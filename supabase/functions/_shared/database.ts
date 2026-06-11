@@ -2350,6 +2350,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          aliases: string[]
           budget: number
           created_at: string | null
           end_date: string | null
@@ -2361,6 +2362,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          aliases?: string[]
           budget?: number
           created_at?: string | null
           end_date?: string | null
@@ -2372,6 +2374,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          aliases?: string[]
           budget?: number
           created_at?: string | null
           end_date?: string | null

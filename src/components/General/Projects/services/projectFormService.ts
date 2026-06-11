@@ -3,6 +3,7 @@ import { supabase } from '../../../../lib/supabase'
 export interface ProjectFormRecord {
   name: string
   location: string
+  aliases: string[]
   start_date: string
   end_date: string | null
   budget: number
@@ -12,6 +13,7 @@ export interface ProjectFormRecord {
 export interface FetchedProject {
   name: string | null
   location: string | null
+  aliases: string[] | null
   start_date: string | null
   end_date: string | null
   budget: number | null

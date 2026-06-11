@@ -35,6 +35,7 @@ export type Project = {
   id: string
   name: string
   location: string
+  aliases: string[]
   start_date: string
   end_date: string | null
   budget: number

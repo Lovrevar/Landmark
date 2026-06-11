@@ -53,12 +53,15 @@ export interface CategoryRow {
   parent_id: string | null
 }
 
-// One candidate row from an entity table, flattened for matching.
+// One candidate row from an entity table, flattened for matching. A candidate
+// can carry several independent search strings (primary name+location plus any
+// aliases) — keeping them separate avoids false matches across the boundary of
+// two concatenated names.
 export interface EntityCandidate {
   id: string
   entity_type: EntityType
   label: string // human-readable, shown to Claude during disambiguation
-  haystack: string // normalized searchable text
+  haystacks: string[] // normalized searchable texts, each matched independently
 }
 
 export interface EntityHint {
@@ -112,9 +115,18 @@ export async function loadEntityCandidates(
   client: ServiceClient,
 ): Promise<EntityCandidate[]> {
   const out: EntityCandidate[] = []
-  const push = (entity_type: EntityType, id: string, label: string, ...keys: (string | null)[]) => {
-    const haystack = normalize(keys.filter(Boolean).join(' '))
-    if (haystack) out.push({ id, entity_type, label, haystack })
+  // `keys` are joined into one primary haystack; each alias becomes its own
+  // haystack so terms can't match across the name/alias boundary.
+  const push = (
+    entity_type: EntityType,
+    id: string,
+    label: string,
+    keys: (string | null)[],
+    aliases: string[] = [],
+  ) => {
+    const haystacks = [normalize(keys.filter(Boolean).join(' ')), ...aliases.map(normalize)]
+      .filter(h => h.length > 0)
+    if (haystacks.length > 0) out.push({ id, entity_type, label, haystacks })
   }
 
   const [
@@ -129,7 +141,7 @@ export async function loadEntityCandidates(
     garages,
     repositories,
   ] = await Promise.all([
-    client.from('projects').select('id, name, location').limit(10000),
+    client.from('projects').select('id, name, location, aliases').limit(10000),
     client.from('project_phases').select('id, phase_name, phase_number').limit(10000),
     client.from('subcontractors').select('id, name').limit(10000),
     client.from('accounting_companies').select('id, name, oib').limit(10000),
@@ -142,36 +154,36 @@ export async function loadEntityCandidates(
   ])
 
   for (const p of projects.data ?? []) {
-    push('project', p.id, p.name ?? '(bez naziva)', p.name, p.location)
+    push('project', p.id, p.name ?? '(bez naziva)', [p.name, p.location], p.aliases ?? [])
   }
   for (const ph of phases.data ?? []) {
-    push('phase', ph.id, ph.phase_name ?? `Faza ${ph.phase_number}`, ph.phase_name)
+    push('phase', ph.id, ph.phase_name ?? `Faza ${ph.phase_number}`, [ph.phase_name])
   }
   for (const s of subcontractors.data ?? []) {
-    push('subcontractor', s.id, s.name ?? '(bez naziva)', s.name)
+    push('subcontractor', s.id, s.name ?? '(bez naziva)', [s.name])
   }
   for (const c of companies.data ?? []) {
-    push('company', c.id, c.name ?? '(bez naziva)', c.name, c.oib)
+    push('company', c.id, c.name ?? '(bez naziva)', [c.name, c.oib])
   }
   for (const c of contracts.data ?? []) {
     const label = c.contract_number ?? c.job_description ?? '(bez broja)'
-    push('contract', c.id, label, c.contract_number, c.job_description)
+    push('contract', c.id, label, [c.contract_number, c.job_description])
   }
   for (const c of customers.data ?? []) {
     const label = [c.name, c.surname].filter(Boolean).join(' ') || '(bez imena)'
-    push('customer', c.id, label, c.name, c.surname)
+    push('customer', c.id, label, [c.name, c.surname])
   }
   for (const c of credits.data ?? []) {
-    push('credit', c.id, c.credit_name ?? '(bez naziva)', c.credit_name)
+    push('credit', c.id, c.credit_name ?? '(bez naziva)', [c.credit_name])
   }
   for (const a of apartments.data ?? []) {
-    push('unit', a.id, `Stan ${a.number}`, a.number)
+    push('unit', a.id, `Stan ${a.number}`, [a.number])
   }
   for (const g of garages.data ?? []) {
-    push('unit', g.id, `Garaža ${g.number}`, g.number)
+    push('unit', g.id, `Garaža ${g.number}`, [g.number])
   }
   for (const r of repositories.data ?? []) {
-    push('unit', r.id, `Spremište ${r.number}`, r.number)
+    push('unit', r.id, `Spremište ${r.number}`, [r.number])
   }
 
   return out
@@ -213,11 +225,17 @@ const SYSTEM_PROMPT =
   'Tvoj zadatak je:\n' +
   '1. Svrstati dokument u TOČNO JEDNU kategoriju iz priloženog stabla ' +
   'kategorija. Ako nisi siguran, postavi category_id na null.\n' +
-  '2. Prepoznati na koje se konkretne entitete dokument odnosi ' +
-  '(projekti, podizvođači, ugovori, tvrtke, kupci, krediti, jedinice) i ' +
+  '2. PRIORITET: identificirati PROJEKT na koji se dokument odnosi. ' +
+  'Uvijek navedi entity_hint tipa "project" kad god dokument ili e-pošta ' +
+  'spominju naziv projekta, naselja, grada, kvarta ili druge lokacije — u ' +
+  'search_terms uključi SVE takve nazive točno onako kako su napisani. ' +
+  'Projekti u dokumentima često nose alternativna imena (npr. ime grada ' +
+  'ili mjesta umjesto službenog naziva projekta), pa navedi i nazive mjesta.\n' +
+  '3. Prepoznati i ostale entitete na koje se dokument odnosi ' +
+  '(podizvođači, ugovori, tvrtke, kupci, krediti, jedinice) i ' +
   'navesti ih kao entity_hints — koristi nazive/brojeve točno onako kako ' +
   'su napisani u dokumentu.\n' +
-  '3. Uvijek popuniti polje description: kratak opis (na hrvatskom) što je ' +
+  '4. Uvijek popuniti polje description: kratak opis (na hrvatskom) što je ' +
   'dokument i zašto je tako klasificiran. Ako je sigurnost niska, u ' +
   'description objasni svoju najbolju pretpostavku.\n' +
   'confidence je broj 0-1 koji izražava koliko si siguran u kategoriju.'
@@ -347,6 +365,29 @@ const PICK_TOOL = {
   },
 } as const
 
+// Shared PICK_TOOL call: sends the prompt, returns the picked entity id, and
+// guards against a hallucinated id (must be one of the candidates).
+async function pickEntity(
+  anthropic: Anthropic,
+  model: string,
+  prompt: string,
+  candidates: EntityCandidate[],
+): Promise<string | null> {
+  const response = await anthropic.messages.create({
+    model,
+    max_tokens: 256,
+    tools: [PICK_TOOL],
+    tool_choice: { type: 'tool', name: PICK_TOOL_NAME },
+    messages: [{ role: 'user', content: prompt }],
+  } as unknown as Parameters<typeof anthropic.messages.create>[0]) as Anthropic.Message
+
+  const toolBlock = response.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === PICK_TOOL_NAME,
+  )
+  const picked = (toolBlock?.input as { entity_id: string | null } | undefined)?.entity_id ?? null
+  return candidates.some(c => c.id === picked) ? picked : null
+}
+
 async function disambiguate(
   anthropic: Anthropic,
   model: string,
@@ -361,20 +402,44 @@ async function disambiguate(
     `Kandidati:\n${list}\n\n` +
     'Odaberi entitet koji najbolje odgovara pozivom alata pick_entity.'
 
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: 256,
-    tools: [PICK_TOOL],
-    tool_choice: { type: 'tool', name: PICK_TOOL_NAME },
-    messages: [{ role: 'user', content: prompt }],
-  } as unknown as Parameters<typeof anthropic.messages.create>[0]) as Anthropic.Message
+  return pickEntity(anthropic, model, prompt, candidates)
+}
 
-  const toolBlock = response.content.find(
-    (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === PICK_TOOL_NAME,
-  )
-  const picked = (toolBlock?.input as { entity_id: string | null } | undefined)?.entity_id ?? null
-  // Guard against a hallucinated id.
-  return candidates.some(c => c.id === picked) ? picked : null
+// Last-resort project pick: when fuzzy matching resolved no project, ask
+// Claude to choose the most likely one from the FULL project list (small for
+// a single company). Returns null only when the model says nothing fits.
+export async function pickProjectFallback(
+  anthropic: Anthropic,
+  model: string,
+  email: EmailContext,
+  doc: DocumentInput,
+  hints: EntityHint[],
+  candidates: EntityCandidate[],
+): Promise<string | null> {
+  const pool = candidates.filter(c => c.entity_type === 'project')
+  if (pool.length === 0) return null
+
+  // Prefer the project names Claude actually read in the document (they just
+  // didn't fuzzy-match anything); fall back to subject + filename.
+  const projectTerms = hints
+    .filter(h => h.entity_type === 'project')
+    .flatMap(h => h.search_terms)
+    .filter(Boolean)
+  const terms = projectTerms.length > 0
+    ? projectTerms
+    : [email.subject, doc.fileName].filter(Boolean)
+
+  const list = pool.map(c => `- ${c.label} [id: ${c.id}]`).join('\n')
+  const prompt =
+    'Dokument iz e-pošte treba povezati s projektom.\n' +
+    `Tragovi iz dokumenta: ${terms.join(', ')}\n` +
+    `Predmet e-pošte: ${email.subject}\n` +
+    `Naziv datoteke: ${doc.fileName}\n\n` +
+    `Projekti:\n${list}\n\n` +
+    'Odaberi NAJVJEROJATNIJI projekt pozivom alata pick_entity. ' +
+    'Vrati null SAMO ako zaista nijedan projekt ne odgovara.'
+
+  return pickEntity(anthropic, model, prompt, pool)
 }
 
 // ---------------------------------------------------------------------------
@@ -382,10 +447,11 @@ async function disambiguate(
 // ---------------------------------------------------------------------------
 
 // A candidate matches a search term when either string contains the other
-// (normalized). Terms shorter than 3 chars are ignored — too noisy.
+// (normalized), against any of the candidate's haystacks. Terms shorter than
+// 3 chars are ignored — too noisy.
 export function matchesTerm(candidate: EntityCandidate, normTerm: string): boolean {
   if (normTerm.length < 3) return false
-  return candidate.haystack.includes(normTerm) || normTerm.includes(candidate.haystack)
+  return candidate.haystacks.some(h => h.includes(normTerm) || normTerm.includes(h))
 }
 
 export async function resolveHints(
@@ -429,9 +495,10 @@ export async function resolveHints(
 // ---------------------------------------------------------------------------
 
 // Classifies a document end-to-end: Pass 1 (Claude) + Pass 2 (code + optional
-// narrow Claude calls). Returns a ready-to-persist result. A low confidence or
-// unknown category collapses categoryId to null (uncategorized inbox); entity
-// associations are kept regardless.
+// narrow Claude calls) + a forced project pick when Pass 2 found no project.
+// Returns a ready-to-persist result. A low confidence or unknown category
+// collapses categoryId to null (uncategorized inbox); entity associations are
+// kept regardless.
 export async function classifyDocument(
   anthropic: Anthropic,
   model: string,
@@ -446,13 +513,15 @@ export async function classifyDocument(
   const confident = typeof pass1.confidence === 'number' && pass1.confidence >= CONFIDENCE_THRESHOLD
   const categoryId = validId && confident ? pass1.category_id : null
 
-  const associations = await resolveHints(
-    anthropic,
-    model,
-    email,
-    Array.isArray(pass1.entity_hints) ? pass1.entity_hints : [],
-    candidates,
-  )
+  const hints = Array.isArray(pass1.entity_hints) ? pass1.entity_hints : []
+  const associations = await resolveHints(anthropic, model, email, hints, candidates)
+
+  // A project link is mandatory whenever one can plausibly be found: if fuzzy
+  // matching resolved none, force a best-guess pick over the full project list.
+  if (!associations.some(a => a.entity_type === 'project')) {
+    const projectId = await pickProjectFallback(anthropic, model, email, doc, hints, candidates)
+    if (projectId) associations.push({ entity_type: 'project', entity_id: projectId })
+  }
 
   return {
     categoryId,

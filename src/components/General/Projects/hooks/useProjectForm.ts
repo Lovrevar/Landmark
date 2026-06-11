@@ -9,6 +9,7 @@ import {
 interface ProjectForm {
   name: string
   location: string
+  aliases: string // comma-separated in the form, stored as text[] in the DB
   start_date: string
   end_date: string
   budget: string
@@ -19,6 +20,7 @@ interface ProjectForm {
 const defaultForm: ProjectForm = {
   name: '',
   location: '',
+  aliases: '',
   start_date: new Date().toISOString().split('T')[0],
   end_date: '',
   budget: '',
@@ -43,6 +45,7 @@ export function useProjectForm(
         setForm({
           name: data.name || '',
           location: data.location || '',
+          aliases: (data.aliases ?? []).join(', '),
           start_date: data.start_date || '',
           end_date: data.end_date || '',
           budget: data.budget?.toString() || '',
@@ -84,6 +87,7 @@ export function useProjectForm(
       const projectData = {
         name: form.name.trim(),
         location: form.location.trim(),
+        aliases: form.aliases.split(',').map(a => a.trim()).filter(Boolean),
         start_date: form.start_date,
         end_date: form.end_date || null,
         budget: parseFloat(form.budget),

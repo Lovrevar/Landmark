@@ -207,14 +207,36 @@ the entity tables loaded up front:
 
 - For each hint, its `search_terms` are normalised (lowercased, Croatian diacritics
   stripped) and fuzzy-matched (substring / containment) against the relevant table's
-  searchable fields (`name`, `contract_number`, `oib`, unit `number`, …).
+  searchable fields (`name`, `contract_number`, `oib`, unit `number`, …). Each
+  candidate carries one haystack per identity: the primary `name + location` string
+  plus, for projects, **one per alias** (`projects.aliases`) — kept separate so a
+  term can't falsely match across the boundary of two concatenated names.
 - **Exactly one match** → a `document_associations` row is emitted.
 - **Several matches** → a *narrow* second Claude call (`pick_entity`, also a forced
   tool) is made with **only those ~3–10 candidate rows** for disambiguation.
-- **No match** → the hint is dropped. The function never invents an association.
+- **No match** → the hint is dropped (but see the project fallback below). The
+  function never invents an association.
 
 So Claude only ever sees the full (small) category list plus, at most, a handful of
 candidate rows. The large tables are matched entirely in code.
+
+### Project aliases
+
+Contracts often refer to a project by an informal name (a city, settlement, or street
+— e.g. project *Zona 31* appearing as *"Osijek"*). `projects.aliases` (`text[]`,
+edited in the project form under **Alternate names**) lists those alternates; each is
+matched independently in Pass 2, exactly like the official name.
+
+### Pass 3 — forced project pick (fallback)
+
+A project link is the single most important association, so when Pass 2 resolves
+**no** `project`, a final small Claude call (`pick_entity`) receives the **full
+project list** (labels only — small for a single company) plus the document's own
+project terms from Pass 1 (or the email subject + filename when there were none) and
+must pick the most likely project, returning `null` only when nothing fits. The
+hallucinated-id guard applies here too. This means a brand-new alternate name still
+usually lands on the right project; adding it as an alias then makes the match exact
+and token-free.
 
 ### Confidence → Uncategorized fallback
 
@@ -268,6 +290,7 @@ No new tables — the feature reuses `documents`, `document_categories`,
 | [`20260521120000_documents_source_email_import.sql`](../supabase/migrations/20260521120000_documents_source_email_import.sql) | Extends the `documents_source_check` constraint with `'email_import'`. |
 | [`20260521130000_documents_content_hash.sql`](../supabase/migrations/20260521130000_documents_content_hash.sql) | Adds the nullable `content_hash` column + its partial index. |
 | [`20260525120000_documents_category_counts_filtered.sql`](../supabase/migrations/20260525120000_documents_category_counts_filtered.sql) | Replaces the parameter-less `get_document_category_counts()` RPC with a filter-aware version (project / entity / file-name / upload-date range) so the sidebar counts track the page's active filters. Email-imported rows are counted exactly like any other; NULL-`category_id` rows feed the **Uncategorized** total. |
+| [`20260611120000_projects_aliases.sql`](../supabase/migrations/20260611120000_projects_aliases.sql) | Adds `projects.aliases text[]` — alternate project names matched by the classifier (see [Project aliases](#project-aliases)). |
 
 Email-imported rows are written as:
 - `source = 'email_import'`
@@ -431,3 +454,7 @@ network, no DB, no Claude tokens. Run `npm run test:functions` (or, from
   the mailbox / Make.com level if untrusted senders are a concern.
 - **Confidence threshold is a fixed constant** (`0.6`) — tune it in `classifier.ts` if
   too many documents land in (or skip) the Uncategorized bucket.
+- **The forced project pick can guess wrong.** When no name or alias matches, Pass 3
+  attaches the *most likely* project rather than none. If a document lands on the
+  wrong project, fix the association in the Documents page and add the name it used
+  as an alias on the right project so future imports match exactly.
