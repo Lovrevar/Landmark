@@ -28,8 +28,9 @@ it into the existing Documents module — no manual upload, no manual categorisa
 A document forwarded to the `documents@…` mailbox ends up — fully classified — on the
 Documents page, with zero human steps in between. The pipeline is:
 
-1. **Make.com** watches the mailbox, extracts PDF/image attachments, and POSTs each one
-   (plus the email subject/body) to a Supabase edge function.
+1. **Make.com** watches the mailbox, extracts supported attachments (PDF, images, XML,
+   DOCX, XLSX/XLS, CSV, TXT, legacy DOC), and POSTs each one (plus the email
+   subject/body) to a Supabase edge function.
 2. The **`sort-document`** edge function authenticates the caller, deduplicates, calls
    the **Claude API** to classify the document, and writes it into the existing
    `documents` / `document_associations` tables and the `documents` storage bucket.
@@ -44,8 +45,12 @@ Confirmed behaviour (from the requirements gathering):
   stays in the **All documents** view and is tallied into the **Uncategorized** count
   (there is no dedicated Uncategorized filter node); Claude's best-guess reasoning is
   saved in the `description` field.
-- **Email scope:** only PDF/image attachments are processed; the email subject + body
-  are always passed to Claude as extra classification context.
+- **Email scope:** PDF, image, XML (e-Računi/UBL), DOCX, XLSX/XLS, CSV, TXT, and legacy
+  DOC attachments are processed; the email subject + body are always passed to Claude
+  as extra classification context. PDFs/images go to Claude as-is; the office/text
+  formats are reduced to plain text in the function first (see
+  [Classification Logic](#classification-logic)); legacy `.doc` has no extractor and is
+  classified from the email metadata + filename only.
 - **Notifications:** none — documents simply appear on the Documents page.
 
 The feature reuses the Documents data model wholesale and adds no frontend code. It
@@ -62,7 +67,7 @@ Email → documents@…
         ▼
 ┌─────────────────────┐
 │  Make.com scenario  │  Watch emails → Iterator(attachments)
-│                     │  → Filter(PDF/image) → HTTP POST
+│                     │  → Filter(supported types) → HTTP POST
 └──────────┬──────────┘
            │  POST /functions/v1/sort-document   (one request per attachment)
            ▼
@@ -70,9 +75,10 @@ Email → documents@…
 │  sort-document edge function                  │
 │  1. validate shared secret + attachment       │
 │  2. SHA-256 dedup check → skip if seen         │
-│  3. classify via Claude API (two passes)       │
-│  4. upload to `documents` bucket               │
-│  5. insert documents + document_associations   │
+│  3. extract text (XML/DOCX/XLSX/CSV/TXT)       │
+│  4. classify via Claude API (two passes)       │
+│  5. upload to `documents` bucket               │
+│  6. insert documents + document_associations   │
 └──────────┬─────────────────────────────────────┘
            ▼
    Documents page (existing UI) — categorised & linked
@@ -92,9 +98,15 @@ One scenario, modules in order:
    doesn't fire a huge burst.
 2. **Iterator** — bound to the trigger's `Attachments[]` array; one cycle per
    attachment, exposing `fileName`, `contentType`, and binary `data`.
-3. **Filter** — placed on the route after the Iterator. Keep only `contentType` in
-   `application/pdf, image/png, image/jpeg, image/jpg, image/webp`. Everything else
-   (inline signatures, `.docx`, `.zip`) is silently dropped.
+3. **Filter** — placed on the route after the Iterator. Keep `contentType` in:
+   `application/pdf`, `image/png`, `image/jpeg`, `image/jpg`, `image/webp`,
+   `application/xml`, `text/xml`,
+   `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (`.docx`),
+   `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (`.xlsx`),
+   `application/vnd.ms-excel` (`.xls`), `text/csv`, `text/plain`,
+   `application/msword` (`.doc`), and `application/octet-stream` (mail clients often
+   declare attachments this way — the function maps known filename extensions and
+   `415`s the rest). Everything else (inline signatures, `.zip`) is silently dropped.
 4. **HTTP "Make a request"** — one POST per kept attachment:
    - **URL:** `https://<project-ref>.supabase.co/functions/v1/sort-document`
    - **Method:** `POST`
@@ -131,7 +143,8 @@ into N POSTs via the Iterator; the subject/body is carried as a constant on ever
 ## Edge Function: `sort-document`
 
 Source: [`supabase/functions/sort-document/`](../supabase/functions/sort-document/)
-— `index.ts` (HTTP, auth, storage, DB) and `classifier.ts` (Claude + entity matching).
+— `index.ts` (HTTP, auth, storage, DB), `extract.ts` (MIME/extension resolution + text
+extraction), and `classifier.ts` (Claude + entity matching).
 
 ### Authentication — why no JWT
 
@@ -151,12 +164,17 @@ no RLS-scoped client and no `uploaded_by` — that column is inserted as `null`.
 2. Non-POST → `405`.
 3. Validate `x-doc-sort-secret` → `401` on mismatch.
 4. Parse + validate the JSON body → `400` on malformed input.
-5. Validate the attachment: MIME whitelist (`415` if not), base64 decode (`400` if
+5. Validate the attachment: resolve the declared MIME to a document kind via
+   `extract.ts` (`415` if unsupported; `application/octet-stream` falls back to the
+   filename extension — unknown extensions still `415`), base64 decode (`400` if
    corrupt), decoded size ≤ 50 MB (`413` if over — the `documents` bucket cap).
 6. **Duplicate check** (see below) → `200 { duplicate: true }` and stop, if seen.
-7. Classify via Claude.
-8. Upload to the `documents` bucket; insert `documents` + `document_associations`.
-9. Return `200 { document_id, duplicate: false, category_id, confidence, associations_count }`.
+7. **Extract text** for XML/DOCX/XLSX/CSV/TXT (capped at 50,000 chars). Extraction
+   failure (corrupt file, bad UTF-8) or legacy `.doc` never rejects the import — the
+   document is classified from the email metadata + filename only (`console.warn`).
+8. Classify via Claude.
+9. Upload to the `documents` bucket; insert `documents` + `document_associations`.
+10. Return `200 { document_id, duplicate: false, category_id, confidence, associations_count }`.
 
 ### Response policy
 
@@ -179,7 +197,13 @@ suppliers, or contracts exist (those tables can hold thousands of rows).
 ### Pass 1 — Claude classification (one API call)
 
 Claude receives:
-- the document itself as a base64 `document` (PDF) or `image` block;
+- the document itself, in one of three shapes:
+  - **PDF** — base64 `document` block; **image** — base64 `image` block;
+  - **XML / DOCX / XLSX / CSV / TXT** — a plain-text `document` block carrying the text
+    extracted in `extract.ts` (XLSX: first sheet converted to CSV; DOCX: raw text via
+    `mammoth`; capped at 50,000 chars with a `[skraćeno]` marker);
+  - **nothing** (legacy `.doc`, or extraction failed) — the prompt instead carries a
+    note telling Claude to classify from the email subject/body, sender, and filename;
 - the email subject + body as text;
 - the **full category tree** — small and bounded, so it is safe to send whole, rendered
   as an indented list with each category's UUID;
@@ -377,8 +401,9 @@ verify_jwt = false
 | Non-POST method | `405` |
 | Malformed JSON / missing attachment fields | `400` |
 | Corrupt base64 | `400` |
-| Unsupported file type | `415` (MIME whitelist re-checked server-side) |
+| Unsupported file type | `415` (MIME whitelist re-checked server-side; octet-stream resolved by filename extension, unknown extensions rejected) |
 | File > 50 MB | `413` |
+| Unreadable DOCX/XLSX/XML/TXT (corrupt, bad UTF-8) or legacy `.doc` | imported anyway — classified from email metadata + filename only (`console.warn` in logs) |
 | Function not configured (`DOC_SORT_WEBHOOK_SECRET` unset) | `500` |
 | Duplicate file (same `content_hash`) | `200 { duplicate: true }`, no new row |
 | Claude API failure | mapped like `ai-chat`'s `mapAnthropicError`; `5xx`; nothing written |
@@ -409,11 +434,13 @@ verify_jwt = false
 ## Verification
 
 The classification logic (`normalize`, `matchesTerm`, `resolveHints` ambiguity /
-hallucination guards, and the confidence/validity collapse in `classifyDocument`) is
-covered by unit tests in
-[`classifier.test.ts`](../supabase/functions/sort-document/classifier.test.ts) — no
-network, no DB, no Claude tokens. Run `npm run test:functions` (or, from
-`supabase/functions/`, `deno task test`).
+hallucination guards, the confidence/validity collapse in `classifyDocument`, and the
+Pass-1 content-block shapes) is covered by unit tests in
+[`classifier.test.ts`](../supabase/functions/sort-document/classifier.test.ts);
+MIME/extension resolution, truncation, and extraction degrade paths are covered by
+[`extract.test.ts`](../supabase/functions/sort-document/extract.test.ts) — no network,
+no DB, no Claude tokens. Run `npm run test:functions` (or, from `supabase/functions/`,
+`deno task test`).
 
 1. **Happy path** — `supabase functions serve sort-document`, then:
    ```
@@ -434,8 +461,20 @@ network, no DB, no Claude tokens. Run `npm run test:functions` (or, from
    tallied into the **Uncategorized** count, with Claude's reasoning in the description.
 6. **Low-confidence path** — feed a blank/irrelevant image → `category_id` null,
    `description` populated.
-7. **End-to-end** — forward a real email with a PDF + an image + a `.docx` → two
-   documents created, the `.docx` silently skipped, both classified.
+7. **Per-type smoke tests** — repeat the happy-path curl varying the `attachment`:
+   - XML e-račun (`"mime_type":"application/xml"`) → `200`, classified from content;
+   - the same XML declared as `"mime_type":"application/octet-stream"` → `200`
+     (extension fallback; `documents.mime_type` stores `application/xml`);
+   - `"mime_type":"application/octet-stream","file_name":"archive.zip"` → `415`;
+   - a DOCX → `200` (also live-checks that `npm:mammoth` runs in the edge runtime —
+     watch the `serve` logs for import errors);
+   - an XLSX and a CSV → `200`;
+   - a corrupt DOCX (e.g. a renamed `.txt`) → `200` + a `console.warn` degrade in the
+     logs, document imported anyway;
+   - a legacy `.doc` → `200`, classified from email metadata only, stored with
+     `application/msword`.
+8. **End-to-end** — forward a real email with a PDF + an image + a `.docx` → three
+   documents created and classified.
 
 ---
 
@@ -448,8 +487,14 @@ network, no DB, no Claude tokens. Run `npm run test:functions` (or, from
   `content_hash` null, so an emailed file is not detected as a duplicate of an
   identical file uploaded through the app. Populating `content_hash` in
   `documentService.uploadDocument` would close this gap.
-- **PDF and image attachments only.** Word/Excel/other formats are filtered out by
-  Make.com and rejected (`415`) by the function — Claude cannot read them natively.
+- **Legacy `.doc` is stored but never content-read.** There is no reliable pure-JS
+  extractor for the binary Word format on Deno, so `.doc` files are classified from
+  the email subject/body, sender, and filename only.
+- **XLSX extraction reads the first sheet only** (converted to CSV), matching the
+  AI-chat uploader's behaviour.
+- **Extracted text is capped at 50,000 characters** (`EXTRACTED_TEXT_MAX_CHARS` in
+  `extract.ts`) to bound Claude token cost; longer content is cut with a
+  `[skraćeno]` marker.
 - **No sender allow-list.** Any email reaching the mailbox is processed. Restrict at
   the mailbox / Make.com level if untrusted senders are a concern.
 - **Confidence threshold is a fixed constant** (`0.6`) — tune it in `classifier.ts` if

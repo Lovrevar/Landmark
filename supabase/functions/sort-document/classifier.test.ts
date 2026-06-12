@@ -323,6 +323,72 @@ Deno.test('classifyDocument: associations are kept even when uncategorized', asy
 })
 
 // ===========================================================================
+// classifyDocument — Pass-1 content block shapes
+// ===========================================================================
+
+// The user content of the Pass-1 (classify_document) request.
+function pass1Content(fake: { calls: Array<Record<string, unknown>> }): Array<Record<string, unknown>> {
+  const messages = fake.calls[0].messages as Array<{ content: Array<Record<string, unknown>> }>
+  return messages[0].content
+}
+
+const NOOP_CLASSIFY = classifyResp({
+  category_id: null,
+  confidence: 0,
+  description: 'x',
+  entity_hints: [],
+})
+
+Deno.test('classifyDocument: PDF input is sent as a base64 document block', async () => {
+  const fake = fakeAnthropic([NOOP_CLASSIFY])
+  await classifyDocument(fake, MODEL, DOC, EMAIL, CATEGORIES, [])
+  const content = pass1Content(fake)
+  assertEquals(content.length, 2)
+  assertEquals(content[0], {
+    type: 'document',
+    source: { type: 'base64', media_type: 'application/pdf', data: 'x' },
+  })
+  assertEquals(content[1].type, 'text')
+})
+
+Deno.test('classifyDocument: image input is sent as an image block', async () => {
+  const doc: DocumentInput = { fileName: 's.png', mimeType: 'image/png', base64: 'img' }
+  const fake = fakeAnthropic([NOOP_CLASSIFY])
+  await classifyDocument(fake, MODEL, doc, EMAIL, CATEGORIES, [])
+  assertEquals(pass1Content(fake)[0], {
+    type: 'image',
+    source: { type: 'base64', media_type: 'image/png', data: 'img' },
+  })
+})
+
+Deno.test('classifyDocument: extracted text is sent as a plain-text document block', async () => {
+  const doc: DocumentInput = {
+    fileName: 'racun.xml',
+    mimeType: 'application/xml',
+    text: '<Invoice><ID>2026-17</ID></Invoice>',
+  }
+  const fake = fakeAnthropic([NOOP_CLASSIFY])
+  await classifyDocument(fake, MODEL, doc, EMAIL, CATEGORIES, [])
+  const content = pass1Content(fake)
+  assertEquals(content[0], {
+    type: 'document',
+    source: { type: 'text', media_type: 'text/plain', data: '<Invoice><ID>2026-17</ID></Invoice>' },
+    title: 'racun.xml',
+  })
+})
+
+Deno.test('classifyDocument: no content (legacy .doc) sends a single text block with the metadata-only note', async () => {
+  const doc: DocumentInput = { fileName: 'stari.doc', mimeType: 'application/msword' }
+  const fake = fakeAnthropic([NOOP_CLASSIFY])
+  await classifyDocument(fake, MODEL, doc, EMAIL, CATEGORIES, [])
+  const content = pass1Content(fake)
+  assertEquals(content.length, 1)
+  assertEquals(content[0].type, 'text')
+  assert((content[0].text as string).includes('Sadržaj dokumenta nije dostupan'))
+  assert((content[0].text as string).includes('stari.doc'))
+})
+
+// ===========================================================================
 // classifyDocument — forced project-pick fallback
 // ===========================================================================
 

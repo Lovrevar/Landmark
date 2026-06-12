@@ -1,9 +1,13 @@
 // sort-document — automatic email document sorting.
 //
 // The Make.com email-automation scenario watches the documents@ mailbox, and
-// for every PDF/image attachment POSTs a JSON envelope here. This function:
+// for every supported attachment (PDF, image, XML, DOCX, XLSX/XLS, CSV, TXT,
+// legacy DOC) POSTs a JSON envelope here. This function:
 //   1. authenticates the caller via a shared secret (x-doc-sort-secret),
-//   2. classifies the document with the Claude API (see classifier.ts),
+//   2. classifies the document with the Claude API (see classifier.ts) —
+//      PDFs/images are sent as-is; XML/DOCX/XLSX/CSV/TXT are reduced to plain
+//      text first (see extract.ts); legacy .doc (no extractor) is classified
+//      from the email metadata + filename only,
 //   3. uploads the file to the `documents` storage bucket and writes the
 //      `documents` + `document_associations` rows that the in-app Documents
 //      page already reads.
@@ -23,21 +27,13 @@ import {
   type DocumentInput,
   type EmailContext,
 } from './classifier.ts'
+import { extractText, resolveDocument } from './extract.ts'
 
 const jsonHeaders = { ...corsHeaders, 'content-type': 'application/json' }
 
 // 50 MB — matches the `documents` bucket cap enforced by the in-app uploader
 // (src/components/Documents/services/documentService.ts).
 const MAX_FILE_SIZE = 50 * 1024 * 1024
-
-// Accepted attachment MIME types. Make.com filters before POSTing; we re-check.
-const ALLOWED_MIME = new Set([
-  'application/pdf',
-  'image/png',
-  'image/jpeg',
-  'image/jpg',
-  'image/webp',
-])
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -74,11 +70,6 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(digest))
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
-}
-
-// Anthropic's image blocks expect `image/jpeg`, not `image/jpg`.
-function normalizeMime(mime: string): string {
-  return mime === 'image/jpg' ? 'image/jpeg' : mime
 }
 
 // Maps Anthropic SDK errors to a code + HTTP status (mirrors ai-chat's
@@ -144,10 +135,13 @@ Deno.serve(async (req) => {
     return errorResponse('bad_request', 'Missing attachment fields.', 400)
   }
 
-  const mimeType = normalizeMime(att.mime_type.toLowerCase())
-  if (!ALLOWED_MIME.has(att.mime_type.toLowerCase())) {
+  // Resolve the declared MIME (falling back to the filename extension for
+  // application/octet-stream) to a document kind + the MIME we store.
+  const resolved = resolveDocument(att.mime_type, att.file_name)
+  if (!resolved) {
     return errorResponse('unsupported_media_type', `Unsupported type: ${att.mime_type}`, 415)
   }
+  const { kind, effectiveMime } = resolved
 
   let bytes: Uint8Array
   try {
@@ -211,10 +205,17 @@ Deno.serve(async (req) => {
     ])
     if (catErr) throw catErr
 
+    // PDFs/images go to Claude as base64 blocks; everything else is reduced to
+    // plain text. A null extraction (legacy .doc, corrupt file, bad UTF-8)
+    // degrades to metadata-only classification — the import still proceeds.
+    const isBinaryPassthrough = kind === 'pdf' || kind === 'image'
+    const text = isBinaryPassthrough ? undefined : (await extractText(kind, bytes)) ?? undefined
+
     const doc: DocumentInput = {
       fileName: att.file_name,
-      mimeType,
-      base64: att.data_base64,
+      mimeType: effectiveMime,
+      base64: isBinaryPassthrough ? att.data_base64 : undefined,
+      text,
     }
     classification = await classifyDocument(
       anthropic,
@@ -238,7 +239,7 @@ Deno.serve(async (req) => {
   const filePath = `${crypto.randomUUID()}/${sanitizeFilename(att.file_name)}`
   const { error: uploadErr } = await client.storage
     .from('documents')
-    .upload(filePath, bytes, { contentType: mimeType })
+    .upload(filePath, bytes, { contentType: effectiveMime })
   if (uploadErr) {
     console.error('[sort-document] storage upload failed', { message: uploadErr.message })
     return errorResponse('storage_failed', 'Failed to store the document.', 502)
@@ -251,7 +252,7 @@ Deno.serve(async (req) => {
       file_path: filePath,
       file_name: att.file_name,
       file_size: bytes.byteLength,
-      mime_type: mimeType,
+      mime_type: effectiveMime,
       category_id: classification.categoryId,
       source: 'email_import',
       description: classification.description || null,
