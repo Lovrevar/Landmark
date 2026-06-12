@@ -175,6 +175,11 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
                       {/* w-0 + min-w-full keeps this cell from widening the min-w-max
                           table, so the description wraps at the visible table width */}
                       <div className="w-0 min-w-full space-y-4">
+                        <DetailRow label={t('documents.page.table.filename')}>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white break-all">
+                            {doc.file_name}
+                          </span>
+                        </DetailRow>
                         <DetailRow label={t('documents.page.table.description')}>
                           {doc.description
                             ? <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">{doc.description}</span>
