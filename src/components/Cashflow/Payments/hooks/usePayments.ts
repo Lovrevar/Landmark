@@ -5,6 +5,7 @@ import {
   Company,
   CompanyBankAccount,
   CompanyCredit,
+  CreditAllocation,
   PaymentFormData,
   VisibleColumns,
   FilterMethod,
@@ -21,9 +22,28 @@ import {
   updatePayment,
   deletePayment
 } from '../services/paymentService'
+import { fetchCreditAllocations } from '../../Invoices/services/invoiceService'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import { useToast } from '../../../../contexts/ToastContext'
 import { useTranslation } from 'react-i18next'
+
+const createEmptyFormData = (): PaymentFormData => ({
+  invoice_id: '',
+  payment_source_type: 'bank_account',
+  company_bank_account_id: '',
+  credit_id: '',
+  credit_allocation_id: '',
+  is_cesija: false,
+  cesija_company_id: '',
+  cesija_bank_account_id: '',
+  cesija_credit_id: '',
+  cesija_credit_allocation_id: '',
+  payment_date: new Date().toISOString().split('T')[0],
+  amount: 0,
+  payment_method: 'WIRE',
+  reference_number: '',
+  description: ''
+})
 
 export const usePayments = () => {
   const toast = useToast()
@@ -33,6 +53,7 @@ export const usePayments = () => {
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
   const [companyCredits, setCompanyCredits] = useState<CompanyCredit[]>([])
+  const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [loading, setLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -47,20 +68,7 @@ export const usePayments = () => {
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
   const [viewingPayment, setViewingPayment] = useState<Payment | null>(null)
 
-  const [formData, setFormData] = useState<PaymentFormData>({
-    invoice_id: '',
-    payment_source_type: 'bank_account',
-    company_bank_account_id: '',
-    credit_id: '',
-    is_cesija: false,
-    cesija_company_id: '',
-    cesija_bank_account_id: '',
-    payment_date: new Date().toISOString().split('T')[0],
-    amount: 0,
-    payment_method: 'WIRE',
-    reference_number: '',
-    description: ''
-  })
+  const [formData, setFormData] = useState<PaymentFormData>(createEmptyFormData)
 
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>(() => {
     const saved = localStorage.getItem('accountingPaymentsColumns')
@@ -146,23 +154,47 @@ export const usePayments = () => {
     }))
   }
 
+  const handleCreditChange = async (creditId: string) => {
+    if (!creditId) {
+      setCreditAllocations([])
+      return
+    }
+    try {
+      setCreditAllocations(await fetchCreditAllocations(creditId))
+    } catch (error) {
+      console.error('Error fetching credit allocations:', error)
+      setCreditAllocations([])
+    }
+  }
+
   const handleOpenModal = async (payment?: Payment) => {
+    setCreditAllocations([])
     if (payment) {
       setEditingPayment(payment)
       setFormData({
+        ...createEmptyFormData(),
         invoice_id: payment.invoice_id,
-        payment_source_type: payment.is_cesija ? 'bank_account' : (payment.payment_source_type || 'bank_account'),
+        payment_source_type: payment.payment_source_type || 'bank_account',
         company_bank_account_id: payment.company_bank_account_id || '',
         credit_id: payment.credit_id || '',
+        credit_allocation_id: payment.credit_allocation_id || '',
         is_cesija: payment.is_cesija || false,
         cesija_company_id: payment.cesija_company_id || '',
         cesija_bank_account_id: payment.cesija_bank_account_id || '',
+        cesija_credit_id: payment.cesija_credit_id || '',
+        cesija_credit_allocation_id: payment.cesija_credit_allocation_id || '',
         payment_date: payment.payment_date,
         amount: payment.amount,
         payment_method: payment.payment_method,
         reference_number: payment.reference_number || '',
         description: payment.description
       })
+
+      // Preload allocations for the credit-funded source so the saved allocation shows
+      const editCreditId = payment.is_cesija ? payment.cesija_credit_id : payment.credit_id
+      if (payment.payment_source_type === 'credit' && editCreditId) {
+        void handleCreditChange(editCreditId)
+      }
 
       const alreadyInList = invoices.some(inv => inv.id === payment.invoice_id)
       if (!alreadyInList) {
@@ -177,20 +209,7 @@ export const usePayments = () => {
       }
     } else {
       setEditingPayment(null)
-      setFormData({
-        invoice_id: '',
-        payment_source_type: 'bank_account',
-        company_bank_account_id: '',
-        credit_id: '',
-        is_cesija: false,
-        cesija_company_id: '',
-        cesija_bank_account_id: '',
-        payment_date: new Date().toISOString().split('T')[0],
-        amount: 0,
-        payment_method: 'WIRE',
-        reference_number: '',
-        description: ''
-      })
+      setFormData(createEmptyFormData())
     }
     lockBodyScroll()
     setShowPaymentModal(true)
@@ -216,6 +235,10 @@ export const usePayments = () => {
     const source = formData.payment_source_type
     const isCesija = formData.is_cesija
 
+    if (!Number.isFinite(formData.amount) || formData.amount <= 0) {
+      toast.error(t('payments.form.error_amount_required'))
+      return
+    }
     if (!isCesija && source === 'bank_account' && !formData.company_bank_account_id) {
       toast.error(t('payments.form.error_bank_account_required'))
       return
@@ -224,12 +247,24 @@ export const usePayments = () => {
       toast.error(t('payments.form.error_credit_required'))
       return
     }
+    if (!isCesija && source === 'credit' && !formData.credit_allocation_id) {
+      toast.error(t('payments.form.error_credit_allocation_required'))
+      return
+    }
     if (isCesija && !formData.cesija_company_id) {
       toast.error(t('payments.form.error_cesija_company_required'))
       return
     }
-    if (isCesija && !formData.cesija_bank_account_id) {
+    if (isCesija && source === 'bank_account' && !formData.cesija_bank_account_id) {
       toast.error(t('payments.form.error_bank_account_required'))
+      return
+    }
+    if (isCesija && source === 'credit' && !formData.cesija_credit_id) {
+      toast.error(t('payments.form.error_credit_required'))
+      return
+    }
+    if (isCesija && source === 'credit' && !formData.cesija_credit_allocation_id) {
+      toast.error(t('payments.form.error_credit_allocation_required'))
       return
     }
 
@@ -322,6 +357,8 @@ export const usePayments = () => {
     companies,
     companyBankAccounts,
     companyCredits,
+    creditAllocations,
+    handleCreditChange,
     loading,
     searchTerm,
     setSearchTerm,

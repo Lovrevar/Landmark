@@ -116,6 +116,8 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
 
   if (error) throw error
 
+  logActivity({ action: 'company.update', entity: 'company', entityId: companyId, metadata: { severity: 'medium', entity_name: formData.name, changed_fields: ['name', 'oib'] } })
+
   for (const account of formData.bankAccounts) {
     if (account.id) {
       const now = new Date().toISOString()

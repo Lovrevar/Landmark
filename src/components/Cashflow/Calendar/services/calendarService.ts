@@ -54,12 +54,13 @@ export const handleSaveBudgets = async (
       const existing = budgets.find(b => b.year === budgetYear && b.month === m)
 
       if (existing) {
-        await supabase
+        const { error } = await supabase
           .from('monthly_budgets')
           .update({ budget_amount: amount })
           .eq('id', existing.id)
+        if (error) throw error
       } else {
-        await supabase
+        const { error } = await supabase
           .from('monthly_budgets')
           .insert({
             year: budgetYear,
@@ -67,6 +68,7 @@ export const handleSaveBudgets = async (
             budget_amount: amount,
             notes: ''
           })
+        if (error) throw error
       }
     }
 

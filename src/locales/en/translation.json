@@ -714,6 +714,7 @@
       "will_be_partial_status": "Status will change to PARTIALLY PAID",
       "confirm_payment": "Confirm Payment",
       "max_amount_helper": "Max amount: €{{amount}}",
+      "error_amount_required": "Enter a valid amount greater than 0",
       "error_bank_account_required": "You must select a bank account",
       "error_credit_required": "You must select a credit",
       "error_credit_allocation_required": "You must select a project for the credit allocation",
@@ -767,6 +768,7 @@
       "source_bank": "Bank Account",
       "source_credit": "Credit",
       "source_kompenzacija": "Compensation",
+      "source_cash": "Cash",
       "type_incoming_supplier": "Incoming Supplier",
       "type_outgoing_supplier": "Outgoing Supplier",
       "type_incoming_investment": "Incoming Investment",
@@ -1180,6 +1182,7 @@
   "cashflow_calendar": {
     "title": "Due Date Calendar",
     "subtitle": "Overview of all due dates",
+    "budget_save_error": "Error saving budgets",
     "months": [
       "January",
       "February",

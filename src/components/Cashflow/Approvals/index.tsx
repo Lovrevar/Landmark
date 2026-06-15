@@ -52,6 +52,7 @@ const AccountingApprovals: React.FC = () => {
     selectedIds,
     toggleSelect,
     toggleSelectAll,
+    clearSelection,
     allFilteredSelected,
     selectedCount,
     selectedTotal,
@@ -165,12 +166,7 @@ const AccountingApprovals: React.FC = () => {
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => {
-                    filteredInvoices.forEach(inv => {
-                      if (selectedIds.has(inv.id)) toggleSelect(inv.id)
-                    })
-                    Array.from(selectedIds).forEach(id => toggleSelect(id))
-                  }}
+                  onClick={clearSelection}
                 >
                   {t('approvals.cancel_selection')}
                 </Button>

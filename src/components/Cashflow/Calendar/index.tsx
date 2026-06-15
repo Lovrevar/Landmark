@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react'
 import { LoadingSpinner, Button, Badge, StatCard, StatGrid } from '../../ui'
 import { useCalendar } from './hooks/useCalendar'
+import { useToast } from '../../../contexts/ToastContext'
 import { handleSaveBudgets } from './services/calendarService'
 import BudgetModal from './forms/BudgetModal'
 import { Invoice } from './types'
 
 const AccountingCalendar: React.FC = () => {
   const { t } = useTranslation()
+  const toast = useToast()
   const monthNames = t('cashflow_calendar.months', { returnObjects: true }) as string[]
   const dayNames = t('cashflow_calendar.days', { returnObjects: true }) as string[]
   const {
@@ -40,9 +42,14 @@ const AccountingCalendar: React.FC = () => {
   today.setHours(0, 0, 0, 0)
 
   const onSaveBudgets = async () => {
-    await handleSaveBudgets(budgetYear, budgetFormData, budgets)
-    await fetchBudgets()
-    setShowBudgetModal(false)
+    try {
+      await handleSaveBudgets(budgetYear, budgetFormData, budgets)
+      await fetchBudgets()
+      setShowBudgetModal(false)
+    } catch (error) {
+      console.error('Error saving budgets:', error)
+      toast.error(t('cashflow_calendar.budget_save_error'))
+    }
   }
 
   const onBudgetYearChange = (newYear: number) => {

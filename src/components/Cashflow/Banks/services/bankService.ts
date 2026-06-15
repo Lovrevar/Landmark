@@ -1,6 +1,7 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { BankWithCredits, BankCredit, Project, Company, NewCreditForm } from '../bankTypes'
+import { calculateAnnuityPayment, calculatePaymentSchedule } from '../../../Funding/Investors/utils/creditCalculations'
 
 export const fetchProjects = async (): Promise<Project[]> => {
   const { data, error } = await supabase
@@ -71,85 +72,60 @@ export const fetchBanksWithCredits = async (): Promise<BankWithCredits[]> => {
   })
 }
 
+// Delegates to the shared, unit-tested annuity formula (the persisted
+// `monthly_payment`). Previously a hand-copied duplicate that drifted (it
+// divided the grace period by 365 instead of 12).
 export const calculateRateAmount = (credit: NewCreditForm): number => {
-  const principal = credit.amount
-  const annualRate = credit.interest_rate / 100
-  const gracePeriodYears = credit.grace_period / 365
-
-  let maturityYears = 10
-  if (credit.maturity_date && credit.start_date) {
-    const startDate = new Date(credit.start_date)
-    const maturityDate = new Date(credit.maturity_date)
-    maturityYears = (maturityDate.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-  }
-
-  const repaymentYears = Math.max(0.1, maturityYears - gracePeriodYears)
-
-  if (annualRate === 0) {
-    return credit.repayment_type === 'yearly'
-      ? principal / repaymentYears
-      : principal / (repaymentYears * 12)
-  }
-
-  if (credit.repayment_type === 'yearly') {
-    const yearlyRate = annualRate
-    return (principal * yearlyRate * Math.pow(1 + yearlyRate, repaymentYears)) /
-           (Math.pow(1 + yearlyRate, repaymentYears) - 1)
-  } else {
-    const monthlyRate = annualRate / 12
-    const totalMonths = repaymentYears * 12
-    return (principal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
-           (Math.pow(1 + monthlyRate, totalMonths) - 1)
-  }
+  return calculateAnnuityPayment({
+    amount: credit.amount,
+    interest_rate: credit.interest_rate,
+    grace_period: credit.grace_period,
+    start_date: credit.start_date,
+    maturity_date: credit.maturity_date || null,
+    repayment_type: credit.repayment_type,
+  })
 }
 
-export const getPaymentFrequency = (type: string): number => {
-  switch (type) {
-    case 'monthly': return 12
-    case 'quarterly': return 4
-    case 'biyearly': return 2
-    case 'yearly': return 1
-    default: return 12
-  }
+// Number of annuity payments over the repayment term — mirrors the internal
+// `n` of calculateAnnuityPayment so annuity-derived totals stay consistent.
+const annuityPaymentCount = (credit: NewCreditForm): number => {
+  const maturityYears = credit.maturity_date && credit.start_date
+    ? (new Date(credit.maturity_date).getTime() - new Date(credit.start_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+    : 10
+  const repaymentYears = Math.max(0.1, maturityYears - credit.grace_period / 12)
+  return credit.repayment_type === 'yearly' ? repaymentYears : repaymentYears * 12
 }
 
 export const calculatePayments = (credit: NewCreditForm) => {
-  if (!credit.start_date || !credit.maturity_date || !credit.amount) {
+  // Reuse the shared schedule for the structural math (counts, dates, guards,
+  // equal-principal split).
+  const schedule = calculatePaymentSchedule({
+    start_date: credit.start_date,
+    maturity_date: credit.maturity_date,
+    amount: credit.amount,
+    grace_period: credit.grace_period,
+    interest_rate: credit.interest_rate,
+    principal_repayment_type: credit.principal_repayment_type,
+    interest_repayment_type: credit.interest_repayment_type,
+  })
+  if (!schedule) {
     return null
   }
 
-  const startDate = new Date(credit.start_date)
-  const endDate = new Date(credit.maturity_date)
-  const gracePeriodMonths = credit.grace_period || 0
-
-  const paymentStartDate = new Date(startDate)
-  paymentStartDate.setMonth(paymentStartDate.getMonth() + gracePeriodMonths)
-
-  if (paymentStartDate >= endDate) {
-    return null
-  }
-
-  const totalYears = (endDate.getTime() - paymentStartDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-
-  const principalFreq = getPaymentFrequency(credit.principal_repayment_type)
-  const interestFreq = getPaymentFrequency(credit.interest_repayment_type)
-
-  const totalPrincipalPayments = Math.floor(totalYears * principalFreq)
-  const totalInterestPayments = Math.floor(totalYears * interestFreq)
-
-  const principalPerPayment = totalPrincipalPayments > 0 ? credit.amount / totalPrincipalPayments : 0
-
-  const annualInterest = credit.amount * (credit.interest_rate / 100)
-  const interestPerPayment = totalInterestPayments > 0 ? annualInterest / interestFreq : 0
+  // Total interest from the amortizing annuity model (the same one persisted as
+  // monthly_payment), spread across the interest payments — instead of the flat
+  // full-principal-per-period interest the raw schedule would otherwise show.
+  const totalInterest = Math.max(0, calculateRateAmount(credit) * annuityPaymentCount(credit) - credit.amount)
+  const interestPerPayment = schedule.totalInterestPayments > 0
+    ? totalInterest / schedule.totalInterestPayments
+    : 0
 
   return {
-    principalPerPayment,
+    ...schedule,
     interestPerPayment,
-    totalPrincipalPayments,
-    totalInterestPayments,
-    paymentStartDate,
+    // Preserve the raw repayment-type labels the UI's `every_freq` string expects.
     principalFrequency: credit.principal_repayment_type,
-    interestFrequency: credit.interest_repayment_type
+    interestFrequency: credit.interest_repayment_type,
   }
 }
 

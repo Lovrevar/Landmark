@@ -64,6 +64,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
       case 'bank_account': return t('payments.detail.source_bank')
       case 'credit': return t('payments.detail.source_credit')
       case 'kompenzacija': return t('payments.detail.source_kompenzacija')
+      case 'gotovina': return t('payments.detail.source_cash')
       default: return '-'
     }
   }

@@ -19,6 +19,8 @@ const AccountingPayments: React.FC = () => {
     companies,
     companyBankAccounts,
     companyCredits,
+    creditAllocations,
+    handleCreditChange,
     loading,
     searchTerm,
     setSearchTerm,
@@ -197,6 +199,8 @@ const AccountingPayments: React.FC = () => {
         companies={companies}
         companyBankAccounts={companyBankAccounts}
         companyCredits={companyCredits}
+        creditAllocations={creditAllocations}
+        onCreditChange={handleCreditChange}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
       />

@@ -15,28 +15,9 @@ export interface Invoice {
   retail_suppliers?: { name: string }
 }
 
-export interface CompanyBankAccount {
-  id: string
-  company_id: string
-  bank_name: string
-  current_balance: number
-}
-
-export interface CompanyCredit {
-  id: string
-  company_id: string
-  credit_name: string
-  amount: number
-  outstanding_balance: number
-  used_amount: number
-  repaid_amount: number
-  disbursed_to_account?: boolean
-}
-
-export interface Company {
-  id: string
-  name: string
-}
+// Share the entity shapes with the Invoices module so the standalone payment
+// flow can reuse PaymentFormModal's CesijaPaymentFields and credit-allocation UI.
+export type { Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../Invoices/types'
 
 export interface Payment {
   id: string
@@ -51,8 +32,11 @@ export interface Payment {
   cesija_company_id: string | null
   cesija_company_name?: string
   cesija_bank_account_id?: string | null
-  payment_source_type?: 'bank_account' | 'credit' | 'kompenzacija' | null
+  cesija_credit_id?: string | null
+  cesija_credit_allocation_id?: string | null
+  payment_source_type?: 'bank_account' | 'credit' | 'kompenzacija' | 'gotovina' | null
   credit_id?: string | null
+  credit_allocation_id?: string | null
   company_bank_account_id?: string | null
   company_bank_accounts?: { bank_name: string; account_number?: string } | null
   bank_credits?: { credit_name: string } | null
@@ -64,14 +48,19 @@ export interface PaymentFormData {
   payment_source_type: 'bank_account' | 'credit' | 'kompenzacija' | 'gotovina'
   company_bank_account_id: string
   credit_id: string
+  credit_allocation_id: string
   is_cesija: boolean
   cesija_company_id: string
   cesija_bank_account_id: string
+  cesija_credit_id: string
+  cesija_credit_allocation_id: string
   payment_date: string
   amount: number
   payment_method: 'WIRE' | 'CASH' | 'CHECK' | 'CARD'
   reference_number: string
   description: string
+  // Loosened to allow CesijaPaymentFields' generic onFormChange merges
+  [key: string]: unknown
 }
 
 export interface VisibleColumns {

@@ -714,6 +714,7 @@
       "will_be_partial_status": "Status će biti promijenjen na DJELOMIČNO PLAĆENO",
       "confirm_payment": "Potvrdi plaćanje",
       "max_amount_helper": "Max iznos: €{{amount}}",
+      "error_amount_required": "Unesite ispravan iznos veći od 0",
       "error_bank_account_required": "Morate odabrati bankovni račun",
       "error_credit_required": "Morate odabrati kredit",
       "error_credit_allocation_required": "Morate odabrati projekt za alokaciju kredita",
@@ -767,6 +768,7 @@
       "source_bank": "Bankovni račun",
       "source_credit": "Kredit",
       "source_kompenzacija": "Kompenzacija",
+      "source_cash": "Gotovina",
       "type_incoming_supplier": "Ulazni dobavljač",
       "type_outgoing_supplier": "Izlazni dobavljač",
       "type_incoming_investment": "Ulazni investitor",
@@ -1182,6 +1184,7 @@
   "cashflow_calendar": {
     "title": "Kalendar dospijeća",
     "subtitle": "Pregled svih dospijeća",
+    "budget_save_error": "Greška prilikom spremanja budžeta",
     "months": [
       "Siječanj",
       "Veljača",
