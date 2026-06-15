@@ -146,6 +146,18 @@ export const updateProjectPhases = async (projectId: string, phases: PhaseFormIn
       if (insertError) throw insertError
     }
   }
+
+  logActivity({
+    action: 'phase.bulk_update',
+    entity: 'phase',
+    projectId,
+    metadata: {
+      severity: 'high',
+      count: phases.length,
+      created: phases.filter(p => !p.id || !existingPhaseIds.has(p.id)).length,
+      deleted: phasesToDelete.length
+    }
+  })
 }
 
 export const updatePhase = async (
@@ -205,6 +217,13 @@ export const resequencePhases = async (phases: ProjectPhase[]) => {
       .update({ phase_number: i + 1 })
       .eq('id', phases[i].id)
   }
+
+  logActivity({
+    action: 'phase.bulk_update',
+    entity: 'phase',
+    projectId: phases[0]?.project_id ?? null,
+    metadata: { severity: 'medium', operation: 'resequence', count: phases.length }
+  })
 }
 
 export const getPhaseInfo = async (phaseId: string) => {

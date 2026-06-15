@@ -18,7 +18,7 @@ export interface CustomerWithApartments extends Customer {
   }>
 }
 
-export type CustomerCategory = 'interested' | 'hot_lead' | 'negotiating' | 'buyer' | 'backed_out'
+export type CustomerCategory = 'interested' | 'lead' | 'buyer'
 
 export interface CategoryInfo {
   id: CustomerCategory
@@ -30,8 +30,6 @@ export interface CategoryInfo {
 
 export interface CustomerCounts {
   interested: number
-  hot_lead: number
-  negotiating: number
+  lead: number
   buyer: number
-  backed_out: number
 }

@@ -32,7 +32,7 @@ export const completeSale = async (payload: CompleteSalePayload): Promise<void> 
     customerId = newCustomer.id
   }
 
-  await createSale(
+  const newSale = await createSale(
     unitForSale.unit.id,
     unitForSale.type,
     customerId,
@@ -45,11 +45,7 @@ export const completeSale = async (payload: CompleteSalePayload): Promise<void> 
     saleData.notes
   )
 
-  logActivity({ action: 'sale.create', entity: 'sale', metadata: { severity: 'high', entity_name: saleData.buyer_name, sale_price: saleData.sale_price } })
-
-  if (customerMode === 'existing' && customerId) {
-    await updateCustomerStatus(customerId, 'buyer')
-  }
+  logActivity({ action: 'sale.create', entity: 'sale', entityId: newSale?.id ?? null, metadata: { severity: 'high', entity_name: saleData.buyer_name, sale_price: saleData.sale_price, unit_type: unitForSale.type, unit_id: unitForSale.unit.id } })
 
   const buyerDisplayName = customerMode === 'existing'
     ? saleData.buyer_name || (() => {
@@ -58,10 +54,17 @@ export const completeSale = async (payload: CompleteSalePayload): Promise<void> 
       })()
     : saleData.buyer_name
 
+  // Mark the unit (and any linked units) sold before flipping the customer
+  // status — these are the core sale invariants, so they run first and a
+  // failure here surfaces before the more cosmetic status change.
   await updateUnitAfterSale(unitForSale.unit.id, unitForSale.type, buyerDisplayName)
 
   if (unitForSale.type === 'apartment') {
     await updateLinkedUnitsAfterSale(unitForSale.unit.id, buyerDisplayName)
+  }
+
+  if (customerMode === 'existing' && customerId) {
+    await updateCustomerStatus(customerId, 'buyer')
   }
 }
 
@@ -177,30 +180,36 @@ export const fetchActualTotalPaidByApartment = async (apartmentIds: string[]): P
 }
 
 export const updateLinkedUnitsAfterSale = async (apartmentId: string, buyerName: string) => {
-  const { data: garageLinks } = await supabase
+  const { data: garageLinks, error: garageLinksError } = await supabase
     .from('apartment_garages')
     .select('garage_id')
     .eq('apartment_id', apartmentId)
 
+  if (garageLinksError) throw garageLinksError
+
   if (garageLinks && garageLinks.length > 0) {
     const garageIds = garageLinks.map(l => l.garage_id)
-    await supabase
+    const { error: garageUpdateError } = await supabase
       .from('garages')
       .update({ status: 'Sold', buyer_name: buyerName })
       .in('id', garageIds)
+    if (garageUpdateError) throw garageUpdateError
   }
 
-  const { data: repoLinks } = await supabase
+  const { data: repoLinks, error: repoLinksError } = await supabase
     .from('apartment_repositories')
     .select('repository_id')
     .eq('apartment_id', apartmentId)
 
+  if (repoLinksError) throw repoLinksError
+
   if (repoLinks && repoLinks.length > 0) {
     const repoIds = repoLinks.map(l => l.repository_id)
-    await supabase
+    const { error: repoUpdateError } = await supabase
       .from('repositories')
       .update({ status: 'Sold', buyer_name: buyerName })
       .in('id', repoIds)
+    if (repoUpdateError) throw repoUpdateError
   }
 }
 
@@ -282,11 +291,21 @@ export const createUnit = async (
     unitData.project_id = projectId
   }
 
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from(tableName)
     .insert(unitData)
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({
+    action: `${unitType}.create`,
+    entity: unitType,
+    entityId: inserted?.id ?? null,
+    projectId: unitType === 'apartment' ? projectId : null,
+    metadata: { severity: 'medium', entity_name: number, price: totalPrice }
+  })
 }
 
 export const bulkCreateUnits = async (
@@ -338,6 +357,13 @@ export const bulkCreateUnits = async (
     .insert(unitsToCreate)
 
   if (error) throw error
+
+  logActivity({
+    action: `${unitType}.bulk_create`,
+    entity: unitType,
+    projectId: unitType === 'apartment' ? projectId : null,
+    metadata: { severity: 'high', count: unitsToCreate.length, building_id: buildingId }
+  })
 }
 
 export const deleteUnit = async (unitId: string, unitType: UnitType) => {
@@ -352,6 +378,13 @@ export const deleteUnit = async (unitId: string, unitType: UnitType) => {
     .eq('id', unitId)
 
   if (error) throw error
+
+  logActivity({
+    action: `${unitType}.delete`,
+    entity: unitType,
+    entityId: unitId,
+    metadata: { severity: 'high' }
+  })
 }
 
 export const updateUnitStatus = async (unitId: string, unitType: UnitType, newStatus: string) => {
@@ -366,6 +399,13 @@ export const updateUnitStatus = async (unitId: string, unitType: UnitType, newSt
     .eq('id', unitId)
 
   if (error) throw error
+
+  logActivity({
+    action: `${unitType}.update`,
+    entity: unitType,
+    entityId: unitId,
+    metadata: { severity: 'medium', changed_fields: ['status'], status: newStatus }
+  })
 }
 
 export const linkGarageToApartment = async (apartmentId: string, garageId: string) => {
@@ -397,6 +437,13 @@ export const linkGarageToApartment = async (apartmentId: string, garageId: strin
 
     if (updateGarageError) throw updateGarageError
   }
+
+  logActivity({
+    action: 'apartment.link_garage',
+    entity: 'apartment',
+    entityId: apartmentId,
+    metadata: { severity: 'low', garage_id: garageId, garage_marked_sold: Boolean(apartment && apartment.status === 'Sold' && apartment.buyer_name) }
+  })
 }
 
 export const linkRepositoryToApartment = async (apartmentId: string, repositoryId: string) => {
@@ -428,6 +475,13 @@ export const linkRepositoryToApartment = async (apartmentId: string, repositoryI
 
     if (updateRepositoryError) throw updateRepositoryError
   }
+
+  logActivity({
+    action: 'apartment.link_repository',
+    entity: 'apartment',
+    entityId: apartmentId,
+    metadata: { severity: 'low', repository_id: repositoryId, repository_marked_sold: Boolean(apartment && apartment.status === 'Sold' && apartment.buyer_name) }
+  })
 }
 
 export const unlinkGarageFromApartment = async (apartmentId: string, garageId: string) => {
@@ -448,6 +502,13 @@ export const unlinkGarageFromApartment = async (apartmentId: string, garageId: s
     .eq('id', garageId)
 
   if (updateGarageError) throw updateGarageError
+
+  logActivity({
+    action: 'apartment.unlink_garage',
+    entity: 'apartment',
+    entityId: apartmentId,
+    metadata: { severity: 'low', garage_id: garageId }
+  })
 }
 
 export const unlinkRepositoryFromApartment = async (apartmentId: string, repositoryId: string) => {
@@ -468,6 +529,13 @@ export const unlinkRepositoryFromApartment = async (apartmentId: string, reposit
     .eq('id', repositoryId)
 
   if (updateRepositoryError) throw updateRepositoryError
+
+  logActivity({
+    action: 'apartment.unlink_repository',
+    entity: 'apartment',
+    entityId: apartmentId,
+    metadata: { severity: 'low', repository_id: repositoryId }
+  })
 }
 
 export const createCustomer = async (
@@ -491,6 +559,14 @@ export const createCustomer = async (
     .single()
 
   if (error) throw error
+
+  logActivity({
+    action: 'customer.create',
+    entity: 'customer',
+    entityId: data?.id ?? null,
+    metadata: { severity: 'low', entity_name: `${firstName} ${lastName}`.trim() }
+  })
+
   return data
 }
 
@@ -540,6 +616,13 @@ export const updateCustomerStatus = async (customerId: string, status: string) =
     .eq('id', customerId)
 
   if (error) throw error
+
+  logActivity({
+    action: 'customer.update',
+    entity: 'customer',
+    entityId: customerId,
+    metadata: { severity: 'low', changed_fields: ['status'], status }
+  })
 }
 
 export const updateUnitAfterSale = async (
@@ -561,6 +644,13 @@ export const updateUnitAfterSale = async (
     .eq('id', unitId)
 
   if (error) throw error
+
+  logActivity({
+    action: `${unitType}.update`,
+    entity: unitType,
+    entityId: unitId,
+    metadata: { severity: 'low', changed_fields: ['status', 'buyer_name'], status: 'Sold' }
+  })
 }
 
 export const bulkUpdateUnitPrice = async (
@@ -606,5 +696,5 @@ export const bulkUpdateUnitPrice = async (
     throw new Error(`Failed to update ${errors.length} units`)
   }
 
-  logActivity({ action: 'apartment.bulk_price_update', entity: 'apartment', metadata: { severity: 'high', count: unitIds.length, adjustment_type: adjustmentType, adjustment_value: adjustmentValue } })
+  logActivity({ action: `${unitType}.bulk_price_update`, entity: unitType, metadata: { severity: 'high', count: unitIds.length, adjustment_type: adjustmentType, adjustment_value: adjustmentValue } })
 }

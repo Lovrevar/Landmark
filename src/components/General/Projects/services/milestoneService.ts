@@ -5,7 +5,7 @@ export async function addMilestone(
   projectId: string,
   data: { name: string; due_date: string | null; completed: boolean; phase?: string | null }
 ): Promise<void> {
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('project_milestones')
     .insert({
       project_id: projectId,
@@ -14,7 +14,17 @@ export async function addMilestone(
       completed: data.completed,
       phase: data.phase ?? null
     })
+    .select('id')
+    .maybeSingle()
   if (error) throw error
+
+  logActivity({
+    action: 'milestone.create',
+    entity: 'milestone',
+    entityId: inserted?.id ?? null,
+    projectId,
+    metadata: { severity: 'medium', entity_name: data.name }
+  })
 }
 
 export async function updateMilestone(
@@ -32,6 +42,13 @@ export async function updateMilestone(
     .update(updates)
     .eq('id', id)
   if (error) throw error
+
+  logActivity({
+    action: 'milestone.update',
+    entity: 'milestone',
+    entityId: id,
+    metadata: { severity: 'medium', entity_name: data.name, changed_fields: Object.keys(updates) }
+  })
 }
 
 export async function deleteMilestone(id: string): Promise<void> {
@@ -40,6 +57,13 @@ export async function deleteMilestone(id: string): Promise<void> {
     .delete()
     .eq('id', id)
   if (error) throw error
+
+  logActivity({
+    action: 'milestone.delete',
+    entity: 'milestone',
+    entityId: id,
+    metadata: { severity: 'high' }
+  })
 }
 
 export async function toggleMilestoneCompletion(id: string, completed: boolean): Promise<void> {
@@ -48,6 +72,13 @@ export async function toggleMilestoneCompletion(id: string, completed: boolean):
     .update({ completed: !completed })
     .eq('id', id)
   if (error) throw error
+
+  logActivity({
+    action: 'milestone.update',
+    entity: 'milestone',
+    entityId: id,
+    metadata: { severity: 'medium', changed_fields: ['completed'], completed: !completed }
+  })
 }
 
 export async function bulkAddMilestones(

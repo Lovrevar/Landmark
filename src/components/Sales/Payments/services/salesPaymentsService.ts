@@ -97,6 +97,14 @@ export function calculateSalesPaymentStats(payments: SalesPaymentWithDetails[]):
   }
 }
 
+// Quote every CSV field (so embedded commas/quotes/newlines don't shift or
+// break rows) and neutralise leading characters spreadsheets treat as formulas.
+function escapeCsvField(value: string | number | undefined | null): string {
+  const str = String(value ?? '')
+  const guarded = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str
+  return `"${guarded.replace(/"/g, '""')}"`
+}
+
 export function exportSalesPaymentsCSV(payments: SalesPaymentWithDetails[]): void {
   const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Apartment', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Description']
   const rows = payments.map(p => [
@@ -112,7 +120,7 @@ export function exportSalesPaymentsCSV(payments: SalesPaymentWithDetails[]): voi
     p.bank_account_name,
     p.description || ''
   ])
-  const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
+  const csv = [headers, ...rows].map(row => row.map(escapeCsvField).join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

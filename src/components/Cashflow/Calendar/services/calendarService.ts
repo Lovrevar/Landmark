@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { Invoice, MonthlyBudget } from '../types'
 
 export const fetchInvoices = async (): Promise<Invoice[]> => {
@@ -68,6 +69,12 @@ export const handleSaveBudgets = async (
           })
       }
     }
+
+    logActivity({
+      action: 'monthly_budget.update',
+      entity: 'monthly_budget',
+      metadata: { severity: 'high', year: budgetYear, count: 12 }
+    })
   } catch (error) {
     console.error('Error saving budgets:', error)
     throw error

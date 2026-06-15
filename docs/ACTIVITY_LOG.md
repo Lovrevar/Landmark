@@ -136,7 +136,7 @@ logActivity({
 
 ## Instrumented Actions — Full Inventory
 
-92 discrete actions across 8 categories. Severity: **L**=low, **M**=medium, **H**=high.
+~140 discrete actions across 8 categories. Severity: **L**=low, **M**=medium, **H**=high.
 
 ### Auth (2)
 | Action | Severity | File |
@@ -144,17 +144,18 @@ logActivity({
 | `auth.login` | L | `src/contexts/AuthContext.tsx` |
 | `auth.logout` | L | `src/contexts/AuthContext.tsx` |
 
-### General — Projects & Milestones (6)
+### General — Projects & Milestones (7)
 | Action | Severity | File |
 |---|---|---|
-| `project.create` | M | `General/Projects/hooks/useProjectForm.ts` |
-| `project.update` | M | `General/Projects/hooks/useProjectForm.ts` |
-| `project.delete` | H | `General/Projects/hooks/useProjectForm.ts` |
-| `milestone.create` | L | `General/Projects/services/milestoneService.ts` |
-| `milestone.update` | L | `General/Projects/services/milestoneService.ts` |
-| `milestone.delete` | M | `General/Projects/services/milestoneService.ts` |
+| `project.create` | M | `General/Projects/services/projectFormService.ts` |
+| `project.update` | M | `General/Projects/services/projectFormService.ts` |
+| `project.delete` | H | `General/Projects/services/projectFormService.ts` |
+| `milestone.create` | M | `General/Projects/services/milestoneService.ts` |
+| `milestone.update` | M | `General/Projects/services/milestoneService.ts` |
+| `milestone.delete` | H | `General/Projects/services/milestoneService.ts` |
+| `milestone.bulk_create` | M | `General/Projects/services/milestoneService.ts` |
 
-### Cashflow / Accounting (22)
+### Cashflow / Accounting (29)
 | Action | Severity | File |
 |---|---|---|
 | `invoice.create` | H | `Cashflow/Invoices/services/invoiceService.ts` |
@@ -163,72 +164,91 @@ logActivity({
 | `invoice.approve` | H | `Cashflow/Invoices/services/invoiceService.ts` |
 | `invoice.hide` | M | `Cashflow/Invoices/services/invoiceService.ts` |
 | `invoice.bulk_hide` | M | `Cashflow/Invoices/services/invoiceService.ts` |
-| `payment.create` | H | `Cashflow/Payments/services/paymentService.ts` |
+| `invoice.bulk_create` | H | `Cashflow/Invoices/services/landPurchaseService.ts` |
+| `retail_invoice.create` | H | `Cashflow/Invoices/services/invoiceService.ts` |
+| `retail_invoice.update` | H | `Cashflow/Invoices/services/invoiceService.ts` |
+| `payment.create` | H | `Cashflow/Payments/services/paymentService.ts` + `Cashflow/Invoices/services/invoiceService.ts` |
 | `payment.update` | H | `Cashflow/Payments/services/paymentService.ts` |
 | `payment.delete` | H | `Cashflow/Payments/services/paymentService.ts` |
 | `company.create` | M | `Cashflow/Companies/services/companyService.ts` |
 | `company.update` | M | `Cashflow/Companies/services/companyService.ts` |
 | `company.delete` | H | `Cashflow/Companies/services/companyService.ts` |
-| `bank_account.create` | M | `Cashflow/Banks/services/bankService.ts` |
+| `bank_account.create` | M | `Cashflow/Banks/services/bankService.ts` + `Cashflow/Companies/services/companyService.ts` |
 | `bank_account.balance_reset` | H | `Cashflow/Banks/services/bankService.ts` |
+| `bank_credit.create` | H | `Cashflow/Banks/services/bankService.ts` |
+| `bank_credit.update` | H | `Cashflow/Banks/services/bankService.ts` |
+| `bank_credit.delete` | H | `Cashflow/Banks/services/bankService.ts` |
 | `supplier.create` | L | `Cashflow/Suppliers/services/supplierService.ts` |
 | `supplier.update` | L | `Cashflow/Suppliers/services/supplierService.ts` |
 | `supplier.delete` | M | `Cashflow/Suppliers/services/supplierService.ts` |
+| `contract.create` | M | `Cashflow/Suppliers/services/supplierService.ts` (link from Accounting) |
 | `office_supplier.create` | L | `Cashflow/OfficeSuppliers/services/officeSupplierService.ts` |
+| `office_supplier.update` | L | `Cashflow/OfficeSuppliers/services/officeSupplierService.ts` |
 | `office_supplier.delete` | M | `Cashflow/OfficeSuppliers/services/officeSupplierService.ts` |
 | `loan.create` | H | `Cashflow/Loans/services/loanService.ts` |
 | `loan.delete` | H | `Cashflow/Loans/services/loanService.ts` |
-| `monthly_budget.update` | M | `Cashflow/Budget/services/budgetService.ts` |
+| `monthly_budget.update` | M | `Cashflow/Budget/services/budgetService.ts` + `Cashflow/Calendar/services/calendarService.ts` |
 
-### Sales (16)
+### Sales (21+)
 | Action | Severity | File |
 |---|---|---|
 | `building.create` | M | `Sales/SalesProjects/services/salesService.ts` |
 | `building.bulk_create` | M | `Sales/SalesProjects/services/salesService.ts` |
 | `building.delete` | H | `Sales/SalesProjects/services/salesService.ts` |
-| `apartment.create` | M | `Sales/Apartments/services/apartmentService.ts` |
-| `apartment.bulk_create` | M | `Sales/Apartments/services/apartmentService.ts` |
-| `apartment.update` | M | `Sales/Apartments/services/apartmentService.ts` |
-| `apartment.delete` | H | `Sales/Apartments/services/apartmentService.ts` |
+| `apartment.create` | M | `Sales/Apartments/services/apartmentService.ts` + `Sales/SalesProjects/services/salesService.ts` |
+| `apartment.bulk_create` | M | `Sales/Apartments/services/apartmentService.ts` + `Sales/SalesProjects/services/salesService.ts` |
+| `apartment.update` | M | `Sales/Apartments/services/apartmentService.ts` + `Sales/SalesProjects/services/salesService.ts` |
+| `apartment.delete` | H | `Sales/Apartments/services/apartmentService.ts` + `Sales/SalesProjects/services/salesService.ts` |
 | `apartment.bulk_price_update` | H | `Sales/SalesProjects/services/salesService.ts` |
-| `apartment.link_garage` | L | `Sales/Apartments/services/linkUnitsService.ts` |
-| `apartment.link_repository` | L | `Sales/Apartments/services/linkUnitsService.ts` |
+| `{garage,repository}.{create,bulk_create,update,delete,bulk_price_update}` | M/H | `Sales/SalesProjects/services/salesService.ts` (dynamic `${unitType}.*`) |
+| `apartment.link_garage` | L | `Sales/SalesProjects/services/salesService.ts` |
+| `apartment.link_repository` | L | `Sales/SalesProjects/services/salesService.ts` |
+| `apartment.unlink_garage` | L | `Sales/SalesProjects/services/salesService.ts` |
+| `apartment.unlink_repository` | L | `Sales/SalesProjects/services/salesService.ts` |
+| `apartment.link_units` | L | `Sales/Apartments/services/linkUnitsService.ts` (replace-all link save) |
 | `apartment.import_excel` | H | `Sales/SalesProjects/services/apartmentImportService.ts` |
 | `garage.import_excel` | H | `Sales/SalesProjects/services/garageImportService.ts` |
-| `customer.create` | L | `Sales/Customers/services/customerService.ts` |
-| `customer.update` | L | `Sales/Customers/services/customerService.ts` |
+| `customer.create` | L | `Sales/Customers/services/customerService.ts` + `Sales/SalesProjects/services/salesService.ts` |
+| `customer.update` | L | `Sales/Customers/services/customerService.ts` + `Sales/SalesProjects/services/salesService.ts` |
 | `customer.delete` | M | `Sales/Customers/services/customerService.ts` |
 | `sale.create` | H | `Sales/SalesProjects/services/salesService.ts` |
 | `export.payments_csv` | L | `Sales/Payments/services/salesPaymentsService.ts` |
 
-### Supervision (14)
+### Supervision (18)
 | Action | Severity | File |
 |---|---|---|
-| `phase.create` | M | `Supervision/SiteManagement/services/siteService.ts` |
-| `phase.update` | M | `Supervision/SiteManagement/services/siteService.ts` |
-| `phase.delete` | H | `Supervision/SiteManagement/services/siteService.ts` |
-| `subcontractor.create` | M | `Supervision/SiteManagement/services/siteService.ts` |
-| `subcontractor.update` | M | `Supervision/SiteManagement/services/siteService.ts` |
-| `subcontractor.delete` | H | `Supervision/SiteManagement/services/siteService.ts` + `Supervision/Subcontractors/hooks/useSubcontractorData.ts` |
-| `contract_milestone.create` | L | `Supervision/SiteManagement/services/siteService.ts` |
-| `contract_milestone.update` | L | `Supervision/SiteManagement/services/siteService.ts` |
-| `contract_milestone.delete` | M | `Supervision/SiteManagement/services/siteService.ts` |
-| `document.upload` | M | `Supervision/SiteManagement/services/siteService.ts` |
-| `document.delete` | M | `Supervision/SiteManagement/services/siteService.ts` |
+| `phase.create` | M | `Supervision/SiteManagement/services/phaseService.ts` |
+| `phase.update` | M | `Supervision/SiteManagement/services/phaseService.ts` |
+| `phase.delete` | H | `Supervision/SiteManagement/services/phaseService.ts` |
+| `phase.bulk_update` | H | `Supervision/SiteManagement/services/phaseService.ts` (phase sync + resequence) |
+| `subcontractor.create` | M | `Supervision/SiteManagement/services/siteSubcontractorService.ts` |
+| `subcontractor.update` | M | `Supervision/SiteManagement/services/siteSubcontractorService.ts` |
+| `subcontractor.delete` | H | `Supervision/SiteManagement/services/siteSubcontractorService.ts` + `Supervision/Subcontractors/hooks/useSubcontractorData.ts` |
+| `subcontractor.comment` | L | `Supervision/SiteManagement/services/siteSubcontractorService.ts` |
+| `contract.create` | H | `Supervision/SiteManagement/services/siteContractService.ts` |
+| `contract_type.create` | M | `Supervision/SiteManagement/services/siteContractService.ts` |
+| `contract_milestone.create` | L | `Supervision/SiteManagement/services/milestoneService.ts` |
+| `contract_milestone.update` | L–M | `Supervision/SiteManagement/services/milestoneService.ts` + `Funding/Payments/services/paymentNotificationService.ts` |
+| `contract_milestone.delete` | M | `Supervision/SiteManagement/services/milestoneService.ts` |
+| `document.upload` | M | `Documents/services/documentService.ts` |
+| `document.delete` | M | `Documents/services/documentService.ts` |
 | `work_log.create` | L | `Supervision/WorkLogs/services/workLogService.ts` |
 | `work_log.update` | L | `Supervision/WorkLogs/services/workLogService.ts` |
 | `work_log.delete` | M | `Supervision/WorkLogs/services/workLogService.ts` |
 | `invoice.approve` | H | `Supervision/Invoices/services/supervisionInvoiceService.ts` |
 
-### Funding (12)
+### Funding (15)
 | Action | Severity | File |
 |---|---|---|
 | `investor.create` | M | `Funding/Investors/hooks/useBankData.ts` |
 | `investor.update` | M | `Funding/Investors/hooks/useBankData.ts` |
 | `investor.delete` | H | `Funding/Investors/hooks/useBankData.ts` |
-| `bank_credit.create` | H | `Funding/Investors/hooks/useCreditForm.ts` |
-| `bank_credit.update` | H | `Funding/Investors/hooks/useCreditForm.ts` |
-| `bank_credit.delete` | H | `Funding/Investors/hooks/useCreditForm.ts` |
+| `bank_credit.create` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
+| `bank_credit.update` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
+| `bank_credit.delete` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
+| `bank_credit.generate_schedule` | M | `Funding/Payments/services/paymentNotificationService.ts` |
+| `payment_notification.dismiss` | M | `Funding/Payments/services/paymentNotificationService.ts` |
+| `subcontractor_payment.create` | H | `Funding/Payments/services/paymentNotificationService.ts` |
 | `credit_allocation.create` | H | `Funding/Investments/services/creditService.ts` |
 | `credit_allocation.delete` | H | `Funding/Investments/services/creditService.ts` |
 | `equity_investment.create` | H | `Funding/Investors/hooks/useEquityForm.ts` |
@@ -236,19 +256,32 @@ logActivity({
 | `export.tic_excel` | L | `Funding/TIC/services/ticExport.ts` |
 | `export.tic_pdf` | L | `Funding/TIC/services/ticExport.ts` |
 
-### Retail (14)
+### Retail (25)
 | Action | Severity | File |
 |---|---|---|
 | `retail_project.create` | M | `Retail/Projects/services/retailProjectService.ts` |
 | `retail_project.update` | M | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_project.delete` | H | `Retail/Projects/services/retailProjectService.ts` |
 | `retail_phase.create` | M | `Retail/Projects/services/retailProjectService.ts` |
 | `retail_phase.update` | M | `Retail/Projects/services/retailProjectService.ts` |
-| `retail_customer.create` | L | `Retail/Customers/services/retailCustomerService.ts` |
+| `retail_phase.delete` | H | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_customer.create` | L–M | `Retail/Customers/services/retailCustomerService.ts` + `Retail/Projects/services/retailProjectService.ts` |
 | `retail_customer.update` | L | `Retail/Customers/services/retailCustomerService.ts` |
 | `retail_customer.delete` | M | `Retail/Customers/services/retailCustomerService.ts` |
 | `retail_sale.create` | H | `Retail/Sales/services/retailSalesService.ts` |
 | `retail_sale.delete` | H | `Retail/Sales/services/retailSalesService.ts` |
 | `retail_contract.create` | M | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_contract.update` | M | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_contract.delete` | H | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_milestone.create` | M | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_milestone.update` | M | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_milestone.delete` | H | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_supplier.create` | M | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_supplier.update` | M | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_supplier.delete` | H | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_supplier_type.create` | M | `Retail/Projects/services/retailProjectService.ts` |
+| `retail_invoice.create` | H | `Cashflow/Invoices/services/invoiceService.ts` |
+| `retail_invoice.update` | H | `Cashflow/Invoices/services/invoiceService.ts` |
 | `land_plot.create` | M | `Retail/LandPlots/services/landPlotService.ts` |
 | `land_plot.update` | M | `Retail/LandPlots/services/landPlotService.ts` |
 | `invoice.approve` | H | `Retail/Invoices/services/retailInvoiceService.ts` |
@@ -264,6 +297,16 @@ logActivity({
 | `calendar_event.acknowledge_all` | L | `Calendar/services/calendarService.ts` |
 
 ---
+
+## Intentionally Unlogged Mutations
+
+These writes are deliberately exempt from `logActivity()` — do not "fix" them without reconsidering the rationale:
+
+- **Derived-value recalculations** — system-computed aggregates rewritten from source data, not user actions; logging them would flood the log: `recalculateBankAccountBalance` (companyService), `recalculatePhaseBudget` / `recalculateAllPhaseBudgets` (phaseService), `updateContractBudgetRealized` (siteContractService)
+- **Automatic status sweeps** — `update_overdue_notifications` RPC (runs on page load, no user intent)
+- **Chat traffic** — `chat_messages` inserts, `chat_participants.last_read_at` updates, chat/AI-chat file attachments; conversation create/delete *are* logged
+- **AI session housekeeping** — session title updates and cancel flags (`aiChatService`); session create/delete *are* logged
+- **Storage rollbacks** — `.remove()` calls that clean up after a failed upload
 
 ## Adding Logging to New Features
 

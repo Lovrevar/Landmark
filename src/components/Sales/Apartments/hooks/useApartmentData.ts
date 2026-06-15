@@ -14,8 +14,6 @@ interface UseApartmentDataResult {
   projects: Array<{ id: string; name: string }>
   buildings: Array<{ id: string; name: string; project_id: string }>
   apartmentPaymentTotals: Record<string, number>
-  garagePaymentTotals: Record<string, number>
-  storagePaymentTotals: Record<string, number>
   linkedGarages: Record<string, LinkedUnit[]>
   linkedStorages: Record<string, LinkedUnit[]>
   loading: boolean
@@ -40,8 +38,6 @@ export function useApartmentData(): UseApartmentDataResult {
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
   const [buildings, setBuildings] = useState<Array<{ id: string; name: string; project_id: string }>>([])
   const [apartmentPaymentTotals, setApartmentPaymentTotals] = useState<Record<string, number>>({})
-  const [garagePaymentTotals] = useState<Record<string, number>>({})
-  const [storagePaymentTotals] = useState<Record<string, number>>({})
   const [linkedGarages, setLinkedGarages] = useState<Record<string, LinkedUnit[]>>({})
   const [linkedStorages, setLinkedStorages] = useState<Record<string, LinkedUnit[]>>({})
   const [loading, setLoading] = useState(true)
@@ -109,8 +105,6 @@ export function useApartmentData(): UseApartmentDataResult {
     projects,
     buildings,
     apartmentPaymentTotals,
-    garagePaymentTotals,
-    storagePaymentTotals,
     linkedGarages,
     linkedStorages,
     loading,

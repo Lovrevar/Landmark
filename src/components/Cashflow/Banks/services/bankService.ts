@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { BankWithCredits, BankCredit, Project, Company, NewCreditForm } from '../bankTypes'
 
 export const fetchProjects = async (): Promise<Project[]> => {
@@ -157,7 +158,7 @@ export const createCredit = async (credit: NewCreditForm): Promise<void> => {
   const seniority = parts[parts.length - 1]
   const actualCreditType = parts.slice(0, -1).join('_')
 
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('bank_credits')
     .insert({
       bank_id: credit.bank_id,
@@ -181,8 +182,18 @@ export const createCredit = async (credit: NewCreditForm): Promise<void> => {
       disbursed_to_account: credit.disbursed_to_account || false,
       disbursed_to_bank_account_id: credit.disbursed_to_bank_account_id || null
     })
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({
+    action: 'bank_credit.create',
+    entity: 'bank_credit',
+    entityId: inserted?.id ?? null,
+    projectId: credit.project_id || null,
+    metadata: { severity: 'high', entity_name: credit.credit_name, amount: credit.amount }
+  })
 }
 
 export const updateCredit = async (creditId: string, credit: NewCreditForm): Promise<void> => {
@@ -215,6 +226,14 @@ export const updateCredit = async (creditId: string, credit: NewCreditForm): Pro
     .eq('id', creditId)
 
   if (error) throw error
+
+  logActivity({
+    action: 'bank_credit.update',
+    entity: 'bank_credit',
+    entityId: creditId,
+    projectId: credit.project_id || null,
+    metadata: { severity: 'high', entity_name: credit.credit_name }
+  })
 }
 
 export const deleteCredit = async (creditId: string): Promise<void> => {
@@ -224,6 +243,13 @@ export const deleteCredit = async (creditId: string): Promise<void> => {
     .eq('id', creditId)
 
   if (error) throw error
+
+  logActivity({
+    action: 'bank_credit.delete',
+    entity: 'bank_credit',
+    entityId: creditId,
+    metadata: { severity: 'high' }
+  })
 }
 
 export interface CompanyBankAccount {

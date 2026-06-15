@@ -94,6 +94,14 @@ export const createCompany = async (formData: CompanyFormData) => {
     .insert(bankAccountsToInsert)
 
   if (bankError) throw bankError
+
+  if (bankAccountsToInsert.length > 0) {
+    logActivity({
+      action: 'bank_account.create',
+      entity: 'bank_account',
+      metadata: { severity: 'medium', count: bankAccountsToInsert.length, company_id: companyData.id, entity_name: formData.name }
+    })
+  }
 }
 
 export const updateCompany = async (companyId: string, formData: CompanyFormData) => {

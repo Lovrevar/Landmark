@@ -81,6 +81,13 @@ export const linkSubcontractorToPhase = async (
     .eq('id', subcontractorId)
 
   if (error) throw error
+
+  logActivity({
+    action: 'subcontractor.update',
+    entity: 'subcontractor',
+    entityId: subcontractorId,
+    metadata: { severity: 'medium', changed_fields: ['phase_id', 'cost', 'deadline', 'job_description'], phase_id: phaseId }
+  })
 }
 
 export const updateSubcontractor = async (
@@ -235,21 +242,38 @@ export const createSubcontractorComment = async (data: {
   comment: string
   comment_type: 'completed' | 'issue' | 'general'
 }) => {
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('subcontractor_comments')
     .insert(data)
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({
+    action: 'subcontractor.comment',
+    entity: 'subcontractor',
+    entityId: data.subcontractor_id,
+    metadata: { severity: 'low', comment_id: inserted?.id ?? null, comment_type: data.comment_type }
+  })
 }
 
 export const insertSubcontractorRecord = async (data: { name: string; contact: string; notes: string | null }) => {
-  const { error } = await supabase.from('subcontractors').insert(data)
+  const { data: inserted, error } = await supabase
+    .from('subcontractors')
+    .insert(data)
+    .select('id')
+    .maybeSingle()
   if (error) throw error
+
+  logActivity({ action: 'subcontractor.create', entity: 'subcontractor', entityId: inserted?.id ?? null, metadata: { severity: 'medium', entity_name: data.name } })
 }
 
 export const updateSubcontractorRecord = async (id: string, data: { name: string; contact: string; notes: string | null }) => {
   const { error } = await supabase.from('subcontractors').update(data).eq('id', id)
   if (error) throw error
+
+  logActivity({ action: 'subcontractor.update', entity: 'subcontractor', entityId: id, metadata: { severity: 'medium', entity_name: data.name, changed_fields: Object.keys(data) } })
 }
 
 export const fetchInvoiceStatsForContracts = async (contractIds: string[]) => {

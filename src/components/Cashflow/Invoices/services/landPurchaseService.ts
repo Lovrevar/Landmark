@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import type { Contract } from '../hooks/useLandPurchaseFormData'
 
 export interface LandPurchaseFormData {
@@ -98,5 +99,18 @@ export async function createLandPurchaseInvoices(
       .from('accounting_invoices')
       .insert(invoicesToCreate)
     if (error) throw error
+
+    logActivity({
+      action: 'invoice.bulk_create',
+      entity: 'invoice',
+      projectId: invoiceType === 'projects' ? formData.project_id || null : null,
+      metadata: {
+        severity: 'high',
+        count: invoicesToCreate.length,
+        invoice_category: invoiceType === 'projects' ? 'SUBCONTRACTOR' : 'RETAIL',
+        source: 'land_purchase',
+        total_amount: formData.deposit_amount + formData.remaining_amount
+      }
+    })
   }
 }

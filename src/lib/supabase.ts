@@ -280,7 +280,7 @@ export type Customer = {
   address: string
   bank_account: string
   id_number: string
-  status: 'buyer' | 'interested' | 'lead' | 'hot_lead' | 'negotiating' | 'backed_out'
+  status: 'buyer' | 'interested' | 'lead'
   created_at: string
   customer_number?: number
   preferences?: {

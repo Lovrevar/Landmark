@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 
 export const createContract = async (data: {
   contract_number: string
@@ -25,6 +26,14 @@ export const createContract = async (data: {
     .single()
 
   if (error) throw error
+
+  logActivity({
+    action: 'contract.create',
+    entity: 'contract',
+    entityId: newContract?.id ?? null,
+    projectId: data.project_id,
+    metadata: { severity: 'high', entity_name: data.contract_number, amount: data.contract_amount }
+  })
 
   return newContract
 }
@@ -104,6 +113,14 @@ export const createContractType = async (name: string, description: string | nul
     .single()
 
   if (error) throw error
+
+  // contract_types uses integer ids; activity_logs.entity_id is uuid, so keep the id in metadata
+  logActivity({
+    action: 'contract_type.create',
+    entity: 'contract_type',
+    metadata: { severity: 'medium', entity_name: name, contract_type_id: newId }
+  })
+
   return newId
 }
 

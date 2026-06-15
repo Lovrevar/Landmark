@@ -174,7 +174,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
         </div>
       )}
 
-      {(activeCategory === 'interested' || activeCategory === 'hot_lead') && customer.preferences && (
+      {(activeCategory === 'interested' || activeCategory === 'lead') && customer.preferences && (
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
           <p className="text-xs font-semibold text-blue-800 dark:text-blue-200 mb-2">{t('customers.card.preferences')}</p>
           <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
@@ -196,13 +196,6 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {activeCategory === 'backed_out' && customer.backed_out_reason && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-          <p className="text-xs font-semibold text-red-800 dark:text-red-300 mb-1">{t('customers.card.backed_out_reason')}</p>
-          <p className="text-xs text-red-700 dark:text-red-400">{customer.backed_out_reason}</p>
         </div>
       )}
 

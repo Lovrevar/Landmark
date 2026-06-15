@@ -8,10 +8,8 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
   const [customers, setCustomers] = useState<CustomerWithApartments[]>([])
   const [counts, setCounts] = useState<CustomerCounts>({
     interested: 0,
-    hot_lead: 0,
-    negotiating: 0,
-    buyer: 0,
-    backed_out: 0
+    lead: 0,
+    buyer: 0
   })
   const [loading, setLoading] = useState(true)
 

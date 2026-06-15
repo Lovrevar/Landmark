@@ -430,6 +430,13 @@ export const createSupplierContract = async (
     end_date: null
   })
   if (error) throw error
+
+  logActivity({
+    action: 'contract.create',
+    entity: 'contract',
+    projectId,
+    metadata: { severity: 'medium', entity_name: contractNumber, subcontractor_id: supplierId, source: 'accounting_link' }
+  })
 }
 
 export const fetchRetailSupplierTypes = async (): Promise<{ id: string; name: string }[]> => {

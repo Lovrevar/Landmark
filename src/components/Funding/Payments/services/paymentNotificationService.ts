@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { differenceInDays, isBefore } from 'date-fns'
 
 export interface PaymentNotification {
@@ -210,6 +211,13 @@ export const dismissNotification = async (notificationId: string, userId: string
       .eq('id', notificationId)
 
     if (error) throw error
+
+    logActivity({
+      action: 'payment_notification.dismiss',
+      entity: 'payment_notification',
+      entityId: notificationId,
+      metadata: { severity: 'medium' }
+    })
   } catch (error) {
     console.error('Error dismissing notification:', error)
     throw error
@@ -282,6 +290,13 @@ export const dismissMilestoneNotification = async (milestoneId: string): Promise
       .eq('id', milestoneId)
 
     if (error) throw error
+
+    logActivity({
+      action: 'contract_milestone.update',
+      entity: 'milestone',
+      entityId: milestoneId,
+      metadata: { severity: 'medium', changed_fields: ['status'], status: 'completed' }
+    })
   } catch (error) {
     console.error('Error dismissing milestone notification:', error)
     throw error
@@ -293,6 +308,13 @@ export const regeneratePaymentSchedule = async (creditId: string): Promise<void>
     const { error } = await supabase.rpc('generate_payment_schedule', { credit_id: creditId })
 
     if (error) throw error
+
+    logActivity({
+      action: 'bank_credit.generate_schedule',
+      entity: 'bank_credit',
+      entityId: creditId,
+      metadata: { severity: 'medium' }
+    })
   } catch (error) {
     console.error('Error regenerating payment schedule:', error)
     throw error
@@ -357,7 +379,7 @@ export interface SubcontractorPaymentData {
 }
 
 export const recordSubcontractorMilestonePayment = async (data: SubcontractorPaymentData): Promise<void> => {
-  const { error: paymentError } = await supabase
+  const { data: inserted, error: paymentError } = await supabase
     .from('subcontractor_payments')
     .insert({
       subcontractor_id: data.subcontractor_id,
@@ -368,6 +390,8 @@ export const recordSubcontractorMilestonePayment = async (data: SubcontractorPay
       paid_by_type: data.paid_by_bank_id ? 'bank' : null,
       paid_by_bank_id: data.paid_by_bank_id
     })
+    .select('id')
+    .maybeSingle()
 
   if (paymentError) throw paymentError
 
@@ -380,4 +404,17 @@ export const recordSubcontractorMilestonePayment = async (data: SubcontractorPay
     .eq('id', data.milestone_id)
 
   if (milestoneError) throw milestoneError
+
+  logActivity({
+    action: 'subcontractor_payment.create',
+    entity: 'subcontractor_payment',
+    entityId: inserted?.id ?? null,
+    metadata: {
+      severity: 'high',
+      amount: data.amount,
+      subcontractor_id: data.subcontractor_id,
+      milestone_id: data.milestone_id,
+      milestone_status: 'paid'
+    }
+  })
 }

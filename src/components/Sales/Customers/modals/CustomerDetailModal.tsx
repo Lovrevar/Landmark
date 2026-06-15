@@ -198,7 +198,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
             </div>
           )}
 
-          {(customer.status === 'interested' || customer.status === 'hot_lead' || customer.status === 'negotiating') && customer.preferences && (
+          {(customer.status === 'interested' || customer.status === 'lead') && customer.preferences && (
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('customers.detail_modal.preferences')}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -246,14 +246,6 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
             </div>
           )}
 
-          {customer.status === 'backed_out' && customer.backed_out_reason && (
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('customers.detail_modal.backed_out_reason')}</h3>
-              <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
-                <p className="text-gray-900 dark:text-white">{customer.backed_out_reason}</p>
-              </div>
-            </div>
-          )}
 
           {customer.notes && (
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
