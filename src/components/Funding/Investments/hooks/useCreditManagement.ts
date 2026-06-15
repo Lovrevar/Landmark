@@ -116,6 +116,16 @@ export function useCreditManagement() {
     if (allocationForm.allocation_type === 'refinancing' && !allocationForm.refinancing_entity_id) {
       errors.refinancing_entity_id = 'Odaberi entitet'
     }
+    if (!(allocationForm.allocated_amount > 0)) {
+      errors.allocated_amount = 'Iznos mora biti veći od 0'
+    } else {
+      const alreadyAllocated = (allocations.get(selectedCredit.id) || [])
+        .reduce((sum, a) => sum + a.allocated_amount, 0)
+      const available = selectedCredit.amount - alreadyAllocated
+      if (allocationForm.allocated_amount > available) {
+        errors.allocated_amount = `Iznos premašuje raspoloživo (${available.toLocaleString('hr-HR')})`
+      }
+    }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 

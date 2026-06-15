@@ -4872,6 +4872,7 @@
       "credit_allocation.update": "Credit allocation updated",
       "credit_allocation.delete": "Credit allocation deleted",
       "equity_investment.create": "Equity investment created",
+      "tic.create": "TIC created",
       "tic.update": "TIC updated",
       "tic.export": "TIC exported",
       "retail_project.create": "Retail project created",

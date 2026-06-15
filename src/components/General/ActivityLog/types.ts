@@ -119,4 +119,5 @@ export const ENTITY_ROUTE_MAP: Record<string, string> = {
   monthly_budget: '/accounting-calendar',
   payment_notification: '/funding-payments',
   subcontractor_payment: '/funding-payments',
+  tic_cost_structures: '/tic',
 }

@@ -32,10 +32,15 @@ export async function fetchInvestmentProjects(): Promise<ProjectWithFinancials[]
   return (projectsData || []).map(project => {
     const projectAllocations = (allocationsData || []).filter(alloc => alloc.project_id === project.id)
 
-    const total_debt = projectAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
-    const total_investment = total_debt
-    const funding_ratio = project.budget > 0 ? (total_debt / project.budget) * 100 : 0
-    const debt_to_equity = 0
+    const debtAllocations = projectAllocations.filter(alloc => alloc.credit?.credit_type !== 'equity')
+    const equityAllocations = projectAllocations.filter(alloc => alloc.credit?.credit_type === 'equity')
+
+    const total_debt = debtAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
+    // total_investment represents equity financing (kept distinct from debt)
+    const total_investment = equityAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
+    // funding_ratio now reflects all financing (debt + equity) against budget
+    const funding_ratio = project.budget > 0 ? ((total_debt + total_investment) / project.budget) * 100 : 0
+    const debt_to_equity = total_investment > 0 ? total_debt / total_investment : 0
     const expected_roi = projectAllocations.length > 0
       ? projectAllocations.reduce((sum, alloc) => sum + (alloc.credit?.interest_rate || 0), 0) / projectAllocations.length
       : 0

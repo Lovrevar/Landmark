@@ -83,7 +83,9 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
             >
               <option value="yearly">{t('funding.equity_form.yearly_option')}</option>
               <option value="monthly">{t('funding.equity_form.monthly_option')}</option>
-              <option value="custom">{t('funding.equity_form.custom_option')}</option>
+              {/* TODO: 'custom' schedule is disabled until bank_credits has a jsonb column
+                  to persist custom_payments (requires a migration). The custom UI below is
+                  gated on payment_schedule === 'custom' and therefore unreachable for now. */}
             </Select>
           </FormField>
 

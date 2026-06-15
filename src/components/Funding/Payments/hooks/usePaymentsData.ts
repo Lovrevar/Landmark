@@ -17,7 +17,7 @@ const calculateStats = (paymentsData: CombinedPayment[]): PaymentsStats => {
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
   const totalAmount = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0)
-  const paymentsThisMonth = paymentsData.filter(p => new Date(p.created_at) >= firstDayOfMonth)
+  const paymentsThisMonth = paymentsData.filter(p => new Date(p.payment_date || p.created_at) >= firstDayOfMonth)
   const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
   const bankPayments = paymentsData.length
 

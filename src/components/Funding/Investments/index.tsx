@@ -366,7 +366,7 @@ const CreditsManagement: React.FC = () => {
               </>
             )}
 
-            <FormField label={t('funding.investments.allocation_modal.allocated_amount_label')} required>
+            <FormField label={t('funding.investments.allocation_modal.allocated_amount_label')} required error={fieldErrors.allocated_amount}>
               <Input
                 type="number"
                 value={allocationForm.allocated_amount}

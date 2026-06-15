@@ -4879,6 +4879,7 @@
       "credit_allocation.update": "Namjena kredita ažurirana",
       "credit_allocation.delete": "Namjena kredita obrisana",
       "equity_investment.create": "Dionički kapital kreiran",
+      "tic.create": "TIC kreiran",
       "tic.update": "TIC ažuriran",
       "tic.export": "TIC izvezen",
       "retail_project.create": "Retail projekt kreiran",
