@@ -1,18 +1,30 @@
 import { supabase } from '../../../lib/supabase'
 import { format, startOfMonth, endOfMonth, startOfYear, subMonths } from 'date-fns'
+import { monthKey } from '../../../utils/dateOnly'
 import type { VATStats, CashFlowStats, TopCompany, MonthlyData, MonthlyBudget } from '../types/accountingDashboardTypes'
 
-const isIncomingPaymentType = (invoiceType: string): boolean =>
-  invoiceType.startsWith('OUTGOING') ||
-  invoiceType === 'INCOMING_BANK_CREDIT' ||
-  invoiceType === 'INCOMING_BANK_DRAWN' ||
-  invoiceType === 'INCOMING_INVESTOR'
+// Cash-flow direction by invoice_type, keyed against the real DB enum
+// (accounting_invoices_invoice_type_check). "Incoming cash" = money the company
+// receives: every OUTGOING_* invoice (issued to customers) plus INCOMING_INVESTMENT
+// (investor capital / bank drawdowns — confirmed as cash IN, matching the Cashflow
+// Calendar convention). "Outgoing cash" = bills the company pays.
+const INCOMING_CASH_TYPES = new Set([
+  'OUTGOING_SUPPLIER',
+  'OUTGOING_SALES',
+  'OUTGOING_OFFICE',
+  'OUTGOING_BANK',
+  'INCOMING_INVESTMENT'
+])
 
-const isOutgoingPaymentType = (invoiceType: string): boolean =>
-  invoiceType.startsWith('INCOMING') &&
-  invoiceType !== 'INCOMING_BANK_CREDIT' &&
-  invoiceType !== 'INCOMING_BANK_DRAWN' &&
-  invoiceType !== 'INCOMING_INVESTOR'
+const OUTGOING_CASH_TYPES = new Set([
+  'INCOMING_SUPPLIER',
+  'INCOMING_OFFICE',
+  'INCOMING_BANK',
+  'INCOMING_BANK_EXPENSES'
+])
+
+const isIncomingPaymentType = (invoiceType: string): boolean => INCOMING_CASH_TYPES.has(invoiceType)
+const isOutgoingPaymentType = (invoiceType: string): boolean => OUTGOING_CASH_TYPES.has(invoiceType)
 
 const sumVATAmounts = (invoice: { vat_amount_1?: string | number | null; vat_amount_2?: string | number | null; vat_amount_3?: string | number | null; vat_amount_4?: string | number | null }): number =>
   Number(invoice.vat_amount_1 || 0) +
@@ -33,13 +45,17 @@ export async function fetchVATStats(): Promise<VATStats> {
 
   if (error) throw error
 
+  // Output VAT comes from sales (OUTGOING). Input VAT (pretporez) is only
+  // deductible on taxable purchases — exclude INCOMING_INVESTMENT (financing
+  // carries no input VAT) so Net PDV isn't distorted.
+  const inputVATTypes = new Set([
+    'INCOMING_SUPPLIER',
+    'INCOMING_OFFICE',
+    'INCOMING_BANK',
+    'INCOMING_BANK_EXPENSES'
+  ])
   const outgoingInvoices = (invoices || []).filter(inv => inv.invoice_type.startsWith('OUTGOING'))
-  const incomingInvoices = (invoices || []).filter(inv =>
-    inv.invoice_type.startsWith('INCOMING') &&
-    inv.invoice_type !== 'INCOMING_INVESTOR' &&
-    inv.invoice_type !== 'INCOMING_BANK_CREDIT' &&
-    inv.invoice_type !== 'INCOMING_BANK_DRAWN'
-  )
+  const incomingInvoices = (invoices || []).filter(inv => inputVATTypes.has(inv.invoice_type))
 
   const totalVATCollected = outgoingInvoices.reduce((sum, inv) => sum + sumVATAmounts(inv), 0)
   const totalVATPaid = incomingInvoices.reduce((sum, inv) => sum + sumVATAmounts(inv), 0)
@@ -85,14 +101,15 @@ export async function fetchCashFlowStats(): Promise<CashFlowStats> {
   const sumByDateRange = (arr: Array<{ amount: string; payment_date: string }>, start: string, end: string) =>
     arr
       .filter(p => p.payment_date >= start && p.payment_date <= end)
-      .reduce((sum, p) => sum + parseFloat(p.amount), 0)
+      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+
+  const totalIncoming = incomingPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+  const totalOutgoing = outgoingPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
 
   return {
-    totalIncoming: incomingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0),
-    totalOutgoing: outgoingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0),
-    netCashFlow:
-      incomingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0) -
-      outgoingPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0),
+    totalIncoming,
+    totalOutgoing,
+    netCashFlow: totalIncoming - totalOutgoing,
     currentMonthIncoming: sumByDateRange(incomingPayments, currentMonthStart, currentMonthEnd),
     currentMonthOutgoing: sumByDateRange(outgoingPayments, currentMonthStart, currentMonthEnd),
     previousMonthIncoming: sumByDateRange(incomingPayments, previousMonthStart, previousMonthEnd),
@@ -112,32 +129,20 @@ export async function fetchTopCompanies(): Promise<TopCompany[]> {
 
   const companyIds = companies.map(c => c.id)
 
-  const [bankAccountsResult, paymentsResult, invoiceCountsResult] = await Promise.all([
-    supabase
-      .from('company_bank_accounts')
-      .select('company_id, current_balance')
-      .in('company_id', companyIds),
+  // Single grouped query for invoice counts (year-scoped to match the card's
+  // "{year}" heading) instead of one count round-trip per company.
+  const [paymentsResult, invoiceCountsResult] = await Promise.all([
     supabase
       .from('accounting_payments')
       .select('amount, payment_date, accounting_invoices!inner(invoice_type, company_id)')
       .in('accounting_invoices.company_id', companyIds)
       .gte('payment_date', yearStart),
-    Promise.all(
-      companyIds.map(id =>
-        supabase
-          .from('accounting_invoices')
-          .select('id', { count: 'exact', head: true })
-          .eq('company_id', id)
-          .then(result => ({ company_id: id, count: result.count || 0 }))
-      )
-    )
+    supabase
+      .from('accounting_invoices')
+      .select('company_id')
+      .in('company_id', companyIds)
+      .gte('issue_date', yearStart)
   ])
-
-  const bankAccountsByCompany = new Map<string, number>()
-  for (const acc of bankAccountsResult.data || []) {
-    const current = bankAccountsByCompany.get(acc.company_id) || 0
-    bankAccountsByCompany.set(acc.company_id, current + parseFloat(acc.current_balance || '0'))
-  }
 
   const paymentsByCompany = new Map<string, { incoming: number; outgoing: number }>()
   for (const payment of paymentsResult.data || []) {
@@ -147,14 +152,14 @@ export async function fetchTopCompanies(): Promise<TopCompany[]> {
       paymentsByCompany.set(companyId, { incoming: 0, outgoing: 0 })
     }
     const stats = paymentsByCompany.get(companyId)!
-    const amount = parseFloat(payment.amount)
+    const amount = parseFloat(payment.amount) || 0
     if (isIncomingPaymentType(invoiceType)) stats.incoming += amount
     else if (isOutgoingPaymentType(invoiceType)) stats.outgoing += amount
   }
 
   const invoiceCountsByCompany = new Map<string, number>()
-  for (const row of invoiceCountsResult) {
-    invoiceCountsByCompany.set(row.company_id, row.count)
+  for (const row of invoiceCountsResult.data || []) {
+    invoiceCountsByCompany.set(row.company_id, (invoiceCountsByCompany.get(row.company_id) || 0) + 1)
   }
 
   const companyStats: TopCompany[] = companies.map(company => {
@@ -164,7 +169,9 @@ export async function fetchTopCompanies(): Promise<TopCompany[]> {
       name: company.name,
       totalIncoming: payments.incoming,
       totalOutgoing: payments.outgoing,
-      netBalance: bankAccountsByCompany.get(company.id) || 0,
+      // Net payment flow (in − out), consistent with the In/Out figures shown
+      // on each row — not an unrelated point-in-time bank balance.
+      netBalance: payments.incoming - payments.outgoing,
       invoiceCount: invoiceCountsByCompany.get(company.id) || 0
     }
   })
@@ -182,26 +189,28 @@ export async function fetchMonthlyTrends(): Promise<MonthlyData[]> {
 
   if (error) throw error
 
-  const monthlyMap = new Map<string, { incoming: number; outgoing: number }>()
+  // Pre-seed every month from Jan to the current month with zeros, keyed by a
+  // sortable 'YYYY-MM' so the chart shows gaps as zeros and stays chronological.
+  const now = new Date()
+  const monthlyMap = new Map<string, { incoming: number; outgoing: number; label: string }>()
+  for (let m = 0; m <= now.getMonth(); m++) {
+    const d = new Date(now.getFullYear(), m, 1)
+    monthlyMap.set(format(d, 'yyyy-MM'), { incoming: 0, outgoing: 0, label: format(d, 'MMM yyyy') })
+  }
 
   for (const payment of payments || []) {
-    const month = format(new Date(payment.payment_date), 'MMM yyyy')
+    const key = monthKey(payment.payment_date)
+    const data = monthlyMap.get(key)
+    if (!data) continue
     const invoiceType = (payment.accounting_invoices as unknown as { invoice_type: string }).invoice_type
-
-    if (!monthlyMap.has(month)) monthlyMap.set(month, { incoming: 0, outgoing: 0 })
-
-    const data = monthlyMap.get(month)!
-    const amount = parseFloat(payment.amount)
-
+    const amount = parseFloat(payment.amount) || 0
     if (isIncomingPaymentType(invoiceType)) data.incoming += amount
     else if (isOutgoingPaymentType(invoiceType)) data.outgoing += amount
   }
 
-  return Array.from(monthlyMap.entries()).map(([month, data]) => ({
-    month,
-    incoming: data.incoming,
-    outgoing: data.outgoing
-  }))
+  return Array.from(monthlyMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, data]) => ({ month: data.label, incoming: data.incoming, outgoing: data.outgoing }))
 }
 
 export async function fetchMonthlyBudget(): Promise<MonthlyBudget | null> {

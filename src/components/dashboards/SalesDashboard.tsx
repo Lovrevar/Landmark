@@ -17,6 +17,7 @@ import {
 import { format } from 'date-fns'
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from './types/salesDashboardTypes'
 import * as salesService from './services/salesDashboardService'
+import DashboardError from './DashboardError'
 
 const defaultStats: SalesDashboardStats = {
   totalUnits: 0, availableUnits: 0, reservedUnits: 0, soldUnits: 0,
@@ -26,7 +27,7 @@ const defaultStats: SalesDashboardStats = {
 
 const SalesDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const { data, loading } = useCachedData('dashboard:sales', salesService.fetchSalesDashboardData)
+  const { data, loading, error, refetch } = useCachedData('dashboard:sales', salesService.fetchSalesDashboardData)
 
   const stats: SalesDashboardStats = data?.stats ?? defaultStats
   const projectStats: ProjectStats[] = data?.projectStats ?? []
@@ -36,6 +37,10 @@ const SalesDashboard: React.FC = () => {
 
   if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.sales.loading')} />
+  }
+
+  if (error && !data) {
+    return <DashboardError onRetry={refetch} />
   }
 
   const maxMonthlyRevenue = Math.max(...monthlyTrends.map(trend => trend.revenue), 1)
@@ -222,7 +227,7 @@ const SalesDashboard: React.FC = () => {
               return (
                 <div key={method}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-700 dark:text-gray-200 capitalize">{method.replace('_', ' ')}</span>
+                    <span className="text-gray-700 dark:text-gray-200 capitalize">{method.replace(/_/g, ' ')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">{count} ({percentage.toFixed(0)}%)</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">

@@ -3510,6 +3510,11 @@
     "date_label": "Datum:"
   },
   "dashboards": {
+    "common": {
+      "load_error_title": "Učitavanje nadzorne ploče nije uspjelo",
+      "load_error_description": "Podatke nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
+      "retry": "Pokušaj ponovno"
+    },
     "director": {
       "title": "Nadzorna ploča direktora",
       "welcome": "Dobrodošli",
@@ -3572,7 +3577,9 @@
       "revenue_col": "Prihod",
       "profit_margin_col": "Profitna marža",
       "completion_col": "Završenost",
-      "no_projects": "Nema dostupnih projekata"
+      "no_projects": "Nema dostupnih projekata",
+      "credit_utilization": "Iskorištenost kredita",
+      "total_credit_facilities": "Ukupni krediti"
     },
     "accounting": {
       "title": "Računovodstvena nadzorna ploča",

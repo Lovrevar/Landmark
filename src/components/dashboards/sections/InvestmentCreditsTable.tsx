@@ -1,7 +1,8 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CreditCard, Calendar, Clock } from 'lucide-react'
-import { format, differenceInDays } from 'date-fns'
+import { format } from 'date-fns'
+import { daysFromToday } from '../../../utils/dateOnly'
 import { Button, Badge } from '../../ui'
 import StatCard from '../../ui/StatCard'
 import { formatEuro } from '../../../utils/formatters'
@@ -40,13 +41,13 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                 ? (Number(credit.used_amount || 0) / Number(credit.amount)) * 100
                 : 0
               const maturityDays = credit.maturity_date
-                ? differenceInDays(new Date(credit.maturity_date), new Date())
+                ? daysFromToday(credit.maturity_date)
                 : null
               const usageDays = credit.usage_expiration_date
-                ? differenceInDays(new Date(credit.usage_expiration_date), new Date())
+                ? daysFromToday(credit.usage_expiration_date)
                 : null
-              const maturityWarning = maturityDays !== null && maturityDays <= 90 && maturityDays > 0
-              const usageWarning = usageDays !== null && usageDays <= 90 && usageDays > 0
+              const maturityWarning = maturityDays !== null && maturityDays >= 0 && maturityDays <= 90
+              const usageWarning = usageDays !== null && usageDays >= 0 && usageDays <= 90
 
               return (
                 <div key={credit.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-all dark:bg-gray-800/50">
@@ -54,7 +55,7 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace('_', ' ')}`}
+                          {credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace(/_/g, ' ')}`}
                         </h3>
                         {credit.project && <Badge variant="blue" size="sm">{credit.project.name}</Badge>}
                         {maturityWarning && <Badge variant="orange" size="sm">{t('dashboards.investment.maturing_soon')}</Badge>}
@@ -97,7 +98,7 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                         </span>
                         <p className={`font-medium ${maturityWarning ? 'text-orange-600' : 'text-gray-900 dark:text-white'}`}>
                           {format(new Date(credit.maturity_date), 'MMM dd, yyyy')}
-                          {maturityDays !== null && maturityDays > 0 && (
+                          {maturityDays !== null && maturityDays >= 0 && (
                             <span className="text-xs ml-1">({maturityDays}d)</span>
                           )}
                         </p>
@@ -111,7 +112,7 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                         </span>
                         <p className={`font-medium ${usageWarning ? 'text-yellow-600' : 'text-gray-900 dark:text-white'}`}>
                           {format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}
-                          {usageDays !== null && usageDays > 0 && (
+                          {usageDays !== null && usageDays >= 0 && (
                             <span className="text-xs ml-1">({usageDays}d)</span>
                           )}
                         </p>

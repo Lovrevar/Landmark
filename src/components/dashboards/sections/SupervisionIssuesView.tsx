@@ -32,7 +32,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                     <h3 className="font-semibold text-gray-900 dark:text-white">{sub.name}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{sub.project_name}</p>
                     <p className="text-sm text-red-600 font-medium mt-2">
-                      {t('dashboards.supervision.days_overdue', { days: Math.abs(sub.days_until_deadline) })} • {sub.progress}% {t('dashboards.supervision.complete')}
+                      {t('dashboards.supervision.days_overdue', { days: Math.abs(sub.days_until_deadline) })} • {sub.progress}% {t('dashboards.supervision.paid_out')}
                     </p>
                   </div>
                   <div className="text-right">
@@ -64,7 +64,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                     <h3 className="font-semibold text-gray-900 dark:text-white">{sub.name}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{sub.project_name}</p>
                     <p className="text-sm text-orange-600 font-medium mt-2">
-                      {t('dashboards.supervision.days_remaining', { days: sub.days_until_deadline })} • {sub.progress}% {t('dashboards.supervision.complete')}
+                      {t('dashboards.supervision.days_remaining', { days: sub.days_until_deadline })} • {sub.progress}% {t('dashboards.supervision.paid_out')}
                     </p>
                   </div>
                   <div className="text-right">
@@ -96,7 +96,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                     <h3 className="font-semibold text-gray-900 dark:text-white">{sub.name}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{sub.project_name}</p>
                     <p className="text-sm text-yellow-600 font-medium mt-2">
-                      {t('dashboards.supervision.no_work_logs_week')} • {sub.progress}% {t('dashboards.supervision.complete')}
+                      {t('dashboards.supervision.no_work_logs_week')} • {sub.progress}% {t('dashboards.supervision.paid_out')}
                     </p>
                   </div>
                   <div className="text-right">

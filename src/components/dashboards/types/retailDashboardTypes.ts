@@ -4,8 +4,9 @@ export interface DashboardStats {
   total_invested: number
   total_costs: number
   total_revenue: number
-  total_paid: number
-  total_supplier_paid: number
+  /** Customer cash collected on OUTGOING_SALES invoices. */
+  total_collected: number
+  /** Outstanding customer balance still to collect. */
   total_remaining: number
   profit: number
 }

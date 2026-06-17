@@ -3506,6 +3506,11 @@
     "date_label": "Date:"
   },
   "dashboards": {
+    "common": {
+      "load_error_title": "Failed to load dashboard",
+      "load_error_description": "The data could not be loaded. This is a loading error, not an absence of data.",
+      "retry": "Try again"
+    },
     "director": {
       "title": "Director Dashboard",
       "welcome": "Welcome",
@@ -3568,7 +3573,9 @@
       "revenue_col": "Revenue",
       "profit_margin_col": "Profit Margin",
       "completion_col": "Completion",
-      "no_projects": "No projects available"
+      "no_projects": "No projects available",
+      "credit_utilization": "Credit Utilization",
+      "total_credit_facilities": "Total Credit"
     },
     "accounting": {
       "title": "Accounting Dashboard",
