@@ -23,6 +23,17 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      // Allow underscore-prefixed names as an explicit "intentionally unused"
+      // signal — e.g. `const { created_by: _omit, ...rest } = payload`.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   {

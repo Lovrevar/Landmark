@@ -52,7 +52,8 @@ export async function fetchTICForProject(projectId: string): Promise<TICRecord |
 
 export async function updateTIC(ticId: string, payload: TICUpsertPayload, projectId: string): Promise<void> {
   // Never overwrite the original creator on update
-  const { created_by: _omit, ...rest } = payload
+  const rest: Omit<TICUpsertPayload, 'created_by'> = { ...payload }
+  delete (rest as Partial<TICUpsertPayload>).created_by
   const { error } = await supabase
     .from('tic_cost_structures')
     .update({ ...rest, updated_at: new Date().toISOString() })
