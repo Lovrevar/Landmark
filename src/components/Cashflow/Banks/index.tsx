@@ -264,7 +264,7 @@ const AccountingBanks: React.FC = () => {
                                   style={{ width: `${Math.min(100 - Math.min(100, paidOutPercentage), remainingAllocatedPercentage)}%` }}
                                 />
                               </div>
-                              {totalUsagePercentage > 100 && (
+                              {allocationPercentage > 100 && (
                                 <p className="text-xs text-red-600 mt-1">
                                   {t('banks.index.credit.over_allocated', { amount: (totalAllocated - credit.amount).toLocaleString('hr-HR') })}
                                 </p>

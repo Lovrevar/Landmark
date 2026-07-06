@@ -20,6 +20,7 @@ import {
 import { format } from 'date-fns'
 import type { ProjectStats, FinancialMetrics, SalesMetrics, ConstructionMetrics, FundingMetrics, Alert } from './types/directorTypes'
 import * as directorService from './services/directorService'
+import DashboardError from './DashboardError'
 import DirectorAlertsSection from './sections/DirectorAlertsSection'
 import DirectorFinancialSection from './sections/DirectorFinancialSection'
 import DirectorProjectsTable from './sections/DirectorProjectsTable'
@@ -40,15 +41,15 @@ const defaultConstruction: ConstructionMetrics = {
   overdue_tasks: 0, critical_deadlines: 0
 }
 const defaultFunding: FundingMetrics = {
-  total_investors: 0, total_banks: 0, total_bank_credit: 0,
-  outstanding_debt: 0, credit_paid_out: 0, avg_interest_rate: 0,
+  funded_projects: 0, total_investors: 0, total_bank_credit: 0,
+  outstanding_debt: 0, credit_utilization: 0, avg_interest_rate: 0,
   monthly_debt_service: 0, upcoming_maturities: 0
 }
 
 const DirectorDashboard: React.FC = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { data, loading } = useCachedData('dashboard:director', directorService.fetchDirectorDashboard)
+  const { data, loading, error, refetch, fetchedAt } = useCachedData('dashboard:director', directorService.fetchDirectorDashboard)
 
   const projects: ProjectStats[] = data?.projects ?? []
   const financialMetrics: FinancialMetrics = data?.financial ?? defaultFinancial
@@ -61,6 +62,10 @@ const DirectorDashboard: React.FC = () => {
     return <LoadingSpinner size="lg" message={t('dashboards.director.loading')} />
   }
 
+  if (error && !data) {
+    return <DashboardError onRetry={refetch} />
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -70,7 +75,7 @@ const DirectorDashboard: React.FC = () => {
         </div>
         <div className="sm:text-right">
           <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.director.last_updated')}</p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-white">{format(new Date(), 'MMM dd, yyyy HH:mm')}</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">{format(fetchedAt ? new Date(fetchedAt) : new Date(), 'MMM dd, yyyy HH:mm')}</p>
         </div>
       </div>
 
@@ -140,13 +145,13 @@ const DirectorDashboard: React.FC = () => {
           <Button variant="primary" onClick={() => navigate('/funding-overview')}>{t('dashboards.director.view_details')}</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatCard label={t('dashboards.director.funded_projects')} value={fundingMetrics.total_investors} icon={Users} color="green" size="lg" />
-          <StatCard label={t('dashboards.director.investors')} value={fundingMetrics.total_banks} icon={Building2} color="blue" size="lg" />
-          <StatCard label={t('dashboards.director.credit_paid_out')} value={`${fundingMetrics.credit_paid_out.toFixed(0)}%`} icon={Target} color="teal" size="lg" />
+          <StatCard label={t('dashboards.director.funded_projects')} value={fundingMetrics.funded_projects} icon={Users} color="green" size="lg" />
+          <StatCard label={t('dashboards.director.investors')} value={fundingMetrics.total_investors} icon={Building2} color="blue" size="lg" />
+          <StatCard label={t('dashboards.director.credit_utilization')} value={`${fundingMetrics.credit_utilization.toFixed(0)}%`} icon={Target} color="teal" size="lg" />
           <StatCard label={t('dashboards.director.upcoming_maturities')} value={fundingMetrics.upcoming_maturities} icon={Calendar} color="orange" size="lg" />
         </div>
         <StatGrid columns={4}>
-          <StatCard label={t('dashboards.director.total_investments')} value={`€${(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_credit_facilities')} value={`€${(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M`} color="gray" size="md" />
           <StatCard label={t('dashboards.director.avg_interest_rate')} value={`${fundingMetrics.avg_interest_rate.toFixed(2)}%`} color="gray" size="md" />
           <StatCard label={t('dashboards.director.outstanding_debt')} value={`€${(fundingMetrics.outstanding_debt / 1000000).toFixed(1)}M`} color="gray" size="md" />
           <StatCard label={t('dashboards.director.monthly_debt_service')} value={`€${(fundingMetrics.monthly_debt_service / 1000).toFixed(0)}K`} color="gray" size="md" />

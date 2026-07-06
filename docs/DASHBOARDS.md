@@ -169,6 +169,18 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 
 ---
 
+## Shared dashboard utilities
+- **`DashboardError.tsx`** — shared error panel (icon + message + retry). Every dashboard renders it when `useCachedData` reports an `error` and there is no cached data, so a failed fetch never renders as legitimate zeros. i18n under `dashboards.common.*`.
+- **`src/utils/dateOnly.ts`** — helpers for SQL `date` (date-only) columns: `parseLocalDate` (parse as local midnight, not UTC), `monthKey` (`'YYYY-MM'` bucket key), `daysFromToday` (whole-day diff, inclusive of today), `isValidDate`. All dashboard services use these for month bucketing, overdue/maturity windows, and "this week" math to avoid the UTC-vs-local off-by-one.
+- **`useCachedData` now exposes `error`** alongside `data`/`loading`/`fetchedAt`/`refetch`.
+
+### Data-integrity conventions (enforced 2026-06-16, see `DASHBOARD_AUDIT.md`)
+- Classify invoices against the real `invoice_type` enum (9 values) — never invented strings. `INCOMING_INVESTMENT` is treated as **incoming cash**.
+- Debt KPIs exclude `credit_type='equity'` and repaid/defaulted credits; "weighted" interest is amount-weighted.
+- Sales counts cover all three unit tables (`apartments`, `garages`, `repositories`); revenue is apartment-only (only apartments are invoiced) and labelled accordingly.
+- Retail revenue is **net of VAT** (`base_amount`); collection figures are customer (`OUTGOING_SALES`) only.
+- Supervision "completed this week" = distinct subcontractors with `completed_at` in the calendar week; progress bars are a **payment** ratio ("Paid Out"), not work completion.
+
 ## Notes
 - `investmentReportPdf.ts` lives in this module (not in Reports/) — it generates the investment PDF report. It runs `yieldToUI()` (`src/utils/yieldToUI.ts`) periodically during long credit/project loops so the export does not freeze the UI
 - `directorService` and `supervisionService` were consolidated during the May 2026 audit: each now exposes a single `fetch{Director,Supervision}Dashboard()` that batches all queries in one `Promise.all` and returns a typed bundle. The previous per-metric `fetch*` functions and the standalone `buildWeeklyStats` are now private helpers

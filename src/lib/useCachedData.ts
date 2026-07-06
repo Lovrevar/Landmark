@@ -48,6 +48,9 @@ interface UseCachedDataOptions {
 interface UseCachedDataResult<T> {
   data: T | null
   loading: boolean
+  /** The error from the last failed fetch, or null. Lets callers distinguish a
+   *  genuine empty result from a load failure (which must not render as zeros). */
+  error: Error | null
   /** Epoch ms of when the currently-shown data was fetched, or null. */
   fetchedAt: number | null
   /** Force a fresh fetch, bypassing (and refreshing) the cache. */
@@ -76,6 +79,7 @@ export function useCachedData<T>(
   const [data, setData] = useState<T | null>(initial?.data ?? null)
   const [fetchedAt, setFetchedAt] = useState<number | null>(initial?.fetchedAt ?? null)
   const [loading, setLoading] = useState(enabled && initial === null)
+  const [error, setError] = useState<Error | null>(null)
 
   const load = useCallback(async (force: boolean) => {
     if (!enabled) return
@@ -84,6 +88,7 @@ export function useCachedData<T>(
       if (fresh) {
         setData(fresh.data)
         setFetchedAt(fresh.fetchedAt)
+        setError(null)
         setLoading(false)
         return
       }
@@ -95,8 +100,12 @@ export function useCachedData<T>(
       store.set(key, entry)
       setData(result)
       setFetchedAt(entry.fetchedAt)
-    } catch (error) {
-      console.error(`[useCachedData] fetch failed for "${key}":`, error)
+      setError(null)
+    } catch (err) {
+      // Surface the failure instead of silently leaving stale/empty data —
+      // a financial dashboard must never render a load error as legitimate zeros.
+      console.error(`[useCachedData] fetch failed for "${key}":`, err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -106,5 +115,5 @@ export function useCachedData<T>(
     load(false)
   }, [load])
 
-  return { data, loading, fetchedAt, refetch: () => load(true) }
+  return { data, loading, error, fetchedAt, refetch: () => load(true) }
 }

@@ -715,6 +715,7 @@
       "confirm_payment": "Potvrdi plaćanje",
       "max_amount_helper": "Max iznos: €{{amount}}",
       "error_amount_required": "Unesite ispravan iznos veći od 0",
+      "error_amount_exceeds_remaining": "Iznos ne smije biti veći od preostalog iznosa",
       "error_bank_account_required": "Morate odabrati bankovni račun",
       "error_credit_required": "Morate odabrati kredit",
       "error_credit_allocation_required": "Morate odabrati projekt za alokaciju kredita",
@@ -3510,6 +3511,11 @@
     "date_label": "Datum:"
   },
   "dashboards": {
+    "common": {
+      "load_error_title": "Učitavanje nadzorne ploče nije uspjelo",
+      "load_error_description": "Podatke nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
+      "retry": "Pokušaj ponovno"
+    },
     "director": {
       "title": "Nadzorna ploča direktora",
       "welcome": "Dobrodošli",
@@ -3572,7 +3578,9 @@
       "revenue_col": "Prihod",
       "profit_margin_col": "Profitna marža",
       "completion_col": "Završenost",
-      "no_projects": "Nema dostupnih projekata"
+      "no_projects": "Nema dostupnih projekata",
+      "credit_utilization": "Iskorištenost kredita",
+      "total_credit_facilities": "Ukupni krediti"
     },
     "accounting": {
       "title": "Računovodstvena nadzorna ploča",

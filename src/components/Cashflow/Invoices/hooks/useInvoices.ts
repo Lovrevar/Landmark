@@ -309,6 +309,15 @@ export const useInvoices = () => {
     const source = paymentFormData.payment_source_type
     const isCesija = paymentFormData.is_cesija
 
+    const amount = Number(paymentFormData.amount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error(t('payments.form.error_amount_required'))
+      return
+    }
+    if (amount > payingInvoice.remaining_amount) {
+      toast.error(t('payments.form.error_amount_exceeds_remaining'))
+      return
+    }
     if (!isCesija && source === 'bank_account' && !paymentFormData.company_bank_account_id) {
       toast.error(t('payments.form.error_bank_account_required'))
       return

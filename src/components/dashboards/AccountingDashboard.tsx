@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { useCachedData } from '../../lib/useCachedData'
 import type { VATStats, CashFlowStats, TopCompany, MonthlyData, MonthlyBudget } from './types/accountingDashboardTypes'
 import * as accountingService from './services/accountingDashboardService'
+import DashboardError from './DashboardError'
 import AccountingVATSection from './sections/AccountingVATSection'
 import AccountingBudgetSection from './sections/AccountingBudgetSection'
 import AccountingCashFlowSection from './sections/AccountingCashFlowSection'
@@ -24,7 +25,7 @@ const defaultCashFlow: CashFlowStats = {
 
 const AccountingDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const { data, loading } = useCachedData('dashboard:accounting', async () => {
+  const { data, loading, error, refetch } = useCachedData('dashboard:accounting', async () => {
     const [vat, cashFlow, companies, trends, budget] = await Promise.all([
       accountingService.fetchVATStats(),
       accountingService.fetchCashFlowStats(),
@@ -43,6 +44,10 @@ const AccountingDashboard: React.FC = () => {
 
   if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.accounting.loading')} />
+  }
+
+  if (error && !data) {
+    return <DashboardError onRetry={refetch} />
   }
 
   return (

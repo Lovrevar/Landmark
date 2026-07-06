@@ -7,7 +7,6 @@ export const useCalendar = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [selectedInvoices, setSelectedInvoices] = useState<Invoice[]>([])
   const [budgets, setBudgets] = useState<MonthlyBudget[]>([])
   const [showBudgetModal, setShowBudgetModal] = useState(false)
   const [budgetYear, setBudgetYear] = useState(new Date().getFullYear())
@@ -16,6 +15,9 @@ export const useCalendar = () => {
   useEffect(() => {
     fetchInvoices()
     fetchBudgets()
+    // Clear any day selection from the previous month so the detail panel
+    // never shows invoices that don't belong to the visible month.
+    setSelectedDate(null)
   }, [currentDate])
 
   const fetchInvoices = async () => {
@@ -116,8 +118,10 @@ export const useCalendar = () => {
   const handleDateClick = (day: number) => {
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
     setSelectedDate(clickedDate)
-    setSelectedInvoices(getInvoicesForDate(clickedDate))
   }
+
+  // Derived from selectedDate + current invoices so it can never go stale after a refetch
+  const selectedInvoices = selectedDate ? getInvoicesForDate(selectedDate) : []
 
   const handleOpenBudgetModal = () => {
     const initialData: { [key: number]: number } = {}

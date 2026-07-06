@@ -1,6 +1,7 @@
 import React from 'react'
 import { ClipboardCheck, FileText } from 'lucide-react'
 import { format } from 'date-fns'
+import { parseLocalDate, isValidDate } from '../../../utils/dateOnly'
 import { useTranslation } from 'react-i18next'
 import type { WorkLog } from '../types/supervisionTypes'
 
@@ -45,7 +46,7 @@ const SupervisionWeekView: React.FC<Props> = ({ weekLogs }) => {
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{log.work_description}</p>
                   </div>
                   <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full text-xs font-semibold">
-                    {format(new Date(log.created_at), 'HH:mm')}
+                    {isValidDate(log.date) ? format(parseLocalDate(log.date), 'MMM dd') : '—'}
                   </span>
                 </div>
                 {log.blocker_details && (

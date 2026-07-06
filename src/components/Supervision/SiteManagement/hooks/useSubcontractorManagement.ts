@@ -46,9 +46,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           throw new Error('Iznos ugovora premašuje raspoloživi budžet faze')
         }
         const phaseData = await siteService.getPhaseInfo(phase.id)
-        const contractNumber = await siteService.generateUniqueContractNumber(phaseData.project_id)
-        const newContract = await siteService.createContract({
-          contract_number: contractNumber,
+        const newContract = await siteService.createContractWithUniqueNumber({
           project_id: phaseData.project_id,
           phase_id: phase.id,
           subcontractor_id: data.existing_subcontractor_id,
@@ -78,15 +76,13 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           throw new Error('Iznos ugovora premašuje raspoloživi budžet faze')
         }
         const phaseData = await siteService.getPhaseInfo(phase.id)
-        const contractNumber = await siteService.generateUniqueContractNumber(phaseData.project_id)
         const newSubcontractor = await siteService.createSubcontractorWithReturn({
           name: data.name,
           contact: data.contact,
           financed_by_type: data.financed_by_type || null,
           financed_by_bank_id: data.financed_by_bank_id || null
         })
-        const newContract = await siteService.createContract({
-          contract_number: contractNumber,
+        const newContract = await siteService.createContractWithUniqueNumber({
           project_id: phaseData.project_id,
           phase_id: phase.id,
           subcontractor_id: newSubcontractor.id,

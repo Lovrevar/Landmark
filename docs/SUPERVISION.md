@@ -28,7 +28,7 @@ The core supervision module. Full project site view with phases, subcontractor c
 ### services/phaseService.ts
 - `fetchProjectPhases()` — fetches all phases ordered by project then phase number
 - `recalculatePhaseBudget(phaseId)` — recomputes budget_used for a phase from active/draft contract amounts
-- `recalculateAllPhaseBudgets()` — recomputes budget_used for every phase across all projects
+- `recalculateAllPhaseBudgets()` — recomputes budget_used for every phase across all projects via the `recalculate_all_phase_budgets()` Postgres RPC (set-based, avoids the 1000-row client cap)
 - `createPhases(projectId, phases)` — bulk-creates phases for a project
 - `updateProjectPhases(projectId, phases)` — syncs a project's phase set (insert/update/delete and renumber)
 - `updatePhase(phaseId, updates)` — updates a single phase
@@ -39,11 +39,11 @@ The core supervision module. Full project site view with phases, subcontractor c
 
 ### services/siteContractService.ts
 - `createContract(contractData)` — creates a contract record linked to a subcontractor and phase, returns it
+- `createContractWithUniqueNumber(contractData)` — generates a unique contract number and calls `createContract`, retrying (max 3) on a `contract_number` UNIQUE-violation race; preferred entry point over generate+create
 - `getContractCount()` — returns the total contract count
 - `generateUniqueContractNumber(projectId)` — generates a unique `CNT-{year}-{seq}-{timestamp}` contract number scoped to a project
-- `updateContractBudgetRealized(contractId, budgetRealized)` — updates the realized budget on a contract
 - `fetchContractTypes()` — fetches active contract types ordered by name
-- `createContractType(name, description)` — inserts a new contract type, returns its new id
+- `createContractType(name, description)` — inserts a new contract type (id assigned by the DB identity column), returns the new id
 - `fetchContractInvoices(contractId)` — fetches invoices for a contract with company name (returns `ContractInvoiceRow[]`)
 - `fetchContractInvoiceTotals(contractId)` — returns total invoiced and total paid amounts for a contract
 - `fetchContractDetails(contractId)` — fetches contract header (osnovica/base, PDV/VAT, total, dates, type) as `ContractDetailsRow`

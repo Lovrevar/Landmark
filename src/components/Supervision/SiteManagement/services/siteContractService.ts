@@ -23,9 +23,10 @@ export const createContract = async (data: {
     .from('contracts')
     .insert(data)
     .select()
-    .single()
+    .maybeSingle()
 
   if (error) throw error
+  if (!newContract) throw new Error('Contract was created but could not be read back.')
 
   logActivity({
     action: 'contract.create',
@@ -36,6 +37,32 @@ export const createContract = async (data: {
   })
 
   return newContract
+}
+
+// Creates a contract, generating a unique contract number and retrying on the rare
+// race where two concurrent creates produce the same CNT-… number (the contracts
+// contract_number UNIQUE constraint rejects the duplicate). A regenerated number embeds
+// a fresh timestamp, so a retry resolves same-millisecond collisions automatically.
+export const createContractWithUniqueNumber = async (
+  data: Omit<Parameters<typeof createContract>[0], 'contract_number'>
+) => {
+  const MAX_ATTEMPTS = 3
+  let lastError: unknown
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const contract_number = await generateUniqueContractNumber(data.project_id)
+    try {
+      return await createContract({ ...data, contract_number })
+    } catch (error) {
+      lastError = error
+      const e = error as { code?: string; message?: string }
+      const message = e.message ?? ''
+      const isContractNumberCollision =
+        (e.code === '23505' || message.includes('duplicate key value violates unique constraint')) &&
+        message.includes('contract_number')
+      if (!isContractNumberCollision) throw error
+    }
+  }
+  throw lastError
 }
 
 export const getContractCount = async () => {
@@ -73,18 +100,6 @@ export const generateUniqueContractNumber = async (projectId: string) => {
   return `${prefix}${String(maxNumber + 1).padStart(4, '0')}-${timestamp}`
 }
 
-export const updateContractBudgetRealized = async (
-  contractId: string,
-  budgetRealized: number
-) => {
-  const { error } = await supabase
-    .from('contracts')
-    .update({ budget_realized: budgetRealized })
-    .eq('id', contractId)
-
-  if (error) throw error
-}
-
 export const fetchContractTypes = async () => {
   const { data, error } = await supabase
     .from('contract_types')
@@ -98,21 +113,17 @@ export const fetchContractTypes = async () => {
 }
 
 export const createContractType = async (name: string, description: string | null): Promise<number> => {
-  const { data: existingTypes } = await supabase
+  // id is assigned by the DB (identity column) — no client-side max(id)+1 race.
+  const { data: inserted, error } = await supabase
     .from('contract_types')
+    .insert({ name, description: description || null, is_active: true })
     .select('id')
-    .order('id', { ascending: false })
-    .limit(1)
-
-  const newId = (existingTypes && existingTypes.length > 0 ? existingTypes[0].id : 0) + 1
-
-  const { error } = await supabase
-    .from('contract_types')
-    .insert({ id: newId, name, description: description || null, is_active: true })
-    .select()
-    .single()
+    .maybeSingle()
 
   if (error) throw error
+  if (!inserted) throw new Error('Contract type was created but could not be read back.')
+
+  const newId = inserted.id
 
   // contract_types uses integer ids; activity_logs.entity_id is uuid, so keep the id in metadata
   logActivity({

@@ -1,5 +1,5 @@
 import { supabase } from '../../../lib/supabase'
-import { differenceInDays } from 'date-fns'
+import { daysFromToday } from '../../../utils/dateOnly'
 import type { Project, Company, Bank, BankCredit, FinancialSummary, RecentActivity } from '../../../types/investment'
 
 export interface InvestmentDashboardData {
@@ -46,20 +46,28 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
   const total_credit_lines = credits.reduce((sum, c) => sum + Number(c.amount), 0)
   const total_used_credit = credits.reduce((sum, c) => sum + Number(c.used_amount || 0), 0)
   const total_repaid_credit = credits.reduce((sum, c) => sum + Number(c.repaid_amount || 0), 0)
-  const total_outstanding_debt = credits.reduce((sum, c) => sum + Number(c.outstanding_balance || 0), 0)
-  const available_credit = total_credit_lines - total_used_credit
-  const weighted_avg_interest = credits.length > 0
-    ? credits.reduce((sum, c) => sum + Number(c.interest_rate || 0), 0) / credits.length
+  // Derive debt from used − repaid so the headline KPI is always consistent with
+  // the Used/Repaid tiles, rather than trusting a separately-stored balance.
+  const total_outstanding_debt = Math.max(0, total_used_credit - total_repaid_credit)
+  // Available headroom can't be negative; an over-drawn facility is an alarm, not
+  // negative "available". Utilization >100% is surfaced separately.
+  const available_credit = Math.max(0, total_credit_lines - total_used_credit)
+  // Amount-weighted, not a simple mean (which a tiny high-rate facility skews).
+  const weighted_avg_interest = total_credit_lines > 0
+    ? credits.reduce((sum, c) => sum + Number(c.interest_rate || 0) * Number(c.amount || 0), 0) / total_credit_lines
     : 0
-  const upcoming_maturities = credits.filter(c =>
-    c.maturity_date &&
-    differenceInDays(new Date(c.maturity_date), new Date()) <= 90 &&
-    differenceInDays(new Date(c.maturity_date), new Date()) > 0
-  ).length
+  const isUpcoming = (date: string | null | undefined): boolean => {
+    if (!date) return false
+    const d = daysFromToday(date)
+    return d >= 0 && d <= 90
+  }
+  const upcoming_maturities = credits.filter(c => isUpcoming(c.maturity_date)).length
 
   const activities: RecentActivity[] = []
 
-  credits
+  // Sort on copies — never mutate the `credits` array that is returned as
+  // bankCredits and consumed by the table and PDF.
+  ;[...credits]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 3)
     .forEach(credit => {
@@ -67,22 +75,18 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
         id: credit.id,
         type: 'credit',
         title: 'Credit facility approved',
-        description: `${credit.company?.name || 'Company'} - €${(Number(credit.amount) / 1000000).toFixed(1)}M ${credit.credit_type.replace('_', ' ')}${credit.project ? ` for ${credit.project.name}` : ''}`,
+        description: `${credit.company?.name || 'Company'} - €${(Number(credit.amount) / 1000000).toFixed(1)}M ${credit.credit_type.replace(/_/g, ' ')}${credit.project ? ` for ${credit.project.name}` : ''}`,
         date: credit.start_date,
         amount: Number(credit.amount)
       })
     })
 
-  credits
-    .filter(c =>
-      c.maturity_date &&
-      differenceInDays(new Date(c.maturity_date), new Date()) <= 90 &&
-      differenceInDays(new Date(c.maturity_date), new Date()) > 0
-    )
+  ;[...credits]
+    .filter(c => isUpcoming(c.maturity_date))
     .sort((a, b) => new Date(a.maturity_date!).getTime() - new Date(b.maturity_date!).getTime())
     .slice(0, 3)
     .forEach(credit => {
-      const daysUntil = differenceInDays(new Date(credit.maturity_date!), new Date())
+      const daysUntil = daysFromToday(credit.maturity_date!)
       activities.push({
         id: credit.id + '_maturity',
         type: 'maturity',
@@ -92,16 +96,12 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
       })
     })
 
-  credits
-    .filter(c =>
-      c.usage_expiration_date &&
-      differenceInDays(new Date(c.usage_expiration_date), new Date()) <= 90 &&
-      differenceInDays(new Date(c.usage_expiration_date), new Date()) > 0
-    )
+  ;[...credits]
+    .filter(c => isUpcoming(c.usage_expiration_date))
     .sort((a, b) => new Date(a.usage_expiration_date!).getTime() - new Date(b.usage_expiration_date!).getTime())
     .slice(0, 2)
     .forEach(credit => {
-      const daysUntil = differenceInDays(new Date(credit.usage_expiration_date!), new Date())
+      const daysUntil = daysFromToday(credit.usage_expiration_date!)
       activities.push({
         id: credit.id + '_usage',
         type: 'usage_expiring',

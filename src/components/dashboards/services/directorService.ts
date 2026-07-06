@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase'
-import { startOfMonth, differenceInDays } from 'date-fns'
+import { startOfMonth } from 'date-fns'
+import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
 import type {
   ProjectStats,
   FinancialMetrics,
@@ -68,10 +69,18 @@ interface CreditRow {
   repaid_amount: number | null
   outstanding_balance: number | null
   interest_rate: number | null
+  monthly_payment: number | null
+  credit_type: string | null
+  status: string | null
   maturity_date: string | null
   credit_name: string | null
   company: { id: string; name: string } | null
 }
+
+// A bank_credits row counts as debt only if it is not an equity facility and
+// is still live (not repaid or defaulted).
+const isLiveDebt = (c: CreditRow): boolean =>
+  c.credit_type !== 'equity' && c.status !== 'paid' && c.status !== 'defaulted'
 
 interface SubcontractorRow {
   id: string
@@ -83,11 +92,6 @@ interface MilestoneRow {
   due_date: string | null
   status: string | null
   contract_id: string | null
-}
-
-interface BankRow {
-  id: string
-  name: string
 }
 
 export interface DirectorDashboardData {
@@ -109,7 +113,7 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
     { data: salesRowsData },
     { data: allocationsData },
     { data: creditsData },
-    { data: banksData },
+    { data: investorsData },
     { data: subcontractorsData },
     { data: milestonesData }
   ] = await Promise.all([
@@ -130,9 +134,9 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
     supabase
       .from('bank_credits')
       .select(
-        'id, project_id, bank_id, amount, used_amount, repaid_amount, outstanding_balance, interest_rate, maturity_date, credit_name, company:accounting_companies(id, name)'
+        'id, project_id, bank_id, amount, used_amount, repaid_amount, outstanding_balance, interest_rate, monthly_payment, credit_type, status, maturity_date, credit_name, company:accounting_companies(id, name)'
       ),
-    supabase.from('banks').select('id, name'),
+    supabase.from('investors').select('id'),
     supabase.from('subcontractors').select('id'),
     supabase
       .from('subcontractor_milestones')
@@ -149,15 +153,15 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const salesRows = (salesRowsData || []) as SaleRow[]
   const allocations = (allocationsData || []) as AllocationRow[]
   const credits = (creditsData || []) as unknown as CreditRow[]
-  const banks = (banksData || []) as BankRow[]
+  const investorsCount = (investorsData || []).length
   const subcontractors = (subcontractorsData || []) as SubcontractorRow[]
   const milestones = (milestonesData || []) as MilestoneRow[]
 
   const projectStats = deriveProjects(projects, apartments, contracts, invoices, allocations, credits)
-  const financial = deriveFinancial(apartments, invoices, payments, salesRows, credits, allocations)
+  const financial = deriveFinancial(invoices, payments, salesRows, credits)
   const sales = deriveSales(apartments, salesRows)
   const construction = deriveConstruction(contracts, subcontractors, milestones, invoices)
-  const funding = deriveFunding(banks, credits, allocations)
+  const funding = deriveFunding(credits, allocations, investorsCount)
   const alerts = deriveAlerts(milestones, credits, financial, sales)
 
   return {
@@ -201,12 +205,14 @@ function deriveProjects(
     const projectApartments = apartmentsByProject.get(project.id) || []
     const projectContracts = contractsByProject.get(project.id) || []
 
+    // Incurred cost = actually invoiced supplier/office cost. (Previously took
+    // max(contract total, invoiced), which inflated expenses for in-progress
+    // contracts by reporting the full planned amount as if already spent.)
     const contractExpenses = projectContracts.map(c => {
       const contractInvoices = (invoicesByContract.get(c.id) || []).filter(
         inv => inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE'
       )
-      const invoicedTotal = contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-      return Math.max(c.total_amount || 0, invoicedTotal)
+      return contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
     })
 
     const invoicesWithoutContract = (invoicesByProject.get(project.id) || [])
@@ -230,7 +236,7 @@ function deriveProjects(
     )
     const totalUnits = projectApartments.length
     const soldUnits = soldApts.length
-    const completionPercentage = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
+    const completionPercentage = totalUnits > 0 ? Math.min(100, (soldUnits / totalUnits) * 100) : 0
     const profit = apartmentSales - totalExpenses
     const profitMargin = apartmentSales > 0 ? (profit / apartmentSales) * 100 : 0
 
@@ -251,33 +257,47 @@ function deriveProjects(
 }
 
 function deriveFinancial(
-  apartments: ApartmentRow[],
   invoices: InvoiceRow[],
   payments: PaymentRow[],
   salesRows: SaleRow[],
-  credits: CreditRow[],
-  allocations: AllocationRow[]
+  credits: CreditRow[]
 ): FinancialMetrics {
   const customerInvoiceIds = new Set(
     invoices.filter(inv => inv.invoice_category === 'CUSTOMER').map(inv => inv.id)
   )
   const apartmentPayments = payments.filter(p => p.invoice_id && customerInvoiceIds.has(p.invoice_id))
+  const isCostInvoice = (inv: InvoiceRow) =>
+    inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE'
 
   const totalRevenue = salesRows.reduce((sum, s) => sum + s.sale_price, 0)
-  const totalExpenses = invoices.reduce((sum, inv) => sum + Number(inv.paid_amount || 0), 0)
+  // Expenses = cash paid out on genuine cost invoices only. (Previously summed
+  // paid_amount across ALL invoice types, which subtracted customer payments on
+  // OUTGOING_SALES invoices as if they were company costs.)
+  const totalExpenses = invoices
+    .filter(isCostInvoice)
+    .reduce((sum, inv) => sum + Number(inv.paid_amount || 0), 0)
   const totalProfit = totalRevenue - totalExpenses
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
-  const totalDebt = credits.reduce((sum, bc) => sum + Number(bc.outstanding_balance || 0), 0)
-  const totalEquity = allocations.reduce((sum, alloc) => sum + Number(alloc.allocated_amount || 0), 0)
+  // Debt excludes equity facilities and repaid/defaulted credits; equity is the
+  // sum of equity-type facilities (real capital), not credit allocations.
+  const totalDebt = credits.filter(isLiveDebt).reduce((sum, bc) => sum + Number(bc.outstanding_balance || 0), 0)
+  const totalEquity = credits
+    .filter(bc => bc.credit_type === 'equity')
+    .reduce((sum, bc) => sum + Number(bc.amount || 0), 0)
   const debtToEquityRatio = totalEquity > 0 ? totalDebt / totalEquity : 0
   const currentMonth = startOfMonth(new Date())
   const cashFlowCurrentMonth = apartmentPayments
-    .filter(p => p.payment_date && new Date(p.payment_date) >= currentMonth)
+    .filter(p => p.payment_date && parseLocalDate(p.payment_date) >= currentMonth)
     .reduce((sum, p) => sum + p.amount, 0)
-  const outstandingReceivables = apartments.reduce((sum, apt) => {
-    if (apt.status === 'Reserved') return sum + apt.price
-    return sum
-  }, 0)
+  // Receivables = unpaid balances on customer invoices (money actually owed to
+  // us), not the list price of Reserved apartments.
+  const outstandingReceivables = invoices
+    .filter(inv => inv.invoice_category === 'CUSTOMER')
+    .reduce((sum, inv) => sum + Math.max(0, Number(inv.total_amount || 0) - Number(inv.paid_amount || 0)), 0)
+  // Payables = unpaid balances on supplier/office cost invoices, not bank debt.
+  const outstandingPayables = invoices
+    .filter(isCostInvoice)
+    .reduce((sum, inv) => sum + Math.max(0, Number(inv.total_amount || 0) - Number(inv.paid_amount || 0)), 0)
 
   return {
     total_revenue: totalRevenue,
@@ -289,7 +309,7 @@ function deriveFinancial(
     debt_to_equity_ratio: debtToEquityRatio,
     cash_flow_current_month: cashFlowCurrentMonth,
     outstanding_receivables: outstandingReceivables,
-    outstanding_payables: totalDebt
+    outstanding_payables: outstandingPayables
   }
 }
 
@@ -302,7 +322,7 @@ function deriveSales(apartments: ApartmentRow[], salesRows: SaleRow[]): SalesMet
   const totalSalesRevenue = salesRows.reduce((sum, s) => sum + s.sale_price, 0)
   const avgPricePerUnit = soldUnits > 0 ? totalSalesRevenue / soldUnits : 0
   const currentMonth = startOfMonth(new Date())
-  const monthlySales = salesRows.filter(s => s.sale_date && new Date(s.sale_date) >= currentMonth)
+  const monthlySales = salesRows.filter(s => s.sale_date && parseLocalDate(s.sale_date) >= currentMonth)
 
   return {
     total_units: totalUnits,
@@ -323,28 +343,27 @@ function deriveConstruction(
   milestones: MilestoneRow[],
   invoices: InvoiceRow[]
 ): ConstructionMetrics {
-  const today = new Date()
   const subcontractorInvoices = invoices.filter(inv => inv.invoice_category === 'SUBCONTRACTOR')
 
-  const completedContracts = contracts.filter(c => {
-    const amount = Number(c.contract_amount || 0)
-    const realized = Number(c.budget_realized || 0)
-    if (amount > 0) return realized >= amount
-    return realized > 0
-  }).length
+  // Use the explicit contract status rather than inferring completion from
+  // budget burn (which mis-flagged over-invoiced or verbal contracts).
+  const completedContracts = contracts.filter(c => c.status === 'completed').length
   const activeContracts = contracts.filter(c => c.status === 'active').length
-  const totalContractValue = contracts.reduce((sum, c) => sum + Number(c.contract_amount || 0), 0)
+  // Exclude draft/terminated contracts from the committed value total.
+  const totalContractValue = contracts
+    .filter(c => c.status === 'active' || c.status === 'completed')
+    .reduce((sum, c) => sum + Number(c.contract_amount || 0), 0)
   const totalPaid = subcontractorInvoices.reduce((sum, inv) => sum + Number(inv.paid_amount || 0), 0)
   const pendingPayments = subcontractorInvoices.reduce(
     (sum, inv) => sum + Number((inv.total_amount || 0) - (inv.paid_amount || 0)),
     0
   )
   const overdueTasks = milestones.filter(
-    m => m.due_date && new Date(m.due_date) < today && m.status !== 'completed'
+    m => m.due_date && m.status !== 'completed' && daysFromToday(m.due_date) < 0
   ).length
   const criticalDeadlines = milestones.filter(m => {
     if (!m.due_date || m.status === 'completed') return false
-    const daysUntil = differenceInDays(new Date(m.due_date), today)
+    const daysUntil = daysFromToday(m.due_date)
     return daysUntil >= 0 && daysUntil <= 7
   }).length
 
@@ -361,35 +380,39 @@ function deriveConstruction(
 }
 
 function deriveFunding(
-  banks: BankRow[],
   credits: CreditRow[],
-  allocations: AllocationRow[]
+  allocations: AllocationRow[],
+  investorsCount: number
 ): FundingMetrics {
-  const totalBanks = banks.length
-  const activeFunderIds = new Set(
+  const fundedProjects = new Set(
     allocations.map(a => a.project_id).filter((id): id is string => Boolean(id))
-  )
-  const totalBankCredit = credits.reduce((sum, bc) => sum + Number(bc.amount || 0), 0)
-  const outstandingDebt = credits.reduce((sum, bc) => sum + Number(bc.outstanding_balance || 0), 0)
-  const totalUsedCredit = credits.reduce((sum, bc) => sum + Number(bc.used_amount || 0), 0)
-  const creditPaidOut = totalBankCredit > 0 ? (totalUsedCredit / totalBankCredit) * 100 : 0
-  const avgInterestRate = credits.length
-    ? credits.reduce((sum, bc) => sum + Number(bc.interest_rate || 0), 0) / credits.length
+  ).size
+
+  // Debt KPIs exclude equity facilities and repaid/defaulted credits.
+  const debtCredits = credits.filter(isLiveDebt)
+  const totalBankCredit = debtCredits.reduce((sum, bc) => sum + Number(bc.amount || 0), 0)
+  const outstandingDebt = debtCredits.reduce((sum, bc) => sum + Number(bc.outstanding_balance || 0), 0)
+  const totalUsedCredit = debtCredits.reduce((sum, bc) => sum + Number(bc.used_amount || 0), 0)
+  const creditUtilization = totalBankCredit > 0 ? (totalUsedCredit / totalBankCredit) * 100 : 0
+  // Amount-weighted average rate (a simple mean is skewed by tiny facilities).
+  const avgInterestRate = totalBankCredit > 0
+    ? debtCredits.reduce((sum, bc) => sum + Number(bc.interest_rate || 0) * Number(bc.amount || 0), 0) / totalBankCredit
     : 0
-  const upcomingMaturities = credits.filter(bc => {
+  const monthlyDebtService = debtCredits.reduce((sum, bc) => sum + Number(bc.monthly_payment || 0), 0)
+  const upcomingMaturities = debtCredits.filter(bc => {
     if (!bc.maturity_date) return false
-    const daysUntil = differenceInDays(new Date(bc.maturity_date), new Date())
+    const daysUntil = daysFromToday(bc.maturity_date)
     return daysUntil >= 0 && daysUntil <= 90
   }).length
 
   return {
-    total_investors: activeFunderIds.size,
-    total_banks: totalBanks,
+    funded_projects: fundedProjects,
+    total_investors: investorsCount,
     total_bank_credit: totalBankCredit,
     outstanding_debt: outstandingDebt,
-    credit_paid_out: creditPaidOut,
+    credit_utilization: creditUtilization,
     avg_interest_rate: avgInterestRate,
-    monthly_debt_service: 0,
+    monthly_debt_service: monthlyDebtService,
     upcoming_maturities: upcomingMaturities
   }
 }
@@ -401,11 +424,10 @@ function deriveAlerts(
   sales: SalesMetrics
 ): Alert[] {
   const alerts: Alert[] = []
-  const today = new Date()
 
   for (const milestone of milestones) {
     if (!milestone.due_date || milestone.status === 'completed') continue
-    const daysUntil = differenceInDays(new Date(milestone.due_date), today)
+    const daysUntil = daysFromToday(milestone.due_date)
     if (daysUntil < 0) {
       alerts.push({
         type: 'critical',
@@ -424,8 +446,8 @@ function deriveAlerts(
   }
 
   for (const credit of credits) {
-    if (!credit.maturity_date) continue
-    const daysUntil = differenceInDays(new Date(credit.maturity_date), today)
+    if (!credit.maturity_date || !isLiveDebt(credit)) continue
+    const daysUntil = daysFromToday(credit.maturity_date)
     if (daysUntil >= 0 && daysUntil <= 30) {
       const label = credit.credit_name || credit.company?.name || 'Credit'
       alerts.push({

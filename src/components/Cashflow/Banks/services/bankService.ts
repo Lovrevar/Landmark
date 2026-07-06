@@ -197,7 +197,9 @@ export const updateCredit = async (creditId: string, credit: NewCreditForm): Pro
       grace_period: credit.grace_period,
       repayment_type: credit.repayment_type,
       principal_repayment_type: credit.principal_repayment_type,
-      interest_repayment_type: credit.interest_repayment_type
+      interest_repayment_type: credit.interest_repayment_type,
+      disbursed_to_account: credit.disbursed_to_account || false,
+      disbursed_to_bank_account_id: credit.disbursed_to_bank_account_id || null
     })
     .eq('id', creditId)
 
