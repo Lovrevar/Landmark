@@ -239,6 +239,11 @@ export const usePayments = () => {
       toast.error(t('payments.form.error_amount_required'))
       return
     }
+    const payingInvoice = invoices.find(inv => inv.id === formData.invoice_id)
+    if (payingInvoice && formData.amount > payingInvoice.remaining_amount) {
+      toast.error(t('payments.form.error_amount_exceeds_remaining'))
+      return
+    }
     if (!isCesija && source === 'bank_account' && !formData.company_bank_account_id) {
       toast.error(t('payments.form.error_bank_account_required'))
       return

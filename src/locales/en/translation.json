@@ -715,6 +715,7 @@
       "confirm_payment": "Confirm Payment",
       "max_amount_helper": "Max amount: €{{amount}}",
       "error_amount_required": "Enter a valid amount greater than 0",
+      "error_amount_exceeds_remaining": "Amount cannot exceed the remaining amount",
       "error_bank_account_required": "You must select a bank account",
       "error_credit_required": "You must select a credit",
       "error_credit_allocation_required": "You must select a project for the credit allocation",
