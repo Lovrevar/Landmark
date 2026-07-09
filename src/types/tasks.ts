@@ -1,5 +1,4 @@
-export type TaskStatus = 'todo' | 'in_progress' | 'done'
-export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent'
+export type TaskStatus = 'todo' | 'done'
 export type TaskDescriptionFormat = 'markdown' | 'plain'
 
 export interface TaskUser {
@@ -37,10 +36,8 @@ export interface Task {
   due_date: string | null
   due_time: string | null
   status: TaskStatus
-  priority: TaskPriority
   is_private: boolean
   project_id: string | null
-  reminder_offsets: number[]
   description_format: TaskDescriptionFormat
   completed_at: string | null
   created_at: string
@@ -122,13 +119,8 @@ export interface NewTaskInput {
   title: string
   description: string
   due_date: string | null
-  due_time: string | null
-  priority: TaskPriority
-  status: TaskStatus
   is_private: boolean
   project_id: string | null
-  reminder_offsets: number[]
-  description_format: TaskDescriptionFormat
   assignee_ids: string[]
 }
 
@@ -137,11 +129,9 @@ export interface UpdateTaskInput {
   description?: string
   due_date?: string | null
   due_time?: string | null
-  priority?: TaskPriority
   status?: TaskStatus
   is_private?: boolean
   project_id?: string | null
-  reminder_offsets?: number[]
   description_format?: TaskDescriptionFormat
 }
 

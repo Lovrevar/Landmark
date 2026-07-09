@@ -4490,107 +4490,48 @@
     "new_task": "Novi zadatak",
     "loading": "Učitavanje...",
     "empty": "Nema zadataka u ovoj kategoriji",
+    "quick_add_placeholder": "Dodaj zadatak i pritisni Enter",
     "tabs": {
+      "all": "Svi zadaci",
       "assigned": "Dodijeljeni meni",
       "created": "Dodijelio sam",
       "private": "Privatni"
     },
-    "priority": {
-      "low": "Nizak",
-      "normal": "Normalan",
-      "high": "Visok",
-      "urgent": "Hitno"
-    },
-    "status": {
-      "todo": "Za napraviti",
-      "in_progress": "U tijeku",
-      "done": "Gotovo"
-    },
     "toolbar": {
       "search_placeholder": "Pretraži zadatke",
-      "filter": "Filter",
-      "clear_filters": "Ukloni filtere",
-      "status": "Status",
-      "project": "Projekt",
-      "any_project": "Bilo koji projekt",
-      "assignees": "Dodijeljeni",
-      "sort": "Sortiraj",
-      "sort_due": "Po roku",
-      "sort_created": "Po datumu kreiranja",
-      "sort_title": "Po naslovu",
-      "group_by": "Grupiraj po",
-      "group_none": "Bez grupiranja",
-      "group_project": "Po projektu",
-      "group_status": "Po statusu",
-      "group_due": "Po roku",
       "show_completed": "Prikaži gotove"
     },
     "group": {
       "no_project": "Bez projekta",
-      "due_bucket": {
-        "overdue": "U kašnjenju",
-        "today": "Danas",
-        "tomorrow": "Sutra",
-        "this_week": "Ovaj tjedan",
-        "later": "Kasnije",
-        "no_due": "Bez roka"
-      }
+      "overdue_count_one": "{{count}} kasni",
+      "overdue_count_few": "{{count}} kasne",
+      "overdue_count_other": "{{count}} kasni"
     },
     "row": {
-      "cycle_status_hint": "Klikni za promjenu statusa",
       "unread": "Nepročitane izmjene",
       "overdue_prefix": "U kašnjenju,",
-      "delete": "Obriši"
+      "delete": "Obriši",
+      "read_only": "Samo za čitanje",
+      "mark_done": "Označi kao gotovo",
+      "mark_open": "Označi kao nije gotovo"
     },
     "modal": {
       "new_title": "Novi zadatak",
-      "edit_title": "Uredi zadatak",
       "title_label": "Naslov",
       "description_label": "Opis",
-      "description_placeholder": "Napiši opis u Markdownu...",
-      "description_empty_preview": "Nema ništa za pregled",
-      "description_hint": "Podržava Markdown: **bold**, *italic*, liste, linkove, kod.",
-      "desc_edit": "Uredi",
-      "desc_preview": "Pregled",
+      "description_placeholder": "Dodaj opis...",
       "due_date_label": "Rok (datum)",
-      "due_time_label": "Vrijeme",
-      "priority_label": "Prioritet",
-      "status_label": "Status",
       "project_label": "Projekt",
       "project_placeholder": "Bez projekta",
       "project_search_placeholder": "Pretraži projekte",
-      "reminders_label": "Podsjetnici",
       "private_label": "Privatno",
       "private_description": "Samo ti vidiš ovaj zadatak",
       "assign_label": "Dodijeli korisnicima",
       "assign_placeholder": "Pretraži korisnike",
       "create_button": "Kreiraj zadatak",
-      "save_button": "Spremi promjene",
-      "saving": "Spremanje...",
       "discard_title": "Odbaciti promjene?",
       "discard_message": "Imate nespremljene promjene. Zatvoriti bez spremanja?",
       "discard_confirm": "Odbaci"
-    },
-    "reminders": {
-      "none": "Nema podsjetnika",
-      "custom_placeholder": "Minute",
-      "custom_add": "Dodaj",
-      "minutes_before_one": "{{count}} minutu prije",
-      "minutes_before_few": "{{count}} minute prije",
-      "minutes_before_other": "{{count}} minuta prije",
-      "hours_before_one": "{{count}} sat prije",
-      "hours_before_few": "{{count}} sata prije",
-      "hours_before_other": "{{count}} sati prije",
-      "days_before_one": "{{count}} dan prije",
-      "days_before_few": "{{count}} dana prije",
-      "days_before_other": "{{count}} dana prije",
-      "presets": {
-        "5_min": "5 min",
-        "15_min": "15 min",
-        "60_min": "1 sat",
-        "1440_min": "1 dan",
-        "2880_min": "2 dana"
-      }
     },
     "attachments": {
       "label": "Privici",
@@ -4606,34 +4547,21 @@
     "mentions": {
       "search_placeholder": "Pretraži korisnike za spominjanje"
     },
-    "card": {
-      "mark_done": "Označi kao gotovo",
-      "mark_undone": "Označi kao nije gotovo",
-      "delete": "Obriši"
-    },
     "detail": {
       "header": "Zadatak",
       "assigned_by": "Kreirao {{username}}",
-      "completed_badge": "Završeno",
-      "private_badge": "Privatno",
       "assignees": "Dodijeljeno",
       "no_assignees": "Nema dodijeljenih",
+      "add_assignee": "Dodaj osobu",
       "no_description": "Nema opisa",
-      "activity": "Aktivnost",
-      "no_activity": "Još nema aktivnosti",
-      "show_less": "Prikaži manje",
-      "show_all": "Prikaži sve ({{count}})",
       "delete_task": "Obriši zadatak",
-      "unknown_user": "Nepoznati korisnik",
       "comments": "Komentari ({{count}})",
       "no_comments": "Još nema komentara. Budite prvi!",
       "comment_placeholder": "Napiši komentar — koristi @ za spominjanje, Ctrl+Enter za slanje",
       "send_comment": "Pošalji",
       "delete_comment": "Obriši",
       "delete_task_confirm_title": "Obrisati zadatak?",
-      "delete_task_confirm_message": "Ova radnja se ne može poništiti.",
-      "delete_comment_confirm_title": "Obrisati komentar?",
-      "delete_comment_confirm_message": "Ova radnja se ne može poništiti."
+      "delete_task_confirm_message": "Ova radnja se ne može poništiti."
     }
   },
   "documents": {

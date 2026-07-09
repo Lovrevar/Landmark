@@ -1675,7 +1675,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
-          id: number
+          id?: number
           is_active?: boolean
           name: string
         }
@@ -3262,9 +3262,7 @@ export type Database = {
           due_time: string | null
           id: string
           is_private: boolean
-          priority: string
           project_id: string | null
-          reminder_offsets: number[]
           status: string
           title: string
           updated_at: string
@@ -3279,9 +3277,7 @@ export type Database = {
           due_time?: string | null
           id?: string
           is_private?: boolean
-          priority?: string
           project_id?: string | null
-          reminder_offsets?: number[]
           status?: string
           title: string
           updated_at?: string
@@ -3296,9 +3292,7 @@ export type Database = {
           due_time?: string | null
           id?: string
           is_private?: boolean
-          priority?: string
           project_id?: string | null
-          reminder_offsets?: number[]
           status?: string
           title?: string
           updated_at?: string
@@ -3521,6 +3515,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_view_task: {
+        Args: { p_task_id: string; p_user_id: string }
+        Returns: boolean
+      }
       check_subcontractor_budget_integrity: {
         Args: never
         Returns: {
@@ -3736,6 +3734,7 @@ export type Database = {
         Args: { p_task_id: string; p_user_id: string }
         Returns: boolean
       }
+      recalculate_all_phase_budgets: { Args: never; Returns: undefined }
       recalculate_bank_credit_fields: {
         Args: { p_credit_id: string }
         Returns: undefined

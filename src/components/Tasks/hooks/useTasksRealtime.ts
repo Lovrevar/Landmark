@@ -1,16 +1,27 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
 
+const REFRESH_DEBOUNCE_MS = 300
+
 export function useTasksRealtime(userId: string | null | undefined, onChange: () => void) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
   useEffect(() => {
     if (!userId) return
+
+    // Visibility is org-wide now, so the unfiltered channels fire for
+    // everyone's edits — coalesce bursts into a single refetch.
+    const debouncedChange = () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(onChange, REFRESH_DEBOUNCE_MS)
+    }
 
     const tasksChannel = supabase
       .channel(`tasks-${userId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tasks' },
-        onChange,
+        debouncedChange,
       )
       .subscribe()
 
@@ -24,7 +35,7 @@ export function useTasksRealtime(userId: string | null | undefined, onChange: ()
           table: 'task_assignees',
           filter: `user_id=eq.${userId}`,
         },
-        onChange,
+        debouncedChange,
       )
       .subscribe()
 
@@ -33,7 +44,7 @@ export function useTasksRealtime(userId: string | null | undefined, onChange: ()
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'task_comments' },
-        onChange,
+        debouncedChange,
       )
       .subscribe()
 
@@ -42,11 +53,12 @@ export function useTasksRealtime(userId: string | null | undefined, onChange: ()
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'task_attachments' },
-        onChange,
+        debouncedChange,
       )
       .subscribe()
 
     return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
       supabase.removeChannel(tasksChannel)
       supabase.removeChannel(assigneesChannel)
       supabase.removeChannel(commentsChannel)
