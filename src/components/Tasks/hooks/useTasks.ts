@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import {
   acknowledgeAllTasks,
   createTask,
   deleteTask,
-  fetchMyTasks,
+  fetchAllTasks,
   setAssignees,
   updateTask,
   updateTaskStatus,
@@ -16,13 +16,17 @@ export function useTasks() {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const loadedOnceRef = useRef(false)
 
+  // Only the first load shows the spinner; mutation/realtime refreshes
+  // swap the data in place so the list never blanks out.
   const load = useCallback(async () => {
     if (!user) return
-    setLoading(true)
+    if (!loadedOnceRef.current) setLoading(true)
     try {
-      const data = await fetchMyTasks(user.id)
+      const data = await fetchAllTasks()
       setTasks(data)
+      loadedOnceRef.current = true
     } finally {
       setLoading(false)
     }
@@ -44,7 +48,20 @@ export function useTasks() {
   const setStatus = useCallback(
     async (task: Task, next: TaskStatus) => {
       if (!user) return
-      await updateTaskStatus(task.id, next, user.id, user.role, task.title)
+      // optimistic flip so the checkbox reacts instantly
+      setTasks(prev =>
+        prev.map(t =>
+          t.id === task.id
+            ? { ...t, status: next, completed_at: next === 'done' ? new Date().toISOString() : null }
+            : t,
+        ),
+      )
+      try {
+        await updateTaskStatus(task.id, next, user.id, user.role, task.title)
+      } catch (err) {
+        await load() // revert to server state
+        throw err
+      }
       await load()
     },
     [user, load],

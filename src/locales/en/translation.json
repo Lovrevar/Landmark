@@ -4486,104 +4486,47 @@
     "new_task": "New task",
     "loading": "Loading...",
     "empty": "No tasks in this category",
+    "quick_add_placeholder": "Add a task and press Enter",
     "tabs": {
+      "all": "All tasks",
       "assigned": "Assigned to me",
       "created": "Assigned by me",
       "private": "Private"
     },
-    "priority": {
-      "low": "Low",
-      "normal": "Normal",
-      "high": "High",
-      "urgent": "Urgent"
-    },
-    "status": {
-      "todo": "To do",
-      "in_progress": "In progress",
-      "done": "Done"
-    },
     "toolbar": {
       "search_placeholder": "Search tasks",
-      "filter": "Filter",
-      "clear_filters": "Clear filters",
-      "status": "Status",
-      "project": "Project",
-      "any_project": "Any project",
-      "assignees": "Assignees",
-      "sort": "Sort",
-      "sort_due": "By due date",
-      "sort_created": "By creation date",
-      "sort_title": "By title",
-      "group_by": "Group by",
-      "group_none": "No grouping",
-      "group_project": "By project",
-      "group_status": "By status",
-      "group_due": "By due date",
       "show_completed": "Show completed"
     },
     "group": {
       "no_project": "No project",
-      "due_bucket": {
-        "overdue": "Overdue",
-        "today": "Today",
-        "tomorrow": "Tomorrow",
-        "this_week": "This week",
-        "later": "Later",
-        "no_due": "No due date"
-      }
+      "overdue_count_one": "{{count}} overdue",
+      "overdue_count_other": "{{count}} overdue"
     },
     "row": {
-      "cycle_status_hint": "Click to change status",
       "unread": "Unread updates",
       "overdue_prefix": "Overdue,",
-      "delete": "Delete"
+      "delete": "Delete",
+      "read_only": "Read only",
+      "mark_done": "Mark as done",
+      "mark_open": "Mark as not done"
     },
     "modal": {
       "new_title": "New task",
-      "edit_title": "Edit task",
       "title_label": "Title",
       "description_label": "Description",
-      "description_placeholder": "Write a description in Markdown...",
-      "description_empty_preview": "Nothing to preview yet",
-      "description_hint": "Supports Markdown: **bold**, *italic*, lists, links, code.",
-      "desc_edit": "Edit",
-      "desc_preview": "Preview",
+      "description_placeholder": "Add a description...",
       "due_date_label": "Due (date)",
-      "due_time_label": "Time",
-      "priority_label": "Priority",
-      "status_label": "Status",
       "project_label": "Project",
       "project_placeholder": "No project",
       "project_search_placeholder": "Search projects",
-      "reminders_label": "Reminders",
       "private_label": "Private",
       "private_description": "Only you see this task",
       "assign_label": "Assign to users",
       "assign_placeholder": "Search users",
       "create_button": "Create task",
-      "save_button": "Save changes",
-      "saving": "Saving...",
       "discard_title": "Discard changes?",
       "discard_message": "You have unsaved changes. Close without saving?",
       "discard_confirm": "Discard"
-    },
-    "reminders": {
-      "none": "No reminders set",
-      "custom_placeholder": "Minutes",
-      "custom_add": "Add",
-      "minutes_before_one": "{{count}} minute before",
-      "minutes_before_other": "{{count}} minutes before",
-      "hours_before_one": "{{count}} hour before",
-      "hours_before_other": "{{count}} hours before",
-      "days_before_one": "{{count}} day before",
-      "days_before_other": "{{count}} days before",
-      "presets": {
-        "5_min": "5 min",
-        "15_min": "15 min",
-        "60_min": "1 hour",
-        "1440_min": "1 day",
-        "2880_min": "2 days"
-      }
     },
     "attachments": {
       "label": "Attachments",
@@ -4599,34 +4542,21 @@
     "mentions": {
       "search_placeholder": "Search users to mention"
     },
-    "card": {
-      "mark_done": "Mark as done",
-      "mark_undone": "Mark as not done",
-      "delete": "Delete"
-    },
     "detail": {
       "header": "Task",
       "assigned_by": "Created by {{username}}",
-      "completed_badge": "Completed",
-      "private_badge": "Private",
       "assignees": "Assignees",
       "no_assignees": "No assignees",
+      "add_assignee": "Add person",
       "no_description": "No description",
-      "activity": "Activity",
-      "no_activity": "No activity yet",
-      "show_less": "Show less",
-      "show_all": "Show all ({{count}})",
       "delete_task": "Delete task",
-      "unknown_user": "Unknown user",
       "comments": "Comments ({{count}})",
       "no_comments": "No comments yet. Be the first!",
       "comment_placeholder": "Write a comment — use @ to mention, Ctrl+Enter to send",
       "send_comment": "Send",
       "delete_comment": "Delete",
       "delete_task_confirm_title": "Delete task?",
-      "delete_task_confirm_message": "This action cannot be undone.",
-      "delete_comment_confirm_title": "Delete comment?",
-      "delete_comment_confirm_message": "This action cannot be undone."
+      "delete_task_confirm_message": "This action cannot be undone."
     }
   },
   "documents": {

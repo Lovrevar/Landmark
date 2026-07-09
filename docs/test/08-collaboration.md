@@ -141,63 +141,65 @@ conversation.create logged to activity log (medium); message sends NOT logged   
 
 ## Tasks
 
-_Route: `/tasks`. Three tabs: Assigned to me, Created by me, Private. Global red badge for unacknowledged `task_assignees.acknowledged_at IS NULL` rows. Every mutation is activity-logged with `entity='task'` and action `task.<verb>`._
+_Route: `/tasks`. Four tabs: **All tasks** (default), Assigned to me, Created by me, Private. Everyone sees all non-private tasks; only creator + assignees can edit or complete a task. Status is binary (open/done checkbox). Global red badge for unacknowledged `task_assignees.acknowledged_at IS NULL` rows. Every mutation is activity-logged with `entity='task'` and action `task.<verb>`. Requires the `20260706120000_simplify_tasks.sql` migration._
 
-### Create task (TaskModal, create mode)
+### Create task (TaskModal + quick-add)
 
 ```
-create task with title only → saves with status=todo, no due date, no assignees             ( )
-create task with title empty → Create button disabled                                       ( )
-create task with whitespace-only title → Create button disabled (title.trim() check)        ( )
-fill title, status=in_progress, project, due date/time, 1 assignee, markdown description → saves  ( )
+create task with title only → saves as open (todo), no due date, no assignees               ( )
+create task with title empty / whitespace-only → Create button disabled                     ( )
+fill title, project, due date, 1 assignee, description → saves; description stored as plain ( )
 toggle Private → assignees picker hides; on save task has 1 self-assignee auto-acknowledged ( )
-reminder chips: click each preset (5 / 15 / 60 / 1440 / 2880 min) → added to list, click again removes ( )
-reminder custom entry: type "45" + Add → "45 min before" chip appears                       ( )
-description tabs: switch to Preview → markdown renders (bold / list / code block); Edit → textarea back ( )
-attachments section is hidden in create mode (hint: "Save the task to add attachments")     ( )
 Ctrl+Enter in any field → submits the form                                                  ( )
 Esc with clean form → closes; Esc with dirty form → ConfirmDialog ("Discard changes?")      ( )
+quick-add input at top of a project group: type title + Enter → open task created in that project ( )
+quick-add on the Private tab → creates a private task; quick-add is hidden on Assigned tab  ( )
 activity_logs gains one row with action='task.create' and metadata.entity_name = title      ( )
 ```
 
-### Toolbar, tabs, and rows
+### Tabs, grouping, and rows
 
 ```
-default tab is "Assigned to me"; counts in tab badges match list length                     ( )
-"Created by me" tab → tasks where creator = self                                            ( )
+default tab is "All tasks"; counts in tab badges match list lengths                         ( )
+All tab shows tasks created by OTHER users (org-wide visibility, non-private only)          ( )
+"Assigned to me" → tasks where self is an assignee; "Created by me" → creator = self        ( )
 "Private" tab → only private tasks created by self (lock icon on each row)                  ( )
-search box (debounced 200 ms) matches title + description, case-insensitive                 ( )
-filter dropdown: Status / Project / Assignees; clearing restores full list                  ( )
-sort dropdown: Due date / Created / Title → list reorders immediately                       ( )
-group-by toggle: None / Project / Status / Due date → sections render with counts           ( )
-"Show completed" off → done rows hidden; on → reappear                                      ( )
-filter/sort/group/search state survives a page reload (localStorage per user)               ( )
+private tasks of other users appear in NO tab and no search result                          ( )
+list is always grouped by project (alphabetical, "Bez projekta" last)                       ( )
+group header: chevron collapses/expands; collapsed state survives reload (localStorage)     ( )
+group header shows task count + red "N kasni" chip when the group has overdue open tasks    ( )
+within a group: open tasks by due date asc (no due date last), completed at the bottom      ( )
+search box matches title + description, case-insensitive                                    ( )
+"Show completed" toggle: ON by default; off → done rows hidden                              ( )
+checkbox click on own/assigned task → toggles open ↔ done; row moves to bottom of group     ( )
+checkbox on someone else's task is disabled with a "read only" tooltip                      ( )
+checking a task sets completed_at; unchecking clears it; task.status_change logged          ( )
 seed 150 tasks → virtualization kicks in (@tanstack/react-virtual); scrolling stays smooth  ( )
-TaskRow left accent turns red when due_date < now AND status != done (overdue indicator)    ( )
-TaskRow shows project tag, attachment icon+count (if any), unread-comment dot (if any)      ( )
+TaskRow left accent turns red when due_date < now AND task is open (overdue indicator)      ( )
+TaskRow shows attachment icon+count (if any), unread dot (if any); no project tag (header carries it) ( )
 avatars: 3 overlapping circles + "+N" chip when > 3 assignees                               ( )
-status pill click cycles todo → in_progress → done → todo                                   ( )
 ```
 
 ### Task detail drawer (TaskDetail)
 
 ```
 click a row → drawer slides in from the right (portal)                                      ( )
+uninvolved user opens someone else's public task → fully read-only: disabled checkbox,
+  disabled project/date inputs, no edit/delete buttons, no comment composer,
+  comments + attachments still visible and attachments downloadable                         ( )
 inline edit title → blur or Enter commits; activity_logs gains task.update row              ( )
-change status segmented → auto-saves; row reflects immediately (optimistic)                 ( )
+big checkbox next to title toggles done; strikethrough applied                              ( )
 change project via SearchableSelect → saves; activity_logs row includes changed_fields      ( )
+clear/change due date → saves (due time is no longer editable anywhere)                     ( )
 assignee picker (non-private only): add/remove → task.assign / task.unassign logged         ( )
-description: Edit/Preview tabs mirror TaskModal; Preview renders markdown safely            ( )
+description edits save as plain text; legacy markdown tasks still render formatted          ( )
 attachments: drag-drop a ≤25 MB file → appears in list with signed-url image thumb          ( )
 upload 11th file → rejected with "Maximum 10 attachments per task" toast                    ( )
-upload a 26 MB file → rejected with size-limit toast; nothing uploaded to storage           ( )
-delete attachment as uploader → removed; activity_logs gains task.attachment_remove         ( )
-delete attachment as creator (but not uploader) → allowed per RLS                           ( )
-Activity tab: last 3 entries shown; "Show all" expands to full list ordered newest-first    ( )
-Comments tab: composer with MentionPicker; type "@" → user popover, arrow-key navigation    ( )
-select a user via Enter/click → token "@[username](uuid)" inserted at caret                 ( )
+delete attachment as uploader or task creator → removed; task.attachment_remove logged      ( )
+comments: type "@" → user popover with arrow-key navigation; token inserted at caret        ( )
 submit comment with Ctrl+Enter → appears in thread; mentions render as blue chips           ( )
-delete own comment → inline ConfirmDialog removes row; other users' comments show no delete ( )
+comment create/edit/delete still works for creator and assignee (RLS tightening check)      ( )
+delete own comment → removed; other users' comments show no delete                          ( )
 Delete button bottom-left → ConfirmDialog (danger); confirm → cascade delete + drawer close ( )
 ```
 
@@ -213,17 +215,10 @@ A deletes the task before B sees it → B's badge decrements on next 20 s poll  
 ### Realtime
 
 ```
-two sessions same user → A edits title in drawer → B's list row updates within ~1 s         ( )
-A adds a comment → B's unread-comment dot appears on the row                                ( )
-A uploads an attachment → B's attachment icon + count updates                               ( )
-```
-
-### Reminder delivery (requires dispatch-task-reminders edge fn + cron)
-
-```
-set reminder_offsets=[15] on a task due in ~16 min → function fires once near T-15 min      ( )
-re-run dispatcher manually → no duplicate send (task_reminder_sends idempotency table)      ( )
-update due_date forward → earlier send row still present; new send fires at new T-offset    ( )
+two sessions, different users → A edits title in drawer → B's All-tab row updates within ~1 s ( )
+A adds a comment → B's unread-comment count updates on the row                              ( )
+A creates a private task → it never appears in B's list, even via realtime refresh          ( )
+rapid successive edits → list refetches once (300 ms debounce), not per event               ( )
 ```
 
 ---

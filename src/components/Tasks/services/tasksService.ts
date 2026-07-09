@@ -18,10 +18,8 @@ const TASK_FIELDS = [
   'due_date',
   'due_time',
   'status',
-  'priority',
   'is_private',
   'project_id',
-  'reminder_offsets',
   'description_format',
   'completed_at',
   'created_at',
@@ -58,37 +56,11 @@ export async function fetchProjectOptions(): Promise<ProjectOption[]> {
   return (data || []) as ProjectOption[]
 }
 
-export async function fetchMyTasks(userId: string): Promise<Task[]> {
-  const { data: assignRows, error: aErr } = await supabase
-    .from('task_assignees')
-    .select('task_id')
-    .eq('user_id', userId)
-  if (aErr) throw aErr
-
-  const assignedTaskIds = (assignRows || []).map(r => r.task_id)
-
-  const { data: created, error: cErr } = await supabase
-    .from('tasks')
-    .select(TASK_FIELDS)
-    .eq('created_by', userId)
-  if (cErr) throw cErr
-
-  let assignedTasks: Task[] = []
-  if (assignedTaskIds.length > 0) {
-    const { data: assigned, error: aErr2 } = await supabase
-      .from('tasks')
-      .select(TASK_FIELDS)
-      .in('id', assignedTaskIds)
-    if (aErr2) throw aErr2
-    assignedTasks = (assigned || []) as unknown as Task[]
-  }
-
-  const byId = new Map<string, Task>()
-  ;[...(created || []), ...assignedTasks].forEach(t =>
-    byId.set((t as Task).id, t as unknown as Task),
-  )
-
-  const tasks = Array.from(byId.values())
+export async function fetchAllTasks(): Promise<Task[]> {
+  // RLS scopes visibility: all public tasks + own/assigned private tasks
+  const { data, error } = await supabase.from('tasks').select(TASK_FIELDS)
+  if (error) throw error
+  const tasks = (data || []) as unknown as Task[]
   await hydrateTaskRelations(tasks)
   return tasks.sort((a, b) => b.created_at.localeCompare(a.created_at))
 }
@@ -205,13 +177,10 @@ export async function createTask(
       title: input.title,
       description: input.description,
       due_date: input.due_date,
-      due_time: input.due_time,
-      priority: input.priority,
-      status: input.status,
+      status: 'todo',
       is_private: input.is_private,
       project_id: input.project_id,
-      reminder_offsets: input.reminder_offsets,
-      description_format: input.description_format,
+      description_format: 'plain',
       created_by: userId,
     })
     .select(TASK_FIELDS)
@@ -551,47 +520,3 @@ export function getAttachmentSignedUrl(storagePath: string, expiresInSeconds = 3
     .createSignedUrl(storagePath, expiresInSeconds)
 }
 
-// ----------------------------------------------------------------------------
-// Activity log (filtered to a single task)
-// ----------------------------------------------------------------------------
-
-export interface TaskActivityEntry {
-  id: string
-  user_id: string
-  action: string
-  metadata: Record<string, unknown>
-  created_at: string
-  username?: string
-  user_role?: string
-}
-
-export async function fetchTaskActivity(taskId: string): Promise<TaskActivityEntry[]> {
-  const { data, error } = await supabase
-    .from('activity_logs')
-    .select('id, user_id, action, metadata, created_at')
-    .eq('entity', 'task')
-    .eq('entity_id', taskId)
-    .order('created_at', { ascending: false })
-    .limit(200)
-  if (error) throw error
-  const rows = (data || []) as Array<{
-    id: string
-    user_id: string
-    action: string
-    metadata: Record<string, unknown>
-    created_at: string
-  }>
-  if (rows.length === 0) return []
-  const userIds = [...new Set(rows.map(r => r.user_id).filter(Boolean))]
-  const { data: users } = userIds.length
-    ? await supabase.from('users').select('id, username, role').in('id', userIds)
-    : { data: [] as Array<{ id: string; username: string; role: string }> }
-  const map = new Map<string, { username: string; role: string }>(
-    (users || []).map(u => [u.id, { username: u.username, role: u.role }]),
-  )
-  return rows.map(r => ({
-    ...r,
-    username: map.get(r.user_id)?.username,
-    user_role: map.get(r.user_id)?.role,
-  }))
-}

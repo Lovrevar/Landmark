@@ -21,7 +21,7 @@
 | **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 10-tool catalog, fork-and-regenerate edits |
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
 | **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
-| **Tasks** | [TASKS.md](./TASKS.md) | Tasks with 3-state status, projects, reminders, attachments, @mention comments, activity log |
+| **Tasks** | [TASKS.md](./TASKS.md) | Shared org-wide task list grouped by project; binary open/done checkbox, private tasks, attachments, @mention comments |
 | **Documents / Email Sorting** | [EMAIL_DOCUMENT_SORTING.md](./EMAIL_DOCUMENT_SORTING.md) | Documents browser (category tree, list, pickers) + auto-classify emailed documents via Make.com + Claude |
 
 ## Reference / cross-cutting docs
@@ -30,6 +30,7 @@
 |---|---|---|
 | **Testing** | [TESTING.md](./TESTING.md) | Vitest unit tests + Playwright e2e setup and conventions |
 | **Security Backlog** | [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) | Tracked security items and RLS hardening status |
+| **Presentation Modules** | [PRESENTATION_MODULES.md](./PRESENTATION_MODULES.md) | Croatian-language module overview + talking points for pitching the platform; ERP sync presented as a built-in product capability |
 
 ---
 
