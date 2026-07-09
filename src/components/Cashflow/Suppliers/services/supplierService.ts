@@ -192,6 +192,25 @@ export const updateSupplier = async (id: string, formData: SupplierFormData): Pr
   logActivity({ action: 'supplier.update', entity: 'supplier', entityId: id, metadata: { severity: 'low', entity_name: formData.name } })
 }
 
+// Returns the next per-project sequence for contract numbers matching `prefix`
+// (e.g. `CNT-2026-`). Parses the sequence segment, ignoring the timestamp suffix.
+const nextContractSequence = (
+  existingContracts: { contract_number: string | null }[] | null,
+  prefix: string
+): number => {
+  let maxNumber = 0
+  ;(existingContracts || []).forEach(contract => {
+    if (contract.contract_number && contract.contract_number.startsWith(prefix)) {
+      const parts = contract.contract_number.replace(prefix, '').split('-')
+      const num = parseInt(parts[0], 10)
+      if (!isNaN(num) && num > maxNumber) {
+        maxNumber = num
+      }
+    }
+  })
+  return maxNumber + 1
+}
+
 export const createSupplier = async (formData: SupplierFormData): Promise<string> => {
   const { data: newSupplier, error: supplierError } = await supabase
     .from('subcontractors')
@@ -214,21 +233,8 @@ export const createSupplier = async (formData: SupplierFormData): Promise<string
     const year = new Date().getFullYear()
     const timestamp = Date.now().toString().slice(-6)
     const prefix = `CNT-${year}-`
-
-    let maxNumber = 0
-    if (existingContracts && existingContracts.length > 0) {
-      existingContracts.forEach(contract => {
-        if (contract.contract_number && contract.contract_number.startsWith(prefix)) {
-          const parts = contract.contract_number.replace(prefix, '').split('-')
-          const num = parseInt(parts[0], 10)
-          if (!isNaN(num) && num > maxNumber) {
-            maxNumber = num
-          }
-        }
-      })
-    }
-
-    const contractNumber = `${prefix}${String(maxNumber + 1).padStart(4, '0')}-${timestamp}`
+    const seq = nextContractSequence(existingContracts, prefix)
+    const contractNumber = `${prefix}${String(seq).padStart(4, '0')}-${timestamp}`
 
     const { error: contractError } = await supabase
       .from('contracts')
@@ -390,20 +396,19 @@ export const fetchPhasesForProject = async (projectId: string): Promise<{ id: st
 }
 
 export const generateSupplierContractNumber = async (projectId: string): Promise<string> => {
-  const { data: project, error: projectError } = await supabase
-    .from('projects').select('name').eq('id', projectId).single()
-  if (projectError) throw projectError
-
-  const { data: contracts, error: contractsError } = await supabase
-    .from('contracts').select('contract_number').eq('project_id', projectId)
-    .order('created_at', { ascending: false }).limit(1)
+  const { data: existingContracts, error: contractsError } = await supabase
+    .from('contracts').select('contract_number')
+    .eq('project_id', projectId)
+    .not('contract_number', 'is', null)
   if (contractsError) throw contractsError
 
-  const projectCode = project.name.substring(0, 3).toUpperCase()
-  const nextNumber = contracts && contracts.length > 0
-    ? parseInt(contracts[0].contract_number.split('-').pop() || '0') + 1
-    : 1
-  return `${projectCode}-${String(nextNumber).padStart(4, '0')}`
+  // Share the same CNT-<year>-<seq>-<timestamp> scheme as createSupplier so both
+  // creation paths stay consistent and the sequence scan sees all existing rows.
+  const year = new Date().getFullYear()
+  const timestamp = Date.now().toString().slice(-6)
+  const prefix = `CNT-${year}-`
+  const seq = nextContractSequence(existingContracts, prefix)
+  return `${prefix}${String(seq).padStart(4, '0')}-${timestamp}`
 }
 
 export const createSupplierContract = async (
@@ -430,6 +435,13 @@ export const createSupplierContract = async (
     end_date: null
   })
   if (error) throw error
+
+  logActivity({
+    action: 'contract.create',
+    entity: 'contract',
+    projectId,
+    metadata: { severity: 'medium', entity_name: contractNumber, subcontractor_id: supplierId, source: 'accounting_link' }
+  })
 }
 
 export const fetchRetailSupplierTypes = async (): Promise<{ id: string; name: string }[]> => {
@@ -465,6 +477,8 @@ export const createRetailSupplierWithContract = async (
     .single()
   if (supplierError) throw supplierError
 
+  logActivity({ action: 'retail_supplier.create', entity: 'retail_supplier', entityId: newSupplier.id, metadata: { severity: 'low', entity_name: supplierData.name } })
+
   if (contractData && newSupplier) {
     const year = new Date().getFullYear()
     const timestamp = Date.now().toString().slice(-6)
@@ -480,5 +494,7 @@ export const createRetailSupplierWithContract = async (
       has_contract: false
     }])
     if (contractError) throw contractError
+
+    logActivity({ action: 'retail_contract.create', entity: 'retail_contract', metadata: { severity: 'medium', entity_name: contractNumber, retail_supplier_id: newSupplier.id, phase_id: contractData.phase_id, source: 'accounting_link' } })
   }
 }

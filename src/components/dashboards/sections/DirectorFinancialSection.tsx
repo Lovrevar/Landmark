@@ -77,7 +77,7 @@ const DirectorFinancialSection: React.FC<Props> = ({ metrics }) => {
         />
         <StatCard
           label={t('dashboards.director.payables')}
-          value={`€${(metrics.outstanding_payables / 1000000).toFixed(3)}M`}
+          value={`€${(metrics.outstanding_payables / 1000).toFixed(0)}K`}
           icon={ArrowDownRight}
           color="white"
           size="md"

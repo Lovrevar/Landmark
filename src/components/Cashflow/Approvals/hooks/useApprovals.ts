@@ -23,6 +23,7 @@ interface UseApprovalsResult {
   selectedIds: Set<string>
   toggleSelect: (id: string) => void
   toggleSelectAll: () => void
+  clearSelection: () => void
   allFilteredSelected: boolean
   selectedCount: number
   selectedTotal: number
@@ -99,6 +100,8 @@ export function useApprovals(): UseApprovalsResult {
     })
   }
 
+  const clearSelection = () => setSelectedIds(new Set())
+
   const selectedCount = selectedIds.size
   const selectedTotal = invoices
     .filter((inv) => selectedIds.has(inv.id))
@@ -126,6 +129,7 @@ export function useApprovals(): UseApprovalsResult {
     selectedIds,
     toggleSelect,
     toggleSelectAll,
+    clearSelection,
     allFilteredSelected,
     selectedCount,
     selectedTotal,

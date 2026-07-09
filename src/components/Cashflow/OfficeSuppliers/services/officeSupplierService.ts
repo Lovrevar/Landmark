@@ -80,6 +80,8 @@ export const updateSupplier = async (id: string, formData: OfficeSupplierFormDat
     .eq('id', id)
 
   if (error) throw error
+
+  logActivity({ action: 'office_supplier.update', entity: 'office_supplier', entityId: id, metadata: { severity: 'low', entity_name: formData.name, changed_fields: Object.keys(supplierData) } })
 }
 
 export const deleteSupplier = async (id: string): Promise<void> => {

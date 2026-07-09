@@ -108,7 +108,11 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
       onSuccess()
     } catch (error) {
       console.error('Error linking supplier:', error)
-      toast.error(t('suppliers.link.error_link'))
+      if ((error as { code?: string })?.code === '23505') {
+        toast.error(t('suppliers.form.duplicate_error'))
+      } else {
+        toast.error(t('suppliers.link.error_link'))
+      }
     } finally {
       setSubmitting(false)
     }

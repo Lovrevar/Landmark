@@ -51,19 +51,23 @@ export async function fetchTICForProject(projectId: string): Promise<TICRecord |
 }
 
 export async function updateTIC(ticId: string, payload: TICUpsertPayload, projectId: string): Promise<void> {
+  // Never overwrite the original creator on update
+  const rest: Omit<TICUpsertPayload, 'created_by'> = { ...payload }
+  delete (rest as Partial<TICUpsertPayload>).created_by
   const { error } = await supabase
     .from('tic_cost_structures')
-    .update({ ...payload, updated_at: new Date().toISOString() })
+    .update({ ...rest, updated_at: new Date().toISOString() })
     .eq('id', ticId)
 
   if (error) throw error
 
   logActivity({
     action: 'tic.update',
-    entity: 'tic_line_item',
+    entity: 'tic_cost_structures',
     entityId: ticId,
     projectId,
-    metadata: { severity: 'medium' },
+    severity: 'medium',
+    metadata: { entity_name: payload.investor_name, changed_fields: Object.keys(rest) },
   })
 }
 
@@ -77,11 +81,12 @@ export async function createTIC(payload: TICUpsertPayload): Promise<string> {
   if (error) throw error
 
   logActivity({
-    action: 'tic.update',
-    entity: 'tic_line_item',
+    action: 'tic.create',
+    entity: 'tic_cost_structures',
     entityId: data.id,
     projectId: payload.project_id,
-    metadata: { severity: 'medium' },
+    severity: 'medium',
+    metadata: { entity_name: payload.investor_name },
   })
 
   return data.id

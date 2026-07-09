@@ -7,6 +7,7 @@ import { BarChart3, FolderOpen, Users, DollarSign, TrendingUp, AlertCircle } fro
 import { format } from 'date-fns'
 import type { DashboardStats, OverdueInvoice } from './types/retailDashboardTypes'
 import { fetchRetailDashboardData } from './services/retailDashboardService'
+import DashboardError from './DashboardError'
 
 const defaultStats: DashboardStats = {
   total_projects: 0,
@@ -14,15 +15,14 @@ const defaultStats: DashboardStats = {
   total_invested: 0,
   total_costs: 0,
   total_revenue: 0,
-  total_paid: 0,
-  total_supplier_paid: 0,
+  total_collected: 0,
   total_remaining: 0,
   profit: 0
 }
 
 const RetailDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const { data, loading } = useCachedData('dashboard:retail', fetchRetailDashboardData)
+  const { data, loading, error, refetch } = useCachedData('dashboard:retail', fetchRetailDashboardData)
 
   const stats: DashboardStats = data?.stats ?? defaultStats
   const overdueInvoices: OverdueInvoice[] = data?.overdueInvoices ?? []
@@ -31,6 +31,10 @@ const RetailDashboard: React.FC = () => {
 
   if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.retail.loading')} />
+  }
+
+  if (error && !data) {
+    return <DashboardError onRetry={refetch} />
   }
 
   return (
@@ -84,7 +88,7 @@ const RetailDashboard: React.FC = () => {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.paid')}</span>
-              <span className="font-semibold text-green-600">{fmt(stats.total_supplier_paid)}</span>
+              <span className="font-semibold text-green-600">{fmt(stats.total_collected)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.to_collect')}</span>
@@ -92,7 +96,7 @@ const RetailDashboard: React.FC = () => {
             </div>
             <div className="pt-3 border-t dark:border-gray-600 flex justify-between">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('dashboards.retail.total_invoiced')}</span>
-              <span className="font-bold text-gray-900 dark:text-white">{fmt(stats.total_supplier_paid + stats.total_remaining)}</span>
+              <span className="font-bold text-gray-900 dark:text-white">{fmt(stats.total_collected + stats.total_remaining)}</span>
             </div>
           </div>
         </div>
@@ -105,7 +109,7 @@ const RetailDashboard: React.FC = () => {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.income')}</span>
-              <span className="font-semibold text-green-600">{fmt(stats.total_paid)}</span>
+              <span className="font-semibold text-green-600">{fmt(stats.total_revenue)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.costs')}</span>

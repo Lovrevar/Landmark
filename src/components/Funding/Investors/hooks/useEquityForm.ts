@@ -14,6 +14,13 @@ export function useEquityForm(onSaved: () => Promise<void>) {
       return
     }
 
+    // Custom payment schedules cannot be persisted yet (no storage column on bank_credits),
+    // so block submission rather than silently discarding the entered schedule.
+    if (newEquity.payment_schedule === 'custom') {
+      toast.warning('Custom payment schedules are not supported yet. Choose Monthly or Yearly.')
+      return
+    }
+
     try {
       await createEquityInvestment(newEquity)
       setShowEquityForm(false)

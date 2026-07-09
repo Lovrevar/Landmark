@@ -1,8 +1,10 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import DateInput from '../../../Common/DateInput'
-import { Payment, Invoice, Company, CompanyBankAccount, CompanyCredit, PaymentFormData } from '../types'
+import { Payment, Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation, PaymentFormData } from '../types'
 import { Modal, Button, Select, Input, Textarea, FormField, Form } from '../../../ui'
+import { formatCurrency } from '../../../Common/CurrencyInput'
+import { CesijaPaymentFields } from '../../components/CesijaPaymentFields'
 
 interface AccountingPaymentFormModalProps {
   showModal: boolean
@@ -13,6 +15,8 @@ interface AccountingPaymentFormModalProps {
   companies: Company[]
   companyBankAccounts: CompanyBankAccount[]
   companyCredits: CompanyCredit[]
+  creditAllocations: CreditAllocation[]
+  onCreditChange: (creditId: string) => void
   onClose: () => void
   onSubmit: (e: React.FormEvent) => void
 }
@@ -26,6 +30,8 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
   companies,
   companyBankAccounts,
   companyCredits,
+  creditAllocations,
+  onCreditChange,
   onClose,
   onSubmit
 }) => {
@@ -87,6 +93,8 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     ...formData,
                     invoice_id: e.target.value,
                     company_bank_account_id: '',
+                    credit_id: '',
+                    credit_allocation_id: '',
                     amount: selectedInvoice ? selectedInvoice.remaining_amount : 0
                   })
                 }}
@@ -171,7 +179,11 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                   >
                     <Select
                       value={formData.credit_id}
-                      onChange={(e) => setFormData({ ...formData, credit_id: e.target.value })}
+                      onChange={(e) => {
+                        const newCreditId = e.target.value
+                        setFormData({ ...formData, credit_id: newCreditId, credit_allocation_id: '' })
+                        onCreditChange(newCreditId)
+                      }}
                     >
                       <option value="">{t('payments.form.select_credit')}</option>
                       {companyCredits
@@ -192,6 +204,30 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     </Select>
                   </FormField>
                 )}
+
+                {formData.payment_source_type === 'credit' && formData.credit_id && (
+                  <FormField
+                    label={t('cesija_fields.project_label')}
+                    required
+                    className="md:col-span-2"
+                    error={creditAllocations.length === 0 ? t('cesija_fields.no_allocations_error') : undefined}
+                  >
+                    <Select
+                      value={formData.credit_allocation_id}
+                      onChange={(e) => setFormData({ ...formData, credit_allocation_id: e.target.value })}
+                    >
+                      <option value="">{t('cesija_fields.project_placeholder')}</option>
+                      {creditAllocations.map(allocation => {
+                        const available = allocation.allocated_amount - allocation.used_amount
+                        return (
+                          <option key={allocation.id} value={allocation.id}>
+                            {allocation.project?.name || t('cesija_fields.opex_label')} ({t('cesija_fields.available_label')}€{formatCurrency(available)})
+                          </option>
+                        )
+                      })}
+                    </Select>
+                  </FormField>
+                )}
               </>
             )}
 
@@ -204,9 +240,14 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     onChange={(e) => setFormData({
                       ...formData,
                       is_cesija: e.target.checked,
+                      payment_source_type: e.target.checked ? 'bank_account' : formData.payment_source_type,
                       company_bank_account_id: e.target.checked ? '' : formData.company_bank_account_id,
+                      credit_id: '',
+                      credit_allocation_id: '',
                       cesija_company_id: '',
-                      cesija_bank_account_id: ''
+                      cesija_bank_account_id: '',
+                      cesija_credit_id: '',
+                      cesija_credit_allocation_id: ''
                     })}
                     className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                   />
@@ -220,54 +261,15 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
               </div>
             )}
 
-            {formData.is_cesija && (
-              <>
-                <FormField label={t('payments.form.cesija_company_label')} required className="md:col-span-2">
-                  <Select
-                    value={formData.cesija_company_id}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      cesija_company_id: e.target.value,
-                      cesija_bank_account_id: ''
-                    })}
-                  >
-                    <option value="">{t('payments.form.select_cesija_company')}</option>
-                    {companies.map(company => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormField>
-
-                {formData.cesija_company_id && (
-                  <FormField
-                    label={t('payments.form.cesija_bank_label')}
-                    required
-                    className="md:col-span-2"
-                    error={
-                      formData.cesija_company_id && companyBankAccounts.filter(acc => acc.company_id === formData.cesija_company_id).length === 0
-                        ? t('payments.form.no_bank_accounts_error')
-                        : undefined
-                    }
-                  >
-                    <Select
-                      value={formData.cesija_bank_account_id}
-                      onChange={(e) => setFormData({ ...formData, cesija_bank_account_id: e.target.value })}
-                    >
-                      <option value="">{t('payments.form.select_bank_account')}</option>
-                      {companyBankAccounts
-                        .filter(acc => acc.company_id === formData.cesija_company_id)
-                        .map(account => (
-                          <option key={account.id} value={account.id}>
-                            {account.bank_name} ({t('payments.form.balance_label')}€{account.current_balance.toLocaleString('hr-HR')})
-                          </option>
-                        ))}
-                    </Select>
-                  </FormField>
-                )}
-              </>
-            )}
+            <CesijaPaymentFields
+              paymentFormData={formData}
+              companies={companies}
+              companyBankAccounts={companyBankAccounts}
+              companyCredits={companyCredits}
+              creditAllocations={creditAllocations}
+              onFormChange={(data) => setFormData({ ...formData, ...data } as PaymentFormData)}
+              onCreditChange={onCreditChange}
+            />
 
             <FormField label={t('payments.form.date_label')} required>
               <DateInput
@@ -281,7 +283,10 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
               <Input
                 type="number"
                 value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value)
+                  setFormData({ ...formData, amount: Number.isFinite(parsed) ? parsed : 0 })
+                }}
               />
             </FormField>
 

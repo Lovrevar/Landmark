@@ -142,6 +142,13 @@ export const updateMilestoneStatus = async (
     .eq('id', milestoneId)
 
   if (error) throw error
+
+  logActivity({
+    action: 'contract_milestone.update',
+    entity: 'milestone',
+    entityId: milestoneId,
+    metadata: { severity: 'medium', changed_fields: Object.keys(updates), status }
+  })
 }
 
 export const deleteMilestone = async (milestoneId: string) => {

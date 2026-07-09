@@ -25,10 +25,12 @@ export const customerService = {
       return customers
     }
 
-    const { data: salesData } = await supabase
+    const { data: salesData, error: salesError } = await supabase
       .from('sales')
       .select('apartment_id, sale_price, sale_date, down_payment, total_paid, customer_id')
       .in('customer_id', buyerIds)
+
+    if (salesError) throw salesError
 
     const sales = (salesData || []).filter(s => s.apartment_id)
     const apartmentIds = [...new Set(sales.map(s => s.apartment_id as string))]
@@ -162,10 +164,8 @@ export const customerService = {
 
     const counts: CustomerCounts = {
       interested: 0,
-      hot_lead: 0,
-      negotiating: 0,
-      buyer: 0,
-      backed_out: 0
+      lead: 0,
+      buyer: 0
     }
 
     data?.forEach((customer) => {
@@ -218,5 +218,7 @@ export const customerService = {
       .eq('id', customerId)
 
     if (error) throw error
+
+    logActivity({ action: 'customer.update', entity: 'customer', entityId: customerId, metadata: { severity: 'low', changed_fields: ['last_contact_date'] } })
   }
 }

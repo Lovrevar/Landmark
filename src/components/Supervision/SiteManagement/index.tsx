@@ -159,10 +159,12 @@ const SiteManagement: React.FC = () => {
   }
 
 
+  const resolveContractId = (sub: Subcontractor) =>
+    (sub as Subcontractor & { contract_id?: string }).contract_id || sub.id
+
   const openPaymentHistory = async (subcontractor: Subcontractor) => {
     setSelectedSubcontractorForPayment(subcontractor)
-    const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
-    const payments = await fetchWirePayments(contractId)
+    const payments = await fetchWirePayments(resolveContractId(subcontractor))
     setWirePayments(payments)
     setShowPaymentHistory(true)
   }
@@ -186,7 +188,7 @@ const SiteManagement: React.FC = () => {
     if (success) {
       setShowEditPaymentModal(false)
       setEditingPayment(null)
-      const payments = await fetchWirePayments(selectedSubcontractorForPayment.id)
+      const payments = await fetchWirePayments(resolveContractId(selectedSubcontractorForPayment))
       setWirePayments(payments)
 
       const updatedProject = projects.find(p => p.id === selectedProject?.id)
@@ -203,7 +205,7 @@ const SiteManagement: React.FC = () => {
     if (!selectedSubcontractorForPayment) return
     const success = await deleteWirePayment(paymentId, amount, selectedSubcontractorForPayment)
     if (success) {
-      const payments = await fetchWirePayments(selectedSubcontractorForPayment.id)
+      const payments = await fetchWirePayments(resolveContractId(selectedSubcontractorForPayment))
       setWirePayments(payments)
 
       const updatedProject = projects.find(p => p.id === selectedProject?.id)

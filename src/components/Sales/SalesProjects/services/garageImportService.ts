@@ -1,6 +1,7 @@
 import * as XLSX from '@e965/xlsx'
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
+import { parseNumber } from '../../../../utils/excelParsers'
 
 export interface ImportResult {
   updated: number
@@ -42,8 +43,8 @@ export async function importGaragesFromExcel(file: File, buildingId: string): Pr
     .filter(row => row[0])
     .map(row => ({
       number: String(row[0]),
-      size_m2: Number(row[1]) || 0,
-      price: Number(row[2]) || 0,
+      size_m2: parseNumber(row[1]),
+      price: parseNumber(row[2]),
       exists: existingNumbers.has(String(row[0]))
     }))
 

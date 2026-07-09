@@ -284,18 +284,28 @@ if (highUtilizationCredits > 0) {
 
   const projectAllocations = new Map<string, number>()
 
+  const addToProject = (projectName: string, amount: number) => {
+    if (amount <= 0) return
+    projectAllocations.set(projectName, (projectAllocations.get(projectName) || 0) + amount)
+  }
+
+  // Distribute every credit's full face amount on a single, consistent basis:
+  // each allocation's slice goes to its project, and any unallocated remainder
+  // (amount − Σ allocated) is bucketed as "Unallocated" — so the donut always
+  // sums to the total facility value rather than mixing allocated slices for
+  // some credits with full amounts for others.
   bankCredits.forEach(credit => {
-    if (credit.credit_allocations && credit.credit_allocations.length > 0) {
-      credit.credit_allocations.forEach(allocation => {
-        const projectName = allocation.project?.name || 'OPEX'
-        const currentAmount = projectAllocations.get(projectName) || 0
-        projectAllocations.set(projectName, currentAmount + Number(allocation.allocated_amount))
-      })
-    } else if (credit.amount > 0) {
-      const projectName = credit.project?.name || 'Unallocated'
-      const currentAmount = projectAllocations.get(projectName) || 0
-      projectAllocations.set(projectName, currentAmount + Number(credit.amount))
-    }
+    const amount = Number(credit.amount) || 0
+    if (amount <= 0) return
+    const allocations = credit.credit_allocations || []
+    let allocated = 0
+    allocations.forEach(allocation => {
+      const slice = Number(allocation.allocated_amount) || 0
+      addToProject(allocation.project?.name || 'OPEX', slice)
+      allocated += slice
+    })
+    const remainder = amount - allocated
+    if (remainder > 0) addToProject(credit.project?.name || 'Unallocated', remainder)
   })
 
   const colors = [
@@ -423,7 +433,7 @@ if (highUtilizationCredits > 0) {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(10)
     doc.setTextColor(30, 30, 30)
-    doc.text(credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace('_', ' ')}`, 23, yPos + 5)
+    doc.text(credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace(/_/g, ' ')}`, 23, yPos + 5)
 
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(8)

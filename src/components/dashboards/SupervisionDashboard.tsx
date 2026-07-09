@@ -17,6 +17,7 @@ import {
 import { format, startOfWeek, endOfWeek } from 'date-fns'
 import type { WorkLog, SubcontractorStatus, WeeklyStats } from './types/supervisionTypes'
 import * as supervisionService from './services/supervisionService'
+import DashboardError from './DashboardError'
 import SupervisionWeekView from './sections/SupervisionWeekView'
 import SupervisionStatusView from './sections/SupervisionStatusView'
 import SupervisionIssuesView from './sections/SupervisionIssuesView'
@@ -32,7 +33,7 @@ const defaultStats: WeeklyStats = {
 
 const SupervisionDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const { data, loading } = useCachedData('dashboard:supervision', supervisionService.fetchSupervisionDashboard)
+  const { data, loading, error, refetch } = useCachedData('dashboard:supervision', supervisionService.fetchSupervisionDashboard)
   const [selectedView, setSelectedView] = useState<'week' | 'status' | 'issues'>('week')
 
   const weekLogs: WorkLog[] = data?.weekLogs ?? []
@@ -50,6 +51,10 @@ const SupervisionDashboard: React.FC = () => {
 
   if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.supervision.loading')} />
+  }
+
+  if (error && !data) {
+    return <DashboardError onRetry={refetch} />
   }
 
   const overdueTasks = subcontractorStatus.filter(s => s.is_overdue)

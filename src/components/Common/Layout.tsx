@@ -403,7 +403,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <li key={item.name}>
                       <Link
                         to={item.path}
-                        onClick={() => setMobileNavOpen(false)}
+                        // Choosing a page closes the drawer (mobile) and collapses
+                        // the sidebar to the icon rail (desktop).
+                        onClick={() => {
+                          setMobileNavOpen(false)
+                          setSidebarOpen(false)
+                        }}
                         className={`flex items-center py-2.5 lg:py-2 px-3 rounded-lg transition-colors duration-200 group relative
                           ${isActive
                             ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium'

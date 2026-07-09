@@ -11,10 +11,12 @@ import {
   CreditCard,
   FileDown
 } from 'lucide-react'
-import { format, differenceInDays } from 'date-fns'
+import { format } from 'date-fns'
+import { daysFromToday, isValidDate } from '../../utils/dateOnly'
 import { generateInvestmentReportPDF } from './investmentReportPdf'
 import type { Company, Bank, BankCredit, FinancialSummary, RecentActivity } from '../../types/investment'
 import * as investmentService from './services/investmentDashboardService'
+import DashboardError from './DashboardError'
 import InvestmentSummaryCards from './sections/InvestmentSummaryCards'
 import InvestmentCreditsTable from './sections/InvestmentCreditsTable'
 
@@ -26,8 +28,9 @@ const defaultFinancialSummary: FinancialSummary = {
 
 const InvestmentDashboard: React.FC = () => {
   const { t } = useTranslation()
-  const { data, loading } = useCachedData('dashboard:investment', investmentService.fetchInvestmentDashboardData)
+  const { data, loading, error, refetch } = useCachedData('dashboard:investment', investmentService.fetchInvestmentDashboardData)
 
+  const projects = data?.projects ?? []
   const companies: Company[] = data?.companies ?? []
   const banks: Bank[] = data?.banks ?? []
   const bankCredits: BankCredit[] = data?.bankCredits ?? []
@@ -35,7 +38,7 @@ const InvestmentDashboard: React.FC = () => {
   const financialSummary: FinancialSummary = data?.financialSummary ?? defaultFinancialSummary
 
   const { run: handleExportPDF } = useAsyncExport(
-    () => generateInvestmentReportPDF(financialSummary, bankCredits, []),
+    () => generateInvestmentReportPDF(financialSummary, bankCredits, projects),
     'dashboards.investment.pdf_error'
   )
 
@@ -43,17 +46,19 @@ const InvestmentDashboard: React.FC = () => {
     return <LoadingSpinner size="lg" message={t('dashboards.investment.loading')} />
   }
 
-  const expiringUsageCount = bankCredits.filter(c =>
-    c.usage_expiration_date &&
-    differenceInDays(new Date(c.usage_expiration_date), new Date()) <= 90 &&
-    differenceInDays(new Date(c.usage_expiration_date), new Date()) > 0
-  ).length
+  if (error && !data) {
+    return <DashboardError onRetry={refetch} />
+  }
 
-  const noCriticalIssues = financialSummary.upcoming_maturities === 0 &&
-    bankCredits.filter(c =>
-      c.usage_expiration_date &&
-      differenceInDays(new Date(c.usage_expiration_date), new Date()) <= 90
-    ).length === 0
+  // Single predicate for "usage period expiring within 90 days" — reused by the
+  // banner count and the all-clear check so they can never disagree.
+  const expiringUsageCount = bankCredits.filter(c => {
+    if (!c.usage_expiration_date) return false
+    const d = daysFromToday(c.usage_expiration_date)
+    return d >= 0 && d <= 90
+  }).length
+
+  const noCriticalIssues = financialSummary.upcoming_maturities === 0 && expiringUsageCount === 0
 
   return (
     <div className="space-y-6">
@@ -187,7 +192,7 @@ const InvestmentDashboard: React.FC = () => {
                       <p className="text-sm text-gray-600 dark:text-gray-400">{activity.description}</p>
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {format(new Date(activity.date), isExpiry ? 'MMM dd, yyyy' : 'MMM dd')}
+                      {isValidDate(activity.date) ? format(new Date(activity.date), isExpiry ? 'MMM dd, yyyy' : 'MMM dd') : '—'}
                     </span>
                   </div>
                 )

@@ -26,6 +26,25 @@ interface Funder {
   name: string
 }
 
+const DEFAULT_FORM_DATA: SubcontractorFormData = {
+  existing_subcontractor_id: '',
+  name: '',
+  contact: '',
+  job_description: '',
+  start_date: '',
+  deadline: '',
+  cost: 0,
+  base_amount: 0,
+  vat_rate: 0,
+  vat_amount: 0,
+  total_amount: 0,
+  phase_id: '',
+  contract_type_id: 0,
+  financed_by_type: null,
+  financed_by_bank_id: null,
+  has_contract: true
+}
+
 export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   visible,
   onClose,
@@ -37,24 +56,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const { t } = useTranslation()
   const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
   const [hasContract, setHasContract] = useState(true)
-  const [formData, setFormData] = useState<SubcontractorFormData>({
-    existing_subcontractor_id: '',
-    name: '',
-    contact: '',
-    job_description: '',
-    start_date: '',
-    deadline: '',
-    cost: 0,
-    base_amount: 0,
-    vat_rate: 0,
-    vat_amount: 0,
-    total_amount: 0,
-    phase_id: '',
-    contract_type_id: 0,
-    financed_by_type: null,
-    financed_by_bank_id: null,
-    has_contract: true
-  })
+  const [formData, setFormData] = useState<SubcontractorFormData>(DEFAULT_FORM_DATA)
   const { contractTypes, loading: loadingContractTypes, load: loadContractTypes } = useContractTypes()
   const { vatAmount, totalAmount } = useVATCalculation(formData.base_amount, formData.vat_rate)
   const [banks, setBanks] = useState<Funder[]>([])
@@ -91,10 +93,21 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   }, [phase])
 
   useEffect(() => {
+    if (visible) {
+      setFormData({ ...DEFAULT_FORM_DATA, phase_id: phase?.id || '' })
+      setHasContract(true)
+      setUseExistingSubcontractor(false)
+      setPendingFiles([])
+      setFieldErrors({})
+    }
+    // Reset only on open; phase sync is handled by the [phase] effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible])
+
+  useEffect(() => {
     if (visible && projectId) {
       loadFunders()
       loadContractTypes()
-      setFieldErrors({})
     }
   }, [visible, projectId, loadFunders, loadContractTypes])
 

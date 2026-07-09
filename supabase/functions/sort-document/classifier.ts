@@ -3,7 +3,9 @@
 // Two passes keep token cost flat regardless of how many projects / suppliers /
 // contracts exist in the database:
 //
-//   Pass 1 — one Claude call. Claude sees the document (base64 PDF/image), the
+//   Pass 1 — one Claude call. Claude sees the document (base64 PDF/image, or
+//            text extracted from XML/DOCX/XLSX/CSV/TXT; legacy .doc and
+//            unreadable files fall back to email metadata only), the
 //            email subject + body, and the FULL category tree (small, bounded).
 //            It returns, via a forced tool call, a strict JSON classification:
 //            { category_id, confidence, description, entity_hints[] }.
@@ -79,7 +81,9 @@ export interface ClassificationResult {
 export interface DocumentInput {
   fileName: string
   mimeType: string
-  base64: string // file bytes, base64-encoded
+  base64?: string // PDF/image bytes, base64-encoded — sent as document/image block
+  text?: string // extracted text (XML/DOCX/XLSX/CSV/TXT) — sent as a plain-text document block
+  // Neither set → metadata-only: Claude classifies from email + filename.
 }
 
 export interface EmailContext {
@@ -221,7 +225,10 @@ function renderCategoryTree(categories: CategoryRow[]): string {
 const SYSTEM_PROMPT =
   'Ti si sustav za klasifikaciju dokumenata u platformi za upravljanje ' +
   'nekretninskim i građevinskim projektima. Dobivaš jedan dokument ' +
-  '(PDF ili slika) te predmet i tekst e-pošte kojom je dokument poslan. ' +
+  '(PDF, slika ili tekstualni sadržaj — npr. XML e-račun ili izvadak iz ' +
+  'Word/Excel/CSV datoteke) te predmet i tekst e-pošte kojom je dokument ' +
+  'poslan. Ako sadržaj dokumenta nije priložen, klasificiraj na temelju ' +
+  'predmeta i teksta e-pošte, pošiljatelja i naziva datoteke. ' +
   'Tvoj zadatak je:\n' +
   '1. Svrstati dokument u TOČNO JEDNU kategoriju iz priloženog stabla ' +
   'kategorija. Ako nisi siguran, postavi category_id na null.\n' +
@@ -290,18 +297,31 @@ interface ClassifyToolOutput {
 }
 
 // Builds the document content block in the shape the Anthropic API expects.
-// PDFs go in a `document` block, images in an `image` block.
-function buildDocumentBlock(doc: DocumentInput): Record<string, unknown> {
-  if (doc.mimeType === 'application/pdf') {
+// PDFs go in a `document` block, images in an `image` block, extracted text in
+// a plain-text `document` block. Returns null when there is no readable
+// content (legacy .doc, failed extraction) — the caller then classifies from
+// email metadata alone.
+function buildDocumentBlock(doc: DocumentInput): Record<string, unknown> | null {
+  if (doc.base64) {
+    if (doc.mimeType === 'application/pdf') {
+      return {
+        type: 'document',
+        source: { type: 'base64', media_type: 'application/pdf', data: doc.base64 },
+      }
+    }
     return {
-      type: 'document',
-      source: { type: 'base64', media_type: 'application/pdf', data: doc.base64 },
+      type: 'image',
+      source: { type: 'base64', media_type: doc.mimeType, data: doc.base64 },
     }
   }
-  return {
-    type: 'image',
-    source: { type: 'base64', media_type: doc.mimeType, data: doc.base64 },
+  if (doc.text !== undefined) {
+    return {
+      type: 'document',
+      source: { type: 'text', media_type: 'text/plain', data: doc.text },
+      title: doc.fileName,
+    }
   }
+  return null
 }
 
 async function runClassification(
@@ -311,12 +331,18 @@ async function runClassification(
   email: EmailContext,
   categories: CategoryRow[],
 ): Promise<ClassifyToolOutput> {
+  const block = buildDocumentBlock(doc)
+
   const contextText =
     `Stablo kategorija:\n${renderCategoryTree(categories)}\n\n` +
     `E-pošta — pošiljatelj: ${email.from}\n` +
     `E-pošta — predmet: ${email.subject}\n` +
     `E-pošta — tekst:\n${email.body}\n\n` +
     `Naziv datoteke: ${doc.fileName}\n\n` +
+    (block === null
+      ? 'NAPOMENA: Sadržaj dokumenta nije dostupan (format se ne može pročitati). ' +
+        'Klasificiraj na temelju e-pošte i naziva datoteke.\n\n'
+      : '') +
     'Klasificiraj priloženi dokument pozivom alata classify_document.'
 
   const response = await anthropic.messages.create({
@@ -332,7 +358,7 @@ async function runClassification(
     messages: [
       {
         role: 'user',
-        content: [buildDocumentBlock(doc), { type: 'text', text: contextText }],
+        content: [...(block ? [block] : []), { type: 'text', text: contextText }],
       },
     ],
   } as unknown as Parameters<typeof anthropic.messages.create>[0]) as Anthropic.Message

@@ -351,11 +351,28 @@ export const handlePaymentSubmit = async (
     created_by: user?.id
   }
 
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('accounting_payments')
     .insert([paymentData])
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({
+    action: 'payment.create',
+    entity: 'payment',
+    entityId: inserted?.id ?? null,
+    projectId: payingInvoice.project_id || null,
+    metadata: {
+      severity: 'high',
+      invoice_id: payingInvoice.id,
+      entity_name: payingInvoice.invoice_number,
+      amount: paymentFormData.amount,
+      is_cesija: Boolean(paymentFormData.is_cesija),
+      is_kompenzacija: isKompenzacija
+    },
+  })
 }
 
 export const handleDelete = async (id: string) => {
@@ -451,16 +468,50 @@ export const fetchMilestones = async (contractId: string) => {
 }
 
 export const createBankInvoice = async (invoiceData: Record<string, unknown>): Promise<void> => {
-  const { error } = await supabase.from('accounting_invoices').insert([invoiceData])
+  const { data: inserted, error } = await supabase
+    .from('accounting_invoices')
+    .insert([invoiceData])
+    .select('id')
+    .maybeSingle()
   if (error) throw error
+
+  logActivity({
+    action: 'invoice.create',
+    entity: 'invoice',
+    entityId: inserted?.id ?? null,
+    metadata: {
+      severity: 'high',
+      entity_name: invoiceData.invoice_number,
+      invoice_category: 'BANK',
+      amount: invoiceData.total_amount
+    },
+  })
 }
 
 export const upsertRetailInvoice = async (invoiceData: Record<string, unknown>, editingId?: string): Promise<void> => {
   if (editingId) {
     const { error } = await supabase.from('accounting_invoices').update(invoiceData).eq('id', editingId)
     if (error) throw error
+
+    logActivity({
+      action: 'retail_invoice.update',
+      entity: 'retail_invoice',
+      entityId: editingId,
+      metadata: { severity: 'high', entity_name: invoiceData.invoice_number, changed_fields: Object.keys(invoiceData) },
+    })
   } else {
-    const { error } = await supabase.from('accounting_invoices').insert(invoiceData)
+    const { data: inserted, error } = await supabase
+      .from('accounting_invoices')
+      .insert(invoiceData)
+      .select('id')
+      .maybeSingle()
     if (error) throw error
+
+    logActivity({
+      action: 'retail_invoice.create',
+      entity: 'retail_invoice',
+      entityId: inserted?.id ?? null,
+      metadata: { severity: 'high', entity_name: invoiceData.invoice_number, amount: invoiceData.total_amount },
+    })
   }
 }

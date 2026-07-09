@@ -142,9 +142,15 @@ export async function hideInvoice(invoiceId: string, userId: string): Promise<vo
 }
 
 export async function bulkHideInvoices(invoiceIds: string[], userId: string): Promise<void> {
-  for (const id of invoiceIds) {
-    await hideInvoice(id, userId)
-  }
+  if (invoiceIds.length === 0) return
+
+  // Single batched insert — atomic, and skips already-hidden rows instead of
+  // failing the whole batch (unique constraint is on invoice_id).
+  const records = invoiceIds.map(invoice_id => ({ invoice_id, hidden_by: userId }))
+  const { error } = await supabase
+    .from('hidden_approved_invoices')
+    .upsert(records, { onConflict: 'invoice_id', ignoreDuplicates: true })
+  if (error) throw error
 
   logActivity({
     userId,

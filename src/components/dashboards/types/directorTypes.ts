@@ -49,11 +49,11 @@ export interface ConstructionMetrics {
 }
 
 export interface FundingMetrics {
+  funded_projects: number
   total_investors: number
-  total_banks: number
   total_bank_credit: number
   outstanding_debt: number
-  credit_paid_out: number
+  credit_utilization: number
   avg_interest_rate: number
   monthly_debt_service: number
   upcoming_maturities: number

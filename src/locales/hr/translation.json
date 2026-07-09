@@ -310,11 +310,9 @@
     "weather_delay": "Kašnjenje zbog vremena"
   },
   "customer_status": {
+    "lead": "Potencijalni kupac",
     "interested": "Zainteresiran",
-    "hot_lead": "Vrući kontakt",
-    "negotiating": "Pregovori",
-    "buyer": "Kupac",
-    "backed_out": "Odustao"
+    "buyer": "Kupac"
   },
   "customer_priority": {
     "hot": "Vruće",
@@ -716,6 +714,8 @@
       "will_be_partial_status": "Status će biti promijenjen na DJELOMIČNO PLAĆENO",
       "confirm_payment": "Potvrdi plaćanje",
       "max_amount_helper": "Max iznos: €{{amount}}",
+      "error_amount_required": "Unesite ispravan iznos veći od 0",
+      "error_amount_exceeds_remaining": "Iznos ne smije biti veći od preostalog iznosa",
       "error_bank_account_required": "Morate odabrati bankovni račun",
       "error_credit_required": "Morate odabrati kredit",
       "error_credit_allocation_required": "Morate odabrati projekt za alokaciju kredita",
@@ -769,6 +769,7 @@
       "source_bank": "Bankovni račun",
       "source_credit": "Kredit",
       "source_kompenzacija": "Kompenzacija",
+      "source_cash": "Gotovina",
       "type_incoming_supplier": "Ulazni dobavljač",
       "type_outgoing_supplier": "Izlazni dobavljač",
       "type_incoming_investment": "Ulazni investitor",
@@ -1184,6 +1185,7 @@
   "cashflow_calendar": {
     "title": "Kalendar dospijeća",
     "subtitle": "Pregled svih dospijeća",
+    "budget_save_error": "Greška prilikom spremanja budžeta",
     "months": [
       "Siječanj",
       "Veljača",
@@ -2115,11 +2117,9 @@
     "update": "Ažuriraj kupca",
     "search": "Pretraži kupce...",
     "tabs": {
+      "leads": "Potencijalni",
       "interested": "Zainteresirani",
-      "hot_leads": "Vrući kontakti",
-      "negotiating": "Pregovori",
-      "buyers": "Kupci",
-      "backed_out": "Odustali"
+      "buyers": "Kupci"
     },
     "form": {
       "first_name": "Ime",
@@ -3511,6 +3511,11 @@
     "date_label": "Datum:"
   },
   "dashboards": {
+    "common": {
+      "load_error_title": "Učitavanje nadzorne ploče nije uspjelo",
+      "load_error_description": "Podatke nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
+      "retry": "Pokušaj ponovno"
+    },
     "director": {
       "title": "Nadzorna ploča direktora",
       "welcome": "Dobrodošli",
@@ -3573,7 +3578,9 @@
       "revenue_col": "Prihod",
       "profit_margin_col": "Profitna marža",
       "completion_col": "Završenost",
-      "no_projects": "Nema dostupnih projekata"
+      "no_projects": "Nema dostupnih projekata",
+      "credit_utilization": "Iskorištenost kredita",
+      "total_credit_facilities": "Ukupni krediti"
     },
     "accounting": {
       "title": "Računovodstvena nadzorna ploča",
@@ -4800,7 +4807,15 @@
       "export": "Izvoz",
       "conversation": "Razgovor",
       "calendar_event": "Događaj kalendara",
-      "task": "Zadatak"
+      "task": "Zadatak",
+      "repository": "Repozitorij",
+      "subcontractor_payment": "Plaćanje podugovaratelju",
+      "contract": "Ugovor",
+      "contract_type": "Tip ugovora",
+      "payment_notification": "Obavijest o plaćanju",
+      "retail_milestone": "Retail prekretnica",
+      "retail_supplier": "Retail dobavljač",
+      "retail_supplier_type": "Tip retail dobavljača"
     },
     "actions": {
       "auth.login": "Korisnik se prijavio",
@@ -4875,6 +4890,7 @@
       "credit_allocation.update": "Namjena kredita ažurirana",
       "credit_allocation.delete": "Namjena kredita obrisana",
       "equity_investment.create": "Dionički kapital kreiran",
+      "tic.create": "TIC kreiran",
       "tic.update": "TIC ažuriran",
       "tic.export": "TIC izvezen",
       "retail_project.create": "Retail projekt kreiran",
@@ -4914,7 +4930,40 @@
       "task.unassign": "uklonio je dodijeljene",
       "task.comment": "komentirao je",
       "task.attachment_add": "dodao je privitak",
-      "task.attachment_remove": "uklonio je privitak"
+      "task.attachment_remove": "uklonio je privitak",
+      "invoice.bulk_create": "Računi masovno kreirani",
+      "payment_notification.dismiss": "Obavijest o plaćanju odbačena",
+      "bank_credit.generate_schedule": "Raspored plaćanja ponovno generiran",
+      "subcontractor_payment.create": "Plaćanje podugovaratelju kreirano",
+      "contract.create": "Ugovor kreiran",
+      "contract_type.create": "Tip ugovora kreiran",
+      "phase.bulk_update": "Faze masovno ažurirane",
+      "subcontractor.comment": "Komentar podugovaratelja dodan",
+      "garage.create": "Garaža kreirana",
+      "garage.update": "Garaža ažurirana",
+      "garage.delete": "Garaža obrisana",
+      "garage.bulk_create": "Garaže masovno kreirane",
+      "garage.bulk_price_update": "Cijene garaža masovno ažurirane",
+      "repository.create": "Repozitorij kreiran",
+      "repository.update": "Repozitorij ažuriran",
+      "repository.delete": "Repozitorij obrisan",
+      "repository.bulk_create": "Repozitoriji masovno kreirani",
+      "repository.bulk_price_update": "Cijene repozitorija masovno ažurirane",
+      "apartment.unlink_garage": "Garaža odvojena od stana",
+      "apartment.unlink_repository": "Repozitorij odvojen od stana",
+      "apartment.link_units": "Poveznice jedinica stana ažurirane",
+      "office_supplier.update": "Office dobavljač ažuriran",
+      "retail_project.delete": "Retail projekt obrisan",
+      "retail_phase.delete": "Retail faza obrisana",
+      "retail_supplier.create": "Retail dobavljač kreiran",
+      "retail_supplier.update": "Retail dobavljač ažuriran",
+      "retail_supplier.delete": "Retail dobavljač obrisan",
+      "retail_supplier_type.create": "Tip retail dobavljača kreiran",
+      "retail_contract.update": "Retail ugovor ažuriran",
+      "retail_contract.delete": "Retail ugovor obrisan",
+      "retail_milestone.create": "Retail prekretnica kreirana",
+      "retail_milestone.update": "Retail prekretnica ažurirana",
+      "retail_milestone.delete": "Retail prekretnica obrisana"
     }
   }
 }

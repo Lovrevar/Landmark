@@ -36,36 +36,12 @@ export const recalculatePhaseBudget = async (phaseId: string) => {
 }
 
 export const recalculateAllPhaseBudgets = async () => {
-  const { data: contractSums, error: contractError } = await supabase
-    .from('contracts')
-    .select('phase_id, contract_amount')
-    .in('status', ['draft', 'active'])
+  // Set-based recalc in Postgres (see recalculate_all_phase_budgets RPC migration).
+  // The previous client-side read of all active/draft contracts was silently capped at
+  // PostgREST's 1000-row default, producing understated phase budgets at scale.
+  const { error } = await supabase.rpc('recalculate_all_phase_budgets')
 
-  if (contractError) throw contractError
-
-  const budgetByPhase = new Map<string, number>()
-
-  for (const contract of contractSums || []) {
-    if (!contract.phase_id) continue
-    const currentSum = budgetByPhase.get(contract.phase_id) || 0
-    budgetByPhase.set(contract.phase_id, currentSum + parseFloat(contract.contract_amount || '0'))
-  }
-
-  const { data: allPhases, error: phasesError } = await supabase
-    .from('project_phases')
-    .select('id')
-
-  if (phasesError) throw phasesError
-
-  const updatePromises = (allPhases || []).map(phase => {
-    const budgetUsed = budgetByPhase.get(phase.id) || 0
-    return supabase
-      .from('project_phases')
-      .update({ budget_used: budgetUsed })
-      .eq('id', phase.id)
-  })
-
-  await Promise.all(updatePromises)
+  if (error) throw error
 }
 
 export const createPhases = async (projectId: string, phases: PhaseFormInput[]) => {
@@ -146,6 +122,18 @@ export const updateProjectPhases = async (projectId: string, phases: PhaseFormIn
       if (insertError) throw insertError
     }
   }
+
+  logActivity({
+    action: 'phase.bulk_update',
+    entity: 'phase',
+    projectId,
+    metadata: {
+      severity: 'high',
+      count: phases.length,
+      created: phases.filter(p => !p.id || !existingPhaseIds.has(p.id)).length,
+      deleted: phasesToDelete.length
+    }
+  })
 }
 
 export const updatePhase = async (
@@ -205,6 +193,13 @@ export const resequencePhases = async (phases: ProjectPhase[]) => {
       .update({ phase_number: i + 1 })
       .eq('id', phases[i].id)
   }
+
+  logActivity({
+    action: 'phase.bulk_update',
+    entity: 'phase',
+    projectId: phases[0]?.project_id ?? null,
+    metadata: { severity: 'medium', operation: 'resequence', count: phases.length }
+  })
 }
 
 export const getPhaseInfo = async (phaseId: string) => {

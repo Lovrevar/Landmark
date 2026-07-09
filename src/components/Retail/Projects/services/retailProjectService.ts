@@ -118,6 +118,8 @@ export const retailProjectService = {
       .eq('id', id)
 
     if (error) throw error
+
+    logActivity({ action: 'retail_project.delete', entity: 'retail_project', entityId: id, metadata: { severity: 'high' } })
   },
 
   async fetchPhasesByProject(projectId: string): Promise<RetailProjectPhase[]> {
@@ -203,6 +205,9 @@ export const retailProjectService = {
       .select()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_phase.create', entity: 'retail_phase', metadata: { severity: 'low', count: defaultPhases.length, default_phases: true } })
+
     return data || []
   },
 
@@ -228,6 +233,8 @@ export const retailProjectService = {
       .eq('id', id)
 
     if (error) throw error
+
+    logActivity({ action: 'retail_phase.delete', entity: 'retail_phase', entityId: id, metadata: { severity: 'high' } })
   },
 
   async fetchSupplierTypes(): Promise<RetailSupplierType[]> {
@@ -248,6 +255,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_supplier_type.create', entity: 'retail_supplier_type', entityId: data?.id ?? null, metadata: { severity: 'medium', entity_name: name } })
+
     return data
   },
 
@@ -272,6 +282,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_supplier.create', entity: 'retail_supplier', entityId: data?.id ?? null, metadata: { severity: 'medium', entity_name: supplier.name } })
+
     return data
   },
 
@@ -284,6 +297,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_supplier.update', entity: 'retail_supplier', entityId: id, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
+
     return data
   },
 
@@ -294,6 +310,8 @@ export const retailProjectService = {
       .eq('id', id)
 
     if (error) throw error
+
+    logActivity({ action: 'retail_supplier.delete', entity: 'retail_supplier', entityId: id, metadata: { severity: 'high' } })
   },
 
   async fetchCustomers() {
@@ -314,6 +332,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_customer.create', entity: 'retail_customer', entityId: data?.id ?? null, metadata: { severity: 'medium', entity_name: customer.name } })
+
     return data
   },
 
@@ -458,6 +479,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_contract.update', entity: 'retail_contract', entityId: id, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
+
     return data
   },
 
@@ -468,6 +492,8 @@ export const retailProjectService = {
       .eq('id', id)
 
     if (error) throw error
+
+    logActivity({ action: 'retail_contract.delete', entity: 'retail_contract', entityId: id, metadata: { severity: 'high' } })
   },
 
   async fetchMilestonesByContract(contractId: string): Promise<RetailContractMilestone[]> {
@@ -509,6 +535,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_milestone.create', entity: 'retail_milestone', entityId: data?.id ?? null, metadata: { severity: 'medium', contract_id: milestone.contract_id } })
+
     return data
   },
 
@@ -521,6 +550,9 @@ export const retailProjectService = {
       .single()
 
     if (error) throw error
+
+    logActivity({ action: 'retail_milestone.update', entity: 'retail_milestone', entityId: id, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
+
     return data
   },
 
@@ -531,6 +563,8 @@ export const retailProjectService = {
       .eq('id', id)
 
     if (error) throw error
+
+    logActivity({ action: 'retail_milestone.delete', entity: 'retail_milestone', entityId: id, metadata: { severity: 'high' } })
   },
 
   async generateContractNumber(projectId: string): Promise<string> {

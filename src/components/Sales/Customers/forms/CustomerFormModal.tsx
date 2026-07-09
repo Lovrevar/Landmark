@@ -49,7 +49,11 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   useEffect(() => {
     setError(null)
     if (editingCustomer) {
-      setFormData(editingCustomer)
+      // strip the joined `apartments` array — it is not a `customers` column and
+      // would make the update payload fail against PostgREST
+      const customerFields = { ...editingCustomer }
+      delete customerFields.apartments
+      setFormData(customerFields)
     } else {
       setFormData({
         name: '',
@@ -152,13 +156,11 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             <FormField label={t('customers.form.status')} required>
               <Select
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'interested' | 'hot_lead' | 'negotiating' | 'buyer' | 'backed_out' })}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'interested' | 'lead' | 'buyer' })}
               >
+                <option value="lead">{t('customer_status.lead')}</option>
                 <option value="interested">{t('customer_status.interested')}</option>
-                <option value="hot_lead">{t('customer_status.hot_lead')}</option>
-                <option value="negotiating">{t('customer_status.negotiating')}</option>
                 <option value="buyer">{t('customer_status.buyer')}</option>
-                <option value="backed_out">{t('customer_status.backed_out')}</option>
               </Select>
             </FormField>
             <FormField label={t('customers.form.priority')}>
@@ -198,18 +200,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             </FormField>
           </div>
 
-          {formData.status === 'backed_out' && (
-            <FormField label={t('customers.form.backed_out_reason')}>
-              <Textarea
-                value={formData.backed_out_reason}
-                onChange={(e) => setFormData({ ...formData, backed_out_reason: e.target.value })}
-                rows={3}
-                placeholder="Why did this customer back out?"
-              />
-            </FormField>
-          )}
-
-          {(formData.status === 'interested' || formData.status === 'hot_lead' || formData.status === 'negotiating') && (
+          {(formData.status === 'interested' || formData.status === 'lead') && (
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('customers.form.preferences')}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -85,10 +85,11 @@ export async function saveUnitLinks(
     if (storageError) throw storageError
   }
 
-  if (garageIds.length > 0) {
-    logActivity({ action: 'apartment.link_garage', entity: 'apartment', entityId: apartmentId, metadata: { severity: 'low', count: garageIds.length } })
-  }
-  if (storageIds.length > 0) {
-    logActivity({ action: 'apartment.link_repository', entity: 'apartment', entityId: apartmentId, metadata: { severity: 'low', count: storageIds.length } })
-  }
+  // single log for the whole replace — counts of 0 record that existing links were cleared
+  logActivity({
+    action: 'apartment.link_units',
+    entity: 'apartment',
+    entityId: apartmentId,
+    metadata: { severity: 'low', garage_count: garageIds.length, repository_count: storageIds.length }
+  })
 }

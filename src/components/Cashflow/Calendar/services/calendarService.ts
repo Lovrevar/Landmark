@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { logActivity } from '../../../../lib/activityLog'
 import { Invoice, MonthlyBudget } from '../types'
 
 export const fetchInvoices = async (): Promise<Invoice[]> => {
@@ -53,12 +54,13 @@ export const handleSaveBudgets = async (
       const existing = budgets.find(b => b.year === budgetYear && b.month === m)
 
       if (existing) {
-        await supabase
+        const { error } = await supabase
           .from('monthly_budgets')
           .update({ budget_amount: amount })
           .eq('id', existing.id)
+        if (error) throw error
       } else {
-        await supabase
+        const { error } = await supabase
           .from('monthly_budgets')
           .insert({
             year: budgetYear,
@@ -66,8 +68,15 @@ export const handleSaveBudgets = async (
             budget_amount: amount,
             notes: ''
           })
+        if (error) throw error
       }
     }
+
+    logActivity({
+      action: 'monthly_budget.update',
+      entity: 'monthly_budget',
+      metadata: { severity: 'high', year: budgetYear, count: 12 }
+    })
   } catch (error) {
     console.error('Error saving budgets:', error)
     throw error

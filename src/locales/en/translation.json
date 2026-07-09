@@ -310,11 +310,9 @@
     "weather_delay": "Weather Delay"
   },
   "customer_status": {
+    "lead": "Lead",
     "interested": "Interested",
-    "hot_lead": "Hot Lead",
-    "negotiating": "Negotiating",
-    "buyer": "Buyer",
-    "backed_out": "Backed Out"
+    "buyer": "Buyer"
   },
   "customer_priority": {
     "hot": "Hot",
@@ -716,6 +714,8 @@
       "will_be_partial_status": "Status will change to PARTIALLY PAID",
       "confirm_payment": "Confirm Payment",
       "max_amount_helper": "Max amount: €{{amount}}",
+      "error_amount_required": "Enter a valid amount greater than 0",
+      "error_amount_exceeds_remaining": "Amount cannot exceed the remaining amount",
       "error_bank_account_required": "You must select a bank account",
       "error_credit_required": "You must select a credit",
       "error_credit_allocation_required": "You must select a project for the credit allocation",
@@ -769,6 +769,7 @@
       "source_bank": "Bank Account",
       "source_credit": "Credit",
       "source_kompenzacija": "Compensation",
+      "source_cash": "Cash",
       "type_incoming_supplier": "Incoming Supplier",
       "type_outgoing_supplier": "Outgoing Supplier",
       "type_incoming_investment": "Incoming Investment",
@@ -1182,6 +1183,7 @@
   "cashflow_calendar": {
     "title": "Due Date Calendar",
     "subtitle": "Overview of all due dates",
+    "budget_save_error": "Error saving budgets",
     "months": [
       "January",
       "February",
@@ -2111,11 +2113,9 @@
     "update": "Update Customer",
     "search": "Search customers...",
     "tabs": {
+      "leads": "Leads",
       "interested": "Interested",
-      "hot_leads": "Hot Leads",
-      "negotiating": "Negotiating",
-      "buyers": "Buyers",
-      "backed_out": "Backed Out"
+      "buyers": "Buyers"
     },
     "form": {
       "first_name": "First Name",
@@ -3507,6 +3507,11 @@
     "date_label": "Date:"
   },
   "dashboards": {
+    "common": {
+      "load_error_title": "Failed to load dashboard",
+      "load_error_description": "The data could not be loaded. This is a loading error, not an absence of data.",
+      "retry": "Try again"
+    },
     "director": {
       "title": "Director Dashboard",
       "welcome": "Welcome",
@@ -3569,7 +3574,9 @@
       "revenue_col": "Revenue",
       "profit_margin_col": "Profit Margin",
       "completion_col": "Completion",
-      "no_projects": "No projects available"
+      "no_projects": "No projects available",
+      "credit_utilization": "Credit Utilization",
+      "total_credit_facilities": "Total Credit"
     },
     "accounting": {
       "title": "Accounting Dashboard",
@@ -4793,7 +4800,15 @@
       "export": "Export",
       "conversation": "Conversation",
       "calendar_event": "Calendar Event",
-      "task": "Task"
+      "task": "Task",
+      "repository": "Storage",
+      "subcontractor_payment": "Subcontractor Payment",
+      "contract": "Contract",
+      "contract_type": "Contract Type",
+      "payment_notification": "Payment Notification",
+      "retail_milestone": "Retail Milestone",
+      "retail_supplier": "Retail Supplier",
+      "retail_supplier_type": "Retail Supplier Type"
     },
     "actions": {
       "auth.login": "User logged in",
@@ -4868,6 +4883,7 @@
       "credit_allocation.update": "Credit allocation updated",
       "credit_allocation.delete": "Credit allocation deleted",
       "equity_investment.create": "Equity investment created",
+      "tic.create": "TIC created",
       "tic.update": "TIC updated",
       "tic.export": "TIC exported",
       "retail_project.create": "Retail project created",
@@ -4907,7 +4923,40 @@
       "task.unassign": "removed assignees",
       "task.comment": "commented",
       "task.attachment_add": "added an attachment",
-      "task.attachment_remove": "removed an attachment"
+      "task.attachment_remove": "removed an attachment",
+      "invoice.bulk_create": "Invoices bulk created",
+      "payment_notification.dismiss": "Payment notification dismissed",
+      "bank_credit.generate_schedule": "Payment schedule regenerated",
+      "subcontractor_payment.create": "Subcontractor payment created",
+      "contract.create": "Contract created",
+      "contract_type.create": "Contract type created",
+      "phase.bulk_update": "Phases bulk updated",
+      "subcontractor.comment": "Subcontractor comment added",
+      "garage.create": "Garage created",
+      "garage.update": "Garage updated",
+      "garage.delete": "Garage deleted",
+      "garage.bulk_create": "Garages bulk created",
+      "garage.bulk_price_update": "Garage prices bulk updated",
+      "repository.create": "Storage created",
+      "repository.update": "Storage updated",
+      "repository.delete": "Storage deleted",
+      "repository.bulk_create": "Storages bulk created",
+      "repository.bulk_price_update": "Storage prices bulk updated",
+      "apartment.unlink_garage": "Garage unlinked from apartment",
+      "apartment.unlink_repository": "Storage unlinked from apartment",
+      "apartment.link_units": "Apartment unit links updated",
+      "office_supplier.update": "Office supplier updated",
+      "retail_project.delete": "Retail project deleted",
+      "retail_phase.delete": "Retail phase deleted",
+      "retail_supplier.create": "Retail supplier created",
+      "retail_supplier.update": "Retail supplier updated",
+      "retail_supplier.delete": "Retail supplier deleted",
+      "retail_supplier_type.create": "Retail supplier type created",
+      "retail_contract.update": "Retail contract updated",
+      "retail_contract.delete": "Retail contract deleted",
+      "retail_milestone.create": "Retail milestone created",
+      "retail_milestone.update": "Retail milestone updated",
+      "retail_milestone.delete": "Retail milestone deleted"
     }
   }
 }

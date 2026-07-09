@@ -30,7 +30,7 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
     .reduce((sum, p) => {
       const invoice = p.accounting_invoices
       if (!invoice) return sum
-      const vatRatio = p.amount / invoice.total_amount
+      const vatRatio = invoice.total_amount ? p.amount / invoice.total_amount : 0
       return sum + (invoice.vat_amount * vatRatio)
     }, 0)
     .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -43,7 +43,7 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
     .reduce((sum, p) => {
       const invoice = p.accounting_invoices
       if (!invoice) return sum
-      const vatRatio = p.amount / invoice.total_amount
+      const vatRatio = invoice.total_amount ? p.amount / invoice.total_amount : 0
       return sum + (invoice.vat_amount * vatRatio)
     }, 0)
     .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })

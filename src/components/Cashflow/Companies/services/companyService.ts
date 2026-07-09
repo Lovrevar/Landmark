@@ -80,8 +80,6 @@ export const createCompany = async (formData: CompanyFormData) => {
 
   if (companyError) throw companyError
 
-  logActivity({ action: 'company.create', entity: 'company', entityId: companyData.id, metadata: { severity: 'medium', entity_name: formData.name } })
-
   const bankAccountsToInsert = formData.bankAccounts.map(acc => ({
     company_id: companyData.id,
     bank_name: acc.bank_name,
@@ -89,11 +87,28 @@ export const createCompany = async (formData: CompanyFormData) => {
     current_balance: acc.current_balance
   }))
 
-  const { error: bankError } = await supabase
-    .from('company_bank_accounts')
-    .insert(bankAccountsToInsert)
+  if (bankAccountsToInsert.length > 0) {
+    const { error: bankError } = await supabase
+      .from('company_bank_accounts')
+      .insert(bankAccountsToInsert)
 
-  if (bankError) throw bankError
+    if (bankError) {
+      // Roll back the orphaned company so a half-created record isn't left behind
+      await supabase.from('accounting_companies').delete().eq('id', companyData.id)
+      throw bankError
+    }
+  }
+
+  // Log only once both inserts have succeeded so the audit trail matches reality
+  logActivity({ action: 'company.create', entity: 'company', entityId: companyData.id, metadata: { severity: 'medium', entity_name: formData.name } })
+
+  if (bankAccountsToInsert.length > 0) {
+    logActivity({
+      action: 'bank_account.create',
+      entity: 'bank_account',
+      metadata: { severity: 'medium', count: bankAccountsToInsert.length, company_id: companyData.id, entity_name: formData.name }
+    })
+  }
 }
 
 export const updateCompany = async (companyId: string, formData: CompanyFormData) => {
@@ -107,6 +122,8 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
     .eq('id', companyId)
 
   if (error) throw error
+
+  logActivity({ action: 'company.update', entity: 'company', entityId: companyId, metadata: { severity: 'medium', entity_name: formData.name, changed_fields: ['name', 'oib'] } })
 
   for (const account of formData.bankAccounts) {
     if (account.id) {
@@ -179,6 +196,11 @@ const recalculateBankAccountBalance = async (bankAccountId: string, resetAt: str
       .maybeSingle()
   ])
 
+  // Don't silently recompute a balance from partial data — a failed query would
+  // otherwise overwrite current_balance with just initial_balance.
+  const queryError = paymentsResult.error || loansFromResult.error || loansToResult.error || accountResult.error
+  if (queryError) throw queryError
+
   let delta = 0
 
   for (const p of paymentsResult.data || []) {
@@ -206,10 +228,11 @@ const recalculateBankAccountBalance = async (bankAccountId: string, resetAt: str
 
   const initialBalance = accountResult.data?.initial_balance ?? 0
 
-  await supabase
+  const { error: updateError } = await supabase
     .from('company_bank_accounts')
     .update({ current_balance: initialBalance + delta, updated_at: new Date().toISOString() })
     .eq('id', bankAccountId)
+  if (updateError) throw updateError
 }
 
 export const deleteCompany = async (companyId: string) => {

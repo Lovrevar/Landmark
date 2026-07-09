@@ -23,8 +23,6 @@ const ApartmentManagement: React.FC = () => {
     projects,
     buildings,
     apartmentPaymentTotals,
-    garagePaymentTotals,
-    storagePaymentTotals,
     linkedGarages,
     linkedStorages,
     loading,
@@ -273,14 +271,14 @@ const ApartmentManagement: React.FC = () => {
             const aptLinkedGarages = linkedGarages[apartment.id] || []
             const aptLinkedStorages = linkedStorages[apartment.id] || []
 
-            const aptPaid = apartmentPaymentTotals[apartment.id] || 0
-            const garagesTotalPaid = aptLinkedGarages.reduce((sum, g) => sum + (garagePaymentTotals[g.id] || 0), 0)
-            const storagesTotalPaid = aptLinkedStorages.reduce((sum, s) => sum + (storagePaymentTotals[s.id] || 0), 0)
+            // payments for a sold package are all recorded against the apartment's
+            // invoices (invoices have no garage/repository linkage), so the
+            // apartment payment total already covers any linked garage/storage
+            const totalPaid = apartmentPaymentTotals[apartment.id] || 0
 
             const garagesTotalPrice = aptLinkedGarages.reduce((sum, g) => sum + (g.price || 0), 0)
             const storagesTotalPrice = aptLinkedStorages.reduce((sum, s) => sum + (s.price || 0), 0)
             const totalPrice = apartment.price + garagesTotalPrice + storagesTotalPrice
-            const totalPaid = aptPaid + garagesTotalPaid + storagesTotalPaid
             const overallPercentage = totalPrice > 0 ? (totalPaid / totalPrice) * 100 : 0
 
             return (
@@ -386,20 +384,18 @@ const ApartmentManagement: React.FC = () => {
                   >
                     {t('apartments.payment_history')}
                   </Button>
-                  {(aptLinkedGarages.length === 0 || aptLinkedStorages.length === 0) && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      fullWidth
-                      icon={LinkIcon}
-                      onClick={() => {
-                        setSelectedApartment(apartment)
-                        setShowLinkUnitsModal(true)
-                      }}
-                    >
-                      {t('apartments.link_units')}
-                    </Button>
-                  )}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    fullWidth
+                    icon={LinkIcon}
+                    onClick={() => {
+                      setSelectedApartment(apartment)
+                      setShowLinkUnitsModal(true)
+                    }}
+                  >
+                    {t('apartments.link_units')}
+                  </Button>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <Button
                       variant="primary"

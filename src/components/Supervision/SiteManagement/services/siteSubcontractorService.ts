@@ -54,9 +54,10 @@ export const createSubcontractorWithReturn = async (data: {
     .from('subcontractors')
     .insert(data)
     .select()
-    .single()
+    .maybeSingle()
 
   if (error) throw error
+  if (!newSubcontractor) throw new Error('Subcontractor was created but could not be read back.')
 
   logActivity({ action: 'subcontractor.create', entity: 'subcontractor', entityId: newSubcontractor.id, metadata: { severity: 'medium', entity_name: data.name } })
 
@@ -81,6 +82,13 @@ export const linkSubcontractorToPhase = async (
     .eq('id', subcontractorId)
 
   if (error) throw error
+
+  logActivity({
+    action: 'subcontractor.update',
+    entity: 'subcontractor',
+    entityId: subcontractorId,
+    metadata: { severity: 'medium', changed_fields: ['phase_id', 'cost', 'deadline', 'job_description'], phase_id: phaseId }
+  })
 }
 
 export const updateSubcontractor = async (
@@ -168,13 +176,13 @@ export const updateSubcontractor = async (
     throw subError
   }
 
-  // If phase was changed, recalculate budgets for both old and new phases
-  if (updates.phase_id && updates.phase_id !== contract.phase_id) {
-    if (contract.phase_id) {
-      await recalculatePhaseBudget(contract.phase_id)
-    }
-    await recalculatePhaseBudget(updates.phase_id)
-  }
+  // Recalculate budgets for every affected phase: the old phase and the target
+  // phase. A cost-only edit (target == old) still recalcs the current phase once.
+  const phasesToRecalc = new Set<string>()
+  if (contract.phase_id) phasesToRecalc.add(contract.phase_id)
+  const targetPhase = updates.phase_id ?? contract.phase_id
+  if (targetPhase) phasesToRecalc.add(targetPhase)
+  for (const pid of phasesToRecalc) await recalculatePhaseBudget(pid)
 
   logActivity({ action: 'subcontractor.update', entity: 'subcontractor', entityId: contract.subcontractor_id, projectId: contract.project_id ?? null, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
 }
@@ -235,48 +243,73 @@ export const createSubcontractorComment = async (data: {
   comment: string
   comment_type: 'completed' | 'issue' | 'general'
 }) => {
-  const { error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('subcontractor_comments')
     .insert(data)
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+
+  logActivity({
+    action: 'subcontractor.comment',
+    entity: 'subcontractor',
+    entityId: data.subcontractor_id,
+    metadata: { severity: 'low', comment_id: inserted?.id ?? null, comment_type: data.comment_type }
+  })
 }
 
 export const insertSubcontractorRecord = async (data: { name: string; contact: string; notes: string | null }) => {
-  const { error } = await supabase.from('subcontractors').insert(data)
+  const { data: inserted, error } = await supabase
+    .from('subcontractors')
+    .insert(data)
+    .select('id')
+    .maybeSingle()
   if (error) throw error
+
+  logActivity({ action: 'subcontractor.create', entity: 'subcontractor', entityId: inserted?.id ?? null, metadata: { severity: 'medium', entity_name: data.name } })
 }
 
 export const updateSubcontractorRecord = async (id: string, data: { name: string; contact: string; notes: string | null }) => {
   const { error } = await supabase.from('subcontractors').update(data).eq('id', id)
   if (error) throw error
+
+  logActivity({ action: 'subcontractor.update', entity: 'subcontractor', entityId: id, metadata: { severity: 'medium', entity_name: data.name, changed_fields: Object.keys(data) } })
 }
 
 export const fetchInvoiceStatsForContracts = async (contractIds: string[]) => {
   const map = new Map<string, { totalPaid: number; totalOwed: number }>()
   if (contractIds.length === 0) return map
 
-  const { data, error } = await supabase
-    .from('accounting_invoices')
-    .select('contract_id, total_amount, paid_amount, status')
-    .in('contract_id', contractIds)
-
-  if (error) {
-    console.error('Error fetching batch invoice stats:', error)
-    return map
-  }
-
   for (const id of contractIds) map.set(id, { totalPaid: 0, totalOwed: 0 })
 
-  for (const inv of data || []) {
-    const cid = inv.contract_id as string | null
-    if (!cid) continue
-    const entry = map.get(cid) ?? { totalPaid: 0, totalOwed: 0 }
-    const paid = parseFloat(inv.paid_amount?.toString() || '0')
-    const total = parseFloat(inv.total_amount?.toString() || '0')
-    entry.totalPaid += paid
-    if (inv.status !== 'PAID') entry.totalOwed += (total - paid)
-    map.set(cid, entry)
+  // Page through results so the aggregation isn't silently capped at PostgREST's
+  // 1000-row default once a project accumulates more than 1000 invoices.
+  const PAGE_SIZE = 1000
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('accounting_invoices')
+      .select('contract_id, total_amount, paid_amount, status')
+      .in('contract_id', contractIds)
+      .range(from, from + PAGE_SIZE - 1)
+
+    if (error) {
+      console.error('Error fetching batch invoice stats:', error)
+      return map
+    }
+
+    for (const inv of data || []) {
+      const cid = inv.contract_id as string | null
+      if (!cid) continue
+      const entry = map.get(cid) ?? { totalPaid: 0, totalOwed: 0 }
+      const paid = parseFloat(inv.paid_amount?.toString() || '0')
+      const total = parseFloat(inv.total_amount?.toString() || '0')
+      entry.totalPaid += paid
+      if (inv.status !== 'PAID') entry.totalOwed += (total - paid)
+      map.set(cid, entry)
+    }
+
+    if (!data || data.length < PAGE_SIZE) break
   }
 
   return map
