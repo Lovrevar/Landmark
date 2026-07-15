@@ -31,6 +31,7 @@
 | **Testing** | [TESTING.md](./TESTING.md) | Vitest unit tests + Playwright e2e setup and conventions |
 | **Security Backlog** | [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) | Tracked security items and RLS hardening status |
 | **Presentation Modules** | [PRESENTATION_MODULES.md](./PRESENTATION_MODULES.md) | Croatian-language module overview + talking points for pitching the platform; ERP sync presented as a built-in product capability |
+| **Presentation Deck** | [PRESENTATION_DECK.md](./PRESENTATION_DECK.md) | Slide-by-slide startup-event deck copy with speaker notes (non-technical users, modularity/integrations, multi-company analytics) |
 
 ---
 
