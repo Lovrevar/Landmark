@@ -8,13 +8,12 @@ import {
   getAttachmentSignedUrl,
   uploadTaskAttachment,
 } from '../services/tasksService'
-import type { TaskAttachment } from '../../../types/tasks'
+import type { TaskActor, TaskAttachment } from '../../../types/tasks'
 
 interface Props {
   taskId: string | null
   attachments: TaskAttachment[]
-  userId: string
-  userRole: string
+  actor: TaskActor
   canDelete: (attachment: TaskAttachment) => boolean
   onChange: () => void
   disabled?: boolean
@@ -33,8 +32,7 @@ function isImage(mime: string | null): boolean {
 const AttachmentList: React.FC<Props> = ({
   taskId,
   attachments,
-  userId,
-  userRole,
+  actor,
   canDelete,
   onChange,
   disabled,
@@ -84,7 +82,7 @@ const AttachmentList: React.FC<Props> = ({
         const key = `${f.name}-${f.size}-${Date.now()}`
         setUploading(u => [...u, key])
         try {
-          await uploadTaskAttachment(taskId, f, userId, userRole)
+          await uploadTaskAttachment(taskId, f, actor)
           onChange()
         } catch (e) {
           setError(e instanceof Error ? e.message : t('tasks.attachments.failed'))
@@ -93,7 +91,7 @@ const AttachmentList: React.FC<Props> = ({
         }
       }
     },
-    [taskId, disabled, attachments.length, userId, userRole, onChange, t],
+    [taskId, disabled, attachments.length, actor, onChange, t],
   )
 
   const handleDrop = (e: React.DragEvent) => {
@@ -104,7 +102,7 @@ const AttachmentList: React.FC<Props> = ({
 
   const handleDelete = async (a: TaskAttachment) => {
     if (disabled) return
-    await deleteTaskAttachment(a.id, userId, userRole)
+    await deleteTaskAttachment(a.id, actor)
     onChange()
   }
 

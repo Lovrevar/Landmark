@@ -34,7 +34,9 @@ function uid() {
 }
 
 async function ins(table, rows) {
-  const { error } = await db.from(table).insert(rows)
+  // defaultToNull: false — in bulk inserts PostgREST fills keys missing from some
+  // rows with NULL instead of the column DEFAULT; this restores DEFAULT semantics.
+  const { error } = await db.from(table).insert(rows, { defaultToNull: false })
   if (error) throw new Error(`insert ${table}: ${error.message}`)
   console.log(`  + ${table}: ${rows.length}`)
 }
@@ -144,8 +146,8 @@ const ACC_PARENT_ZABA = uid(), ACC_PARENT_PBZ = uid(), ACC_JARUN = uid(), ACC_MA
 await ins('company_bank_accounts', [
   { id: ACC_PARENT_ZABA, company_id: C_PARENT, bank_name: 'Zagrebačka banka', account_number: 'HR1223600001101234565', initial_balance: 1400000, current_balance: 1400000 },
   { id: ACC_PARENT_PBZ, company_id: C_PARENT, bank_name: 'Privredna banka Zagreb', account_number: 'HR5223400091110987654', initial_balance: 320000, current_balance: 320000 },
-  { id: ACC_JARUN, company_id: C_JARUN, bank_name: 'Zagrebačka banka', account_number: 'HR6523600001102233445', initial_balance: 1200000, current_balance: 1200000 },
-  { id: ACC_MARJAN, company_id: C_MARJAN, bank_name: 'OTP banka', account_number: 'HR7424070001105566778', initial_balance: 275000, current_balance: 275000 },
+  { id: ACC_JARUN, company_id: C_JARUN, bank_name: 'Zagrebačka banka', account_number: 'HR6523600001102233445', initial_balance: 1900000, current_balance: 1900000 },
+  { id: ACC_MARJAN, company_id: C_MARJAN, bank_name: 'OTP banka', account_number: 'HR7424070001105566778', initial_balance: 1000000, current_balance: 1000000 },
   { id: ACC_GRADNJA, company_id: C_GRADNJA, bank_name: 'Erste banka', account_number: 'HR8824020061108899001', initial_balance: 190000, current_balance: 190000 },
 ])
 
@@ -183,6 +185,10 @@ await ins('project_phases', [
   { id: PH_M1, project_id: P_MARJAN, phase_number: 1, phase_name: 'Pripremni radovi', status: 'completed', budget_allocated: 220000, start_date: '2025-09-01', end_date: '2025-12-20' },
   { id: PH_M2, project_id: P_MARJAN, phase_number: 2, phase_name: 'Grubi građevinski radovi', status: 'active', budget_allocated: 1500000, start_date: '2026-01-10', end_date: '2026-11-30' },
   { id: PH_M3, project_id: P_MARJAN, phase_number: 3, phase_name: 'Završni radovi i uređenje', status: 'planning', budget_allocated: 1100000, start_date: '2026-10-01', end_date: '2027-03-15' },
+  { id: uid(), project_id: P_CRNOMEREC, phase_number: 1, phase_name: 'Pripremni radovi i rušenje', status: 'planning', budget_allocated: 800000, start_date: '2026-10-01', end_date: '2027-03-31' },
+  { id: uid(), project_id: P_CRNOMEREC, phase_number: 2, phase_name: 'Grubi građevinski radovi', status: 'planning', budget_allocated: 6500000, start_date: '2027-04-01', end_date: '2028-12-31' },
+  { id: uid(), project_id: P_CRNOMEREC, phase_number: 3, phase_name: 'Instalacije i završni radovi', status: 'planning', budget_allocated: 3200000, start_date: '2028-06-01', end_date: '2029-09-30' },
+  { id: uid(), project_id: P_CRNOMEREC, phase_number: 4, phase_name: 'Okoliš i priključci', status: 'planning', budget_allocated: 700000, start_date: '2029-06-01', end_date: '2029-12-15' },
   { id: PH_T1, project_id: P_TRESNJEVKA, phase_number: 1, phase_name: 'Gradnja', status: 'completed', budget_allocated: 2400000, start_date: '2023-05-01', end_date: '2025-05-31' },
   { id: PH_T2, project_id: P_TRESNJEVKA, phase_number: 2, phase_name: 'Završni radovi i primopredaja', status: 'completed', budget_allocated: 700000, start_date: '2025-04-01', end_date: '2025-11-30' },
 ])
@@ -221,7 +227,7 @@ await ins('contract_types', [
   { id: 6, name: 'Projektiranje i nadzor', is_active: true },
 ])
 
-const S_TEHNO = uid(), S_ELEKTRO = uid(), S_TERMO = uid(), S_ALU = uid(), S_KERAMIKA = uid(), S_KROV = uid(), S_MODUL = uid(), S_GEO = uid()
+const S_TEHNO = uid(), S_ELEKTRO = uid(), S_TERMO = uid(), S_ALU = uid(), S_KERAMIKA = uid(), S_KROV = uid(), S_MODUL = uid(), S_GEO = uid(), S_ISKOP = uid()
 await ins('subcontractors', [
   { id: S_TEHNO, name: 'Tehnogradnja d.o.o.', contact: 'Ivan Horvat · 091 234 5678 · info@tehnogradnja.hr' },
   { id: S_ELEKTRO, name: 'Elektro-Instal d.o.o.', contact: 'Marko Jurić · 098 111 2233 · marko@elektro-instal.hr' },
@@ -231,10 +237,11 @@ await ins('subcontractors', [
   { id: S_KROV, name: 'Krovomont d.o.o.', contact: 'Stjepan Balog · 098 700 500 · info@krovomont.hr' },
   { id: S_MODUL, name: 'Arhitektonski studio Modul d.o.o.', contact: 'Iva Radić · 01 4833 210 · iva@studiomodul.hr' },
   { id: S_GEO, name: 'Geo-Nadzor d.o.o.', contact: 'Tomislav Klarić · 091 555 0102 · tomislav@geonadzor.hr' },
+  { id: S_ISKOP, name: 'Iskop-Trans d.o.o.', contact: 'Branimir Vlahov · 098 606 707 · info@iskop-trans.hr' },
 ])
 
 const CT_TEHNO_J = uid(), CT_ELEKTRO_J = uid(), CT_TERMO_J = uid(), CT_ALU_J = uid(), CT_MODUL_J = uid(), CT_KROV_J = uid()
-const CT_TEHNO_M = uid(), CT_KERAMIKA_M = uid(), CT_TEHNO_T = uid(), CT_ELEKTRO_T = uid()
+const CT_TEHNO_M = uid(), CT_KERAMIKA_M = uid(), CT_TEHNO_T = uid(), CT_ELEKTRO_T = uid(), CT_ISKOP_J = uid(), CT_ISKOP_M = uid()
 const contract = (id, project, phase, sub, type, num, base, status, extra = {}) => ({
   id, project_id: project, phase_id: phase, subcontractor_id: sub, contract_type_id: type,
   contract_number: num, base_amount: base, vat_rate: 25, contract_amount: base * 1.25,
@@ -249,25 +256,48 @@ await ins('contracts', [
   contract(CT_ALU_J, P_JARUN, PH_J4, S_ALU, 4, 'UG-2026-009', 480000, 'draft', { job: 'ALU stolarija i staklene stijene', start: '2026-11-01', end: '2027-02-28' }),
   contract(CT_MODUL_J, P_JARUN, PH_J2, S_MODUL, 6, 'UG-2025-002', 280000, 'active', { job: 'Glavni projekt, izvedbeni projekt i projektantski nadzor', start: '2025-03-01', end: '2027-06-30' }),
   contract(CT_KROV_J, P_JARUN, PH_J2, S_KROV, 1, 'UG-2026-012', 190000, 'draft', { job: 'Krovište, limarija i hidroizolacija', start: '2026-09-01', end: '2026-11-15' }),
+  contract(CT_ISKOP_J, P_JARUN, PH_J1, S_ISKOP, 1, 'UG-2025-004', 268000, 'completed', { job: 'Pripremni radovi, iskop i odvoz — Jarun', start: '2025-03-10', end: '2025-06-10' }),
+  contract(CT_ISKOP_M, P_MARJAN, PH_M1, S_ISKOP, 1, 'UG-2025-021', 168000, 'completed', { job: 'Pripremni radovi i iskop — Vila Marjan', start: '2025-09-10', end: '2025-12-15' }),
   contract(CT_TEHNO_M, P_MARJAN, PH_M2, S_TEHNO, 1, 'UG-2026-001', 980000, 'active', { job: 'Grubi građevinski radovi — Vila Marjan', start: '2026-01-10', end: '2026-11-30' }),
   contract(CT_KERAMIKA_M, P_MARJAN, PH_M3, S_KERAMIKA, 5, 'UG-2026-010', 260000, 'draft', { job: 'Keramičarski i kamenoklesarski radovi', start: '2026-10-01', end: '2027-02-15' }),
   contract(CT_TEHNO_T, P_TRESNJEVKA, PH_T1, S_TEHNO, 1, 'UG-2023-006', 1450000, 'completed', { job: 'Gradnja stambene zgrade — svi građevinski radovi', start: '2023-06-01', end: '2025-05-31' }),
-  contract(CT_ELEKTRO_T, P_TRESNJEVKA, PH_T1, S_ELEKTRO, 2, 'UG-2023-009', 310000, 'completed', { job: 'Elektroinstalacije', start: '2024-01-15', end: '2025-04-30' }),
+  contract(CT_ELEKTRO_T, P_TRESNJEVKA, PH_T2, S_ELEKTRO, 2, 'UG-2023-009', 310000, 'completed', { job: 'Elektroinstalacije', start: '2024-01-15', end: '2025-04-30' }),
 ])
 
-const M_TEHNO_J1 = uid(), M_TEHNO_J2 = uid(), M_TEHNO_J3 = uid(), M_TEHNO_J4 = uid(), M_TEHNO_J5 = uid()
-const M_ELEKTRO_J1 = uid(), M_ELEKTRO_J2 = uid(), M_TERMO_J1 = uid(), M_TEHNO_M1 = uid(), M_TEHNO_M2 = uid()
+const M_TEHNO_J1 = uid(), M_TEHNO_J2 = uid(), M_TEHNO_J3 = uid(), M_TEHNO_J4 = uid(), M_TEHNO_J5 = uid(), M_TEHNO_J6 = uid()
+const M_ELEKTRO_J1 = uid(), M_ELEKTRO_J2 = uid(), M_TERMO_J1 = uid(), M_TERMO_J2 = uid(), M_TEHNO_M1 = uid(), M_TEHNO_M2 = uid()
+const M_MOD_J1 = uid(), M_ISK_J1 = uid(), M_ISK_M1 = uid(), M_TEHNO_T1 = uid(), M_ELEKTRO_T1 = uid()
 await ins('subcontractor_milestones', [
+  // Tehnogradnja — Jarun (90% physically done: 4 paid situacije + 1 completed)
   { id: M_TEHNO_J1, contract_id: CT_TEHNO_J, milestone_number: 1, milestone_name: '1. privremena situacija — iskop i temelji', percentage: 15, status: 'paid', due_date: '2025-08-01', completed_date: '2025-07-25', paid_date: '2025-08-20' },
   { id: M_TEHNO_J2, contract_id: CT_TEHNO_J, milestone_number: 2, milestone_name: '2. privremena situacija — AB konstrukcija podrum i prizemlje', percentage: 20, status: 'paid', due_date: '2025-12-15', completed_date: '2025-12-05', paid_date: '2026-01-10' },
-  { id: M_TEHNO_J3, contract_id: CT_TEHNO_J, milestone_number: 3, milestone_name: '3. privremena situacija — AB konstrukcija Zgrada A', percentage: 20, status: 'completed', due_date: '2026-05-31', completed_date: '2026-06-10' },
-  { id: M_TEHNO_J4, contract_id: CT_TEHNO_J, milestone_number: 4, milestone_name: '4. privremena situacija — AB konstrukcija Zgrada B', percentage: 25, status: 'pending', due_date: '2026-09-15' },
-  { id: M_TEHNO_J5, contract_id: CT_TEHNO_J, milestone_number: 5, milestone_name: 'Okončana situacija', percentage: 20, status: 'pending', due_date: '2026-10-15' },
+  { id: M_TEHNO_J3, contract_id: CT_TEHNO_J, milestone_number: 3, milestone_name: '3. privremena situacija — AB konstrukcija Zgrada A', percentage: 20, status: 'paid', due_date: '2026-05-31', completed_date: '2026-06-10', paid_date: '2026-07-10' },
+  { id: M_TEHNO_J4, contract_id: CT_TEHNO_J, milestone_number: 4, milestone_name: '4. privremena situacija — AB konstrukcija Zgrada B do 3. kata', percentage: 25, status: 'paid', due_date: '2026-06-30', completed_date: '2026-06-28', paid_date: '2026-07-05' },
+  { id: M_TEHNO_J6, contract_id: CT_TEHNO_J, milestone_number: 5, milestone_name: '5. privremena situacija — fasada i krovna ploča Zgrada A', percentage: 10, status: 'completed', due_date: '2026-07-31', completed_date: '2026-07-12' },
+  { id: M_TEHNO_J5, contract_id: CT_TEHNO_J, milestone_number: 6, milestone_name: 'Okončana situacija', percentage: 10, status: 'pending', due_date: '2026-10-15' },
+  // Elektro-Instal — Jarun (55% done, both situacije paid)
   { id: M_ELEKTRO_J1, contract_id: CT_ELEKTRO_J, milestone_number: 1, milestone_name: '1. situacija — gruba instalacija Zgrada A', percentage: 30, status: 'paid', due_date: '2026-05-15', completed_date: '2026-05-10', paid_date: '2026-06-01' },
-  { id: M_ELEKTRO_J2, contract_id: CT_ELEKTRO_J, milestone_number: 2, milestone_name: '2. situacija — gruba instalacija Zgrada B', percentage: 25, status: 'completed', due_date: '2026-07-10', completed_date: '2026-07-08' },
-  { id: M_TERMO_J1, contract_id: CT_TERMO_J, milestone_number: 1, milestone_name: '1. situacija — razvod ViK podrum', percentage: 30, status: 'completed', due_date: '2026-06-15', completed_date: '2026-06-12' },
+  { id: M_ELEKTRO_J2, contract_id: CT_ELEKTRO_J, milestone_number: 2, milestone_name: '2. situacija — gruba instalacija Zgrada B', percentage: 25, status: 'paid', due_date: '2026-07-10', completed_date: '2026-07-08', paid_date: '2026-07-12' },
+  { id: uid(), contract_id: CT_ELEKTRO_J, milestone_number: 3, milestone_name: '3. situacija — završna montaža i ormari', percentage: 45, status: 'pending', due_date: '2026-11-30' },
+  // Termo-Vod — Jarun (50% done; 2. situacija completed ali NEPLAĆENA — dospjeli račun)
+  { id: M_TERMO_J1, contract_id: CT_TERMO_J, milestone_number: 1, milestone_name: '1. situacija — razvod ViK podrum', percentage: 30, status: 'paid', due_date: '2026-06-15', completed_date: '2026-06-12', paid_date: '2026-06-30' },
+  { id: M_TERMO_J2, contract_id: CT_TERMO_J, milestone_number: 2, milestone_name: '2. situacija — podno grijanje prizemlje Zgrada A', percentage: 20, status: 'completed', due_date: '2026-07-01', completed_date: '2026-06-28' },
+  { id: uid(), contract_id: CT_TERMO_J, milestone_number: 3, milestone_name: '3. situacija — dizalice topline i završna montaža', percentage: 50, status: 'pending', due_date: '2026-12-15' },
+  // Studio Modul — Jarun (65% done: projekt plaćen, nadzor u tijeku)
+  { id: M_MOD_J1, contract_id: CT_MODUL_J, milestone_number: 1, milestone_name: 'Glavni i izvedbeni projekt', percentage: 40, status: 'paid', due_date: '2025-05-31', completed_date: '2025-05-20', paid_date: '2025-06-15' },
+  { id: uid(), contract_id: CT_MODUL_J, milestone_number: 2, milestone_name: 'Projektantski nadzor — gruba gradnja', percentage: 25, status: 'completed', due_date: '2026-09-30', completed_date: '2026-07-01' },
+  { id: uid(), contract_id: CT_MODUL_J, milestone_number: 3, milestone_name: 'Nadzor do primopredaje', percentage: 35, status: 'pending', due_date: '2027-06-30' },
+  // Iskop-Trans — pripremne faze (100% done → završene faze nose punu ostvarenu vrijednost)
+  { id: M_ISK_J1, contract_id: CT_ISKOP_J, milestone_number: 1, milestone_name: 'Okončana situacija — pripremni radovi', percentage: 100, status: 'paid', due_date: '2025-06-15', completed_date: '2025-06-10', paid_date: '2025-07-05' },
+  { id: M_ISK_M1, contract_id: CT_ISKOP_M, milestone_number: 1, milestone_name: 'Okončana situacija — pripremni radovi', percentage: 100, status: 'paid', due_date: '2025-12-20', completed_date: '2025-12-15', paid_date: '2026-01-15' },
+  // Tehnogradnja — Marjan (55% done: 1. plaćena, 2. dovršena)
   { id: M_TEHNO_M1, contract_id: CT_TEHNO_M, milestone_number: 1, milestone_name: '1. privremena situacija — temelji', percentage: 30, status: 'paid', due_date: '2026-04-30', completed_date: '2026-04-22', paid_date: '2026-05-15' },
-  { id: M_TEHNO_M2, contract_id: CT_TEHNO_M, milestone_number: 2, milestone_name: '2. privremena situacija — AB konstrukcija', percentage: 30, status: 'pending', due_date: '2026-08-31' },
+  { id: M_TEHNO_M2, contract_id: CT_TEHNO_M, milestone_number: 2, milestone_name: '2. privremena situacija — AB konstrukcija prizemlje', percentage: 25, status: 'completed', due_date: '2026-07-15', completed_date: '2026-07-10' },
+  { id: uid(), contract_id: CT_TEHNO_M, milestone_number: 3, milestone_name: 'Okončana situacija', percentage: 45, status: 'pending', due_date: '2026-11-30' },
+  // Trešnjevka — dovršen projekt, sve situacije plaćene
+  { id: M_TEHNO_T1, contract_id: CT_TEHNO_T, milestone_number: 1, milestone_name: 'Situacije 1–6 — gradnja (zbirno)', percentage: 80, status: 'paid', due_date: '2025-03-31', completed_date: '2025-03-20', paid_date: '2025-04-20' },
+  { id: uid(), contract_id: CT_TEHNO_T, milestone_number: 2, milestone_name: 'Okončana situacija', percentage: 20, status: 'paid', due_date: '2025-06-15', completed_date: '2025-05-31', paid_date: '2025-06-15' },
+  { id: M_ELEKTRO_T1, contract_id: CT_ELEKTRO_T, milestone_number: 1, milestone_name: 'Okončana situacija — elektroinstalacije', percentage: 100, status: 'paid', due_date: '2025-04-30', completed_date: '2025-04-25', paid_date: '2025-05-20' },
 ])
 
 const wl = (date, sub, ctr, phase, project, desc, status, extra = {}) => ({
@@ -560,7 +590,14 @@ inv('I_TG_J2', { invoice_number: 'TG-2025-201', invoice_type: 'INCOMING_SUPPLIER
 inv('I_TG_J3', { invoice_number: 'TG-2026-097', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Građevinski radovi', company_id: C_JARUN, supplier_id: S_TEHNO, contract_id: CT_TEHNO_J, milestone_id: M_TEHNO_J3, project_id: P_JARUN, base_amount_1: 448000, issue_date: '2026-06-12', due_date: '2026-07-12', description: '3. privremena situacija — AB konstrukcija Zgrada A', iban: 'HR9123600001500011111' })
 inv('I_EL_J1', { invoice_number: 'EI-2026-054', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Elektroinstalacije', company_id: C_JARUN, supplier_id: S_ELEKTRO, contract_id: CT_ELEKTRO_J, milestone_id: M_ELEKTRO_J1, project_id: P_JARUN, base_amount_1: 156000, issue_date: '2026-05-12', due_date: '2026-06-11', description: '1. situacija — gruba instalacija Zgrada A' })
 inv('I_EL_J2', { invoice_number: 'EI-2026-078', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Elektroinstalacije', company_id: C_JARUN, supplier_id: S_ELEKTRO, contract_id: CT_ELEKTRO_J, milestone_id: M_ELEKTRO_J2, project_id: P_JARUN, base_amount_1: 130000, issue_date: '2026-07-09', due_date: '2026-07-25', description: '2. situacija — gruba instalacija Zgrada B' })
-inv('I_TV_J1', { invoice_number: 'TV-2026-041', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Instalacije ViK', company_id: C_JARUN, supplier_id: S_TERMO, contract_id: CT_TERMO_J, milestone_id: M_TERMO_J1, project_id: P_JARUN, base_amount_1: 183000, issue_date: '2026-06-15', due_date: '2026-06-20', description: '1. situacija — razvod ViK podrum (DOSPJELO)' })
+inv('I_TV_J1', { invoice_number: 'TV-2026-041', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Instalacije ViK', company_id: C_JARUN, supplier_id: S_TERMO, contract_id: CT_TERMO_J, milestone_id: M_TERMO_J1, project_id: P_JARUN, base_amount_1: 183000, issue_date: '2026-06-15', due_date: '2026-06-20', description: '1. situacija — razvod ViK podrum' })
+inv('I_TV_J2', { invoice_number: 'TV-2026-058', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Instalacije ViK', company_id: C_JARUN, supplier_id: S_TERMO, contract_id: CT_TERMO_J, milestone_id: M_TERMO_J2, project_id: P_JARUN, base_amount_1: 122000, issue_date: '2026-06-28', due_date: '2026-07-01', description: '2. situacija — podno grijanje prizemlje (DOSPJELO)' })
+inv('I_TG_J4', { invoice_number: 'TG-2026-118', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Građevinski radovi', company_id: C_JARUN, supplier_id: S_TEHNO, contract_id: CT_TEHNO_J, milestone_id: M_TEHNO_J4, project_id: P_JARUN, base_amount_1: 560000, issue_date: '2026-06-30', due_date: '2026-07-30', description: '4. privremena situacija — AB konstrukcija Zgrada B do 3. kata' })
+inv('I_TG_J5', { invoice_number: 'TG-2026-131', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Građevinski radovi', company_id: C_JARUN, supplier_id: S_TEHNO, contract_id: CT_TEHNO_J, milestone_id: M_TEHNO_J6, project_id: P_JARUN, base_amount_1: 224000, issue_date: '2026-07-13', due_date: '2026-08-12', description: '5. privremena situacija — fasada i krovna ploča Zgrada A' })
+inv('I_MOD_J0', { invoice_number: 'MOD-2025-11', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Projektiranje i nadzor', company_id: C_JARUN, supplier_id: S_MODUL, contract_id: CT_MODUL_J, milestone_id: M_MOD_J1, project_id: P_JARUN, base_amount_1: 112000, issue_date: '2025-05-25', due_date: '2025-06-24', description: 'Glavni i izvedbeni projekt — Rezidencija Jarun' })
+inv('I_ISK_J', { invoice_number: 'IT-2025-044', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Građevinski radovi', company_id: C_JARUN, supplier_id: S_ISKOP, contract_id: CT_ISKOP_J, milestone_id: M_ISK_J1, project_id: P_JARUN, base_amount_1: 268000, issue_date: '2025-06-12', due_date: '2025-07-12', description: 'Okončana situacija — pripremni radovi i iskop' })
+inv('I_ISK_M', { invoice_number: 'IT-2025-098', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Građevinski radovi', company_id: C_MARJAN, supplier_id: S_ISKOP, contract_id: CT_ISKOP_M, milestone_id: M_ISK_M1, project_id: P_MARJAN, base_amount_1: 168000, issue_date: '2025-12-16', due_date: '2026-01-15', description: 'Okončana situacija — pripremni radovi Vila Marjan' })
+inv('I_TG_M3', { invoice_number: 'TG-2026-115', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Građevinski radovi', company_id: C_MARJAN, supplier_id: S_TEHNO, contract_id: CT_TEHNO_M, project_id: P_MARJAN, base_amount_1: 260000, issue_date: '2026-06-25', due_date: '2026-07-25', description: 'Avansni račun — materijal za AB konstrukciju' })
 inv('I_MOD_J', { invoice_number: 'MOD-2026-07', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Projektiranje i nadzor', company_id: C_JARUN, supplier_id: S_MODUL, contract_id: CT_MODUL_J, project_id: P_JARUN, base_amount_1: 14000, issue_date: '2026-06-30', due_date: '2026-07-05', description: 'Projektantski nadzor — lipanj 2026.' })
 // — Multi-VAT showcase invoice (25% + 13% + 5% on one invoice)
 inv('I_KER_M', { invoice_number: 'KP-2026-112', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Materijal', company_id: C_MARJAN, supplier_id: S_KERAMIKA, project_id: P_MARJAN, base_amount_1: 42000, base_amount_2: 18000, base_amount_4: 6000, issue_date: '2026-06-25', due_date: '2026-07-25', description: 'Keramika i kamen — kombinirane stope PDV-a (25% / 13% / 5%)' })
@@ -569,6 +606,8 @@ inv('I_TG_M1', { invoice_number: 'TG-2026-044', invoice_type: 'INCOMING_SUPPLIER
 inv('I_TG_M2', { invoice_number: 'TG-2026-101', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Građevinski radovi', company_id: C_MARJAN, supplier_id: S_TEHNO, contract_id: CT_TEHNO_M, project_id: P_MARJAN, base_amount_1: 196000, issue_date: '2026-06-20', due_date: '2026-07-20', description: 'Dodatni radovi — potporni zid (djelomično kompenzacija)' })
 // — Trešnjevka historical
 inv('I_TG_T', { invoice_number: 'TG-2025-089', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Građevinski radovi', company_id: C_PARENT, supplier_id: S_TEHNO, contract_id: CT_TEHNO_T, project_id: P_TRESNJEVKA, base_amount_1: 290000, issue_date: '2025-05-20', due_date: '2025-06-19', description: 'Okončana situacija — Trešnjevka' })
+inv('I_TG_T2', { invoice_number: 'TG-2025-030', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Građevinski radovi', company_id: C_PARENT, supplier_id: S_TEHNO, contract_id: CT_TEHNO_T, milestone_id: M_TEHNO_T1, project_id: P_TRESNJEVKA, base_amount_1: 1160000, issue_date: '2025-03-25', due_date: '2025-04-24', description: 'Situacije 1–6 zbirno — gradnja Trešnjevka' })
+inv('I_EL_T', { invoice_number: 'EI-2025-021', invoice_type: 'INCOMING_SUPPLIER', invoice_category: 'SUBCONTRACTOR', category: 'Elektroinstalacije', company_id: C_PARENT, supplier_id: S_ELEKTRO, contract_id: CT_ELEKTRO_T, milestone_id: M_ELEKTRO_T1, project_id: P_TRESNJEVKA, base_amount_1: 310000, issue_date: '2025-04-28', due_date: '2025-05-28', description: 'Okončana situacija — elektroinstalacije Trešnjevka' })
 // — Office invoices (HEP monthly Jan–Jun for dashboard trends, HT, office supplies)
 const hepMonths = ['01', '02', '03', '04', '05', '06']
 for (const m of hepMonths) {
@@ -602,6 +641,16 @@ pay('I_TG_J1', 420000, '2025-08-20', { company_bank_account_id: ACC_JARUN, descr
 pay('I_TG_J2', 560000, '2026-01-10', { company_bank_account_id: ACC_JARUN, description: 'Plaćanje 2. situacije' })
 // 3. situacija — partially paid, and paid FROM THE CREDIT LINE (drawdown showcase)
 pay('I_TG_J3', 300000, '2026-07-02', { payment_source_type: 'credit', credit_id: K_JARUN, credit_allocation_id: AL_JARUN_PROJ, description: 'Djelomično — povlačenje iz kredita ZABA' })
+pay('I_TG_J3', 260000, '2026-07-10', { payment_source_type: 'credit', credit_id: K_JARUN, credit_allocation_id: AL_JARUN_PROJ, description: 'Ostatak 3. situacije — povlačenje iz kredita ZABA' })
+pay('I_TG_J4', 700000, '2026-07-05', { payment_source_type: 'credit', credit_id: K_JARUN, credit_allocation_id: AL_JARUN_PROJ, description: '4. situacija — povlačenje iz kredita ZABA' })
+pay('I_EL_J2', 162500, '2026-07-12', { company_bank_account_id: ACC_JARUN })
+pay('I_TV_J1', 228750, '2026-06-30', { company_bank_account_id: ACC_JARUN })
+pay('I_MOD_J0', 140000, '2025-06-15', { company_bank_account_id: ACC_JARUN, description: 'Projekt — Studio Modul' })
+pay('I_ISK_J', 335000, '2025-07-05', { company_bank_account_id: ACC_JARUN })
+pay('I_ISK_M', 210000, '2026-01-15', { company_bank_account_id: ACC_MARJAN })
+pay('I_TG_M3', 325000, '2026-06-30', { company_bank_account_id: ACC_MARJAN, description: 'Avans za materijal' })
+pay('I_TG_T2', 1450000, '2025-04-20', { payment_source_type: 'credit', credit_id: K_TRESNJEVKA, description: 'Situacije 1–6 — iz kredita Erste' })
+pay('I_EL_T', 387500, '2025-05-20', { payment_source_type: 'credit', credit_id: K_TRESNJEVKA, description: 'Elektroinstalacije — iz kredita Erste' })
 pay('I_EL_J1', 195000, '2026-06-01', { company_bank_account_id: ACC_JARUN })
 pay('I_MOD_J', 0.0 + 17500, '2026-07-06', { company_bank_account_id: ACC_JARUN, description: 'Nadzor — lipanj' })
 // Multi-VAT invoice — paid
@@ -610,6 +659,7 @@ pay('I_KER_M', 79140, '2026-07-03', { company_bank_account_id: ACC_MARJAN })
 pay('I_TG_M1', 367500, '2026-05-15', { is_cesija: true, cesija_company_id: C_PARENT, cesija_bank_account_id: ACC_PARENT_ZABA, description: 'Cesija — Adriatic Development plaća za AD Projekt Marjan' })
 // KOMPENZACIJA showcase — partial offset
 pay('I_TG_M2', 100000, '2026-07-08', { payment_source_type: 'kompenzacija', description: 'Kompenzacija — prijeboj po izjavi KOMP-2026-07' })
+pay('I_TG_M2', 145000, '2026-07-12', { company_bank_account_id: ACC_MARJAN, description: 'Ostatak nakon kompenzacije' })
 // Trešnjevka historical
 pay('I_TG_T', 362500, '2025-06-15', { company_bank_account_id: ACC_PARENT_ZABA })
 // Office invoices — HEP paid monthly (one CASH for variety), HT paid
@@ -635,27 +685,28 @@ await ins('monthly_budgets', [1, 2, 3, 4, 5, 6, 7, 8].map((m) => ({
 
 // ---------- 10. TASKS ----------
 
+// Task user columns hold AUTH user ids (schema shared with the mobile task app).
 const task = (title, o = {}) => ({
   id: uid(), title, description: o.description ?? '', description_format: 'plain',
-  status: o.status ?? 'todo', created_by: o.by ?? director.id, project_id: o.project ?? null,
-  due_date: o.due ?? null, is_private: o.private ?? false,
-  completed_at: o.status === 'done' ? '2026-07-10T10:00:00Z' : null,
+  completed: o.done ?? false, created_by: o.by ?? director.auth_user_id, project_id: o.project ?? null,
+  deadline: o.due ?? null, is_private: o.private ?? false,
+  completed_at: o.done ? '2026-07-10T10:00:00Z' : null,
 })
 const taskRows = [
   task('Pripremiti dokumentaciju za tehnički pregled — Zgrada A', { project: P_JARUN, due: '2026-08-20', description: 'Atesti, izjave izvođača i geodetski snimak izvedenog stanja.' }),
-  task('Ovjeriti 3. situaciju Tehnogradnje kod nadzora', { project: P_JARUN, due: '2026-07-18', by: (supervisionUsers[0] ?? director).id }),
-  task('Poslati ponude za stanove B-202 i B-301 rezerviranim kupcima', { project: P_JARUN, due: '2026-07-16', by: salesUser.id }),
+  task('Ovjeriti 3. situaciju Tehnogradnje kod nadzora', { project: P_JARUN, due: '2026-07-18', by: (supervisionUsers[0] ?? director).auth_user_id }),
+  task('Poslati ponude za stanove B-202 i B-301 rezerviranim kupcima', { project: P_JARUN, due: '2026-07-16', by: salesUser.auth_user_id }),
   task('Dogovoriti termin s HBOR-om za Črnomerec', { project: P_CRNOMEREC, due: '2026-07-25' }),
   task('Produžiti policu osiguranja gradilišta Marjan', { project: P_MARJAN, due: '2026-07-31' }),
-  task('Objaviti oglase za penthouse stanove A-601 i A-602', { project: P_JARUN, status: 'done', by: salesUser.id }),
-  task('Kontrola troškova — usporedba TIC vs. realizacija za Q2', { project: P_JARUN, status: 'done' }),
+  task('Objaviti oglase za penthouse stanove A-601 i A-602', { project: P_JARUN, done: true, by: salesUser.auth_user_id }),
+  task('Kontrola troškova — usporedba TIC vs. realizacija za Q2', { project: P_JARUN, done: true }),
   task('Pripremiti materijale za sastanak uprave', { due: '2026-07-15', private: true }),
 ]
 await ins('tasks', taskRows)
 await ins('task_assignees', [
-  { id: uid(), task_id: taskRows[1].id, user_id: (supervisionUsers[0] ?? director).id },
-  { id: uid(), task_id: taskRows[2].id, user_id: salesUser.id },
-  { id: uid(), task_id: taskRows[0].id, user_id: director.id },
+  { id: uid(), task_id: taskRows[1].id, assignee_id: (supervisionUsers[0] ?? director).auth_user_id },
+  { id: uid(), task_id: taskRows[2].id, assignee_id: salesUser.auth_user_id },
+  { id: uid(), task_id: taskRows[0].id, assignee_id: director.auth_user_id },
 ])
 
 // ---------- summary ----------

@@ -175,7 +175,7 @@ checkbox click on own/assigned task → toggles open ↔ done; row moves to bott
 checkbox on someone else's task is disabled with a "read only" tooltip                      ( )
 checking a task sets completed_at; unchecking clears it; task.status_change logged          ( )
 seed 150 tasks → virtualization kicks in (@tanstack/react-virtual); scrolling stays smooth  ( )
-TaskRow left accent turns red when due_date < now AND task is open (overdue indicator)      ( )
+TaskRow left accent turns red when deadline < now AND task is open (overdue indicator)      ( )
 TaskRow shows attachment icon+count (if any), unread dot (if any); no project tag (header carries it) ( )
 avatars: 3 overlapping circles + "+N" chip when > 3 assignees                               ( )
 ```
@@ -244,9 +244,9 @@ search input narrows tasks by title + description as well                       
 ```
 task pills render BELOW the up-to-3 event segments in each day cell                         ( )
 task pills are thinner (h-4) and use Square/CheckSquare icon instead of left accent bar     ( )
-overdue task → red left accent; status=done → line-through + dim                            ( )
+overdue task → red left accent; completed → line-through + dim                              ( )
 cell with 4+ events AND 4+ tasks → "+N more" count sums the overflows                       ( )
-click the checkbox icon → status flips todo ↔ done (optimistic, refreshes from server)      ( )
+click the checkbox icon → completed flips on ↔ off (optimistic, refreshes from server)      ( )
 click the title → TaskDetail drawer opens (NOT the event modal)                             ( )
 ```
 

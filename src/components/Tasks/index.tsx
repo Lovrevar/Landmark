@@ -67,9 +67,9 @@ function savePrefs(userId: string, prefs: ViewPrefs) {
 }
 
 function dueDateAsDate(task: Task): Date | null {
-  if (!task.due_date) return null
+  if (!task.deadline) return null
   const time = task.due_time ? task.due_time.slice(0, 5) : '23:59'
-  return new Date(`${task.due_date}T${time}`)
+  return new Date(`${task.deadline}T${time}`)
 }
 
 interface Group {
@@ -89,7 +89,7 @@ const TasksPage: React.FC = () => {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { tasks, loading, create, toggleStatus, remove, refresh } = useTasks()
-  useTasksRealtime(user?.id, refresh)
+  useTasksRealtime(user?.auth_user_id, refresh)
 
   const [tab, setTab] = useState<TabKey>('all')
   const [search, setSearch] = useState('')
@@ -133,7 +133,8 @@ const TasksPage: React.FC = () => {
   const isMine = useCallback(
     (tk: Task) =>
       !!user &&
-      (tk.created_by === user.id || (tk.assignees || []).some(a => a.user_id === user.id)),
+      (tk.created_by === user.auth_user_id ||
+        (tk.assignees || []).some(a => a.assignee_id === user.auth_user_id)),
     [user],
   )
 
@@ -145,12 +146,12 @@ const TasksPage: React.FC = () => {
     if (!user) return { all: allList, assigned: assignedList, created: createdList, privateTasks: privateList }
     tasks.forEach(tk => {
       if (tk.is_private) {
-        if (tk.created_by === user.id) privateList.push(tk)
+        if (tk.created_by === user.auth_user_id) privateList.push(tk)
         return
       }
       allList.push(tk)
-      if (tk.created_by === user.id) createdList.push(tk)
-      if (tk.assignees?.some(a => a.user_id === user.id)) assignedList.push(tk)
+      if (tk.created_by === user.auth_user_id) createdList.push(tk)
+      if (tk.assignees?.some(a => a.assignee_id === user.auth_user_id)) assignedList.push(tk)
     })
     return { all: allList, assigned: assignedList, created: createdList, privateTasks: privateList }
   }, [tasks, user])
@@ -169,7 +170,7 @@ const TasksPage: React.FC = () => {
     const now = new Date()
 
     const visible = baseList.filter(tk => {
-      if (!prefs.showCompleted && tk.status === 'done') return false
+      if (!prefs.showCompleted && tk.completed) return false
       if (q) {
         const haystack = `${tk.title} ${tk.description}`.toLowerCase()
         if (!haystack.includes(q)) return false
@@ -186,8 +187,8 @@ const TasksPage: React.FC = () => {
     })
 
     const sortTasks = (list: Task[]): Task[] => {
-      const open = list.filter(tk => tk.status !== 'done')
-      const done = list.filter(tk => tk.status === 'done')
+      const open = list.filter(tk => !tk.completed)
+      const done = list.filter(tk => tk.completed)
       open.sort((a, b) => {
         const ad = dueDateAsDate(a)?.getTime() ?? Number.POSITIVE_INFINITY
         const bd = dueDateAsDate(b)?.getTime() ?? Number.POSITIVE_INFINITY
@@ -203,7 +204,7 @@ const TasksPage: React.FC = () => {
       const projectId = key === NO_PROJECT_KEY ? null : key
       const sorted = sortTasks(items)
       const overdueCount = sorted.filter(tk => {
-        if (tk.status === 'done') return false
+        if (tk.completed) return false
         const due = dueDateAsDate(tk)
         return !!due && due.getTime() < now.getTime()
       }).length
@@ -281,7 +282,7 @@ const TasksPage: React.FC = () => {
       await create({
         title,
         description: '',
-        due_date: null,
+        deadline: null,
         is_private: tab === 'private',
         project_id: group.projectId,
         assignee_ids: [],
@@ -349,7 +350,7 @@ const TasksPage: React.FC = () => {
   const renderTaskRow = (task: Task) => (
     <TaskRow
       task={task}
-      currentUserId={user?.id || ''}
+      currentUserId={user?.auth_user_id || ''}
       canEdit={isMine(task)}
       onToggleDone={toggleStatus}
       onDelete={tk => setPendingDelete(tk)}

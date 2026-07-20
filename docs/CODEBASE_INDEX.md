@@ -21,7 +21,7 @@
 | **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 10-tool catalog, fork-and-regenerate edits |
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
 | **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
-| **Tasks** | [TASKS.md](./TASKS.md) | Shared org-wide task list grouped by project; binary open/done checkbox, private tasks, attachments, @mention comments |
+| **Tasks** | [TASKS.md](./TASKS.md) | Shared org-wide task list grouped by project; binary open/done checkbox, private tasks, attachments, @mention comments. Schema is shared with a standalone mobile task app: task tables use auth user ids + a `profiles` mirror table (`deadline`/`completed` columns) |
 | **Documents / Email Sorting** | [EMAIL_DOCUMENT_SORTING.md](./EMAIL_DOCUMENT_SORTING.md) | Documents browser (category tree, list, pickers) + auto-classify emailed documents via Make.com + Claude |
 
 ## Reference / cross-cutting docs

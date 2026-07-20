@@ -38,7 +38,7 @@ export function useTaskComments(taskId: string | null) {
     if (!user || !taskId || !draft.trim() || sending) return
     setSending(true)
     try {
-      await createTaskComment(taskId, user.id, draft)
+      await createTaskComment(taskId, user, draft)
       setDraft('')
       await load()
     } finally {

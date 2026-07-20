@@ -15,9 +15,9 @@ interface Props {
 }
 
 function dueDateAsDate(task: Task): Date | null {
-  if (!task.due_date) return null
+  if (!task.deadline) return null
   const time = task.due_time ? task.due_time.slice(0, 5) : '23:59'
-  return new Date(`${task.due_date}T${time}`)
+  return new Date(`${task.deadline}T${time}`)
 }
 
 const TaskRow: React.FC<Props> = ({
@@ -29,7 +29,7 @@ const TaskRow: React.FC<Props> = ({
   onClick,
 }) => {
   const { t } = useTranslation()
-  const done = task.status === 'done'
+  const done = task.completed
   const canDelete = canEdit && task.created_by === currentUserId
 
   const due = useMemo(() => dueDateAsDate(task), [task])
@@ -41,13 +41,13 @@ const TaskRow: React.FC<Props> = ({
   const assigneeUsers = useMemo(
     () =>
       (task.assignees || [])
-        .map(a => ({ id: a.user_id, username: a.user?.username }))
+        .map(a => ({ id: a.assignee_id, username: a.user?.username }))
         .filter(u => !!u.username),
     [task.assignees],
   )
 
   const hasUnread = !!(task.assignees || []).find(
-    a => a.user_id === currentUserId && a.acknowledged_at == null,
+    a => a.assignee_id === currentUserId && a.acknowledged_at == null,
   )
   const attachmentCount = task.attachments?.length || 0
   const commentCount = task.comment_count || 0

@@ -110,14 +110,16 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
 
   if (!task || !user) return null
 
-  const canEdit = task.created_by === user.id || (task.assignees || []).some(a => a.user_id === user.id)
-  const canDelete = task.created_by === user.id
-  const done = task.status === 'done'
+  const canEdit =
+    task.created_by === user.auth_user_id ||
+    (task.assignees || []).some(a => a.assignee_id === user.auth_user_id)
+  const canDelete = task.created_by === user.auth_user_id
+  const done = task.completed
 
   const saveField = async (patch: UpdateTaskInput) => {
     setSaving(true)
     try {
-      await updateTask(task.id, patch, user.id, user.role, task.title)
+      await updateTask(task.id, patch, user, task.title)
       onChanged()
     } finally {
       setSaving(false)
@@ -147,7 +149,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   }
 
   const toggleDone = async () => {
-    await saveField({ status: done ? 'todo' : 'done' })
+    await saveField({ completed: !done })
   }
 
   const saveProject = async (pid: string | null) => {
@@ -156,8 +158,8 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   }
 
   const saveDueDate = async (value: string) => {
-    if (value === (task.due_date || '')) return
-    await saveField({ due_date: value || null, due_time: null })
+    if (value === (task.deadline || '')) return
+    await saveField({ deadline: value || null, due_time: null })
   }
 
   const saveIsPrivate = async (val: boolean) => {
@@ -166,13 +168,13 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   }
 
   // RLS: only the task creator may insert/delete task_assignees rows
-  const canManageAssignees = task.created_by === user.id
-  const currentAssigneeIds = (task.assignees || []).map(a => a.user_id)
+  const canManageAssignees = task.created_by === user.auth_user_id
+  const currentAssigneeIds = (task.assignees || []).map(a => a.assignee_id)
 
   const changeAssignees = async (ids: string[]) => {
     setSaving(true)
     try {
-      await setAssignees(task.id, ids, user.id, user.role)
+      await setAssignees(task.id, ids, user)
       onChanged()
     } finally {
       setSaving(false)
@@ -191,7 +193,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
 
   const assigneeCandidates = users.filter(
     u =>
-      u.id !== user.id &&
+      u.id !== user.auth_user_id &&
       !currentAssigneeIds.includes(u.id) &&
       (!assigneeQuery.trim() ||
         u.username.toLowerCase().includes(assigneeQuery.trim().toLowerCase())),
@@ -226,7 +228,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
     })
 
   const assigneeUsers = (task.assignees || [])
-    .map(a => ({ id: a.user_id, username: a.user?.username }))
+    .map(a => ({ id: a.assignee_id, username: a.user?.username }))
     .filter(u => !!u.username)
 
   const DoneIcon = done ? CheckSquare : Square
@@ -333,7 +335,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
             <Field icon={<CalendarIcon className="w-4 h-4" />} label={t('tasks.modal.due_date_label')}>
               <input
                 type="date"
-                value={task.due_date || ''}
+                value={task.deadline || ''}
                 onChange={e => saveDueDate(e.target.value)}
                 disabled={!canEdit}
                 className="w-full px-2 py-1.5 text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60"
@@ -510,9 +512,11 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
             <AttachmentList
               taskId={task.id}
               attachments={attachments}
-              userId={user.id}
-              userRole={user.role}
-              canDelete={a => canEdit && (a.uploaded_by === user.id || task.created_by === user.id)}
+              actor={user}
+              canDelete={a =>
+                canEdit &&
+                (a.uploaded_by === user.auth_user_id || task.created_by === user.auth_user_id)
+              }
               onChange={() => loadAttachments(task.id)}
               disabled={!canEdit}
             />
@@ -533,7 +537,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                 </div>
               ) : (
                 comments.map(c => {
-                  const mine = c.user_id === user.id
+                  const mine = c.user_id === user.auth_user_id
                   const parts = renderCommentWithMentions(c.comment)
                   return (
                     <div key={c.id} className={`flex gap-2 ${mine ? 'flex-row-reverse' : ''}`}>

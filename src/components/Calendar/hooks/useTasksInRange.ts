@@ -45,7 +45,7 @@ export function useTasksInRange({
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchTasksInRange(user.id, fromIso, toIso)
+      const data = await fetchTasksInRange(user.auth_user_id, fromIso, toIso)
       if (id === reqIdRef.current) setRawTasks(data)
     } catch (e) {
       if (id === reqIdRef.current) setError(e as Error)
@@ -88,7 +88,7 @@ export function useTasksInRange({
     const filtered = rawTasks.filter(t => {
       if (activeProjectId && t.project_id !== activeProjectId) return false
       if (activeParticipantIds.length > 0) {
-        const ids = new Set([t.created_by, ...(t.assignees?.map(a => a.user_id) || [])])
+        const ids = new Set([t.created_by, ...(t.assignees?.map(a => a.assignee_id) || [])])
         const match = activeParticipantIds.some(id => ids.has(id))
         if (!match) return false
       }

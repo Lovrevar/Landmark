@@ -12,33 +12,47 @@ Removed in the rework: the `in_progress` ("u tijeku") status, reminders (never d
 
 ## Data Layer
 
-Four tables (schema baseline + `20260706120000_simplify_tasks.sql`):
-- `tasks` — carries `project_id`, `description_format ('markdown'|'plain')`; status is `todo` | `done`; `completed_at` flips when status becomes `done`. New descriptions are always saved as `plain`; legacy `markdown` rows still render through `MarkdownView`. `due_time` remains in the schema for legacy Calendar rendering but has no UI
-- `task_assignees` — junction with `acknowledged_at` (badge clears on visit)
-- `task_comments` — thread per task; `user_id` FKs to `public.users`; bodies may embed `@[username](uuid)` mention tokens
+Four tables (schema baseline + `20260706120000_simplify_tasks.sql` + `20260720120000_tasks_mobile_compat.sql`):
+
+> ⚠️ **Shared schema with the standalone mobile task app.** All user columns
+> in the task tables (`tasks.created_by`, `task_assignees.assignee_id`,
+> `task_comments.user_id`, `task_attachments.uploaded_by`) hold **auth user
+> ids** and FK to `public.profiles` (a mirror of `public.users` keyed by
+> `auth_user_id`, kept in sync by trigger; Director maps to `role='admin'`).
+> The web app translates via `user.auth_user_id` from AuthContext; the
+> activity log still uses `public.users.id` (see `TaskActor` in
+> [types/tasks.ts](../src/types/tasks.ts)). Column names follow the mobile
+> app: `deadline` (not `due_date`) and `completed` boolean (not `status`).
+
+- `tasks` — carries `project_id`, `description_format ('markdown'|'plain')`; `completed` boolean; `completed_at` flips with it. `deadline` is the due date. New descriptions are always saved as `plain`; legacy `markdown` rows still render through `MarkdownView`. `due_time` remains in the schema for legacy Calendar rendering but has no UI (and is invisible to the mobile app)
+- `task_assignees` — junction (`assignee_id`, composite PK `(task_id, assignee_id)` so PostgREST supports the mobile app's flat `profiles!task_assignees` embed; surrogate `id` kept as UNIQUE for web delete-by-id) with `acknowledged_at` (badge clears on visit). The mobile app creates tasks via the `create_task_with_assignees(...)` RPC, which exists here too (SECURITY INVOKER; requires ≥1 assignee — the web create path does not use it)
+- `task_comments` — thread per task; bodies may embed `@[username](uuid)` mention tokens
 - `task_attachments` — storage metadata for files in the private `task-attachments` Storage bucket (25 MB/file, 10/task)
 
 ### Visibility & edit rights (RLS)
 
-- **SELECT**: all authenticated users can view non-private tasks; private tasks only creator/assignees. Child tables (`task_assignees`, `task_comments`, `task_attachments`, and the storage read policy) follow the parent task via the `public.can_view_task(task_id, user_id)` SECURITY DEFINER helper
-- **UPDATE**: creator or assignee only (the UI mirrors this as `canEdit` — others get a disabled checkbox and a read-only detail drawer)
-- **INSERT/DELETE** on tasks: creator only; comment/attachment INSERT: assignee or creator only
+- **SELECT**: all authenticated users can view non-private tasks; private tasks only creator/assignees. Child tables (`task_assignees`, `task_comments`, `task_attachments`, and the storage read policy) follow the parent task via the `public.can_view_task(task_id, user_id)` SECURITY DEFINER helper. Policies compare `auth.uid()` directly (no `users` subquery)
+- **UPDATE**: creator, assignee, or admin (`public.is_admin()`, i.e. Director) — the UI mirrors creator/assignee as `canEdit`; admin rights exist for the mobile app
+- **INSERT/DELETE** on tasks: creator (delete also admin); comment/attachment INSERT: assignee or creator only
 
 Every mutation is logged through `logActivity()` with `entity='task'` and action `task.<verb>` (create / update / status_change / delete / assign / unassign / comment / attachment_add / attachment_remove).
 
 ### services/tasksService.ts
-- `fetchTaskUsers()` — user list for pickers
+
+Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext user object) so they can write auth ids into task tables while logging with the app user id.
+
+- `fetchTaskUsers()` — user list for pickers; `TaskUser.id` is the **auth user id** (`id:auth_user_id` alias, rows without an auth account filtered out)
 - `fetchProjectOptions()` — project list for the project linkage field
 - `fetchAllTasks()` — single select; RLS scopes visibility (all public + own private tasks); hydrated with creator, assignees, attachments, comment count
-- `fetchTasksInRange(userId, fromIso, toIso)` — created + assigned tasks with `due_date` inside the window; used by the Calendar overlay (intentionally personal, not org-wide)
-- `createTask(input, userId, userRole)` — inserts a task (`status: 'todo'`, `description_format: 'plain'`) + assignee rows (or a single self-row for private); logs `task.create`
-- `updateTask(taskId, updates, userId, userRole, title?)` — patches a task; logs `task.update` with `changed_fields`
-- `updateTaskStatus(taskId, status, userId?, userRole?, title?)` — status-only patch; writes `completed_at`; logs `task.status_change`
-- `deleteTask(taskId, userId?, userRole?, title?)` — cascade remove; logs `task.delete` (high severity)
-- `setAssignees(taskId, ids, userId, userRole)` — diff-based add/remove; logs `task.assign` / `task.unassign`
-- `fetchTaskComments(taskId)` / `createTaskComment` / `deleteTaskComment` — thread CRUD; `createTaskComment` logs `task.comment`
-- `listTaskAttachments` / `uploadTaskAttachment` / `deleteTaskAttachment` / `getAttachmentSignedUrl` — attachment CRUD with 25 MB + 10-per-task enforcement; logs `task.attachment_add` / `task.attachment_remove`. Bucket constant: `TASK_ATTACHMENTS_BUCKET = 'task-attachments'`
-- `getUnacknowledgedTaskCount(userId)` / `acknowledgeAllTasks(userId)` — global badge helpers
+- `fetchTasksInRange(authUserId, fromIso, toIso)` — created + assigned tasks with `deadline` inside the window; used by the Calendar overlay (intentionally personal, not org-wide)
+- `createTask(input, actor)` — inserts a task (`completed: false`, `description_format: 'plain'`) + assignee rows (or a single self-row for private); logs `task.create`
+- `updateTask(taskId, updates, actor, title?)` — patches a task (`completed` also flips `completed_at`); logs `task.update` with `changed_fields`
+- `updateTaskCompleted(taskId, completed, actor?, title?)` — completion-only patch; writes `completed_at`; logs `task.status_change`
+- `deleteTask(taskId, actor?, title?)` — cascade remove; logs `task.delete` (high severity)
+- `setAssignees(taskId, ids, actor)` — diff-based add/remove (ids are auth ids); logs `task.assign` / `task.unassign`
+- `fetchTaskComments(taskId)` / `createTaskComment(taskId, actor, comment)` / `deleteTaskComment` — thread CRUD; `createTaskComment` logs `task.comment`
+- `listTaskAttachments` / `uploadTaskAttachment(taskId, file, actor)` / `deleteTaskAttachment(id, actor)` / `getAttachmentSignedUrl` — attachment CRUD with 25 MB + 10-per-task enforcement; logs `task.attachment_add` / `task.attachment_remove`. Bucket constant: `TASK_ATTACHMENTS_BUCKET = 'task-attachments'`
+- `getUnacknowledgedTaskCount(authUserId)` / `acknowledgeAllTasks(authUserId)` — global badge helpers
 - **Depends on:** supabase client, activityLog
 - **Logs:** every mutation listed above
 
@@ -48,7 +62,7 @@ Every mutation is logged through `logActivity()` with `entity='task'` and action
 
 ### hooks/useTasks.ts
 - `useTasks()` — loads `fetchAllTasks()` on mount; also calls `acknowledgeAllTasks` + `dispatchTasksRead` once per session so opening `/tasks` clears the badge
-- Exposes `tasks`, `loading`, and mutation callbacks: `create`, `update`, `setStatus`, `toggleStatus` (`todo ↔ done`, the checkbox handler), `remove`, `refresh`. All mutations call `load()` after success so the list is always source-of-truth
+- Exposes `tasks`, `loading`, and mutation callbacks: `create`, `update`, `setCompleted`, `toggleStatus` (open ↔ done, the checkbox handler), `remove`, `refresh`. All mutations call `load()` after success so the list is always source-of-truth
 - View state (search, show-completed, collapsed groups) lives in [index.tsx](../src/components/Tasks/index.tsx); `showCompleted` + `collapsed` persist per-user to `localStorage` under `tasks.view.${userId}` (the legacy `tasks.filters.${userId}` key is removed on mount)
 
 ### hooks/useTasksRealtime.ts
@@ -110,6 +124,7 @@ Every mutation is logged through `logActivity()` with `entity='task'` and action
 ## Notes
 - Acknowledge semantics: opening `/tasks` clears the current user's badge via `acknowledgeAllTasks` + `dispatchTasksRead` (once per mount)
 - Private tasks skip the assignee picker; the creator becomes the sole pre-acknowledged assignee
-- The calendar's `TaskPill` flips `todo ↔ done`, same as the list checkbox
+- The calendar's `TaskPill` flips completed on/off, same as the list checkbox
 - Comment mention notifications are deferred until a notifications table exists (tracked in `docs/tasks-redesign-plan.md` §11)
 - Migration `20260706120000_simplify_tasks.sql` (data: `in_progress` → `todo`; drops `reminder_offsets`, `priority`, `task_reminder_sends`; broadens SELECT policies) must be applied by a human — after applying, regenerate types with `npm run db:types`
+- Migrations `20260720120000_tasks_mobile_compat.sql` (profiles mirror + `is_admin()`, task tables → auth-id space, `status` → `completed`, `due_date` → `deadline`, RLS on `auth.uid()`) and `20260720130000_task_assignees_mobile_compat.sql` (`user_id` → `assignee_id`, composite PK, `create_task_with_assignees` RPC) must be applied by a human — the frontend on this branch **requires** both. The colleague's standalone mobile app points at this same schema; its own migrations in `todoMigrations/` must **never** be run against this DB
