@@ -18,7 +18,9 @@ Four tables (schema baseline + `20260706120000_simplify_tasks.sql` + `2026072012
 > in the task tables (`tasks.created_by`, `task_assignees.assignee_id`,
 > `task_comments.user_id`, `task_attachments.uploaded_by`) hold **auth user
 > ids** and FK to `public.profiles` (a mirror of `public.users` keyed by
-> `auth_user_id`, kept in sync by trigger; Director maps to `role='admin'`).
+> `auth_user_id`; email is trigger-synced, while `name`/`role` are owned by
+> profiles — task-app admins are managed explicitly there, independent of
+> Cognilion roles; new signups default to `role='user'`).
 > The web app translates via `user.auth_user_id` from AuthContext; the
 > activity log still uses `public.users.id` (see `TaskActor` in
 > [types/tasks.ts](../src/types/tasks.ts)). Column names follow the mobile
@@ -32,7 +34,7 @@ Four tables (schema baseline + `20260706120000_simplify_tasks.sql` + `2026072012
 ### Visibility & edit rights (RLS)
 
 - **SELECT**: all authenticated users can view non-private tasks; private tasks only creator/assignees. Child tables (`task_assignees`, `task_comments`, `task_attachments`, and the storage read policy) follow the parent task via the `public.can_view_task(task_id, user_id)` SECURITY DEFINER helper. Policies compare `auth.uid()` directly (no `users` subquery)
-- **UPDATE**: creator, assignee, or admin (`public.is_admin()`, i.e. Director) — the UI mirrors creator/assignee as `canEdit`; admin rights exist for the mobile app
+- **UPDATE**: creator, assignee, or admin (`public.is_admin()`, i.e. `profiles.role='admin'`) — the UI mirrors creator/assignee as `canEdit`; admin rights exist for the mobile app
 - **INSERT/DELETE** on tasks: creator (delete also admin); comment/attachment INSERT: assignee or creator only
 
 Every mutation is logged through `logActivity()` with `entity='task'` and action `task.<verb>` (create / update / status_change / delete / assign / unassign / comment / attachment_add / attachment_remove).
