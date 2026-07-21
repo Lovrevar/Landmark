@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "13.0.4"
   }
   graphql_public: {
     Tables: {
@@ -653,7 +653,6 @@ export type Database = {
         Row: {
           content: Json
           created_at: string
-          edited_at: string | null
           id: string
           input_tokens: number | null
           model: string | null
@@ -666,7 +665,6 @@ export type Database = {
         Insert: {
           content: Json
           created_at?: string
-          edited_at?: string | null
           id?: string
           input_tokens?: number | null
           model?: string | null
@@ -679,7 +677,6 @@ export type Database = {
         Update: {
           content?: Json
           created_at?: string
-          edited_at?: string | null
           id?: string
           input_tokens?: number | null
           model?: string | null
@@ -2211,6 +2208,30 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          name: string
+          role?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          role?: string
+        }
+        Relationships: []
+      }
       project_managers: {
         Row: {
           assigned_at: string | null
@@ -3132,38 +3153,38 @@ export type Database = {
       task_assignees: {
         Row: {
           acknowledged_at: string | null
+          assignee_id: string
           created_at: string
           id: string
           task_id: string
-          user_id: string
         }
         Insert: {
           acknowledged_at?: string | null
+          assignee_id: string
           created_at?: string
           id?: string
           task_id: string
-          user_id: string
         }
         Update: {
           acknowledged_at?: string | null
+          assignee_id?: string
           created_at?: string
           id?: string
           task_id?: string
-          user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "task_assignees_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "task_assignees_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_assignees_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -3211,7 +3232,7 @@ export type Database = {
             foreignKeyName: "task_attachments_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3243,57 +3264,64 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "task_comments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
       tasks: {
         Row: {
+          completed: boolean
           completed_at: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
+          deadline: string | null
           description: string
           description_format: string
-          due_date: string | null
           due_time: string | null
           id: string
           is_private: boolean
           project_id: string | null
-          status: string
           title: string
           updated_at: string
         }
         Insert: {
+          completed?: boolean
           completed_at?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
+          deadline?: string | null
           description?: string
           description_format?: string
-          due_date?: string | null
           due_time?: string | null
           id?: string
           is_private?: boolean
           project_id?: string | null
-          status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          completed?: boolean
           completed_at?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
+          deadline?: string | null
           description?: string
           description_format?: string
-          due_date?: string | null
           due_time?: string | null
           id?: string
           is_private?: boolean
           project_id?: string | null
-          status?: string
           title?: string
           updated_at?: string
         }
@@ -3302,7 +3330,7 @@ export type Database = {
             foreignKeyName: "tasks_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -3530,6 +3558,16 @@ export type Database = {
           difference: number
         }[]
       }
+      create_task_with_assignees: {
+        Args: {
+          p_assignee_ids: string[]
+          p_deadline: string
+          p_description: string
+          p_project_id: string
+          p_title: string
+        }
+        Returns: string
+      }
       fix_subcontractor_budget_integrity: { Args: never; Returns: undefined }
       get_activity_logs: {
         Args: {
@@ -3722,6 +3760,7 @@ export type Database = {
             }[]
           }
       get_task_creator: { Args: { p_task_id: string }; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
       is_chat_participant: {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
