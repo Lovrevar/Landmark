@@ -2,22 +2,25 @@ import { supabase } from '../../../lib/supabase'
 import { logActivity } from '../../../lib/activityLog'
 import type {
   Task,
+  TaskActor,
   TaskUser,
   NewTaskInput,
   UpdateTaskInput,
-  TaskStatus,
   TaskComment,
   TaskAttachment,
 } from '../../../types/tasks'
 
+// User columns in the task tables hold AUTH user ids (shared schema with
+// the standalone mobile task app) — hence the `id:auth_user_id` aliases
+// when resolving usernames from public.users.
 const TASK_FIELDS = [
   'id',
   'title',
   'description',
   'created_by',
-  'due_date',
+  'deadline',
   'due_time',
-  'status',
+  'completed',
   'is_private',
   'project_id',
   'description_format',
@@ -25,6 +28,8 @@ const TASK_FIELDS = [
   'created_at',
   'updated_at',
 ].join(', ')
+
+const TASK_USER_FIELDS = 'id:auth_user_id, username, role'
 
 const ATTACHMENT_FIELDS =
   'id, task_id, uploaded_by, storage_path, file_name, mime_type, size_bytes, created_at'
@@ -41,10 +46,11 @@ export interface ProjectOption {
 export async function fetchTaskUsers(): Promise<TaskUser[]> {
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, role')
+    .select(TASK_USER_FIELDS)
+    .not('auth_user_id', 'is', null)
     .order('username')
   if (error) throw error
-  return data || []
+  return (data || []) as unknown as TaskUser[]
 }
 
 export async function fetchProjectOptions(): Promise<ProjectOption[]> {
@@ -66,7 +72,7 @@ export async function fetchAllTasks(): Promise<Task[]> {
 }
 
 export async function fetchTasksInRange(
-  userId: string,
+  authUserId: string,
   fromIso: string,
   toIso: string,
 ): Promise<Task[]> {
@@ -76,17 +82,17 @@ export async function fetchTasksInRange(
   const { data: assignRows, error: aErr } = await supabase
     .from('task_assignees')
     .select('task_id')
-    .eq('user_id', userId)
+    .eq('assignee_id', authUserId)
   if (aErr) throw aErr
   const assignedIds = (assignRows || []).map(r => r.task_id)
 
   const { data: created, error: cErr } = await supabase
     .from('tasks')
     .select(TASK_FIELDS)
-    .eq('created_by', userId)
-    .not('due_date', 'is', null)
-    .gte('due_date', fromDate)
-    .lte('due_date', toDate)
+    .eq('created_by', authUserId)
+    .not('deadline', 'is', null)
+    .gte('deadline', fromDate)
+    .lte('deadline', toDate)
   if (cErr) throw cErr
 
   let assigned: Task[] = []
@@ -95,9 +101,9 @@ export async function fetchTasksInRange(
       .from('tasks')
       .select(TASK_FIELDS)
       .in('id', assignedIds)
-      .not('due_date', 'is', null)
-      .gte('due_date', fromDate)
-      .lte('due_date', toDate)
+      .not('deadline', 'is', null)
+      .gte('deadline', fromDate)
+      .lte('deadline', toDate)
     if (error) throw error
     assigned = (data || []) as unknown as Task[]
   }
@@ -114,7 +120,7 @@ export async function fetchTasksInRange(
 async function hydrateTaskRelations(tasks: Task[]) {
   if (tasks.length === 0) return
   const ids = tasks.map(t => t.id)
-  const creatorIds = [...new Set(tasks.map(t => t.created_by))]
+  const creatorIds = [...new Set(tasks.map(t => t.created_by).filter(Boolean))] as string[]
 
   const [
     { data: assignees },
@@ -124,9 +130,11 @@ async function hydrateTaskRelations(tasks: Task[]) {
   ] = await Promise.all([
     supabase
       .from('task_assignees')
-      .select('id, task_id, user_id, acknowledged_at, created_at')
+      .select('id, task_id, assignee_id, acknowledged_at, created_at')
       .in('task_id', ids),
-    supabase.from('users').select('id, username, role').in('id', creatorIds),
+    creatorIds.length
+      ? supabase.from('users').select(TASK_USER_FIELDS).in('auth_user_id', creatorIds)
+      : Promise.resolve({ data: [] as unknown[] }),
     supabase.from('task_attachments').select(ATTACHMENT_FIELDS).in('task_id', ids),
     supabase
       .from('task_comments')
@@ -134,13 +142,17 @@ async function hydrateTaskRelations(tasks: Task[]) {
       .in('task_id', ids),
   ])
 
-  const userIds = [...new Set((assignees || []).map(a => a.user_id))]
+  const userIds = [...new Set((assignees || []).map(a => a.assignee_id))]
   const { data: users } = userIds.length
-    ? await supabase.from('users').select('id, username, role').in('id', userIds)
-    : { data: [] as TaskUser[] }
+    ? await supabase.from('users').select(TASK_USER_FIELDS).in('auth_user_id', userIds)
+    : { data: [] as unknown[] }
 
-  const userMap = new Map<string, TaskUser>((users || []).map(u => [u.id, u]))
-  const creatorMap = new Map<string, TaskUser>((creators || []).map(u => [u.id, u]))
+  const userMap = new Map<string, TaskUser>(
+    ((users || []) as unknown as TaskUser[]).map(u => [u.id, u]),
+  )
+  const creatorMap = new Map<string, TaskUser>(
+    ((creators || []) as unknown as TaskUser[]).map(u => [u.id, u]),
+  )
 
   const attachmentsByTask = new Map<string, TaskAttachment[]>()
   ;(attachments || []).forEach(row => {
@@ -157,10 +169,10 @@ async function hydrateTaskRelations(tasks: Task[]) {
   })
 
   tasks.forEach(t => {
-    t.creator = creatorMap.get(t.created_by)
+    t.creator = t.created_by ? creatorMap.get(t.created_by) : undefined
     t.assignees = (assignees || [])
       .filter(a => a.task_id === t.id)
-      .map(a => ({ ...a, user: userMap.get(a.user_id) }))
+      .map(a => ({ ...a, user: userMap.get(a.assignee_id) }))
     t.attachments = attachmentsByTask.get(t.id) || []
     t.comment_count = countByTask.get(t.id) || 0
   })
@@ -168,20 +180,19 @@ async function hydrateTaskRelations(tasks: Task[]) {
 
 export async function createTask(
   input: NewTaskInput,
-  userId: string,
-  userRole: string,
+  actor: TaskActor,
 ): Promise<Task> {
   const { data: inserted, error } = await supabase
     .from('tasks')
     .insert({
       title: input.title,
       description: input.description,
-      due_date: input.due_date,
-      status: 'todo',
+      deadline: input.deadline,
+      completed: false,
       is_private: input.is_private,
       project_id: input.project_id,
       description_format: 'plain',
-      created_by: userId,
+      created_by: actor.auth_user_id,
     })
     .select(TASK_FIELDS)
     .single()
@@ -191,21 +202,21 @@ export async function createTask(
   if (!input.is_private && input.assignee_ids.length > 0) {
     const rows = input.assignee_ids.map(uid => ({
       task_id: task.id,
-      user_id: uid,
+      assignee_id: uid,
     }))
     const { error: aErr } = await supabase.from('task_assignees').insert(rows)
     if (aErr) throw aErr
   } else if (input.is_private) {
     await supabase.from('task_assignees').insert({
       task_id: task.id,
-      user_id: userId,
+      assignee_id: actor.auth_user_id,
       acknowledged_at: new Date().toISOString(),
     })
   }
 
   logActivity({
-    userId,
-    userRole,
+    userId: actor.id,
+    userRole: actor.role,
     action: 'task.create',
     entity: 'task',
     entityId: task.id,
@@ -224,21 +235,19 @@ export async function createTask(
 export async function updateTask(
   taskId: string,
   updates: UpdateTaskInput,
-  userId: string,
-  userRole: string,
+  actor: TaskActor,
   taskTitle?: string,
 ): Promise<void> {
   const patch: Record<string, unknown> = { ...updates, updated_at: new Date().toISOString() }
-  if (updates.status) {
-    if (updates.status === 'done') patch.completed_at = new Date().toISOString()
-    else patch.completed_at = null
+  if (updates.completed !== undefined) {
+    patch.completed_at = updates.completed ? new Date().toISOString() : null
   }
   const { error } = await supabase.from('tasks').update(patch).eq('id', taskId)
   if (error) throw error
 
   logActivity({
-    userId,
-    userRole,
+    userId: actor.id,
+    userRole: actor.role,
     action: 'task.update',
     entity: 'task',
     entityId: taskId,
@@ -250,19 +259,17 @@ export async function updateTask(
   })
 }
 
-export async function updateTaskStatus(
+export async function updateTaskCompleted(
   taskId: string,
-  status: TaskStatus,
-  userId?: string,
-  userRole?: string,
+  completed: boolean,
+  actor?: TaskActor,
   taskTitle?: string,
 ): Promise<void> {
   const patch: Record<string, unknown> = {
-    status,
+    completed,
+    completed_at: completed ? new Date().toISOString() : null,
     updated_at: new Date().toISOString(),
   }
-  if (status === 'done') patch.completed_at = new Date().toISOString()
-  else patch.completed_at = null
 
   const { error } = await supabase
     .from('tasks')
@@ -270,14 +277,14 @@ export async function updateTaskStatus(
     .eq('id', taskId)
   if (error) throw error
 
-  if (userId && userRole) {
+  if (actor) {
     logActivity({
-      userId,
-      userRole,
+      userId: actor.id,
+      userRole: actor.role,
       action: 'task.status_change',
       entity: 'task',
       entityId: taskId,
-      metadata: { entity_name: taskTitle, status },
+      metadata: { entity_name: taskTitle, status: completed ? 'done' : 'todo' },
       severity: 'low',
     })
   }
@@ -285,16 +292,15 @@ export async function updateTaskStatus(
 
 export async function deleteTask(
   taskId: string,
-  userId?: string,
-  userRole?: string,
+  actor?: TaskActor,
   taskTitle?: string,
 ): Promise<void> {
   const { error } = await supabase.from('tasks').delete().eq('id', taskId)
   if (error) throw error
-  if (userId && userRole) {
+  if (actor) {
     logActivity({
-      userId,
-      userRole,
+      userId: actor.id,
+      userRole: actor.role,
       action: 'task.delete',
       entity: 'task',
       entityId: taskId,
@@ -307,20 +313,19 @@ export async function deleteTask(
 export async function setAssignees(
   taskId: string,
   assigneeIds: string[],
-  userId: string,
-  userRole: string,
+  actor: TaskActor,
 ): Promise<void> {
   const { data: existing, error: eErr } = await supabase
     .from('task_assignees')
-    .select('id, user_id')
+    .select('id, assignee_id')
     .eq('task_id', taskId)
   if (eErr) throw eErr
 
-  const currentIds = new Set((existing || []).map(r => r.user_id))
+  const currentIds = new Set((existing || []).map(r => r.assignee_id))
   const nextIds = new Set(assigneeIds)
 
   const toAdd = assigneeIds.filter(id => !currentIds.has(id))
-  const toRemove = (existing || []).filter(r => !nextIds.has(r.user_id))
+  const toRemove = (existing || []).filter(r => !nextIds.has(r.assignee_id))
 
   if (toRemove.length > 0) {
     const { error } = await supabase
@@ -330,32 +335,32 @@ export async function setAssignees(
     if (error) throw error
   }
   if (toAdd.length > 0) {
-    const rows = toAdd.map(uid => ({ task_id: taskId, user_id: uid }))
+    const rows = toAdd.map(uid => ({ task_id: taskId, assignee_id: uid }))
     const { error } = await supabase.from('task_assignees').insert(rows)
     if (error) throw error
   }
 
   if (toAdd.length > 0 || toRemove.length > 0) {
     logActivity({
-      userId,
-      userRole,
+      userId: actor.id,
+      userRole: actor.role,
       action: toAdd.length > 0 ? 'task.assign' : 'task.unassign',
       entity: 'task',
       entityId: taskId,
       metadata: {
         added: toAdd,
-        removed: toRemove.map(r => r.user_id),
+        removed: toRemove.map(r => r.assignee_id),
       },
       severity: 'low',
     })
   }
 }
 
-export async function getUnacknowledgedTaskCount(userId: string): Promise<number> {
+export async function getUnacknowledgedTaskCount(authUserId: string): Promise<number> {
   const { count, error } = await supabase
     .from('task_assignees')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
+    .eq('assignee_id', authUserId)
     .is('acknowledged_at', null)
   if (error) return 0
   return count || 0
@@ -373,34 +378,33 @@ export async function fetchTaskComments(taskId: string): Promise<TaskComment[]> 
   const userIds = [...new Set(comments.map(c => c.user_id))]
   const { data: users } = await supabase
     .from('users')
-    .select('id, username, role')
-    .in('id', userIds)
-  const userMap = new Map<string, TaskUser>((users || []).map(u => [u.id, u]))
+    .select(TASK_USER_FIELDS)
+    .in('auth_user_id', userIds)
+  const userMap = new Map<string, TaskUser>(
+    ((users || []) as unknown as TaskUser[]).map(u => [u.id, u]),
+  )
   return comments.map(c => ({ ...c, user: userMap.get(c.user_id) }))
 }
 
 export async function createTaskComment(
   taskId: string,
-  userId: string,
+  actor: TaskActor,
   comment: string,
-  userRole?: string,
 ): Promise<void> {
   const trimmed = comment.trim()
   if (!trimmed) return
   const { error } = await supabase
     .from('task_comments')
-    .insert({ task_id: taskId, user_id: userId, comment: trimmed })
+    .insert({ task_id: taskId, user_id: actor.auth_user_id, comment: trimmed })
   if (error) throw error
-  if (userRole) {
-    logActivity({
-      userId,
-      userRole,
-      action: 'task.comment',
-      entity: 'task',
-      entityId: taskId,
-      severity: 'low',
-    })
-  }
+  logActivity({
+    userId: actor.id,
+    userRole: actor.role,
+    action: 'task.comment',
+    entity: 'task',
+    entityId: taskId,
+    severity: 'low',
+  })
 }
 
 export async function deleteTaskComment(commentId: string): Promise<void> {
@@ -408,11 +412,11 @@ export async function deleteTaskComment(commentId: string): Promise<void> {
   if (error) throw error
 }
 
-export async function acknowledgeAllTasks(userId: string): Promise<void> {
+export async function acknowledgeAllTasks(authUserId: string): Promise<void> {
   await supabase
     .from('task_assignees')
     .update({ acknowledged_at: new Date().toISOString() })
-    .eq('user_id', userId)
+    .eq('assignee_id', authUserId)
     .is('acknowledged_at', null)
 }
 
@@ -433,8 +437,7 @@ export async function listTaskAttachments(taskId: string): Promise<TaskAttachmen
 export async function uploadTaskAttachment(
   taskId: string,
   file: File,
-  userId: string,
-  userRole: string,
+  actor: TaskActor,
 ): Promise<TaskAttachment> {
   if (file.size > MAX_ATTACHMENT_BYTES) {
     throw new Error(`File exceeds ${MAX_ATTACHMENT_BYTES / 1024 / 1024} MB limit`)
@@ -456,7 +459,7 @@ export async function uploadTaskAttachment(
     .from('task_attachments')
     .insert({
       task_id: taskId,
-      uploaded_by: userId,
+      uploaded_by: actor.auth_user_id,
       storage_path: storagePath,
       file_name: file.name,
       mime_type: file.type || null,
@@ -471,8 +474,8 @@ export async function uploadTaskAttachment(
 
   const row = data as TaskAttachment
   logActivity({
-    userId,
-    userRole,
+    userId: actor.id,
+    userRole: actor.role,
     action: 'task.attachment_add',
     entity: 'task',
     entityId: taskId,
@@ -484,8 +487,7 @@ export async function uploadTaskAttachment(
 
 export async function deleteTaskAttachment(
   attachmentId: string,
-  userId: string,
-  userRole: string,
+  actor: TaskActor,
 ): Promise<void> {
   const { data: row, error: fetchErr } = await supabase
     .from('task_attachments')
@@ -504,8 +506,8 @@ export async function deleteTaskAttachment(
     .remove([attachment.storage_path])
 
   logActivity({
-    userId,
-    userRole,
+    userId: actor.id,
+    userRole: actor.role,
     action: 'task.attachment_remove',
     entity: 'task',
     entityId: attachment.task_id,

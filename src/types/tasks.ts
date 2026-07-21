@@ -1,16 +1,31 @@
-export type TaskStatus = 'todo' | 'done'
 export type TaskDescriptionFormat = 'markdown' | 'plain'
 
+/**
+ * User ids in the task tables are AUTH user ids (auth.users / profiles),
+ * not public.users ids — the schema is shared with the standalone mobile
+ * task app. TaskUser.id therefore holds users.auth_user_id.
+ */
 export interface TaskUser {
   id: string
   username: string
   role: string
 }
 
+/**
+ * The acting user for task mutations. `auth_user_id` is written into the
+ * task tables; `id` (public.users id) + `role` feed the activity log.
+ * The AuthContext user object satisfies this shape.
+ */
+export interface TaskActor {
+  id: string
+  auth_user_id: string
+  role: string
+}
+
 export interface TaskAssignee {
   id: string
   task_id: string
-  user_id: string
+  assignee_id: string
   acknowledged_at: string | null
   created_at: string
   user?: TaskUser
@@ -19,7 +34,7 @@ export interface TaskAssignee {
 export interface TaskAttachment {
   id: string
   task_id: string
-  uploaded_by: string
+  uploaded_by: string | null
   storage_path: string
   file_name: string
   mime_type: string | null
@@ -32,10 +47,10 @@ export interface Task {
   id: string
   title: string
   description: string
-  created_by: string
-  due_date: string | null
+  created_by: string | null
+  deadline: string | null
   due_time: string | null
-  status: TaskStatus
+  completed: boolean
   is_private: boolean
   project_id: string | null
   description_format: TaskDescriptionFormat
@@ -118,18 +133,19 @@ export interface TaskComment {
 export interface NewTaskInput {
   title: string
   description: string
-  due_date: string | null
+  deadline: string | null
   is_private: boolean
   project_id: string | null
+  /** auth user ids */
   assignee_ids: string[]
 }
 
 export interface UpdateTaskInput {
   title?: string
   description?: string
-  due_date?: string | null
+  deadline?: string | null
   due_time?: string | null
-  status?: TaskStatus
+  completed?: boolean
   is_private?: boolean
   project_id?: string | null
   description_format?: TaskDescriptionFormat

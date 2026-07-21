@@ -163,7 +163,7 @@ const AccountingBanks: React.FC = () => {
                       const remainingAllocatedPercentage = credit.amount > 0 ? (remainingAllocated / credit.amount) * 100 : 0
                       const paidOutPercentage = credit.amount > 0 ? (totalIskorišteno / credit.amount) * 100 : 0
                       const totalUsagePercentage = paidOutPercentage + remainingAllocatedPercentage
-                      const netUsed = credit.used_amount + unallocatedDisbursements - credit.repaid_amount
+                      const netUsed = (credit.used_amount || 0) + unallocatedDisbursements - (credit.repaid_amount || 0)
 
                       return (
                         <div key={credit.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -224,7 +224,7 @@ const AccountingBanks: React.FC = () => {
                               <div className={`p-3 rounded-lg ${netUsed > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
                                 <p className={`text-sm ${netUsed > 0 ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-200'}`}>{t('banks.index.credit.debt')}</p>
                                 <p className={`text-lg font-bold ${netUsed > 0 ? 'text-red-900 dark:text-red-200' : 'text-gray-900 dark:text-white'}`}>
-                                  €{credit.outstanding_balance.toLocaleString('hr-HR')}
+                                  €{(credit.outstanding_balance || 0).toLocaleString('hr-HR')}
                                 </p>
                               </div>
                               <div className={`p-3 rounded-lg ${unallocatedAmount < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
@@ -291,11 +291,11 @@ const AccountingBanks: React.FC = () => {
                                     </div>
                                     <div className="flex justify-between">
                                       <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.outstanding_balance_label')}</span>
-                                      <span className="font-medium text-gray-900 dark:text-white">€{credit.outstanding_balance.toLocaleString('hr-HR')}</span>
+                                      <span className="font-medium text-gray-900 dark:text-white">€{(credit.outstanding_balance || 0).toLocaleString('hr-HR')}</span>
                                     </div>
                                     <div className="flex justify-between">
                                       <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.repaid_amount_label')}</span>
-                                      <span className="font-medium text-green-600">€{credit.repaid_amount.toLocaleString('hr-HR')}</span>
+                                      <span className="font-medium text-green-600">€{(credit.repaid_amount || 0).toLocaleString('hr-HR')}</span>
                                     </div>
                                   </div>
                                 </div>

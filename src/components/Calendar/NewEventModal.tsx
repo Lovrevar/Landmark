@@ -4,10 +4,14 @@ import { Bell, Briefcase, Lock, MapPin, Plus, Repeat, Users, X } from 'lucide-re
 import Modal from '../ui/Modal'
 import ToggleSwitch from '../ui/ToggleSwitch'
 import SearchableSelect from '../ui/SearchableSelect'
-import { fetchTaskUsers } from '../Tasks/services/tasksService'
-import { fetchProjectOptions, type ProjectOption } from './services/calendarService'
+import {
+  fetchCalendarUsers,
+  fetchProjectOptions,
+  type CalendarUser,
+  type ProjectOption,
+} from './services/calendarService'
 import ParticipantPicker from './components/ParticipantPicker'
-import type { NewEventInput, EventType, TaskUser } from '../../types/tasks'
+import type { NewEventInput, EventType } from '../../types/tasks'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   DEFAULT_RECURRENCE,
@@ -68,7 +72,7 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
   const [projectId, setProjectId] = useState<string | null>(null)
   const [reminderOffsets, setReminderOffsets] = useState<number[]>([])
   const [recurrence, setRecurrence] = useState<RecurrenceState>(DEFAULT_RECURRENCE)
-  const [users, setUsers] = useState<TaskUser[]>([])
+  const [users, setUsers] = useState<CalendarUser[]>([])
   const [projects, setProjects] = useState<ProjectOption[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -76,7 +80,7 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
   useEffect(() => {
     if (!show) return
     Promise.all([
-      fetchTaskUsers().then(setUsers).catch(() => setUsers([])),
+      fetchCalendarUsers().then(setUsers).catch(() => setUsers([])),
       fetchProjectOptions().then(setProjects).catch(() => setProjects([])),
     ])
     const today = new Date()

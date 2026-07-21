@@ -49,11 +49,11 @@ export const BankWirePaymentModal: React.FC<BankWirePaymentModalProps> = ({
         </div>
         <div>
           <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.bank_wire_modal.outstanding_balance_label')}</p>
-          <p className="font-medium text-blue-900 dark:text-blue-100">{credit.outstanding_balance.toLocaleString('hr-HR')}</p>
+          <p className="font-medium text-blue-900 dark:text-blue-100">{(credit.outstanding_balance || 0).toLocaleString('hr-HR')}</p>
         </div>
         <div>
           <p className="text-blue-700 dark:text-blue-300">{t('funding.payments.bank_wire_modal.scheduled_payment_label')}</p>
-          <p className="font-medium text-blue-900 dark:text-blue-100">{credit.monthly_payment.toLocaleString('hr-HR')}</p>
+          <p className="font-medium text-blue-900 dark:text-blue-100">{(credit.monthly_payment || 0).toLocaleString('hr-HR')}</p>
         </div>
       </div>
     </>

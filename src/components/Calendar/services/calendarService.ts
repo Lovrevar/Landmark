@@ -43,6 +43,28 @@ export async function fetchProjectOptions(): Promise<ProjectOption[]> {
   return (data || []) as ProjectOption[]
 }
 
+/**
+ * Calendar tables (event participants, busy blocks) key users by
+ * public.users.id, unlike the task tables which use auth user ids.
+ * `id` here is the app user id; `auth_user_id` is carried along so the
+ * tasks overlay can translate participant filters into the task id space.
+ */
+export interface CalendarUser {
+  id: string
+  auth_user_id: string | null
+  username: string
+  role: string
+}
+
+export async function fetchCalendarUsers(): Promise<CalendarUser[]> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, auth_user_id, username, role')
+    .order('username')
+  if (error) throw error
+  return (data || []) as CalendarUser[]
+}
+
 export async function fetchEventsInRange(
   userId: string,
   fromIso: string,

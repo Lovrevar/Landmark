@@ -29,11 +29,11 @@ export function expandTasks(
   const endMs = windowEnd.getTime()
   const out: TaskOccurrence[] = []
   for (const task of tasks) {
-    if (!task.due_date) continue
-    const due = buildDueDate(task.due_date, task.due_time)
+    if (!task.deadline) continue
+    const due = buildDueDate(task.deadline, task.due_time)
     const ms = due.getTime()
     if (ms < startMs || ms > endMs) continue
-    const isDone = task.status === 'done'
+    const isDone = task.completed
     out.push({
       occurrenceKey: `task:${task.id}`,
       task,

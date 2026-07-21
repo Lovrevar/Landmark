@@ -22,7 +22,7 @@ export function useTasksNotifications() {
   const refresh = useCallback(async () => {
     if (!user) return
     try {
-      const c = await getUnacknowledgedTaskCount(user.id)
+      const c = await getUnacknowledgedTaskCount(user.auth_user_id)
       if (mountedRef.current) setUnreadCount(c)
     } catch {
       /* ignore */

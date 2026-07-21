@@ -33,7 +33,7 @@ export function useTasksRealtime(userId: string | null | undefined, onChange: ()
           event: '*',
           schema: 'public',
           table: 'task_assignees',
-          filter: `user_id=eq.${userId}`,
+          filter: `assignee_id=eq.${userId}`,
         },
         debouncedChange,
       )

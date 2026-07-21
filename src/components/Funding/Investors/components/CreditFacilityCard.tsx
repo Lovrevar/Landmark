@@ -77,7 +77,7 @@ const CreditFacilityCard: React.FC<CreditFacilityCardProps> = ({ credit, onEdit,
         </div>
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('funding.investors.credit_facility_card.outstanding_debt_label')}</p>
-          <p className="text-sm font-medium text-red-600">€{credit.outstanding_balance.toLocaleString('hr-HR')}</p>
+          <p className="text-sm font-medium text-red-600">€{(credit.outstanding_balance || 0).toLocaleString('hr-HR')}</p>
         </div>
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('funding.investors.credit_facility_card.available_to_use_label')}</p>
@@ -90,7 +90,7 @@ const CreditFacilityCard: React.FC<CreditFacilityCardProps> = ({ credit, onEdit,
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 pt-3 border-t border-gray-100 dark:border-gray-700">
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400">{credit.repayment_type === 'yearly' ? t('funding.investors.credit_facility_card.annual_payment_label') : t('funding.investors.credit_facility_card.monthly_payment_label')}</p>
-          <p className="text-sm font-medium text-gray-900 dark:text-white">€{credit.monthly_payment.toLocaleString('hr-HR')}</p>
+          <p className="text-sm font-medium text-gray-900 dark:text-white">€{(credit.monthly_payment || 0).toLocaleString('hr-HR')}</p>
         </div>
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('funding.investors.credit_facility_card.maturity_date_label')}</p>

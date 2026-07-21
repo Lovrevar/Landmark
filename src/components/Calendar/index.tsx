@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useCalendarPreferences } from './hooks/useCalendarPreferences'
 import { useEventsInRange } from './hooks/useEventsInRange'
 import { useTasksInRange } from './hooks/useTasksInRange'
-import { updateTaskStatus, deleteTask as deleteTaskSvc } from '../Tasks/services/tasksService'
+import { updateTaskCompleted, deleteTask as deleteTaskSvc } from '../Tasks/services/tasksService'
 import TaskDetail from '../Tasks/TaskDetail'
 import type { Task } from '../../types/tasks'
 import type { TaskOccurrence } from './utils/expandTasks'
@@ -13,16 +13,17 @@ import {
   acknowledgeAllEvents,
   createEvent,
   deleteEvent,
+  fetchCalendarUsers,
   fetchProjectOptions,
   respondToEvent,
   respondToOccurrence,
+  type CalendarUser,
   type ProjectOption,
 } from './services/calendarService'
 import { fetchBusyBlocks, type BusyBlock } from './services/busyBlocksService'
-import { fetchTaskUsers } from '../Tasks/services/tasksService'
 import { dispatchCalendarRead } from './hooks/useCalendarNotifications'
 import { useCalendarReminderToasts } from './hooks/useCalendarReminderToasts'
-import type { EventResponse, NewEventInput, TaskUser } from '../../types/tasks'
+import type { EventResponse, NewEventInput } from '../../types/tasks'
 import type { ExpandedOccurrence } from './utils/recurrence'
 import MonthView from './MonthView'
 import DayView from './views/DayView'
@@ -103,7 +104,7 @@ const CalendarPage: React.FC = () => {
 
   const [search, setSearch] = useState('')
   const [projects, setProjects] = useState<ProjectOption[]>([])
-  const [users, setUsers] = useState<TaskUser[]>([])
+  const [users, setUsers] = useState<CalendarUser[]>([])
   const [busyBlocks, setBusyBlocks] = useState<BusyBlock[]>([])
 
   const { from, to } = useMemo(() => rangeForView(prefs.view, anchor), [prefs.view, anchor])
@@ -119,12 +120,22 @@ const CalendarPage: React.FC = () => {
     search,
   })
 
+  // Task tables key users by auth id; the participant filter holds app
+  // user ids — translate before handing it to the tasks overlay.
+  const taskParticipantIds = useMemo(
+    () =>
+      prefs.activeParticipantIds
+        .map(id => users.find(u => u.id === id)?.auth_user_id)
+        .filter((id): id is string => !!id),
+    [prefs.activeParticipantIds, users],
+  )
+
   const { rawTasks, taskOccurrences, refresh: refreshTasks } = useTasksInRange({
     fromIso,
     toIso,
     enabled: prefs.showTasks,
     activeProjectId: prefs.activeProjectId,
-    activeParticipantIds: prefs.activeParticipantIds,
+    activeParticipantIds: taskParticipantIds,
     search,
   })
 
@@ -147,8 +158,7 @@ const CalendarPage: React.FC = () => {
 
   const handleTaskToggle = useCallback(async (occ: TaskOccurrence) => {
     if (!user) return
-    const nextStatus = occ.isDone ? 'todo' : 'done'
-    await updateTaskStatus(occ.task.id, nextStatus, user.id, user.role, occ.task.title)
+    await updateTaskCompleted(occ.task.id, !occ.isDone, user, occ.task.title)
     await refreshTasks()
   }, [user, refreshTasks])
 
@@ -157,7 +167,7 @@ const CalendarPage: React.FC = () => {
     acknowledgeAllEvents(user.id).then(() => dispatchCalendarRead())
     Promise.all([
       fetchProjectOptions().then(setProjects).catch(() => setProjects([])),
-      fetchTaskUsers().then(setUsers).catch(() => setUsers([])),
+      fetchCalendarUsers().then(setUsers).catch(() => setUsers([])),
     ])
   }, [user])
 
@@ -453,7 +463,7 @@ const CalendarPage: React.FC = () => {
           onClose={() => setSelectedTask(null)}
           onDelete={async (tk) => {
             if (!user) return
-            await deleteTaskSvc(tk.id, user.id, user.role, tk.title)
+            await deleteTaskSvc(tk.id, user, tk.title)
             setSelectedTask(null)
             await refreshTasks()
           }}

@@ -7,10 +7,10 @@ import {
   fetchAllTasks,
   setAssignees,
   updateTask,
-  updateTaskStatus,
+  updateTaskCompleted,
 } from '../services/tasksService'
 import { dispatchTasksRead } from './useTasksNotifications'
-import type { NewTaskInput, Task, TaskStatus, UpdateTaskInput } from '../../../types/tasks'
+import type { NewTaskInput, Task, UpdateTaskInput } from '../../../types/tasks'
 
 export function useTasks() {
   const { user } = useAuth()
@@ -36,28 +36,28 @@ export function useTasks() {
 
   useEffect(() => {
     if (!user) return
-    acknowledgeAllTasks(user.id).then(() => dispatchTasksRead())
+    acknowledgeAllTasks(user.auth_user_id).then(() => dispatchTasksRead())
   }, [user])
 
   const create = useCallback(async (input: NewTaskInput) => {
     if (!user) return
-    await createTask(input, user.id, user.role)
+    await createTask(input, user)
     await load()
   }, [user, load])
 
-  const setStatus = useCallback(
-    async (task: Task, next: TaskStatus) => {
+  const setCompleted = useCallback(
+    async (task: Task, next: boolean) => {
       if (!user) return
       // optimistic flip so the checkbox reacts instantly
       setTasks(prev =>
         prev.map(t =>
           t.id === task.id
-            ? { ...t, status: next, completed_at: next === 'done' ? new Date().toISOString() : null }
+            ? { ...t, completed: next, completed_at: next ? new Date().toISOString() : null }
             : t,
         ),
       )
       try {
-        await updateTaskStatus(task.id, next, user.id, user.role, task.title)
+        await updateTaskCompleted(task.id, next, user, task.title)
       } catch (err) {
         await load() // revert to server state
         throw err
@@ -69,15 +69,14 @@ export function useTasks() {
 
   const toggleStatus = useCallback(
     async (task: Task) => {
-      const next: TaskStatus = task.status === 'done' ? 'todo' : 'done'
-      await setStatus(task, next)
+      await setCompleted(task, !task.completed)
     },
-    [setStatus],
+    [setCompleted],
   )
 
   const remove = useCallback(async (task: Task) => {
     if (!user) return
-    await deleteTask(task.id, user.id, user.role, task.title)
+    await deleteTask(task.id, user, task.title)
     await load()
   }, [user, load])
 
@@ -85,10 +84,10 @@ export function useTasks() {
     async (task: Task, patch: UpdateTaskInput, assigneeIds?: string[]) => {
       if (!user) return
       if (Object.keys(patch).length > 0) {
-        await updateTask(task.id, patch, user.id, user.role, task.title)
+        await updateTask(task.id, patch, user, task.title)
       }
       if (assigneeIds && !patch.is_private) {
-        await setAssignees(task.id, assigneeIds, user.id, user.role)
+        await setAssignees(task.id, assigneeIds, user)
       }
       await load()
     },
@@ -100,7 +99,7 @@ export function useTasks() {
     loading,
     create,
     update,
-    setStatus,
+    setCompleted,
     toggleStatus,
     remove,
     refresh: load,

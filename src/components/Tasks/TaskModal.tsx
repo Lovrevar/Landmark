@@ -93,7 +93,7 @@ const TaskModal: React.FC<Props> = ({
       const input: NewTaskInput = {
         title: form.title.trim(),
         description: form.description,
-        due_date: form.dueDate || null,
+        deadline: form.dueDate || null,
         is_private: form.isPrivate,
         project_id: form.projectId,
         assignee_ids: form.isPrivate ? [] : form.assigneeIds,
@@ -175,7 +175,7 @@ const TaskModal: React.FC<Props> = ({
                   users={users}
                   selectedIds={form.assigneeIds}
                   onChange={ids => setForm(f => ({ ...f, assigneeIds: ids }))}
-                  excludeId={user?.id}
+                  excludeId={user?.auth_user_id}
                   placeholder={t('tasks.modal.assign_placeholder')}
                 />
               </div>
