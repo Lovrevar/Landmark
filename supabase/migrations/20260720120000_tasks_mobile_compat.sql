@@ -59,6 +59,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- The EXISTS guard matters: the remote has users rows whose auth_user_id
+-- points at a deleted auth account (the users_auth_user_id_fkey cascade
+-- evidently never fired for them — drift). Those cannot be mirrored.
 INSERT INTO public.profiles (id, email, name, role, created_at)
 SELECT
   u.auth_user_id,
@@ -68,6 +71,7 @@ SELECT
   COALESCE(u.created_at, now())
 FROM public.users u
 WHERE u.auth_user_id IS NOT NULL
+  AND EXISTS (SELECT 1 FROM auth.users au WHERE au.id = u.auth_user_id)
 ON CONFLICT (id) DO UPDATE
   SET email = EXCLUDED.email,
       name  = EXCLUDED.name,
@@ -93,7 +97,10 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF NEW.auth_user_id IS NULL THEN
+  -- Skip users without a live auth account (stale auth_user_id values
+  -- exist on the remote; profiles.id FKs to auth.users).
+  IF NEW.auth_user_id IS NULL
+     OR NOT EXISTS (SELECT 1 FROM auth.users au WHERE au.id = NEW.auth_user_id) THEN
     RETURN NEW;
   END IF;
 
