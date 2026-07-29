@@ -130,3 +130,13 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - Comment mention notifications are deferred until a notifications table exists (tracked in `docs/tasks-redesign-plan.md` §11)
 - Migration `20260706120000_simplify_tasks.sql` (data: `in_progress` → `todo`; drops `reminder_offsets`, `priority`, `task_reminder_sends`; broadens SELECT policies) must be applied by a human — after applying, regenerate types with `npm run db:types`
 - Migrations `20260720120000_tasks_mobile_compat.sql` (profiles mirror + `is_admin()`, task tables → auth-id space, `status` → `completed`, `due_date` → `deadline`, RLS on `auth.uid()`) and `20260720130000_task_assignees_mobile_compat.sql` (`user_id` → `assignee_id`, composite PK, `create_task_with_assignees` RPC) must be applied by a human — the frontend on this branch **requires** both. The colleague's standalone mobile app points at this same schema; its own migrations in `todoMigrations/` must **never** be run against this DB
+
+## Web Push (mobile app only)
+
+The mobile app can push task notifications to a phone's lock screen. Because it runs against **this** database, the server half lives here, not in the colleague's Supabase project:
+
+- Migration `20260729120000_push_subscriptions.sql` — `push_subscriptions` (one row per opted-in device, `endpoint` as PK) plus `save_push_subscription()`. Must be applied by a human, then regenerate types with `npm run db:types`
+- Edge function [`supabase/functions/send-push/`](../supabase/functions/send-push/index.ts) — re-reads the task with the service role, works out recipients, excludes the actor, encrypts one message per device. Needs the `VAPID_KEYS` and `VAPID_SUBJECT` secrets set on this project. It is the only place dead endpoints get pruned (on 404/410; 403 is a key mismatch, deliberately not pruned)
+- RLS on `push_subscriptions` is owner-scoped for SELECT and DELETE with **no INSERT/UPDATE policy** — a subscription is a capability to write to someone's lock screen. All writes go through `save_push_subscription()` (SECURITY DEFINER), which deletes by endpoint before inserting so a shared site phone can change hands; a plain upsert would hit a unique violation against a row RLS makes invisible
+- This is the one file in `todoMigrations/` whose content is safe here, so it has a Landmark-owned counterpart with the same name. The rule above is unchanged: run **this** copy, not that one
+- The Landmark UI does not send or receive these — a task created in Cognilion notifies nobody. Sending only needs an authenticated `fetch` at the edge function; receiving would need PWA/service-worker infrastructure Landmark does not have

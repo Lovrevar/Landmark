@@ -18,6 +18,15 @@ verify_jwt = false
 [functions.ai-chat]
 verify_jwt = true
 
+[functions.send-push]
+# Web Push fan-out for the standalone mobile task app, which points at this
+# database — so the function has to live in this project, not in that app's.
+# Open to any signed-in user (anyone can create a task or complete their own).
+# The client sends only a task id, never a recipient list or message text: the
+# function re-reads the task with the service role and checks the caller is an
+# assignee, the creator, or an admin before sending.
+verify_jwt = true
+
 [functions.sort-document]
 # Called by the Make.com email-automation scenario, not a browser — there is
 # no user JWT. The function authenticates the caller itself via a shared
