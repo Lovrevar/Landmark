@@ -542,14 +542,14 @@ The JWT is signed by Supabase Auth and carries user identity. But it does NOT (a
 
 ## Deployment
 
-Target environment: the shared Supabase project `Landmark-Test` (project-ref `ktfaimjkcvhkftwbnnwy`).
+Target environment: the shared Supabase project `Landmark-Test` (project-ref `xzoicihsebdkbdezcugs`).
 
 ### Environment variables
 
 Set in the Supabase dashboard under Edge Functions → Secrets:
 
 - **`ANTHROPIC_API_KEY`** (required). Available to all edge functions automatically once set.
-- **`AI_CHAT_MODEL`** (optional). Defaults to `claude-sonnet-4-6` if unset. Override via `npx supabase secrets set AI_CHAT_MODEL=<model-id> --project-ref ktfaimjkcvhkftwbnnwy`.
+- **`AI_CHAT_MODEL`** (optional). Defaults to `claude-sonnet-4-6` if unset. Override via `npx supabase secrets set AI_CHAT_MODEL=<model-id> --project-ref xzoicihsebdkbdezcugs`.
 - **`AI_CHAT_SUMMARY_MODEL`** (optional). Model used for the post-turn context-compaction summary (see [Context-Window Management](#context-window-management)). Defaults to `AI_CHAT_MODEL`'s value. Point it at a cheaper/faster model (e.g. a Haiku) to cut compaction cost.
 - **`AI_CHAT_DEBUG_ENABLED`** (dev only). Set to the literal string `'true'` to unlock the Director-only debug branch. Must be unset or any other value on production-adjacent environments — the function checks for strict equality with `'true'`.
 
@@ -558,7 +558,7 @@ Set in the Supabase dashboard under Edge Functions → Secrets:
 ### Deploying the function
 
 ```bash
-npx supabase functions deploy ai-chat --project-ref ktfaimjkcvhkftwbnnwy
+npx supabase functions deploy ai-chat --project-ref xzoicihsebdkbdezcugs
 ```
 
 This bundles the `ai-chat/index.ts` entry point along with all imports from `_shared/`. There is no per-function `import_map.json` for ai-chat; remote imports (`npm:@anthropic-ai/sdk@0.97.0`, `npm:@supabase/supabase-js@2`) are pinned at the import site and resolved at deploy time. Do not float `@anthropic-ai/sdk` on `latest`. The SDK's `AbortSignal` support on `messages.create` is kept wired up but is currently a no-op cancellation source — see [Cancellation](#cancellation) for why we rely on a DB beacon instead.
@@ -657,7 +657,7 @@ The data is already there. A separate table would need its own RLS, its own clea
 Most failures map to a known cause; symptom → check is below. Log line prefixes that the function emits are noted in parentheses.
 
 - **HTTP 401 on the chat request.** JWT expired or invalid. The user's Supabase session has lapsed. Frontend can read the token from `localStorage['supabase.auth.token']`; if missing or stale, force a re-login. (Log: `[ai-chat:auth] unauthorized`.)
-- **HTTP 404 on a debug request.** Either `AI_CHAT_DEBUG_ENABLED` is unset (or not the literal string `'true'`), or the request shape is wrong. Verify the secret with `npx supabase secrets list --project-ref ktfaimjkcvhkftwbnnwy`. (Log: `[ai-chat:debug] gated off`.)
+- **HTTP 404 on a debug request.** Either `AI_CHAT_DEBUG_ENABLED` is unset (or not the literal string `'true'`), or the request shape is wrong. Verify the secret with `npx supabase secrets list --project-ref xzoicihsebdkbdezcugs`. (Log: `[ai-chat:debug] gated off`.)
 - **HTTP 429 with code `rate_limited`.** Burst or daily limit hit. Confirm by counting `ai_messages` rows for the user in the last 5 minutes / 24 hours. (Log: `[ai-chat] rate limit hit`.)
 - **Mid-stream `error` event, code `model_rate_limited`.** Anthropic's own rate limit. Wait and retry, or check the Anthropic dashboard for the project key's usage tier. Not logged loudly (expected operational state).
 - **Mid-stream `error` event, code `model_auth_failed`.** `ANTHROPIC_API_KEY` is invalid, revoked, or unset. Check Supabase secrets. (Log: `[ai-chat] anthropic call failed` with errorClass `AuthenticationError`.)
@@ -675,7 +675,7 @@ Most failures map to a known cause; symptom → check is below. Log line prefixe
 Useful when bisecting whether a failure is in the function or in the client:
 
 ```bash
-curl -N -X POST 'https://ktfaimjkcvhkftwbnnwy.supabase.co/functions/v1/ai-chat' \
+curl -N -X POST 'https://xzoicihsebdkbdezcugs.supabase.co/functions/v1/ai-chat' \
   -H "Authorization: Bearer $JWT" \
   -H "apikey: $ANON_KEY" \
   -H "Content-Type: application/json" \

@@ -20,7 +20,7 @@ Playwright end-to-end tests running against the shared dev Supabase project. See
    The only value that must be set is `E2E_ALLOWED_SUPABASE_URL`, which must equal `VITE_SUPABASE_URL` in your `.env`. The prod-safety check hard-fails on mismatch.
 
 3. **Seed the dev DB with anchor data (one-time, per dev Supabase project):**
-   Open Supabase Studio for the dev project, load the SQL editor, paste [`support/anchor-setup.sql`](./support/anchor-setup.sql), and run it (anchor project + the Supervision `project_managers` link). Idempotent — safe to re-run. The test **users** are *not* created here — `globalSetup` provisions them automatically (see below).
+   Open Supabase Studio for the dev project, load the SQL editor, paste [`support/anchor-setup.sql`](./support/anchor-setup.sql), and run it (anchor project, the Supervision `project_managers` link, and the Cashflow counterparty anchors). Idempotent — safe to re-run. The `project_managers` link only lands once the test users exist, so on a brand-new project run it, run the suite once, then run it again. The test **users** are *not* created here — `globalSetup` provisions them automatically (see below).
 
 ## Test users (auto-provisioned by globalSetup)
 

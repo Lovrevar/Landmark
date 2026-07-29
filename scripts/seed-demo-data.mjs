@@ -13,7 +13,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const EXPECTED_PROJECT = 'ktfaimjkcvhkftwbnnwy' // shared dev/test project (same as E2E allowlist)
+const EXPECTED_PROJECT = 'xzoicihsebdkbdezcugs' // shared dev/test project (same as E2E allowlist)
 
 const url = process.env.VITE_SUPABASE_URL
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
