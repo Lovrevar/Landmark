@@ -12,6 +12,9 @@ type PushEvent = "task_assigned" | "task_completed";
 interface RequestPayload {
   event: PushEvent;
   taskId: string;
+  // Optional, sent by the Cognilion web UI when assignees are added to an
+  // EXISTING task. See the intersection below for why it cannot be abused.
+  newAssigneeIds?: string[];
 }
 
 interface SubscriptionRow {
@@ -171,7 +174,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const callerId = await requireUser(req);
-    const { event, taskId } = (await req.json()) as RequestPayload;
+    const { event, taskId, newAssigneeIds } = (await req.json()) as RequestPayload;
 
     if (event !== "task_assigned" && event !== "task_completed") {
       return errorResponse("Nepoznata vrsta obavijesti.", 400);
@@ -219,6 +222,20 @@ Deno.serve(async (req: Request) => {
     const recipients = new Set<string>(
       event === "task_assigned" ? assigneeIds : [...assigneeIds, task.created_by ?? ""],
     );
+
+    // Reassignment: the Cognilion web UI can add assignees to an existing task,
+    // and we have no before-state to diff, so without this everyone already on
+    // the task gets re-buzzed. The client may only NARROW this set — we
+    // intersect against the assignees we read ourselves a moment ago. Worst
+    // case a caller silences someone who should have been told; it can never
+    // push to anyone who is not on the task.
+    if (Array.isArray(newAssigneeIds) && newAssigneeIds.length > 0) {
+      const only = new Set(newAssigneeIds);
+      for (const id of [...recipients]) {
+        if (!only.has(id)) recipients.delete(id);
+      }
+    }
+
     recipients.delete(callerId);
     recipients.delete("");
 

@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { logActivity } from '../../../lib/activityLog'
+import { notify } from './pushNotify'
 import type {
   Task,
   TaskActor,
@@ -229,6 +230,14 @@ export async function createTask(
     severity: 'medium',
   })
 
+  // Must come after the assignee insert above: send-push reads assignees from
+  // the database, so firing any earlier would find none and notify nobody.
+  // Private tasks make the creator the sole assignee, and the function drops
+  // the caller from the recipients, so they would be a wasted round trip.
+  if (!input.is_private && input.assignee_ids.length > 0) {
+    notify('task_assigned', task.id)
+  }
+
   return task
 }
 
@@ -244,6 +253,11 @@ export async function updateTask(
   }
   const { error } = await supabase.from('tasks').update(patch).eq('id', taskId)
   if (error) throw error
+
+  // Completing from the edit modal. Re-opening never notifies.
+  if (updates.completed === true) {
+    notify('task_completed', taskId)
+  }
 
   logActivity({
     userId: actor.id,
@@ -276,6 +290,12 @@ export async function updateTaskCompleted(
     .update(patch)
     .eq('id', taskId)
   if (error) throw error
+
+  // Checkbox in the list, the detail drawer, or the calendar's TaskPill.
+  // Re-opening never notifies.
+  if (completed) {
+    notify('task_completed', taskId)
+  }
 
   if (actor) {
     logActivity({
@@ -338,6 +358,10 @@ export async function setAssignees(
     const rows = toAdd.map(uid => ({ task_id: taskId, assignee_id: uid }))
     const { error } = await supabase.from('task_assignees').insert(rows)
     if (error) throw error
+
+    // Only the people just added — send-push intersects this with the task's
+    // real assignees, so it narrows the fan-out without letting us widen it.
+    notify('task_assigned', taskId, toAdd)
   }
 
   if (toAdd.length > 0 || toRemove.length > 0) {
