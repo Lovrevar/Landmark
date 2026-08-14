@@ -9,9 +9,11 @@ import ConfirmDialog from '../ui/ConfirmDialog'
 import SearchableSelect from '../ui/SearchableSelect'
 import ToggleSwitch from '../ui/ToggleSwitch'
 import ParticipantPicker from '../Calendar/components/ParticipantPicker'
+import TaskColorPicker from './components/TaskColorPicker'
 import { fetchProjectOptions, fetchTaskUsers, type ProjectOption } from './services/tasksService'
 import { useAuth } from '../../contexts/AuthContext'
 import type { NewTaskInput, TaskUser } from '../../types/tasks'
+import type { TaskColor } from './taskColor'
 
 interface Props {
   show: boolean
@@ -26,6 +28,7 @@ interface FormState {
   description: string
   projectId: string | null
   dueDate: string
+  color: TaskColor | null
   isPrivate: boolean
   assigneeIds: string[]
 }
@@ -35,6 +38,7 @@ const EMPTY_FORM: FormState = {
   description: '',
   projectId: null,
   dueDate: '',
+  color: null,
   isPrivate: false,
   assigneeIds: [],
 }
@@ -68,6 +72,7 @@ const TaskModal: React.FC<Props> = ({
       form.description !== '' ||
       form.projectId !== defaultProjectId ||
       form.dueDate !== '' ||
+      form.color !== null ||
       form.isPrivate !== defaultPrivate ||
       form.assigneeIds.length > 0,
     [form, defaultProjectId, defaultPrivate],
@@ -96,6 +101,7 @@ const TaskModal: React.FC<Props> = ({
         deadline: form.dueDate || null,
         is_private: form.isPrivate,
         project_id: form.projectId,
+        color: form.color,
         assignee_ids: form.isPrivate ? [] : form.assigneeIds,
       }
       await onCreate(input)
@@ -154,6 +160,16 @@ const TaskModal: React.FC<Props> = ({
                   onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('tasks.modal.color_label')}
+              </label>
+              <TaskColorPicker
+                value={form.color}
+                onChange={color => setForm(f => ({ ...f, color }))}
+              />
             </div>
 
             <div className="flex items-center gap-2">

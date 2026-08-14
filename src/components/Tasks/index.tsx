@@ -285,6 +285,7 @@ const TasksPage: React.FC = () => {
         deadline: null,
         is_private: tab === 'private',
         project_id: group.projectId,
+        color: null,
         assignee_ids: [],
       })
       setQuickAddDrafts(d => ({ ...d, [group.key]: '' }))

@@ -24,6 +24,7 @@ const TASK_FIELDS = [
   'completed',
   'is_private',
   'project_id',
+  'color',
   'description_format',
   'completed_at',
   'created_at',
@@ -192,6 +193,7 @@ export async function createTask(
       completed: false,
       is_private: input.is_private,
       project_id: input.project_id,
+      color: input.color,
       description_format: 'plain',
       created_by: actor.auth_user_id,
     })

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Square, CheckSquare, Paperclip, MessageSquare } from 'lucide-react'
+import TaskColorChip from '../../Tasks/components/TaskColorChip'
 import type { TaskOccurrence } from '../utils/expandTasks'
 
 interface Props {
@@ -42,6 +43,9 @@ const TaskPill: React.FC<Props> = ({
       >
         <ToggleIcon className={compact ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
       </button>
+      {/* Dot only — a pill this narrow has no room for the label, and the red left border
+          still belongs to the deadline. */}
+      <TaskColorChip color={task.color} dotOnly />
       <button
         type="button"
         onClick={e => { e.stopPropagation(); onClick?.(occurrence) }}

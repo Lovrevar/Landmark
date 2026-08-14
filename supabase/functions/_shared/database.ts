@@ -3314,8 +3314,38 @@ export type Database = {
           },
         ]
       }
+      task_reminders: {
+        Row: {
+          created_at: string
+          kind: string
+          sent_on: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          kind: string
+          sent_on: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          kind?: string
+          sent_on?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_reminders_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
+          color: string | null
           completed: boolean
           completed_at: string | null
           created_at: string
@@ -3331,6 +3361,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          color?: string | null
           completed?: boolean
           completed_at?: string | null
           created_at?: string
@@ -3346,6 +3377,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          color?: string | null
           completed?: boolean
           completed_at?: string | null
           created_at?: string
@@ -3596,6 +3628,7 @@ export type Database = {
       create_task_with_assignees: {
         Args: {
           p_assignee_ids: string[]
+          p_color?: string
           p_deadline: string
           p_description: string
           p_project_id: string
@@ -3603,6 +3636,7 @@ export type Database = {
         }
         Returns: string
       }
+      dispatch_due_reminders: { Args: { p_force?: boolean }; Returns: number }
       fix_subcontractor_budget_integrity: { Args: never; Returns: undefined }
       get_activity_logs: {
         Args: {
@@ -3844,6 +3878,18 @@ export type Database = {
         }[]
       }
       update_overdue_notifications: { Args: never; Returns: undefined }
+      update_task_with_assignees: {
+        Args: {
+          p_assignee_ids: string[]
+          p_color: string
+          p_deadline: string
+          p_description: string
+          p_project_id: string
+          p_task_id: string
+          p_title: string
+        }
+        Returns: string
+      }
       user_has_project_access:
         | { Args: { p_project_id: string }; Returns: boolean }
         | { Args: { proj_id: string; user_uuid: string }; Returns: boolean }

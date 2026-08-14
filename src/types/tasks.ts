@@ -1,3 +1,5 @@
+import type { TaskColor } from '../components/Tasks/taskColor'
+
 export type TaskDescriptionFormat = 'markdown' | 'plain'
 
 /**
@@ -53,6 +55,8 @@ export interface Task {
   completed: boolean
   is_private: boolean
   project_id: string | null
+  /** User-chosen label colour, independent of the deadline status. See Tasks/taskColor.ts. */
+  color: TaskColor | null
   description_format: TaskDescriptionFormat
   completed_at: string | null
   created_at: string
@@ -136,6 +140,7 @@ export interface NewTaskInput {
   deadline: string | null
   is_private: boolean
   project_id: string | null
+  color: TaskColor | null
   /** auth user ids */
   assignee_ids: string[]
 }
@@ -148,6 +153,7 @@ export interface UpdateTaskInput {
   completed?: boolean
   is_private?: boolean
   project_id?: string | null
+  color?: TaskColor | null
   description_format?: TaskDescriptionFormat
 }
 

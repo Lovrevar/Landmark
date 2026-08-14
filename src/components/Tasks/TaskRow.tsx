@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Paperclip, MessageSquare, Trash2, Lock, Square, CheckSquare } from 'lucide-react'
 import AvatarStack from '../ui/AvatarStack'
+import TaskColorChip from './components/TaskColorChip'
 import { relativeLabel } from '../Calendar/utils/relativeLabel'
 import type { Task } from '../../types/tasks'
 
@@ -108,9 +109,13 @@ const TaskRow: React.FC<Props> = ({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+          {/* The colour label sits beside the deadline but never replaces it: the red left
+              border above is the "is this late" signal and stays deadline-driven. */}
+          <TaskColorChip color={task.color} />
           {relative && (
+            // No "Overdue," prefix: relativeLabel already words a past deadline as
+            // "3 d ago", and the red says the rest.
             <span className={overdue ? 'text-red-600 dark:text-red-400 font-medium' : ''}>
-              {overdue ? t('tasks.row.overdue_prefix') + ' ' : ''}
               {relative}
             </span>
           )}
