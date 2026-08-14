@@ -15,6 +15,7 @@ import {
   CheckSquare,
   Plus,
   Search,
+  Tag,
 } from 'lucide-react'
 import ConfirmDialog from '../ui/ConfirmDialog'
 import SearchableSelect from '../ui/SearchableSelect'
@@ -22,6 +23,8 @@ import ToggleSwitch from '../ui/ToggleSwitch'
 import MarkdownView from '../ui/MarkdownView'
 import AttachmentList from './components/AttachmentList'
 import MentionPicker from './components/MentionPicker'
+import TaskColorChip from './components/TaskColorChip'
+import TaskColorPicker from './components/TaskColorPicker'
 import { renderCommentWithMentions } from './components/mentions'
 import { useTaskComments } from './hooks/useTaskComments'
 import {
@@ -39,6 +42,7 @@ import type {
   TaskUser,
   UpdateTaskInput,
 } from '../../types/tasks'
+import type { TaskColor } from './taskColor'
 
 interface Props {
   task: Task | null
@@ -160,6 +164,11 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   const saveDueDate = async (value: string) => {
     if (value === (task.deadline || '')) return
     await saveField({ deadline: value || null, due_time: null })
+  }
+
+  const saveColor = async (color: TaskColor | null) => {
+    if (color === task.color) return
+    await saveField({ color })
   }
 
   const saveIsPrivate = async (val: boolean) => {
@@ -342,6 +351,18 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
               />
             </Field>
           </div>
+
+          {(canEdit || task.color) && (
+            <Field icon={<Tag className="w-4 h-4" />} label={t('tasks.modal.color_label')}>
+              {canEdit ? (
+                <div className="pt-1">
+                  <TaskColorPicker value={task.color} onChange={saveColor} disabled={saving} />
+                </div>
+              ) : (
+                <TaskColorChip color={task.color} />
+              )}
+            </Field>
+          )}
 
           {canEdit && (
             <div className="flex items-center gap-2">

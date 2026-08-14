@@ -4353,7 +4353,11 @@
       "in_minutes": "In {{count}} min",
       "in_hours": "In {{count}} h",
       "in_days": "In {{count}} d",
-      "in_weeks": "In {{count}} wk"
+      "in_weeks": "In {{count}} wk",
+      "ago_minutes": "{{count}} min ago",
+      "ago_hours": "{{count}} h ago",
+      "ago_days": "{{count}} d ago",
+      "ago_weeks": "{{count}} wk ago"
     },
     "team_calendars": {
       "title": "Team calendars",
@@ -4504,11 +4508,19 @@
     },
     "row": {
       "unread": "Unread updates",
-      "overdue_prefix": "Overdue,",
       "delete": "Delete",
       "read_only": "Read only",
       "mark_done": "Mark as done",
       "mark_open": "Mark as not done"
+    },
+    "colors": {
+      "none": "No colour",
+      "blue": "Blue",
+      "green": "Green",
+      "yellow": "Yellow",
+      "red": "Red",
+      "purple": "Purple",
+      "gray": "Grey"
     },
     "modal": {
       "new_title": "New task",
@@ -4516,6 +4528,7 @@
       "description_label": "Description",
       "description_placeholder": "Add a description...",
       "due_date_label": "Due (date)",
+      "color_label": "Colour",
       "project_label": "Project",
       "project_placeholder": "No project",
       "project_search_placeholder": "Search projects",

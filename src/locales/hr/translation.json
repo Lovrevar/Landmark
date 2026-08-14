@@ -4357,7 +4357,11 @@
       "in_minutes": "Za {{count}} min",
       "in_hours": "Za {{count}} h",
       "in_days": "Za {{count}} d",
-      "in_weeks": "Za {{count}} tj."
+      "in_weeks": "Za {{count}} tj.",
+      "ago_minutes": "prije {{count}} min",
+      "ago_hours": "prije {{count}} h",
+      "ago_days": "prije {{count}} d",
+      "ago_weeks": "prije {{count}} tj."
     },
     "team_calendars": {
       "title": "Kalendari tima",
@@ -4509,11 +4513,19 @@
     },
     "row": {
       "unread": "Nepročitane izmjene",
-      "overdue_prefix": "U kašnjenju,",
       "delete": "Obriši",
       "read_only": "Samo za čitanje",
       "mark_done": "Označi kao gotovo",
       "mark_open": "Označi kao nije gotovo"
+    },
+    "colors": {
+      "none": "Bez boje",
+      "blue": "Plava",
+      "green": "Zelena",
+      "yellow": "Žuta",
+      "red": "Crvena",
+      "purple": "Ljubičasta",
+      "gray": "Siva"
     },
     "modal": {
       "new_title": "Novi zadatak",
@@ -4521,6 +4533,7 @@
       "description_label": "Opis",
       "description_placeholder": "Dodaj opis...",
       "due_date_label": "Rok (datum)",
+      "color_label": "Boja",
       "project_label": "Projekt",
       "project_placeholder": "Bez projekta",
       "project_search_placeholder": "Pretraži projekte",

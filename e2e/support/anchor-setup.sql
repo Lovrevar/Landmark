@@ -36,6 +36,26 @@ WHERE u.email = 'e2e-supervision@mail.com'
     WHERE pm.user_id = u.id AND pm.project_id = p.id
   );
 
+-- 3. Counterparty anchors for the Cashflow invoice factory. It borrows the first
+--    existing row of each rather than creating one (see factories/cashflowInvoices.ts:
+--    firstCompanyId / firstSubcontractorId), which silently worked on the old shared
+--    dev DB because manual dev work had left rows there. A freshly provisioned test
+--    project has none, so the factory throws and every Cashflow spec fails. Seed them
+--    here. The subcontractor satisfies check_invoice_entity_type for
+--    invoice_type = 'INCOMING_SUPPLIER' (supplier_id NOT NULL); invoice FKs use
+--    ON DELETE RESTRICT, so per-test cleanup cannot remove these rows.
+INSERT INTO accounting_companies (name, oib, initial_balance)
+SELECT 'E2E Anchor Company', '00000000001', 0
+WHERE NOT EXISTS (
+  SELECT 1 FROM accounting_companies WHERE oib = '00000000001'
+);
+
+INSERT INTO subcontractors (name, contact)
+SELECT 'E2E Anchor Subcontractor', 'E2E'
+WHERE NOT EXISTS (
+  SELECT 1 FROM subcontractors WHERE name = 'E2E Anchor Subcontractor'
+);
+
 COMMIT;
 
 -- Optional anchors — enable only if the corresponding module's tests reveal they

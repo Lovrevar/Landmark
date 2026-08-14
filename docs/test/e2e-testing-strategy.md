@@ -139,11 +139,11 @@ Every fixture returning a list must accept a namespace filter.
 `.env.test` is gitignored. It contains:
 
 ```
-VITE_SUPABASE_URL=https://ktfaimjkcvhkftwbnnwy.supabase.co
+VITE_SUPABASE_URL=https://xzoicihsebdkbdezcugs.supabase.co
 VITE_SUPABASE_ANON_KEY=<dev anon key>
 VITE_CASHFLOW_PASSWORD=admin
 SUPABASE_SERVICE_ROLE_KEY=<dev service-role key>
-E2E_ALLOWED_SUPABASE_URL=https://ktfaimjkcvhkftwbnnwy.supabase.co
+E2E_ALLOWED_SUPABASE_URL=https://xzoicihsebdkbdezcugs.supabase.co
 ```
 
 `playwright.config.ts` loads `.env.test` and **throws** before any test runs if `VITE_SUPABASE_URL !== E2E_ALLOWED_SUPABASE_URL`. The allowlist is explicit — we check that the target *is* the dev URL, rather than checking it *isn't* prod. That failure mode is safer: a misconfigured env that doesn't match the allowlist fails closed.
@@ -228,6 +228,7 @@ A small set of permanent, non-prefixed records must exist in the dev DB before t
 Required:
 - **`E2E Anchor Project`** — a single row in `projects` that Supervision, Funding, and Retail tests attach work under. Avoids re-creating project records and re-assigning managers every run.
 - **`project_managers`** row linking `e2e-supervision@mail.com` to the anchor project so work-log tests pass RLS.
+- **`E2E Anchor Company`** (`accounting_companies`, OIB `00000000001`) and **`E2E Anchor Subcontractor`** (`subcontractors`) — the Cashflow invoice factory borrows the *first existing* row of each rather than creating one, so a freshly provisioned project with empty tables makes every Cashflow spec fail. These were implicit on the old shared dev project, where manual dev work happened to leave rows behind; they are explicit anchors as of the 2026-07-29 project move.
 
 Likely (decided in Step 2 once the smoke test reveals what's actually blocked by missing references):
 - **`E2E Anchor Bank`** — for Funding credit tests.

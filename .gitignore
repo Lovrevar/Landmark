@@ -51,5 +51,8 @@ graphify-out/
 supabase/.temp/
 # Deno lockfile — regenerated locally when type-checking edge functions
 supabase/functions/deno.lock
+# Web Push private VAPID keys — the JWKS half. Lives in the send-push edge
+# function secret VAPID_KEYS, never in the repo.
+vapid.json
 # Local backup of .git made during repo recovery — delete once verified
 .git.bak/
