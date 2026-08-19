@@ -139,11 +139,11 @@ Every fixture returning a list must accept a namespace filter.
 `.env.test` is gitignored. It contains:
 
 ```
-VITE_SUPABASE_URL=https://xzoicihsebdkbdezcugs.supabase.co
+VITE_SUPABASE_URL=https://nxvbglegqcgxlxvyfuht.supabase.co
 VITE_SUPABASE_ANON_KEY=<dev anon key>
 VITE_CASHFLOW_PASSWORD=admin
 SUPABASE_SERVICE_ROLE_KEY=<dev service-role key>
-E2E_ALLOWED_SUPABASE_URL=https://xzoicihsebdkbdezcugs.supabase.co
+E2E_ALLOWED_SUPABASE_URL=https://nxvbglegqcgxlxvyfuht.supabase.co
 ```
 
 `playwright.config.ts` loads `.env.test` and **throws** before any test runs if `VITE_SUPABASE_URL !== E2E_ALLOWED_SUPABASE_URL`. The allowlist is explicit — we check that the target *is* the dev URL, rather than checking it *isn't* prod. That failure mode is safer: a misconfigured env that doesn't match the allowlist fails closed.
