@@ -6,6 +6,11 @@ import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
+// Survives the full-page redirect to Microsoft and back, so the SIGNED_IN
+// handler can tell a returning OAuth round trip from an ordinary session
+// restore and report/log it accordingly.
+const SSO_PENDING_KEY = 'sso_redirect_pending'
+
 export interface ProjectAssignment {
   id: string
   project_id: string
@@ -30,6 +35,7 @@ export type LoginErrorCode =
   | 'too_many_requests'
   | 'network_error'
   | 'no_user_record'
+  | 'sso_not_provisioned'
   | 'unknown'
 
 export type AuthResult = { success: true } | { success: false; code: LoginErrorCode }
@@ -41,8 +47,12 @@ interface AuthContextType {
   currentProfile: Profile
   setCurrentProfile: (profile: Profile) => void
   login: (email: string, password: string) => Promise<AuthResult>
+  loginWithMicrosoft: () => Promise<AuthResult>
   resetPassword: (email: string) => Promise<AuthResult>
   logout: () => Promise<void>
+  /** Set when a redirect-based sign-in fails after the OAuth round trip. */
+  authError: LoginErrorCode | null
+  clearAuthError: () => void
   hasProjectAccess: (projectId: string) => boolean
 }
 
@@ -64,6 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [authError, setAuthError] = useState<LoginErrorCode | null>(null)
   const [currentProfile, setCurrentProfile] = useState<Profile>(() => {
     const saved = localStorage.getItem('currentProfile')
     return (saved as Profile) || 'General'
@@ -131,23 +142,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [])
 
+  // A session with no public.users row is an authenticated identity with no
+  // app account — the state a Microsoft sign-in lands in when nobody has
+  // provisioned the person. Drop the session so it cannot linger, and say why.
+  const rejectUnprovisionedSession = useCallback(async (viaSso: boolean) => {
+    setUser(null)
+    setIsAuthenticated(false)
+    setAuthError(viaSso ? 'sso_not_provisioned' : 'no_user_record')
+    try {
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('[auth] sign-out after unprovisioned session failed:', error)
+    }
+  }, [])
+
   const handleAuthChange = useCallback((authUser: SupabaseUser | null) => {
     (async () => {
-      if (authUser) {
-        const userData = await fetchUserData(authUser)
-        if (userData) {
-          setUser(userData)
-          setIsAuthenticated(true)
-        } else {
-          setUser(null)
-          setIsAuthenticated(false)
-        }
-      } else {
+      if (!authUser) {
         setUser(null)
         setIsAuthenticated(false)
+        return
+      }
+
+      const viaSso = sessionStorage.getItem(SSO_PENDING_KEY) === '1'
+      const userData = await fetchUserData(authUser)
+
+      if (!userData) {
+        sessionStorage.removeItem(SSO_PENDING_KEY)
+        await rejectUnprovisionedSession(viaSso)
+        return
+      }
+
+      setUser(userData)
+      setIsAuthenticated(true)
+      setAuthError(null)
+
+      if (viaSso) {
+        // The redirect skips login(), so do its bookkeeping here instead.
+        sessionStorage.removeItem(SSO_PENDING_KEY)
+        setCurrentProfile('General')
+        localStorage.setItem('currentProfile', 'General')
+        logActivity({
+          userId: userData.id,
+          userRole: userData.role,
+          action: 'auth.login',
+          entity: 'user',
+          entityId: userData.id,
+          metadata: { severity: 'low', method: 'microsoft' },
+        })
       }
     })()
-  }, [fetchUserData])
+  }, [fetchUserData, rejectUnprovisionedSession])
 
   useEffect(() => {
     let mounted = true
@@ -160,9 +205,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.error('Error getting session:', error)
         } else if (session?.user && mounted) {
           const userData = await fetchUserData(session.user)
-          if (userData && mounted) {
+          if (!mounted) return
+          if (userData) {
             setUser(userData)
             setIsAuthenticated(true)
+          } else {
+            await rejectUnprovisionedSession(sessionStorage.getItem(SSO_PENDING_KEY) === '1')
+            sessionStorage.removeItem(SSO_PENDING_KEY)
           }
         }
       } catch (error) {
@@ -193,7 +242,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [fetchUserData, handleAuthChange])
+  }, [fetchUserData, handleAuthChange, rejectUnprovisionedSession])
 
   const mapAuthError = (error: unknown): LoginErrorCode => {
     if (!error || typeof error !== 'object') return 'unknown'
@@ -209,6 +258,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   const login = async (email: string, password: string): Promise<AuthResult> => {
+    // Clear a marker left behind by an OAuth attempt the user abandoned at
+    // Microsoft, so this sign-in is not logged as one.
+    sessionStorage.removeItem(SSO_PENDING_KEY)
+    setAuthError(null)
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -245,6 +298,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  /**
+   * Redirects to Microsoft (Entra ID). On success the browser comes back to
+   * the app with tokens in the URL, supabase-js picks them up
+   * (detectSessionInUrl) and fires SIGNED_IN, which handleAuthChange handles.
+   * A resolved { success: true } here only means the redirect was issued.
+   */
+  const loginWithMicrosoft = async (): Promise<AuthResult> => {
+    setAuthError(null)
+    try {
+      sessionStorage.setItem(SSO_PENDING_KEY, '1')
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'azure',
+        options: {
+          scopes: 'openid email profile',
+          redirectTo: window.location.origin,
+        },
+      })
+
+      if (error) {
+        sessionStorage.removeItem(SSO_PENDING_KEY)
+        return { success: false, code: mapAuthError(error) }
+      }
+
+      return { success: true }
+    } catch (error) {
+      sessionStorage.removeItem(SSO_PENDING_KEY)
+      return { success: false, code: mapAuthError(error) }
+    }
+  }
+
+  const clearAuthError = () => setAuthError(null)
+
   const resetPassword = async (email: string): Promise<AuthResult> => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -277,8 +362,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setUser(null)
       setIsAuthenticated(false)
+      setAuthError(null)
       localStorage.removeItem('currentProfile')
       sessionStorage.removeItem('cashflow_unlocked')
+      sessionStorage.removeItem(SSO_PENDING_KEY)
     }
   }
 
@@ -306,8 +393,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     currentProfile,
     setCurrentProfile: handleSetCurrentProfile,
     login,
+    loginWithMicrosoft,
     resetPassword,
     logout,
+    authError,
+    clearAuthError,
     hasProjectAccess
   }
 

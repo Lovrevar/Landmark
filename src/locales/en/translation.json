@@ -176,6 +176,7 @@
     "error_too_many_requests": "Too many attempts. Please wait a moment and try again",
     "error_network_error": "Can't reach the server. Check your connection and try again",
     "error_no_user_record": "Your account is not set up. Please contact an administrator",
+    "error_sso_not_provisioned": "This Microsoft account has no access to Cognilion. Please contact an administrator",
     "error_unknown": "Something went wrong. Please try again",
     "forgot_password": "Forgot your password?",
     "reset_password": "Reset your password",
@@ -183,7 +184,10 @@
     "send_reset_link": "Send reset link",
     "sending_reset_link": "Sending...",
     "reset_link_sent": "If an account exists for that email, a reset link is on its way",
-    "back_to_sign_in": "Back to sign in"
+    "back_to_sign_in": "Back to sign in",
+    "or": "or",
+    "sign_in_with_microsoft": "Sign in with Microsoft",
+    "redirecting_to_microsoft": "Redirecting to Microsoft..."
   },
   "nav": {
     "dashboard": "Dashboard",
