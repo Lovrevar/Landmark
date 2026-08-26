@@ -35,6 +35,9 @@ vite.config.ts.timestamp-*
 # One-off import/report artifacts
 nin-import-report.json
 
+# Vitest coverage report
+coverage/
+
 # Playwright / E2E
 e2e/.auth/
 playwright-report/

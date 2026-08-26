@@ -176,6 +176,7 @@
     "error_too_many_requests": "Previše pokušaja. Pričekajte trenutak i pokušajte ponovno",
     "error_network_error": "Poslužitelj nije dostupan. Provjerite vezu i pokušajte ponovno",
     "error_no_user_record": "Vaš račun nije postavljen. Obratite se administratoru",
+    "error_sso_not_provisioned": "Ovaj Microsoft račun nema pristup Cognilionu. Obratite se administratoru",
     "error_unknown": "Nešto je pošlo po zlu. Pokušajte ponovno",
     "forgot_password": "Zaboravili ste lozinku?",
     "reset_password": "Resetirajte lozinku",
@@ -183,7 +184,10 @@
     "send_reset_link": "Pošalji poveznicu za resetiranje",
     "sending_reset_link": "Slanje...",
     "reset_link_sent": "Ako račun za taj email postoji, poveznica za resetiranje je na putu",
-    "back_to_sign_in": "Natrag na prijavu"
+    "back_to_sign_in": "Natrag na prijavu",
+    "or": "ili",
+    "sign_in_with_microsoft": "Prijava putem Microsoft računa",
+    "redirecting_to_microsoft": "Preusmjeravanje na Microsoft..."
   },
   "nav": {
     "dashboard": "Nadzorna ploča",

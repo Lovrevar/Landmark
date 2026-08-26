@@ -13,9 +13,20 @@ interface FieldErrors {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+// Microsoft's four-square mark. Inlined rather than pulled from Lucide, which
+// has no brand icons, and the sign-in button is required to carry it.
+const MicrosoftLogo: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 21 21" aria-hidden="true" className={className}>
+    <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+    <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+    <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+    <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+  </svg>
+)
+
 const LoginForm: React.FC = () => {
   const { t } = useTranslation()
-  const { login, resetPassword } = useAuth()
+  const { login, loginWithMicrosoft, resetPassword, authError, clearAuthError } = useAuth()
 
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
@@ -24,6 +35,7 @@ const LoginForm: React.FC = () => {
   const [formError, setFormError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [ssoLoading, setSsoLoading] = useState(false)
 
   const errorKey = (code: LoginErrorCode) => `auth.error_${code}`
 
@@ -42,6 +54,7 @@ const LoginForm: React.FC = () => {
   }
 
   const handleEmailChange = (value: string) => {
+    if (authError) clearAuthError()
     setEmail(value)
     if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: undefined }))
     if (formError) setFormError('')
@@ -49,12 +62,14 @@ const LoginForm: React.FC = () => {
   }
 
   const handlePasswordChange = (value: string) => {
+    if (authError) clearAuthError()
     setPassword(value)
     if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: undefined }))
     if (formError) setFormError('')
   }
 
   const switchMode = (next: Mode) => {
+    clearAuthError()
     setMode(next)
     setFieldErrors({})
     setFormError('')
@@ -88,6 +103,21 @@ const LoginForm: React.FC = () => {
 
     if (!result.success) {
       applyAuthError(result.code)
+    }
+  }
+
+  const handleMicrosoftSignIn = async () => {
+    setSsoLoading(true)
+    setFormError('')
+    setFieldErrors({})
+    clearAuthError()
+
+    const result = await loginWithMicrosoft()
+
+    // On success the browser is navigating away, so leave the button spinning.
+    if (!result.success) {
+      setSsoLoading(false)
+      setFormError(t(errorKey(result.code)))
     }
   }
 
@@ -175,18 +205,39 @@ const LoginForm: React.FC = () => {
                 )}
               </div>
 
-              {formError && (
+              {(formError || authError) && (
                 <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-                  {formError}
+                  {formError || t(errorKey(authError!))}
                 </div>
               )}
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || ssoLoading}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50"
               >
                 {loading ? t('auth.signing_in') : t('auth.sign_in')}
+              </button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-white dark:bg-gray-800 px-3 text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                    {t('auth.or')}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleMicrosoftSignIn}
+                disabled={loading || ssoLoading}
+                className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-100 font-semibold py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50"
+              >
+                <MicrosoftLogo className="w-5 h-5" />
+                {ssoLoading ? t('auth.redirecting_to_microsoft') : t('auth.sign_in_with_microsoft')}
               </button>
 
               <div className="text-center">
