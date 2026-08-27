@@ -2,6 +2,7 @@ import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { BankWithCredits, BankCredit, Project, Company, NewCreditForm } from '../bankTypes'
 import { calculateAnnuityPayment, calculatePaymentSchedule } from '../../../Funding/Investors/utils/creditCalculations'
+import { detachInvoicesFromCredits } from '../../../Funding/Investors/services/creditService'
 
 export const fetchProjects = async (): Promise<Project[]> => {
   const { data, error } = await supabase
@@ -215,6 +216,9 @@ export const updateCredit = async (creditId: string, credit: NewCreditForm): Pro
 }
 
 export const deleteCredit = async (creditId: string): Promise<void> => {
+  // accounting_invoices.bank_credit_id is ON DELETE RESTRICT — unlink before deleting.
+  const detachedInvoices = await detachInvoicesFromCredits([creditId])
+
   const { error } = await supabase
     .from('bank_credits')
     .delete()
@@ -226,7 +230,7 @@ export const deleteCredit = async (creditId: string): Promise<void> => {
     action: 'bank_credit.delete',
     entity: 'bank_credit',
     entityId: creditId,
-    metadata: { severity: 'high' }
+    metadata: { severity: 'high', detached_invoices: detachedInvoices }
   })
 }
 

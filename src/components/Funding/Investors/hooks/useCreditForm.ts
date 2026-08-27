@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { BankCredit } from '../../../../lib/supabase'
 import { INITIAL_CREDIT_FORM, type CreditFormData, type CompanyBankAccount } from '../types'
 import { calculateAnnuityPayment, parseCreditTypeAndSeniority } from '../utils/creditCalculations'
 import { useToast } from '../../../../contexts/ToastContext'
+import { isForeignKeyViolation } from '../../../../lib/dbErrors'
 import {
   fetchCompanyBankAccounts,
   createCredit,
   updateCredit,
   deleteCredit,
+  countInvoicesForCredits,
 } from '../services/creditService'
 
 export function useCreditForm(onSaved: () => Promise<void>) {
   const toast = useToast()
+  const { t } = useTranslation()
   const [showCreditForm, setShowCreditForm] = useState(false)
   const [editingCredit, setEditingCredit] = useState<BankCredit | null>(null)
   const [newCredit, setNewCredit] = useState<CreditFormData>({ ...INITIAL_CREDIT_FORM })
@@ -141,9 +145,19 @@ export function useCreditForm(onSaved: () => Promise<void>) {
   }
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [pendingDeleteInvoiceCount, setPendingDeleteInvoiceCount] = useState<number | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  const handleDeleteCredit = (creditId: string) => setPendingDeleteId(creditId)
+  // null = not looked up yet, or the lookup failed; the dialog just omits the warning line.
+  const handleDeleteCredit = async (creditId: string) => {
+    setPendingDeleteId(creditId)
+    setPendingDeleteInvoiceCount(null)
+    try {
+      setPendingDeleteInvoiceCount(await countInvoicesForCredits([creditId]))
+    } catch (error) {
+      console.error('Error counting invoices linked to credit:', error)
+    }
+  }
 
   const confirmDeleteCredit = async () => {
     if (!pendingDeleteId) return
@@ -153,14 +167,22 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       await onSaved()
     } catch (error) {
       console.error('Error deleting credit:', error)
-      toast.error('Error deleting credit facility.')
+      toast.error(
+        isForeignKeyViolation(error)
+          ? t('funding.investors.error_delete_credit_linked')
+          : t('funding.investors.error_delete_credit'),
+      )
     } finally {
       setDeleting(false)
       setPendingDeleteId(null)
+      setPendingDeleteInvoiceCount(null)
     }
   }
 
-  const cancelDeleteCredit = () => setPendingDeleteId(null)
+  const cancelDeleteCredit = () => {
+    setPendingDeleteId(null)
+    setPendingDeleteInvoiceCount(null)
+  }
 
   return {
     showCreditForm,
@@ -177,6 +199,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     confirmDeleteCredit,
     cancelDeleteCredit,
     pendingDeleteId,
+    pendingDeleteInvoiceCount,
     deleting,
   }
 }

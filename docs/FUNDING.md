@@ -91,14 +91,17 @@ Bank and investor registry. Manages credit facilities and equity investments per
 - `fetchFundingBanksData()` — fetches banks (with credit aggregates: utilized, outstanding, available, utilization) plus companies
 - `createBank(payload)` — inserts a new bank/investor record
 - `updateBank(bankId, payload)` — updates a bank/investor record
-- `deleteBank(bankId)` — deletes a bank/investor record
-- **Depends on:** supabase client, activityLog
+- `fetchBankCreditIds(bankId)` — returns the ids of the bank's credit facilities (used to size and perform the invoice detach)
+- `deleteBank(bankId)` — detaches invoices from all the bank's credit facilities, then deletes the bank/investor record
+- **Depends on:** supabase client, activityLog, creditService (`detachInvoicesFromCredits`)
 
 ### creditService.ts
 - `fetchCompanyBankAccounts(companyId)` — fetches a company's bank accounts for disbursement selection
 - `createCredit(newCredit, computed)` — inserts a new bank credit facility (with computed type/seniority/monthly payment)
 - `updateCredit(creditId, newCredit, computed)` — updates a credit facility
-- `deleteCredit(creditId)` — deletes a credit facility
+- `countInvoicesForCredits(creditIds)` — how many invoices still reference these facilities (drives the delete-confirmation warning)
+- `detachInvoicesFromCredits(creditIds)` — clears `accounting_invoices.bank_credit_id`, returns the number detached; also imported by `Cashflow/Banks/services/bankService.ts` and by `bankService.deleteBank`
+- `deleteCredit(creditId)` — detaches linked invoices, then deletes the credit facility
 - **Depends on:** supabase client, activityLog
 - _Note: distinct from `Investments/services/creditService.ts`; this one handles facility CRUD for the investor registry._
 
@@ -111,7 +114,7 @@ Bank and investor registry. Manages credit facilities and equity investments per
 ### useBankData.ts
 - `useBankData()` — fetches banks (with credits) and companies, and manages bank create/update/delete with pending-delete confirmation state
 - **Calls:** bankService.ts
-- **Returns:** banks, companies, loading, fetchData, addBank, updateBank, deleteBank, confirmDeleteBank, cancelDeleteBank, pendingDeleteId, deleting
+- **Returns:** banks, companies, loading, fetchData, addBank, updateBank, deleteBank, confirmDeleteBank, cancelDeleteBank, pendingDeleteId, pendingDeleteInvoiceCount, deleting
 
 ### useBankForm.ts
 - `useBankForm()` — manages bank add/edit form state
@@ -121,7 +124,7 @@ Bank and investor registry. Manages credit facilities and equity investments per
 - `useCreditForm(onSaved)` — manages credit facility add/edit form state, lazy-loads company bank accounts, computes the annuity payment, and persists create/update/delete with confirmation state
 - **Calls:** creditService.ts (Investors)
 - **Uses utils:** creditCalculations (calculateAnnuityPayment, parseCreditTypeAndSeniority)
-- **Returns:** showCreditForm, setShowCreditForm, editingCredit, newCredit, setNewCredit, companyBankAccounts, loadingAccounts, handleEditCredit, resetCreditForm, addCredit, handleDeleteCredit, confirmDeleteCredit, cancelDeleteCredit, pendingDeleteId, deleting
+- **Returns:** showCreditForm, setShowCreditForm, editingCredit, newCredit, setNewCredit, companyBankAccounts, loadingAccounts, handleEditCredit, resetCreditForm, addCredit, handleDeleteCredit, confirmDeleteCredit, cancelDeleteCredit, pendingDeleteId, pendingDeleteInvoiceCount, deleting
 
 ### useEquityForm.ts
 - `useEquityForm(onSaved)` — manages equity investment form state and persists the investment
@@ -334,3 +337,4 @@ Troškovna Informatička Struktura (TIC) — structured cost breakdown table per
 - The audit refactor also lowercased the `Modals/`→`modals/` and `Services/`→`services/` directories in Payments, Projects, and TIC
 - Pure calculation/formatting helpers have colocated unit tests: `Investors/utils/creditCalculations.test.ts` and `TIC/utils/ticFormatters.test.ts`
 - All service mutations log via `logActivity()` (fire-and-forget)
+- **Deleting a credit facility or an investor detaches invoices first.** `accounting_invoices.bank_credit_id` is the only `ON DELETE RESTRICT` reference to `bank_credits`, so a bare delete fails with Postgres `23503` whenever an invoice is attached (and, for investors, aborts the `bank_credits` cascade). `creditService.detachInvoicesFromCredits()` clears the FK — the invoices are kept, only unlinked — and both delete paths call it before deleting. The confirmation dialog reports the count via `countInvoicesForCredits()`, and the hooks fall back to `isForeignKeyViolation()` from `src/lib/dbErrors.ts` for a readable toast if some other constraint blocks the delete
