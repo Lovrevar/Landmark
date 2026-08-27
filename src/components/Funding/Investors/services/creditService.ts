@@ -90,7 +90,58 @@ export async function updateCredit(
   })
 }
 
+/**
+ * How many invoices still point at these credit facilities.
+ *
+ * `accounting_invoices.bank_credit_id` is the only ON DELETE RESTRICT reference to
+ * `bank_credits`, so this count is exactly what blocks a delete.
+ */
+export async function countInvoicesForCredits(creditIds: string[]): Promise<number> {
+  if (creditIds.length === 0) return 0
+
+  const { count, error } = await supabase
+    .from('accounting_invoices')
+    .select('id', { count: 'exact', head: true })
+    .in('bank_credit_id', creditIds)
+
+  if (error) throw error
+  return count ?? 0
+}
+
+/**
+ * Unlinks invoices from these credit facilities so the credit rows can be deleted.
+ * The invoices themselves are kept — only `bank_credit_id` is cleared.
+ *
+ * Must run before the delete: the update fires `recalculate_bank_credit_fields()` on the
+ * OLD credit id, which is harmless while the credit still exists but has nothing to
+ * recalculate once it is gone.
+ */
+export async function detachInvoicesFromCredits(creditIds: string[]): Promise<number> {
+  if (creditIds.length === 0) return 0
+
+  const { data, error } = await supabase
+    .from('accounting_invoices')
+    .update({ bank_credit_id: null })
+    .in('bank_credit_id', creditIds)
+    .select('id')
+
+  if (error) throw error
+
+  const detached = data?.length ?? 0
+  if (detached > 0) {
+    logActivity({
+      action: 'invoice.bulk_detach_credit',
+      entity: 'invoice',
+      metadata: { severity: 'high', count: detached, credit_ids: creditIds },
+    })
+  }
+
+  return detached
+}
+
 export async function deleteCredit(creditId: string): Promise<void> {
+  const detachedInvoices = await detachInvoicesFromCredits([creditId])
+
   const { error } = await supabase.from('bank_credits').delete().eq('id', creditId)
   if (error) throw error
 
@@ -98,6 +149,6 @@ export async function deleteCredit(creditId: string): Promise<void> {
     action: 'bank_credit.delete',
     entity: 'bank_credit',
     entityId: creditId,
-    metadata: { severity: 'high' },
+    metadata: { severity: 'high', detached_invoices: detachedInvoices },
   })
 }

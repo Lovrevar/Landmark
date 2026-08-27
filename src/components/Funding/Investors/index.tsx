@@ -19,6 +19,7 @@ const InvestorsManagement: React.FC = () => {
   const {
     banks, companies, loading, addBank, updateBank, deleteBank, fetchData,
     pendingDeleteId: pendingDeleteBankId,
+    pendingDeleteInvoiceCount: pendingDeleteBankInvoiceCount,
     confirmDeleteBank,
     cancelDeleteBank,
     deleting: deletingBank
@@ -111,7 +112,18 @@ const InvestorsManagement: React.FC = () => {
       <ConfirmDialog
         show={!!pendingDeleteBankId}
         title={t('funding.investors.confirm_delete_bank_title')}
-        message={t('funding.investors.confirm_delete_bank_message')}
+        message={
+          <>
+            <p>{t('funding.investors.confirm_delete_bank_message')}</p>
+            {!!pendingDeleteBankInvoiceCount && (
+              <p className="mt-3 text-amber-600 dark:text-amber-400">
+                {t('funding.investors.confirm_delete_bank_invoices_warning', {
+                  count: pendingDeleteBankInvoiceCount,
+                })}
+              </p>
+            )}
+          </>
+        }
         confirmLabel={t('common.yes_delete')}
         cancelLabel={t('common.cancel')}
         variant="danger"
@@ -123,7 +135,18 @@ const InvestorsManagement: React.FC = () => {
       <ConfirmDialog
         show={!!creditForm.pendingDeleteId}
         title={t('funding.investors.confirm_delete_credit_title')}
-        message={t('funding.investors.confirm_delete_credit_message')}
+        message={
+          <>
+            <p>{t('funding.investors.confirm_delete_credit_message')}</p>
+            {!!creditForm.pendingDeleteInvoiceCount && (
+              <p className="mt-3 text-amber-600 dark:text-amber-400">
+                {t('funding.investors.confirm_delete_credit_invoices_warning', {
+                  count: creditForm.pendingDeleteInvoiceCount,
+                })}
+              </p>
+            )}
+          </>
+        }
         confirmLabel={t('common.yes_delete')}
         cancelLabel={t('common.cancel')}
         variant="danger"

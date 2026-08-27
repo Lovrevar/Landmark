@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { BankWithCredits, Company } from '../types'
 import { useToast } from '../../../../contexts/ToastContext'
+import { isForeignKeyViolation } from '../../../../lib/dbErrors'
 import {
   fetchFundingBanksData,
   createBank,
   updateBank,
   deleteBank,
+  fetchBankCreditIds,
   type BankFormPayload,
 } from '../services/bankService'
+import { countInvoicesForCredits } from '../services/creditService'
 
 export function useBankData() {
   const toast = useToast()
+  const { t } = useTranslation()
   const [banks, setBanks] = useState<BankWithCredits[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
@@ -64,9 +69,19 @@ export function useBankData() {
   }
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [pendingDeleteInvoiceCount, setPendingDeleteInvoiceCount] = useState<number | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  const handleDeleteBank = (bankId: string) => setPendingDeleteId(bankId)
+  // null = not looked up yet, or the lookup failed; the dialog just omits the warning line.
+  const handleDeleteBank = async (bankId: string) => {
+    setPendingDeleteId(bankId)
+    setPendingDeleteInvoiceCount(null)
+    try {
+      setPendingDeleteInvoiceCount(await countInvoicesForCredits(await fetchBankCreditIds(bankId)))
+    } catch (error) {
+      console.error('Error counting invoices linked to investor credits:', error)
+    }
+  }
 
   const confirmDeleteBank = async () => {
     if (!pendingDeleteId) return
@@ -76,14 +91,22 @@ export function useBankData() {
       await fetchData()
     } catch (error) {
       console.error('Error deleting bank:', error)
-      toast.error('Error deleting bank.')
+      toast.error(
+        isForeignKeyViolation(error)
+          ? t('funding.investors.error_delete_bank_linked')
+          : t('funding.investors.error_delete_bank'),
+      )
     } finally {
       setDeleting(false)
       setPendingDeleteId(null)
+      setPendingDeleteInvoiceCount(null)
     }
   }
 
-  const cancelDeleteBank = () => setPendingDeleteId(null)
+  const cancelDeleteBank = () => {
+    setPendingDeleteId(null)
+    setPendingDeleteInvoiceCount(null)
+  }
 
   return {
     banks,
@@ -96,6 +119,7 @@ export function useBankData() {
     confirmDeleteBank,
     cancelDeleteBank,
     pendingDeleteId,
+    pendingDeleteInvoiceCount,
     deleting,
   }
 }

@@ -1,5 +1,6 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
+import { detachInvoicesFromCredits } from './creditService'
 import type { BankWithCredits, Company } from '../types'
 
 export interface BankFormPayload {
@@ -90,7 +91,17 @@ export async function updateBank(bankId: string, payload: BankFormPayload): Prom
   })
 }
 
+export async function fetchBankCreditIds(bankId: string): Promise<string[]> {
+  const { data, error } = await supabase.from('bank_credits').select('id').eq('bank_id', bankId)
+  if (error) throw error
+  return (data ?? []).map(row => row.id)
+}
+
 export async function deleteBank(bankId: string): Promise<void> {
+  // bank_credits cascade when the bank goes, but their invoices are ON DELETE RESTRICT —
+  // unlink those first or the whole cascade aborts.
+  const detachedInvoices = await detachInvoicesFromCredits(await fetchBankCreditIds(bankId))
+
   const { error } = await supabase.from('banks').delete().eq('id', bankId)
   if (error) throw error
 
@@ -98,6 +109,6 @@ export async function deleteBank(bankId: string): Promise<void> {
     action: 'investor.delete',
     entity: 'investor',
     entityId: bankId,
-    metadata: { severity: 'high' },
+    metadata: { severity: 'high', detached_invoices: detachedInvoices },
   })
 }
