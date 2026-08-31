@@ -80,6 +80,9 @@ export interface ActivityLogFilters {
 
 /** Maps an entity type to the route where it can be viewed */
 export const ENTITY_ROUTE_MAP: Record<string, string> = {
+  erp_account_map: '/sifrarnici',
+  erp_cost_center_map: '/sifrarnici',
+  erp_partner_map: '/sifrarnici',
   project: '/projects',
   invoice: '/accounting-invoices',
   payment: '/accounting-payments',

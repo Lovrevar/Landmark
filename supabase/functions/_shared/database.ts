@@ -3612,6 +3612,192 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_account_map: {
+        Row: {
+          account_code: string | null
+          bank_id: string | null
+          created_at: string | null
+          invoice_category_id: string | null
+          notes: string | null
+          role: string | null
+          updated_at: string | null
+          updated_by: string | null
+          vat_rate: number | null
+        }
+        Insert: {
+          account_code?: string | null
+          bank_id?: string | null
+          created_at?: string | null
+          invoice_category_id?: string | null
+          notes?: string | null
+          role?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          vat_rate?: number | null
+        }
+        Update: {
+          account_code?: string | null
+          bank_id?: string | null
+          created_at?: string | null
+          invoice_category_id?: string | null
+          notes?: string | null
+          role?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          vat_rate?: number | null
+        }
+        Relationships: []
+      }
+      erp_chart_of_accounts: {
+        Row: {
+          account_code: string | null
+          active: boolean | null
+          imported_at: string | null
+          name: string | null
+        }
+        Insert: {
+          account_code?: string | null
+          active?: boolean | null
+          imported_at?: string | null
+          name?: string | null
+        }
+        Update: {
+          account_code?: string | null
+          active?: boolean | null
+          imported_at?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
+      erp_cost_center_map: {
+        Row: {
+          cost_center_code: string | null
+          created_at: string | null
+          notes: string | null
+          project_id: string | null
+          retail_project_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          cost_center_code?: string | null
+          created_at?: string | null
+          notes?: string | null
+          project_id?: string | null
+          retail_project_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          cost_center_code?: string | null
+          created_at?: string | null
+          notes?: string | null
+          project_id?: string | null
+          retail_project_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      erp_cost_centers: {
+        Row: {
+          active: boolean | null
+          code: string | null
+          imported_at: string | null
+          name: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          code?: string | null
+          imported_at?: string | null
+          name?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          code?: string | null
+          imported_at?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
+      erp_partner_map: {
+        Row: {
+          created_at: string | null
+          entity_id: string | null
+          entity_kind: string | null
+          kom_id: number | null
+          notes: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_kind?: string | null
+          kom_id?: number | null
+          notes?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_kind?: string | null
+          kom_id?: number | null
+          notes?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      erp_partners: {
+        Row: {
+          active: boolean | null
+          address: string | null
+          email: string | null
+          iban: string | null
+          imported_at: string | null
+          kom_id: number | null
+          name: string | null
+          oib: string | null
+          partner_type: string | null
+          phone: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          address?: string | null
+          email?: string | null
+          iban?: string | null
+          imported_at?: string | null
+          kom_id?: number | null
+          name?: string | null
+          oib?: string | null
+          partner_type?: string | null
+          phone?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          address?: string | null
+          email?: string | null
+          iban?: string | null
+          imported_at?: string | null
+          kom_id?: number | null
+          name?: string | null
+          oib?: string | null
+          partner_type?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      erp_unmapped_codes: {
+        Row: {
+          active: boolean | null
+          code: string | null
+          kind: string | null
+          name: string | null
+        }
+        Relationships: []
+      }
       payment_totals_by_category: {
         Row: {
           invoice_category: string | null

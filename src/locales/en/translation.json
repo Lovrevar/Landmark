@@ -233,7 +233,8 @@
     "accounting_banks": "Investments",
     "accounting_customers": "Customers",
     "budget_control": "Budget Control",
-    "activity_log": "Activity Log"
+    "activity_log": "Activity Log",
+    "sifrarnici": "Šifrarnici"
   },
   "profiles": {
     "general": "General",
@@ -4910,7 +4911,67 @@
       "retail_contract.delete": "Retail contract deleted",
       "retail_milestone.create": "Retail milestone created",
       "retail_milestone.update": "Retail milestone updated",
-      "retail_milestone.delete": "Retail milestone deleted"
+      "retail_milestone.delete": "Retail milestone deleted",
+      "erp_account_map.upsert": "ERP account mapping saved",
+      "erp_account_map.delete": "ERP account mapping removed",
+      "erp_cost_center_map.upsert": "ERP cost centre mapping saved",
+      "erp_cost_center_map.delete": "ERP cost centre mapping removed",
+      "erp_partner_map.upsert": "ERP partner mapping saved",
+      "erp_partner_map.delete": "ERP partner mapping removed"
+    }
+  },
+  "sifrarnici": {
+    "title": "Šifrarnici",
+    "description": "Maps 4D Wand codes onto Cognilion entities so imported invoices classify themselves.",
+    "search_placeholder": "Search by code or name…",
+    "only_unmapped": "Only unmapped",
+    "tab_accounts": "Konta",
+    "tab_cost_centers": "Mjesta troška",
+    "tab_partners": "Komitenti",
+    "col_code": "Code",
+    "col_name": "Name",
+    "col_role": "Role",
+    "col_target": "Maps to",
+    "col_project": "Project",
+    "col_kom_id": "ID",
+    "col_oib": "OIB",
+    "col_kind": "Type",
+    "col_entity": "Entity",
+    "no_category": "No category",
+    "no_project": "Not mapped",
+    "no_oib": "No OIB",
+    "pick_vat_rate": "Pick a rate…",
+    "pick_bank": "Pick a bank…",
+    "pick_kind": "Pick a type…",
+    "pick_entity": "Pick an entity…",
+    "group_projects": "Projects",
+    "group_retail_projects": "Retail projects",
+    "empty_accounts": "No chart of accounts imported yet",
+    "empty_hint": "Reference data arrives with the first ERP import.",
+    "empty_cost_centers": "No cost centres imported yet",
+    "empty_cost_centers_hint": "Cost centres are not currently booked in 4D Wand, so this list may stay empty. Project assignment is manual until that changes.",
+    "empty_partners": "No partners imported yet",
+    "empty_partners_hint": "The komitenti register arrives with the first ERP import. Without it invoices cannot be attributed to a supplier.",
+    "role": {
+      "unclassified": "Unclassified",
+      "liability_supplier": "Supplier liability",
+      "liability_customer": "Customer liability",
+      "liability_other": "Other liability",
+      "receivable_advance": "Advance receivable",
+      "expense": "Expense / cost",
+      "vat_input": "Input VAT (pretporez)",
+      "vat_output": "Output VAT",
+      "bank": "Bank account",
+      "ignore": "Ignore"
+    },
+    "kind": {
+      "subcontractor": "Subcontractor",
+      "retail_supplier": "Retail supplier",
+      "office_supplier": "Office supplier",
+      "customer": "Customer",
+      "retail_customer": "Retail customer",
+      "bank": "Bank",
+      "investor": "Investor"
     }
   }
 }

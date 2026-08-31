@@ -35,6 +35,7 @@ import {
   MessageCircle,
   CheckSquare,
   Files,
+  BookMarked,
   Menu as MenuIcon,
   X
 } from 'lucide-react'
@@ -164,6 +165,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.loans'), icon: TrendingUp, path: '/accounting-loans' },
         { name: t('nav.debt_status'), icon: AlertCircle, path: '/debt-status' },
         { name: t('nav.approvals'), icon: CheckCircle, path: '/accounting-approvals' },
+        { name: t('nav.sifrarnici'), icon: BookMarked, path: '/sifrarnici' },
         { name: t('nav.documents'), icon: Files, path: '/documents' }
       ],
       Retail: [

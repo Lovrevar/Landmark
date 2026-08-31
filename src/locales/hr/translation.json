@@ -233,7 +233,8 @@
     "accounting_banks": "Investicije",
     "accounting_customers": "Kupci",
     "budget_control": "Kontrola proračuna",
-    "activity_log": "Dnevnik aktivnosti"
+    "activity_log": "Dnevnik aktivnosti",
+    "sifrarnici": "Šifrarnici"
   },
   "profiles": {
     "general": "General",
@@ -4915,7 +4916,67 @@
       "retail_contract.delete": "Retail ugovor obrisan",
       "retail_milestone.create": "Retail prekretnica kreirana",
       "retail_milestone.update": "Retail prekretnica ažurirana",
-      "retail_milestone.delete": "Retail prekretnica obrisana"
+      "retail_milestone.delete": "Retail prekretnica obrisana",
+      "erp_account_map.upsert": "Spremljeno povezivanje konta",
+      "erp_account_map.delete": "Uklonjeno povezivanje konta",
+      "erp_cost_center_map.upsert": "Spremljeno povezivanje mjesta troška",
+      "erp_cost_center_map.delete": "Uklonjeno povezivanje mjesta troška",
+      "erp_partner_map.upsert": "Spremljeno povezivanje komitenta",
+      "erp_partner_map.delete": "Uklonjeno povezivanje komitenta"
+    }
+  },
+  "sifrarnici": {
+    "title": "Šifrarnici",
+    "description": "Povezuje šifre iz 4D Wanda s entitetima u Cognilionu kako bi se uvezeni računi sami klasificirali.",
+    "search_placeholder": "Pretraži po šifri ili nazivu…",
+    "only_unmapped": "Samo nepovezani",
+    "tab_accounts": "Konta",
+    "tab_cost_centers": "Mjesta troška",
+    "tab_partners": "Komitenti",
+    "col_code": "Šifra",
+    "col_name": "Naziv",
+    "col_role": "Uloga",
+    "col_target": "Povezano s",
+    "col_project": "Projekt",
+    "col_kom_id": "ID",
+    "col_oib": "OIB",
+    "col_kind": "Vrsta",
+    "col_entity": "Entitet",
+    "no_category": "Bez kategorije",
+    "no_project": "Nije povezano",
+    "no_oib": "Nema OIB-a",
+    "pick_vat_rate": "Odaberi stopu…",
+    "pick_bank": "Odaberi banku…",
+    "pick_kind": "Odaberi vrstu…",
+    "pick_entity": "Odaberi entitet…",
+    "group_projects": "Projekti",
+    "group_retail_projects": "Retail projekti",
+    "empty_accounts": "Kontni plan još nije uvezen",
+    "empty_hint": "Šifrarnici stižu s prvim uvozom iz ERP-a.",
+    "empty_cost_centers": "Mjesta troška još nisu uvezena",
+    "empty_cost_centers_hint": "Mjesta troška se trenutno ne knjiže u 4D Wandu, pa ovaj popis može ostati prazan. Dok se to ne promijeni, projekt se dodjeljuje ručno.",
+    "empty_partners": "Komitenti još nisu uvezeni",
+    "empty_partners_hint": "Šifrarnik komitenata stiže s prvim uvozom iz ERP-a. Bez njega se računi ne mogu povezati s dobavljačem.",
+    "role": {
+      "unclassified": "Neklasificirano",
+      "liability_supplier": "Obveza prema dobavljaču",
+      "liability_customer": "Obveza prema kupcu",
+      "liability_other": "Ostale obveze",
+      "receivable_advance": "Potraživanje za predujam",
+      "expense": "Trošak",
+      "vat_input": "Pretporez",
+      "vat_output": "Obveza PDV-a",
+      "bank": "Žiro račun",
+      "ignore": "Zanemari"
+    },
+    "kind": {
+      "subcontractor": "Podizvođač",
+      "retail_supplier": "Retail dobavljač",
+      "office_supplier": "Uredski dobavljač",
+      "customer": "Kupac",
+      "retail_customer": "Retail kupac",
+      "bank": "Banka",
+      "investor": "Investitor"
     }
   }
 }

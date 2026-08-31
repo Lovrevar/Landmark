@@ -39,6 +39,7 @@ const AccountingCalendar = lazy(() => import('./components/Cashflow/Calendar/ind
 const AccountingLoans = lazy(() => import('./components/Cashflow/Loans/index'))
 const DebtStatus = lazy(() => import('./components/Cashflow/DebtStatus/index'))
 const AccountingApprovals = lazy(() => import('./components/Cashflow/Approvals/index'))
+const Sifrarnici = lazy(() => import('./components/Cashflow/Sifrarnici/index'))
 const RetailLandPlots = lazy(() => import('./components/Retail/LandPlots/index'))
 const RetailCustomers = lazy(() => import('./components/Retail/Customers/index'))
 const RetailSales = lazy(() => import('./components/Retail/Sales/RetailSales'))
@@ -344,6 +345,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <CashflowRoute><AccountingApprovals /></CashflowRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sifrarnici"
+          element={
+            <ProtectedRoute>
+              <CashflowRoute><Sifrarnici /></CashflowRoute>
             </ProtectedRoute>
           }
         />
