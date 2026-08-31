@@ -1,6 +1,6 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
-import type { FeedName, ImportRun, StagingProblem, UploadResult } from '../types'
+import type { FeedName, ImportRun, ReclassifyResult, ReviewItem, StagingProblem, UploadResult } from '../types'
 
 /**
  * The browser uploads the file rather than parsing it: the edge function owns
@@ -70,4 +70,42 @@ export async function fetchRunProblems(runId: string): Promise<StagingProblem[]>
     .limit(500)
   if (error) throw error
   return (data ?? []) as StagingProblem[]
+}
+
+export async function fetchReviewQueue(): Promise<ReviewItem[]> {
+  const { data, error } = await supabase
+    .from('erp_review_queue')
+    .select('*')
+    .order('issue_date', { ascending: false })
+    .limit(500)
+  if (error) throw error
+  return (data ?? []) as ReviewItem[]
+}
+
+/**
+ * Re-runs resolution and promotion for one import run after a mapping was
+ * fixed in Šifrarnici — so a held document is recovered without asking
+ * accounting to re-export the file.
+ *
+ * Goes through the `erp_reclassify` wrapper rather than the `erp.*` functions
+ * directly: those are SECURITY DEFINER and granted to the service role only.
+ */
+export async function reclassifyRun(runId: string): Promise<ReclassifyResult | null> {
+  const { data, error } = await supabase.rpc('erp_reclassify', { p_run_id: runId })
+  if (error) throw error
+
+  const result = (Array.isArray(data) ? data[0] : data) as ReclassifyResult | undefined
+
+  logActivity({
+    action: 'erp_import.reclassify',
+    entity: 'erp_import_run',
+    entityId: runId,
+    metadata: {
+      severity: 'high',
+      promoted: result?.promoted ?? 0,
+      unresolved: result?.unresolved ?? 0,
+    },
+  })
+
+  return result ?? null
 }

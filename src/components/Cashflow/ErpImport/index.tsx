@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Upload } from 'lucide-react'
+import { AlertTriangle, Upload } from 'lucide-react'
 import {
   Alert, Badge, Button, Card, EmptyState, LoadingSpinner,
   PageHeader, Select, Table,
@@ -8,6 +8,7 @@ import {
 import { formatEuropean } from '../../../utils/formatters'
 import { useErpImport } from './hooks/useErpImport'
 import { FEED_NAMES, REFERENCE_FEEDS, type FeedName, type RunStatus } from './types'
+import { formatEuropean as fmt } from '../../../utils/formatters'
 
 /**
  * Cashflow ▸ ERP import. Uploads a 4D Wand feed export to the `import-erp`
@@ -78,6 +79,8 @@ export default function ErpImport() {
 
         {s.lastResult && <UploadSummary result={s.lastResult} />}
       </Card>
+
+      {s.review.length > 0 && <ReviewQueue s={s} />}
 
       <Card>
         <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
@@ -171,6 +174,78 @@ export default function ErpImport() {
         )}
       </Card>
     </div>
+  )
+}
+
+/**
+ * Documents that imported cleanly but could not be classified — an unmapped
+ * account, cost centre or partner. Promotion is all-or-nothing per document,
+ * so one unmapped code holds the whole invoice rather than promoting part of
+ * it; the fix is to map the code in Šifrarnici and re-run classification here.
+ */
+function ReviewQueue({ s }: { s: ReturnType<typeof useErpImport> }) {
+  const { t } = useTranslation()
+  const runIds = [...new Set(s.review.map(r => r.import_run_id))]
+
+  return (
+    <Card variant="bordered" className="border-yellow-300 dark:border-yellow-700">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+            {t('erp_import.review_title', { count: s.review.length })}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            {t('erp_import.review_hint')}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 flex-shrink-0">
+          {runIds.map(id => (
+            <Button
+              key={id}
+              variant="secondary"
+              size="sm"
+              loading={s.reclassifying === id}
+              onClick={() => void s.reclassify(id)}
+            >
+              {t('erp_import.reclassify')}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <Table>
+        <Table.Head>
+          <Table.Tr>
+            <Table.Th>{t('erp_import.col_document')}</Table.Th>
+            <Table.Th>{t('erp_import.col_partner')}</Table.Th>
+            <Table.Th>{t('erp_import.col_amount')}</Table.Th>
+            <Table.Th>{t('erp_import.col_problems')}</Table.Th>
+          </Table.Tr>
+        </Table.Head>
+        <Table.Body>
+          {s.review.map(r => (
+            <Table.Tr key={`${r.import_run_id}-${r.document_ref}`}>
+              <Table.Td label={t('erp_import.col_document')}>
+                <span className="font-mono text-xs">{r.invoice_number ?? r.document_ref}</span>
+                <span className="block text-xs text-gray-400">
+                  {t('erp_import.lines', { count: r.line_count })}
+                </span>
+              </Table.Td>
+              <Table.Td label={t('erp_import.col_partner')}>{r.partner_name ?? '—'}</Table.Td>
+              <Table.Td label={t('erp_import.col_amount')}>
+                {r.total_amount === null ? '—' : fmt(r.total_amount)}
+              </Table.Td>
+              <Table.Td label={t('erp_import.col_problems')}>
+                <ul className="list-disc ml-4 text-sm text-yellow-800 dark:text-yellow-300">
+                  {r.problems.map((p, i) => <li key={i}>{p}</li>)}
+                </ul>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Body>
+      </Table>
+    </Card>
   )
 }
 

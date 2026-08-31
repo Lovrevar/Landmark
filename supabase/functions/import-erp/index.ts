@@ -114,13 +114,64 @@ Deno.serve(async (req) => {
       : await replaceReferenceData(admin, runId, feed, rows)
 
     await finish(admin, runId, 'staged', result)
-    return json({ run_id: runId, feed, ...result })
+
+    // Classify and promote straight away, so the agent is unattended. Anything
+    // that will not resolve stays in the review queue rather than blocking the
+    // rest of the file; a person maps the missing code and re-runs via
+    // public.erp_reclassify.
+    const classification = await classify(admin, runId, feed)
+    return json({ run_id: runId, feed, ...result, ...classification })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
     await finish(admin, runId, 'failed', {}, message)
     return json({ run_id: runId, error: message }, 500)
   }
 })
+
+// ---------------------------------------------------------------------------
+// Classification
+// ---------------------------------------------------------------------------
+
+interface Classification {
+  /** Staged rows whose codes all resolved. */
+  resolved?: number
+  /** Staged rows with at least one unmapped code. */
+  unresolved?: number
+  /** Documents written to accounting_invoices / accounting_payments. */
+  promoted?: number
+  /** Documents already present and unchanged, so not rewritten. */
+  skipped?: number
+}
+
+async function classify(admin: Admin, runId: string, feed: FeedName): Promise<Classification> {
+  if (feed !== 'invoices' && feed !== 'payments') return {}
+
+  // Written out per feed rather than with a computed rpc name, so the
+  // argument and return types are actually checked.
+  const erp = admin.schema('erp')
+  const { data: res, error: resErr } = feed === 'invoices'
+    ? await erp.rpc('resolve_invoices', { p_run_id: runId })
+    : await erp.rpc('resolve_payments', { p_run_id: runId })
+  if (resErr) throw new Error(`resolution failed: ${resErr.message}`)
+
+  const { data: prom, error: promErr } = feed === 'invoices'
+    ? await erp.rpc('promote_invoices', { p_run_id: runId })
+    : await erp.rpc('promote_payments', { p_run_id: runId })
+  if (promErr) throw new Error(`promotion failed: ${promErr.message}`)
+
+  const r = Array.isArray(res) ? res[0] : res
+  const p = Array.isArray(prom) ? prom[0] : prom
+  // Promotion is all-or-nothing per document, so a count of unresolved *rows*
+  // is not a count of held documents — the review queue is the place to see
+  // those, and reporting a second, differently-scoped number here would just
+  // invite the two to be read as the same thing.
+  return {
+    resolved: r?.rows_resolved ?? 0,
+    unresolved: r?.rows_unresolved ?? 0,
+    promoted: p?.promoted ?? 0,
+    skipped: p?.skipped ?? 0,
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Authentication

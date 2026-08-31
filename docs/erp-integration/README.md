@@ -25,17 +25,18 @@ them.
 
 ## Current status
 
-Phases 0–2 are done and applied to LandmarkDev; the `import-erp` function is
-deployed there. Phase 3 — classification and promotion — is next. See
-[PROGRESS.md](./PROGRESS.md).
+Phases 0–3 are done and applied to LandmarkDev; the `import-erp` function is
+deployed there. A file now imports, classifies and promotes into
+`accounting_invoices` / `accounting_payments` on its own, with anything
+unclassifiable held in a review queue. Phase 4 — the historical re-import — is
+next. See [PROGRESS.md](./PROGRESS.md).
 
 Both earlier blockers are gone: accounting confirmed cost centres will be
 booked and OIBs populated, and confirmed we define the export format. That last
 point removed the riskiest piece of the design — the importer consumes
 invoice-shaped feeds instead of rebuilding invoices out of ledger postings.
 
-Nothing reaches `accounting_invoices` yet. Files import, validate and stage;
-promotion is phase 3.
+`npm run erp:smoke` exercises the whole chain against a live dev project.
 
 ## Sample data
 

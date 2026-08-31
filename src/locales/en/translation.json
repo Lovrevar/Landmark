@@ -4920,7 +4920,8 @@
       "erp_cost_center_map.delete": "ERP cost centre mapping removed",
       "erp_partner_map.upsert": "ERP partner mapping saved",
       "erp_partner_map.delete": "ERP partner mapping removed",
-      "erp_import.upload": "ERP feed file imported"
+      "erp_import.upload": "ERP feed file imported",
+      "erp_import.reclassify": "ERP import reclassified"
     }
   },
   "sifrarnici": {
@@ -5017,6 +5018,14 @@
       "promoting": "Promoting",
       "completed": "Completed",
       "failed": "Failed"
-    }
+    },
+    "review_title": "{{count}} document(s) need classification",
+    "review_hint": "Promotion is all-or-nothing per document, so one unmapped code holds the whole invoice. Map the code in Šifrarnici, then re-run classification.",
+    "reclassify": "Re-run classification",
+    "col_document": "Document",
+    "col_partner": "Partner",
+    "col_amount": "Amount",
+    "col_problems": "Problems",
+    "lines": "{{count}} line(s)"
   }
 }

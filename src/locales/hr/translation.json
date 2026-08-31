@@ -4925,7 +4925,8 @@
       "erp_cost_center_map.delete": "Uklonjeno povezivanje mjesta troška",
       "erp_partner_map.upsert": "Spremljeno povezivanje komitenta",
       "erp_partner_map.delete": "Uklonjeno povezivanje komitenta",
-      "erp_import.upload": "Uvezena datoteka iz ERP-a"
+      "erp_import.upload": "Uvezena datoteka iz ERP-a",
+      "erp_import.reclassify": "Ponovljena klasifikacija uvoza"
     }
   },
   "sifrarnici": {
@@ -5022,6 +5023,14 @@
       "promoting": "Potvrđivanje",
       "completed": "Završeno",
       "failed": "Greška"
-    }
+    },
+    "review_title": "{{count}} dokument(a) čeka klasifikaciju",
+    "review_hint": "Dokument se prenosi u cijelosti ili nikako, pa jedna nepovezana šifra zadržava cijeli račun. Poveži šifru u Šifrarnicima pa ponovno pokreni klasifikaciju.",
+    "reclassify": "Ponovi klasifikaciju",
+    "col_document": "Dokument",
+    "col_partner": "Komitent",
+    "col_amount": "Iznos",
+    "col_problems": "Problemi",
+    "lines": "{{count}} redak/redaka"
   }
 }

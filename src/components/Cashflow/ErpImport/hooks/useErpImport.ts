@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { FeedName, ImportRun, StagingProblem, UploadResult } from '../types'
-import { fetchImportRuns, fetchRunProblems, uploadFeedFile } from '../services/erpImportService'
+import type { FeedName, ImportRun, ReviewItem, StagingProblem, UploadResult } from '../types'
+import {
+  fetchImportRuns, fetchReviewQueue, fetchRunProblems, reclassifyRun, uploadFeedFile,
+} from '../services/erpImportService'
 
 export function useErpImport() {
   const [runs, setRuns] = useState<ImportRun[]>([])
@@ -14,10 +16,15 @@ export function useErpImport() {
   const [problems, setProblems] = useState<StagingProblem[]>([])
   const [problemsLoading, setProblemsLoading] = useState(false)
 
+  const [review, setReview] = useState<ReviewItem[]>([])
+  const [reclassifying, setReclassifying] = useState<string | null>(null)
+
   const loadRuns = useCallback(async () => {
     setLoading(true)
     try {
-      setRuns(await fetchImportRuns())
+      const [r, q] = await Promise.all([fetchImportRuns(), fetchReviewQueue()])
+      setRuns(r)
+      setReview(q)
     } catch (e) {
       console.error('Error loading import runs:', e)
       setError(e instanceof Error ? e.message : 'Failed to load import runs')
@@ -61,9 +68,23 @@ export function useErpImport() {
     }
   }, [expandedRunId])
 
+  const reclassify = useCallback(async (runId: string) => {
+    setReclassifying(runId)
+    setError(null)
+    try {
+      await reclassifyRun(runId)
+      await loadRuns()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Reclassification failed')
+    } finally {
+      setReclassifying(null)
+    }
+  }, [loadRuns])
+
   return {
     runs, loading, uploading, feed, setFeed, lastResult, error,
     upload, reload: loadRuns,
     expandedRunId, problems, problemsLoading, toggleProblems,
+    review, reclassify, reclassifying,
   }
 }

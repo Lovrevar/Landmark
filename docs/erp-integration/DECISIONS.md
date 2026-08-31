@@ -160,3 +160,50 @@ considers `is_valid` rows, so nothing bad escapes staging.
 
 The exception is a reference feed where *every* row fails — that is a broken
 file, and replacing a register from it would do more damage than refusing.
+
+### D15 — Promotion is all-or-nothing per document
+**2026-08-31 · settled**
+
+If any line of a document fails to resolve, the whole document is held. The
+resolvable lines are not promoted on their own.
+
+**Why:** found by the pipeline smoke test. A two-line invoice with one unmapped
+account was promoted from its other line — it carried the ERP's declared total
+of 225.00 but only 100.00 of base amount, and nothing downstream would have
+flagged the difference. An invoice that is silently short is worse than one
+that is visibly absent, and the review queue makes absence visible.
+
+### D16 — Imported invoices keep the ERP's total; the trigger is bypassed
+**2026-08-31 · settled**
+
+`public.calculate_invoice_amounts()` returns early for `source = 'erp'`, filling
+only the legacy aggregate columns (plain sums) and `remaining_amount`.
+
+**Why:** the trigger hardcodes the rates — slot 1 = 25%, 2 = 13%, 3 = 0%,
+4 = 5% — and overwrites `vat_amount_n` with `base_amount_n * rate`. Verified
+against the real sample posting: 4024.47 base at 13% with 438.53 VAT posted came
+back as 523.18 VAT and a 4547.65 total against the ERP's 4463.00. An 84.65
+discrepancy on one invoice, propagating into debt reporting and contract
+realization with nothing to flag it.
+
+A consequence worth knowing: because the trigger fixes the rates, **the four VAT
+slots are 25 / 13 / 0 / 5 and nothing else**. Promotion assigns a line to a slot
+by its rate, and a rate outside that set is held for review rather than rounded
+into a neighbour.
+
+### D17 — Import classifies immediately; people re-run it after fixing a mapping
+**2026-08-31 · settled**
+
+`import-erp` resolves and promotes as part of the upload, so the on-prem agent
+is unattended. Anything that will not resolve stays in the review queue.
+`public.erp_reclassify(run_id)` re-runs it for one run.
+
+**Why:** the alternative — stage now, promote later — means every import needs a
+second deliberate action even when nothing is wrong, which in practice means
+imports sit unpromoted. Holding only what cannot be classified keeps the common
+case automatic and the exceptional case visible. Resolution writes nothing to
+`public`, so re-running it is free.
+
+`erp_reclassify` is a role-gated wrapper: the `erp.*` functions are SECURITY
+DEFINER and granted to `service_role` only, so exposing them to `authenticated`
+would hand any signed-in user definer rights on `accounting_invoices`.

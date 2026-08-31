@@ -54,3 +54,27 @@ export interface UploadResult {
   problems?: { row: number; errors: string[] }[]
   error?: string
 }
+
+/** A document that imported cleanly but could not be classified. */
+export interface ReviewItem {
+  import_run_id: string
+  feed: string
+  document_ref: string
+  invoice_number: string | null
+  partner_name: string | null
+  issue_date: string | null
+  total_amount: number | null
+  partner_erp_id: string | null
+  cost_center_code: string | null
+  account_code: string | null
+  problems: string[]
+  line_count: number
+}
+
+export interface ReclassifyResult {
+  feed: string
+  resolved: number
+  unresolved: number
+  promoted: number
+  skipped: number
+}

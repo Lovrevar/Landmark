@@ -430,6 +430,15 @@ export type Database = {
           partner_oib: string | null
           raw: Json
           reference_number: string | null
+          resolution_errors: string[]
+          resolved_at: string | null
+          resolved_category_id: string | null
+          resolved_company_id: string | null
+          resolved_invoice_type: string | null
+          resolved_partner_id: string | null
+          resolved_partner_kind: string | null
+          resolved_project_id: string | null
+          resolved_retail_project_id: string | null
           row_number: number
           source_updated_at: string | null
           validation_errors: string[]
@@ -462,6 +471,15 @@ export type Database = {
           partner_oib?: string | null
           raw?: Json
           reference_number?: string | null
+          resolution_errors?: string[]
+          resolved_at?: string | null
+          resolved_category_id?: string | null
+          resolved_company_id?: string | null
+          resolved_invoice_type?: string | null
+          resolved_partner_id?: string | null
+          resolved_partner_kind?: string | null
+          resolved_project_id?: string | null
+          resolved_retail_project_id?: string | null
           row_number: number
           source_updated_at?: string | null
           validation_errors?: string[]
@@ -494,6 +512,15 @@ export type Database = {
           partner_oib?: string | null
           raw?: Json
           reference_number?: string | null
+          resolution_errors?: string[]
+          resolved_at?: string | null
+          resolved_category_id?: string | null
+          resolved_company_id?: string | null
+          resolved_invoice_type?: string | null
+          resolved_partner_id?: string | null
+          resolved_partner_kind?: string | null
+          resolved_project_id?: string | null
+          resolved_retail_project_id?: string | null
           row_number?: number
           source_updated_at?: string | null
           validation_errors?: string[]
@@ -530,6 +557,11 @@ export type Database = {
           payment_total: number | null
           raw: Json
           reference_number: string | null
+          resolution_errors: string[]
+          resolved_at: string | null
+          resolved_bank_account_id: string | null
+          resolved_cesija_company_id: string | null
+          resolved_invoice_id: string | null
           row_number: number
           settlement_type: string | null
           source_updated_at: string | null
@@ -554,6 +586,11 @@ export type Database = {
           payment_total?: number | null
           raw?: Json
           reference_number?: string | null
+          resolution_errors?: string[]
+          resolved_at?: string | null
+          resolved_bank_account_id?: string | null
+          resolved_cesija_company_id?: string | null
+          resolved_invoice_id?: string | null
           row_number: number
           settlement_type?: string | null
           source_updated_at?: string | null
@@ -578,6 +615,11 @@ export type Database = {
           payment_total?: number | null
           raw?: Json
           reference_number?: string | null
+          resolution_errors?: string[]
+          resolved_at?: string | null
+          resolved_bank_account_id?: string | null
+          resolved_cesija_company_id?: string | null
+          resolved_invoice_id?: string | null
           row_number?: number
           settlement_type?: string | null
           source_updated_at?: string | null
@@ -598,7 +640,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      promote_invoices: {
+        Args: { p_run_id: string }
+        Returns: {
+          held: number
+          promoted: number
+          skipped: number
+        }[]
+      }
+      promote_payments: {
+        Args: { p_run_id: string }
+        Returns: {
+          promoted: number
+          skipped: number
+        }[]
+      }
+      resolve_invoices: {
+        Args: { p_run_id: string }
+        Returns: {
+          rows_resolved: number
+          rows_unresolved: number
+        }[]
+      }
+      resolve_payments: {
+        Args: { p_run_id: string }
+        Returns: {
+          rows_resolved: number
+          rows_unresolved: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -4473,6 +4543,31 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_review_queue: {
+        Row: {
+          account_code: string | null
+          cost_center_code: string | null
+          document_ref: string | null
+          feed: string | null
+          import_run_id: string | null
+          invoice_number: string | null
+          issue_date: string | null
+          line_count: number | null
+          partner_erp_id: string | null
+          partner_name: string | null
+          problems: string[] | null
+          total_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staging_invoices_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_staging_problems: {
         Row: {
           document_ref: string | null
@@ -4541,6 +4636,16 @@ export type Database = {
         Returns: string
       }
       dispatch_due_reminders: { Args: { p_force?: boolean }; Returns: number }
+      erp_reclassify: {
+        Args: { p_run_id: string }
+        Returns: {
+          feed: string
+          promoted: number
+          resolved: number
+          skipped: number
+          unresolved: number
+        }[]
+      }
       fix_subcontractor_budget_integrity: { Args: never; Returns: undefined }
       get_activity_logs: {
         Args: {
