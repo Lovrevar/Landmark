@@ -609,6 +609,8 @@ later phase.
 - `uploadFeedFile(feed, file)` — POSTs multipart to `/functions/v1/import-erp` with the user's JWT; Content-Type is deliberately unset so the browser adds the multipart boundary
 - `fetchImportRuns(limit)` — run history from `public.erp_import_runs`
 - `fetchRunProblems(runId)` — per-row validation failures from `public.erp_staging_problems`
+- `fetchReviewQueue()` — documents held for classification, from `public.erp_review_queue`
+- `reclassifyRun(runId)` — re-runs resolve + promote via the role-gated `public.erp_reclassify` RPC (the `erp.*` functions are service-role only)
 - **Depends on:** supabase client, activityLog
 
 #### Hooks
@@ -623,6 +625,7 @@ later phase.
 ### index.tsx (ErpImport)
 - Feed picker, file picker, and a result summary listing the first ten rejected rows with their errors
 - Run history table with an expandable problem list per run
+- Review-queue section listing documents that imported cleanly but could not be classified, with a per-run "re-run classification" action. Promotion is all-or-nothing per document, so one unmapped code holds the whole invoice — the fix is to map it in Šifrarnici and re-run here rather than re-exporting the file
 - Reference feeds (accounts, cost centres, partners) must be imported before invoices and payments; the hint text under the picker says which kind is selected
 - **Uses hooks:** useErpImport
 - **Uses Ui:** PageHeader, Card, Select, Button, Alert, Badge, Table, EmptyState, LoadingSpinner

@@ -52,6 +52,27 @@ npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 
 ---
 
+## ERP pipeline smoke test
+
+`npm run erp:smoke` — [`scripts/erp-pipeline-smoke.mjs`](../scripts/erp-pipeline-smoke.mjs)
+
+Exercises the ERP import chain end to end against a **live dev project**:
+upload → parse → stage → resolve → promote, plus the review queue and the
+fix-a-mapping-then-reclassify loop. 25 checks. It writes real rows and cleans up
+after itself, and refuses to run against production.
+
+Needs `ERP_IMPORT_SECRET` (the value passed to `supabase secrets set`) and a
+project with the e2e anchor rows.
+
+It exists because the ERP promotion logic lives in SQL and interacts with ~20
+existing triggers, which unit tests cannot reach. It has already caught three
+defects that were invisible to them — most importantly a partially-resolved
+invoice being promoted from only its resolvable lines. **Run it after touching
+anything under `erp.` or the promotion functions.**
+
+The parsing and validation logic has its own Deno unit tests
+(`cd supabase/functions && deno test import-erp/`, 38 tests).
+
 ## E2E suite
 
 **Location:** [`e2e/`](../e2e/). Strategy write-up: [`docs/test/e2e-testing-strategy.md`](./test/e2e-testing-strategy.md). Day-to-day commands live in [`e2e/README.md`](../e2e/README.md).
