@@ -549,6 +549,46 @@ Payment records linked to invoices. Supports wire, cash, check, card, kompenzaci
 
 ---
 
+### Šifrarnici
+**Path:** `Sifrarnici/`
+
+ERP code mappings. Tells the 4D Wand importer what each ERP code means in
+Cognilion terms, so imported invoices classify themselves without a human.
+Part of the ERP integration rewrite — see [`erp-integration/SPEC.md`](./erp-integration/SPEC.md) §7.
+
+Reads and writes through the `erp_*` views in `public`; the underlying tables
+live in the `erp` schema, which PostgREST does not expose. The three mapping
+views are plain (one table, no joins) so Postgres keeps them auto-updatable —
+adding a join would silently make the screen read-only.
+
+#### Services
+
+### sifrarniciService.ts
+- `fetchAccountRows()` / `fetchCostCenterRows()` / `fetchPartnerRows()` — code list left-joined with its mapping, in memory
+- `fetchInvoiceCategories()`, `fetchBanks()`, `fetchProjectTargets()` — mapping targets
+- `fetchPartnerTargets(kind)` — entities of one partner kind, fetched on demand rather than loading all seven tables up front
+- `saveAccountMapping()` / `saveCostCenterMapping()` / `savePartnerMapping()` — upserts
+- `deleteAccountMapping()` / `deleteCostCenterMapping()` / `deletePartnerMapping()`
+- **Depends on:** supabase client, activityLog
+
+#### Hooks
+
+### useSifrarnici.ts
+- `useSifrarnici()` — tab state, all three code lists with their mappings, search and unmapped filtering, per-tab unmapped counts, and save/clear actions that reload only the affected list
+- **Calls:** sifrarniciService.ts
+- **Returns:** activeTab, loading, error, searchTerm, onlyUnmapped, accounts, costCenters, partners, filtered*, unmappedCounts, categories, banks, projects, retailProjects, partnerTargets, ensurePartnerTargets, save*, clear*, reload
+
+#### Views
+
+### index.tsx (Sifrarnici)
+- Three tabs — Konta, Mjesta troška, Komitenti — with inline editing and an "only unmapped" filter
+- Account rows pick a `role` (what part the account plays in a posting: gross liability, net expense, VAT, bank …) which then decides what the "maps to" column offers: a category, a VAT rate, or a bank
+- Empty until the reference-data feeds land in phase 2, so each tab has a real empty state
+- **Uses hooks:** useSifrarnici
+- **Uses Ui:** Tabs, Table, Select, SearchInput, ToggleSwitch, EmptyState, PageHeader, Card, Badge, Button
+
+---
+
 ### Services (Cashflow-level helpers)
 **Path:** `services/`
 
