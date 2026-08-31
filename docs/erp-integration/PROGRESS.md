@@ -6,7 +6,7 @@ Phases as defined in [SPEC.md](./SPEC.md) §14. Update this file as work lands.
 |---|---|---|
 | 0 — Foundation | ✅ done | `erp` schema, `import_runs`, `link_carry_forward`, provenance columns |
 | 1 — Reference data & mappings | ✅ done | Code lists, mapping tables, Šifrarnici UI |
-| 2 — Ingestion | ⬜ not started | Parser, staging, `import-erp-csv` function, manual upload |
+| 2 — Ingestion | ✅ done | Parser, staging, `import-erp` function, manual upload |
 | 3 — Classification & promotion | ⬜ not started | Auto-classify, review queue, promote to `public` |
 | 4 — Historical re-import | ⬜ not started | Full re-import with link carry-forward, rehearsed on dev |
 | 5 — Removals & RLS | ⬜ not started | Delete creation UI, lock writes to service role |
@@ -77,11 +77,61 @@ the CHECK constraints hold *through* the views, and that anon is refused
 - **No bulk mapping.** Fine for a few dozen accounts; revisit if the imported
   chart turns out to be large.
 
+## Phase 2 — Ingestion ✅
+
+Migrations `20260831140000_erp_phase2_staging.sql` and
+`20260831150000_erp_expose_schema.sql`, applied to LandmarkDev. Edge function
+`import-erp` deployed there.
+
+- [x] `erp.staging_invoices` / `erp.staging_payments` — typed staging, one row
+      per invoice line and per payment allocation, with `raw` jsonb kept so a
+      mapping bug can be diagnosed without the original file
+- [x] `erp.bank_balances` — a time series keyed by (iban, date), so it
+      accumulates rather than being replaced
+- [x] Partner ids moved from `integer` to `text` — we define the export now, so
+      the key should survive any ERP id scheme
+- [x] `import-erp` edge function: one parser for both transports, shared-secret
+      auth for the agent and JWT + role re-check for the browser
+- [x] CSV (RFC 4180, delimiter sniffed, BOM stripped, CP1250 fallback) and
+      XLSX/XLS, read as displayed text to dodge Excel's timezone coercion
+- [x] Per-row validation plus cross-row checks: lines must sum to
+      `invoice_total`, no more than 4 distinct VAT rates, no duplicate
+      `line_no`, allocations may not exceed `payment_total`
+- [x] Invalid rows are staged **with** their errors rather than dropped, so a
+      file with 20 bad rows still lands the other 980
+- [x] Reference feeds replace their register outright, so a code deleted in the
+      ERP disappears here too
+- [x] `Cashflow ▸ ERP import` screen at `/erp-import`, doubling as the run log
+      for agent-pushed files
+- [x] `public.erp_import_runs` and `public.erp_staging_problems` views
+- [x] 38 Deno tests; `/erp-import` added to the e2e permissions matrix
+- [x] Agent contract written up in [AGENT.md](./AGENT.md)
+
+Verified end-to-end against the live dev function: reference and document feeds
+import; comma and dot decimals both parse (`4024,47` → `4024.47`); `31.08.2026`
+→ `2026-08-31` with no timezone drift; Croatian diacritics survive an XLSX
+round-trip; invalid rows are retained with per-row errors; a wrong or missing
+secret gives 401 and an unknown feed 400. Test data was cleaned off dev
+afterwards.
+
+### Deliberately not done
+
+- **No promotion.** Nothing reaches `accounting_invoices` yet; that is phase 3.
+- **Reference replacement is not atomic** — delete and insert are separate
+  statements, so a failure between them leaves the register empty until the
+  next run. Noted in the function; move it into an RPC if it ever bites.
+- **No on-prem agent.** AGENT.md specifies it; the upload screen covers
+  development and manual replay in the meantime.
+
 ## Notes for whoever picks this up
 
-- **`erp` is not reachable from the browser.** PostgREST does not expose the
-  schema. Phase 1 adds `public` views for the mapping tables; staging tables
-  stay unreachable on purpose.
+- **`erp` is now exposed to PostgREST** (`20260831150000`). It had to be: the
+  restriction is in the API layer, so `.schema('erp')` failed with `PGRST106`
+  even for the service role. Every table there has RLS with SELECT-only
+  policies for Director/Accounting and no write policy, so exposure gives the
+  import screen its reads without opening a write path. **On production, also
+  set it in the dashboard** (Settings ▸ API ▸ Exposed schemas) or an
+  infrastructure change can silently revert it and every import starts failing.
 - **Dev has zero invoice rows.** There is nothing on LandmarkDev to rehearse the
   phase 4 re-import against yet. That needs seeding before phase 4 means
   anything.

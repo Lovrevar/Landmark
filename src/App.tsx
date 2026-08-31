@@ -40,6 +40,7 @@ const AccountingLoans = lazy(() => import('./components/Cashflow/Loans/index'))
 const DebtStatus = lazy(() => import('./components/Cashflow/DebtStatus/index'))
 const AccountingApprovals = lazy(() => import('./components/Cashflow/Approvals/index'))
 const Sifrarnici = lazy(() => import('./components/Cashflow/Sifrarnici/index'))
+const ErpImport = lazy(() => import('./components/Cashflow/ErpImport/index'))
 const RetailLandPlots = lazy(() => import('./components/Retail/LandPlots/index'))
 const RetailCustomers = lazy(() => import('./components/Retail/Customers/index'))
 const RetailSales = lazy(() => import('./components/Retail/Sales/RetailSales'))
@@ -353,6 +354,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <CashflowRoute><Sifrarnici /></CashflowRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/erp-import"
+          element={
+            <ProtectedRoute>
+              <CashflowRoute><ErpImport /></CashflowRoute>
             </ProtectedRoute>
           }
         />

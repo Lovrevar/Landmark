@@ -1,14 +1,26 @@
 # Open questions
 
+> **2026-08-31 — the two blockers are gone.** Accounting confirmed cost centres
+> will be booked and OIBs populated, and confirmed we choose the export format.
+> Q1, Q2, Q3, Q9 and Q11 are closed; the importer now consumes invoice-shaped
+> feeds rather than reconstructing them from the ledger.
+
 Status: 🔴 blocking · 🟡 needed soon · 🟢 nice to have · ✅ answered
 
 Most of these need **accounting**, not code. Ordered by how much they hold up.
 
 ---
 
-## 🔴 Blocking
+## ✅ Closed 2026-08-31
 
-### Q1 — Will cost centres (`MjTr`) start being booked?
+Cost centres and OIBs will be entered. We choose the export format, so the
+feeds are defined in SPEC.md §4–§5 rather than discovered. Outgoing invoices
+are part of that contract via the `direction` column.
+
+<details><summary>Original wording</summary>
+
+
+### ✅ Q1 — Will cost centres (`MjTr`) start being booked?
 `MjTr` is empty in all 76 sampled postings, as are the `D1`–`D3` analytical
 dimensions. Automatic project assignment was to come from the cost centre.
 Without it every imported invoice lands in the review queue with no project,
@@ -26,16 +38,18 @@ Options, best first:
 value of the whole integration is capped: invoices import, but they do not
 reach projects on their own. *Owner: accounting.*
 
-### Q2 — Can we get a *komitenti* (partners) export?
+### ✅ Q2 — Can we get a *komitenti* (partners) export?
 The GL export identifies partners only by an internal numeric `Kom.` id plus a
 name — **there is no OIB anywhere**. Without a partner list carrying
 `Kom.` → OIB, name and IBAN, no invoice can be attributed to a supplier at all.
 *Owner: accounting.*
 
-### Q12 — Where are outgoing invoices?
+### ✅ Q12 — Where are outgoing invoices?
 No `IRA`/`IFA` rows in the sample; it appears to be supplier-side only. Sales
 invoices must come from the ERP, so we need this feed, and confirmation that
 apartment buyers appear as partners. *Owner: accounting.*
+
+</details>
 
 ## 🟡 Needed soon
 

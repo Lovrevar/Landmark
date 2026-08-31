@@ -142,7 +142,8 @@
     "filtered_results": "Filtered Results",
     "paid_by": "Paid By",
     "budget": "Budget",
-    "note": "Note"
+    "note": "Note",
+    "hide": "Hide"
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -234,7 +235,8 @@
     "accounting_customers": "Customers",
     "budget_control": "Budget Control",
     "activity_log": "Activity Log",
-    "sifrarnici": "Šifrarnici"
+    "sifrarnici": "Šifrarnici",
+    "erp_import": "ERP import"
   },
   "profiles": {
     "general": "General",
@@ -4917,7 +4919,8 @@
       "erp_cost_center_map.upsert": "ERP cost centre mapping saved",
       "erp_cost_center_map.delete": "ERP cost centre mapping removed",
       "erp_partner_map.upsert": "ERP partner mapping saved",
-      "erp_partner_map.delete": "ERP partner mapping removed"
+      "erp_partner_map.delete": "ERP partner mapping removed",
+      "erp_import.upload": "ERP feed file imported"
     }
   },
   "sifrarnici": {
@@ -4972,6 +4975,48 @@
       "retail_customer": "Retail customer",
       "bank": "Bank",
       "investor": "Investor"
+    }
+  },
+  "erp_import": {
+    "title": "ERP import",
+    "description": "Upload a 4D Wand feed export. Files are parsed, validated and staged — nothing reaches the invoice ledger until it is promoted.",
+    "feed_label": "Feed",
+    "choose_file": "Choose file…",
+    "hint_reference": "Reference feeds replace the register outright, so a code removed in the ERP disappears here too. Import these before invoices and payments.",
+    "hint_document": "Rows are staged for classification. Import the reference feeds first, or codes will not resolve.",
+    "history": "Import history",
+    "no_runs": "Nothing imported yet",
+    "no_runs_hint": "Uploads and agent-pushed files both appear here.",
+    "col_started": "Started",
+    "col_feed": "Feed",
+    "col_file": "File",
+    "col_transport": "Source",
+    "col_status": "Status",
+    "col_rows": "Rows",
+    "rejected": "rejected",
+    "show_problems": "Show problems",
+    "row": "Row",
+    "and_more": "…and {{count}} more",
+    "result_summary": "{{total}} rows read, {{staged}} staged, {{rejected}} rejected.",
+    "feed": {
+      "accounts": "Chart of accounts (konta)",
+      "cost_centers": "Cost centres (mjesta troška)",
+      "partners": "Partners (komitenti)",
+      "invoices": "Invoices",
+      "payments": "Payments",
+      "bank_balances": "Bank balances"
+    },
+    "transport": {
+      "agent": "Agent",
+      "manual": "Upload"
+    },
+    "status": {
+      "received": "Received",
+      "parsing": "Parsing",
+      "staged": "Staged",
+      "promoting": "Promoting",
+      "completed": "Completed",
+      "failed": "Failed"
     }
   }
 }

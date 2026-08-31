@@ -9,6 +9,8 @@ from **4D Wand**, the ERP the company adopted.
 | [PROGRESS.md](./PROGRESS.md) | Phase-by-phase status. What is done, what is next. |
 | [DECISIONS.md](./DECISIONS.md) | Decision log — what was chosen, and why, so choices are not silently relitigated. |
 | [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) | Questions blocking work, with owner and status. |
+| [AGENT.md](./AGENT.md) | Contract for the on-prem push agent — not yet written. |
+| [LEDGER_NOTES.md](./LEDGER_NOTES.md) | What the raw GL export looks like. Reference only. |
 
 ## The shape of it in one paragraph
 
@@ -23,19 +25,17 @@ them.
 
 ## Current status
 
-Phase 0 is done and applied to LandmarkDev. Phase 1 (reference data and code
-mappings) is in progress. See [PROGRESS.md](./PROGRESS.md).
+Phases 0–2 are done and applied to LandmarkDev; the `import-erp` function is
+deployed there. Phase 3 — classification and promotion — is next. See
+[PROGRESS.md](./PROGRESS.md).
 
-**Two things block real progress**, both in
-[OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) and needing accounting, not code:
+Both earlier blockers are gone: accounting confirmed cost centres will be
+booked and OIBs populated, and confirmed we define the export format. That last
+point removed the riskiest piece of the design — the importer consumes
+invoice-shaped feeds instead of rebuilding invoices out of ledger postings.
 
-1. **Cost centres are not booked.** `MjTr` is empty in every posting we have
-   seen, and it was to be the basis of automatic project assignment. Without it
-   manual classification is permanent rather than exceptional, which caps the
-   value of the whole integration.
-2. **The export carries no OIB.** Partners appear only as an internal numeric
-   id, so a separate *komitenti* export is required before any invoice can be
-   attributed to a supplier.
+Nothing reaches `accounting_invoices` yet. Files import, validate and stage;
+promotion is phase 3.
 
 ## Sample data
 

@@ -85,124 +85,118 @@ With a full snapshot we diff each run against the previous one for that window a
 
 The cost is file size, which for this volume is trivial.
 
-## 4. What 4D Wand actually exports
+## 4. Feed: `invoices`
 
-A sample export (*Pretraživanje podataka financijskih knjiženja*, 76 rows, Aug 2026) is in `docs/erp-samples/` — gitignored, it holds real supplier names and amounts. **It changed several assumptions in this spec and should be read before implementing anything.**
+**We define this format; 4D Wand is configured to produce it.** The sample in
+`docs/erp-samples/` is a general-ledger dump and was only ever illustrative —
+it showed what the data looks like, not what the export has to be. Designing an
+invoice-shaped feed instead removes the document-reconstruction step entirely,
+which was the largest and riskiest piece of the importer.
 
-### 4.1 It is a general ledger, not an invoice book
+The general-ledger shape and how an invoice decomposes into postings is
+recorded in [LEDGER_NOTES.md](./LEDGER_NOTES.md), in case the export turns out
+to be less configurable than expected and reconstruction has to come back.
 
-The export is one row per **double-entry posting**, not per invoice. A single incoming invoice is several rows:
+### 4.1 One row per invoice line
 
-```
-2026/5/UFA/4          Duguje    Potražuje   Kom.   Vezni dok.
-  2200   Dobavljači        0        10.00     6    534836-1-2/e računi   ← liability: partner, gross, invoice no.
-  4101   Poštanski tr.  8.00            0     –    534836-1-2            ← expense: the classifying account
-  140012 Pretporez 25%  2.00            0     –    4                     ← input VAT
-```
+Header-level would be simpler, but throws away two things we cannot recover:
+an invoice booked across several cost centres (so charging several projects),
+and the per-rate VAT breakdown. Lines keep both.
 
-Documents are keyed by **(fiscal year, `Nal.`, `Dok.`, `Lok. dok.`)** — journal, document type, document number — and each is internally balanced. To build one Cognilion invoice the importer groups postings by that key and reads:
-
-| Cognilion field | From |
-|---|---|
-| `total_amount` | the liability line (konto 2200) |
-| partner | `Kom.` on the liability line — the expense and VAT lines carry no partner |
-| `invoice_number` | `Vezni dok.` on the liability line |
-| `base_amount_n` | each expense line |
-| `vat_amount_n`, `vat_rate_n` | each input-VAT line |
-| **category** | the **expense** line's `Konto` — *not* the liability line's |
-| `paid_amount` | `total_amount` − `Otvoreno` on the liability line |
-
-`Otvoreno` (open amount) means **payment status comes free with the invoice feed** — we do not have to derive it from payments.
-
-Reconstruction is the importer's job and the riskiest part of it. 4D Wand may also be able to export the URA/IRA books (*knjiga ulaznih/izlaznih računa*) directly, which are already invoice-shaped; **that is worth asking accounting for before building the reconstructor** (§13 q11).
-
-### 4.2 Document types
-
-| `Dok.` | Meaning | Handling |
+| Column | Req | Notes |
 |---|---|---|
-| `UFA` | *Ulazna faktura* — incoming invoice | → `accounting_invoices`, INCOMING |
-| `UFB` | Advance/prepayment invoice (konto 1250/1251 + 140022/14010) | → invoice, but advances have no contract or milestone |
-| `IZV` | *Izvod* — bank statement | → `accounting_payments` (§5) |
-| `PDV` | Monthly VAT settlement (*Po obračunu*) | **excluded** — an internal journal, not a document |
-| `IFA`/`IRA` | Outgoing invoice | **absent from the sample** — see §13 q12 |
+| `erp_id` | ● | **stable, immutable, never reused** — identity of the whole document. Everything hinges on it |
+| `line_no` | ● | line ordinal within the document, 1-based |
+| `direction` | ● | `INCOMING` \| `OUTGOING` |
+| `document_type` | ● | `INVOICE` \| `CREDIT_NOTE` \| `ADVANCE` \| `STORNO` |
+| `original_erp_id` | | the document being corrected, for credit notes and storna |
+| `company_oib` | ● | **our** legal entity → `accounting_companies` |
+| `partner_erp_id` | ● | counterparty's 4D Wand id — the **primary** join, via `erp.partner_map` |
+| `partner_oib` | | counterparty OIB. Seeds the mapping and is the fallback join; not primary, because it can be absent for private individuals and foreign partners |
+| `partner_name` | ● | as booked, so the review queue is readable without a resolved partner |
+| `invoice_number` | ● | as printed on the document |
+| `reference_number` | | *poziv na broj* |
+| `issue_date` | ● | |
+| `due_date` | ● | |
+| `cost_center_code` | ● | *mjesto troška* → **project**, via `erp.cost_center_map` |
+| `account_code` | ● | *konto* → **category**, via `erp.account_map` |
+| `base_amount` | ● | line net |
+| `vat_rate` | ● | line VAT rate as a percentage, e.g. `25` |
+| `vat_amount` | ● | line VAT |
+| `line_total` | ● | line gross |
+| `invoice_total` | ● | **whole-document** gross, repeated on every line |
+| `currency` | ● | `EUR` |
+| `description` | | |
+| `updated_at` | ● | last modification in the ERP |
 
-Negative amounts are storna: `2026/5/UFA/12` is a complete negative reversal of an electricity invoice. They import as ordinary documents with negative amounts.
+`invoice_total` is repeated deliberately: it lets the importer check that the
+lines it received sum to the document, and so detect a truncated or
+partially-written file before anything is promoted.
 
-### 4.3 The VAT rate is in the account number
+### 4.2 Multi-VAT
 
-There is no VAT-rate column. The rate is encoded in the account: `140011` = *Pretporez 13%*, `140012` = *Pretporez 25%*, `140022` = advance VAT 25%. So `vat_rate_n` is derived from `erp.account_category_map`, not read.
+Croatian invoices carry up to four VAT rates. The importer groups an
+invoice's lines by distinct `vat_rate` and folds them into
+`base_amount_1..4` / `vat_rate_1..4` / `vat_amount_1..4`.
 
-**Do not recompute the base/VAT split from a nominal rate.** In the sample it frequently does not reconcile — a water invoice posts 6.77 base against 0.81 VAT on the 13% account (≈12.0%), and 4024.47 against 438.53 (≈10.9%), most likely partial input-VAT deductibility. Store what is posted; a recomputed figure would silently disagree with the ledger. §13 q13.
+**More than four distinct rates on one document is a hard error, not a
+truncation** — silently dropping the fifth would corrupt the total.
 
-### 4.4 Column reference
+`vat_amount` is taken as posted, never recomputed from `base_amount × vat_rate`.
+The sample showed splits that do not match the nominal rate (6.77 against 0.81
+on a 13% account), most likely partial input-VAT deductibility. A recomputed
+figure would silently disagree with the ledger. See DECISIONS.md D8.
 
-Of 43 columns, these carry signal (fill rates from the sample):
+### 4.3 Storna and credit notes
 
-| Column | Fill | Meaning |
+Corrections arrive as their own documents with `document_type` of `STORNO` or
+`CREDIT_NOTE`, negative amounts, and `original_erp_id` pointing at what they
+correct. A document that is retracted outright instead disappears from the next
+snapshot and is caught by the diff (§3.1).
+
+## 5. Feed: `payments`
+
+**One row per (payment, invoice) allocation.** One bank transfer settling six
+invoices is six rows sharing an `erp_id`. This is the natural grain:
+`accounting_payments.invoice_id` is a single non-null FK, so an allocation *is*
+a Cognilion payment.
+
+| Column | Req | Notes |
 |---|---|---|
-| `ID` | 100% | **stable posting id**, unique per row — the row key, not the document key |
-| `Nal.`, `Dok.`, `Lok. dok.`, `St.` | 100% | journal / type / document no. / line no. |
-| `Datum knjiž.`, `Dat.posl.dog.`, `Datum dok.` | 100% | posting, business-event and document dates |
-| `Dosp.do dana` | 100% | due date |
-| `Konto`, `Naziv konta` | 100% | account and name |
-| `Duguje`, `Potražuje`, `Otvoreno` | 100% | debit, credit, outstanding |
-| `Kom.`, `Naziv komitenta` | 43% | partner — **liability lines only** |
-| `Vezni dok.` | 95% | supplier's invoice number on the liability line; internal doc no. elsewhere |
-| `Opis knjiženja` | 100% | description |
-| `Dev.`, `Tečaj` | 100% | currency and rate — uniformly 1 (EUR) in the sample |
-| `MjTr`, `Naziv MjTr` | **0%** | cost centre — see below |
-| `D1`–`D3`, `Osoba`, `Str.konto` | 0% | unused |
+| `erp_id` | ● | stable id of the payment; repeated across its allocations |
+| `allocation_no` | ● | ordinal within the payment, so (erp_id, allocation_no) is unique |
+| `invoice_erp_id` | ● | the invoice being settled — must match an `invoices.erp_id` |
+| `allocated_amount` | ● | amount against *this* invoice, not the transfer total |
+| `payment_total` | ● | the whole transfer, repeated — same checksum role as `invoice_total` |
+| `payment_date` | ● | |
+| `payment_method` | ● | `WIRE` \| `CASH` \| `CHECK` \| `CARD` |
+| `settlement_type` | ● | `BANK` \| `KOMPENZACIJA` \| `CESIJA` \| `GOTOVINA` |
+| `company_iban` | | our account → `company_bank_accounts`; null for cash and kompenzacija |
+| `counterparty_iban` | | |
+| `cesija_payer_oib` | | the third party that paid on our behalf, when `settlement_type = CESIJA` |
+| `kompenzacija_reference` | | offset statement number |
+| `reference_number` | | |
+| `description` | | |
+| `updated_at` | ● | |
 
-### 4.5 ⚠️ Cost centre is empty
+**`payment_method` and `settlement_type` are separate on purpose.**
+`accounting_payments` constrains `payment_method` to `WIRE|CASH|CHECK|CARD`;
+kompenzacija and cesija are not methods there — they are `payment_source_type`
+(`bank_account|credit|kompenzacija|gotovina`) plus the `is_cesija` flag and the
+`cesija_*` columns. One combined column would produce values that cannot be
+stored.
 
-`MjTr` is **null in all 76 rows**, as are the `D1`–`D3` analytical dimensions.
-
-This breaks the central assumption of this document. Automatic project assignment was to come from the cost centre; with the field unused, **every imported invoice would land in the review queue with no project**, and manual classification becomes the normal path rather than the exception — for every invoice, forever.
-
-Three ways out, in order of preference:
-
-1. **Accounting starts booking cost centres**, one per project. Much the best outcome, and cheap if adopted before the ledger grows — but it is a change to their daily routine and cannot be imposed from here.
-2. **Derive the project from the account**, where the chart is project-specific. `0572 Ulaganja u građevine u izgradnji` (capitalised construction cost) suggests the chart may already be subdivided per project; the sample is too small to tell.
-3. **Manual project assignment** in the review queue, permanently.
-
-Until this is settled, the value of the whole integration is capped: invoices import, but they do not reach projects on their own. **This is the first thing to resolve with accounting.**
-
-### 4.6 There is no OIB
-
-Partners appear as an internal numeric `Kom.` id plus a name (`ELEKTRONIČKI RAČUNI d.o.o.`, `VODOVOD-OSIJEK d.o.o.`, …). This spec's partner matching was OIB-based throughout; **the GL export cannot support it**.
-
-So a separate *komitenti* export carrying `Kom.` → OIB is required (§6), and `erp.partner_link_map` is keyed on the 4D Wand partner id, with OIB used only to seed the mapping.
-
-## 5. Feed: payments (`IZV`)
-
-Bank statements are ordinary journal rows: a bank-account line (konto `1000`) against one or more supplier lines (konto `2200`), the supplier line's `Kom.` identifying who was paid.
-
-```
-2026/7/IZV/…          Duguje    Potražuje   Kom.
-  1000  Transakcijski račun     0     235.54    –     ← one transfer out
-  2200  Dobavljači           5.01          0    5     ← ...settling six invoices
-  2200  Dobavljači           5.01          0    5
-  2200  Dobavljači           8.02          0    5
-  2200  Dobavljači          10.00          0    6
-  2200  Dobavljači         200.00          0    7
-  2200  Dobavljači           7.50          0    4
-```
-
-**One payment can settle several invoices — confirmed from the data**, which answers a question this spec previously had to ask. Each supplier line is one `accounting_payments` row, so an allocation is the natural grain and `accounting_payments.invoice_id` stays single-valued.
-
-Note the allocations balance against the bank line **across `Lok. dok.` values** — 228.04 under one document number and 7.50 under another sum to the single 235.54 transfer. **Balance must therefore be checked per journal (`Nal.`), not per document.** A naive per-document check reports false imbalances.
-
-The hard part is **matching an allocation to its invoice**: the payment line carries `Kom.` and an amount but no invoice document key. Matching runs on (partner, amount, open balance) against invoices with `Otvoreno > 0`. It will be ambiguous when a supplier has two invoices for the same amount — VODOVOD-OSIJEK has two 5.01 lines in this sample alone. Ambiguous matches go to the review queue; **the importer must never guess an allocation.**
-
-`payment_method` and `settlement_type` stay separate columns. `accounting_payments` constrains `payment_method` to `WIRE|CASH|CHECK|CARD`; kompenzacija and cesija are not methods there — they are `payment_source_type` (`bank_account|credit|kompenzacija|gotovina`) plus the `is_cesija` flag and the `cesija_*` columns. Collapsing both into one column would produce unstorable values. Neither appears in the sample (§13 q4).
+Because the ERP supplies `invoice_erp_id` directly, there is no amount-matching
+heuristic and no ambiguity — which is the single biggest benefit of designing
+the feed rather than reading it out of the ledger.
 
 ## 6. Feeds: reference data
 
 Imported before invoices on every run — invoice classification depends on them.
 
 - **`chart_of_accounts`** — `account_code`, `name`, `active`. Drives category assignment.
-- **`cost_centers`** — `code`, `name`, `active`. Drives project assignment — **but see §4.5: the field is currently unused in postings, so this feed is inert until accounting starts booking it.**
-- **`partners` (*komitenti*)** — `kom_id` (the numeric id the GL uses), `oib`, `name`, `type`, `address`, `iban`, `email`, `phone`. **Required**: the GL export identifies partners only by `kom_id`, so without this feed no invoice can be attributed to a supplier at all (§4.6). OIB seeds the initial mapping to `subcontractors` / `retail_suppliers` / `office_suppliers` / `customers` / `retail_customers`; thereafter `kom_id` is the join key.
+- **`cost_centers`** — `code`, `name`, `active`. Drives project assignment. Accounting has confirmed cost centres will be booked going forward, so this is a live route rather than an aspiration.
+- **`partners` (*komitenti*)** — `erp_id`, `oib`, `name`, `type`, `address`, `iban`, `email`, `phone`. **Required**: invoices join to partners by `partner_erp_id`, so without this feed nothing can be attributed to a supplier. OIB — which accounting has confirmed will be populated — seeds the initial mapping to `subcontractors` / `retail_suppliers` / `office_suppliers` / `customers` / `retail_customers`; `erp_id` stays the join key, since OIB can be absent for private individuals and foreign partners.
 - **`companies`** — `oib`, `name`, `vat_id`. Our own entities → `accounting_companies`.
 - **`bank_balances`** — `company_oib`, `iban`, `bank_name`, `currency`, `balance`, `balance_as_of`. Authoritative balances (§8).
 
@@ -210,10 +204,10 @@ Imported before invoices on every run — invoice classification depends on them
 
 | Cognilion entity | Derived from | How |
 |---|---|---|
-| Company (ours) | the exporting 4D Wand company | automatic — one export per legal entity |
-| Supplier / customer | `Kom.` on the liability line | automatic, via `erp.partner_link_map`; unknown → review queue |
-| **Project** | `MjTr` cost centre | ⚠️ **not currently possible** — the field is empty in every posting (§4.5). Manual until resolved |
-| **Category** | `Konto` on the **expense** line | automatic, via `erp.account_category_map`. Several expense lines ⇒ several categories on one invoice |
+| Company (ours) | `company_oib` | automatic, by OIB |
+| Supplier / customer | `partner_erp_id` | automatic, via `erp.partner_map`; unknown → review queue |
+| **Project** | `cost_center_code` | automatic, via `erp.cost_center_map` |
+| **Category** | `account_code` | automatic, via `erp.account_map`. Several lines ⇒ several categories on one invoice |
 | Contract | — | **manual** |
 | Milestone / situacija | — | **manual** |
 | Apartment / unit | — | **manual** |
@@ -227,14 +221,14 @@ Note that `erp` is not exposed through PostgREST (a query returns `PGRST106`), s
 
 `accounting_invoices` has a `check_invoice_entity_type` CHECK constraint that makes `invoice_type` and the counterparty FK mutually determining: each type requires exactly one of `supplier_id` / `retail_supplier_id` / `customer_id` / `retail_customer_id` / `office_supplier_id` / `investor_id` / `bank_id` to be set and **all others to be NULL**. The importer must therefore decide the type and the counterparty together, or the insert is rejected.
 
-Direction comes from the document type (`UFA`/`UFB` incoming, `IRA`/`IFA` outgoing), and the rest from the expense account plus the resolved partner kind:
+Direction comes from the `direction` column, and the rest from `account_code` plus the resolved partner kind:
 
 | Conditions | `invoice_type` |
 |---|---|
 | INCOMING, partner is a subcontractor/retail supplier | `INCOMING_SUPPLIER` |
 | INCOMING, partner is an office supplier | `INCOMING_OFFICE` |
-| INCOMING, partner is a bank, expense account = credit | `INCOMING_BANK` |
-| INCOMING, partner is a bank, expense account = fees/interest (e.g. `4650`) | `INCOMING_BANK_EXPENSES` |
+| INCOMING, partner is a bank, account = credit | `INCOMING_BANK` |
+| INCOMING, partner is a bank, account = fees/interest | `INCOMING_BANK_EXPENSES` |
 | INCOMING, partner is an investor | `INCOMING_INVESTMENT` |
 | OUTGOING, partner is a customer | `OUTGOING_SALES` |
 | OUTGOING, partner is a supplier | `OUTGOING_SUPPLIER` |
@@ -243,7 +237,7 @@ Direction comes from the document type (`UFA`/`UFB` incoming, `IRA`/`IFA` outgoi
 
 Anything the table does not resolve goes to the review queue. **The importer never guesses a type.**
 
-Note that "is a bank", "is an investor" etc. are properties of *our* records, not of the ERP partner — so `erp.partner_link_map` must record which Cognilion entity kind each `Kom.` id resolves to, and an id present in two kinds is a conflict to be resolved by a human, not by precedence.
+Note that "is a bank", "is an investor" etc. are properties of *our* records, not of the ERP partner — so `erp.partner_map` must record which Cognilion entity kind each ERP partner id resolves to, and an id present in two kinds is a conflict to be resolved by a human, not by precedence.
 
 ## 8. Bank balances
 
@@ -308,31 +302,35 @@ E2E factories use the service-role client (`e2e/support/supabase-admin.ts`), so 
 
 ## 13. Open questions
 
-**Answered by the sample — no longer open:**
+**Settled:**
 
-- ~~Header or line-level booking?~~ **Line level**, and more than that: a full general ledger (§4.1).
-- ~~Can one payment settle several invoices?~~ **Yes** — confirmed by a 235.54 transfer settling six (§5).
-- ~~Does 4D Wand expose bank statements?~~ **Yes**, as `IZV` journals.
-- ~~Are storna identifiable?~~ **Yes**, as negative postings.
+- **Cost centres will be booked**, and **OIBs will be populated** — accounting
+  confirmed both. Automatic project and partner assignment are live routes.
+- **We define the export format.** The sample was illustrative only, so the
+  invoice-shaped feeds in §4 and §5 replace any reconstruction from the ledger.
+  This removed the largest piece of risk in the importer.
+- Line vs header booking, one-payment-many-invoices, storno visibility and
+  payment status were all answered by the sample; see LEDGER_NOTES.md.
 
-**For accounting — blocking:**
+**Still needed from accounting:**
 
-1. **⚠️ Will cost centres (`MjTr`) start being booked?** Empty in every sampled posting. Without them there is no automatic project assignment and manual classification becomes permanent, not exceptional (§4.5). **The single most important question in this document.**
-2. **Can we get a *komitenti* export** mapping `Kom.` → OIB, name, IBAN? Without it no invoice can be attributed to a supplier (§4.6).
-3. **Is the chart of accounts subdivided per project?** `0572 Ulaganja u građevine u izgradnji` hints at it. If so it is a fallback route to project assignment (§4.5 option 2).
-4. **How are kompenzacija and cesija posted** — as `IZV` lines, or as separate journals? Neither appears in the sample, and both are first-class in Cognilion.
-5. **Are bank fees and loan interest posted with a credit-facility identifier?** `4650 Troškovi platnog prometa` appears, but nothing ties it to a facility. Without one, the `bank_credits` link stays manual forever.
-6. **Which journal (`Nal.`) numbers mean what**, and are they stable across periods? The sample has 5 (UFA), 6 (UFB), 7 (IZV), 8 (PDV) — if that is a convention rather than a coincidence it is a cheap routing signal.
-7. **Can the export carry a control total per run** (§11)?
-8. **Advance invoices (`UFB`)** — how should they surface? They have no contract or milestone, and konto 1250/1251 is a receivable, not a cost.
-
-**On the export mechanics:**
-
-9. **The sample is `.xlsx`, this spec assumes CSV.** We can choose; CSV is preferable — no cell-type coercion, no Excel date/timezone drift (the sample's dates arrive as `2026-08-20T22:00:00Z`, i.e. shifted a day by the local offset), and trivially diffable for the snapshot comparison in §3.1. Confirm 4D Wand can emit CSV with the §3 conventions.
-10. **Is the export windowed and repeatable?** §3.1 needs a full snapshot of a rolling window, not a hand-picked date range.
-11. **Can 4D Wand export the URA/IRA books directly** instead of the GL? They are already invoice-shaped and would remove the reconstruction logic in §4.1 — the single largest simplification available.
-12. **Where are outgoing invoices?** No `IRA`/`IFA` rows in the sample. Sales invoices must come from ERP, so we need this feed and confirmation that apartment buyers appear as partners.
-13. **Why does the base/VAT split not match the nominal rate?** 6.77 against 0.81 on the 13% account (§4.3). Presumably partial deductibility — needs confirming, because it determines whether we can validate imported VAT at all.
+1. **Can 4D Wand emit exactly the columns in §4 and §5?** "Any format" is
+   assumed to mean column choice and file type. If some column cannot be
+   produced — `partner_erp_id`, `cost_center_code`, or `invoice_total` most
+   critically — say so early, because each has a fallback and the fallbacks
+   differ a lot in cost.
+2. **How are kompenzacija and cesija recorded** — can they carry
+   `settlement_type` and `cesija_payer_oib`? Both are first-class in Cognilion.
+3. **Do bank fees and loan interest carry a credit-facility identifier?**
+   Without one, the `bank_credits` link stays manual forever.
+4. **Can the export carry a per-run control total** (§11)?
+5. **Are advance invoices (`ADVANCE`) in scope for phase 1?** They have no
+   contract or milestone and post to a receivable rather than a cost.
+6. **Is the export a repeatable full snapshot of a rolling window** (§3.1),
+   rather than a hand-picked date range?
+7. **CSV rather than XLSX?** Both are supported by the importer, but CSV avoids
+   Excel's date/timezone coercion — the sample's dates arrived shifted a day —
+   and diffs cleanly for the snapshot comparison.
 
 **For us — product decisions:**
 

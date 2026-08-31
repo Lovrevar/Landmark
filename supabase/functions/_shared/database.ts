@@ -12,23 +12,593 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
+  erp: {
     Tables: {
-      [_ in never]: never
+      account_map: {
+        Row: {
+          account_code: string
+          bank_id: string | null
+          created_at: string
+          invoice_category_id: string | null
+          notes: string | null
+          role: string
+          updated_at: string
+          updated_by: string | null
+          vat_rate: number | null
+        }
+        Insert: {
+          account_code: string
+          bank_id?: string | null
+          created_at?: string
+          invoice_category_id?: string | null
+          notes?: string | null
+          role?: string
+          updated_at?: string
+          updated_by?: string | null
+          vat_rate?: number | null
+        }
+        Update: {
+          account_code?: string
+          bank_id?: string | null
+          created_at?: string
+          invoice_category_id?: string | null
+          notes?: string | null
+          role?: string
+          updated_at?: string
+          updated_by?: string | null
+          vat_rate?: number | null
+        }
+        Relationships: []
+      }
+      bank_balances: {
+        Row: {
+          balance: number
+          balance_as_of: string
+          bank_name: string | null
+          company_oib: string
+          currency: string
+          iban: string
+          import_run_id: string | null
+          imported_at: string
+        }
+        Insert: {
+          balance: number
+          balance_as_of: string
+          bank_name?: string | null
+          company_oib: string
+          currency?: string
+          iban: string
+          import_run_id?: string | null
+          imported_at?: string
+        }
+        Update: {
+          balance?: number
+          balance_as_of?: string
+          bank_name?: string | null
+          company_oib?: string
+          currency?: string
+          iban?: string
+          import_run_id?: string | null
+          imported_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_balances_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chart_of_accounts: {
+        Row: {
+          account_code: string
+          active: boolean
+          import_run_id: string | null
+          imported_at: string
+          name: string
+        }
+        Insert: {
+          account_code: string
+          active?: boolean
+          import_run_id?: string | null
+          imported_at?: string
+          name: string
+        }
+        Update: {
+          account_code?: string
+          active?: boolean
+          import_run_id?: string | null
+          imported_at?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cost_center_map: {
+        Row: {
+          cost_center_code: string
+          created_at: string
+          notes: string | null
+          project_id: string | null
+          retail_project_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cost_center_code: string
+          created_at?: string
+          notes?: string | null
+          project_id?: string | null
+          retail_project_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cost_center_code?: string
+          created_at?: string
+          notes?: string | null
+          project_id?: string | null
+          retail_project_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      cost_centers: {
+        Row: {
+          active: boolean
+          code: string
+          import_run_id: string | null
+          imported_at: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          import_run_id?: string | null
+          imported_at?: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          import_run_id?: string | null
+          imported_at?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_centers_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_runs: {
+        Row: {
+          error_message: string | null
+          feed: string
+          file_hash: string
+          file_name: string
+          file_size_bytes: number | null
+          finished_at: string | null
+          id: string
+          rows_promoted: number
+          rows_rejected: number
+          rows_skipped: number
+          rows_staged: number
+          rows_total: number
+          started_at: string
+          status: string
+          transport: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          feed: string
+          file_hash: string
+          file_name: string
+          file_size_bytes?: number | null
+          finished_at?: string | null
+          id?: string
+          rows_promoted?: number
+          rows_rejected?: number
+          rows_skipped?: number
+          rows_staged?: number
+          rows_total?: number
+          started_at?: string
+          status?: string
+          transport: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          feed?: string
+          file_hash?: string
+          file_name?: string
+          file_size_bytes?: number | null
+          finished_at?: string | null
+          id?: string
+          rows_promoted?: number
+          rows_rejected?: number
+          rows_skipped?: number
+          rows_staged?: number
+          rows_total?: number
+          started_at?: string
+          status?: string
+          transport?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      link_carry_forward: {
+        Row: {
+          apartment_id: string | null
+          bank_credit_id: string | null
+          captured_at: string
+          company_id: string
+          contract_id: string | null
+          credit_allocation_id: string | null
+          id: string
+          investment_id: string | null
+          investor_id: string | null
+          invoice_number: string
+          invoice_type: string
+          issue_date: string
+          match_note: string | null
+          match_status: string
+          milestone_id: string | null
+          original_invoice_id: string
+          project_id: string | null
+          reapplied_at: string | null
+          reapplied_to_invoice_id: string | null
+          refund_id: number | null
+          retail_contract_id: string | null
+          retail_milestone_id: string | null
+          retail_project_id: string | null
+          total_amount: number
+        }
+        Insert: {
+          apartment_id?: string | null
+          bank_credit_id?: string | null
+          captured_at?: string
+          company_id: string
+          contract_id?: string | null
+          credit_allocation_id?: string | null
+          id?: string
+          investment_id?: string | null
+          investor_id?: string | null
+          invoice_number: string
+          invoice_type: string
+          issue_date: string
+          match_note?: string | null
+          match_status?: string
+          milestone_id?: string | null
+          original_invoice_id: string
+          project_id?: string | null
+          reapplied_at?: string | null
+          reapplied_to_invoice_id?: string | null
+          refund_id?: number | null
+          retail_contract_id?: string | null
+          retail_milestone_id?: string | null
+          retail_project_id?: string | null
+          total_amount: number
+        }
+        Update: {
+          apartment_id?: string | null
+          bank_credit_id?: string | null
+          captured_at?: string
+          company_id?: string
+          contract_id?: string | null
+          credit_allocation_id?: string | null
+          id?: string
+          investment_id?: string | null
+          investor_id?: string | null
+          invoice_number?: string
+          invoice_type?: string
+          issue_date?: string
+          match_note?: string | null
+          match_status?: string
+          milestone_id?: string | null
+          original_invoice_id?: string
+          project_id?: string | null
+          reapplied_at?: string | null
+          reapplied_to_invoice_id?: string | null
+          refund_id?: number | null
+          retail_contract_id?: string | null
+          retail_milestone_id?: string | null
+          retail_project_id?: string | null
+          total_amount?: number
+        }
+        Relationships: []
+      }
+      partner_map: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_kind: string
+          erp_id: string
+          notes: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_kind: string
+          erp_id: string
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_kind?: string
+          erp_id?: string
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      partners: {
+        Row: {
+          active: boolean
+          address: string | null
+          email: string | null
+          erp_id: string
+          iban: string | null
+          import_run_id: string | null
+          imported_at: string
+          name: string
+          oib: string | null
+          partner_type: string | null
+          phone: string | null
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          email?: string | null
+          erp_id: string
+          iban?: string | null
+          import_run_id?: string | null
+          imported_at?: string
+          name: string
+          oib?: string | null
+          partner_type?: string | null
+          phone?: string | null
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          email?: string | null
+          erp_id?: string
+          iban?: string | null
+          import_run_id?: string | null
+          imported_at?: string
+          name?: string
+          oib?: string | null
+          partner_type?: string | null
+          phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partners_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staging_invoices: {
+        Row: {
+          account_code: string | null
+          base_amount: number | null
+          company_oib: string | null
+          cost_center_code: string | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          direction: string | null
+          document_type: string | null
+          due_date: string | null
+          erp_id: string | null
+          id: string
+          import_run_id: string
+          invoice_number: string | null
+          invoice_total: number | null
+          is_valid: boolean
+          issue_date: string | null
+          line_no: number | null
+          line_total: number | null
+          original_erp_id: string | null
+          partner_erp_id: string | null
+          partner_name: string | null
+          partner_oib: string | null
+          raw: Json
+          reference_number: string | null
+          row_number: number
+          source_updated_at: string | null
+          validation_errors: string[]
+          vat_amount: number | null
+          vat_rate: number | null
+        }
+        Insert: {
+          account_code?: string | null
+          base_amount?: number | null
+          company_oib?: string | null
+          cost_center_code?: string | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          direction?: string | null
+          document_type?: string | null
+          due_date?: string | null
+          erp_id?: string | null
+          id?: string
+          import_run_id: string
+          invoice_number?: string | null
+          invoice_total?: number | null
+          is_valid?: boolean
+          issue_date?: string | null
+          line_no?: number | null
+          line_total?: number | null
+          original_erp_id?: string | null
+          partner_erp_id?: string | null
+          partner_name?: string | null
+          partner_oib?: string | null
+          raw?: Json
+          reference_number?: string | null
+          row_number: number
+          source_updated_at?: string | null
+          validation_errors?: string[]
+          vat_amount?: number | null
+          vat_rate?: number | null
+        }
+        Update: {
+          account_code?: string | null
+          base_amount?: number | null
+          company_oib?: string | null
+          cost_center_code?: string | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          direction?: string | null
+          document_type?: string | null
+          due_date?: string | null
+          erp_id?: string | null
+          id?: string
+          import_run_id?: string
+          invoice_number?: string | null
+          invoice_total?: number | null
+          is_valid?: boolean
+          issue_date?: string | null
+          line_no?: number | null
+          line_total?: number | null
+          original_erp_id?: string | null
+          partner_erp_id?: string | null
+          partner_name?: string | null
+          partner_oib?: string | null
+          raw?: Json
+          reference_number?: string | null
+          row_number?: number
+          source_updated_at?: string | null
+          validation_errors?: string[]
+          vat_amount?: number | null
+          vat_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staging_invoices_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staging_payments: {
+        Row: {
+          allocated_amount: number | null
+          allocation_no: number | null
+          cesija_payer_oib: string | null
+          company_iban: string | null
+          counterparty_iban: string | null
+          created_at: string
+          description: string | null
+          erp_id: string | null
+          id: string
+          import_run_id: string
+          invoice_erp_id: string | null
+          is_valid: boolean
+          kompenzacija_reference: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_total: number | null
+          raw: Json
+          reference_number: string | null
+          row_number: number
+          settlement_type: string | null
+          source_updated_at: string | null
+          validation_errors: string[]
+        }
+        Insert: {
+          allocated_amount?: number | null
+          allocation_no?: number | null
+          cesija_payer_oib?: string | null
+          company_iban?: string | null
+          counterparty_iban?: string | null
+          created_at?: string
+          description?: string | null
+          erp_id?: string | null
+          id?: string
+          import_run_id: string
+          invoice_erp_id?: string | null
+          is_valid?: boolean
+          kompenzacija_reference?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_total?: number | null
+          raw?: Json
+          reference_number?: string | null
+          row_number: number
+          settlement_type?: string | null
+          source_updated_at?: string | null
+          validation_errors?: string[]
+        }
+        Update: {
+          allocated_amount?: number | null
+          allocation_no?: number | null
+          cesija_payer_oib?: string | null
+          company_iban?: string | null
+          counterparty_iban?: string | null
+          created_at?: string
+          description?: string | null
+          erp_id?: string | null
+          id?: string
+          import_run_id?: string
+          invoice_erp_id?: string | null
+          is_valid?: boolean
+          kompenzacija_reference?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_total?: number | null
+          raw?: Json
+          reference_number?: string | null
+          row_number?: number
+          settlement_type?: string | null
+          source_updated_at?: string | null
+          validation_errors?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staging_payments_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
@@ -3646,7 +4216,29 @@ export type Database = {
           updated_by?: string | null
           vat_rate?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "account_map_bank_id_fkey"
+            columns: ["bank_id"]
+            isOneToOne: false
+            referencedRelation: "banks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_map_invoice_category_id_fkey"
+            columns: ["invoice_category_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_map_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_chart_of_accounts: {
         Row: {
@@ -3697,7 +4289,29 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cost_center_map_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_center_map_retail_project_id_fkey"
+            columns: ["retail_project_id"]
+            isOneToOne: false
+            referencedRelation: "retail_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_center_map_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_cost_centers: {
         Row: {
@@ -3720,12 +4334,74 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_import_runs: {
+        Row: {
+          error_message: string | null
+          feed: string | null
+          file_name: string | null
+          file_size_bytes: number | null
+          finished_at: string | null
+          id: string | null
+          rows_promoted: number | null
+          rows_rejected: number | null
+          rows_skipped: number | null
+          rows_staged: number | null
+          rows_total: number | null
+          started_at: string | null
+          status: string | null
+          transport: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          feed?: string | null
+          file_name?: string | null
+          file_size_bytes?: number | null
+          finished_at?: string | null
+          id?: string | null
+          rows_promoted?: number | null
+          rows_rejected?: number | null
+          rows_skipped?: number | null
+          rows_staged?: number | null
+          rows_total?: number | null
+          started_at?: string | null
+          status?: string | null
+          transport?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          feed?: string | null
+          file_name?: string | null
+          file_size_bytes?: number | null
+          finished_at?: string | null
+          id?: string | null
+          rows_promoted?: number | null
+          rows_rejected?: number | null
+          rows_skipped?: number | null
+          rows_staged?: number | null
+          rows_total?: number | null
+          started_at?: string | null
+          status?: string | null
+          transport?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_runs_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_partner_map: {
         Row: {
           created_at: string | null
           entity_id: string | null
           entity_kind: string | null
-          kom_id: number | null
+          erp_id: string | null
           notes: string | null
           updated_at: string | null
           updated_by: string | null
@@ -3734,7 +4410,7 @@ export type Database = {
           created_at?: string | null
           entity_id?: string | null
           entity_kind?: string | null
-          kom_id?: number | null
+          erp_id?: string | null
           notes?: string | null
           updated_at?: string | null
           updated_by?: string | null
@@ -3743,21 +4419,29 @@ export type Database = {
           created_at?: string | null
           entity_id?: string | null
           entity_kind?: string | null
-          kom_id?: number | null
+          erp_id?: string | null
           notes?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "partner_map_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_partners: {
         Row: {
           active: boolean | null
           address: string | null
           email: string | null
+          erp_id: string | null
           iban: string | null
           imported_at: string | null
-          kom_id: number | null
           name: string | null
           oib: string | null
           partner_type: string | null
@@ -3767,9 +4451,9 @@ export type Database = {
           active?: boolean | null
           address?: string | null
           email?: string | null
+          erp_id?: string | null
           iban?: string | null
           imported_at?: string | null
-          kom_id?: number | null
           name?: string | null
           oib?: string | null
           partner_type?: string | null
@@ -3779,13 +4463,23 @@ export type Database = {
           active?: boolean | null
           address?: string | null
           email?: string | null
+          erp_id?: string | null
           iban?: string | null
           imported_at?: string | null
-          kom_id?: number | null
           name?: string | null
           oib?: string | null
           partner_type?: string | null
           phone?: string | null
+        }
+        Relationships: []
+      }
+      erp_staging_problems: {
+        Row: {
+          document_ref: string | null
+          feed: string | null
+          import_run_id: string | null
+          row_number: number | null
+          validation_errors: string[] | null
         }
         Relationships: []
       }
@@ -4231,7 +4925,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
+  erp: {
     Enums: {},
   },
   public: {

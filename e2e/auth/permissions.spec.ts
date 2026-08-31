@@ -11,6 +11,7 @@ const CASHFLOW_ROUTES = [
   '/accounting-approvals',
   '/debt-status',
   '/sifrarnici',
+  '/erp-import',
 ] as const
 
 test.describe('permissions — Sales role and Cashflow routes', () => {

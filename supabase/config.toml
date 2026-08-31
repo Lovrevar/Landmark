@@ -32,3 +32,12 @@ verify_jwt = true
 # no user JWT. The function authenticates the caller itself via a shared
 # secret (x-doc-sort-secret header), so Supabase's JWT gate is disabled.
 verify_jwt = false
+
+[functions.import-erp]
+# Ingests 4D Wand feed exports. Two callers: the on-prem agent, which has no
+# user JWT and authenticates with a shared secret (x-erp-import-secret), and
+# the in-app upload screen, which sends a normal Supabase JWT. Supabase's JWT
+# gate is therefore off and both paths are authenticated inside the function,
+# which also re-checks the Director/Accounting role rather than trusting the
+# client. See docs/erp-integration/SPEC.md §2.1.
+verify_jwt = false

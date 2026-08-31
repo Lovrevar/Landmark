@@ -103,3 +103,60 @@ queue rather than being assigned by precedence or best guess.
 **Why:** a wrong automatic link is worse than an absent one. An absent link is
 visible in a queue someone works through; a wrong one is invisible and
 propagates through contract realization and debt reporting silently.
+
+### D11 — Invoice-shaped feeds we define, not reconstruction from the ledger
+**2026-08-31 · settled (user decision)**
+
+The sample export was a general ledger, and the plan had been to rebuild
+invoices from postings. Accounting then confirmed we choose the export format,
+so the feeds in SPEC.md §4–§5 are invoice-shaped and payment-allocation-shaped.
+
+**Why:** reconstruction was the largest and riskiest part of the importer —
+grouping postings, telling the gross liability line from the net expense line,
+matching payments to invoices by amount with no id. All of it disappears when
+the ERP hands us `erp_id` and `invoice_erp_id` directly. The ledger analysis is
+kept in LEDGER_NOTES.md in case the export proves less configurable than
+promised.
+
+### D12 — Cost centres and OIBs will be booked
+**2026-08-31 · settled (accounting)**
+
+Both were empty in the sample and both were blocking. Accounting confirmed they
+will be entered going forward, which makes automatic project assignment and
+automatic partner resolution live routes rather than aspirations.
+
+`partner_erp_id` stays the primary join even so — OIB is legitimately absent
+for private individuals and foreign partners, so it seeds the mapping rather
+than keying it.
+
+### D13 — Expose the `erp` schema to PostgREST
+**2026-08-31 · settled**
+
+**Why:** forced. `supabase-js` reaches the schema through PostgREST, and the
+schema allow-list lives in the API layer, not the database — so `.schema('erp')`
+failed with `PGRST106` **even for the service role**. Bypassing RLS does not
+bypass this.
+
+Safe because every table there has RLS with a SELECT-only policy for Director
+and Accounting and no write policy at all, apart from the three mapping tables
+the Šifrarnici screen owns; `anon` holds no grants and gets 42501. The one real
+change is that Director and Accounting can read staging directly, which is what
+the import screen needs anyway.
+
+Rejected alternatives: writing through `public` views (`ON CONFLICT` does not
+work through a view, so the reference upserts would lose their unique-constraint
+safety net) and SECURITY DEFINER RPCs (six functions duplicating PostgREST).
+
+⚠️ On production this must also be set in the dashboard (Settings ▸ API ▸
+Exposed schemas), or an infrastructure change can silently revert it.
+
+### D14 — Invalid rows are staged with their errors, not rejected
+**2026-08-31 · settled**
+
+**Why:** a file with twenty bad rows should land the other nine hundred and
+eighty and show exactly what failed. Refusing the whole file gives the person
+fixing it nothing to work from, and re-exporting is slow. Promotion only ever
+considers `is_valid` rows, so nothing bad escapes staging.
+
+The exception is a reference feed where *every* row fails — that is a broken
+file, and replacing a register from it would do more damage than refusing.

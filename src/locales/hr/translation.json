@@ -142,7 +142,8 @@
     "filtered_results": "Filtrirani rezultati",
     "paid_by": "Platio/la",
     "budget": "Budžet",
-    "note": "Napomena"
+    "note": "Napomena",
+    "hide": "Sakrij"
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -234,7 +235,8 @@
     "accounting_customers": "Kupci",
     "budget_control": "Kontrola proračuna",
     "activity_log": "Dnevnik aktivnosti",
-    "sifrarnici": "Šifrarnici"
+    "sifrarnici": "Šifrarnici",
+    "erp_import": "Uvoz iz ERP-a"
   },
   "profiles": {
     "general": "General",
@@ -4922,7 +4924,8 @@
       "erp_cost_center_map.upsert": "Spremljeno povezivanje mjesta troška",
       "erp_cost_center_map.delete": "Uklonjeno povezivanje mjesta troška",
       "erp_partner_map.upsert": "Spremljeno povezivanje komitenta",
-      "erp_partner_map.delete": "Uklonjeno povezivanje komitenta"
+      "erp_partner_map.delete": "Uklonjeno povezivanje komitenta",
+      "erp_import.upload": "Uvezena datoteka iz ERP-a"
     }
   },
   "sifrarnici": {
@@ -4977,6 +4980,48 @@
       "retail_customer": "Retail kupac",
       "bank": "Banka",
       "investor": "Investitor"
+    }
+  },
+  "erp_import": {
+    "title": "Uvoz iz ERP-a",
+    "description": "Učitaj izvoz iz 4D Wanda. Datoteke se parsiraju, provjeravaju i pripremaju — ništa ne ulazi u knjigu računa dok se ne potvrdi.",
+    "feed_label": "Vrsta podataka",
+    "choose_file": "Odaberi datoteku…",
+    "hint_reference": "Šifrarnici se u cijelosti zamjenjuju, pa šifra obrisana u ERP-u nestaje i ovdje. Uvezi ih prije računa i plaćanja.",
+    "hint_document": "Redci se pripremaju za klasifikaciju. Prvo uvezi šifrarnike, inače se šifre neće moći povezati.",
+    "history": "Povijest uvoza",
+    "no_runs": "Još ništa nije uvezeno",
+    "no_runs_hint": "Ovdje se prikazuju i ručni uvozi i datoteke poslane s poslužitelja.",
+    "col_started": "Početak",
+    "col_feed": "Vrsta",
+    "col_file": "Datoteka",
+    "col_transport": "Izvor",
+    "col_status": "Status",
+    "col_rows": "Redaka",
+    "rejected": "odbijeno",
+    "show_problems": "Prikaži greške",
+    "row": "Redak",
+    "and_more": "…i još {{count}}",
+    "result_summary": "Pročitano {{total}} redaka, pripremljeno {{staged}}, odbijeno {{rejected}}.",
+    "feed": {
+      "accounts": "Kontni plan (konta)",
+      "cost_centers": "Mjesta troška",
+      "partners": "Komitenti",
+      "invoices": "Računi",
+      "payments": "Plaćanja",
+      "bank_balances": "Stanja žiro računa"
+    },
+    "transport": {
+      "agent": "Agent",
+      "manual": "Ručni uvoz"
+    },
+    "status": {
+      "received": "Zaprimljeno",
+      "parsing": "Obrada",
+      "staged": "Pripremljeno",
+      "promoting": "Potvrđivanje",
+      "completed": "Završeno",
+      "failed": "Greška"
     }
   }
 }
