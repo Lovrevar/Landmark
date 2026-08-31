@@ -61,8 +61,24 @@ upload → parse → stage → resolve → promote, plus the review queue and th
 fix-a-mapping-then-reclassify loop. 25 checks. It writes real rows and cleans up
 after itself, and refuses to run against production.
 
-Needs `ERP_IMPORT_SECRET` (the value passed to `supabase secrets set`) and a
-project with the e2e anchor rows.
+#### Setting `ERP_IMPORT_SECRET`
+
+The script authenticates as the on-prem agent would, so it needs the same shared
+secret the `import-erp` function checks. Supabase stores that secret write-only —
+it cannot be read back — so it has to be set in **two** places with the same
+value:
+
+```sh
+SECRET="dev-$(openssl rand -hex 16)"
+supabase secrets set ERP_IMPORT_SECRET="$SECRET" --project-ref <dev ref>
+echo "ERP_IMPORT_SECRET=$SECRET" >> .env      # gitignored
+```
+
+If `.env` loses it, generate a new one and repeat both steps — there is no way
+to recover the old value. Rotating it is harmless: nothing else depends on it.
+
+The project also needs the e2e anchor rows (`accounting_companies`,
+`subcontractors`, `projects`); `e2e/support/anchor-setup.sql` creates them.
 
 It exists because the ERP promotion logic lives in SQL and interacts with ~20
 existing triggers, which unit tests cannot reach. It has already caught three

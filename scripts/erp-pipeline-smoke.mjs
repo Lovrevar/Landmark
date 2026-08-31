@@ -7,9 +7,9 @@
  * resolve -> promote, plus the review queue and the reclassify loop. It writes
  * real rows and cleans up after itself, so point it at dev, never production.
  *
- * Needs ERP_IMPORT_SECRET (the value set with `supabase secrets set`) and a
- * project with at least one accounting_companies, subcontractors and projects
- * row — the e2e anchor rows are enough.
+ * Needs ERP_IMPORT_SECRET in .env, matching the value set on the project with
+ * `supabase secrets set`, and a project with at least one accounting_companies,
+ * subcontractors and projects row — the e2e anchor rows are enough.
  *
  * The unit tests in supabase/functions/import-erp/ cover parsing and validation
  * logic. This covers the parts they cannot: the SQL, the triggers, and the
@@ -23,7 +23,16 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const SECRET = process.env.ERP_IMPORT_SECRET
 
 if (!URL || !SERVICE_KEY) throw new Error('VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required')
-if (!SECRET) throw new Error('ERP_IMPORT_SECRET is required (the value passed to `supabase secrets set`)')
+if (!SECRET) {
+  throw new Error(
+    'ERP_IMPORT_SECRET is not set.\n\n' +
+    'It has to match the value the import-erp function sees, so set it in both places:\n' +
+    '  1. supabase secrets set ERP_IMPORT_SECRET="$(openssl rand -hex 16)" --project-ref <dev ref>\n' +
+    '  2. add the same value to .env as ERP_IMPORT_SECRET=... (gitignored)\n\n' +
+    'The secret is write-only on Supabase — it cannot be read back — so if .env has lost it,\n' +
+    'generate a new one and set it in both places again.',
+  )
+}
 if (/xhlgviunhitdgzkeucxc/.test(URL)) throw new Error('refusing to run against production')
 
 const db = createClient(URL, SERVICE_KEY, { auth: { persistSession: false } })
