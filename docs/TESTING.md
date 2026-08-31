@@ -77,18 +77,19 @@ The parsing and validation logic has its own Deno unit tests
 
 **Location:** [`e2e/`](../e2e/). Strategy write-up: [`docs/test/e2e-testing-strategy.md`](./test/e2e-testing-strategy.md). Day-to-day commands live in [`e2e/README.md`](../e2e/README.md).
 
-### Current coverage (25 tests)
+### Current coverage (28 tests)
 
 | Module | Spec | Tests |
 |---|---|---|
 | Auth | `auth/login.spec.ts` | 6 (5 valid-credential logins + 1 invalid password) — runs `describe.serial` to avoid Supabase auth rate limits |
-| Auth | `auth/permissions.spec.ts` | 4 — Sales user redirected from `/accounting-invoices`, `/accounting-payments`, `/accounting-approvals`, `/debt-status` |
+| Auth | `auth/permissions.spec.ts` | 6 — Sales user redirected from `/accounting-invoices`, `/accounting-payments`, `/accounting-approvals`, `/debt-status`, `/sifrarnici`, `/erp-import` |
 | Auth | `auth/session.spec.ts` | 2 — logout clears session + Cashflow flag; reload on a protected route stays authenticated |
 | Cashflow | `cashflow/approvals.spec.ts` | 1 — Director hides an approved invoice; row lands in `hidden_approved_invoices` |
 | Cashflow | `cashflow/unlock.spec.ts` | 2 — wrong password keeps modal open with `aria-invalid`; correct password sets the sessionStorage flag and opens `/accounting-invoices` |
 | Funding | `funding/access.spec.ts` | 2 — Investment user reaches `/banks` + `/funding-credits` |
 | Retail | `retail/customers.spec.ts` | 1 — Director creates a retail customer via the form; admin client verifies the row |
 | Sales | `sales/customers.spec.ts` | 1 — Sales user creates a customer via the form; admin client verifies the row |
+| Sales | `sales/complete-sale.spec.ts` | 1 — selling an apartment marks it Sold, records sale + buyer, and sells linked units |
 | Supervision | `supervision/work-logs.spec.ts` | 1 — Supervision user reaches `/work-logs` and the E2E anchor project appears in the project select (exercises `project_managers` RLS) |
 | Smoke | `smoke.spec.ts` | 5 — every role's authenticated app shell loads |
 
