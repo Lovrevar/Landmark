@@ -589,6 +589,46 @@ adding a join would silently make the screen read-only.
 
 ---
 
+### ErpImport
+**Path:** `ErpImport/`
+
+Uploads 4D Wand feed exports. Part of the ERP integration rewrite — see
+[`erp-integration/SPEC.md`](./erp-integration/SPEC.md) §2.1 and
+[`erp-integration/AGENT.md`](./erp-integration/AGENT.md).
+
+The browser **uploads the file rather than parsing it**: the `import-erp` edge
+function owns the parser, the validation rules and the audit trail, so a manual
+upload and an agent push are handled identically. The screen therefore doubles
+as the run log for agent-pushed files. Nothing here reaches
+`accounting_invoices` — files are parsed, validated and staged; promotion is a
+later phase.
+
+#### Services
+
+### erpImportService.ts
+- `uploadFeedFile(feed, file)` — POSTs multipart to `/functions/v1/import-erp` with the user's JWT; Content-Type is deliberately unset so the browser adds the multipart boundary
+- `fetchImportRuns(limit)` — run history from `public.erp_import_runs`
+- `fetchRunProblems(runId)` — per-row validation failures from `public.erp_staging_problems`
+- **Depends on:** supabase client, activityLog
+
+#### Hooks
+
+### useErpImport.ts
+- `useErpImport()` — selected feed, upload state, last result, run history, and lazily-loaded per-run problem lists
+- **Calls:** erpImportService.ts
+- **Returns:** runs, loading, uploading, feed, setFeed, lastResult, error, upload, reload, expandedRunId, problems, problemsLoading, toggleProblems
+
+#### Views
+
+### index.tsx (ErpImport)
+- Feed picker, file picker, and a result summary listing the first ten rejected rows with their errors
+- Run history table with an expandable problem list per run
+- Reference feeds (accounts, cost centres, partners) must be imported before invoices and payments; the hint text under the picker says which kind is selected
+- **Uses hooks:** useErpImport
+- **Uses Ui:** PageHeader, Card, Select, Button, Alert, Badge, Table, EmptyState, LoadingSpinner
+
+---
+
 ### Services (Cashflow-level helpers)
 **Path:** `services/`
 
