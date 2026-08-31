@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -87,6 +87,9 @@ export type Database = {
           customer_id: string | null
           description: string | null
           due_date: string
+          erp_content_hash: string | null
+          erp_document_key: string | null
+          erp_synced_at: string | null
           iban: string | null
           id: string
           investment_id: string | null
@@ -107,6 +110,7 @@ export type Database = {
           retail_milestone_id: string | null
           retail_project_id: string | null
           retail_supplier_id: string | null
+          source: string
           status: string
           supplier_id: string | null
           total_amount: number
@@ -142,6 +146,9 @@ export type Database = {
           customer_id?: string | null
           description?: string | null
           due_date: string
+          erp_content_hash?: string | null
+          erp_document_key?: string | null
+          erp_synced_at?: string | null
           iban?: string | null
           id?: string
           investment_id?: string | null
@@ -162,6 +169,7 @@ export type Database = {
           retail_milestone_id?: string | null
           retail_project_id?: string | null
           retail_supplier_id?: string | null
+          source?: string
           status?: string
           supplier_id?: string | null
           total_amount?: number
@@ -197,6 +205,9 @@ export type Database = {
           customer_id?: string | null
           description?: string | null
           due_date?: string
+          erp_content_hash?: string | null
+          erp_document_key?: string | null
+          erp_synced_at?: string | null
           iban?: string | null
           id?: string
           investment_id?: string | null
@@ -217,6 +228,7 @@ export type Database = {
           retail_milestone_id?: string | null
           retail_project_id?: string | null
           retail_supplier_id?: string | null
+          source?: string
           status?: string
           supplier_id?: string | null
           total_amount?: number
@@ -396,6 +408,9 @@ export type Database = {
           credit_allocation_id: string | null
           credit_id: string | null
           description: string | null
+          erp_content_hash: string | null
+          erp_document_key: string | null
+          erp_synced_at: string | null
           id: string
           invoice_id: string
           is_cesija: boolean | null
@@ -403,6 +418,7 @@ export type Database = {
           payment_method: string
           payment_source_type: string | null
           reference_number: string | null
+          source: string
           updated_at: string | null
         }
         Insert: {
@@ -417,6 +433,9 @@ export type Database = {
           credit_allocation_id?: string | null
           credit_id?: string | null
           description?: string | null
+          erp_content_hash?: string | null
+          erp_document_key?: string | null
+          erp_synced_at?: string | null
           id?: string
           invoice_id: string
           is_cesija?: boolean | null
@@ -424,6 +443,7 @@ export type Database = {
           payment_method: string
           payment_source_type?: string | null
           reference_number?: string | null
+          source?: string
           updated_at?: string | null
         }
         Update: {
@@ -438,6 +458,9 @@ export type Database = {
           credit_allocation_id?: string | null
           credit_id?: string | null
           description?: string | null
+          erp_content_hash?: string | null
+          erp_document_key?: string | null
+          erp_synced_at?: string | null
           id?: string
           invoice_id?: string
           is_cesija?: boolean | null
@@ -445,6 +468,7 @@ export type Database = {
           payment_method?: string
           payment_source_type?: string | null
           reference_number?: string | null
+          source?: string
           updated_at?: string | null
         }
         Relationships: [
