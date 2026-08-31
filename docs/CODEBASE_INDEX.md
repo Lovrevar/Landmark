@@ -28,6 +28,7 @@
 
 | Doc | File | Description |
 |---|---|---|
+| **ERP Integration** | [erp-integration/](./erp-integration/README.md) | In-progress rewrite of the financial section: 4D Wand becomes the source of truth for invoices, payments and bank balances; Cognilion stops authoring them and imports/classifies instead. Spec, decision log, progress and open questions |
 | **Testing** | [TESTING.md](./TESTING.md) | Vitest unit tests + Playwright e2e setup and conventions |
 | **Security Backlog** | [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) | Tracked security items and RLS hardening status |
 | **Presentation Modules** | [PRESENTATION_MODULES.md](./PRESENTATION_MODULES.md) | Croatian-language module overview + talking points for pitching the platform; ERP sync presented as a built-in product capability |

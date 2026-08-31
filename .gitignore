@@ -59,3 +59,6 @@ supabase/functions/deno.lock
 vapid.json
 # Local backup of .git made during repo recovery — delete once verified
 .git.bak/
+
+# Real financial data from 4D Wand exports — kept local, never committed.
+docs/erp-samples/
