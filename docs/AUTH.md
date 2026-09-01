@@ -55,5 +55,5 @@ Auth state is managed globally in `src/contexts/AuthContext.tsx` — not inside 
 
 ## Related
 
-- [src/contexts/AuthContext.tsx](../contexts/AuthContext.tsx) — provides `useAuth()` hook consumed app-wide
-- [src/utils/permissions.ts](../utils/permissions.ts) — role-based access checks derived from auth context
+- [src/contexts/AuthContext.tsx](../src/contexts/AuthContext.tsx) — provides `useAuth()` hook consumed app-wide
+- [src/utils/permissions.ts](../src/utils/permissions.ts) — role-based access checks derived from auth context

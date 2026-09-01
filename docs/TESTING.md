@@ -26,6 +26,8 @@ Pure functions only — the deterministic calculation and formatting helpers tha
 | Credit calculations | [`src/components/Funding/Investors/utils/creditCalculations.test.ts`](../src/components/Funding/Investors/utils/creditCalculations.test.ts) | annuity payments, equity cashflow, money multiple, payment schedules, risk levels, badge variants |
 | TIC formatters | [`src/components/Funding/TIC/utils/ticFormatters.test.ts`](../src/components/Funding/TIC/utils/ticFormatters.test.ts) | `calculateRowPercentages`, `calculateTotals` (vlastita/kreditna), `formatNumber`, `formatPercentage` |
 | Documents tree helpers | [`src/components/Documents/utils/treeHelpers.test.ts`](../src/components/Documents/utils/treeHelpers.test.ts) | `buildIdMap`, `buildDescendantsMap`, `rollupCounts`, `flattenTree` |
+| EVM | [`src/utils/evm.test.ts`](../src/utils/evm.test.ts) | `calculatePhaseEVM` and `calculateProjectEVM` — PV/EV/AC, CPI/SPI, CV/SV, EAC/VAC, and the phase→project aggregation |
+| Payment payload | [`src/components/Cashflow/Payments/services/paymentPayload.test.ts`](../src/components/Cashflow/Payments/services/paymentPayload.test.ts) | `buildPaymentData` across all five payment methods (bank account, credit, kompenzacija, gotovina, cesija), plus empty-string→null normalisation and passthrough fields |
 
 ### Configuration ([`vitest.config.ts`](../vitest.config.ts))
 
@@ -37,7 +39,7 @@ Pure functions only — the deterministic calculation and formatting helpers tha
 
 ### Conventions
 
-- Tests live **next to the code** as `*.test.ts`, typically inside the module's `utils/` folder (e.g. `src/components/Funding/TIC/utils/ticFormatters.test.ts` sits beside `ticFormatters.ts`).
+- Tests live **next to the code** as `*.test.ts`, in whichever folder the code itself lives in — usually the module's `utils/` (e.g. `src/components/Funding/TIC/utils/ticFormatters.test.ts` sits beside `ticFormatters.ts`), but `services/` where the pure helper was extracted out of a service (`paymentPayload.test.ts`).
 - Targets are **pure functions** — deterministic, dependency-free, no Supabase/React. If a helper needs a DB row or a rendered component, it belongs in E2E, not here.
 - Croatian domain terms (`vlastita`, `kreditna`, the 4 VAT slots) stay in Croatian in the test data, matching the codebase.
 - Assertions are anchored to the code's **actual** output, not the textbook ideal — several specs document real quirks (e.g. the `calculatePaymentSchedule` 119-vs-120 monthly-payment off-by-one, hr-HR's U+2212 minus sign).

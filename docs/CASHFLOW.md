@@ -395,6 +395,14 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 - Full detail modal for a single invoice including payment history
 - **Uses Ui:** Modal
 
+### services/invoiceValidation.ts
+Pure validation helpers, kept out of `invoiceService.ts` so they can be reasoned about (and
+tested) without Supabase.
+- `validateInvoice(...)` — field-level validation; the VAT-base rule rejects an invoice whose summed VAT bases are zero
+- `getCounterpartyColumn(...)` → `InvoiceCounterpartyColumn` — resolves which counterparty column (supplier / customer / company) applies for a given invoice type and direction
+- `checkDuplicateInvoiceNumber({...})` — pre-flight duplicate check
+- `isInvoiceNumberDuplicateError(error)` — recognises the unique-constraint violation when the pre-flight check races
+
 ### InvoiceStats.tsx
 - Summary stat cards (total invoices, unpaid amount, etc.)
 - **Uses Ui:** StatGrid
@@ -532,6 +540,10 @@ Payment records linked to invoices. Supports wire, cash, check, card, kompenzaci
 ### PaymentTable.tsx
 - Payment list table with column visibility toggle
 - **Uses Ui:** Table
+
+### services/paymentPayload.ts
+- `buildPaymentData(formData, createdBy)` — turns the payment form state into the row that gets inserted, branching on payment method: bank account, credit, **kompenzacija**, **gotovina**, and **cesija** each null out and populate different columns
+- Pure and unit-tested (`paymentPayload.test.ts`, 11 tests) — this is where the Croatian payment-method column rules are pinned down, so change it there rather than inline in a form
 
 ### PaymentStatsCards.tsx
 - Summary stat cards for payment totals

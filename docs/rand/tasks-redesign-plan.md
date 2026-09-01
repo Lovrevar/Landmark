@@ -1,8 +1,17 @@
 # Tasks Redesign + Calendar Toggle — Design Doc
 
-**Status:** draft for sign-off · **Scope:** Tasks module + Calendar overlay · **Stage:** dev (schema is free to change)
+> **Superseded — historical.** This plan was signed off and built; the Tasks module and the
+> Calendar task overlay both shipped. It is kept for the design rationale only. **Do not treat
+> file names, component names, or step ordering here as current** — several drifted during
+> implementation (e.g. `TaskItem.tsx` shipped as
+> [`TaskRow.tsx`](../../src/components/Tasks/TaskRow.tsx), and the `docs/modules/` folder in
+> Step 5 was never created — the module docs live at [`docs/TASKS.md`](../TASKS.md) and
+> [`docs/CALENDAR.md`](../CALENDAR.md)). For how Tasks actually works, read
+> [`docs/TASKS.md`](../TASKS.md).
 
-This is the Step 1 design doc. Please read, mark things to change, and approve. No code, migrations, or dependency installs will happen until this is signed off.
+**Status:** ~~draft for sign-off~~ → implemented · **Scope:** Tasks module + Calendar overlay
+
+This was the Step 1 design doc.
 
 ---
 
@@ -29,12 +38,12 @@ Tasks stays on its own page. We do **not** merge `tasks` into `calendar_events`.
 
 | File | Role |
 |---|---|
-| [src/components/Tasks/index.tsx](src/components/Tasks/index.tsx) | Page shell, 3 tabs (Mine / Team / Overdue), pulls from `useTasks`. |
+| [src/components/Tasks/index.tsx](../../src/components/Tasks/index.tsx) | Page shell, 3 tabs (Mine / Team / Overdue), pulls from `useTasks`. |
 | `src/components/Tasks/hooks/useTasks.ts` | Inline Supabase queries, no service layer, no real-time. |
 | `src/components/Tasks/TaskModal.tsx` | Minimal create/edit modal: title, description, due date, assignee, status. |
 | `src/components/Tasks/TaskItem.tsx` | Row with checkbox, title, due date, small assignee avatar. |
 | `src/types/tasks.ts` | `Task` type + `TaskStatus = 'todo'\|'in_progress'\|'done'\|'cancelled'` (cancelled never surfaces in the UI). |
-| `supabase/migrations/.../create_tasks_and_calendar_tables.sql` | Creates `tasks`, `task_assignees`, `task_comments`, and the `is_task_assignee` / `get_task_creator` RLS helpers. |
+| `supabase/migrations/20260417072736_create_tasks_and_calendar_tables.sql` | Creates `tasks`, `task_assignees`, `task_comments`, and the `is_task_assignee` / `get_task_creator` RLS helpers. |
 
 The tasks schema already has good bones (RLS helpers, comments table, assignees join) — we extend it, not replace it.
 

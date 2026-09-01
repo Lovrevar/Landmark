@@ -10,10 +10,20 @@ Shared primitive component library. Always check here before building new UI —
 
 ## Components
 
+> **Barrel-file gotcha.** `AvatarStack`, `MarkdownView`, `SearchableSelect`, `ToggleSwitch` and
+> `Toast` are **not** re-exported from `src/components/ui/index.ts` — import them by path
+> (`import SearchableSelect from '../../ui/SearchableSelect'`). `Toast` is never imported
+> directly at all; use `useToast()`. Everything else is available from `'../../ui'`.
+
 ### Alert.tsx
 - Styled alert banner with dismiss button
 - Props: `variant` ('info' | 'success' | 'warning' | 'error'), `title?`, `children`, `onDismiss?`, `className?`
 - **Uses Ui:** (none — standalone primitive)
+
+### AvatarStack.tsx
+- Overlapping initials avatars for a set of users, with a `+N` overflow bubble
+- Props: `users` (`{id, username?}[]`), `max?` (default overflow cutoff), `size?` ('xs' | 'sm' | 'md', default 'md'), `title?`
+- Used for task assignees and calendar event attendees
 
 ### Badge.tsx
 - Compact coloured label for statuses and categories
@@ -44,6 +54,10 @@ Shared primitive component library. Always check here before building new UI —
 - Responsive filter controls row (column on mobile, row on desktop)
 - Props: `children`, `className?`
 
+### FilterChip.tsx
+- Single toggleable filter pill; pairs with `FilterBar`
+- Props: `active`, `onClick`, `children`, `icon?` (LucideIcon), `dotColor?`, `count?` (badge), `size?` ('sm' | 'md'), `className?`
+
 ### Form.tsx
 - Form wrapper that prevents double-submission by tracking async submit state via context
 - Props: extends all HTML form attributes; `onSubmit?` accepts both sync and async handlers
@@ -62,6 +76,11 @@ Shared primitive component library. Always check here before building new UI —
 ### LoadingSpinner.tsx
 - Animated loading indicator, centred or inline
 - Props: `size?` ('sm' | 'md' | 'lg'), `message?`, `className?`, `inline?`
+
+### MarkdownView.tsx
+- Renders a Markdown string with the app's typography, via `react-markdown` + `remark-gfm` (so tables, strikethrough and task lists work)
+- Props: `content`, `className?`
+- Used by AI chat message bodies and task descriptions. Prefer this over hand-rolling a Markdown renderer
 
 ### Modal.tsx
 - Full-featured modal dialog with portal rendering and body scroll lock
@@ -89,6 +108,11 @@ Shared primitive component library. Always check here before building new UI —
 - Search input with integrated clear (×) button
 - Props: extends all HTML input attributes (minus `type`), `onClear?`, `placeholder?` (default: 'Pretraži...')
 - Uses `forwardRef`
+
+### SearchableSelect.tsx
+- Dropdown with a type-to-filter search box — for selects long enough that a plain `Select` is unusable (suppliers, projects, partners)
+- Props: `value`, `options` (`SearchableOption[]` = `{value, label, sublabel?}`), `onChange`, `placeholder?`, `searchPlaceholder?`, `clearLabel?`, `allowClear?`, `disabled?`
+- Exports the `SearchableOption` type
 
 ### Select.tsx
 - Styled select dropdown
@@ -129,6 +153,11 @@ Shared primitive component library. Always check here before building new UI —
 - Styled multi-line text input with focus ring
 - Props: extends all HTML textarea attributes; `compact?`, `rows?` (default: 3)
 - Uses `forwardRef`
+
+### ToggleSwitch.tsx
+- Accessible on/off switch with optional label and description
+- Props: `checked`, `onChange`, `label?`, `description?`, `disabled?`, `id?` (auto-derived from `label` when omitted)
+- Use this for booleans instead of a bare checkbox
 
 ---
 

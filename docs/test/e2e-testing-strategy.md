@@ -46,7 +46,7 @@ e2e/
   support/
     supabase-admin.ts           # service-role client (cleanup only)
     namespace.ts                # runId + testId generator
-    factories.ts                # createInvoice(), createCustomer(), etc.
+    factories/                  # cashflowInvoices.ts, salesUnits.ts
     cleanup.ts                  # deleteByNamespace(runId|testId)
     auth.ts                     # loginAs(role) used by globalSetup
     env.ts                      # loads .env.test, asserts prod-safety
@@ -102,7 +102,7 @@ testId = `${runId}-${slug(testTitle)}`
 // e.g. e2e-1714320000000-a3f8c2d1-invoice-multi-vat
 ```
 
-Every user-visible text field that tests write — invoice number, customer name, project name, work-log note, land plot label, subcontractor name, description fields — is prefixed with the `testId`. Factory helpers in `e2e/support/factories.ts` apply the prefix automatically so test authors can't forget.
+Every user-visible text field that tests write — invoice number, customer name, project name, work-log note, land plot label, subcontractor name, description fields — is prefixed with the `testId`. Factory helpers under `e2e/support/factories/` apply the prefix automatically so test authors can't forget.
 
 This gives us three layers of isolation, from loosest to tightest:
 1. **By test user** — each role has its own pre-provisioned account with its own `auth_user_id`.
@@ -164,9 +164,9 @@ Five users have been provisioned in the dev Supabase project, all with password 
 | `e2e-funding@mail.com` | Investment | Funding credits and drawdowns |
 | `e2e-sales@mail.com` | Sales | Sales flow, customers |
 
-Role strings as defined in [src/contexts/AuthContext.tsx:22](src/contexts/AuthContext.tsx#L22): `'Director' | 'Accounting' | 'Sales' | 'Supervision' | 'Investment'`.
+Role strings as defined in [src/contexts/AuthContext.tsx:26](../../src/contexts/AuthContext.tsx#L26): `'Director' | 'Accounting' | 'Sales' | 'Supervision' | 'Investment'`.
 
-Profiles are distinct from roles (see [src/contexts/AuthContext.tsx:22](src/contexts/AuthContext.tsx#L22)): `'General' | 'Supervision' | 'Sales' | 'Funding' | 'Cashflow' | 'Retail'`. The Cashflow profile is password-gated by `VITE_CASHFLOW_PASSWORD` (default `'admin'`) and stored in `sessionStorage` under `cashflow_unlocked`, enforced by the `CashflowRoute` wrapper in [src/App.tsx](src/App.tsx).
+Profiles are distinct from roles (see [src/contexts/AuthContext.tsx:30](../../src/contexts/AuthContext.tsx#L30)): `'General' | 'Supervision' | 'Sales' | 'Funding' | 'Cashflow' | 'Retail'`. The Cashflow profile is password-gated by `VITE_CASHFLOW_PASSWORD` (default `'admin'`) and stored in `sessionStorage` under `cashflow_unlocked`, enforced by the `CashflowRoute` wrapper in [src/App.tsx](../../src/App.tsx).
 
 ## 6. Auth helpers and storage state
 
@@ -250,7 +250,7 @@ Each suite is 3–6 tests targeting critical journeys only. Total: **21 tests**,
 
 ### Cashflow — 5 tests
 1. Director creates an invoice with two VAT rates (25% + 13%) via the UI; totals render correctly in the summary; after save, the row appears in the invoice list with the computed total.
-2. Submitting an invoice where the summed VAT bases are zero is rejected by `invoiceValidation` and no row is created (per [src/components/Cashflow/Invoices/services/invoiceValidation.ts](src/components/Cashflow/Invoices/services/invoiceValidation.ts)).
+2. Submitting an invoice where the summed VAT bases are zero is rejected by `invoiceValidation` and no row is created (per [src/components/Cashflow/Invoices/services/invoiceValidation.ts](../../src/components/Cashflow/Invoices/services/invoiceValidation.ts)).
 3. Director (or Accounting) approves an invoice in the approval queue. The invoice leaves the queue, and `activity_log` contains a new row with the expected action string (`invoice.hide` — the string emitted by `approvalsService.ts`) and the correct `entity_id`.
 4. Recording a payment against an invoice via `PaymentFormModal` reduces the invoice's `remaining_amount` by the payment amount and increments `paid_amount`.
 5. Cashflow profile unlock: with `sessionStorage.cashflow_unlocked` cleared, switching to the Cashflow profile prompts for password; a wrong password is rejected; the correct password unlocks; logging out clears the flag.
@@ -270,7 +270,7 @@ Each suite is 3–6 tests targeting critical journeys only. Total: **21 tests**,
 ### Retail — 3 tests
 1. Create a land plot and link it to a retail project. The plot appears under the project.
 2. Create a retail invoice tied to that plot, linking one customer and one supplier. The invoice appears in the retail invoice list.
-3. Approving a retail invoice writes an `invoice.approve` entry to `activity_log` with `severity: 'high'` (per [src/components/Retail/Invoices/services/retailInvoiceService.ts](src/components/Retail/Invoices/services/retailInvoiceService.ts)).
+3. Approving a retail invoice writes an `invoice.approve` entry to `activity_log` with `severity: 'high'` (per [src/components/Retail/Invoices/services/retailInvoiceService.ts](../../src/components/Retail/Invoices/services/retailInvoiceService.ts)).
 
 ### Supervision — 4 tests
 1. Create a work log with `work_finished` status against the anchor project. The row appears in the work-log list.
@@ -282,8 +282,8 @@ Each suite is 3–6 tests targeting critical journeys only. Total: **21 tests**,
 
 Several tests above assert on `activity_log` rows. Notes for test authors:
 
-- The Cashflow **approvals** flow emits `invoice.hide` / `invoice.bulk_hide`, not `invoice.approve` (per [src/components/Cashflow/Approvals/services/approvalsService.ts](src/components/Cashflow/Approvals/services/approvalsService.ts)).
-- The Retail **approvals** flow emits `invoice.approve` (per [src/components/Retail/Invoices/services/retailInvoiceService.ts](src/components/Retail/Invoices/services/retailInvoiceService.ts)).
+- The Cashflow **approvals** flow emits `invoice.hide` / `invoice.bulk_hide`, not `invoice.approve` (per [src/components/Cashflow/Approvals/services/approvalsService.ts](../../src/components/Cashflow/Approvals/services/approvalsService.ts)).
+- The Retail **approvals** flow emits `invoice.approve` (per [src/components/Retail/Invoices/services/retailInvoiceService.ts](../../src/components/Retail/Invoices/services/retailInvoiceService.ts)).
 - Assertions scope by `entity_id` matching the test's created record, not by action string alone — there may be unrelated rows for the same action elsewhere in the log from other users.
 - Tests read `activity_log` via the `admin` fixture (service role) so they bypass read-side RLS and can assert reliably.
 
@@ -318,7 +318,7 @@ These are ambiguities the infra step will resolve by running the smoke test — 
 ## 15. Deliverables for the next step
 
 Step 2 ships:
-- `playwright.config.ts`, `e2e/tsconfig.json`
+- `playwright.config.ts`
 - `e2e/support/` — env, namespace, admin client, auth, factories, cleanup, fixtures
 - `e2e/.auth/` (gitignored) produced by globalSetup
 - `e2e/smoke.spec.ts` — one test per role, logs in, asserts dashboard loads

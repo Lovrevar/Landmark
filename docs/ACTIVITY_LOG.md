@@ -136,7 +136,7 @@ logActivity({
 
 ## Instrumented Actions — Full Inventory
 
-~140 discrete actions across 8 categories. Severity: **L**=low, **M**=medium, **H**=high.
+138 discrete actions across 11 categories. Severity: **L**=low, **M**=medium, **H**=high.
 
 ### Auth (2)
 | Action | Severity | File |
@@ -231,13 +231,14 @@ logActivity({
 | `contract_milestone.update` | L–M | `Supervision/SiteManagement/services/milestoneService.ts` + `Funding/Payments/services/paymentNotificationService.ts` |
 | `contract_milestone.delete` | M | `Supervision/SiteManagement/services/milestoneService.ts` |
 | `document.upload` | M | `Documents/services/documentService.ts` |
+| `document.update` | M | `Documents/services/documentService.ts` |
 | `document.delete` | M | `Documents/services/documentService.ts` |
 | `work_log.create` | L | `Supervision/WorkLogs/services/workLogService.ts` |
 | `work_log.update` | L | `Supervision/WorkLogs/services/workLogService.ts` |
 | `work_log.delete` | M | `Supervision/WorkLogs/services/workLogService.ts` |
 | `invoice.approve` | H | `Supervision/Invoices/services/supervisionInvoiceService.ts` |
 
-### Funding (15)
+### Funding (17)
 | Action | Severity | File |
 |---|---|---|
 | `investor.create` | M | `Funding/Investors/hooks/useBankData.ts` |
@@ -252,6 +253,8 @@ logActivity({
 | `credit_allocation.create` | H | `Funding/Investments/services/creditService.ts` |
 | `credit_allocation.delete` | H | `Funding/Investments/services/creditService.ts` |
 | `equity_investment.create` | H | `Funding/Investors/hooks/useEquityForm.ts` |
+| `invoice.bulk_detach_credit` | H | `Funding/Investors/services/creditService.ts` |
+| `tic.create` | M | `Funding/TIC/services/ticService.ts` |
 | `tic.update` | M | `Funding/TIC/hooks/useTIC.ts` |
 | `export.tic_excel` | L | `Funding/TIC/services/ticExport.ts` |
 | `export.tic_pdf` | L | `Funding/TIC/services/ticExport.ts` |
@@ -292,9 +295,46 @@ logActivity({
 |---|---|---|
 | `conversation.create` | M | `Chat/services/chatService.ts` |
 | `calendar_event.create` | M | `Calendar/services/calendarService.ts` |
+| `calendar_event.update` | M | `Calendar/services/calendarService.ts` |
 | `calendar_event.respond` | L | `Calendar/services/calendarService.ts` |
 | `calendar_event.delete` | H | `Calendar/services/calendarService.ts` |
+| `calendar_event.exception_create` | M/H | `Calendar/services/calendarService.ts` (H when the override cancels the occurrence) |
+| `calendar_event.exception_delete` | M | `Calendar/services/calendarService.ts` |
 | `calendar_event.acknowledge_all` | L | `Calendar/services/calendarService.ts` |
+
+### Tasks (7)
+| Action | Severity | File |
+|---|---|---|
+| `task.create` | M | `Tasks/services/tasksService.ts` |
+| `task.update` | M | `Tasks/services/tasksService.ts` |
+| `task.status_change` | L | `Tasks/services/tasksService.ts` |
+| `task.delete` | H | `Tasks/services/tasksService.ts` |
+| `task.comment` | L | `Tasks/services/tasksService.ts` |
+| `task.attachment_add` | L | `Tasks/services/tasksService.ts` |
+| `task.attachment_remove` | L | `Tasks/services/tasksService.ts` |
+
+### ERP import & mappings (8)
+| Action | Severity | File |
+|---|---|---|
+| `erp_import.upload` | H | `Cashflow/ErpImport/services/erpImportService.ts` |
+| `erp_import.reclassify` | H | `Cashflow/ErpImport/services/erpImportService.ts` |
+| `erp_account_map.upsert` | M | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+| `erp_account_map.delete` | H | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+| `erp_cost_center_map.upsert` | M | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+| `erp_cost_center_map.delete` | H | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+| `erp_partner_map.upsert` | M | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+| `erp_partner_map.delete` | H | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+
+Entities are `erp_import_run`, `erp_account_map`, `erp_cost_center_map` and `erp_partner_map`.
+The importer itself runs as the service role inside the `import-erp` edge function and does
+**not** call `logActivity()` — `erp.import_runs` is its own audit trail. What is logged here
+is the *user* action that triggered or corrected a run.
+
+### AI chat (2)
+| Action | Severity | File |
+|---|---|---|
+| `ai_session.update` | M | `AiChat/hooks/useAiChatStore.ts` (session rename) |
+| `ai_session.delete` | H | `AiChat/hooks/useAiChatStore.ts` |
 
 ---
 
@@ -305,7 +345,7 @@ These writes are deliberately exempt from `logActivity()` — do not "fix" them 
 - **Derived-value recalculations** — system-computed aggregates rewritten from source data, not user actions; logging them would flood the log: `recalculateBankAccountBalance` (companyService), `recalculatePhaseBudget` / `recalculateAllPhaseBudgets` (phaseService), `updateContractBudgetRealized` (siteContractService)
 - **Automatic status sweeps** — `update_overdue_notifications` RPC (runs on page load, no user intent)
 - **Chat traffic** — `chat_messages` inserts, `chat_participants.last_read_at` updates, chat/AI-chat file attachments; conversation create/delete *are* logged
-- **AI session housekeeping** — session title updates and cancel flags (`aiChatService`); session create/delete *are* logged
+- **AI session housekeeping** — session *creation* and cancel flags (`aiChatService`). A session row is created implicitly on the first message, so logging it would just duplicate chat traffic. Renames (`ai_session.update`) and deletes (`ai_session.delete`) *are* logged
 - **Storage rollbacks** — `.remove()` calls that clean up after a failed upload
 
 ## Adding Logging to New Features

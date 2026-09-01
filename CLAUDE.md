@@ -14,7 +14,10 @@ Cognilion is a full-lifecycle real estate and construction project management pl
 | Routing | React Router DOM |
 | Icons | Lucide React |
 | PDF | jsPDF (client-side, no server) |
-| Excel | xlsx library |
+| Excel | `@e965/xlsx` (maintained SheetJS fork — **not** the `xlsx` package) |
+| Charts | Recharts |
+| i18n | i18next + react-i18next (hr default, en fallback) |
+| Dates | date-fns; `rrule` for calendar recurrence |
 
 ## User Roles & Profiles
 
@@ -28,14 +31,21 @@ Each profile renders a different navigation menu and dashboard. Profile ≠ role
 
 | Module | Path | Description |
 |---|---|---|
-| Projects | `src/components/Projects/` | Central project lifecycle, milestones, budget tracking |
+| General | `src/components/General/` | Project lifecycle, milestones, budget control/EVM, activity log |
 | Sales | `src/components/Sales/` | CRM, unit inventory, buyer tracking, payments |
 | Supervision | `src/components/Supervision/` | Construction site, subcontractors, work logs |
-| Accounting | `src/components/Accounting/` | Invoices, payments, suppliers, companies, banks |
+| Cashflow | `src/components/Cashflow/` | Invoices, payments, suppliers, companies, banks, ERP import, Šifrarnici |
 | Retail | `src/components/Retail/` | Land development, parcels, retail buyers |
 | Funding | `src/components/Funding/` | Bank loans, investors, drawdowns, TIC structure |
-| Dashboards | `src/components/Dashboard/` | Per-profile home pages |
+| Dashboards | `src/components/dashboards/` | Per-profile home pages (lowercase directory) |
 | Reports | `src/components/Reports/` | PDF/Excel reports across all modules |
+| Tasks | `src/components/Tasks/` | Org-wide task list, comments, attachments; schema shared with a mobile app |
+| Calendar | `src/components/Calendar/` | Events, RSVP, recurrence, per-user task overlay |
+| Chat | `src/components/Chat/` | 1:1 and group conversations, attachments, realtime unread badge |
+| AI Chat | `src/components/AiChat/` | Floating Claude assistant (SSE streaming, tool calling, document generation) |
+| Documents | `src/components/Documents/` | Document browser and category tree; auto-classified emailed documents |
+| Auth | `src/components/Auth/` | Login form (email/password + Microsoft Entra ID) |
+| Common | `src/components/Common/` | Layout, profile switcher, language switcher, shared inputs |
 
 ## Key Domain Concepts
 
@@ -49,11 +59,31 @@ These are business-specific — do not simplify or generalize them:
 - **Credit allocation** — bank credit lines can be allocated across multiple projects/contracts
 - **TIC** — Troškovna Informatička Struktura, a cost breakdown structure for investment projects
 
+## ERP Integration (in progress)
+
+The financial section is being rewritten so that **4D Wand** — the ERP the company adopted —
+becomes the source of truth for invoices, payments and bank balances. Cognilion stops
+authoring them and becomes a consumer that imports, classifies and links. Everything
+downstream keeps reading `accounting_invoices` / `accounting_payments` unchanged; what is
+changing is *who writes* those two tables.
+
+- Phases 0–3 (foundation, reference data, ingestion, classification/promotion) are done;
+  phase 4 (historical re-import) is next. **Phase 5 removes the in-app creation UI and locks
+  writes to the service role** — do not build new invoice/payment authoring UI without
+  checking the plan first
+- Lives in the `erp` Postgres schema, surfaced through `security_invoker` views in `public`
+  (`erp` is not exposed via PostgREST). UI at `/sifrarnici` (mappings) and `/erp-import`
+- Ingestion is the `import-erp` edge function; `npm run erp:smoke` exercises the chain
+- Read [`docs/erp-integration/`](./docs/erp-integration/README.md) before touching invoices,
+  payments, or bank balances
+
 ## Data Layer
 
-- 200+ Supabase migrations — never execute migration files without being explicitly asked
+- 340+ Supabase migrations (342 as of Sept 2026) — never execute migration files without being explicitly asked
 - All tables use RLS (Row Level Security) — always respect existing policies
 - Never bypass auth context when writing queries
+- `npm run db:types` regenerates `src/types/database.ts` from the linked project
+  (both the `public` and `erp` schemas) and mirrors it into `supabase/functions/_shared/`
 
 ## Architecture Pattern
 
@@ -63,7 +93,13 @@ UI Component → Custom Hook → Service Layer → Supabase → Database
 
 ## Shared UI Library
 
-There is a shared component library at `src/components/ui/` with ~20 components including `Modal`, `Table`, `Badge`, `Card`. Always use these before creating new UI primitives.
+There is a shared component library at `src/components/ui/` with 30 components. Check it before
+creating any new UI primitive — the full list with props is in [`docs/UI.md`](./docs/UI.md).
+
+**Five are not in the barrel file** and must be imported by path: `AvatarStack`,
+`MarkdownView`, `SearchableSelect`, `ToggleSwitch`, and `Toast` (which you never import
+directly — use `useToast()` from `src/contexts/ToastContext`). Everything else comes from
+`src/components/ui`.
 
 ### Rules for i18n work
 
@@ -104,9 +140,42 @@ After creating new files or doing major updates, update the relevant docs.
 
 ## graphify
 
-This project has a graphify knowledge graph at graphify-out/.
+This project has a graphify knowledge graph at `graphify-out/`. It indexes **code only**
+(~1830 nodes over ~580 files) — docs are not in it, so doc edits never require a rebuild.
 
 Rules:
-- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
-- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
-- After modifying code files in this session, run `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` to keep the graph current
+- After modifying code files in this session, run
+  `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`
+  to keep it current. Takes about 5 seconds
+- `.graphifyignore` at the repo root controls what gets indexed. graphify does **not** read
+  `.gitignore`, so anything gitignored that still contains parseable source has to be listed there
+- Use it to find *where* something lives — locating a symbol, seeing what a module's call graph
+  touches. Verify anything it claims about relationships against the code before acting on it
+
+### What this graph cannot tell you
+
+Extraction is pure AST with no model in the loop (`0 input · 0 output` tokens), and node IDs are
+built from **filename stem + symbol name with no path**. Two consequences, both load-bearing:
+
+- **Same-named symbols in different files are merged into one node.** This manufactures call edges
+  that do not exist. Every entry in the report's *"Surprising Connections"* section is currently a
+  false positive of this kind — e.g. it claims `Tasks/index.tsx`'s `confirmDelete()` calls
+  `refreshCounts()` in `Documents/index.tsx`; `Tasks/index.tsx` does not contain that string. Treat
+  that whole section as noise, not as findings
+- **Same-named files collide, and the loser gets no file-level node.** `Supervision/…/PhaseCard.tsx`
+  is absent because `Retail/Projects/PhaseCard.tsx` claimed the id; 46 TS/JS files are missing this
+  way, mostly `types.ts` and `index.tsx`. A file's absence from the graph means nothing
+
+The *God Nodes* list ranks by raw edge count, so it surfaces short common helper names rather than
+core abstractions — `str()`, a local coercion helper in `import-erp/feeds.ts`, currently tops it.
+Community cohesion scores of 0.01–0.05 mean the clustering found little structure there; they are
+not a signal that a module needs splitting.
+
+Neither limitation is configurable — `path.stem` is hardcoded in graphify's extractor. Do not patch
+`site-packages` to work around it.
+
+### Stale files in graphify-out/
+
+Only `graph.json`, `GRAPH_REPORT.md` and `cache/` are refreshed by the rebuild command above.
+`graph.html`, `manifest.json` and `cost.json` are left at whatever the last full `graphify` run
+produced (currently April 2026, 369 files) — **do not read them as current**.

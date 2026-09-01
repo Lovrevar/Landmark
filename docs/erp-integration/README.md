@@ -9,7 +9,7 @@ from **4D Wand**, the ERP the company adopted.
 | [PROGRESS.md](./PROGRESS.md) | Phase-by-phase status. What is done, what is next. |
 | [DECISIONS.md](./DECISIONS.md) | Decision log — what was chosen, and why, so choices are not silently relitigated. |
 | [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) | Questions blocking work, with owner and status. |
-| [AGENT.md](./AGENT.md) | Contract for the on-prem push agent — not yet written. |
+| [AGENT.md](./AGENT.md) | The contract the on-prem push agent has to satisfy: endpoint, feed order, retry and file-handling rules. The agent script itself is not written yet. |
 | [LEDGER_NOTES.md](./LEDGER_NOTES.md) | What the raw GL export looks like. Reference only. |
 
 ## The shape of it in one paragraph

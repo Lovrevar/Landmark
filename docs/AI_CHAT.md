@@ -22,7 +22,7 @@ This document is the maintenance reference for the Cognilion AI chat feature. It
 
 ## Overview
 
-The AI chat is a Croatian-language, read-only question-and-answer assistant embedded in the Cognilion web app. Users open a floating widget, type a question in any language about projects, phases, contracts, subcontractors, invoices, or payments, and receive an answer in Croatian. The answer is composed by Claude (model: `claude-sonnet-4-6`) via the Anthropic Messages API; Claude reaches into Cognilion data through a curated set of 10 tools exposed by a Supabase Edge Function.
+The AI chat is a Croatian-language, read-only question-and-answer assistant embedded in the Cognilion web app. Users open a floating widget, type a question in any language about projects, phases, contracts, subcontractors, invoices, or payments, and receive an answer in Croatian. The answer is composed by Claude (model: `claude-sonnet-4-6`) via the Anthropic Messages API; Claude reaches into Cognilion data through a curated set of 14 tools exposed by a Supabase Edge Function.
 
 The assistant explicitly does NOT mutate any data and does NOT have access to the retail/land-development side of the platform — only construction-side data is reachable. Refusal phrasing for out-of-scope requests is baked into the system prompt. It *can*, since the document-generation work, produce downloadable PDF / Excel / Markdown files on request (see [Document generation](#document-generation)) — that reads data but changes nothing.
 
@@ -282,7 +282,7 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 
 ## Tool Catalog
 
-12 tools, defined in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts) and implemented in [supabase/functions/_shared/tool-handlers.ts](../supabase/functions/_shared/tool-handlers.ts) (the help-search tool lives in `help-search.ts`). For each tool, JSON Schema and exact input/output shapes live in those files — do not duplicate them here.
+14 tools, defined in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts) and implemented in [supabase/functions/_shared/tool-handlers.ts](../supabase/functions/_shared/tool-handlers.ts) (the help-search tool lives in `help-search.ts`). For each tool, JSON Schema and exact input/output shapes live in those files — do not duplicate them here.
 
 ### Role gating
 
@@ -298,6 +298,8 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 | `list_payments_for_subcontractor` | ✓ | ✓ |   |   |   |
 | `get_invoice_summary` | ✓ | ✓ |   |   |   |
 | `get_project_financial_summary` | ✓ | ✓ |   |   |   |
+| `list_documents_for_entity` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `get_document_download_link` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `create_document` | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 `search_help` (omitted from the table) is also available to every role.
@@ -316,6 +318,8 @@ Three role-buckets in code: `ALL_ROLES` (every role), `FINANCE_ROLES` (Director 
 - **`list_payments_for_subcontractor`** — individual payment records (date, amount, method, cesija flag, linked invoice number) for one subcontractor; joins through `accounting_invoices.supplier_id`.
 - **`get_invoice_summary`** — aggregate counts and unpaid sums across `accounting_invoices`, backed by the `get_invoice_statistics` SECURITY DEFINER RPC.
 - **`get_project_financial_summary`** — full financial rollup for a single project: project budget, contract sums and realised spend, invoice totals via both direct `project_id` and transitive `contract_id` paths (deduped), plus a derived summary block with `committed` / `spent` / `remaining_to_*` / `over_budget` fields.
+- **`list_documents_for_entity`** — documents attached to one entity. `entity_type` is one of `project`, `phase`, `subcontractor`, `contract`, `unit` (maps to apartments), `customer`, `credit`, `company`; `entity_id` comes from a prior search tool. Returns document rows including the id the download tool needs.
+- **`get_document_download_link`** — takes a document id from `list_documents_for_entity` and returns `{document_id, file_name, mime_type, file_path, source}`. It hands back the storage path, **not** a signed URL — the client signs it when the user clicks through.
 - **`create_document`** — produces a downloadable PDF, Excel (`.xlsx`), or Markdown file for the user. Unlike every other tool it reads no data: the model authors the whole document from data it already gathered, and the handler only *validates* the spec. See [Document generation](#document-generation).
 
 ### Data-model landmines the tools navigate around
@@ -329,6 +333,7 @@ Each landmine below has been observed in the wild and is encoded in handler logi
 - **`accounting_companies` is the canonical companies table.** A vestigial `companies` table exists but is not used by AI chat tools or current app code.
 - **`get_project_financial_summary` builds a PostgREST `.or()` filter from caller input.** It is the only handler that does. To prevent filter-syntax injection, it validates `input.project_id` against `UUID_RE` before interpolating it into the `.or()` string. `contractIds` interpolated alongside come from a prior DB query (DB-issued UUIDs) and are trusted.
 - **Cesija (`is_cesija: true` on `accounting_payments`).** A cesija is a Croatian debt-assignment pattern: company A pays company B's invoice. Not an error. The system prompt tells the model to surface the fact when cesija payments appear in payment history.
+- **The two document tools carry their own access gate** — `documents` and `document_associations` have no effective RLS, so `list_documents_for_entity` / `get_document_download_link` enforce access in application code by probing a parent entity. See [Security posture §3](#3-rls-coverage-gaps-the-handlers-compensate-for).
 - **`get_invoice_summary` is backed by a SECURITY DEFINER RPC** (`get_invoice_statistics`) that bypasses RLS and returns global totals. Access is gated solely by the tool's `requiredRoles = [Director, Accounting]` filter in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts). If this tool were ever exposed to other roles without changing the access model, every role would see global invoice totals.
 
 ### Why we curate tools instead of giving Claude SQL
@@ -420,14 +425,28 @@ src/components/AiChat/
 ├── AiChatProvider.tsx     ← Context + provider
 ├── AiChatTrigger.tsx
 ├── AiChatWidget.tsx       ← mount point; route-based hiding
+├── components/
+│   ├── AttachmentChip.tsx      ← pending-attachment pill in the input tray
+│   ├── DocumentCard.tsx        ← `create_document` result (client-generated file)
+│   ├── MessageAttachment.tsx   ← uploaded attachment under a user bubble
+│   └── ServerDocumentCard.tsx  ← `get_document_download_link` result (stored file)
 ├── hooks/
-│   └── useAiChatStore.ts  ← single internal hook
+│   ├── useAiChatStore.ts       ← single internal hook
+│   └── useAutoGrowTextarea.ts  ← refits the composer textarea to its content
 ├── lib/
-│   ├── labels.ts          ← Croatian tool / error labels
-│   └── normalizeMessages.ts ← RenderMessage[] producer
+│   ├── documentGenerator.ts    ← builds the PDF / xlsx / Markdown file client-side
+│   ├── labels.ts               ← Croatian tool / error labels
+│   └── normalizeMessages.ts    ← RenderMessage[] producer
 └── services/
-    └── aiChatService.ts   ← SSE client + REST helpers
+    ├── aiAttachmentsService.ts ← upload, signed URLs, size/kind limits
+    └── aiChatService.ts        ← SSE client + REST helpers
 ```
+
+`MessageAttachment` and `ServerDocumentCard` both mint signed URLs **on demand** rather than
+baking them into the message, so a history reload after the 1 h TTL still works
+(`SIGNED_URL_TTL_SECONDS` in `aiAttachmentsService.ts`). The two card components are
+deliberately separate: `DocumentCard` renders a file the model authored and the browser
+generates, `ServerDocumentCard` renders an existing row in the `documents` table.
 
 Plus [src/types/aiChat.ts](../src/types/aiChat.ts) for the event taxonomy and the `AiChatHttpError` class.
 
@@ -490,6 +509,7 @@ Why both: tool handlers benefit from RLS doing the per-row gating "for free" (e.
 Several tables that the AI chat reads have RLS policies of `USING(true)` — that is, RLS is enabled but gates nothing. These tables include `subcontractors`, `contracts`, `accounting_payments`, `accounting_companies`, and `project_milestones`. For these, access control is enforced two ways:
 
 - **Role gating** at the tool layer: `selectAvailableTools(ctx)` filters TOOLS by `requiredRoles.includes(ctx.role)`. A Sales user simply cannot invoke `list_payments_for_subcontractor` — the tool is not exposed to the model in their session.
+- **Parent-entity probing** for the two document tools. `documents` and `document_associations` are also `USING(true)`, and the `documents` / `contract-documents` storage buckets have **no `storage.objects` policies at all** — so neither the rows nor the files have a database backstop. `list_documents_for_entity` and `get_document_download_link` compensate entirely in application code: for each association they call `probeParentEntity()`, which re-reads the parent (project / phase / subcontractor / contract / unit / customer / credit / company) through the caller's `userClient` and only allows the document if that read succeeds. Director and Accounting skip the probe; documents with no associations at all are restricted to those two roles. Any new code path that reads `documents` must re-implement this gate.
 - **Explicit project scoping** for Supervision users at the handler layer: `list_contracts` calls `query.in('project_id', ctx.assignedProjects.map(p => p.project_id))`; `list_unpaid_invoices` inherits RLS scoping from `accounting_invoices`, which DOES have proper RLS (see [supabase/migrations/20251128113128_fix_all_accounting_invoices_policies.sql](../supabase/migrations/20251128113128_fix_all_accounting_invoices_policies.sql)).
 
 ### 4. Role-based tool gating

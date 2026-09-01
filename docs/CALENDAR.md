@@ -111,6 +111,22 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 ### views/AgendaView.tsx
 - Chronological list grouped by day for the next 30 days from `anchor`. Events and task occurrences are interleaved per day and sorted by start/due time
 
+### views/_shared/
+
+Shared timeline primitives for DayView and WeekView. Both views render the same hour grid, so
+the geometry lives here once.
+
+- **TimelineColumn.tsx** — one day's hour grid plus its absolutely-positioned event cards. Below a
+  40 px card height it drops the secondary time-range line, on the grounds that a full title beats a
+  clipped title over a clipped `"11:00 A…"`
+- **NowIndicator.tsx** — the current-time line; renders nothing when `now` falls outside the day it
+  was given, so the week grid only draws it on today's column
+- **timeSlots.ts** — the shared constants and helpers both of the above key off (`HOUR_HEIGHT`,
+  `DAY_HOURS`, `VISIBLE_START_MIN` / `VISIBLE_END_MIN`, `minutesFromDayStart`, `startOfDay`).
+  Change a layout constant here, not in a view
+- **overlappingLayout.ts** — flows overlapping events into side-by-side columns
+- **useClickToCreate.ts** — drag-select a time range to open `NewEventModal` pre-filled
+
 ### Modals
 
 #### NewEventModal.tsx

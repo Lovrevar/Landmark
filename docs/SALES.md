@@ -180,6 +180,10 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 - **Uses components:** ContractedSection
 - **Uses Ui:** Modal, Button, Select, useToast
 
+### modals/EditApartmentModal.tsx
+- Edits an existing apartment; controlled by the Apartments page
+- Props: `visible`, `onClose`, `apartment` (`ApartmentWithDetails | null`), `onSubmit(id, updates)`
+
 ### modals/EditPaymentModal.tsx
 - Edit a single payment record (amount, date, type, notes)
 - **Uses Ui:** Modal, Button, Select
@@ -202,7 +206,7 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 ### Customers
 **Path:** `Customers/`
 
-Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiating, buyer, backed_out), preferences tracking, and linked unit summaries.
+Sales-side buyer CRM with category segmentation (`lead`, `interested`, `buyer` — see `CustomerCategory` in `Customers/types.ts`), preferences tracking, and linked unit summaries.
 
 #### Services
 
@@ -228,7 +232,7 @@ Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiati
 #### Views
 
 ### CategoryTabs.tsx
-- Tab bar with 5 category tabs (interested, hot_lead, negotiating, buyer, backed_out) showing badge counts
+- Tab bar with 3 category tabs (Leads / Interested / Buyers) showing badge counts
 
 ### CustomerGrid.tsx
 - Multi-select customer card grid with edit/delete/view-details/update-contact actions

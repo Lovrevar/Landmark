@@ -42,7 +42,7 @@ Add one shared helper (e.g. `parseLocalDate(str)` building `new Date(y, m-1, d)`
 
 ## DASH-003: `useCachedData` swallows fetch errors → silent all-zero dashboards
 
-**Severity:** Critical · **Dashboard:** all (Sales most visible) · **File:** `src/hooks/useCachedData.ts:98-100`, `SalesDashboard.tsx:29-39`
+**Severity:** Critical · **Dashboard:** all (Sales most visible) · **File:** `src/lib/useCachedData.ts:98-100`, `SalesDashboard.tsx:29-39`
 
 ### What's wrong
 On any fetch error (RLS denial, network, query bug) the hook logs to console, leaves `data` null, and the dashboard renders its zero-valued defaults with `loading=false`.

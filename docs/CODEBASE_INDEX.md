@@ -18,7 +18,7 @@
 | **UI** | [UI.md](./UI.md) | Primitive component library |
 | **Core** | [CORE.md](./CORE.md) | Contexts, hooks, lib, types, utils |
 | **Activity Log** | [ACTIVITY_LOG.md](./ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
-| **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 10-tool catalog, fork-and-regenerate edits |
+| **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 14-tool catalog, fork-and-regenerate edits |
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
 | **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
 | **Tasks** | [TASKS.md](./TASKS.md) | Shared org-wide task list grouped by project; binary open/done checkbox, private tasks, colour labels, attachments, @mention comments. Schema is shared with a standalone mobile task app: task tables use auth user ids + a `profiles` mirror table (`deadline`/`completed` columns). That app's Web Push server half — `push_subscriptions`, the `send-push` edge function, and the `pg_cron` deadline-reminder dispatcher — also lives in this project |
@@ -33,6 +33,13 @@
 | **Security Backlog** | [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) | Tracked security items and RLS hardening status |
 | **Presentation Modules** | [PRESENTATION_MODULES.md](./PRESENTATION_MODULES.md) | Croatian-language module overview + talking points for pitching the platform; ERP sync presented as a built-in product capability |
 | **Presentation Deck** | [PRESENTATION_DECK.md](./PRESENTATION_DECK.md) | Slide-by-slide startup-event deck copy with speaker notes (non-technical users, modularity/integrations, multi-company analytics) |
+| **Dashboard Audit** | [DASHBOARD_AUDIT.md](./DASHBOARD_AUDIT.md) | Historical record of the June 2026 dashboard data-integrity audit. All findings were fixed; kept for the rationale and the three deferred Low items |
+| **Manual Smoke Testsheet** | [MANUAL_TESTSHEET.md](./MANUAL_TESTSHEET.md) | ~15-minute tick-box pass over the core money loop: invoice → dashboard → payment → account |
+| **Manual test sheets** | [test/](./test/) | Per-module manual test scripts (`01-foundations` … `10-appendix`), the e2e strategy write-up, and seed SQL |
+| **Scratch plans** | [rand/](./rand/) | Superseded/one-off planning docs. Historical — do not treat as current design |
+
+`docs/erp-samples/` holds real 4D Wand exports and is **gitignored** — it contains supplier
+names and amounts. Ask a colleague for a copy rather than committing one.
 
 ---
 
@@ -78,3 +85,17 @@ Module/
 | `src/types/retail.ts` | Shared retail types |
 | `src/lib/activityLog.ts` | Fire-and-forget audit logger (`logActivity`) |
 | `src/components/Common/PageFallback.tsx` | Spinner fallback shown while lazy-loaded route components load |
+| `src/contexts/ThemeContext.tsx` | Light/dark theme state (`ThemeProvider`, `useTheme`) |
+| `src/contexts/ToastContext.tsx` | App-wide toast queue (`ToastProvider`, `useToast`) |
+| `src/lib/useCachedData.ts` | TTL-cached fetch hook used by every dashboard (`useCachedData`, `invalidateCachedData`); exposes `error` — never render zeros on a failed load |
+| `src/lib/dbErrors.ts` | `isForeignKeyViolation()` — distinguishes FK violations from other Supabase errors |
+| `src/hooks/useMediaQuery.ts` | `useMediaQuery`, `useIsMobile`, `useIsTabletUp`, `useIsDesktop` — the responsive breakpoint hooks |
+| `src/hooks/useListPreferences.ts` | Persisted per-list view mode / sort preferences |
+| `src/hooks/useAsyncExport.ts` | Wraps a long export in pending state so the UI can show progress |
+| `src/hooks/useModalOverflow.ts` | Locks `body` scroll while a modal is open |
+| `src/utils/dateOnly.ts` | Local-timezone date-only helpers (`parseLocalDate`, `monthKey`, `daysFromToday`, `isValidDate`, `startOfTodayLocal`). **Use these for SQL `date` columns** — `new Date('YYYY-MM-DD')` parses as UTC and drifts a day in Croatia |
+| `src/utils/pdfFont.ts` | `loadUnicodeFont()` — loads NotoSans into a jsPDF doc so Croatian diacritics render |
+| `src/types/database.ts` | Generated Supabase types (`public` + `erp` schemas). Regenerate with `npm run db:types`; never hand-edit |
+| `src/types/tasks.ts` | Shared task types |
+| `src/types/chat.ts` | Shared chat types |
+| `src/types/aiChat.ts` | AI chat event taxonomy, attachment and document-spec types |
