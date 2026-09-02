@@ -4317,6 +4317,7 @@
     "create_group": "Create group",
     "start_chat": "Start chat",
     "participants_count": "{{count}} participants",
+    "members": "Members ({{count}})",
     "file_too_large": "File exceeds 25 MB limit",
     "send_failed": "Send failed. Try again.",
     "time_now": "now",
