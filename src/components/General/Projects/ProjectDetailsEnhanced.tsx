@@ -27,9 +27,14 @@ import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import { usePhaseCollapseState } from './hooks/usePhaseCollapseState'
 import { buildPhaseBuckets, computePhaseStatuses } from './utils'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
+import { useAuth } from '../../../contexts/AuthContext'
 
 const ProjectDetailsEnhanced: React.FC = () => {
   const { t } = useTranslation()
+  // Editing a project is Director-only at the RLS level; hide the entry point
+  // for everyone else instead of letting the save fail with a 403.
+  const { user } = useAuth()
+  const canManageProjects = user?.role === 'Director'
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [project, setProject] = useState<ProjectDisplay | null>(null)
@@ -102,7 +107,9 @@ const ProjectDetailsEnhanced: React.FC = () => {
         <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/projects')}>
           {t('general_projects.back_to_projects')}
         </Button>
-        <Button icon={Edit2} onClick={() => setShowEditModal(true)}>{t('general_projects.edit_project')}</Button>
+        {canManageProjects && (
+          <Button icon={Edit2} onClick={() => setShowEditModal(true)}>{t('general_projects.edit_project')}</Button>
+        )}
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">

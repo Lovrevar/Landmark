@@ -1859,9 +1859,10 @@ export type Database = {
           bank_account: string | null
           created_at: string | null
           customer_number: number
-          email: string
+          email: string | null
           id: string
           id_number: string | null
+          interested_project_id: string | null
           last_contact_date: string | null
           name: string
           notes: string | null
@@ -1877,9 +1878,10 @@ export type Database = {
           bank_account?: string | null
           created_at?: string | null
           customer_number?: number
-          email: string
+          email?: string | null
           id?: string
           id_number?: string | null
+          interested_project_id?: string | null
           last_contact_date?: string | null
           name: string
           notes?: string | null
@@ -1895,9 +1897,10 @@ export type Database = {
           bank_account?: string | null
           created_at?: string | null
           customer_number?: number
-          email?: string
+          email?: string | null
           id?: string
           id_number?: string | null
+          interested_project_id?: string | null
           last_contact_date?: string | null
           name?: string
           notes?: string | null
@@ -1907,7 +1910,15 @@ export type Database = {
           status?: string
           surname?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_interested_project_id_fkey"
+            columns: ["interested_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_associations: {
         Row: {
@@ -2373,6 +2384,7 @@ export type Database = {
         Row: {
           aliases: string[]
           budget: number
+          category: string
           created_at: string | null
           end_date: string | null
           id: string
@@ -2385,6 +2397,7 @@ export type Database = {
         Insert: {
           aliases?: string[]
           budget?: number
+          category?: string
           created_at?: string | null
           end_date?: string | null
           id?: string
@@ -2397,6 +2410,7 @@ export type Database = {
         Update: {
           aliases?: string[]
           budget?: number
+          category?: string
           created_at?: string | null
           end_date?: string | null
           id?: string

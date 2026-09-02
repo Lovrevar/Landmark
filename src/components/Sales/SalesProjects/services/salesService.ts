@@ -68,10 +68,14 @@ export const completeSale = async (payload: CompleteSalePayload): Promise<void> 
   }
 }
 
+// The Sales module sells residential units, so it only ever deals with
+// 'stambeno' projects. Interno and Retail projects are excluded entirely rather
+// than shown as empty sections.
 export const fetchProjects = async () => {
   const { data, error } = await supabase
     .from('projects')
     .select('*')
+    .eq('category', 'stambeno')
     .order('name')
 
   if (error) throw error
@@ -548,10 +552,12 @@ export const createCustomer = async (
   const { data, error } = await supabase
     .from('customers')
     .insert({
+      // '' would collide on the UNIQUE email index for a second contactless
+      // buyer; null does not. See normalizeContactFields in the Customers module.
       name: firstName,
       surname: lastName,
-      email,
-      phone: phone || '',
+      email: email?.trim() || null,
+      phone: phone?.trim() || null,
       address: address || '',
       status: 'buyer'
     })

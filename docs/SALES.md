@@ -54,6 +54,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 ### ProjectsGrid.tsx
 - Project card grid showing building count, unit count, sold count, revenue, and progress bar
+- Only `stambeno` projects reach this screen: `fetchProjects()` filters on `category = 'stambeno'`, since the Sales module sells residential units and Interno/Retail projects have nothing to sell here
 
 ### BuildingsGrid.tsx
 - Building card grid for a selected project showing unit counts and revenue per building
@@ -202,14 +203,16 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 ### Customers
 **Path:** `Customers/`
 
-Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiating, buyer, backed_out), preferences tracking, and linked unit summaries.
+Sales-side buyer CRM with category segmentation (lead, interested, buyer), preferences tracking, a project-of-interest link and linked unit summaries.
 
 #### Services
 
 ### services/customerService.ts
 - `fetchCustomers(category)` — fetches customers filtered by category; for `buyer` records it enriches with linked apartment/garage/repository purchases. Now uses batched `.in()` queries (apartments, garage/repo links, invoices, payments) and in-memory maps instead of the previous per-customer/per-sale request fan-out
+- `fetchProjectOptions()` — id/name list of projects, backing the form's project select and the page filter
 - `createCustomer(data)` — inserts a new customer (captures new id; logs `customer.create`)
 - `updateCustomer(id, data)` — updates a customer record (logs `customer.update`)
+- Both writes pass through `normalizeContactFields()`, which rewrites blank `email`/`phone` to `null`. `customers.email` is UNIQUE and nullable: Postgres permits many NULLs but only one `''`, so writing empty strings would fail the *second* contactless customer with a 23505 reported as a duplicate email
 - `deleteCustomer(id)` — removes a customer (logs `customer.delete`)
 - `updateLastContact(id, date)` — updates the last contact date
 - **Depends on:** supabase client, customerCache.ts, activityLog
@@ -221,23 +224,24 @@ Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiati
 #### Hooks
 
 ### hooks/useCustomerData.ts
-- `useCustomerData(activeCategory)` — fetches customers for the active category, reads counts from cache, exposes CRUD actions
+- `useCustomerData(activeCategory)` — fetches customers for the active category, reads counts from cache, fetches the project list once per mount, exposes CRUD actions
 - **Calls:** customerService.ts, customerCache.ts
-- **Returns:** customers, counts, loading, saveCustomer, deleteCustomer, updateLastContact
+- **Returns:** customers, counts, projects, loading, saveCustomer, deleteCustomer, updateLastContact
 
 #### Views
 
 ### CategoryTabs.tsx
-- Tab bar with 5 category tabs (interested, hot_lead, negotiating, buyer, backed_out) showing badge counts
+- Tab bar with 3 category tabs (lead, interested, buyer) showing badge counts; clicking the active tab clears the filter
 
 ### CustomerGrid.tsx
 - Multi-select customer card grid with edit/delete/view-details/update-contact actions
 
 ### CustomerCard.tsx
-- Individual customer card with name, contact info, preferences, priority badge (hot/warm/cold), and purchased units for buyers
+- Individual customer card with name, contact info, a project-of-interest badge, and purchased units for buyers. Email and phone rows are hidden when absent, since both are optional
 
 ### index.tsx (Customers)
 - Customer list page with category tabs, grid, and all CRUD modals
+- Filter bar pairs the search box with a project dropdown. The project filter is applied client-side and matches either `interested_project_id` or any purchased apartment's project, so it works for interested customers and buyers alike
 - **Uses hooks:** useCustomerData
 - **Uses components:** CategoryTabs, CustomerGrid, CustomerCard, CustomerFormModal, CustomerDetailModal
 - **Uses Ui:** SearchInput, useToast
@@ -245,8 +249,9 @@ Sales-side buyer CRM with category segmentation (interested, hot_lead, negotiati
 #### Forms
 
 ### forms/CustomerFormModal.tsx
-- Add/edit customer modal: basic info, preferences (budget range, size, floor, bedrooms), and notes
-- Validates name, surname, email, phone with per-field `fieldErrors` (inline red text, not Alert)
+- Add/edit customer modal: basic info, project of interest, preferences (budget range, size, floor, bedrooms), and notes
+- Validates name and surname only with per-field `fieldErrors` (inline red text, not Alert). Email and phone are optional
+- The `priority` select was retired here; the `customers.priority` column is kept so existing values survive
 - **Uses Ui:** Modal, Button, FormField, Input
 
 #### Modals

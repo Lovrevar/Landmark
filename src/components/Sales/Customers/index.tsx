@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Mail } from 'lucide-react'
-import { PageHeader, SearchInput, Button, ConfirmDialog } from '../../ui'
+import { PageHeader, SearchInput, Button, ConfirmDialog, Select } from '../../ui'
 import { CustomerCategory } from './types'
 import { useCustomerData } from './hooks/useCustomerData'
 import { useToast } from '../../../contexts/ToastContext'
@@ -20,6 +20,7 @@ const CustomersManagement: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithApartments | null>(null)
   const [editingCustomer, setEditingCustomer] = useState<CustomerWithApartments | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [projectFilter, setProjectFilter] = useState<string>('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [pendingDeleteCustomerId, setPendingDeleteCustomerId] = useState<string | null>(null)
   const [deletingCustomer, setDeletingCustomer] = useState(false)
@@ -27,16 +28,28 @@ const CustomersManagement: React.FC = () => {
   const {
     customers,
     counts,
+    projects,
     loading,
     saveCustomer,
     deleteCustomer,
     updateLastContact
   } = useCustomerData(activeCategory)
 
+  // A customer's project comes from two places: interested/lead customers carry
+  // `interested_project_id`, while buyers are linked through the apartments they
+  // bought. Matching only the former would make the filter return nothing for
+  // buyers, so both are checked.
+  const matchesProject = (customer: CustomerWithApartments) => {
+    if (!projectFilter) return true
+    if (customer.interested_project_id === projectFilter) return true
+    return (customer.apartments ?? []).some(unit => unit.project_id === projectFilter)
+  }
+
   const filteredCustomers = customers.filter(customer =>
-    `${customer.name} ${customer.surname} ${customer.email} ${customer.phone}`
+    `${customer.name} ${customer.surname} ${customer.email ?? ''} ${customer.phone ?? ''}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
+    && matchesProject(customer)
   )
 
   const handleToggleSelect = (id: string) => {
@@ -141,16 +154,32 @@ const CustomersManagement: React.FC = () => {
       />
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-        <SearchInput
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onClear={() => setSearchTerm('')}
-          placeholder={t('customers.search')}
-        />
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
+              placeholder={t('customers.search')}
+            />
+          </div>
+          <div className="w-full sm:w-64">
+            <Select
+              value={projectFilter}
+              onChange={(e) => setProjectFilter(e.target.value)}
+            >
+              <option value="">{t('common.all_projects')}</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </Select>
+          </div>
+        </div>
       </div>
 
       <CustomerGrid
         customers={filteredCustomers}
+        projects={projects}
         activeCategory={activeCategory}
         loading={loading}
         selectedIds={selectedIds}
@@ -166,6 +195,7 @@ const CustomersManagement: React.FC = () => {
         show={showCustomerForm}
         editingCustomer={editingCustomer}
         activeCategory={activeCategory}
+        projects={projects}
         onClose={handleCloseForm}
         onSave={saveCustomer}
       />

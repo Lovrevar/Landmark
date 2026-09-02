@@ -23,7 +23,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 
 ### projectFormService.ts
 - `fetchProjectById(projectId)` — fetches a single project row for the edit form (returns `FetchedProject | null`)
-- `createProject(data)` — inserts a new project (`ProjectFormRecord`: name, location, start_date, end_date, budget, status)
+- `createProject(data)` — inserts a new project (`ProjectFormRecord`: name, location, aliases, start_date, end_date, budget, status, category)
 - `updateProject(projectId, data)` — updates an existing project
 - `deleteProject(projectId)` — deletes a project
 - **Exports types:** `ProjectFormRecord`, `FetchedProject`
@@ -80,7 +80,9 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 #### Forms
 
 ### forms/ProjectFormModal.tsx
-- Modal form for creating and editing projects (name, location, dates, budget, status)
+- Modal form for creating and editing projects (name, location, aliases, dates, budget, status, category)
+- Create/edit/delete are Director-only at the RLS level. The entry-point buttons in `index.tsx` and `ProjectDetailsEnhanced.tsx` are hidden for other roles, and a 42501 from Postgres is surfaced as `general_projects.error_permission_denied` instead of a generic "Failed to save project". RLS stays the real boundary; the UI gate only avoids offering an action that will be refused
+- Category is one of `interno` / `retail` / `stambeno`, from `PROJECT_CATEGORIES` in `lib/supabase.ts`. These are Croatian domain terms and stay untranslated. Note this is unrelated to the Retail module, which models land development in its own `retail_*` tables
 - Edit mode includes a delete button (routes to the optional `onDeleted` callback, falling back to `onSuccess`)
 - **Uses hooks:** useProjectForm
 - **Uses Ui:** Modal, FormField, Input, Select, Button, Alert, ConfirmDialog

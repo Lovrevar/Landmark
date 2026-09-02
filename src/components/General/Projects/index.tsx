@@ -6,9 +6,15 @@ import { fetchProjectsWithStats } from './services/projectService'
 import type { ProjectWithStats } from './types'
 import ProjectCard from './ProjectCard'
 import ProjectFormModal from './forms/ProjectFormModal'
+import { useAuth } from '../../../contexts/AuthContext'
 
 const ProjectsManagement: React.FC = () => {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  // Mirrors the "Directors can insert projects" RLS policy: anyone else gets a
+  // 403 on save, so the action is hidden rather than offered and then refused.
+  // RLS remains the actual boundary - this only keeps the UI honest.
+  const canManageProjects = user?.role === 'Director'
   const [projects, setProjects] = useState<ProjectWithStats[]>([])
   const [filteredProjects, setFilteredProjects] = useState<ProjectWithStats[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,9 +62,11 @@ const ProjectsManagement: React.FC = () => {
         title={t('general_projects.title')}
         description={t('general_projects.subtitle')}
         actions={
-          <Button icon={Plus} onClick={() => setShowNewProjectModal(true)}>
-            {t('general_projects.new_project')}
-          </Button>
+          canManageProjects ? (
+            <Button icon={Plus} onClick={() => setShowNewProjectModal(true)}>
+              {t('general_projects.new_project')}
+            </Button>
+          ) : undefined
         }
       />
 

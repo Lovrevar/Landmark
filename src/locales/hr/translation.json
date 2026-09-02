@@ -318,11 +318,6 @@
     "interested": "Zainteresiran",
     "buyer": "Kupac"
   },
-  "customer_priority": {
-    "hot": "Vruće",
-    "warm": "Toplo",
-    "cold": "Hladno"
-  },
   "pagination": {
     "previous": "Prethodno",
     "next": "Sljedeće",
@@ -1612,12 +1607,14 @@
     "form_location_placeholder": "npr. Zagreb, Hrvatska",
     "form_aliases": "Alternativni nazivi (opcionalno)",
     "form_aliases_placeholder": "Nazivi iz ugovora i dokumenata, odvojeni zarezom — npr. Osijek",
+    "form_category": "Kategorija",
     "form_end_date_optional": "Datum završetka (opcionalno)",
     "form_budget_eur": "Budžet (EUR)",
     "form_error_name": "Naziv projekta je obavezan",
     "form_error_location": "Lokacija je obavezna",
     "form_error_start_date": "Datum početka je obavezan",
     "form_error_budget": "Budžet je obavezan",
+    "error_permission_denied": "Samo Direktor može kreirati, uređivati ili brisati projekte.",
     "confirm_delete_project": "Jeste li sigurni da želite obrisati ovaj projekt? Ova akcija se ne može poništiti.",
     "confirm_delete_milestone": "Jeste li sigurni da želite obrisati ovaj milestone?",
     "milestones": "Prekretnice",
@@ -2131,7 +2128,8 @@
       "email": "Email",
       "phone": "Telefon",
       "status": "Status",
-      "priority": "Prioritet",
+      "interested_project": "Zainteresiran za projekt",
+      "no_project": "Bez projekta",
       "address": "Adresa",
       "bank_account": "Bankovni račun",
       "id_number": "Broj dokumenta",

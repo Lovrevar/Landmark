@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { customerService } from '../services/customerService'
 import { cache } from '../services/customerCache'
-import { CustomerWithApartments, CustomerCategory, CustomerCounts } from '../types'
+import { CustomerWithApartments, CustomerCategory, CustomerCounts, ProjectOption } from '../types'
 import { Customer } from '../../../../lib/supabase'
 
 export const useCustomerData = (activeCategory: CustomerCategory | null) => {
@@ -11,6 +11,7 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
     lead: 0,
     buyer: 0
   })
+  const [projects, setProjects] = useState<ProjectOption[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchCustomers = useCallback(async (forceRefresh = false) => {
@@ -61,6 +62,14 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
     fetchCounts()
   }, [])
 
+  // Project list backs both the form's "interested in" select and the page filter.
+  // Small and slow-changing, so it is fetched once per mount rather than cached.
+  useEffect(() => {
+    customerService.fetchProjectOptions()
+      .then(setProjects)
+      .catch(error => console.error('Error fetching projects:', error))
+  }, [])
+
   const saveCustomer = async (customerData: Partial<Customer>, editingId?: string) => {
     if (editingId) {
       await customerService.updateCustomer(editingId, customerData)
@@ -98,6 +107,7 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
   return {
     customers,
     counts,
+    projects,
     loading,
     saveCustomer,
     deleteCustomer,
