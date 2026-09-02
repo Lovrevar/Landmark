@@ -149,11 +149,13 @@ The core supervision module. Full project site view with phases, subcontractor c
 
 ### ProjectsGrid.tsx
 - Project card grid with budget allocation progress bars, phase count, subcontractor count, and timeline
+- Each card's badge row carries the project-category badge (ProjectCategoryBadge) next to the status badge
 
 ### ProjectDetail.tsx
 - Single project detail view: credit allocations section, phase cards, and project summary stats
+- The header shows the project-category badge beside the status badge
 - **Uses services:** siteFundingService (fetchCreditAllocations, via siteService barrel)
-- **Uses components:** PhaseCard
+- **Uses components:** ProjectCategoryBadge, PhaseCard
 
 ### PhaseCard.tsx
 - Expanded phase view: phase header, budget metrics, subcontractors grouped by contract type with expandable sections; shows contracted amount, paid out, unpaid, and budget remaining with colour warnings

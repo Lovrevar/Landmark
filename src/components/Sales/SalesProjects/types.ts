@@ -21,6 +21,11 @@ export interface ProjectWithBuildings extends Project {
   total_revenue: number
 }
 
+// Categories the Sales module lists. `interno` projects are company-internal and
+// are never offered for sale, so they are excluded at the query level.
+export const SALES_PROJECT_CATEGORIES = ['stambeno', 'retail'] as const
+export type SalesProjectCategory = typeof SALES_PROJECT_CATEGORIES[number]
+
 export type UnitType = 'apartment' | 'garage' | 'repository'
 export type ViewMode = 'projects' | 'buildings' | 'units'
 export type FilterStatus = 'all' | 'available' | 'reserved' | 'sold'

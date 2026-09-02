@@ -264,6 +264,7 @@ export async function fetchGeneralReportData(
         name: project.name,
         location: project.location,
         status: project.status,
+        category: project.category ?? null,
         budget: project.budget,
         revenue: projectRevenue,
         expenses: projectExpenses,
