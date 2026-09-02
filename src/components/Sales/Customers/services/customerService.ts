@@ -1,6 +1,23 @@
 import { supabase, Customer } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
-import { CustomerWithApartments, CustomerCategory, CustomerCounts } from '../types'
+import { CustomerWithApartments, CustomerCategory, CustomerCounts, ProjectOption } from '../types'
+
+/**
+ * customers.email is UNIQUE and now nullable. Postgres allows any number of NULLs
+ * under a unique constraint but only one empty string, so writing '' would make
+ * the *second* contactless customer fail with 23505 — reported to the user as a
+ * duplicate-email error, which it is not. Blank contact fields become null.
+ */
+function normalizeContactFields(customerData: Partial<Customer>): Partial<Customer> {
+  const normalized = { ...customerData }
+  if (typeof normalized.email === 'string' && normalized.email.trim() === '') {
+    normalized.email = null
+  }
+  if (typeof normalized.phone === 'string' && normalized.phone.trim() === '') {
+    normalized.phone = null
+  }
+  return normalized
+}
 
 export const customerService = {
   async fetchCustomers(category: CustomerCategory | null): Promise<CustomerWithApartments[]> {
@@ -155,6 +172,17 @@ export const customerService = {
     })
   },
 
+  /** Projects offered in the customer form's "interested in" select and the page filter. */
+  async fetchProjectOptions(): Promise<ProjectOption[]> {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('id, name')
+      .order('name')
+
+    if (error) throw error
+    return data || []
+  },
+
   async fetchCustomerCounts(): Promise<CustomerCounts> {
     const { data, error } = await supabase
       .from('customers')
@@ -180,7 +208,7 @@ export const customerService = {
   async createCustomer(customerData: Partial<Customer>): Promise<void> {
     const { data: inserted, error } = await supabase
       .from('customers')
-      .insert([customerData])
+      .insert([normalizeContactFields(customerData)])
       .select('id')
       .maybeSingle()
 
@@ -192,7 +220,7 @@ export const customerService = {
   async updateCustomer(id: string, customerData: Partial<Customer>): Promise<void> {
     const { error } = await supabase
       .from('customers')
-      .update(customerData)
+      .update(normalizeContactFields(customerData))
       .eq('id', id)
 
     if (error) throw error

@@ -40,7 +40,20 @@ export type Project = {
   end_date: string | null
   budget: number
   status: 'Planning' | 'In Progress' | 'Completed' | 'On Hold'
+  category: ProjectCategory
   created_at: string
+}
+
+// Project category. Unrelated to the Retail module (retail_projects); these are
+// Croatian domain terms and are kept untranslated in the UI.
+export type ProjectCategory = 'interno' | 'retail' | 'stambeno'
+
+export const PROJECT_CATEGORIES: ProjectCategory[] = ['interno', 'retail', 'stambeno']
+
+export const PROJECT_CATEGORY_LABELS: Record<ProjectCategory, string> = {
+  interno: 'Interno',
+  retail: 'Retail',
+  stambeno: 'Stambeno'
 }
 
 export type Task = {
@@ -275,8 +288,11 @@ export type Customer = {
   id: string
   name: string
   surname: string
-  email: string
-  phone: string
+  // Optional since the sales-feedback change; normalised to null (never '') on
+  // write, because customers.email is UNIQUE and Postgres allows many NULLs but
+  // only one empty string.
+  email: string | null
+  phone: string | null
   address: string
   bank_account: string
   id_number: string
@@ -296,6 +312,11 @@ export type Customer = {
   last_contact_date?: string
   backed_out_reason?: string
   notes?: string
+  // Project this customer is interested in. Buyers derive their project through
+  // sales -> apartments instead, so this can be null for them.
+  interested_project_id?: string | null
+  // Retired from the UI in the sales-feedback change; the column is kept so the
+  // existing values are not lost.
   priority?: 'hot' | 'warm' | 'cold'
 }
 

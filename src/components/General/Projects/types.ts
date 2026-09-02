@@ -1,4 +1,4 @@
-import type { Project, Apartment, Bank } from '../../../lib/supabase'
+import type { Project, Apartment, Bank, ProjectCategory } from '../../../lib/supabase'
 
 // ── ProjectsManagement ────────────────────────────────────────────────────
 
@@ -110,6 +110,7 @@ export interface ProjectDisplay {
   end_date: string | null
   budget: number
   status: string
+  category: ProjectCategory | null
   investor?: string | null
   created_at: string
 }

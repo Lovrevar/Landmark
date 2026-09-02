@@ -1,6 +1,6 @@
 import { supabase, Apartment } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
-import { UnitType, BulkCreateData, SaleFormData, CustomerMode, UnitForSale } from '../types'
+import { UnitType, BulkCreateData, SaleFormData, CustomerMode, UnitForSale, SALES_PROJECT_CATEGORIES } from '../types'
 
 export interface CompleteSalePayload {
   unitForSale: UnitForSale
@@ -68,10 +68,13 @@ export const completeSale = async (payload: CompleteSalePayload): Promise<void> 
   }
 }
 
+// Sales lists Stambeno and Retail projects, separated by tabs on the screen.
+// Interno projects are company-internal and never offered for sale.
 export const fetchProjects = async () => {
   const { data, error } = await supabase
     .from('projects')
     .select('*')
+    .in('category', SALES_PROJECT_CATEGORIES)
     .order('name')
 
   if (error) throw error
@@ -548,10 +551,12 @@ export const createCustomer = async (
   const { data, error } = await supabase
     .from('customers')
     .insert({
+      // '' would collide on the UNIQUE email index for a second contactless
+      // buyer; null does not. See normalizeContactFields in the Customers module.
       name: firstName,
       surname: lastName,
-      email,
-      phone: phone || '',
+      email: email?.trim() || null,
+      phone: phone?.trim() || null,
       address: address || '',
       status: 'buyer'
     })

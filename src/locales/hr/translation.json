@@ -142,7 +142,9 @@
     "filtered_results": "Filtrirani rezultati",
     "paid_by": "Platio/la",
     "budget": "Budžet",
-    "note": "Napomena"
+    "note": "Napomena",
+    "project_type": "Vrsta projekta",
+    "all_project_types": "Sve vrste"
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -317,11 +319,6 @@
     "lead": "Potencijalni kupac",
     "interested": "Zainteresiran",
     "buyer": "Kupac"
-  },
-  "customer_priority": {
-    "hot": "Vruće",
-    "warm": "Toplo",
-    "cold": "Hladno"
   },
   "pagination": {
     "previous": "Prethodno",
@@ -1618,6 +1615,7 @@
     "form_error_location": "Lokacija je obavezna",
     "form_error_start_date": "Datum početka je obavezan",
     "form_error_budget": "Budžet je obavezan",
+    "error_permission_denied": "Samo Direktor može kreirati, uređivati ili brisati projekte.",
     "confirm_delete_project": "Jeste li sigurni da želite obrisati ovaj projekt? Ova akcija se ne može poništiti.",
     "confirm_delete_milestone": "Jeste li sigurni da želite obrisati ovaj milestone?",
     "milestones": "Prekretnice",
@@ -2131,7 +2129,8 @@
       "email": "Email",
       "phone": "Telefon",
       "status": "Status",
-      "priority": "Prioritet",
+      "interested_project": "Zainteresiran za projekt",
+      "no_project": "Bez projekta",
       "address": "Adresa",
       "bank_account": "Bankovni račun",
       "id_number": "Broj dokumenta",

@@ -145,6 +145,7 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 
 ### DirectorProjectsTable.tsx
 - Clickable project table with budget, expenses, revenue, profit margin, and completion %
+- The project cell carries the project-category badge (ProjectCategoryBadge) next to the name; `directorService` selects `category` for it
 - Props: `ProjectStats[]`
 
 ### InvestmentSummaryCards.tsx

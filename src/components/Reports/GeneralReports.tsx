@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { LoadingSpinner, Button, Badge, EmptyState, Table } from '../ui'
+import ProjectCategoryBadge from '../Common/ProjectCategoryBadge'
 import { generateGeneralReportPDF } from './pdf/generalReportPdf'
 import { useGeneralReportData } from './hooks/useGeneralReportData'
 import { useToast } from '../../contexts/ToastContext'
@@ -389,6 +390,7 @@ const GeneralReports: React.FC = () => {
                     <p className="text-sm text-gray-600 dark:text-gray-400">{project.location}</p>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <ProjectCategoryBadge category={project.category} size="md" />
                     <Badge variant={project.risk_level === 'High' ? 'red' : project.risk_level === 'Medium' ? 'yellow' : 'green'}>
                       {t('reports.general.risk')} {project.risk_level}
                     </Badge>

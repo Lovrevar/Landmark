@@ -17,19 +17,26 @@ import {
 } from 'lucide-react'
 import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table } from '../../ui'
 import { format, differenceInDays, parseISO } from 'date-fns'
+import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import MilestoneTimeline from './MilestoneTimeline'
 import ProjectFormModal from './forms/ProjectFormModal'
 import MilestoneTemplateModal from './forms/MilestoneTemplateModal'
 import PhasesContractsTab from './tabs/PhasesContractsTab'
 import SubcontractorsTab from './tabs/SubcontractorsTab'
+import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { fetchProjectDataEnhanced } from './services/projectDetailsService'
 import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import { usePhaseCollapseState } from './hooks/usePhaseCollapseState'
 import { buildPhaseBuckets, computePhaseStatuses } from './utils'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
+import { useAuth } from '../../../contexts/AuthContext'
 
 const ProjectDetailsEnhanced: React.FC = () => {
   const { t } = useTranslation()
+  // Editing a project is Director-only at the RLS level; hide the entry point
+  // for everyone else instead of letting the save fail with a 403.
+  const { user } = useAuth()
+  const canManageProjects = user?.role === 'Director'
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [project, setProject] = useState<ProjectDisplay | null>(null)
@@ -102,7 +109,9 @@ const ProjectDetailsEnhanced: React.FC = () => {
         <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/projects')}>
           {t('general_projects.back_to_projects')}
         </Button>
-        <Button icon={Edit2} onClick={() => setShowEditModal(true)}>{t('general_projects.edit_project')}</Button>
+        {canManageProjects && (
+          <Button icon={Edit2} onClick={() => setShowEditModal(true)}>{t('general_projects.edit_project')}</Button>
+        )}
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -111,13 +120,16 @@ const ProjectDetailsEnhanced: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{project.name}</h1>
             <p className="text-gray-600 dark:text-gray-400">{project.location}</p>
           </div>
-          <Badge variant={
-            project.status === 'Completed' ? 'green'
-              : project.status === 'In Progress' ? 'blue'
-              : project.status === 'On Hold' ? 'yellow' : 'gray'
-          }>
-            {project.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <ProjectCategoryBadge category={project.category} size="md" />
+            <Badge variant={
+              project.status === 'Completed' ? 'green'
+                : project.status === 'In Progress' ? 'blue'
+                : project.status === 'On Hold' ? 'yellow' : 'gray'
+            }>
+              {project.status}
+            </Badge>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -196,6 +208,12 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.investor')}</span>
                     <p className="text-gray-900 dark:text-white font-medium mt-1">{project.investor || t('general_projects.na')}</p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.project_type')}</span>
+                    <p className="text-gray-900 dark:text-white font-medium mt-1">
+                      {project.category ? PROJECT_CATEGORY_LABELS[project.category] : t('general_projects.na')}
+                    </p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.start_date')}</span>

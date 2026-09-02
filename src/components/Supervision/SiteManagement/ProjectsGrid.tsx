@@ -4,6 +4,7 @@ import { Building2, ArrowRight, RefreshCw } from 'lucide-react'
 import { differenceInDays } from 'date-fns'
 import { ProjectWithPhases, OnSelectProjectCallback } from './types'
 import { Button, Badge, EmptyState } from '../../ui'
+import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 
 interface ProjectsGridProps {
   projects: ProjectWithPhases[]
@@ -56,6 +57,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                     } size="sm">
                       {project.status}
                     </Badge>
+                    <ProjectCategoryBadge category={project.category} />
                     {project.has_phases ? (
                       <Badge variant="blue" size="sm">
                         {project.phases.length} {t('supervision.site_management.projects_grid.phases')}

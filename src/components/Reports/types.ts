@@ -1,4 +1,4 @@
-import type { Project, Apartment, Customer, Sale, Subcontractor, Contract, WirePayment, ProjectPhase } from '../../lib/supabase'
+import type { Project, Apartment, Customer, Sale, Subcontractor, Contract, WirePayment, ProjectPhase, ProjectCategory } from '../../lib/supabase'
 
 // ── General Report ──────────────────────────────────────────────────────────
 
@@ -7,6 +7,7 @@ export interface ProjectData {
   name: string
   location: string
   status: string
+  category: ProjectCategory | null
   budget: number
   revenue: number
   expenses: number

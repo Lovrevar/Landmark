@@ -142,7 +142,9 @@
     "filtered_results": "Filtered Results",
     "paid_by": "Paid By",
     "budget": "Budget",
-    "note": "Note"
+    "note": "Note",
+    "project_type": "Project type",
+    "all_project_types": "All types"
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -317,11 +319,6 @@
     "lead": "Lead",
     "interested": "Interested",
     "buyer": "Buyer"
-  },
-  "customer_priority": {
-    "hot": "Hot",
-    "warm": "Warm",
-    "cold": "Cold"
   },
   "pagination": {
     "previous": "Previous",
@@ -1616,6 +1613,7 @@
     "form_error_location": "Location is required",
     "form_error_start_date": "Start date is required",
     "form_error_budget": "Budget is required",
+    "error_permission_denied": "Only a Director can create, edit or delete projects.",
     "confirm_delete_project": "Are you sure you want to delete this project? This action cannot be undone.",
     "confirm_delete_milestone": "Are you sure you want to delete this milestone?",
     "milestones": "Milestones",
@@ -2127,7 +2125,8 @@
       "email": "Email",
       "phone": "Phone",
       "status": "Status",
-      "priority": "Priority",
+      "interested_project": "Interested in project",
+      "no_project": "No project",
       "address": "Address",
       "bank_account": "Bank Account",
       "id_number": "ID Number",

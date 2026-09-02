@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Building2, FileUp } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Button, ConfirmDialog } from '../../ui'
+import { LoadingSpinner, PageHeader, Button, ConfirmDialog, Tabs } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
-import { Apartment, Garage, Repository } from '../../../lib/supabase'
+import { Apartment, Garage, Repository, PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { useSalesData } from './hooks/useSalesData'
 import * as salesService from './services/salesService'
 import {
@@ -17,7 +17,9 @@ import {
   CustomerMode,
   BuildingFormData,
   UnitFormData,
-  BulkCreateData
+  BulkCreateData,
+  SalesProjectCategory,
+  SALES_PROJECT_CATEGORIES
 } from './types'
 import { ProjectsGrid } from './ProjectsGrid'
 import { BuildingsGrid } from './BuildingsGrid'
@@ -42,6 +44,7 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('projects')
   const [activeUnitType, setActiveUnitType] = useState<UnitType>('apartment')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  const [projectCategory, setProjectCategory] = useState<SalesProjectCategory>('stambeno')
 
   React.useEffect(() => {
     // Re-sync the selected project to the freshest object after the list
@@ -388,7 +391,22 @@ const SalesProjectsEnhanced: React.FC = () => {
       />
 
       {viewMode === 'projects' && (
-        <ProjectsGrid projects={projects} onSelectProject={handleSelectProject} />
+        <>
+          {/* Category names are Croatian domain terms and stay untranslated. */}
+          <Tabs
+            tabs={SALES_PROJECT_CATEGORIES.map(category => ({
+              id: category,
+              label: PROJECT_CATEGORY_LABELS[category],
+              count: projects.filter(p => p.category === category).length
+            }))}
+            activeTab={projectCategory}
+            onChange={setProjectCategory}
+          />
+          <ProjectsGrid
+            projects={projects.filter(p => p.category === projectCategory)}
+            onSelectProject={handleSelectProject}
+          />
+        </>
       )}
 
       {viewMode === 'buildings' && selectedProject && (

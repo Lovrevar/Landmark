@@ -66,6 +66,7 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 
 ### pdf/generalReportPdf.ts
 - `generateGeneralReportPDF(report)` — generates a 10+ page executive PDF covering: cover page, KPIs, portfolio analytics, sales performance, funding & finance, construction status, accounting overview, TIC costs, bank accounts, contract distribution, cash flow trend, project portfolio, risk assessment, insights & recommendations
+- In the project portfolio cards the project's category is appended to the location line (`Zagreb  ·  Stambeno`), keeping the fixed 50mm card height
 - **Depends on:** jsPDF, pdfCharts.ts
 
 ### pdf/salesReportPdf.ts
@@ -85,7 +86,7 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 ## Views
 
 ### GeneralReports.tsx
-- Full executive dashboard: 9 KPI summary cards, sales performance, funding structure, construction status, accounting overview, TIC costs, company investments, buildings summary, retail portfolio, contract distribution, cash flow analysis, per-project breakdown with risk badges, risk assessment, and PDF export
+- Full executive dashboard: 9 KPI summary cards, sales performance, funding structure, construction status, accounting overview, TIC costs, company investments, buildings summary, retail portfolio, contract distribution, cash flow analysis, per-project breakdown with project-category and risk badges, risk assessment, and PDF export
 - **Uses hooks:** useGeneralReportData
 - **Uses services:** generalReportPdf (for PDF export)
 - **Uses Ui:** Card, StatGrid, Button, useToast

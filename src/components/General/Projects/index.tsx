@@ -2,18 +2,26 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FolderKanban, Plus } from 'lucide-react'
 import { LoadingSpinner, PageHeader, SearchInput, Select, EmptyState, Button } from '../../ui'
+import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { fetchProjectsWithStats } from './services/projectService'
 import type { ProjectWithStats } from './types'
 import ProjectCard from './ProjectCard'
 import ProjectFormModal from './forms/ProjectFormModal'
+import { useAuth } from '../../../contexts/AuthContext'
 
 const ProjectsManagement: React.FC = () => {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  // Mirrors the "Directors can insert projects" RLS policy: anyone else gets a
+  // 403 on save, so the action is hidden rather than offered and then refused.
+  // RLS remains the actual boundary - this only keeps the UI honest.
+  const canManageProjects = user?.role === 'Director'
   const [projects, setProjects] = useState<ProjectWithStats[]>([])
   const [filteredProjects, setFilteredProjects] = useState<ProjectWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
 
   const loadProjects = useCallback(async () => {
@@ -39,8 +47,11 @@ const ProjectsManagement: React.FC = () => {
     if (statusFilter !== 'all') {
       filtered = filtered.filter(p => p.status === statusFilter)
     }
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(p => p.category === categoryFilter)
+    }
     setFilteredProjects(filtered)
-  }, [projects, searchTerm, statusFilter])
+  }, [projects, searchTerm, statusFilter, categoryFilter])
 
   useEffect(() => {
     loadProjects()
@@ -56,9 +67,11 @@ const ProjectsManagement: React.FC = () => {
         title={t('general_projects.title')}
         description={t('general_projects.subtitle')}
         actions={
-          <Button icon={Plus} onClick={() => setShowNewProjectModal(true)}>
-            {t('general_projects.new_project')}
-          </Button>
+          canManageProjects ? (
+            <Button icon={Plus} onClick={() => setShowNewProjectModal(true)}>
+              {t('general_projects.new_project')}
+            </Button>
+          ) : undefined
         }
       />
 
@@ -80,6 +93,18 @@ const ProjectsManagement: React.FC = () => {
             <option value="In Progress">{t('status.in_progress')}</option>
             <option value="Completed">{t('status.completed')}</option>
             <option value="On Hold">{t('status.on_hold')}</option>
+          </Select>
+          {/* Category values are Croatian domain terms and stay untranslated. */}
+          <Select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="all">{t('common.all_project_types')}</option>
+            {PROJECT_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {PROJECT_CATEGORY_LABELS[category]}
+              </option>
+            ))}
           </Select>
         </div>
 

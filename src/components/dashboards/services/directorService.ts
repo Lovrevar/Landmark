@@ -1,4 +1,4 @@
-import { supabase } from '../../../lib/supabase'
+import { supabase, type ProjectCategory } from '../../../lib/supabase'
 import { startOfMonth } from 'date-fns'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
 import type {
@@ -15,6 +15,8 @@ interface ProjectRow {
   name: string
   location: string | null
   status: string | null
+  // CHECK-constrained in the DB to the three ProjectCategory values.
+  category: ProjectCategory | null
   budget: number | null
 }
 
@@ -113,13 +115,12 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
     { data: salesRowsData },
     { data: allocationsData },
     { data: creditsData },
-    { data: investorsData },
     { data: subcontractorsData },
     { data: milestonesData }
   ] = await Promise.all([
     supabase
       .from('projects')
-      .select('id, name, location, status, budget')
+      .select('id, name, location, status, budget, category')
       .order('created_at', { ascending: false }),
     supabase.from('apartments').select('id, project_id, status, price'),
     supabase
@@ -136,7 +137,6 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
       .select(
         'id, project_id, bank_id, amount, used_amount, repaid_amount, outstanding_balance, interest_rate, monthly_payment, credit_type, status, maturity_date, credit_name, company:accounting_companies(id, name)'
       ),
-    supabase.from('investors').select('id'),
     supabase.from('subcontractors').select('id'),
     supabase
       .from('subcontractor_milestones')
@@ -153,7 +153,6 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const salesRows = (salesRowsData || []) as SaleRow[]
   const allocations = (allocationsData || []) as AllocationRow[]
   const credits = (creditsData || []) as unknown as CreditRow[]
-  const investorsCount = (investorsData || []).length
   const subcontractors = (subcontractorsData || []) as SubcontractorRow[]
   const milestones = (milestonesData || []) as MilestoneRow[]
 
@@ -161,7 +160,7 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const financial = deriveFinancial(invoices, payments, salesRows, credits)
   const sales = deriveSales(apartments, salesRows)
   const construction = deriveConstruction(contracts, subcontractors, milestones, invoices)
-  const funding = deriveFunding(credits, allocations, investorsCount)
+  const funding = deriveFunding(credits, allocations)
   const alerts = deriveAlerts(milestones, credits, financial, sales)
 
   return {
@@ -245,6 +244,7 @@ function deriveProjects(
       name: project.name,
       location: project.location ?? '',
       status: project.status ?? '',
+      category: project.category ?? null,
       budget: project.budget ?? 0,
       total_expenses: totalExpenses,
       apartment_sales: apartmentSales,
@@ -381,11 +381,22 @@ function deriveConstruction(
 
 function deriveFunding(
   credits: CreditRow[],
-  allocations: AllocationRow[],
-  investorsCount: number
+  allocations: AllocationRow[]
 ): FundingMetrics {
   const fundedProjects = new Set(
     allocations.map(a => a.project_id).filter((id): id is string => Boolean(id))
+  ).size
+
+  // "Investors" = the distinct banks currently funding us. `public.investors` was
+  // moved to the `deprecated` schema in May 2026, leaving this card querying a
+  // table that no longer exists (a 404 on every load, and a permanent 0).
+  // Unlike the debt KPIs below this deliberately includes equity facilities — an
+  // equity provider is an investor — and excludes only settled ones.
+  const investorsCount = new Set(
+    credits
+      .filter(c => c.status !== 'paid' && c.status !== 'defaulted')
+      .map(c => c.bank_id)
+      .filter((id): id is string => Boolean(id))
   ).size
 
   // Debt KPIs exclude equity facilities and repaid/defaulted credits.

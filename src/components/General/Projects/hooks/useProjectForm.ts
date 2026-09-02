@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { ProjectCategory } from '../../../../lib/supabase'
 import {
   fetchProjectById,
   updateProject,
@@ -14,6 +15,7 @@ interface ProjectForm {
   end_date: string
   budget: string
   status: string
+  category: ProjectCategory
   description: string
 }
 
@@ -25,7 +27,22 @@ const defaultForm: ProjectForm = {
   end_date: '',
   budget: '',
   status: 'Planning',
+  category: 'stambeno',
   description: ''
+}
+
+// Postgres raises 42501 when an RLS policy rejects the write. Only Directors may
+// insert/update/delete projects, so surface that instead of a generic failure.
+// Returns a translation key; ProjectFormModal runs it through t(), which passes
+// unknown strings straight through.
+function toErrorMessage(err: unknown, fallback: string): string {
+  const code = (err as { code?: string } | null)?.code
+  if (code === '42501') return 'general_projects.error_permission_denied'
+  return err instanceof Error ? err.message : fallback
+}
+
+function isPermissionError(err: unknown): boolean {
+  return (err as { code?: string } | null)?.code === '42501'
 }
 
 export function useProjectForm(
@@ -50,6 +67,7 @@ export function useProjectForm(
           end_date: data.end_date || '',
           budget: data.budget?.toString() || '',
           status: data.status || 'Planning',
+          category: data.category || 'stambeno',
           description: ''
         })
       }
@@ -91,7 +109,8 @@ export function useProjectForm(
         start_date: form.start_date,
         end_date: form.end_date || null,
         budget: parseFloat(form.budget),
-        status: form.status
+        status: form.status,
+        category: form.category
       }
 
       if (projectId) {
@@ -102,8 +121,9 @@ export function useProjectForm(
 
       onSaved()
     } catch (err: unknown) {
-      console.error('Error saving project:', err)
-      setError(err instanceof Error ? err.message : 'Failed to save project')
+      // A permission denial is an expected outcome, not a defect - don't log it.
+      if (!isPermissionError(err)) console.error('Error saving project:', err)
+      setError(toErrorMessage(err, 'Failed to save project'))
     } finally {
       setLoading(false)
     }
@@ -121,8 +141,8 @@ export function useProjectForm(
       await deleteProject(projectId)
       onDeleted()
     } catch (err: unknown) {
-      console.error('Error deleting project:', err)
-      setError(err instanceof Error ? err.message : 'Failed to delete project')
+      if (!isPermissionError(err)) console.error('Error deleting project:', err)
+      setError(toErrorMessage(err, 'Failed to delete project'))
     } finally {
       setDeleting(false)
       setShowDeleteConfirm(false)
