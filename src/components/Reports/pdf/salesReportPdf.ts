@@ -231,7 +231,7 @@ export async function generateSalesReportPDF(
       const statusColor = customer.status === 'buyer' ? [34, 197, 94] : customer.status === 'interested' ? [59, 130, 246] : [245, 158, 11]
 
       pdf.text(`${customer.name} ${customer.surname}`, margin + 5, yPosition)
-      pdf.text(customer.email, margin + 60, yPosition)
+      pdf.text(customer.email || 'No email', margin + 60, yPosition)
       pdf.text(customer.phone || 'No phone', margin + 120, yPosition)
 
       pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2])

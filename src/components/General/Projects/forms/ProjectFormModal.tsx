@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal, FormField, Input, Select, Button, Alert, Form, ConfirmDialog } from '../../../ui'
+import { ProjectCategory, PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS } from '../../../../lib/supabase'
 import { useProjectForm } from '../hooks/useProjectForm'
 
 interface ProjectFormModalProps {
@@ -41,7 +42,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
         <Form onSubmit={(e) => handleLocalSubmit(e)}>
           {error && (
             <Alert variant="error" className="mb-4" onDismiss={() => setError('')}>
-              {error}
+              {t(error)}
             </Alert>
           )}
 
@@ -109,6 +110,20 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
                 <option value="In Progress">{t('status.in_progress')}</option>
                 <option value="Completed">{t('status.completed')}</option>
                 <option value="On Hold">{t('status.on_hold')}</option>
+              </Select>
+            </FormField>
+
+            {/* Category values are Croatian domain terms and stay untranslated. */}
+            <FormField label={t('general_projects.form_category')}>
+              <Select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value as ProjectCategory })}
+              >
+                {PROJECT_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {PROJECT_CATEGORY_LABELS[category]}
+                  </option>
+                ))}
               </Select>
             </FormField>
 
