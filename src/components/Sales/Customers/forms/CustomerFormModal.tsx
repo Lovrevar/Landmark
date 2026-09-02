@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Customer } from '../../../../lib/supabase'
-import { CustomerWithApartments, CustomerCategory } from '../types'
+import { CustomerWithApartments, CustomerCategory, ProjectOption } from '../types'
 import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
 import { Alert } from '../../../ui'
 
@@ -9,6 +9,7 @@ interface CustomerFormModalProps {
   show: boolean
   editingCustomer: CustomerWithApartments | null
   activeCategory: CustomerCategory | null
+  projects: ProjectOption[]
   onClose: () => void
   onSave: (formData: Partial<Customer>, editingId?: string) => Promise<void>
 }
@@ -17,6 +18,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   show,
   editingCustomer,
   activeCategory,
+  projects,
   onClose,
   onSave
 }) => {
@@ -32,7 +34,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     bank_account: '',
     id_number: '',
     status: activeCategory ?? 'interested',
-    priority: 'warm',
+    interested_project_id: null,
     notes: '',
     preferences: {
       budget_min: 0,
@@ -64,7 +66,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         bank_account: '',
         id_number: '',
         status: activeCategory ?? 'interested',
-        priority: 'warm',
+        interested_project_id: null,
         notes: '',
         preferences: {
           budget_min: 0,
@@ -85,8 +87,6 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     const errors: Record<string, string> = {}
     if (!formData.name?.trim()) errors.name = 'First name is required.'
     if (!formData.surname?.trim()) errors.surname = 'Last name is required.'
-    if (!formData.email?.trim()) errors.email = 'Email is required.'
-    if (!formData.phone?.trim()) errors.phone = 'Phone is required.'
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     try {
@@ -136,17 +136,17 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label={t('customers.form.email')} required error={fieldErrors.email}>
+            <FormField label={t('customers.form.email')} error={fieldErrors.email}>
               <Input
                 type="email"
-                value={formData.email}
+                value={formData.email ?? ''}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </FormField>
-            <FormField label={t('customers.form.phone')} required error={fieldErrors.phone}>
+            <FormField label={t('customers.form.phone')} error={fieldErrors.phone}>
               <Input
                 type="tel"
-                value={formData.phone}
+                value={formData.phone ?? ''}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
             </FormField>
@@ -163,14 +163,15 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 <option value="buyer">{t('customer_status.buyer')}</option>
               </Select>
             </FormField>
-            <FormField label={t('customers.form.priority')}>
+            <FormField label={t('customers.form.interested_project')}>
               <Select
-                value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'hot' | 'warm' | 'cold' })}
+                value={formData.interested_project_id ?? ''}
+                onChange={(e) => setFormData({ ...formData, interested_project_id: e.target.value || null })}
               >
-                <option value="hot">{t('customer_priority.hot')}</option>
-                <option value="warm">{t('customer_priority.warm')}</option>
-                <option value="cold">{t('customer_priority.cold')}</option>
+                <option value="">{t('customers.form.no_project')}</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>{project.name}</option>
+                ))}
               </Select>
             </FormField>
           </div>

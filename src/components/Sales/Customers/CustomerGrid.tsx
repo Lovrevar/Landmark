@@ -1,12 +1,13 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Users } from 'lucide-react'
-import { CustomerWithApartments, CustomerCategory } from './types'
+import { CustomerWithApartments, CustomerCategory, ProjectOption } from './types'
 import { CustomerCard } from './CustomerCard'
 import { LoadingSpinner, EmptyState } from '../../ui'
 
 interface CustomerGridProps {
   customers: CustomerWithApartments[]
+  projects: ProjectOption[]
   activeCategory: CustomerCategory | null
   loading: boolean
   selectedIds: Set<string>
@@ -20,6 +21,7 @@ interface CustomerGridProps {
 
 export const CustomerGrid: React.FC<CustomerGridProps> = ({
   customers,
+  projects,
   activeCategory,
   loading,
   selectedIds,
@@ -31,6 +33,11 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
   onUpdateContact
 }) => {
   const { t } = useTranslation()
+  // Resolved once here rather than per card.
+  const projectNameById = React.useMemo(
+    () => new Map(projects.map(project => [project.id, project.name])),
+    [projects]
+  )
 
   if (loading) {
     return <LoadingSpinner message={t('common.loading')} />
@@ -91,6 +98,11 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
           <CustomerCard
             key={customer.id}
             customer={customer}
+            interestedProjectName={
+              customer.interested_project_id
+                ? projectNameById.get(customer.interested_project_id)
+                : undefined
+            }
             activeCategory={activeCategory}
             isSelected={selectedIds.has(customer.id)}
             onToggleSelect={onToggleSelect}

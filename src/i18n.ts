@@ -13,6 +13,8 @@ i18n
       en: { translation: en },
     },
     fallbackLng: 'hr',
+    // Suppresses i18next's Locize promo console.info on every dev boot.
+    showSupportNotice: false,
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],

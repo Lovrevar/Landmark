@@ -69,6 +69,17 @@ Expose the caught error from `useCachedData` and render an explicit "Failed to l
 ### Fix
 Rename fields to match reality; source a real investor figure (or remove the card); split credits by `credit_type` (equity vs debt); compute `monthly_debt_service` from `monthly_payment`. Until then, hide the fabricated €0 card.
 
+### Update (2026-09-02) — investor count resolved
+The "Investors" half of this finding is closed. In between, the card had been
+repointed at `public.investors`, which migration `20260518110001` moved to the
+`deprecated` schema — so it 404'd on every dashboard load and always rendered 0.
+`total_investors` now counts **distinct banks behind live facilities** (any
+`bank_credits` row not `paid`/`defaulted`), which is the business's own reading of
+"investor". It deliberately includes equity facilities, unlike the debt KPIs
+beside it, since an equity provider is an investor. Derived from the `credits`
+rows already fetched — no extra query. The debt/equity and `monthly_debt_service`
+parts of DASH-101 were fixed earlier; see `isLiveDebt`.
+
 ## DASH-102: Company profit mixes accrual revenue with cash expenses over ALL invoice types
 
 **Severity:** High · **File:** `directorService.ts:266-269`

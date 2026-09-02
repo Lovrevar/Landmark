@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase'
+import { supabase, ProjectCategory } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 
 export interface ProjectFormRecord {
@@ -9,6 +9,7 @@ export interface ProjectFormRecord {
   end_date: string | null
   budget: number
   status: string
+  category: ProjectCategory
 }
 
 export interface FetchedProject {
@@ -19,6 +20,7 @@ export interface FetchedProject {
   end_date: string | null
   budget: number | null
   status: string | null
+  category: ProjectCategory | null
 }
 
 export async function fetchProjectById(projectId: string): Promise<FetchedProject | null> {

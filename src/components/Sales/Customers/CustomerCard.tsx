@@ -1,12 +1,14 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Flame, TrendingUp, AlertCircle, Star } from 'lucide-react'
+import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { CustomerWithApartments, CustomerCategory } from './types'
 import { Button } from '../../ui'
 
 interface CustomerCardProps {
   customer: CustomerWithApartments
+  /** Name of the project the customer is interested in, resolved by CustomerGrid. */
+  interestedProjectName?: string
   activeCategory: CustomerCategory | null
   isSelected: boolean
   onToggleSelect: (id: string) => void
@@ -18,6 +20,7 @@ interface CustomerCardProps {
 
 export const CustomerCard: React.FC<CustomerCardProps> = ({
   customer,
+  interestedProjectName,
   activeCategory,
   isSelected,
   onToggleSelect,
@@ -27,24 +30,6 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
   onUpdateContact
 }) => {
   const { t } = useTranslation()
-  const getPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case 'hot': return 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
-      case 'warm': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400'
-      case 'cold': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300'
-      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-400'
-    }
-  }
-
-  const getPriorityIcon = (priority?: string) => {
-    switch (priority) {
-      case 'hot': return <Flame className="w-4 h-4" />
-      case 'warm': return <TrendingUp className="w-4 h-4" />
-      case 'cold': return <AlertCircle className="w-4 h-4" />
-      default: return <Star className="w-4 h-4" />
-    }
-  }
-
   return (
     <div
       onClick={() => onToggleSelect(customer.id)}
@@ -57,10 +42,10 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {customer.name} {customer.surname}
           </h3>
-          {customer.priority && (
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 ${getPriorityColor(customer.priority)}`}>
-              {getPriorityIcon(customer.priority)}
-              <span className="ml-1 capitalize">{customer.priority}</span>
+          {interestedProjectName && (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300">
+              <Building2 className="w-4 h-4" />
+              <span className="ml-1">{interestedProjectName}</span>
             </span>
           )}
         </div>
@@ -72,14 +57,18 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
       </div>
 
       <div className="space-y-2 mb-4">
-        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-          <Mail className="w-4 h-4 mr-2" />
-          {customer.email}
-        </div>
-        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-          <Phone className="w-4 h-4 mr-2" />
-          {customer.phone}
-        </div>
+        {customer.email && (
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+            <Mail className="w-4 h-4 mr-2" />
+            {customer.email}
+          </div>
+        )}
+        {customer.phone && (
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+            <Phone className="w-4 h-4 mr-2" />
+            {customer.phone}
+          </div>
+        )}
         {customer.last_contact_date && (
           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <Clock className="w-4 h-4 mr-2" />

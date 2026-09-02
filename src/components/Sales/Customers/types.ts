@@ -7,6 +7,7 @@ export interface CustomerWithApartments extends Customer {
     number: string
     floor: number
     size_m2: number
+    project_id: string
     project_name: string
     sale_price: number
     sale_date: string
@@ -19,6 +20,12 @@ export interface CustomerWithApartments extends Customer {
 }
 
 export type CustomerCategory = 'interested' | 'lead' | 'buyer'
+
+/** Minimal project shape used by the customer form, filter and card. */
+export interface ProjectOption {
+  id: string
+  name: string
+}
 
 export interface CategoryInfo {
   id: CustomerCategory
