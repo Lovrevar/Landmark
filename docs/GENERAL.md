@@ -95,10 +95,10 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 #### Views
 
 ### ProjectCard.tsx
-- Summary card for a single project showing status badge, budget, spent, remaining, progress bar, milestone count, and days info
+- Summary card for a single project showing status badge, project-category badge, budget, spent, remaining, progress bar, milestone count, and days info
 - **Uses services:** (receives ProjectWithStats as prop)
 - **Uses Ui:** Badge, Button
-- **Uses components:** getStatusConfig, getDaysInfo
+- **Uses components:** ProjectCategoryBadge, getStatusConfig, getDaysInfo
 
 ### MilestoneTimeline.tsx
 - Visual vertical timeline of project milestones sorted by due date, with status colors and edit/delete/toggle actions
@@ -117,11 +117,12 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 
 ### ProjectDetailsEnhanced.tsx
 - Alternative multi-tab project view: Overview, Phases (PhasesContractsTab), Apartments, Subcontractors (SubcontractorsTab), Financing, Milestones
+- Header shows the project-category badge next to the status badge, and the Overview tab's project-info grid carries a "Vrsta projekta" tile alongside location/investor/dates
 - Header stat cards (budget/spent, timeline, completion %, contract count); Milestones tab combines an inline add form, the "Use template" action (MilestoneTemplateModal), an expand/collapse-all toggle, and a phase-grouped MilestoneTimeline
 - Computes `phaseStatuses` from milestones (`computePhaseStatuses(buildPhaseBuckets(...))`) and drives both the milestone grouping and `PhasesContractsTab` collapse via `usePhaseCollapseState`
 - **Uses hooks:** useMilestoneManagement, usePhaseCollapseState
 - **Uses services:** projectDetailsService (fetchProjectDataEnhanced)
-- **Uses components:** MilestoneTimeline, ProjectFormModal, MilestoneTemplateModal, PhasesContractsTab, SubcontractorsTab
+- **Uses components:** ProjectCategoryBadge, MilestoneTimeline, ProjectFormModal, MilestoneTemplateModal, PhasesContractsTab, SubcontractorsTab
 - **Calls:** `buildPhaseBuckets`, `computePhaseStatuses` (utils.ts)
 - **Uses Ui:** LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table
 
@@ -139,7 +140,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - **Uses Ui:** Badge, Button, EmptyState, Select, SearchInput, StatCard, StatGrid, Table
 
 ### index.tsx (ProjectsManagement)
-- Project list with search by name/location and status filter, grid layout, and new project modal
+- Project list with search by name/location, a status filter and a project-category filter (Interno / Retail / Stambeno), grid layout, and new project modal
 - **Uses hooks:** (direct fetch via projectService)
 - **Uses services:** projectService
 - **Uses components:** ProjectCard, ProjectFormModal
@@ -170,7 +171,7 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 #### Views
 
 ### index.tsx (BudgetControl)
-- Project selector dropdown at the top to switch between all projects
+- Project selector dropdown at the top to switch between all projects; each option is suffixed with the project's category (`Name — Stambeno`) so same-named projects of different categories can be told apart
 - Top metric cards: TIC, Planned Budget, Committed (% of budget), Paid (% of committed), Forecast EAC (Under/Over Budget by sign of VAC)
 - Budget Control bar chart (recharts): 4 bars — Planned, Committed, Paid, Forecast EAC
 - EVM Indices scatter chart (recharts): CPI and SPI plotted against a Target (1.0) and a Warning (0.9) reference line

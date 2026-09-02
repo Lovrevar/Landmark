@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FolderKanban, Plus } from 'lucide-react'
 import { LoadingSpinner, PageHeader, SearchInput, Select, EmptyState, Button } from '../../ui'
+import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { fetchProjectsWithStats } from './services/projectService'
 import type { ProjectWithStats } from './types'
 import ProjectCard from './ProjectCard'
@@ -20,6 +21,7 @@ const ProjectsManagement: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
 
   const loadProjects = useCallback(async () => {
@@ -45,8 +47,11 @@ const ProjectsManagement: React.FC = () => {
     if (statusFilter !== 'all') {
       filtered = filtered.filter(p => p.status === statusFilter)
     }
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(p => p.category === categoryFilter)
+    }
     setFilteredProjects(filtered)
-  }, [projects, searchTerm, statusFilter])
+  }, [projects, searchTerm, statusFilter, categoryFilter])
 
   useEffect(() => {
     loadProjects()
@@ -88,6 +93,18 @@ const ProjectsManagement: React.FC = () => {
             <option value="In Progress">{t('status.in_progress')}</option>
             <option value="Completed">{t('status.completed')}</option>
             <option value="On Hold">{t('status.on_hold')}</option>
+          </Select>
+          {/* Category values are Croatian domain terms and stay untranslated. */}
+          <Select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="all">{t('common.all_project_types')}</option>
+            {PROJECT_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {PROJECT_CATEGORY_LABELS[category]}
+              </option>
+            ))}
           </Select>
         </div>
 

@@ -2,6 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building2 } from 'lucide-react'
 import { Badge } from '../../ui'
+import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import { useTranslation } from 'react-i18next'
 import type { ProjectStats } from '../types/directorTypes'
 
@@ -54,7 +55,10 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                 >
                   <td data-label={t('dashboards.director.project_col')} className="px-6 py-4">
                     <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">{project.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900 dark:text-white">{project.name}</p>
+                        <ProjectCategoryBadge category={project.category} />
+                      </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">{project.location}</p>
                     </div>
                   </td>

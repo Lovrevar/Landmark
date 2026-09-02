@@ -1,6 +1,6 @@
 import { supabase, Apartment } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
-import { UnitType, BulkCreateData, SaleFormData, CustomerMode, UnitForSale } from '../types'
+import { UnitType, BulkCreateData, SaleFormData, CustomerMode, UnitForSale, SALES_PROJECT_CATEGORIES } from '../types'
 
 export interface CompleteSalePayload {
   unitForSale: UnitForSale
@@ -68,14 +68,13 @@ export const completeSale = async (payload: CompleteSalePayload): Promise<void> 
   }
 }
 
-// The Sales module sells residential units, so it only ever deals with
-// 'stambeno' projects. Interno and Retail projects are excluded entirely rather
-// than shown as empty sections.
+// Sales lists Stambeno and Retail projects, separated by tabs on the screen.
+// Interno projects are company-internal and never offered for sale.
 export const fetchProjects = async () => {
   const { data, error } = await supabase
     .from('projects')
     .select('*')
-    .eq('category', 'stambeno')
+    .in('category', SALES_PROJECT_CATEGORIES)
     .order('name')
 
   if (error) throw error

@@ -114,7 +114,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
             </FormField>
 
             {/* Category values are Croatian domain terms and stay untranslated. */}
-            <FormField label={t('general_projects.form_category')}>
+            <FormField label={t('common.project_type')}>
               <Select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value as ProjectCategory })}

@@ -1,8 +1,11 @@
+import type { ProjectCategory } from '../../../lib/supabase'
+
 export interface ProjectStats {
   id: string
   name: string
   location: string
   status: string
+  category: ProjectCategory | null
   budget: number
   total_expenses: number
   apartment_sales: number

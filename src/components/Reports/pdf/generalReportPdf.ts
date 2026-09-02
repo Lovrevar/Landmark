@@ -8,6 +8,7 @@ import {
   hexToRgb
 } from './pdfCharts'
 import type { ComprehensiveReport } from '../types'
+import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 
 export async function generateGeneralReportPDF(report: ComprehensiveReport): Promise<void> {
   const { jsPDF } = await import('jspdf')
@@ -765,7 +766,15 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
       pdf.setFontSize(8)
       pdf.setFont('helvetica', 'normal')
       pdf.setTextColor(100, 100, 100)
-      pdf.text(project.location, margin + 5, yPosition + 12)
+      // Category labels are Croatian domain terms; kept untranslated, and appended
+      // to the location line so the fixed 50mm card height still holds.
+      pdf.text(
+        project.category
+          ? `${project.location}  ·  ${PROJECT_CATEGORY_LABELS[project.category]}`
+          : project.location,
+        margin + 5,
+        yPosition + 12
+      )
 
       const riskColor = project.risk_level === 'High' ? '#ef4444' : project.risk_level === 'Medium' ? '#f59e0b' : '#22c55e'
       const riskBg = hexToRgb(riskColor)

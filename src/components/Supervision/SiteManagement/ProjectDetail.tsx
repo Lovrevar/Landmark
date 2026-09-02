@@ -6,6 +6,7 @@ import { ProjectWithPhases, SubcontractorWithPhase } from './types'
 import { PhaseCard } from './PhaseCard'
 import { fetchCreditAllocations, type CreditAllocation } from './services/siteService'
 import { Button, Badge, EmptyState } from '../../ui'
+import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 
 interface ProjectDetailProps {
   project: ProjectWithPhases
@@ -87,6 +88,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             </p>
           </div>
           <div className="flex items-center space-x-3">
+            <ProjectCategoryBadge category={project.category} size="md" />
             <Badge variant={
               project.status === 'Completed' ? 'green' :
               project.status === 'In Progress' ? 'blue' :

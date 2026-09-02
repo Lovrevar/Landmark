@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, Calendar, Eye } from 'lucide-react'
 import { Badge, Button } from '../../ui'
+import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import type { ProjectWithStats } from './types'
 import { getStatusConfig, getDaysInfo } from './utils'
 
@@ -29,14 +30,17 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
             {project.location}
           </div>
         </div>
-        <Badge variant={
-          project.status === 'Completed' ? 'green'
-            : project.status === 'In Progress' ? 'blue'
-            : project.status === 'On Hold' ? 'yellow'
-            : 'gray'
-        } size="sm">
-          {statusConfig.label}
-        </Badge>
+        <div className="flex flex-col items-end gap-1">
+          <Badge variant={
+            project.status === 'Completed' ? 'green'
+              : project.status === 'In Progress' ? 'blue'
+              : project.status === 'On Hold' ? 'yellow'
+              : 'gray'
+          } size="sm">
+            {statusConfig.label}
+          </Badge>
+          <ProjectCategoryBadge category={project.category} />
+        </div>
       </div>
 
       <div className="space-y-3 mb-4">
