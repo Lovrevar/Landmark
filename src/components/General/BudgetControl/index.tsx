@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Activity,
 } from 'lucide-react'
+import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { useBudgetControl } from './hooks/useBudgetControl'
 import LoadingSpinner from '../../ui/LoadingSpinner'
 
@@ -127,7 +128,9 @@ export default function BudgetControl() {
             className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:min-w-[220px]"
           >
             {projects.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.id}>
+                {p.category ? `${p.name} — ${PROJECT_CATEGORY_LABELS[p.category]}` : p.name}
+              </option>
             ))}
           </select>
         </div>

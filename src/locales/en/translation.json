@@ -142,7 +142,9 @@
     "filtered_results": "Filtered Results",
     "paid_by": "Paid By",
     "budget": "Budget",
-    "note": "Note"
+    "note": "Note",
+    "project_type": "Project type",
+    "all_project_types": "All types"
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -1605,7 +1607,6 @@
     "form_location_placeholder": "e.g., Zagreb, Croatia",
     "form_aliases": "Alternate names (optional)",
     "form_aliases_placeholder": "Names used in contracts and documents, comma separated — e.g., Osijek",
-    "form_category": "Category",
     "form_end_date_optional": "End Date (Optional)",
     "form_budget_eur": "Budget (EUR)",
     "form_error_name": "Project name is required",

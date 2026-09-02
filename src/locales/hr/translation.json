@@ -142,7 +142,9 @@
     "filtered_results": "Filtrirani rezultati",
     "paid_by": "Platio/la",
     "budget": "Budžet",
-    "note": "Napomena"
+    "note": "Napomena",
+    "project_type": "Vrsta projekta",
+    "all_project_types": "Sve vrste"
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -1607,7 +1609,6 @@
     "form_location_placeholder": "npr. Zagreb, Hrvatska",
     "form_aliases": "Alternativni nazivi (opcionalno)",
     "form_aliases_placeholder": "Nazivi iz ugovora i dokumenata, odvojeni zarezom — npr. Osijek",
-    "form_category": "Kategorija",
     "form_end_date_optional": "Datum završetka (opcionalno)",
     "form_budget_eur": "Budžet (EUR)",
     "form_error_name": "Naziv projekta je obavezan",

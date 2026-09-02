@@ -77,3 +77,4 @@ Module/
 | `src/types/retail.ts` | Shared retail types |
 | `src/lib/activityLog.ts` | Fire-and-forget audit logger (`logActivity`) |
 | `src/components/Common/PageFallback.tsx` | Spinner fallback shown while lazy-loaded route components load |
+| `src/components/Common/ProjectCategoryBadge.tsx` | Badge for a project's category (Interno / Retail / Stambeno); shared by General, Site Management, the Director dashboard and General Reports |

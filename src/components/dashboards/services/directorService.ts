@@ -1,4 +1,4 @@
-import { supabase } from '../../../lib/supabase'
+import { supabase, type ProjectCategory } from '../../../lib/supabase'
 import { startOfMonth } from 'date-fns'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
 import type {
@@ -15,6 +15,8 @@ interface ProjectRow {
   name: string
   location: string | null
   status: string | null
+  // CHECK-constrained in the DB to the three ProjectCategory values.
+  category: ProjectCategory | null
   budget: number | null
 }
 
@@ -118,7 +120,7 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   ] = await Promise.all([
     supabase
       .from('projects')
-      .select('id, name, location, status, budget')
+      .select('id, name, location, status, budget, category')
       .order('created_at', { ascending: false }),
     supabase.from('apartments').select('id, project_id, status, price'),
     supabase
@@ -242,6 +244,7 @@ function deriveProjects(
       name: project.name,
       location: project.location ?? '',
       status: project.status ?? '',
+      category: project.category ?? null,
       budget: project.budget ?? 0,
       total_expenses: totalExpenses,
       apartment_sales: apartmentSales,
