@@ -394,6 +394,7 @@ const SalesProjectsEnhanced: React.FC = () => {
         <>
           {/* Category names are Croatian domain terms and stay untranslated. */}
           <Tabs
+            className="mb-3"
             tabs={SALES_PROJECT_CATEGORIES.map(category => ({
               id: category,
               label: PROJECT_CATEGORY_LABELS[category],

@@ -4320,6 +4320,7 @@
     "create_group": "Kreiraj grupu",
     "start_chat": "Započni chat",
     "participants_count": "{{count}} sudionika",
+    "members": "Članovi ({{count}})",
     "file_too_large": "Datoteka prelazi limit od 25 MB",
     "send_failed": "Slanje nije uspjelo. Pokušajte ponovno.",
     "time_now": "sada",

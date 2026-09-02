@@ -64,7 +64,13 @@ Three tables: `chat_conversations`, `chat_participants` (junction with `last_rea
 
 ### MessagePanel.tsx
 - Header with conversation name + participant count, message thread, and composer (textarea + file attach + send)
+- For groups, the participant count is a toggle (and an `AvatarStack` of members sits on the right) that opens [GroupMembersPanel](../src/components/Chat/GroupMembersPanel.tsx); the panel closes on conversation switch
 - Surfaces the `FILE_TOO_LARGE` sentinel error from `uploadChatFile` with an i18n'd toast
+
+### GroupMembersPanel.tsx
+- Dropdown listing every participant of a group conversation (avatar initial, username, role), current user pinned first and marked `(You)`, the rest alphabetical
+- Reads `conversation.participants`, which `fetchConversations` already hydrates — no extra query
+- Closes on outside click and Escape
 
 ### MessageBubble.tsx
 - Single message bubble with sender, timestamp, and optional file attachment preview
