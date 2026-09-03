@@ -33,6 +33,22 @@ export interface TaskAssignee {
   user?: TaskUser
 }
 
+/**
+ * One line of a checklist task. A task with zero of these is a simple task;
+ * one with any is a checklist, and its `completed` is then owned by a database
+ * trigger rather than by the user. The kind is derived, never stored — see
+ * supabase/migrations/20260902110000_task_subtasks.sql.
+ */
+export interface Subtask {
+  id: string
+  task_id: string
+  title: string
+  position: number
+  completed: boolean
+  completed_at: string | null
+  created_at: string
+}
+
 export interface TaskAttachment {
   id: string
   task_id: string
@@ -64,6 +80,8 @@ export interface Task {
   creator?: TaskUser
   assignees?: TaskAssignee[]
   attachments?: TaskAttachment[]
+  /** Sorted by position. Empty or undefined = a simple task. See Tasks/subtasks.ts. */
+  subtasks?: Subtask[]
   comment_count?: number
 }
 

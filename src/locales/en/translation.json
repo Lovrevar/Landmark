@@ -4562,6 +4562,19 @@
       "none": "No attachments yet",
       "create_first": "Save the task to add attachments"
     },
+    "subtasks": {
+      "label": "Subtasks",
+      "none": "No subtasks",
+      "progress": "{{done}}/{{total}}",
+      "add_placeholder": "Add a subtask and press Enter",
+      "move_up": "Move up",
+      "move_down": "Move down",
+      "remove": "Remove",
+      "remove_confirm_title": "Remove subtask?",
+      "remove_confirm_message": "The subtask “{{title}}” will be permanently removed.",
+      "governs_task": "The task is marked done when every subtask is done.",
+      "governed_tooltip": "{{done}} of {{total}} subtasks done — the task follows its subtasks"
+    },
     "mentions": {
       "search_placeholder": "Search users to mention"
     },
@@ -4878,6 +4891,11 @@
       "task.comment": "commented",
       "task.attachment_add": "added an attachment",
       "task.attachment_remove": "removed an attachment",
+      "task.subtask_add": "added a subtask",
+      "task.subtask_toggle": "changed a subtask's status",
+      "task.subtask_rename": "renamed a subtask",
+      "task.subtask_reorder": "reordered subtasks",
+      "task.subtask_delete": "removed a subtask",
       "invoice.bulk_create": "Invoices bulk created",
       "payment_notification.dismiss": "Payment notification dismissed",
       "bank_credit.generate_schedule": "Payment schedule regenerated",

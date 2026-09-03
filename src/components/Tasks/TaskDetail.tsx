@@ -22,6 +22,7 @@ import SearchableSelect from '../ui/SearchableSelect'
 import ToggleSwitch from '../ui/ToggleSwitch'
 import MarkdownView from '../ui/MarkdownView'
 import AttachmentList from './components/AttachmentList'
+import SubtaskList from './components/SubtaskList'
 import MentionPicker from './components/MentionPicker'
 import TaskColorChip from './components/TaskColorChip'
 import TaskColorPicker from './components/TaskColorPicker'
@@ -36,6 +37,7 @@ import {
   type ProjectOption,
 } from './services/tasksService'
 import { useAuth } from '../../contexts/AuthContext'
+import { isChecklist, subtaskProgress } from './subtasks'
 import type {
   Task,
   TaskAttachment,
@@ -119,6 +121,9 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
     (task.assignees || []).some(a => a.assignee_id === user.auth_user_id)
   const canDelete = task.created_by === user.auth_user_id
   const done = task.completed
+  // On a checklist task the trigger owns `completed`; the checkbox below becomes a readout.
+  const checklist = isChecklist(task)
+  const progress = subtaskProgress(task)
 
   const saveField = async (patch: UpdateTaskInput) => {
     setSaving(true)
@@ -274,7 +279,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
           <div className="flex items-start gap-3">
             <button
               type="button"
-              disabled={!canEdit || saving}
+              disabled={!canEdit || saving || checklist}
               onClick={toggleDone}
               className={`flex-shrink-0 mt-1 transition-colors ${
                 done
@@ -282,11 +287,16 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                   : 'text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400'
               } disabled:cursor-not-allowed disabled:opacity-50`}
               title={
-                !canEdit
-                  ? t('tasks.row.read_only')
-                  : done
-                    ? t('tasks.row.mark_open')
-                    : t('tasks.row.mark_done')
+                checklist
+                  ? t('tasks.subtasks.governed_tooltip', {
+                      done: progress.done,
+                      total: progress.total,
+                    })
+                  : !canEdit
+                    ? t('tasks.row.read_only')
+                    : done
+                      ? t('tasks.row.mark_open')
+                      : t('tasks.row.mark_done')
               }
             >
               <DoneIcon className="w-7 h-7" />
@@ -464,6 +474,19 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                 </div>
               )}
             </Field>
+          )}
+
+          {/* Sits above the description rather than replacing it: unlike the mobile app's
+              card, Cognilion's description carries description_format, markdown rendering
+              and real prose that is not a list. */}
+          {(canEdit || checklist) && (
+            <SubtaskList
+              taskId={task.id}
+              subtasks={task.subtasks || []}
+              actor={user}
+              canEdit={canEdit}
+              onChange={onChanged}
+            />
           )}
 
           <div>
