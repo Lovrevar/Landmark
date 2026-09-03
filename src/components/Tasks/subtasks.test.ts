@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isChecklist, subtaskProgress } from './subtasks'
+import { isChecklist, normalizeDraftSubtasks, subtaskProgress } from './subtasks'
 import type { Subtask, Task } from '../../types/tasks'
 
 function subtask(id: string, completed: boolean): Subtask {
@@ -51,6 +51,35 @@ describe('isChecklist', () => {
 
   it('stays a checklist when every line is done', () => {
     expect(isChecklist(task([subtask('a', true), subtask('b', true)]))).toBe(true)
+  })
+})
+
+describe('normalizeDraftSubtasks', () => {
+  it('keeps order', () => {
+    expect(normalizeDraftSubtasks(['gr dozvola', 'troškovnici', 'tender'])).toEqual([
+      'gr dozvola',
+      'troškovnici',
+      'tender',
+    ])
+  })
+
+  it('trims surrounding whitespace', () => {
+    expect(normalizeDraftSubtasks(['  ts  ', 'vodovod'])).toEqual(['ts', 'vodovod'])
+  })
+
+  // The trailing empty row an "add line" button leaves behind. Dropped, not rejected —
+  // and the title CHECK on task_subtasks would reject a blank anyway.
+  it('drops blank and whitespace-only lines', () => {
+    expect(normalizeDraftSubtasks(['internet', '', '   ', 'iptv'])).toEqual(['internet', 'iptv'])
+  })
+
+  it('returns an empty list for an all-blank draft, so the task stays simple', () => {
+    expect(normalizeDraftSubtasks(['', '  '])).toEqual([])
+    expect(normalizeDraftSubtasks([])).toEqual([])
+  })
+
+  it('keeps duplicates — two lines may legitimately read the same', () => {
+    expect(normalizeDraftSubtasks(['popravci', 'popravci'])).toEqual(['popravci', 'popravci'])
   })
 })
 

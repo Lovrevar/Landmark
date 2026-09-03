@@ -10,6 +10,7 @@ import SearchableSelect from '../ui/SearchableSelect'
 import ToggleSwitch from '../ui/ToggleSwitch'
 import ParticipantPicker from '../Calendar/components/ParticipantPicker'
 import TaskColorPicker from './components/TaskColorPicker'
+import SubtaskDraftList from './components/SubtaskDraftList'
 import { fetchProjectOptions, fetchTaskUsers, type ProjectOption } from './services/tasksService'
 import { useAuth } from '../../contexts/AuthContext'
 import type { NewTaskInput, TaskUser } from '../../types/tasks'
@@ -31,6 +32,7 @@ interface FormState {
   color: TaskColor | null
   isPrivate: boolean
   assigneeIds: string[]
+  subtasks: string[]
 }
 
 const EMPTY_FORM: FormState = {
@@ -41,6 +43,7 @@ const EMPTY_FORM: FormState = {
   color: null,
   isPrivate: false,
   assigneeIds: [],
+  subtasks: [],
 }
 
 const TaskModal: React.FC<Props> = ({
@@ -74,7 +77,8 @@ const TaskModal: React.FC<Props> = ({
       form.dueDate !== '' ||
       form.color !== null ||
       form.isPrivate !== defaultPrivate ||
-      form.assigneeIds.length > 0,
+      form.assigneeIds.length > 0 ||
+      form.subtasks.length > 0,
     [form, defaultProjectId, defaultPrivate],
   )
 
@@ -103,6 +107,7 @@ const TaskModal: React.FC<Props> = ({
         project_id: form.projectId,
         color: form.color,
         assignee_ids: form.isPrivate ? [] : form.assigneeIds,
+        subtasks: form.subtasks,
       }
       await onCreate(input)
       onClose()
@@ -196,6 +201,14 @@ const TaskModal: React.FC<Props> = ({
                 />
               </div>
             )}
+
+            {/* Above the description, matching TaskDetail's order. Leave it empty and the
+                task is created simple — the kind is derived from the rows, not chosen. */}
+            <SubtaskDraftList
+              value={form.subtasks}
+              onChange={subtasks => setForm(f => ({ ...f, subtasks }))}
+              disabled={saving}
+            />
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

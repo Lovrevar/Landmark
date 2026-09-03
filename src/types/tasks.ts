@@ -161,6 +161,12 @@ export interface NewTaskInput {
   color: TaskColor | null
   /** auth user ids */
   assignee_ids: string[]
+  /**
+   * Checklist line titles, in order. Optional: the quick-add path creates
+   * simple tasks and does not send it. Titles only — a task cannot be born
+   * with items already crossed off.
+   */
+  subtasks?: string[]
 }
 
 export interface UpdateTaskInput {
