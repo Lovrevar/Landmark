@@ -9,6 +9,7 @@ import type {
   UpdateTaskInput,
   TaskComment,
   TaskAttachment,
+  Subtask,
 } from '../../../types/tasks'
 
 // User columns in the task tables hold AUTH user ids (shared schema with
@@ -35,6 +36,9 @@ const TASK_USER_FIELDS = 'id:auth_user_id, username, role'
 
 const ATTACHMENT_FIELDS =
   'id, task_id, uploaded_by, storage_path, file_name, mime_type, size_bytes, created_at'
+
+const SUBTASK_FIELDS =
+  'id, task_id, title, position, completed, completed_at, created_at'
 
 export const TASK_ATTACHMENTS_BUCKET = 'task-attachments'
 export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
@@ -129,6 +133,7 @@ async function hydrateTaskRelations(tasks: Task[]) {
     { data: creators },
     { data: attachments },
     { data: commentCounts },
+    { data: subtasks },
   ] = await Promise.all([
     supabase
       .from('task_assignees')
@@ -142,6 +147,10 @@ async function hydrateTaskRelations(tasks: Task[]) {
       .from('task_comments')
       .select('task_id')
       .in('task_id', ids),
+    // A separate query rather than a PostgREST embed, matching how every other relation on a
+    // task is loaded here. It also means a client that reaches a database without the table
+    // yet degrades to "no checklists" instead of failing the whole task query.
+    supabase.from('task_subtasks').select(SUBTASK_FIELDS).in('task_id', ids),
   ])
 
   const userIds = [...new Set((assignees || []).map(a => a.assignee_id))]
@@ -170,12 +179,27 @@ async function hydrateTaskRelations(tasks: Task[]) {
     countByTask.set(tid, (countByTask.get(tid) || 0) + 1)
   })
 
+  // Sorted by position, then created_at: idx_task_subtasks_task is not UNIQUE (a reorder
+  // rewrites every position in one statement, which a unique constraint would reject), so
+  // two lines can briefly share a position and the tiebreak keeps the order stable.
+  const subtasksByTask = new Map<string, Subtask[]>()
+  ;(subtasks || []).forEach(row => {
+    const s = row as Subtask
+    const list = subtasksByTask.get(s.task_id) || []
+    list.push(s)
+    subtasksByTask.set(s.task_id, list)
+  })
+  subtasksByTask.forEach(list =>
+    list.sort((a, b) => a.position - b.position || a.created_at.localeCompare(b.created_at)),
+  )
+
   tasks.forEach(t => {
     t.creator = t.created_by ? creatorMap.get(t.created_by) : undefined
     t.assignees = (assignees || [])
       .filter(a => a.task_id === t.id)
       .map(a => ({ ...a, user: userMap.get(a.assignee_id) }))
     t.attachments = attachmentsByTask.get(t.id) || []
+    t.subtasks = subtasksByTask.get(t.id) || []
     t.comment_count = countByTask.get(t.id) || 0
   })
 }
@@ -243,6 +267,29 @@ export async function createTask(
   return task
 }
 
+/**
+ * On a checklist task `tasks.completed` belongs to the task_subtasks_sync_parent trigger,
+ * so a direct write to it would be a second switch on the same lamp: the write would stick
+ * and the next subtask tick would silently revert it.
+ *
+ * Every checkbox in the UI is disabled for checklist tasks, so this is the backstop for a
+ * stale client — someone whose page was open while another user added the first subtask.
+ * Throwing (rather than no-opping) is deliberate: useTasks.setCompleted reverts to server
+ * state on error, which snaps the checkbox back to the truth.
+ */
+async function assertParentCompletionIsWritable(taskId: string): Promise<void> {
+  const { count, error } = await supabase
+    .from('task_subtasks')
+    .select('id', { count: 'exact', head: true })
+    .eq('task_id', taskId)
+  // A missing table (schema not yet applied) leaves this a simple task — fail open, the
+  // same way hydrateTaskRelations degrades to "no checklists".
+  if (error) return
+  if ((count || 0) > 0) {
+    throw new Error('Task completion is governed by its subtasks')
+  }
+}
+
 export async function updateTask(
   taskId: string,
   updates: UpdateTaskInput,
@@ -251,6 +298,7 @@ export async function updateTask(
 ): Promise<void> {
   const patch: Record<string, unknown> = { ...updates, updated_at: new Date().toISOString() }
   if (updates.completed !== undefined) {
+    await assertParentCompletionIsWritable(taskId)
     patch.completed_at = updates.completed ? new Date().toISOString() : null
   }
   const { error } = await supabase.from('tasks').update(patch).eq('id', taskId)
@@ -281,6 +329,8 @@ export async function updateTaskCompleted(
   actor?: TaskActor,
   taskTitle?: string,
 ): Promise<void> {
+  await assertParentCompletionIsWritable(taskId)
+
   const patch: Record<string, unknown> = {
     completed,
     completed_at: completed ? new Date().toISOString() : null,
@@ -444,6 +494,280 @@ export async function acknowledgeAllTasks(authUserId: string): Promise<void> {
     .update({ acknowledged_at: new Date().toISOString() })
     .eq('assignee_id', authUserId)
     .is('acknowledged_at', null)
+}
+
+// ----------------------------------------------------------------------------
+// Subtasks (checklists)
+//
+// A task with no subtasks is a simple task; one with any is a checklist, and its
+// `completed` is then owned by the task_subtasks_sync_parent trigger. See
+// supabase/migrations/20260902110000_task_subtasks.sql and ../subtasks.ts.
+// ----------------------------------------------------------------------------
+
+export async function listSubtasks(taskId: string): Promise<Subtask[]> {
+  const { data, error } = await supabase
+    .from('task_subtasks')
+    .select(SUBTASK_FIELDS)
+    .eq('task_id', taskId)
+    .order('position', { ascending: true })
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []) as unknown as Subtask[]
+}
+
+async function readTaskCompleted(taskId: string): Promise<boolean | null> {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('completed')
+    .eq('id', taskId)
+    .maybeSingle()
+  if (error) throw error
+  return data ? (data as { completed: boolean }).completed : null
+}
+
+/**
+ * Serialises **every** subtask write per task id, so none of the read-decide-write cycles
+ * below can interleave. Correctness lives here rather than in the component: SubtaskList's
+ * `busy` flag is React state, and two taps inside a single render both read it as false.
+ *
+ * The UI ticks optimistically and does not wait on this, so a run of fast taps still feels
+ * instant; what queues is the network work behind them. Without it, two concurrent ticks on
+ * a 4-of-6 checklist both read `completed = false` before writing and both read `true` after,
+ * so both believe they were the one that closed the task and both fire a push.
+ */
+const subtaskWriteQueue = new Map<string, Promise<unknown>>()
+
+function queuePerTask<T>(taskId: string, op: () => Promise<T>): Promise<T> {
+  const tail = subtaskWriteQueue.get(taskId) ?? Promise.resolve()
+  const next = tail.then(op, op) // a failed predecessor must not cancel what follows
+  // Park a swallowed copy as the new tail: an unhandled rejection here would surface as a
+  // stray console error long after the caller has already handled its own.
+  subtaskWriteQueue.set(
+    taskId,
+    next.catch(() => undefined),
+  )
+  return next
+}
+
+/**
+ * Ticks or un-ticks one line. Returns the parent's completion state afterwards.
+ *
+ * The parent flip is done by a database trigger, but the `task_completed` push is
+ * fired from the client — send-push is only ever called from here or from the cron
+ * dispatcher, never by a trigger. So completing a task by ticking its last line has
+ * to be noticed here, or it would notify nobody. Re-opening never notifies, matching
+ * updateTask/updateTaskCompleted.
+ */
+export function setSubtaskCompleted(
+  taskId: string,
+  subtaskId: string,
+  completed: boolean,
+  actor: TaskActor,
+  taskTitle?: string,
+  subtaskTitle?: string,
+): Promise<boolean> {
+  return queuePerTask(taskId, () =>
+    writeSubtaskCompleted(taskId, subtaskId, completed, actor, taskTitle, subtaskTitle),
+  )
+}
+
+async function writeSubtaskCompleted(
+  taskId: string,
+  subtaskId: string,
+  completed: boolean,
+  actor: TaskActor,
+  taskTitle?: string,
+  subtaskTitle?: string,
+): Promise<boolean> {
+  // Only a tick can complete the parent — un-ticking can only reopen it — so the
+  // before-read is paid for on ticks alone.
+  const wasCompleted = completed ? await readTaskCompleted(taskId) : null
+
+  const { error } = await supabase
+    .from('task_subtasks')
+    .update({
+      completed,
+      completed_at: completed ? new Date().toISOString() : null,
+    })
+    .eq('id', subtaskId)
+  if (error) throw error
+
+  let parentCompleted = false
+  if (completed) {
+    parentCompleted = (await readTaskCompleted(taskId)) === true
+    if (parentCompleted && !wasCompleted) {
+      notify('task_completed', taskId)
+    }
+  }
+
+  logActivity({
+    userId: actor.id,
+    userRole: actor.role,
+    action: 'task.subtask_toggle',
+    entity: 'task',
+    entityId: taskId,
+    metadata: {
+      entity_name: taskTitle,
+      subtask_name: subtaskTitle,
+      status: completed ? 'done' : 'todo',
+    },
+    severity: 'low',
+  })
+
+  return parentCompleted
+}
+
+export function addSubtask(
+  taskId: string,
+  title: string,
+  position: number,
+  actor: TaskActor,
+  taskTitle?: string,
+): Promise<Subtask> {
+  return queuePerTask(taskId, () => writeAddSubtask(taskId, title, position, actor, taskTitle))
+}
+
+async function writeAddSubtask(
+  taskId: string,
+  title: string,
+  position: number,
+  actor: TaskActor,
+  taskTitle?: string,
+): Promise<Subtask> {
+  const trimmed = title.trim()
+  if (!trimmed) throw new Error('Subtask title cannot be empty')
+
+  const { data, error } = await supabase
+    .from('task_subtasks')
+    .insert({ task_id: taskId, title: trimmed, position })
+    .select(SUBTASK_FIELDS)
+    .single()
+  if (error) throw error
+  const subtask = data as unknown as Subtask
+
+  logActivity({
+    userId: actor.id,
+    userRole: actor.role,
+    action: 'task.subtask_add',
+    entity: 'task',
+    entityId: taskId,
+    metadata: { entity_name: taskTitle, subtask_name: subtask.title },
+    severity: 'medium',
+  })
+
+  return subtask
+}
+
+export function renameSubtask(
+  taskId: string,
+  subtaskId: string,
+  title: string,
+  actor: TaskActor,
+  taskTitle?: string,
+): Promise<void> {
+  return queuePerTask(taskId, () =>
+    writeRenameSubtask(taskId, subtaskId, title, actor, taskTitle),
+  )
+}
+
+async function writeRenameSubtask(
+  taskId: string,
+  subtaskId: string,
+  title: string,
+  actor: TaskActor,
+  taskTitle?: string,
+): Promise<void> {
+  const trimmed = title.trim()
+  if (!trimmed) throw new Error('Subtask title cannot be empty')
+
+  const { error } = await supabase
+    .from('task_subtasks')
+    .update({ title: trimmed })
+    .eq('id', subtaskId)
+  if (error) throw error
+
+  logActivity({
+    userId: actor.id,
+    userRole: actor.role,
+    action: 'task.subtask_rename',
+    entity: 'task',
+    entityId: taskId,
+    metadata: { entity_name: taskTitle, subtask_name: trimmed },
+    severity: 'low',
+  })
+}
+
+/**
+ * Rewrites every position from the given order. Separate statements rather than an
+ * upsert: an upsert would have to send `completed` back, and a stale value there would
+ * un-tick somebody's line. Only `position` is touched, so the trigger (which watches
+ * UPDATE OF completed) does not fire.
+ */
+export function reorderSubtasks(
+  taskId: string,
+  orderedIds: string[],
+  actor: TaskActor,
+  taskTitle?: string,
+): Promise<void> {
+  return queuePerTask(taskId, () => writeReorderSubtasks(taskId, orderedIds, actor, taskTitle))
+}
+
+async function writeReorderSubtasks(
+  taskId: string,
+  orderedIds: string[],
+  actor: TaskActor,
+  taskTitle?: string,
+): Promise<void> {
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from('task_subtasks')
+      .update({ position: i })
+      .eq('id', orderedIds[i])
+    if (error) throw error
+  }
+
+  logActivity({
+    userId: actor.id,
+    userRole: actor.role,
+    action: 'task.subtask_reorder',
+    entity: 'task',
+    entityId: taskId,
+    metadata: { entity_name: taskTitle, count: orderedIds.length },
+    severity: 'low',
+  })
+}
+
+export function deleteSubtask(
+  taskId: string,
+  subtaskId: string,
+  actor: TaskActor,
+  taskTitle?: string,
+  subtaskTitle?: string,
+): Promise<void> {
+  return queuePerTask(taskId, () =>
+    writeDeleteSubtask(taskId, subtaskId, actor, taskTitle, subtaskTitle),
+  )
+}
+
+async function writeDeleteSubtask(
+  taskId: string,
+  subtaskId: string,
+  actor: TaskActor,
+  taskTitle?: string,
+  subtaskTitle?: string,
+): Promise<void> {
+  const { error } = await supabase.from('task_subtasks').delete().eq('id', subtaskId)
+  if (error) throw error
+
+  logActivity({
+    userId: actor.id,
+    userRole: actor.role,
+    action: 'task.subtask_delete',
+    entity: 'task',
+    entityId: taskId,
+    metadata: { entity_name: taskTitle, subtask_name: subtaskTitle },
+    severity: 'medium',
+  })
 }
 
 // ----------------------------------------------------------------------------

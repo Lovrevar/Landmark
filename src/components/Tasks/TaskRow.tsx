@@ -4,6 +4,7 @@ import { Paperclip, MessageSquare, Trash2, Lock, Square, CheckSquare } from 'luc
 import AvatarStack from '../ui/AvatarStack'
 import TaskColorChip from './components/TaskColorChip'
 import { relativeLabel } from '../Calendar/utils/relativeLabel'
+import { isChecklist, subtaskProgress } from './subtasks'
 import type { Task } from '../../types/tasks'
 
 interface Props {
@@ -32,6 +33,12 @@ const TaskRow: React.FC<Props> = ({
   const { t } = useTranslation()
   const done = task.completed
   const canDelete = canEdit && task.created_by === currentUserId
+  // A checklist task's completion is written by a database trigger when its last line is
+  // ticked, so this checkbox is a readout. Leaving it live would let a click here stick and
+  // then be silently reverted by the next tick in the drawer. The count goes in the tooltip
+  // so a disabled checkbox is not unexplained.
+  const checklist = isChecklist(task)
+  const progress = subtaskProgress(task)
 
   const due = useMemo(() => dueDateAsDate(task), [task])
   const now = useMemo(() => new Date(), [])
@@ -70,7 +77,7 @@ const TaskRow: React.FC<Props> = ({
     >
       <button
         type="button"
-        disabled={!canEdit}
+        disabled={!canEdit || checklist}
         onClick={e => {
           e.stopPropagation()
           onToggleDone(task)
@@ -81,11 +88,16 @@ const TaskRow: React.FC<Props> = ({
             : 'text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400'
         } disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-gray-400`}
         title={
-          !canEdit
-            ? t('tasks.row.read_only')
-            : done
-              ? t('tasks.row.mark_open')
-              : t('tasks.row.mark_done')
+          checklist
+            ? t('tasks.subtasks.governed_tooltip', {
+                done: progress.done,
+                total: progress.total,
+              })
+            : !canEdit
+              ? t('tasks.row.read_only')
+              : done
+                ? t('tasks.row.mark_open')
+                : t('tasks.row.mark_done')
         }
       >
         <CheckIcon className="w-6 h-6" />

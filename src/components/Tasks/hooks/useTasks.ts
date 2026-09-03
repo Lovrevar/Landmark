@@ -10,6 +10,7 @@ import {
   updateTaskCompleted,
 } from '../services/tasksService'
 import { dispatchTasksRead } from './useTasksNotifications'
+import { isChecklist } from '../subtasks'
 import type { NewTaskInput, Task, UpdateTaskInput } from '../../../types/tasks'
 
 export function useTasks() {
@@ -48,6 +49,11 @@ export function useTasks() {
   const setCompleted = useCallback(
     async (task: Task, next: boolean) => {
       if (!user) return
+      // A checklist task's completion is the trigger's to write — every checkbox in the UI
+      // is disabled for one, so reaching here means a stale client (someone added the first
+      // subtask while this page was open). Bail before the optimistic flip rather than show
+      // a state the server is going to refuse.
+      if (isChecklist(task)) return
       // optimistic flip so the checkbox reacts instantly
       setTasks(prev =>
         prev.map(t =>

@@ -59,3 +59,5 @@ supabase/functions/deno.lock
 vapid.json
 # Local backup of .git made during repo recovery — delete once verified
 .git.bak/
+
+*.xlsx

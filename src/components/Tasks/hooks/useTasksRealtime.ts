@@ -57,12 +57,25 @@ export function useTasksRealtime(userId: string | null | undefined, onChange: ()
       )
       .subscribe()
 
+    // Its own channel, not covered by the tasks one above: the parent row only changes when
+    // a tick crosses the checklist into or out of "all done", so ticking a middle line would
+    // otherwise never reach anybody else's screen.
+    const subtasksChannel = supabase
+      .channel(`task_subtasks-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_subtasks' },
+        debouncedChange,
+      )
+      .subscribe()
+
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
       supabase.removeChannel(tasksChannel)
       supabase.removeChannel(assigneesChannel)
       supabase.removeChannel(commentsChannel)
       supabase.removeChannel(attachmentsChannel)
+      supabase.removeChannel(subtasksChannel)
     }
   }, [userId, onChange])
 }

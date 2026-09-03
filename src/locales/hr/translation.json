@@ -4567,6 +4567,19 @@
       "none": "Još nema privitaka",
       "create_first": "Spremi zadatak za dodavanje privitaka"
     },
+    "subtasks": {
+      "label": "Podzadaci",
+      "none": "Nema podzadataka",
+      "progress": "{{done}}/{{total}}",
+      "add_placeholder": "Dodaj podzadatak i pritisni Enter",
+      "move_up": "Pomakni gore",
+      "move_down": "Pomakni dolje",
+      "remove": "Ukloni",
+      "remove_confirm_title": "Ukloniti podzadatak?",
+      "remove_confirm_message": "Podzadatak „{{title}}” bit će trajno uklonjen.",
+      "governs_task": "Zadatak se označava gotovim kad su svi podzadaci gotovi.",
+      "governed_tooltip": "Gotovo {{done}} od {{total}} podzadataka — zadatak prati podzadatke"
+    },
     "mentions": {
       "search_placeholder": "Pretraži korisnike za spominjanje"
     },
@@ -4883,6 +4896,11 @@
       "task.comment": "komentirao je",
       "task.attachment_add": "dodao je privitak",
       "task.attachment_remove": "uklonio je privitak",
+      "task.subtask_add": "dodao je podzadatak",
+      "task.subtask_toggle": "promijenio je status podzadatka",
+      "task.subtask_rename": "preimenovao je podzadatak",
+      "task.subtask_reorder": "presložio je podzadatke",
+      "task.subtask_delete": "uklonio je podzadatak",
       "invoice.bulk_create": "Računi masovno kreirani",
       "payment_notification.dismiss": "Obavijest o plaćanju odbačena",
       "bank_credit.generate_schedule": "Raspored plaćanja ponovno generiran",
