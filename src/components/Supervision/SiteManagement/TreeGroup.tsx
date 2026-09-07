@@ -86,6 +86,9 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
   // A budgeted-but-empty group is normal (that is how a phase is planned before anything is
   // contracted). Showing it "€0 / €0" was just noise, so those columns read "—" instead.
   const isEmpty = node.rollup.count === 0
+  // Nothing to reveal, so the row is not a toggle. Expanding it opened an empty container and
+  // left a chevron pointing at nothing — the budget on the row is already the whole story.
+  const isExpandable = node.children.length > 0 || node.contracts.length > 0
 
   return (
     <div className={
@@ -95,20 +98,38 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
         ? 'border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden'
         : 'rounded-lg overflow-hidden'
     }>
+      {/* Hover highlight only where the row actually responds to a click. */}
       <div className={`w-full flex items-center justify-between gap-4 transition-colors duration-200 ${
-        depth <= 1
-          ? 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
-          : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-700/40'
+        depth <= 1 ? 'bg-gray-50 dark:bg-gray-700/50' : 'bg-gray-50/60 dark:bg-gray-800/40'
+      } ${
+        !isExpandable
+          ? ''
+          : depth <= 1
+            ? 'hover:bg-gray-100 dark:hover:bg-gray-700'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-700/40'
       }`}>
         <button
+          type="button"
           onClick={() => onToggleNode(node.key)}
-          className="flex-1 min-w-0 px-4 py-2.5 flex items-center gap-2.5 text-left"
+          disabled={!isExpandable}
+          aria-expanded={isExpandable ? isExpanded : undefined}
+          className="flex-1 min-w-0 px-4 py-2.5 flex items-center gap-2.5 text-left disabled:cursor-default"
         >
-          {isExpanded
-            ? <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-            : <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />}
-          <span className="font-semibold text-gray-900 dark:text-white truncate">{node.label}</span>
-          <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">({node.rollup.count})</span>
+          {/* The chevron's space is held even when there is nothing to open, so labels stay on
+              one vertical line whether or not a row is expandable. */}
+          {isExpandable
+            ? (isExpanded
+                ? <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                : <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />)
+            : <span className="w-4 h-4 flex-shrink-0" aria-hidden="true" />}
+          <span className={`font-semibold truncate ${
+            isExpandable ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+          }`}>
+            {node.label}
+          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
+            ({node.rollup.count})
+          </span>
         </button>
 
         {/* Fixed-width right-aligned columns with the label above the value: the figures then
@@ -164,7 +185,10 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
         </div>
       </div>
 
-      {isExpanded && (
+      {/* isExpandable is re-checked here, not just on the toggle: expandedNodes is a flat set of
+          keys, so a group emptied while open (its last contract deleted) would otherwise keep a
+          stale key and render an empty container. */}
+      {isExpanded && isExpandable && (
         isLeaf ? (
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {node.contracts.map(subcontractor => (

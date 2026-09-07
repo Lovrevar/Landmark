@@ -172,6 +172,13 @@ describe('buildContractTree — grouping', () => {
     expect(opremanje).toBeDefined()
     expect(opremanje!.budget).toBe(812_401)
     expect(opremanje!.rollup.count).toBe(0)
+
+    // TreeGroup decides whether a row is expandable from exactly these two being empty, and
+    // renders it as a non-interactive row when they are. Pinned here because a change that gave
+    // such a node an empty child group would silently make the row clickable again, opening
+    // onto nothing.
+    expect(opremanje!.children).toEqual([])
+    expect(opremanje!.contracts).toEqual([])
   })
 
   it('shows a phase that has no contracts yet', () => {
