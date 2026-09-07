@@ -15,6 +15,20 @@ Construction site supervision: manages active build sites, subcontractor contrac
 
 The core supervision module. Full project site view with phases, subcontractor contracts, milestone tracking, document management, and financial summaries per phase.
 
+**Phases and cost classifications are two independent axes.** A phase (`project_phases`) is a
+time division of a project — "Faza 1", "Faza 2". A cost classification (`cost_classifications`)
+is a cost-breakdown line — "Zemljište", "Priprema i razvoj", "Izgradnja i uređenje", … — and is
+set per contract via `contracts.classification_id`. Contract type (`contract_types`) is a third,
+narrower axis for the kind of work or vendor. The screen groups contracts three levels deep and
+the user can swap the top two, so the same contracts read either "phase → classification" or
+"classification → phase".
+
+Before migration `20260908120200` the two were conflated: users typed the cost line into
+`phase_name`, which meant a project could never have more than one real phase and the seven
+canonical names drifted into 17 spellings. That migration folded the old rows onto the new
+model. Per-(phase, classification) budgets live in `phase_classification_budgets`; a phase's
+`budget_allocated` is the sum of those plus any unallocated remainder.
+
 #### Services
 
 > The original monolithic `siteService.ts` was split by entity during the May 2026 audit refactor. `siteService.ts` is now a thin barrel that keeps a couple of project-level fetchers and re-exports the per-entity service files below, so existing `import * as siteService` consumers keep working unchanged. New code should import directly from the entity-specific file.
@@ -25,6 +39,20 @@ The core supervision module. Full project site view with phases, subcontractor c
 - Re-exports everything from phaseService, siteContractService, siteSubcontractorService, milestoneService, siteFundingService, and wirePaymentService
 - **Depends on:** supabase client; the six entity service files below
 
+### services/costClassificationService.ts
+- `fetchCostClassifications(includeInactive?)` — global cost breakdown lookup, ordered by sort_order
+- `createCostClassification({ name, description, sort_order })` — returns the new integer id
+- `updateCostClassification(id, updates)` / `deleteCostClassification(id)`
+- `countClassificationUsage(id)` — contracts + budget rows referencing a classification, used to explain a refused delete
+- **Note:** the seven seeded rows are `is_system` and a database trigger refuses to rename or delete them; `is_active` and `sort_order` stay editable
+
+### services/phaseClassificationBudgetService.ts
+- `fetchPhaseClassificationBudgets(phaseIds?)` — per-(phase, classification) sub-allocations
+- `upsertPhaseClassificationBudget(phaseId, classificationId, amount, notes?)`
+- `bulkUpsertPhaseClassificationBudgets(phaseId, rows)` — one round trip; rows at 0 are deleted unless `keepEmpty`
+- `fetchClassificationBudgetStatus(phaseId, classificationId)` — allocated vs committed; the binding limit when adding a contract, since the phase budget is now a sum of its classifications
+- `deletePhaseClassificationBudget(phaseId, classificationId)`
+
 ### services/phaseService.ts
 - `fetchProjectPhases()` — fetches all phases ordered by project then phase number
 - `recalculatePhaseBudget(phaseId)` — recomputes budget_used for a phase from active/draft contract amounts
@@ -33,7 +61,8 @@ The core supervision module. Full project site view with phases, subcontractor c
 - `updateProjectPhases(projectId, phases)` — syncs a project's phase set (insert/update/delete and renumber)
 - `updatePhase(phaseId, updates)` — updates a single phase
 - `deletePhase(phaseId)` — removes a phase
-- `resequencePhases(phases)` — renumbers phases sequentially after a deletion
+- `countPhaseDependents(phaseId)` — contracts + work logs pointing at a phase. Both FKs are `ON DELETE SET NULL`, so deleting a phase with dependants silently detaches them; callers must check this first. `budget_used` is **not** a substitute — it is derived and only refreshed by `recalculate_all_phase_budgets()`
+- `resequencePhases(phases)` — renumbers via the `renumber_project_phases` RPC, set-based and collision-free (the old row-by-row loop could transiently violate `UNIQUE (project_id, phase_number)`)
 - `getPhaseInfo(phaseId)` — fetches project_id and phase_name for contract linking
 - **Depends on:** supabase client, logActivity
 
@@ -120,6 +149,9 @@ The core supervision module. Full project site view with phases, subcontractor c
 - **Calls:** siteService barrel → siteSubcontractorService (`fetchSubcontractorComments`, `createSubcontractorComment`)
 - **Returns:** fetchSubcontractorComments, addSubcontractorComment
 
+### hooks/useCostClassifications.ts
+- `useCostClassifications(includeInactive?)` — loads the global classification list once at the SiteManagement root and passes it down, rather than duplicating it onto every project
+
 ### hooks/useContractTypes.ts
 - `useContractTypes()` — loads active contract types from the contract_types table
 - **Calls:** contractTypesService (`fetchActiveContractTypes`)
@@ -157,8 +189,23 @@ The core supervision module. Full project site view with phases, subcontractor c
 - **Uses services:** siteFundingService (fetchCreditAllocations, via siteService barrel)
 - **Uses components:** ProjectCategoryBadge, PhaseCard
 
+### utils/contractTree.ts
+- `buildContractTree(contracts, dimensions, ctx)` — the grouping used by both Site Management views. `dimensions` comes from `VIEW_DIMENSIONS`: `['phase','classification','contractType']` or `['classification','phase','contractType']`. Contract type is always innermost; only the top two levels swap
+- `rollupContracts(contracts)` — contracted / paid / unpaid money for any subset. A row counts as contracted only when it has a contract AND a non-zero amount
+- `remainingBudget(budget, rollup)`, `unallocatedBudget(phase, budgets)` — the latter is the phase budget not yet given to any classification, shown as "Neraspoređeno"
+- Pure module, covered by `contractTree.test.ts`. The logic used to be inline in PhaseCard where it could not be tested
+
 ### PhaseCard.tsx
-- Expanded phase view: phase header, budget metrics, subcontractors grouped by contract type with expandable sections; shows contracted amount, paid out, unpaid, and budget remaining with colour warnings
+- Level 1 of the "by phase" view: phase header, five budget tiles (contracted, paid, unpaid, remaining, unallocated), utilisation bar, then the classification groups nested inside
+
+### ClassificationCard.tsx
+- Level 1 of the "by cost classification" view: a classification with the project's phases nested inside. Its budget is a SUM across phases and is therefore read-only — the editable figure is the (phase × classification) row one level down, the same row the phase-first view edits
+
+### TreeGroup.tsx
+- One collapsible level of the contract tree, rendered recursively and dimension-agnostic, so the same component draws a classification inside a phase and a phase inside a classification
+
+### ContractCard.tsx
+- A single contract card, lifted verbatim out of PhaseCard when the tree gained a third level
 
 ### MilestoneList.tsx
 - Milestone management panel: add/edit/delete milestones, stats summary, and details per milestone

@@ -121,6 +121,7 @@ await wipe('retail_land_plots')
 await wipe('retail_project_phases')
 await wipe('retail_projects')
 await wipe('project_milestones')
+await wipe('phase_classification_budgets')
 await wipe('project_phases')
 await wipe('project_managers')
 await wipe('projects')
@@ -218,6 +219,32 @@ if (pmRows.length) await ins('project_managers', pmRows)
 
 // ---------- 5. SUPERVISION: subcontractors, contracts, situacije, work logs ----------
 
+// Cost classifications are seeded by migration 20260908120000 and are is_system rows that a
+// trigger refuses to delete, so this script neither wipes nor inserts them — it just resolves
+// their ids to classify the demo contracts.
+const { data: classificationRows, error: classificationError } = await db
+  .from('cost_classifications')
+  .select('id, code')
+if (classificationError) throw new Error(`read cost_classifications: ${classificationError.message}`)
+const CLS = Object.fromEntries((classificationRows ?? []).map(r => [r.code, r.id]))
+if (!CLS.izgradnja_i_uredenje) {
+  throw new Error('cost_classifications is empty — apply the migrations before seeding.')
+}
+
+// A worked example of the phase budget split across cost classifications, so the demo data
+// exercises the "Neraspoređeno" remainder as well as fully-allocated phases.
+// PH_J2 is fully allocated (3.3M); PH_J3 leaves 150k unallocated on purpose.
+await ins('phase_classification_budgets', [
+  { id: uid(), phase_id: PH_J1, classification_id: CLS.priprema_i_razvoj, budget_allocated: 350000 },
+  { id: uid(), phase_id: PH_J2, classification_id: CLS.izgradnja_i_uredenje, budget_allocated: 3000000 },
+  { id: uid(), phase_id: PH_J2, classification_id: CLS.priprema_i_razvoj, budget_allocated: 300000 },
+  { id: uid(), phase_id: PH_J3, classification_id: CLS.izgradnja_i_uredenje, budget_allocated: 1500000 },
+  { id: uid(), phase_id: PH_J4, classification_id: CLS.opremanje, budget_allocated: 1900000 },
+  { id: uid(), phase_id: PH_M1, classification_id: CLS.priprema_i_razvoj, budget_allocated: 220000 },
+  { id: uid(), phase_id: PH_M2, classification_id: CLS.izgradnja_i_uredenje, budget_allocated: 1500000 },
+  { id: uid(), phase_id: PH_M3, classification_id: CLS.opremanje, budget_allocated: 1100000 },
+])
+
 await ins('contract_types', [
   { id: 1, name: 'Građevinski radovi', is_active: true },
   { id: 2, name: 'Elektroinstalacije', is_active: true },
@@ -242,26 +269,29 @@ await ins('subcontractors', [
 
 const CT_TEHNO_J = uid(), CT_ELEKTRO_J = uid(), CT_TERMO_J = uid(), CT_ALU_J = uid(), CT_MODUL_J = uid(), CT_KROV_J = uid()
 const CT_TEHNO_M = uid(), CT_KERAMIKA_M = uid(), CT_TEHNO_T = uid(), CT_ELEKTRO_T = uid(), CT_ISKOP_J = uid(), CT_ISKOP_M = uid()
+// `cls` is the cost classification code (the WHAT); `type` stays the contract type (the KIND
+// of work). The two are independent axes — see the phase/classification split migration.
 const contract = (id, project, phase, sub, type, num, base, status, extra = {}) => ({
   id, project_id: project, phase_id: phase, subcontractor_id: sub, contract_type_id: type,
+  classification_id: CLS[extra.cls ?? 'izgradnja_i_uredenje'],
   contract_number: num, base_amount: base, vat_rate: 25, contract_amount: base * 1.25,
   status, has_contract: true, signed: status !== 'draft',
   job_description: extra.job ?? '', start_date: extra.start ?? null, end_date: extra.end ?? null,
   signed_date: status !== 'draft' ? (extra.start ?? null) : null, budget_realized: 0,
 })
 await ins('contracts', [
-  contract(CT_TEHNO_J, P_JARUN, PH_J2, S_TEHNO, 1, 'UG-2025-011', 2240000, 'active', { job: 'Grubi građevinski radovi — Zgrada A i B (AB konstrukcija, zidanje)', start: '2025-06-16', end: '2026-09-30' }),
-  contract(CT_ELEKTRO_J, P_JARUN, PH_J3, S_ELEKTRO, 2, 'UG-2026-003', 520000, 'active', { job: 'Kompletne elektroinstalacije — obje zgrade', start: '2026-03-01', end: '2026-12-15' }),
-  contract(CT_TERMO_J, P_JARUN, PH_J3, S_TERMO, 3, 'UG-2026-004', 610000, 'active', { job: 'ViK, podno grijanje i dizalice topline', start: '2026-03-15', end: '2026-12-31' }),
-  contract(CT_ALU_J, P_JARUN, PH_J4, S_ALU, 4, 'UG-2026-009', 480000, 'draft', { job: 'ALU stolarija i staklene stijene', start: '2026-11-01', end: '2027-02-28' }),
-  contract(CT_MODUL_J, P_JARUN, PH_J2, S_MODUL, 6, 'UG-2025-002', 280000, 'active', { job: 'Glavni projekt, izvedbeni projekt i projektantski nadzor', start: '2025-03-01', end: '2027-06-30' }),
-  contract(CT_KROV_J, P_JARUN, PH_J2, S_KROV, 1, 'UG-2026-012', 190000, 'draft', { job: 'Krovište, limarija i hidroizolacija', start: '2026-09-01', end: '2026-11-15' }),
-  contract(CT_ISKOP_J, P_JARUN, PH_J1, S_ISKOP, 1, 'UG-2025-004', 268000, 'completed', { job: 'Pripremni radovi, iskop i odvoz — Jarun', start: '2025-03-10', end: '2025-06-10' }),
-  contract(CT_ISKOP_M, P_MARJAN, PH_M1, S_ISKOP, 1, 'UG-2025-021', 168000, 'completed', { job: 'Pripremni radovi i iskop — Vila Marjan', start: '2025-09-10', end: '2025-12-15' }),
-  contract(CT_TEHNO_M, P_MARJAN, PH_M2, S_TEHNO, 1, 'UG-2026-001', 980000, 'active', { job: 'Grubi građevinski radovi — Vila Marjan', start: '2026-01-10', end: '2026-11-30' }),
-  contract(CT_KERAMIKA_M, P_MARJAN, PH_M3, S_KERAMIKA, 5, 'UG-2026-010', 260000, 'draft', { job: 'Keramičarski i kamenoklesarski radovi', start: '2026-10-01', end: '2027-02-15' }),
-  contract(CT_TEHNO_T, P_TRESNJEVKA, PH_T1, S_TEHNO, 1, 'UG-2023-006', 1450000, 'completed', { job: 'Gradnja stambene zgrade — svi građevinski radovi', start: '2023-06-01', end: '2025-05-31' }),
-  contract(CT_ELEKTRO_T, P_TRESNJEVKA, PH_T2, S_ELEKTRO, 2, 'UG-2023-009', 310000, 'completed', { job: 'Elektroinstalacije', start: '2024-01-15', end: '2025-04-30' }),
+  contract(CT_TEHNO_J, P_JARUN, PH_J2, S_TEHNO, 1, 'UG-2025-011', 2240000, 'active', { job: 'Grubi građevinski radovi — Zgrada A i B (AB konstrukcija, zidanje)', start: '2025-06-16', end: '2026-09-30' , cls: 'izgradnja_i_uredenje'}),
+  contract(CT_ELEKTRO_J, P_JARUN, PH_J3, S_ELEKTRO, 2, 'UG-2026-003', 520000, 'active', { job: 'Kompletne elektroinstalacije — obje zgrade', start: '2026-03-01', end: '2026-12-15' , cls: 'izgradnja_i_uredenje'}),
+  contract(CT_TERMO_J, P_JARUN, PH_J3, S_TERMO, 3, 'UG-2026-004', 610000, 'active', { job: 'ViK, podno grijanje i dizalice topline', start: '2026-03-15', end: '2026-12-31' , cls: 'izgradnja_i_uredenje'}),
+  contract(CT_ALU_J, P_JARUN, PH_J4, S_ALU, 4, 'UG-2026-009', 480000, 'draft', { job: 'ALU stolarija i staklene stijene', start: '2026-11-01', end: '2027-02-28' , cls: 'opremanje'}),
+  contract(CT_MODUL_J, P_JARUN, PH_J2, S_MODUL, 6, 'UG-2025-002', 280000, 'active', { job: 'Glavni projekt, izvedbeni projekt i projektantski nadzor', start: '2025-03-01', end: '2027-06-30' , cls: 'priprema_i_razvoj'}),
+  contract(CT_KROV_J, P_JARUN, PH_J2, S_KROV, 1, 'UG-2026-012', 190000, 'draft', { job: 'Krovište, limarija i hidroizolacija', start: '2026-09-01', end: '2026-11-15' , cls: 'izgradnja_i_uredenje'}),
+  contract(CT_ISKOP_J, P_JARUN, PH_J1, S_ISKOP, 1, 'UG-2025-004', 268000, 'completed', { job: 'Pripremni radovi, iskop i odvoz — Jarun', start: '2025-03-10', end: '2025-06-10' , cls: 'priprema_i_razvoj'}),
+  contract(CT_ISKOP_M, P_MARJAN, PH_M1, S_ISKOP, 1, 'UG-2025-021', 168000, 'completed', { job: 'Pripremni radovi i iskop — Vila Marjan', start: '2025-09-10', end: '2025-12-15' , cls: 'priprema_i_razvoj'}),
+  contract(CT_TEHNO_M, P_MARJAN, PH_M2, S_TEHNO, 1, 'UG-2026-001', 980000, 'active', { job: 'Grubi građevinski radovi — Vila Marjan', start: '2026-01-10', end: '2026-11-30' , cls: 'izgradnja_i_uredenje'}),
+  contract(CT_KERAMIKA_M, P_MARJAN, PH_M3, S_KERAMIKA, 5, 'UG-2026-010', 260000, 'draft', { job: 'Keramičarski i kamenoklesarski radovi', start: '2026-10-01', end: '2027-02-15' , cls: 'opremanje'}),
+  contract(CT_TEHNO_T, P_TRESNJEVKA, PH_T1, S_TEHNO, 1, 'UG-2023-006', 1450000, 'completed', { job: 'Gradnja stambene zgrade — svi građevinski radovi', start: '2023-06-01', end: '2025-05-31' , cls: 'izgradnja_i_uredenje'}),
+  contract(CT_ELEKTRO_T, P_TRESNJEVKA, PH_T2, S_ELEKTRO, 2, 'UG-2023-009', 310000, 'completed', { job: 'Elektroinstalacije', start: '2024-01-15', end: '2025-04-30' , cls: 'izgradnja_i_uredenje'}),
 ])
 
 const M_TEHNO_J1 = uid(), M_TEHNO_J2 = uid(), M_TEHNO_J3 = uid(), M_TEHNO_J4 = uid(), M_TEHNO_J5 = uid(), M_TEHNO_J6 = uid()

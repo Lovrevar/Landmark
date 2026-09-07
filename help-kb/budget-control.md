@@ -17,4 +17,6 @@ Prikazuje se pet ključnih pokazatelja:
 
 Ispod kartica nalazi se stupčasti grafikon (Planirano, Ugovoreno, Plaćeno, Prognoza) i raspršeni grafikon CPI/SPI po fazama.
 
+Napomena: SPI (indeks izvršenja rasporeda) računa se samo ako faza ima upisan početni i završni datum. Ako nijedna faza projekta nema datume, SPI nema osnovu za usporedbu i ne treba ga čitati kao "u roku". CPI (indeks izvršenja troška) računa se uvijek.
+
 Realizirani budžet računa se iz ugovora (`contracts`), ne iz polja `budget_used` na fazi — to polje nije pouzdano.
