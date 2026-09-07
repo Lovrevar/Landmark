@@ -13,7 +13,8 @@ import {
   Edit2,
   Trash2,
   Palette,
-  Wrench
+  Wrench,
+  HelpCircle
 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, Form, FormField, ConfirmDialog } from '../../ui'
 import { format } from 'date-fns'
@@ -33,9 +34,18 @@ const variantMap: Record<string, 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 
   green: 'green', red: 'red', yellow: 'yellow', blue: 'blue', gray: 'gray', orange: 'orange',
 }
 
+// `work_logs.status` is a nullable column with no default, so a row can legitimately carry no
+// status — anything written before the column existed, or outside this form. Without a fallback
+// the lookup returns undefined and the whole page unmounts on one such row.
+const unknownStatusConfig = {
+  tKey: 'supervision.work_logs.status.unknown',
+  icon: HelpCircle,
+  color: 'gray',
+} as const
+
 function StatusBadge({ status }: { status: WorkLog['status'] }) {
   const { t } = useTranslation()
-  const config = statusConfig[status]
+  const config = (status ? statusConfig[status] : undefined) ?? unknownStatusConfig
   const Icon = config.icon
   return (
     <Badge variant={variantMap[config.color] || 'gray'}>

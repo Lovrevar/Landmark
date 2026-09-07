@@ -1,6 +1,14 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 
+export type WorkLogStatus =
+  | 'work_finished'
+  | 'in_progress'
+  | 'blocker'
+  | 'quality_issue'
+  | 'waiting_materials'
+  | 'weather_delay'
+
 export interface WorkLog {
   id: string
   contract_id: string
@@ -8,7 +16,8 @@ export interface WorkLog {
   phase_id: string | null
   subcontractor_id: string
   date: string
-  status: 'work_finished' | 'in_progress' | 'blocker' | 'quality_issue' | 'waiting_materials' | 'weather_delay'
+  /** Nullable in the database: legacy rows predate the column, and nothing backfilled them. */
+  status: WorkLogStatus | null
   work_description: string
   blocker_details: string | null
   notes: string
@@ -43,7 +52,7 @@ export interface WorkLogFormData {
   phase_id: string
   contract_id: string
   date: string
-  status: WorkLog['status']
+  status: WorkLogStatus
   work_description: string
   blocker_details: string
   notes: string

@@ -2759,7 +2759,8 @@
         "blocker": "Blocker",
         "quality_issue": "Quality Issue",
         "waiting_materials": "Waiting Materials",
-        "weather_delay": "Weather Delay"
+        "weather_delay": "Weather Delay",
+        "unknown": "Unknown"
       },
       "errors": {
         "project": "Project is required",

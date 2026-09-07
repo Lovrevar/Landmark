@@ -2763,7 +2763,8 @@
         "blocker": "Blokada",
         "quality_issue": "Problem kvalitete",
         "waiting_materials": "Čekanje materijala",
-        "weather_delay": "Kašnjenje zbog vremena"
+        "weather_delay": "Kašnjenje zbog vremena",
+        "unknown": "Nepoznato"
       },
       "errors": {
         "project": "Projekt je obavezan",
