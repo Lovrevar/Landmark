@@ -96,11 +96,11 @@ export interface ComprehensiveReport {
     payment_completion_rate: number
   }
   tic_cost_management: {
-    total_companies: number
+    /** Sum of every project's TIC investment plan. */
     total_tic_budget: number
-    total_tic_spent: number
-    tic_utilization: number
-    companies_over_budget: number
+    projects_with_tic: number
+    /** Projects with no investment plan at all — the actionable number here. */
+    projects_without_tic: number
   }
   office_expenses: {
     total_office_suppliers: number

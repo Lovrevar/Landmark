@@ -1,43 +1,50 @@
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, Input, Button, Alert, LoadingSpinner } from '../../../ui'
+import { Modal, Button, Alert, LoadingSpinner } from '../../../ui'
 import { ProjectPhase } from '../../../../lib/supabase'
 import { CostClassification, PhaseClassificationBudget } from '../types'
 import { formatPhaseLabel } from '../utils/phaseLabel'
 import {
   fetchPhaseClassificationBudgets,
-  bulkUpsertPhaseClassificationBudgets
+  fetchTICClassificationTotals
 } from '../services/siteService'
+import type { ClassificationTotals } from '../../../Funding/TIC/utils/ticBudget'
+import { formatEuroRounded as money } from '../../../../utils/formatters'
 
 interface Props {
   visible: boolean
   phase: ProjectPhase | null
   classifications: CostClassification[]
+  /** The project this phase belongs to — its TIC is the source of the planned amounts. */
+  projectId: string
+  /** Every phase of the project, so "already taken by other phases" can be computed. */
+  projectPhaseIds: string[]
   onClose: () => void
-  onSaved: () => void
 }
 
-const money = (value: number) => `€${value.toLocaleString('hr-HR')}`
 
 /**
- * Distributes a phase's budget across cost classifications — the screen where the planning
- * actually happens: one row per active classification, and a running total against the phase
- * budget.
+ * A phase's budget broken down by cost classification.
  *
- * The total is deliberately allowed not to match. Sub-allocations are optional, and the
- * remainder is shown as "Neraspoređeno" rather than blocking the save.
+ * Read-only: every figure here is derived from the project's TIC, which is the only writer of
+ * planned budget. The "other phases" column is kept because on a multi-phase project it says
+ * where the rest of a classification's plan went.
  */
 export const PhaseClassificationBudgetsModal: React.FC<Props> = ({
   visible,
   phase,
   classifications,
-  onClose,
-  onSaved
+  projectId,
+  projectPhaseIds,
+  onClose
 }) => {
   const { t } = useTranslation()
   const [amounts, setAmounts] = useState<Record<number, number>>({})
+  // The project's TIC plan, and every phase's existing sub-allocation — together these say how
+  // much of each classification is still undistributed.
+  const [ticTotals, setTicTotals] = useState<ClassificationTotals | null>(null)
+  const [allPhaseRows, setAllPhaseRows] = useState<PhaseClassificationBudget[]>([])
   const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -48,9 +55,18 @@ export const PhaseClassificationBudgetsModal: React.FC<Props> = ({
       try {
         setLoading(true)
         setError(null)
-        const rows: PhaseClassificationBudget[] = await fetchPhaseClassificationBudgets([phase.id])
+        // Every phase of the project, not just this one: "already taken by other phases" is what
+        // makes the TIC remainder meaningful on a multi-phase project.
+        const [rows, tic] = await Promise.all([
+          fetchPhaseClassificationBudgets(projectPhaseIds),
+          fetchTICClassificationTotals(projectId)
+        ])
         if (cancelled) return
-        setAmounts(Object.fromEntries(rows.map(r => [r.classification_id, r.budget_allocated])))
+        setAllPhaseRows(rows)
+        setTicTotals(tic)
+        setAmounts(Object.fromEntries(
+          rows.filter(r => r.phase_id === phase.id).map(r => [r.classification_id, r.budget_allocated])
+        ))
       } catch (e) {
         console.error('Error loading classification budgets:', e)
         if (!cancelled) setError(t('supervision.cost_classification.errors.save_error'))
@@ -61,33 +77,19 @@ export const PhaseClassificationBudgetsModal: React.FC<Props> = ({
 
     load()
     return () => { cancelled = true }
-  }, [visible, phase, t])
+  }, [visible, phase, projectId, projectPhaseIds, t])
 
   if (!visible || !phase) return null
 
   const totalAllocated = Object.values(amounts).reduce((sum, v) => sum + (v || 0), 0)
   const difference = phase.budget_allocated - totalAllocated
 
-  const handleSave = async () => {
-    try {
-      setSaving(true)
-      setError(null)
-      await bulkUpsertPhaseClassificationBudgets(
-        phase.id,
-        classifications.map(c => ({
-          classification_id: c.id,
-          budget_allocated: amounts[c.id] || 0
-        }))
-      )
-      onSaved()
-      onClose()
-    } catch (e) {
-      console.error('Error saving classification budgets:', e)
-      setError(t('supervision.cost_classification.errors.save_error'))
-    } finally {
-      setSaving(false)
-    }
-  }
+  const takenElsewhere = (classificationId: number) =>
+    allPhaseRows
+      .filter(r => r.phase_id !== phase.id && r.classification_id === classificationId)
+      .reduce((sum, r) => sum + r.budget_allocated, 0)
+
+  const hasTicPlan = ticTotals !== null && ticTotals.total > 0
 
   return (
     <Modal show={visible} onClose={onClose} size="lg">
@@ -106,23 +108,51 @@ export const PhaseClassificationBudgetsModal: React.FC<Props> = ({
             {t('supervision.site_management.classification_budgets.no_classifications')}
           </Alert>
         ) : (
-          <div className="space-y-2">
-            {classifications.map(c => (
-              <div key={c.id} className="flex items-center gap-4">
-                <span className="flex-1 text-sm text-gray-900 dark:text-white">{c.name}</span>
-                <div className="w-48">
-                  <Input
-                    type="number"
-                    value={amounts[c.id] ?? 0}
-                    onChange={(e) =>
-                      setAmounts(prev => ({ ...prev, [c.id]: parseFloat(e.target.value) || 0 }))
-                    }
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              {hasTicPlan
+                ? t('general_projects.budget_from_tic_hint')
+                : t('supervision.site_management.classification_budgets.tic_missing')}
+            </p>
+
+            <div className="flex items-center gap-4 pb-1 text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+              <span className="flex-1">{t('supervision.site_management.phase_card.classification_label')}</span>
+              <span className="w-28 text-right">{t('supervision.site_management.classification_budgets.tic_plan')}</span>
+              <span className="w-28 text-right">{t('supervision.site_management.classification_budgets.other_phases')}</span>
+              <span className="w-48 text-right">{t('supervision.site_management.classification_budgets.this_phase')}</span>
+            </div>
+
+            <div className="space-y-2">
+              {classifications.map(c => {
+                const planned = ticTotals?.byClassification.get(c.id)
+                const elsewhere = takenElsewhere(c.id)
+                return (
+                  <div key={c.id} className="flex items-center gap-4">
+                    <span className="flex-1 text-sm text-gray-900 dark:text-white">{c.name}</span>
+                    {/* Read-only context: what the TIC plans, and how much of it other phases
+                        have already taken. The editable figure is this phase's own share. */}
+                    <span className="w-28 text-right text-sm tabular-nums text-gray-600 dark:text-gray-400">
+                      {planned === undefined ? '—' : money(planned)}
+                    </span>
+                    <span className="w-28 text-right text-sm tabular-nums text-gray-500 dark:text-gray-500">
+                      {elsewhere > 0 ? money(elsewhere) : '—'}
+                    </span>
+                    <span className="w-48 text-right text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
+                      {amounts[c.id] ? money(amounts[c.id]) : '—'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {ticTotals !== null && ticTotals.unmapped > 0 && (
+              <Alert variant="warning" className="mt-4">
+                {t('supervision.site_management.classification_budgets.tic_unmapped', {
+                  amount: money(ticTotals.unmapped)
+                })}
+              </Alert>
+            )}
+          </>
         )}
 
         <div className="mt-6 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
@@ -163,11 +193,8 @@ export const PhaseClassificationBudgetsModal: React.FC<Props> = ({
         </div>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose} disabled={saving}>
-          {t('common.cancel')}
-        </Button>
-        <Button variant="primary" onClick={handleSave} loading={saving} disabled={loading}>
-          {t('supervision.site_management.classification_budgets.save')}
+        <Button variant="secondary" onClick={onClose}>
+          {t('common.close')}
         </Button>
       </Modal.Footer>
     </Modal>

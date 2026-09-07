@@ -1,4 +1,6 @@
 import { supabase } from '../../../lib/supabase'
+import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
+import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
 import type { ComprehensiveReport, ProjectData } from '../types'
 
@@ -17,7 +19,6 @@ export async function fetchGeneralReportData(
     { data: workLogs },
     { data: accountingInvoices },
     { data: accountingPayments },
-    { data: accountingCompanies },
     { data: banks },
     { data: companyBankAccounts },
     { data: ticCostStructures },
@@ -46,7 +47,6 @@ export async function fetchGeneralReportData(
     supabase.from('work_logs').select('*'),
     supabase.from('accounting_invoices').select('*'),
     supabase.from('accounting_payments').select('*'),
-    supabase.from('accounting_companies').select('*'),
     supabase.from('banks').select('*'),
     supabase.from('company_bank_accounts').select('*'),
     supabase.from('tic_cost_structures').select('*'),
@@ -77,7 +77,6 @@ export async function fetchGeneralReportData(
 
   const accountingInvoicesArray = accountingInvoices || []
   const accountingPaymentsArray = accountingPayments || []
-  const accountingCompaniesArray = accountingCompanies || []
   const banksArray = banks || []
   const companyBankAccountsArray = companyBankAccounts || []
   const ticCostStructuresArray = ticCostStructures || []
@@ -334,11 +333,21 @@ export async function fetchGeneralReportData(
 
   const paymentCompletionRate = totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0
 
-  const totalCompanies = accountingCompaniesArray.length
-  const totalTicBudget = ticCostStructuresArray.reduce((sum, tic) => sum + (tic.budgeted_amount || 0), 0)
-  const totalTicSpent = ticCostStructuresArray.reduce((sum, tic) => sum + (tic.actual_spent || 0), 0)
-  const ticUtilization = totalTicBudget > 0 ? (totalTicSpent / totalTicBudget) * 100 : 0
-  const companiesOverBudget = ticCostStructuresArray.filter(tic => (tic.actual_spent || 0) > (tic.budgeted_amount || 0)).length
+  // This section printed zeros for its whole life: it summed tic.budgeted_amount and
+  // tic.actual_spent, neither of which is a column on tic_cost_structures — the money lives in
+  // the line_items jsonb. TypeScript could not catch it because the Supabase client is created
+  // without the <Database> generic, so those reads were `any`.
+  //
+  // Reshaped rather than repaired. `actual_spent` has no source anywhere, and
+  // `companies_over_budget` counted companies against a per-PROJECT plan, so both were dropped
+  // instead of being faked. What is left is answerable from the data: how much is planned, and
+  // how many projects have no plan at all.
+  const ticTotals = ticCostStructuresArray.map(tic =>
+    ticGrandTotal((tic.line_items || []) as LineItem[])
+  )
+  const totalTicBudget = ticTotals.reduce((sum, total) => sum + total, 0)
+  const projectsWithTic = ticTotals.filter(total => total > 0).length
+  const projectsWithoutTic = projectsArray.length - projectsWithTic
 
   const totalOfficeSuppliers = officeSuppliersArray.length
   const officeInvoices = accountingInvoicesArray.filter(inv => inv.invoice_category === 'OFFICE')
@@ -462,11 +471,9 @@ export async function fetchGeneralReportData(
       payment_completion_rate: paymentCompletionRate
     },
     tic_cost_management: {
-      total_companies: totalCompanies,
       total_tic_budget: totalTicBudget,
-      total_tic_spent: totalTicSpent,
-      tic_utilization: ticUtilization,
-      companies_over_budget: companiesOverBudget
+      projects_with_tic: projectsWithTic,
+      projects_without_tic: projectsWithoutTic
     },
     office_expenses: {
       total_office_suppliers: totalOfficeSuppliers,

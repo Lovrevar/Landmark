@@ -63,6 +63,18 @@ export function rollupContracts(contracts: SubcontractorWithPhase[]): GroupRollu
   return { contracted, paid, unpaid, unpaidWithoutContract, count: contracts.length }
 }
 
+/**
+ * A contract counts as settled when it has been paid in full — or, for a row with no contract,
+ * when something was paid and nothing is still owed.
+ *
+ * The two branches exist because an uncontracted row has no agreed amount to compare against;
+ * all it has is what invoices say was paid and what is still outstanding.
+ */
+export const isFullySettled = (sub: SubcontractorWithPhase): boolean =>
+  sub.has_contract
+    ? sub.budget_realized >= sub.cost && sub.cost > 0
+    : (sub.invoice_total_owed ?? 0) === 0 && (sub.invoice_total_paid ?? 0) > 0
+
 /** Budget headroom, matching the phase card's "remaining" tile. */
 export const remainingBudget = (budget: number, rollup: GroupRollup): number =>
   budget - rollup.contracted - rollup.unpaidWithoutContract

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Subcontractor } from '../../../../lib/supabase'
 import { ProjectWithPhases } from '../types'
 import * as siteService from '../services/siteService'
+import { ticGrandTotal, phaseTotals } from '../../../Funding/TIC/utils/ticBudget'
 
 export const useSiteProjectData = () => {
   const [projects, setProjects] = useState<ProjectWithPhases[]>([])
@@ -17,12 +18,13 @@ export const useSiteProjectData = () => {
       setLoading(true)
     }
     try {
-      const [projectsData, phasesData, subcontractorsWithPhaseData, allSubcontractorsData, classificationBudgets] = await Promise.all([
+      const [projectsData, phasesData, subcontractorsWithPhaseData, allSubcontractorsData, classificationBudgets, ticLineItems] = await Promise.all([
         siteService.fetchAllProjects(),
         siteService.fetchProjectPhases(),
         siteService.fetchSubcontractorsWithPhases(),
         siteService.fetchAllSubcontractors(),
         siteService.fetchPhaseClassificationBudgets(),
+        siteService.fetchTICTotalsByProject(),
       ])
 
       setExistingSubcontractors(allSubcontractorsData)
@@ -35,6 +37,8 @@ export const useSiteProjectData = () => {
         const projectPhases = phasesData.filter(phase => phase.project_id === project.id)
         const projectPhaseIds = new Set(projectPhases.map(phase => phase.id))
         const projectClassificationBudgets = classificationBudgets.filter(b => projectPhaseIds.has(b.phase_id))
+        const projectTic = ticLineItems.get(project.id) ?? null
+        const projectTicPhases = projectTic ? phaseTotals(projectTic) : null
         // Scope by the contract's own project_id, not by whether its phase still resolves.
         // Going through phases meant a contract whose phase was deleted (phase_id set to NULL by
         // the FK) silently vanished from this screen instead of showing up unassigned.
@@ -70,6 +74,9 @@ export const useSiteProjectData = () => {
           phases: projectPhases,
           subcontractors: projectSubcontractors,
           classification_budgets: projectClassificationBudgets,
+          tic_total: projectTic ? ticGrandTotal(projectTic) : null,
+          tic_phase_count: projectTicPhases?.byPhase.size ?? 0,
+          tic_not_phased: projectTicPhases?.notPhased ?? 0,
           completion_percentage,
           total_subcontractor_cost,
           overdue_subcontractors,

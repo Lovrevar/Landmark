@@ -1,6 +1,11 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { PhaseClassificationBudget } from '../types'
+import {
+  totalsByClassification,
+  type ClassificationTotals
+} from '../../../Funding/TIC/utils/ticBudget'
+import type { LineItem } from '../../../Funding/TIC/utils/ticFormatters'
 
 /**
  * Per-(phase, classification) budget sub-allocations.
@@ -165,4 +170,29 @@ export async function fetchClassificationBudgetStatus(
   )
 
   return { allocated: budgetRow.data?.budget_allocated ?? 0, used }
+}
+
+/**
+ * The project's TIC plan, grouped by cost classification.
+ *
+ * This is where planned budget actually comes from: the TIC is the investment cost plan, and
+ * these are the amounts "Popuni iz TIC-a" writes into a phase. Returns null when the project
+ * has no TIC at all, which the caller shows differently from a TIC that exists but is empty.
+ *
+ * Only the INVESTICIJA rows are read. The GRAĐENJE tab is a breakdown of the single "Građenje"
+ * line, so including it would double-count the largest item in the plan.
+ */
+export async function fetchTICClassificationTotals(
+  projectId: string
+): Promise<ClassificationTotals | null> {
+  const { data, error } = await supabase
+    .from('tic_cost_structures')
+    .select('line_items')
+    .eq('project_id', projectId)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return null
+
+  return totalsByClassification((data.line_items || []) as LineItem[])
 }

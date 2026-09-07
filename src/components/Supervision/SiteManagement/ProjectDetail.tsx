@@ -8,6 +8,9 @@ import { ClassificationCard } from './ClassificationCard'
 import { buildContractTree } from './utils/contractTree'
 import { formatPhaseLabel } from './utils/phaseLabel'
 import { formatEuroRounded } from '../../../utils/formatters'
+import { TICBudgetBadge } from './TICBudgetBadge'
+import { ProjectSummaryBanner } from './ProjectSummaryBanner'
+import { TreeGroup } from './TreeGroup'
 import { fetchCreditAllocations, type CreditAllocation } from './services/siteService'
 import { Button, Badge, EmptyState } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
@@ -80,6 +83,20 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     }
   }), [project.phases, project.classification_budgets, classifications, t])
 
+  const isSinglePhase = project.phases.length === 1
+
+  /** For a single-phase project the phase level is skipped entirely. */
+  const singlePhaseNodes = React.useMemo(
+    () => isSinglePhase
+      ? buildContractTree(
+          project.subcontractors as unknown as SubcontractorWithPhase[],
+          VIEW_DIMENSIONS.byPhase.slice(1),
+          treeContext()
+        )
+      : [],
+    [isSinglePhase, project.subcontractors, treeContext]
+  )
+
   const classificationNodes = React.useMemo(
     () => buildContractTree(
       project.subcontractors as unknown as SubcontractorWithPhase[],
@@ -102,20 +119,26 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   return (
     <div>
       <div className="mb-6">
-        <Button
-          variant="ghost"
-          icon={ArrowLeft}
-          size="sm"
-          onClick={onBack}
-        >
-          {t('supervision.site_management.project_detail.back_to_projects')}
-        </Button>
+        <div className="mb-3">
+          <Button
+            variant="ghost"
+            icon={ArrowLeft}
+            size="sm"
+            onClick={onBack}
+          >
+            {t('supervision.site_management.project_detail.back_to_projects')}
+          </Button>
+        </div>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{project.name}</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">{project.location}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {t('supervision.site_management.project_detail.budget_label')}: {formatEuroRounded(project.budget)}
+              {t('supervision.site_management.project_detail.budget_label')}:{' '}
+              {project.tic_total && project.tic_total > 0
+                ? formatEuroRounded(project.budget)
+                : <span className="text-gray-400">—</span>}
+              <TICBudgetBadge ticTotal={project.tic_total} />
               {project.has_phases && (
                 <>
                   <span className="ml-2">
@@ -262,8 +285,44 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
       )}
 
+      {/* The project totalled, above the detail. Same five tiles as a phase card, so the two
+          read the same way and the project total is visibly the sum of what is below it. */}
+      <ProjectSummaryBanner project={project} canManagePayments={canManagePayments} />
+
       {project.has_phases ? (
         grouping === 'byPhase' ? (
+          isSinglePhase ? (
+            // One phase: show the cost classifications directly, as the screen did before
+            // phases and classifications were separated. Wrapping a lone phase around them adds
+            // a level to expand and tells the user nothing.
+            <div className="space-y-3">
+              {singlePhaseNodes.length === 0 ? (
+                <EmptyState
+                  icon={Building2}
+                  title={t('supervision.site_management.phase_card.no_subs_title')}
+                  description={t('supervision.site_management.phase_card.no_subs_desc')}
+                />
+              ) : singlePhaseNodes.map(node => (
+                <TreeGroup
+                  key={node.key}
+                  node={node}
+                  phase={project.phases[0]}
+                  project={project}
+                  depth={1}
+                  expandedNodes={expandedNodes}
+                  onToggleNode={onToggleNode}
+                  onEditClassificationBudget={onEditClassificationBudget}
+                  onAddSubcontractor={onAddSubcontractor}
+                  onOpenPaymentHistory={onOpenPaymentHistory}
+                  onOpenInvoices={onOpenInvoices}
+                  onEditSubcontractor={onEditSubcontractor}
+                  onOpenSubDetails={onOpenSubDetails}
+                  onDeleteSubcontractor={onDeleteSubcontractor}
+                  onManageMilestones={onManageMilestones}
+                />
+              ))}
+            </div>
+          ) : (
           <div className="space-y-6">
             {project.phases.map((phase) => {
               const phaseSubcontractors = project.subcontractors.filter(sub => sub.phase_id === phase.id)
@@ -301,6 +360,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               )
             })}
           </div>
+          )
         ) : (
           <div className="space-y-6">
             {classificationNodes.map(node => (
@@ -335,41 +395,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         />
       )}
 
-      <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('supervision.site_management.project_detail.project_summary')}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{project.subcontractors.length}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.project_detail.total_subcontractors')}</div>
-          </div>
-          {canManagePayments && (
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {project.subcontractors.filter(s => {
-                  const sub = s as SubcontractorWithPhase
-                  if (sub.has_contract) {
-                    return sub.budget_realized >= sub.cost && sub.cost > 0
-                  }
-                  return (sub.invoice_total_owed ?? 0) === 0 && (sub.invoice_total_paid ?? 0) > 0
-                }).length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">{t('status.fully_paid')}</div>
-            </div>
-          )}
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">{formatEuroRounded(project.total_subcontractor_cost)}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.project_detail.contract_total')}</div>
-          </div>
-          {canManagePayments && (
-            <div className="text-center">
-              <div className="text-2xl font-bold text-teal-600">
-                {formatEuroRounded(project.subcontractors.reduce((sum, s) => sum + s.budget_realized, 0))}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.payment_history.total_paid')}</div>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   )
 }

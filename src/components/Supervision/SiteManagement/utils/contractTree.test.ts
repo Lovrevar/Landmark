@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   buildContractTree,
   rollupContracts,
+  isFullySettled,
   remainingBudget,
   unallocatedBudget,
   nodeKey,
@@ -282,5 +283,37 @@ describe('unallocatedBudget', () => {
 
   it('goes negative if sub-allocations exceed the phase budget', () => {
     expect(unallocatedBudget(phase('ph1', 1, 'Faza 1', 100), [budget('ph1', 10, 250)])).toBe(-150)
+  })
+})
+
+describe('isFullySettled', () => {
+  it('counts a contract paid up to its value', () => {
+    expect(isFullySettled(contract({ has_contract: true, cost: 1000, budget_realized: 1000 }))).toBe(true)
+    expect(isFullySettled(contract({ has_contract: true, cost: 1000, budget_realized: 1200 }))).toBe(true)
+  })
+
+  it('does not count one still short', () => {
+    expect(isFullySettled(contract({ has_contract: true, cost: 1000, budget_realized: 999 }))).toBe(false)
+  })
+
+  it('does not count a zero-value contract as settled', () => {
+    // Nothing was agreed, so there is nothing to have finished paying.
+    expect(isFullySettled(contract({ has_contract: true, cost: 0, budget_realized: 0 }))).toBe(false)
+  })
+
+  it('settles an uncontracted row on invoices instead', () => {
+    // No agreed amount to compare against, so it goes on what was paid and what is still owed.
+    expect(isFullySettled(contract({
+      has_contract: false, cost: 0, invoice_total_paid: 500, invoice_total_owed: 0
+    }))).toBe(true)
+    expect(isFullySettled(contract({
+      has_contract: false, cost: 0, invoice_total_paid: 500, invoice_total_owed: 100
+    }))).toBe(false)
+  })
+
+  it('does not count an untouched uncontracted row', () => {
+    expect(isFullySettled(contract({
+      has_contract: false, cost: 0, invoice_total_paid: 0, invoice_total_owed: 0
+    }))).toBe(false)
   })
 })

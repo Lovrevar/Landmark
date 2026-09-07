@@ -31,6 +31,9 @@ const TICManagement: React.FC = () => {
     message,
     totals,
     grandTotal,
+    classifications,
+    classificationTotals,
+    phaseNumbers,
     constructionTotals,
     constructionGrandTotal,
     saveTIC,
@@ -162,6 +165,9 @@ const TICManagement: React.FC = () => {
               lineItems={lineItems}
               totals={totals}
               grandTotal={grandTotal}
+              classifications={classifications}
+              classificationTotals={classificationTotals}
+              phaseNumbers={phaseNumbers}
               onUpdate={updateLineItem}
               onAdd={addLineItem}
               onRemove={removeLineItem}

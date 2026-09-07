@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { formatEuroRounded } from '../../../../utils/formatters'
 import { useTranslation } from 'react-i18next'
 import { ProjectPhase } from '../../../../lib/supabase'
 import { ProjectWithPhases, EditPhaseFormData } from '../types'
@@ -68,22 +69,22 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             />
           </FormField>
 
+          {/* Read-only: the phase budget is that phase's share of the TIC. */}
           <FormField
             label={t('supervision.site_management.edit_phase.budget')}
-            required
-            helperText={
-              formData.budget_allocated < phase.budget_used
-                ? `${t('supervision.site_management.edit_phase.budget_warning')} (€${phase.budget_used.toLocaleString('hr-HR')})`
-                : `${t('supervision.site_management.edit_phase.available_after')} €${(formData.budget_allocated - phase.budget_used).toLocaleString('hr-HR')}`
-            }
-            error={fieldErrors.budget_allocated ?? (formData.budget_allocated < phase.budget_used ? t('supervision.site_management.edit_phase.budget_less_error') : undefined)}
+            helperText={t('general_projects.budget_from_tic_hint')}
           >
-            <Input
-              type="number"
-              value={formData.budget_allocated}
-              onChange={(e) => setFormData({ ...formData, budget_allocated: parseFloat(e.target.value) || 0 })}
-              placeholder="0"
-            />
+            <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
+              {formData.budget_allocated > 0 ? (
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatEuroRounded(formData.budget_allocated)}
+                </span>
+              ) : (
+                <span className="text-gray-500 dark:text-gray-400">
+                  {t('general_projects.budget_not_set')}
+                </span>
+              )}
+            </div>
           </FormField>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -139,7 +140,6 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
         <Button onClick={() => {
           const errors: Record<string, string> = {}
           if (!formData.phase_name?.trim()) errors.phase_name = t('supervision.site_management.edit_phase.errors.name_required')
-          if (!formData.budget_allocated && formData.budget_allocated !== 0) errors.budget_allocated = t('supervision.site_management.edit_phase.errors.budget_required')
           setFieldErrors(errors)
           if (Object.keys(errors).length > 0) return
           onSubmit(formData)

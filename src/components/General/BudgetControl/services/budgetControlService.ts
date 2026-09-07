@@ -1,4 +1,6 @@
 import { supabase } from '../../../../lib/supabase'
+import { ticGrandTotal } from '../../../Funding/TIC/utils/ticBudget'
+import type { LineItem } from '../../../Funding/TIC/utils/ticFormatters'
 import type { Phase, ContractWithDetails, ProjectDisplay } from '../../Projects/types'
 import type { MilestoneProgress } from '../../../../utils/evm'
 
@@ -17,6 +19,8 @@ export interface ProjectBudgetData {
   phases: Phase[]
   contracts: ContractWithDetails[]
   milestones: MilestoneProgress[]
+  /** The project's TIC investment total, or null when it has no TIC. */
+  ticTotal: number | null
 }
 
 export async function fetchProjectBudgetData(projectId: string): Promise<ProjectBudgetData> {
@@ -26,6 +30,14 @@ export async function fetchProjectBudgetData(projectId: string): Promise<Project
     .eq('id', projectId)
     .single()
   if (projectError) throw projectError
+
+  // The screen's headline card is labelled "TIC / Ukupni investicijski trošak" but has always
+  // rendered projects.budget, never touching tic_cost_structures. Read the real thing.
+  const { data: ticData } = await supabase
+    .from('tic_cost_structures')
+    .select('line_items')
+    .eq('project_id', projectId)
+    .maybeSingle()
 
   const { data: phasesData } = await supabase
     .from('project_phases')
@@ -60,5 +72,6 @@ export async function fetchProjectBudgetData(projectId: string): Promise<Project
     phases: (phasesData || []) as unknown as Phase[],
     contracts,
     milestones,
+    ticTotal: ticData ? ticGrandTotal((ticData.line_items || []) as LineItem[]) : null,
   }
 }

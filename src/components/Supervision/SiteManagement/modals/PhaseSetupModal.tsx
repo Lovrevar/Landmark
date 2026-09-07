@@ -95,8 +95,6 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
 
   if (!visible) return null
 
-  const totalAllocated = phases.reduce((sum, p) => sum + p.budget_allocated, 0)
-  const difference = project.budget - totalAllocated
 
   return (
     <Modal show={true} onClose={onClose} size="xl">
@@ -141,18 +139,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
                     placeholder={`${t('common.phase')} ${index + 1} ${t('common.name').toLowerCase()}`}
                   />
                 </FormField>
-                <FormField label={t('supervision.site_management.phase_setup.budget_allocated')}>
-                  <Input
-                    type="number"
-                    value={phase.budget_allocated}
-                    onChange={(e) => {
-                      const newPhases = [...phases]
-                      newPhases[index].budget_allocated = parseFloat(e.target.value) || 0
-                      setPhases(newPhases)
-                    }}
-                    placeholder="0"
-                  />
-                </FormField>
+
                 <FormField label={t('supervision.site_management.phase_setup.start_date')}>
                   <Input
                     type="date"
@@ -180,51 +167,14 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
           ))}
         </div>
 
-        <div className="mt-6 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-          <h4 className="font-medium text-gray-900 dark:text-white mb-3">{t('supervision.site_management.phase_setup.budget_summary')}</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_setup.total_budget')}</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_setup.total_allocated')}</p>
-              <p className={`text-lg font-bold ${
-                totalAllocated === project.budget
-                  ? 'text-green-600'
-                  : totalAllocated > project.budget
-                  ? 'text-orange-600'
-                  : 'text-blue-600'
-              }`}>
-                €{totalAllocated.toLocaleString('hr-HR')}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_setup.difference')}</p>
-              <p className={`text-lg font-bold ${
-                difference === 0
-                  ? 'text-green-600'
-                  : difference < 0
-                  ? 'text-orange-600'
-                  : 'text-blue-600'
-              }`}>
-                {difference === 0
-                  ? t('supervision.site_management.phase_setup.matched')
-                  : difference > 0
-                  ? `€${difference.toLocaleString('hr-HR')} ${t('supervision.site_management.phase_setup.under')}`
-                  : `€${Math.abs(difference).toLocaleString('hr-HR')} ${t('supervision.site_management.phase_setup.over')}`
-                }
-              </p>
-            </div>
-          </div>
-          {difference !== 0 && (
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                {t('supervision.site_management.phase_setup.mismatch_note')}
-              </p>
-            </div>
-          )}
+        {/* The over/under summary is gone: phase budgets are no longer typed here, so there is
+            nothing left to reconcile against the project total. Both come from the TIC. */}
+        <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            {t('general_projects.budget_from_tic_hint')}
+          </p>
         </div>
+
       </Modal.Body>
 
       <Modal.Footer>

@@ -95,10 +95,8 @@ export function useProjectForm(
       setError('Location is required')
       return
     }
-    if (!form.budget || parseFloat(form.budget) <= 0) {
-      setError('Valid budget is required')
-      return
-    }
+    // No budget validation: the TIC writes it, not this form. Requiring one here would block
+    // creating a project before its cost plan exists — which is the normal order of work.
 
     setLoading(true)
     try {
@@ -108,7 +106,9 @@ export function useProjectForm(
         aliases: form.aliases.split(',').map(a => a.trim()).filter(Boolean),
         start_date: form.start_date,
         end_date: form.end_date || null,
-        budget: parseFloat(form.budget),
+        // Sent unchanged so an existing value survives a name or date edit; the TIC trigger
+        // overwrites it whenever a plan is saved.
+        budget: parseFloat(form.budget) || 0,
         status: form.status,
         category: form.category
       }

@@ -1740,7 +1740,9 @@
     "no_apartments_desc": "No apartments have been defined for this project",
     "size": "Size",
     "funding_sources": "Funding Sources",
-    "no_credit_allocations": "No credit allocations recorded"
+    "no_credit_allocations": "No credit allocations recorded",
+    "budget_not_set": "Budget not set",
+    "budget_from_tic_hint": "Budget comes from the project's TIC."
   },
   "sales_projects": {
     "title": "Projects",
@@ -2300,7 +2302,11 @@
         "credit_available": "Credit Available",
         "interest_rate": "Interest Rate",
         "no_phases_title": "No Phases Set Up",
-        "no_phases_desc": "Set up project phases to track progress by phase"
+        "no_phases_desc": "Set up project phases to track progress by phase",
+        "budget_from_tic": "from TIC",
+        "budget_differs_from_tic": "differs from TIC ({{amount}})",
+        "budget_not_set": "Budget not set",
+        "budget_from_tic_hint": "Budget comes from the project's TIC."
       },
       "loading": "Loading site management...",
       "confirm_delete_sub": "Are you sure you want to delete this subcontractor?",
@@ -2368,12 +2374,24 @@
         "unallocated_note": "Any unallocated amount stays at the phase level.",
         "over_phase_budget": "The total exceeds the phase budget",
         "save": "Save budgets",
-        "no_classifications": "No active cost classifications."
+        "no_classifications": "No active cost classifications.",
+        "populate_from_tic": "Fill from TIC",
+        "tic_plan": "TIC plan",
+        "other_phases": "Other phases",
+        "this_phase": "This phase",
+        "tic_available": "Amounts can be filled from this project's TIC.",
+        "tic_missing": "This project has no TIC filled in, so there is nothing to fill from.",
+        "tic_unmapped": "{{amount}} in the TIC has no cost classification and is excluded from these amounts."
       },
       "grouping": {
         "label": "View",
         "by_phase": "By phase",
         "by_classification": "By cost classification"
+      },
+      "budget_matrix": {
+        "title": "Investment plan by phase",
+        "subtitle": "Cost classifications across phases, from the project's TIC.",
+        "not_phased": "Not phased"
       }
     },
     "subcontractors": {
@@ -3611,8 +3629,18 @@
       "error_no_sheets": "No TIC table was found in the file. Check that a header row contains NAMJENA and VLASTITA SREDSTVA.",
       "error_parse_failed": "The file could not be read. Check its format.",
       "error_missing_header": "no header row found (NAMJENA / VLASTITA SREDSTVA)",
-      "error_no_rows": "no line items found"
-    }
+      "error_no_rows": "no line items found",
+      "phases_found": "Phases found: {{count}}",
+      "unphased_title": "Not phased:",
+      "unphased_body": "these costs are incurred once for the whole project, so they are not split across phases. The sheet repeats them in full in every phase — summing those columns would inflate the plan.",
+      "inconsistent_title": "Check the split:",
+      "inconsistent_body": "on these rows the phase amounts do not add up to the total. They are imported exactly as written, without being reconciled."
+    },
+    "col_classification": "Cost classification",
+    "classification_unmapped": "— unclassified —",
+    "classification_summary": "Plan by cost classification",
+    "classification_unmapped_total": "Unclassified in TIC",
+    "classification_unmapped_hint": "This amount is excluded from phase budgets until you assign it a cost classification."
   },
   "dashboards": {
     "common": {

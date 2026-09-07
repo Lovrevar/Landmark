@@ -118,6 +118,26 @@ const ExcelImportTICModal: React.FC<ExcelImportTICModalProps> = ({ show, onClose
           <div className="space-y-4">
             <Alert variant="warning">{t('tic.import.replace_warning')}</Alert>
 
+            {parsed.investment && parsed.investment.unphasedRows.length > 0 && (
+              <Alert variant="info" className="mb-4">
+                <strong>{t('tic.import.unphased_title')}</strong>{' '}
+                {t('tic.import.unphased_body')}
+                <ul className="mt-1 list-disc list-inside">
+                  {parsed.investment.unphasedRows.map(name => <li key={name}>{name}</li>)}
+                </ul>
+              </Alert>
+            )}
+
+            {parsed.investment && parsed.investment.inconsistentRows.length > 0 && (
+              <Alert variant="warning" className="mb-4">
+                <strong>{t('tic.import.inconsistent_title')}</strong>{' '}
+                {t('tic.import.inconsistent_body')}
+                <ul className="mt-1 list-disc list-inside">
+                  {parsed.investment.inconsistentRows.map(name => <li key={name}>{name}</li>)}
+                </ul>
+              </Alert>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
@@ -131,6 +151,11 @@ const ExcelImportTICModal: React.FC<ExcelImportTICModalProps> = ({ show, onClose
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                       {t('tic.import.rows_from_sheet', { sheet: parsed.investment.sheetName })}
                     </div>
+                    {parsed.investment.phaseNumbers.length > 0 && (
+                      <div className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+                        {t('tic.import.phases_found', { count: parsed.investment.phaseNumbers.length })}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="text-sm text-gray-500 dark:text-gray-400">{t('tic.import.tab_unchanged')}</div>

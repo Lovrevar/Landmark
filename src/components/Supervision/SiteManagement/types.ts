@@ -5,6 +5,12 @@ export interface ProjectWithPhases extends Project {
   subcontractors: Subcontractor[]
   /** Per-(phase, classification) budget rows for this project's phases. */
   classification_budgets: PhaseClassificationBudget[]
+  /** The project's TIC investment total, or null when it has no TIC. */
+  tic_total: number | null
+  /** How many phases the TIC plans. 0 for an unphased TIC or none at all. */
+  tic_phase_count: number
+  /** TIC money belonging to the project but to no single phase — land, project preparation. */
+  tic_not_phased: number
   completion_percentage: number
   total_subcontractor_cost: number
   overdue_subcontractors: number

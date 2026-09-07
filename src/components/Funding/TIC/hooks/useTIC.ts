@@ -11,6 +11,12 @@ import {
   toSectionCode,
 } from '../utils/ticFormatters'
 import { defaultLineItems, defaultConstructionSections } from '../constants'
+import { applyDefaultClassifications } from '../utils/ticClassificationMap'
+import { totalsByClassification } from '../utils/ticBudget'
+// cost_classifications is a global lookup, not a Supervision-owned one — the service simply
+// lives next to its first consumer. Imported directly rather than duplicated here.
+import { fetchCostClassifications } from '../../../Supervision/SiteManagement/services/costClassificationService'
+import type { CostClassification } from '../../../../lib/supabase'
 import {
   fetchTICProjects,
   fetchTICForProject,
@@ -37,6 +43,7 @@ export function useTIC() {
   const [constructionSections, setConstructionSections] = useState<ConstructionSection[]>(defaultConstructionSections)
   const [investorName, setInvestorName] = useState('RAVNICE CITY D.O.O.')
   const [documentDate, setDocumentDate] = useState(new Date().toISOString().split('T')[0])
+  const [classifications, setClassifications] = useState<CostClassification[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -44,6 +51,16 @@ export function useTIC() {
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text })
     setTimeout(() => setMessage(null), 3000)
+  }, [])
+
+  const loadClassifications = useCallback(async () => {
+    try {
+      setClassifications(await fetchCostClassifications())
+    } catch (error) {
+      // Not fatal: without the list the classification column falls back to "unmapped", which is
+      // visible and recoverable. Blocking the whole TIC screen over it would not be.
+      console.error('Error loading cost classifications:', error)
+    }
   }, [])
 
   const loadProjects = useCallback(async () => {
@@ -69,7 +86,12 @@ export function useTIC() {
         setTicId(data.id)
         setInvestorName(data.investor_name)
         setDocumentDate(data.document_date)
-        setLineItems(data.line_items.length > 0 ? data.line_items : defaultLineItems)
+        setLineItems(
+          applyDefaultClassifications(
+            data.line_items.length > 0 ? data.line_items : defaultLineItems,
+            classifications
+          )
+        )
         // Records saved before the GRAĐENJE tab existed fall back to the defaults.
         setConstructionSections(
           data.construction_sections.length > 0 ? data.construction_sections : defaultConstructionSections
@@ -78,7 +100,7 @@ export function useTIC() {
         setTicId(null)
         setInvestorName('RAVNICE CITY D.O.O.')
         setDocumentDate(new Date().toISOString().split('T')[0])
-        setLineItems(defaultLineItems)
+        setLineItems(applyDefaultClassifications(defaultLineItems, classifications))
         setConstructionSections(defaultConstructionSections)
       }
     } catch (error) {
@@ -87,7 +109,7 @@ export function useTIC() {
     } finally {
       setLoading(false)
     }
-  }, [showMessage])
+  }, [showMessage, classifications])
 
   const saveTIC = useCallback(async () => {
     if (!selectedProjectId) {
@@ -216,7 +238,10 @@ export function useTIC() {
     const sheets: string[] = []
 
     if (parsed.investment) {
-      setLineItems(parsed.investment.lineItems)
+      // Parsed rows carry no classification. Stamping the defaults here is what stops an import
+      // from emptying the mapping — and with it the per-classification totals and any phase
+      // budget populated from them.
+      setLineItems(applyDefaultClassifications(parsed.investment.lineItems, classifications))
       sheets.push(parsed.investment.sheetName)
     }
     if (parsed.construction) {
@@ -240,7 +265,11 @@ export function useTIC() {
           (parsed.construction?.sections.reduce((sum, s) => sum + s.items.length, 0) ?? 0),
       },
     })
-  }, [ticId, selectedProjectId])
+  }, [ticId, selectedProjectId, classifications])
+
+  useEffect(() => {
+    loadClassifications()
+  }, [loadClassifications])
 
   useEffect(() => {
     loadProjects()
@@ -258,8 +287,17 @@ export function useTIC() {
   const constructionTotals = calculateConstructionTotals(constructionSections)
   const constructionGrandTotal = constructionTotals.vlastita + constructionTotals.kreditna
 
+  // What the phase budgets will be populated from. Derived, like every other TIC total.
+  const classificationTotals = totalsByClassification(lineItems)
+  // Phases the plan actually mentions; empty for an unphased TIC.
+  const phaseNumbers = [...new Set(lineItems.flatMap(i => i.phases?.map(p => p.phase_number) ?? []))]
+    .sort((a, b) => a - b)
+
   return {
     projects,
+    classifications,
+    classificationTotals,
+    phaseNumbers,
     lineItems,
     setLineItems,
     constructionSections,

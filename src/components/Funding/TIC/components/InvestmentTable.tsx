@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
-import { Button, Input } from '../../../ui'
+import { Button, Input, Select } from '../../../ui'
 import {
   formatNumber,
   formatPercentage,
@@ -9,6 +9,9 @@ import {
   type LineItem,
   type TICTotals,
 } from '../utils/ticFormatters'
+import type { CostClassification } from '../../../../lib/supabase'
+import type { ClassificationTotals } from '../utils/ticBudget'
+import { lineItemPhaseTotal, isPhased } from '../utils/ticBudget'
 
 const CELL = 'border border-gray-300 dark:border-gray-600'
 
@@ -16,6 +19,12 @@ interface InvestmentTableProps {
   lineItems: LineItem[]
   totals: TICTotals
   grandTotal: number
+  /** Active cost classifications, for the per-row select that drives the phase budgets. */
+  classifications: CostClassification[]
+  /** Derived per-classification totals, shown under the table. */
+  classificationTotals: ClassificationTotals
+  /** Phase ordinals the TIC plans, ascending. Empty for an unphased TIC. */
+  phaseNumbers: number[]
   onUpdate: (index: number, patch: Partial<LineItem>) => void
   onAdd: () => void
   onRemove: (index: number) => void
@@ -26,6 +35,9 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
   lineItems,
   totals,
   grandTotal,
+  classifications,
+  classificationTotals,
+  phaseNumbers,
   onUpdate,
   onAdd,
   onRemove,
@@ -46,6 +58,9 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
               <th className={`${CELL} px-4 py-3 text-left font-bold text-gray-900 dark:text-white`}>
                 {t('tic.col_purpose')}
               </th>
+              <th className={`${CELL} px-4 py-3 text-left font-bold text-gray-900 dark:text-white`}>
+                {t('tic.col_classification')}
+              </th>
               <th className={`${CELL} px-4 py-3 text-center font-bold text-gray-900 dark:text-white`} colSpan={2}>
                 {t('tic.col_own_funds')}
               </th>
@@ -55,17 +70,26 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
               <th className={`${CELL} px-4 py-3 text-center font-bold text-gray-900 dark:text-white`}>
                 {t('tic.col_total_investment')}
               </th>
+              {phaseNumbers.map(n => (
+                <th key={n} className={`${CELL} px-4 py-3 text-center font-bold text-gray-900 dark:text-white`}>
+                  {t('common.phase')} {n}
+                </th>
+              ))}
               <th className={`${CELL} px-2 py-3 w-px`}>
                 <span className="sr-only">{t('tic.col_actions')}</span>
               </th>
             </tr>
             <tr className="bg-gray-50 dark:bg-gray-700/50">
               <th className={`${CELL} px-4 py-2`}></th>
+              <th className={`${CELL} px-4 py-2`}></th>
               <th className={`${CELL} px-4 py-2 text-center text-sm font-semibold text-gray-700 dark:text-gray-200`}>EUR</th>
               <th className={`${CELL} px-4 py-2 text-center text-sm font-semibold text-gray-700 dark:text-gray-200`}>(%)</th>
               <th className={`${CELL} px-4 py-2 text-center text-sm font-semibold text-gray-700 dark:text-gray-200`}>EUR</th>
               <th className={`${CELL} px-4 py-2 text-center text-sm font-semibold text-gray-700 dark:text-gray-200`}>(%)</th>
               <th className={`${CELL} px-4 py-2 text-center text-sm font-semibold text-gray-700 dark:text-gray-200`}>EUR</th>
+              {phaseNumbers.map(n => (
+                <th key={n} className={`${CELL} px-4 py-2 text-center text-sm font-semibold text-gray-700 dark:text-gray-200`}>EUR</th>
+              ))}
               <th className={`${CELL} px-2 py-2`}></th>
             </tr>
           </thead>
@@ -84,6 +108,20 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
                       placeholder={t('tic.row_name_placeholder')}
                       className="px-2 py-1 border-gray-200 dark:border-gray-600"
                     />
+                  </td>
+                  <td className={`${CELL} px-2 py-2 min-w-[12rem]`}>
+                    <Select
+                      value={item.classification_id ?? ''}
+                      onChange={(e) =>
+                        onUpdate(index, { classification_id: e.target.value ? parseInt(e.target.value) : null })
+                      }
+                      className="px-2 py-1 border-gray-200 dark:border-gray-600"
+                    >
+                      <option value="">{t('tic.classification_unmapped')}</option>
+                      {classifications.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </Select>
                   </td>
                   <td className={`${CELL} px-2 py-2`}>
                     <Input
@@ -112,6 +150,16 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
                   <td className={`${CELL} px-4 py-2 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap`}>
                     {formatNumber(rowTotal)}
                   </td>
+                  {phaseNumbers.map(n => (
+                    <td key={n} className={`${CELL} px-4 py-2 text-right whitespace-nowrap ${
+                      isPhased(item) ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-600'
+                    }`}>
+                      {/* A cost incurred once for the whole project belongs to no phase. Showing
+                          it as "—" rather than repeating the full figure is the difference
+                          between a plan that adds up and one that overstates itself. */}
+                      {isPhased(item) ? formatNumber(lineItemPhaseTotal(item, n)) : '—'}
+                    </td>
+                  ))}
                   <td className={`${CELL} px-2 py-2`}>
                     <div className="flex items-center gap-1">
                       <Button
@@ -147,6 +195,7 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
             })}
             <tr className="bg-blue-50 dark:bg-blue-900/30 font-bold">
               <td className={`${CELL} px-4 py-3 text-gray-900 dark:text-white uppercase`}>{t('tic.total_row')}</td>
+              <td className={`${CELL} px-4 py-3`}></td>
               <td className={`${CELL} px-4 py-3 text-right text-blue-900 dark:text-blue-100`}>
                 {formatNumber(totals.vlastita)}
               </td>
@@ -162,6 +211,11 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
               <td className={`${CELL} px-4 py-3 text-right text-blue-900 dark:text-blue-100`}>
                 {formatNumber(grandTotal)}
               </td>
+              {phaseNumbers.map(n => (
+                <td key={n} className={`${CELL} px-4 py-3 text-right text-blue-900 dark:text-blue-100`}>
+                  {formatNumber(lineItems.reduce((sum, i) => sum + lineItemPhaseTotal(i, n), 0))}
+                </td>
+              ))}
               <td className={`${CELL} px-2 py-3`}></td>
             </tr>
           </tbody>
@@ -172,6 +226,44 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
         <Button variant="secondary" size="sm" icon={Plus} onClick={onAdd}>
           {t('tic.add_row')}
         </Button>
+      </div>
+
+      {/* What Site Management will populate the phase budgets from. Shown here so the effect of
+          a classification choice is visible where the choice is made, rather than only on
+          another screen in another module. */}
+      <div className="mt-6 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+        <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+          {t('tic.classification_summary')}
+        </h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {classifications.map((c) => {
+            const amount = classificationTotals.byClassification.get(c.id)
+            if (amount === undefined) return null
+            return (
+              <div key={c.id}>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{c.name}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {formatNumber(amount)} €
+                </p>
+              </div>
+            )
+          })}
+          {classificationTotals.unmapped > 0 && (
+            <div>
+              <p className="text-xs text-orange-600 dark:text-orange-400">
+                {t('tic.classification_unmapped_total')}
+              </p>
+              <p className="text-sm font-semibold text-orange-700 dark:text-orange-300">
+                {formatNumber(classificationTotals.unmapped)} €
+              </p>
+            </div>
+          )}
+        </div>
+        {classificationTotals.unmapped > 0 && (
+          <p className="mt-3 text-xs text-orange-700 dark:text-orange-400">
+            {t('tic.classification_unmapped_hint')}
+          </p>
+        )}
       </div>
     </div>
   )

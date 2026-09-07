@@ -37,18 +37,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     }
   }
 
-  const createProjectPhases = async (projectId: string, phases: PhaseFormInput[], projectBudget: number) => {
-    const totalAllocated = phases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
-    const budgetDifference = totalAllocated - projectBudget
-
-    if (budgetDifference !== 0) {
-      const message = budgetDifference > 0
-        ? `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) exceeds project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-        : `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) is less than project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-      const confirmed = await requestConfirm('Potvrda', message)
-      if (!confirmed) return false
-    }
-
+  const createProjectPhases = async (projectId: string, phases: PhaseFormInput[]) => {
     try {
       await siteService.createPhases(projectId, phases)
       await fetchProjects()
@@ -68,34 +57,11 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       start_date: string | null
       end_date: string | null
       status: 'planning' | 'active' | 'completed' | 'on_hold'
-    },
-    project: ProjectWithPhases
+    }
   ) => {
     if (!updates.phase_name.trim()) {
       toast.warning('Phase name is required')
       return false
-    }
-
-    if (updates.budget_allocated < phase.budget_used) {
-      const confirmed = await requestConfirm(
-        'Upozorenje',
-        `Warning: New budget (€${updates.budget_allocated.toLocaleString('hr-HR')}) is less than already allocated amount (€${phase.budget_used.toLocaleString('hr-HR')}).\n\nThis means you're reducing the budget below what's already committed to subcontractors.\n\nDo you want to proceed anyway?`
-      )
-      if (!confirmed) return false
-    }
-
-    const otherPhasesTotalBudget = project.phases
-      .filter(p => p.id !== phase.id)
-      .reduce((sum, p) => sum + p.budget_allocated, 0)
-    const newTotalAllocated = otherPhasesTotalBudget + updates.budget_allocated
-    const projectBudgetDiff = newTotalAllocated - project.budget
-
-    if (projectBudgetDiff !== 0) {
-      const message = projectBudgetDiff > 0
-        ? `Total allocated budget across all phases (€${newTotalAllocated.toLocaleString('hr-HR')}) will exceed project budget by €${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
-        : `Total allocated budget across all phases (€${newTotalAllocated.toLocaleString('hr-HR')}) will be less than project budget by €${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
-      const confirmed = await requestConfirm('Potvrda', message)
-      if (!confirmed) return false
     }
 
     try {
@@ -158,18 +124,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     }
   }
 
-  const updateProjectPhases = async (projectId: string, phases: PhaseFormInput[], projectBudget: number) => {
-    const totalAllocated = phases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
-    const budgetDifference = totalAllocated - projectBudget
-
-    if (budgetDifference !== 0) {
-      const message = budgetDifference > 0
-        ? `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) exceeds project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-        : `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) is less than project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-      const confirmed = await requestConfirm('Potvrda', message)
-      if (!confirmed) return false
-    }
-
+  const updateProjectPhases = async (projectId: string, phases: PhaseFormInput[]) => {
     try {
       await siteService.updateProjectPhases(projectId, phases)
       await fetchProjects()

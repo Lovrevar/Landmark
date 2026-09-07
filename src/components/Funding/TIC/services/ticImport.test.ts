@@ -179,3 +179,110 @@ describe('parseTICWorkbook', () => {
     expect(result.errors).toEqual([{ sheetName: 'Bilješke', error: 'missing_header' }])
   })
 })
+
+describe('phased investment sheets', () => {
+  // Shaped like 1908_TIC_Osijek.xlsx: project totals, then one FAZA group per phase, each
+  // laid out own-funds / % / credit / % exactly as the project block is.
+  const header = [
+    ['', 'NAMJENA', 'VLASTITA SREDSTVA', '', 'KREDITNA SREDSTVA', '', '', '', '', '', '', '', '', ''],
+    ['', '', 'EUR', '(%)', 'EUR', '(%)', 'EQUITY', '(%)', 'KREDIT', '(%)', 'EQUITY', '(%)', 'KREDIT', '(%)'],
+    ['', '', '', '', 'UKUPNO', '', 'FAZA 1', '', '', '', 'FAZA 2', '', '', ''],
+  ]
+
+  it('finds the phase groups and splits a row across them', () => {
+    const sheet = parseSheet('TIC', [
+      ...header,
+      ['', 'Građenje', 0, 0, 1000, 0.5, 0, 0, 600, 0.3, 0, 0, 400, 0.2],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    expect(sheet.phaseNumbers).toEqual([1, 2])
+    expect(sheet.lineItems[0].phases).toEqual([
+      { phase_number: 1, vlastita: 0, kreditna: 600 },
+      { phase_number: 2, vlastita: 0, kreditna: 400 },
+    ])
+    expect(sheet.unphasedRows).toEqual([])
+  })
+
+  it('treats a row repeated in full across every phase as NOT phased', () => {
+    // Vrijednost zemljišta behaves this way: the land is bought once but each phase's business
+    // case restates it. Taking the columns at face value would multiply it by the phase count.
+    const sheet = parseSheet('TIC', [
+      ...header,
+      ['', 'Vrijednost zemljišta', 4000, 0.1, 0, 0, 4000, 0.2, 0, 0, 4000, 0.2, 0, 0],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    expect(sheet.lineItems[0].phases).toBeUndefined()
+    expect(sheet.unphasedRows).toEqual(['Vrijednost zemljišta'])
+    expect(sheet.lineItems[0].vlastita).toBe(4000)
+  })
+
+  it('treats a row with empty phase columns as project-level', () => {
+    const sheet = parseSheet('TIC', [
+      ...header,
+      ['', 'Porez na promet', 500, 0, 0, 0, null, null, null, null, null, null, null, null],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    expect(sheet.lineItems[0].phases).toBeUndefined()
+    expect(sheet.unphasedRows).toEqual(['Porez na promet'])
+  })
+
+  it('keeps a split that neither sums nor repeats, and flags it for review', () => {
+    // Reconciling it ourselves would be inventing figures, so the author's numbers stand and
+    // the preview reports the row.
+    const sheet = parseSheet('TIC', [
+      ...header,
+      ['', 'Odd row', 1000, 0, 0, 0, 300, 0, 0, 0, 200, 0, 0, 0],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    expect(sheet.inconsistentRows).toEqual(['Odd row'])
+    expect(sheet.lineItems[0].phases).toHaveLength(2)
+  })
+
+  it('tolerates the cent-level rounding real sheets carry', () => {
+    const sheet = parseSheet('TIC', [
+      ...header,
+      ['', 'Rounded', 0, 0, 708560.13, 0, 0, 0, 333023.26, 0, 0, 0, 375536.86, 0],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    expect(sheet.inconsistentRows).toEqual([])
+    expect(sheet.lineItems[0].phases).toHaveLength(2)
+  })
+
+  it('leaves an unphased sheet with no phases at all', () => {
+    const sheet = parseSheet('INVESTICIJA', [
+      ['NAMJENA', 'VLASTITA SREDSTVA', '', 'KREDITNA SREDSTVA', ''],
+      ['', 'EUR', '(%)', 'EUR', '(%)'],
+      ['Građenje', 100, 0, 200, 0],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    expect(sheet.phaseNumbers).toEqual([])
+    expect(sheet.lineItems[0].phases).toBeUndefined()
+    expect(sheet.unphasedRows).toEqual([])
+  })
+
+  it('does not mistake the word "faza" in a data row for a phase label', () => {
+    const sheet = parseSheet('INVESTICIJA', [
+      ['NAMJENA', 'VLASTITA SREDSTVA', '', 'KREDITNA SREDSTVA', ''],
+      ['', 'EUR', '(%)', 'EUR', '(%)'],
+      ['Priprema za FAZA 2', 100, 0, 0, 0],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    expect(sheet.phaseNumbers).toEqual([])
+  })
+})
+
+describe('sheet name matching', () => {
+  it('matches a construction sheet whose name is prefixed', () => {
+    // Real workbooks call it "STR.TR. GRAĐENJA", not "GRAĐENJE".
+    const wb = parseTICWorkbook([
+      { name: 'STR.TR. GRAĐENJA', rows: [
+        ['', 'NAMJENA', '', 'VLASTITA SREDSTVA', '', 'KREDITNA SREDSTVA', ''],
+        ['', '', '', 'EUR', '(%)', 'EUR', '(%)'],
+        ['', 'A)', 'GRAĐEVINSKI RADOVI', '', '', '', ''],
+        ['', 'I.', 'Pripremni radovi', 0, 0, 100, 0],
+      ] },
+    ])
+    expect(wb.construction?.sheetName).toBe('STR.TR. GRAĐENJA')
+    expect(wb.errors).toEqual([])
+  })
+})

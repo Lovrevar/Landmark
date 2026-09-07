@@ -9,6 +9,19 @@ export interface ParsedInvestmentSheet {
   kind: 'investment'
   sheetName: string
   lineItems: LineItem[]
+  /** Phase ordinals found in the sheet, ascending. Empty for an unphased TIC. */
+  phaseNumbers: number[]
+  /**
+   * Names of rows whose money is not attributed to any phase because every phase column
+   * repeated the row's full total — land, project preparation. Surfaced in the preview: taking
+   * these as phased would have overstated the Osijek plan by €8.087.207.
+   */
+  unphasedRows: string[]
+  /**
+   * Rows whose phase columns neither sum to the total nor repeat it. Imported with the split as
+   * given and listed for review — never silently reconciled.
+   */
+  inconsistentRows: string[]
 }
 
 export interface ParsedConstructionSheet {
@@ -98,9 +111,56 @@ function detectLayout(rows: SheetRow[]): SheetLayout | null {
   return null
 }
 
-function parseInvestmentRows(rows: SheetRow[], layout: SheetLayout): LineItem[] {
+interface PhaseColumn {
+  phaseNumber: number
+  ownFundsCol: number
+}
+
+/**
+ * Locate the per-phase column groups.
+ *
+ * A phased TIC labels each group `FAZA n` on a header line above the data, with the same
+ * shape the project columns use: own funds, a % column, then credit. So credit sits at +2,
+ * exactly as it does for the project block.
+ */
+function detectPhaseColumns(rows: SheetRow[], layout: SheetLayout): PhaseColumn[] {
+  const found = new Map<number, number>()
+
+  // Only the header block — a data row mentioning "faza" must not be mistaken for a label.
+  for (let r = 0; r <= layout.headerRow + 3 && r < rows.length; r++) {
+    const row = rows[r]
+    if (!Array.isArray(row)) continue
+
+    row.forEach((cell, col) => {
+      const match = /^FAZA\s*(\d+)$/.exec(normalize(cell))
+      if (!match) return
+      const phaseNumber = Number(match[1])
+      // Left-most wins: the label sits over the first column of its group.
+      if (col > layout.ownFundsCol && !found.has(phaseNumber)) found.set(phaseNumber, col)
+    })
+  }
+
+  return [...found.entries()]
+    .map(([phaseNumber, ownFundsCol]) => ({ phaseNumber, ownFundsCol }))
+    .sort((a, b) => a.phaseNumber - b.phaseNumber)
+}
+
+/** Cent-level tolerance: the source rounds each phase cell independently. */
+const RECONCILE_TOLERANCE = 0.05
+
+export interface InvestmentParseResult {
+  lineItems: LineItem[]
+  phaseNumbers: number[]
+  unphasedRows: string[]
+  inconsistentRows: string[]
+}
+
+function parseInvestmentRows(rows: SheetRow[], layout: SheetLayout): InvestmentParseResult {
   const { nameCol, ownFundsCol } = layout
+  const phaseColumns = detectPhaseColumns(rows, layout)
   const lineItems: LineItem[] = []
+  const unphasedRows: string[] = []
+  const inconsistentRows: string[] = []
 
   for (let r = layout.headerRow + 1; r < rows.length; r++) {
     const row = rows[r]
@@ -112,14 +172,50 @@ function parseInvestmentRows(rows: SheetRow[], layout: SheetLayout): LineItem[] 
     if (SUBTOTAL_RE.test(name) || GRAND_TOTAL_RE.test(name)) break
     if (/^DATUM:?$/i.test(name)) break
 
-    lineItems.push({
-      name,
-      vlastita: cellNumber(row[ownFundsCol]),
-      kreditna: cellNumber(row[ownFundsCol + 2]),
-    })
+    const vlastita = cellNumber(row[ownFundsCol])
+    const kreditna = cellNumber(row[ownFundsCol + 2])
+    const item: LineItem = { name, vlastita, kreditna }
+
+    if (phaseColumns.length > 0) {
+      const phases = phaseColumns.map(({ phaseNumber, ownFundsCol: col }) => ({
+        phase_number: phaseNumber,
+        vlastita: cellNumber(row[col]),
+        kreditna: cellNumber(row[col + 2]),
+      }))
+
+      const rowTotal = vlastita + kreditna
+      const phaseSum = phases.reduce((sum, p) => sum + p.vlastita + p.kreditna, 0)
+      const everyPhaseRepeatsTheTotal =
+        rowTotal > 0 &&
+        phases.length > 1 &&
+        phases.every(p => Math.abs(p.vlastita + p.kreditna - rowTotal) < RECONCILE_TOLERANCE)
+
+      if (everyPhaseRepeatsTheTotal) {
+        // Not phased. The cost is incurred once and each phase's column restates it in full —
+        // land is bought once. Attributing it to phases would multiply it by the phase count.
+        unphasedRows.push(name)
+      } else if (Math.abs(phaseSum - rowTotal) < RECONCILE_TOLERANCE) {
+        item.phases = phases
+      } else if (phaseSum === 0) {
+        // Nothing in the phase columns: a project-level cost on an otherwise phased sheet.
+        unphasedRows.push(name)
+      } else {
+        // Neither splits nor repeats. Keep the author's split, but say so — reconciling it
+        // ourselves would be inventing figures.
+        item.phases = phases
+        inconsistentRows.push(name)
+      }
+    }
+
+    lineItems.push(item)
   }
 
-  return lineItems
+  return {
+    lineItems,
+    phaseNumbers: phaseColumns.map(p => p.phaseNumber),
+    unphasedRows,
+    inconsistentRows,
+  }
 }
 
 function parseConstructionRows(rows: SheetRow[], layout: SheetLayout): ConstructionSection[] {
@@ -183,9 +279,9 @@ export function parseSheet(sheetName: string, rows: SheetRow[]): ParsedSheet {
     return { kind: 'construction', sheetName, sections }
   }
 
-  const lineItems = parseInvestmentRows(rows, layout)
-  if (lineItems.length === 0) throw new Error('no_rows')
-  return { kind: 'investment', sheetName, lineItems }
+  const parsed = parseInvestmentRows(rows, layout)
+  if (parsed.lineItems.length === 0) throw new Error('no_rows')
+  return { kind: 'investment', sheetName, ...parsed }
 }
 
 /** Pull "INVESTITOR:" / "Datum:" from anywhere in the sheet — both are optional. */
@@ -214,7 +310,8 @@ function parseDocumentHeader(rows: SheetRow[]): { investorName: string | null; d
 }
 
 const looksLikeInvestment = (name: string) => normalize(name).startsWith('INVESTICIJ')
-const looksLikeConstruction = (name: string) => normalize(name).startsWith('GRADENJ')
+// `includes`, not `startsWith`: real workbooks prefix the sheet, e.g. "STR.TR. GRAĐENJA".
+const looksLikeConstruction = (name: string) => normalize(name).includes('GRADENJ')
 
 /**
  * Maps each sheet of a workbook onto the two TIC tabs. Sheets are matched by name first

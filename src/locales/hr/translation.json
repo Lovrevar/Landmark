@@ -1744,7 +1744,9 @@
     "no_apartments_desc": "Za ovaj projekt nisu definirani stanovi",
     "size": "Površina",
     "funding_sources": "Izvori financiranja",
-    "no_credit_allocations": "Nema evidentiranih kreditnih alokacija"
+    "no_credit_allocations": "Nema evidentiranih kreditnih alokacija",
+    "budget_not_set": "Budžet nije postavljen",
+    "budget_from_tic_hint": "Budžet se preuzima iz TIC-a projekta."
   },
   "sales_projects": {
     "title": "Projekti",
@@ -2304,7 +2306,11 @@
         "credit_available": "Dostupni kredit",
         "interest_rate": "Kamatna stopa",
         "no_phases_title": "Nema postavljenih faza",
-        "no_phases_desc": "Postavite faze projekta kako biste pratili napredak po fazama"
+        "no_phases_desc": "Postavite faze projekta kako biste pratili napredak po fazama",
+        "budget_from_tic": "iz TIC-a",
+        "budget_differs_from_tic": "odstupa od TIC ({{amount}})",
+        "budget_not_set": "Budžet nije postavljen",
+        "budget_from_tic_hint": "Budžet se preuzima iz TIC-a projekta."
       },
       "loading": "Učitavanje upravljanja gradilištem...",
       "confirm_delete_sub": "Jeste li sigurni da želite obrisati ovog podizvođača?",
@@ -2372,12 +2378,24 @@
         "unallocated_note": "Neraspoređeni iznos ostaje na razini faze.",
         "over_phase_budget": "Zbroj premašuje budžet faze",
         "save": "Spremi budžete",
-        "no_classifications": "Nema aktivnih klasifikacija troška."
+        "no_classifications": "Nema aktivnih klasifikacija troška.",
+        "populate_from_tic": "Popuni iz TIC-a",
+        "tic_plan": "TIC plan",
+        "other_phases": "Druge faze",
+        "this_phase": "Ova faza",
+        "tic_available": "Iznosi se mogu popuniti iz TIC-a ovog projekta.",
+        "tic_missing": "Ovaj projekt nema popunjen TIC, pa nema iz čega popuniti iznose.",
+        "tic_unmapped": "U TIC-u je {{amount}} bez klasifikacije troška i nije uključeno u ove iznose."
       },
       "grouping": {
         "label": "Prikaz",
         "by_phase": "Po fazama",
         "by_classification": "Po klasifikaciji troška"
+      },
+      "budget_matrix": {
+        "title": "Plan investicije po fazama",
+        "subtitle": "Klasifikacije troška po fazama, prema TIC-u projekta.",
+        "not_phased": "Nije fazirano"
       }
     },
     "subcontractors": {
@@ -3615,8 +3633,18 @@
       "error_no_sheets": "U datoteci nije pronađena nijedna TIC tablica. Provjerite sadrži li redak zaglavlja NAMJENA i VLASTITA SREDSTVA.",
       "error_parse_failed": "Datoteku nije moguće pročitati. Provjerite format.",
       "error_missing_header": "nije pronađen redak zaglavlja (NAMJENA / VLASTITA SREDSTVA)",
-      "error_no_rows": "nije pronađena nijedna stavka"
-    }
+      "error_no_rows": "nije pronađena nijedna stavka",
+      "phases_found": "Pronađeno faza: {{count}}",
+      "unphased_title": "Nije fazirano:",
+      "unphased_body": "ovi troškovi nastaju jednom za cijeli projekt, pa se ne dijele po fazama. U tablici se ponavljaju u svakoj fazi u punom iznosu — zbrajanje tih stupaca uvećalo bi plan.",
+      "inconsistent_title": "Provjerite raspodjelu:",
+      "inconsistent_body": "kod ovih redaka zbroj po fazama ne odgovara ukupnom iznosu. Uvezeni su onako kako su napisani, bez ispravljanja."
+    },
+    "col_classification": "Klasifikacija troška",
+    "classification_unmapped": "— nije klasificirano —",
+    "classification_summary": "Plan po klasifikaciji troška",
+    "classification_unmapped_total": "Neraspoređeno u TIC-u",
+    "classification_unmapped_hint": "Ovaj iznos nije uključen u budžete faza dok mu ne dodijelite klasifikaciju troška."
   },
   "dashboards": {
     "common": {

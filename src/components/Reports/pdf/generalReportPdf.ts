@@ -519,11 +519,9 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.setTextColor(0, 0, 0)
 
   const ticData = [
-    ['Total Companies:', report.tic_cost_management.total_companies.toString()],
-    ['TIC Budget:', '€' + report.tic_cost_management.total_tic_budget.toLocaleString()],
-    ['TIC Spent:', '€' + report.tic_cost_management.total_tic_spent.toLocaleString()],
-    ['TIC Utilization:', report.tic_cost_management.tic_utilization.toFixed(1) + '%'],
-    ['Over Budget:', report.tic_cost_management.companies_over_budget.toString()]
+    ['Planned Investment:', '€' + report.tic_cost_management.total_tic_budget.toLocaleString()],
+    ['Projects with a Plan:', report.tic_cost_management.projects_with_tic.toString()],
+    ['Projects without a Plan:', report.tic_cost_management.projects_without_tic.toString()]
   ]
 
   ticData.forEach((row, index) => {

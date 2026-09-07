@@ -128,13 +128,13 @@ const SiteManagement: React.FC = () => {
     if (!selectedProject) return
 
     if (isPhaseSetupEditMode) {
-      const success = await updateProjectPhases(selectedProject.id, phases, selectedProject.budget)
+      const success = await updateProjectPhases(selectedProject.id, phases)
       if (success) {
         setShowPhaseSetup(false)
         setIsPhaseSetupEditMode(false)
       }
     } else {
-      const success = await createProjectPhases(selectedProject.id, phases, selectedProject.budget)
+      const success = await createProjectPhases(selectedProject.id, phases)
       if (success) {
         setShowPhaseSetup(false)
       }
@@ -143,7 +143,7 @@ const SiteManagement: React.FC = () => {
 
   const handleUpdatePhase = async (updates: EditPhaseFormData) => {
     if (!editingPhase || !selectedProject) return
-    const success = await updatePhase(editingPhase, updates, selectedProject)
+    const success = await updatePhase(editingPhase, updates)
     if (success) {
       setShowEditPhaseModal(false)
       setEditingPhase(null)
@@ -359,8 +359,9 @@ const SiteManagement: React.FC = () => {
         visible={budgetsModalPhase !== null}
         phase={budgetsModalPhase}
         classifications={classifications}
+        projectId={selectedProject?.id ?? ''}
+        projectPhaseIds={selectedProject?.phases.map(p => p.id) ?? []}
         onClose={() => setBudgetsModalPhase(null)}
-        onSaved={fetchProjects}
       />
 
       <ManageCostClassificationsModal

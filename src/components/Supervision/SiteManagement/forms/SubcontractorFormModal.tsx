@@ -115,7 +115,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
       loadContractTypes()
       loadClassifications()
     }
-  }, [visible, projectId, loadFunders, loadContractTypes])
+  }, [visible, projectId, loadFunders, loadContractTypes, loadClassifications])
 
   useEffect(() => {
     document.body.style.overflow = visible ? 'hidden' : 'unset'
