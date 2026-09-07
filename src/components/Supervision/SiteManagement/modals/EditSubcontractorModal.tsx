@@ -5,6 +5,8 @@ import { Subcontractor } from '../../../../lib/supabase'
 import { fetchContractFormData } from '../services/siteService'
 import { VAT_RATE_OPTIONS } from '../types'
 import { useContractTypes } from '../hooks/useContractTypes'
+import { useCostClassifications } from '../hooks/useCostClassifications'
+import { formatPhaseLabel } from '../utils/phaseLabel'
 import { useVATCalculation } from '../hooks/useVATCalculation'
 import { Modal, FormField, Input, Select, Textarea, Button, Alert } from '../../../ui'
 import { ContractDocumentUpload } from '../ContractDocumentUpload'
@@ -16,6 +18,7 @@ import { useToast } from '../../../../contexts/ToastContext'
 interface Phase {
   id: string
   phase_name: string
+  phase_number: number
   project_id: string
 }
 
@@ -44,12 +47,14 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const { t } = useTranslation()
   const toast = useToast()
   const { contractTypes, loading: loadingContractTypes, load: loadContractTypes } = useContractTypes()
+  const { classifications, loading: loadingClassifications, load: loadClassifications } = useCostClassifications()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [phases, setPhases] = useState<Phase[]>([])
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
   const [hasContract, setHasContract] = useState(true)
   const [loadingPhases, setLoadingPhases] = useState(false)
-  const [contractTypeId, setContractTypeId] = useState(0)
+  const [contractTypeId, setContractTypeId] = useState<number | null>(null)
+  const [classificationId, setClassificationId] = useState<number | null>(null)
   const [name, setName] = useState('')
   const [contact, setContact] = useState('')
   const [jobDescription, setJobDescription] = useState('')
@@ -70,6 +75,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       const data = await fetchContractFormData(contractId)
       setPhases(data.phases)
       setContractTypeId(data.contract_type_id)
+      setClassificationId(data.classification_id)
       setBaseAmount(data.base_amount)
       setVatRate(data.vat_rate)
     } catch (error) {
@@ -90,8 +96,9 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
       loadContractFormData()
       loadContractTypes()
+      loadClassifications()
     }
-  }, [visible, subcontractor, loadContractFormData, loadContractTypes])
+  }, [visible, subcontractor, loadContractFormData, loadContractTypes, loadClassifications])
 
   const handleUploadFiles = async () => {
     const contractId = getContractId(subcontractor)
@@ -147,7 +154,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                   <option value="">{t('supervision.edit_subcontractor.select_phase')}</option>
                   {phases.map((phase) => (
                     <option key={phase.id} value={phase.id}>
-                      {phase.phase_name}
+                      {formatPhaseLabel(phase, t('common.phase'))}
                     </option>
                   ))}
                 </Select>
@@ -171,15 +178,35 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             </div>
 
             <FormField
+              label={t('supervision.edit_subcontractor.cost_classification')}
+              required
+              helperText={t('supervision.edit_subcontractor.cost_classification_help')}
+            >
+              <Select
+                value={classificationId ?? ''}
+                onChange={(e) => setClassificationId(e.target.value ? parseInt(e.target.value) : null)}
+                disabled={loadingClassifications}
+              >
+                <option value="">{t('supervision.edit_subcontractor.select_classification')}</option>
+                {classifications.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+
+            <FormField
               label={t('supervision.edit_subcontractor.contract_category')}
               required
               helperText={t('supervision.edit_subcontractor.contract_category_help')}
             >
               <Select
-                value={contractTypeId}
-                onChange={(e) => setContractTypeId(parseInt(e.target.value))}
+                value={contractTypeId ?? ''}
+                onChange={(e) => setContractTypeId(e.target.value ? parseInt(e.target.value) : null)}
                 disabled={loadingContractTypes}
               >
+                <option value="">{t('supervision.edit_subcontractor.select_category')}</option>
                 {contractTypes.map(type => (
                   <option key={type.id} value={type.id}>
                     {type.name}
@@ -361,6 +388,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
               total_amount: totalAmount,
               phase_id: selectedPhaseId,
               contract_type_id: contractTypeId,
+              classification_id: classificationId,
               has_contract: hasContract
             } as unknown as Subcontractor
 

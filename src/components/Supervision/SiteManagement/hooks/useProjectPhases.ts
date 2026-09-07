@@ -116,8 +116,22 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
   }
 
   const deletePhase = async (phase: ProjectPhase, _project: ProjectWithPhases) => {
-    if (phase.budget_used > 0) {
-      toast.warning('Cannot delete phase with active subcontractor assignments. Please remove or reassign all subcontractors first.')
+    // Count the actual dependants rather than trusting `budget_used`, which is a derived column
+    // refreshed only by recalculate_all_phase_budgets() and therefore reads 0 for a phase that
+    // does have contracts whenever the recalc has not run since they were added. Getting this
+    // wrong detaches every contract on the phase, silently, via ON DELETE SET NULL.
+    try {
+      const { contracts, workLogs } = await siteService.countPhaseDependents(phase.id)
+      if (contracts > 0 || workLogs > 0) {
+        toast.warning(
+          `Faza "${phase.phase_name}" ima ${contracts} ugovora i ${workLogs} dnevnika rada. ` +
+          'Prvo ih premjestite na drugu fazu ili obrišite.'
+        )
+        return false
+      }
+    } catch (error) {
+      console.error('Error checking phase dependents:', error)
+      toast.error('Provjera ovisnosti faze nije uspjela. Pokušajte ponovno.')
       return false
     }
 

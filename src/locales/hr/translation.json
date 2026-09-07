@@ -144,7 +144,9 @@
     "budget": "Budžet",
     "note": "Napomena",
     "project_type": "Vrsta projekta",
-    "all_project_types": "Sve vrste"
+    "all_project_types": "Sve vrste",
+    "activate": "Aktiviraj",
+    "deactivate": "Deaktiviraj"
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -2241,7 +2243,9 @@
         "over": "iznad",
         "mismatch_note": "Napomena: Budžeti faza se ne podudaraju s budžetom projekta. Možete nastaviti s ovom raspodjelom, ali budite svjesni razlike pri upravljanju troškovima.",
         "create": "Kreiraj faze",
-        "update": "Ažuriraj faze"
+        "update": "Ažuriraj faze",
+        "default_phase_name": "Faza {{n}}",
+        "classification_hint": "Ovdje postavljate budžet faze. Raspodjelu po klasifikacijama troška uredite na kartici faze."
       },
       "edit_phase": {
         "title": "Uredi fazu",
@@ -2334,7 +2338,13 @@
         "no_subs_title": "Nema podugovaratelja",
         "no_subs_desc": "Nema podugovaratelja dodijeljenih ovoj fazi",
         "cost": "Ugovor",
-        "total_owed": "Ukupno dugovi"
+        "total_owed": "Ukupno dugovi",
+        "classification_label": "Klasifikacija troška",
+        "unclassified": "Bez klasifikacije",
+        "classification_budget": "Budžet",
+        "classification_remaining": "Preostalo",
+        "unallocated": "Neraspoređeno",
+        "remaining_budget": "Preostali budžet"
       },
       "milestone_list": {
         "title": "Prekretnice plaćanja",
@@ -2352,6 +2362,22 @@
         "create_error": "Greška pri kreiranju prekretnice",
         "update_error": "Greška pri ažuriranju prekretnice",
         "delete_error": "Greška pri brisanju prekretnice"
+      },
+      "classification_budgets": {
+        "title": "Budžet po klasifikaciji troška",
+        "subtitle": "Rasporedite budžet faze po stavkama troškovnika.",
+        "phase_budget": "Budžet faze",
+        "total_allocated": "Ukupno alocirano",
+        "difference": "Razlika",
+        "unallocated_note": "Neraspoređeni iznos ostaje na razini faze.",
+        "over_phase_budget": "Zbroj premašuje budžet faze",
+        "save": "Spremi budžete",
+        "no_classifications": "Nema aktivnih klasifikacija troška."
+      },
+      "grouping": {
+        "label": "Prikaz",
+        "by_phase": "Po fazama",
+        "by_classification": "Po klasifikaciji troška"
       }
     },
     "subcontractors": {
@@ -2438,8 +2464,13 @@
       "errors": {
         "select_category": "Odaberite kategoriju ugovora",
         "select_subcontractor": "Odaberite podugovaratelja",
-        "add_error": "Greška pri dodavanju podugovaratelja."
-      }
+        "add_error": "Greška pri dodavanju podugovaratelja.",
+        "select_classification": "Odaberite klasifikaciju troška",
+        "exceeds_classification_budget": "Iznos ugovora premašuje raspoloživi budžet klasifikacije troška"
+      },
+      "cost_classification": "Klasifikacija troška",
+      "cost_classification_help": "U koju stavku troškovnika ovaj ugovor spada. Neovisno o kategoriji ugovora ispod.",
+      "select_classification": "Odaberite klasifikaciju troška"
     },
     "contract_type": {
       "title": "Nova kategorija ugovora",
@@ -2601,7 +2632,11 @@
         "phase_required": "Faza je obavezna",
         "name_required": "Naziv je obavezan",
         "job_required": "Opis posla je obavezan"
-      }
+      },
+      "cost_classification": "Klasifikacija troška",
+      "cost_classification_help": "U koju stavku troškovnika ovaj ugovor spada.",
+      "select_classification": "Odaberite klasifikaciju troška",
+      "select_category": "Odaberite kategoriju ugovora"
     },
     "edit_payment": {
       "title": "Uredi plaćanje",
@@ -2741,6 +2776,28 @@
         "name_required": "Naziv kategorije je obavezan",
         "name_exists": "Kategorija s tim nazivom već postoji",
         "save_error": "Greška pri spremanju kategorije"
+      }
+    },
+    "cost_classification": {
+      "title_create": "Nova klasifikacija troška",
+      "title_edit": "Uredi klasifikaciju troška",
+      "subtitle": "Klasifikacije troška grupiraju ugovore unutar faze projekta.",
+      "manage_title": "Klasifikacije troškova",
+      "name_label": "Naziv",
+      "name_placeholder": "npr. Priključci",
+      "desc_label": "Opis",
+      "desc_placeholder": "Neobavezno",
+      "sort_order_label": "Redoslijed",
+      "active_label": "Aktivna",
+      "system_badge": "Sistemska",
+      "system_hint": "Sistemske klasifikacije se ne mogu preimenovati ni obrisati.",
+      "save": "Spremi",
+      "errors": {
+        "name_required": "Naziv je obavezan",
+        "already_exists": "Klasifikacija s tim nazivom već postoji",
+        "save_error": "Greška pri spremanju klasifikacije",
+        "system_readonly": "Sistemska klasifikacija se ne može mijenjati",
+        "in_use": "Klasifikacija se koristi na ugovorima ili budžetima i ne može se obrisati"
       }
     }
   },
@@ -4976,7 +5033,13 @@
       "retail_contract.delete": "Retail ugovor obrisan",
       "retail_milestone.create": "Retail prekretnica kreirana",
       "retail_milestone.update": "Retail prekretnica ažurirana",
-      "retail_milestone.delete": "Retail prekretnica obrisana"
+      "retail_milestone.delete": "Retail prekretnica obrisana",
+      "cost_classification.create": "Klasifikacija troška kreirana",
+      "cost_classification.update": "Klasifikacija troška ažurirana",
+      "cost_classification.delete": "Klasifikacija troška obrisana",
+      "phase_classification_budget.update": "Budžet klasifikacije ažuriran",
+      "phase_classification_budget.bulk_update": "Budžeti klasifikacija masovno ažurirani",
+      "phase_classification_budget.delete": "Budžet klasifikacije obrisan"
     }
   }
 }

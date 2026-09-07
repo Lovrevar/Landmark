@@ -1,8 +1,10 @@
-import { Project, Subcontractor, ProjectPhase, WirePayment, SubcontractorMilestone } from '../../../lib/supabase'
+import { Project, Subcontractor, ProjectPhase, WirePayment, SubcontractorMilestone, CostClassification, PhaseClassificationBudget } from '../../../lib/supabase'
 
 export interface ProjectWithPhases extends Project {
   phases: ProjectPhase[]
   subcontractors: Subcontractor[]
+  /** Per-(phase, classification) budget rows for this project's phases. */
+  classification_budgets: PhaseClassificationBudget[]
   completion_percentage: number
   total_subcontractor_cost: number
   overdue_subcontractors: number
@@ -18,6 +20,7 @@ export interface SubcontractorWithPhase extends Subcontractor {
   deadline?: string
   cost: number
   budget_realized: number
+  project_id?: string
   phase_id?: string
   contract_id?: string
   subcontractor_id?: string
@@ -26,6 +29,9 @@ export interface SubcontractorWithPhase extends Subcontractor {
   invoice_total_owed?: number
   contract_type_id?: number | null
   contract_type_name?: string | null
+  classification_id?: number | null
+  classification_name?: string | null
+  classification_sort_order?: number | null
 }
 
 export interface SubcontractorWithMilestones extends Subcontractor {
@@ -69,7 +75,8 @@ export interface SubcontractorFormData {
   vat_amount: number
   total_amount: number
   phase_id: string
-  contract_type_id: number
+  contract_type_id: number | null
+  classification_id: number | null
   financed_by_type?: 'investor' | 'bank' | null
   financed_by_bank_id?: string | null
   financed_by_investor_id?: string | null
@@ -81,6 +88,49 @@ export interface ContractType {
   name: string
   description: string | null
   is_active: boolean
+}
+
+export type { CostClassification, PhaseClassificationBudget }
+
+/**
+ * Which axis nests inside which, on the Site Management contract tree.
+ *
+ * Contract type is always innermost; only the top two levels swap, which is the entire
+ * difference between the "by phase" and "by classification" views.
+ */
+export type GroupDimension = 'phase' | 'classification' | 'contractType'
+
+export type SiteGrouping = 'byPhase' | 'byClassification'
+
+export const VIEW_DIMENSIONS: Record<SiteGrouping, GroupDimension[]> = {
+  byPhase: ['phase', 'classification', 'contractType'],
+  byClassification: ['classification', 'phase', 'contractType']
+}
+
+/** Money rolled up over a set of contracts. Same shape at every level of the tree. */
+export interface GroupRollup {
+  contracted: number
+  paid: number
+  unpaid: number
+  /** Owed on rows that have no contract; kept separate because the budget tiles subtract it. */
+  unpaidWithoutContract: number
+  count: number
+}
+
+export interface TreeNode {
+  /** Full path key, e.g. `phase:<uuid>|cls:12|type:3`. Unique per view. */
+  key: string
+  dimension: GroupDimension
+  id: string | number | null
+  label: string
+  /** phase_number or classification sort_order; contract types use 0 and sort by label. */
+  sortKey: number
+  /** Allocated budget for this node, or null where the dimension has no budget of its own. */
+  budget: number | null
+  rollup: GroupRollup
+  children: TreeNode[]
+  /** Populated on leaf nodes only. */
+  contracts: SubcontractorWithPhase[]
 }
 
 export interface MilestoneFormData {

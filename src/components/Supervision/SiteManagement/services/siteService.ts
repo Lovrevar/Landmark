@@ -52,6 +52,12 @@ export const fetchSubcontractorsWithPhases = async () => {
         id,
         name,
         description
+      ),
+      classification_id,
+      classification:cost_classifications!contracts_classification_id_fkey(
+        id,
+        name,
+        sort_order
       )
     `)
     .in('status', ['draft', 'active'])
@@ -69,6 +75,7 @@ export const fetchSubcontractorsWithPhases = async () => {
 
     return {
       id: contract.id,
+      project_id: contract.project_id,
       subcontractor_id: contract.subcontractor.id,
       name: contract.subcontractor.name,
       contact: contract.subcontractor.contact,
@@ -88,7 +95,10 @@ export const fetchSubcontractorsWithPhases = async () => {
       project_phases: contract.phase,
       has_contract: contract.has_contract !== false,
       contract_type_id: contract.contract_type_id,
-      contract_type_name: contract.contract_type?.name || null
+      contract_type_name: contract.contract_type?.name || null,
+      classification_id: contract.classification_id,
+      classification_name: contract.classification?.name || null,
+      classification_sort_order: contract.classification?.sort_order ?? null
     }
   })
 
@@ -96,6 +106,8 @@ export const fetchSubcontractorsWithPhases = async () => {
 }
 
 // Re-exports — preserved for backward compatibility with existing consumers.
+export * from './costClassificationService'
+export * from './phaseClassificationBudgetService'
 export * from './phaseService'
 export * from './siteContractService'
 export * from './siteSubcontractorService'

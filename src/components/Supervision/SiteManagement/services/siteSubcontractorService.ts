@@ -105,7 +105,8 @@ export const updateSubcontractor = async (
     vat_amount?: number
     total_amount?: number
     phase_id?: string
-    contract_type_id?: number
+    contract_type_id?: number | null
+    classification_id?: number | null
     has_contract?: boolean
   }
 ) => {
@@ -145,6 +146,9 @@ export const updateSubcontractor = async (
   }
   if (updates.contract_type_id !== undefined) {
     contractUpdateData.contract_type_id = updates.contract_type_id
+  }
+  if (updates.classification_id !== undefined) {
+    contractUpdateData.classification_id = updates.classification_id
   }
   if (updates.has_contract !== undefined) {
     contractUpdateData.has_contract = updates.has_contract

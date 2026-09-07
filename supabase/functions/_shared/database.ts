@@ -1691,7 +1691,8 @@ export type Database = {
           budget_realized: number
           contract_amount: number
           contract_number: string | null
-          contract_type_id: number
+          classification_id: number | null
+          contract_type_id: number | null
           created_at: string | null
           end_date: string | null
           has_contract: boolean
@@ -1717,7 +1718,8 @@ export type Database = {
           budget_realized?: number
           contract_amount?: number
           contract_number?: string | null
-          contract_type_id?: number
+          classification_id?: number | null
+          contract_type_id?: number | null
           created_at?: string | null
           end_date?: string | null
           has_contract?: boolean
@@ -1743,7 +1745,8 @@ export type Database = {
           budget_realized?: number
           contract_amount?: number
           contract_number?: string | null
-          contract_type_id?: number
+          classification_id?: number | null
+          contract_type_id?: number | null
           created_at?: string | null
           end_date?: string | null
           has_contract?: boolean
@@ -1794,6 +1797,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cost_classifications: {
+        Row: {
+          code: string | null
+          created_at: string
+          description: string | null
+          id: number
+          is_active: boolean
+          is_system: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: number
+          is_active?: boolean
+          is_system?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: number
+          is_active?: boolean
+          is_system?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       credit_allocations: {
         Row: {
@@ -2218,6 +2257,51 @@ export type Database = {
           vat_id?: string | null
         }
         Relationships: []
+      }
+      phase_classification_budgets: {
+        Row: {
+          budget_allocated: number
+          classification_id: number
+          created_at: string
+          id: string
+          notes: string | null
+          phase_id: string
+          updated_at: string
+        }
+        Insert: {
+          budget_allocated?: number
+          classification_id: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phase_id: string
+          updated_at?: string
+        }
+        Update: {
+          budget_allocated?: number
+          classification_id?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phase_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase_classification_budgets_classification_id_fkey"
+            columns: ["classification_id"]
+            isOneToOne: false
+            referencedRelation: "cost_classifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phase_classification_budgets_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "project_phases"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       profiles: {
         Row: {

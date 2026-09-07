@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Building2, Settings, CreditCard } from 'lucide-react'
+import { ArrowLeft, Building2, Settings, CreditCard, Layers, Tags } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
-import { ProjectWithPhases, SubcontractorWithPhase } from './types'
+import { ProjectWithPhases, SubcontractorWithPhase, SiteGrouping, VIEW_DIMENSIONS, CostClassification } from './types'
 import { PhaseCard } from './PhaseCard'
+import { ClassificationCard } from './ClassificationCard'
+import { buildContractTree } from './utils/contractTree'
+import { formatPhaseLabel } from './utils/phaseLabel'
+import { formatEuroRounded } from '../../../utils/formatters'
 import { fetchCreditAllocations, type CreditAllocation } from './services/siteService'
 import { Button, Badge, EmptyState } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
@@ -15,7 +19,13 @@ interface ProjectDetailProps {
   onEditPhaseSetup?: () => void
   onEditPhase: (phase: ProjectPhase) => void
   onDeletePhase: (phase: ProjectPhase) => void
-  onAddSubcontractor: (phase: ProjectPhase) => void
+  onAddSubcontractor: (phase: ProjectPhase, classificationId?: number | null) => void
+  onEditClassificationBudgets: (phase: ProjectPhase) => void
+  onEditClassificationBudget: (phaseId: string, classificationId: number) => void
+  onManageClassifications: () => void
+  classifications: CostClassification[]
+  grouping: SiteGrouping
+  onChangeGrouping: (grouping: SiteGrouping) => void
   onOpenPaymentHistory?: (subcontractor: Subcontractor) => void
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
@@ -24,9 +34,10 @@ interface ProjectDetailProps {
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   canManagePayments?: boolean
   expandedPhases: Set<string>
-  expandedContractTypes: Map<string, Set<string>>
+  /** Flat set of full path keys. Encodes the dimension order, so each view keeps its own state. */
+  expandedNodes: Set<string>
   onTogglePhase: (phaseId: string) => void
-  onToggleContractType: (phaseId: string, typeKey: string) => void
+  onToggleNode: (key: string) => void
 }
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({
@@ -37,6 +48,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onEditPhase,
   onDeletePhase,
   onAddSubcontractor,
+  onEditClassificationBudgets,
+  onEditClassificationBudget,
+  onManageClassifications,
+  classifications,
+  grouping,
+  onChangeGrouping,
   onOpenPaymentHistory,
   onOpenInvoices,
   onEditSubcontractor,
@@ -45,11 +62,32 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onManageMilestones,
   canManagePayments = true,
   expandedPhases,
-  expandedContractTypes,
+  expandedNodes,
   onTogglePhase,
-  onToggleContractType
+  onToggleNode
 }) => {
   const { t } = useTranslation()
+
+  // Shared by both views, so the two produce identical labels, ordering and money.
+  const treeContext = React.useCallback((phases = project.phases) => ({
+    phases,
+    classifications,
+    budgets: project.classification_budgets || [],
+    labels: {
+      unclassified: t('supervision.site_management.phase_card.unclassified'),
+      uncategorizedType: t('supervision.site_management.phase_card.uncategorized'),
+      phase: (p: ProjectPhase) => formatPhaseLabel(p, t('common.phase'))
+    }
+  }), [project.phases, project.classification_budgets, classifications, t])
+
+  const classificationNodes = React.useMemo(
+    () => buildContractTree(
+      project.subcontractors as unknown as SubcontractorWithPhase[],
+      VIEW_DIMENSIONS.byClassification,
+      treeContext()
+    ),
+    [project.subcontractors, treeContext]
+  )
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [, setLoadingCredits] = useState(false)
 
@@ -77,11 +115,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{project.name}</h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">{project.location}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {t('supervision.site_management.project_detail.budget_label')}: €{project.budget.toLocaleString('hr-HR')}
+              {t('supervision.site_management.project_detail.budget_label')}: {formatEuroRounded(project.budget)}
               {project.has_phases && (
                 <>
                   <span className="ml-2">
-                    • {t('supervision.site_management.project_detail.allocated_label')}: €{project.total_budget_allocated.toLocaleString('hr-HR')}
+                    • {t('supervision.site_management.project_detail.allocated_label')}: {formatEuroRounded(project.total_budget_allocated)}
                   </span>
                 </>
               )}
@@ -96,6 +134,35 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             } size="md">
               {project.status}
             </Badge>
+            {project.has_phases && (
+              <div className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+                <button
+                  onClick={() => onChangeGrouping('byPhase')}
+                  className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${
+                    grouping === 'byPhase'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Layers className="w-4 h-4" />
+                  {t('supervision.site_management.grouping.by_phase')}
+                </button>
+                <button
+                  onClick={() => onChangeGrouping('byClassification')}
+                  className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${
+                    grouping === 'byClassification'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Tags className="w-4 h-4" />
+                  {t('supervision.site_management.grouping.by_classification')}
+                </button>
+              </div>
+            )}
+            <Button variant="secondary" onClick={onManageClassifications} icon={Tags}>
+              {t('supervision.cost_classification.manage_title')}
+            </Button>
             {!project.has_phases ? (
               <Button
                 onClick={onOpenPhaseSetup}
@@ -142,18 +209,18 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.project_detail.credit_allocated')}:</span>
-                      <span className="font-bold text-blue-600">€{allocatedAmount.toLocaleString('hr-HR')}</span>
+                      <span className="font-bold text-blue-600">{formatEuroRounded(allocatedAmount)}</span>
                     </div>
                     {credit.disbursed_to_account ? null : (
                       <>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.project_detail.credit_used')}:</span>
-                          <span className="font-semibold text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
+                          <span className="font-semibold text-orange-600">{formatEuroRounded(usedAmount)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.project_detail.credit_available')}:</span>
                           <span className={`font-semibold ${availableAmount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            €{availableAmount.toLocaleString('hr-HR')}
+                            {formatEuroRounded(availableAmount)}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
@@ -196,18 +263,54 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       )}
 
       {project.has_phases ? (
-        <div className="space-y-6">
-          {project.phases.map((phase) => {
-            const phaseSubcontractors = project.subcontractors.filter(sub => sub.phase_id === phase.id)
+        grouping === 'byPhase' ? (
+          <div className="space-y-6">
+            {project.phases.map((phase) => {
+              const phaseSubcontractors = project.subcontractors.filter(sub => sub.phase_id === phase.id)
+              // Tree for this phase alone: the phase level is the card itself, so only the
+              // levels below it are built here.
+              const nodes = buildContractTree(
+                phaseSubcontractors as unknown as SubcontractorWithPhase[],
+                VIEW_DIMENSIONS.byPhase.slice(1),
+                treeContext([phase])
+              )
 
-            return (
-              <PhaseCard
-                key={phase.id}
-                phase={phase}
+              return (
+                <PhaseCard
+                  key={phase.id}
+                  phase={phase}
+                  project={project}
+                  phaseSubcontractors={phaseSubcontractors}
+                  nodes={nodes}
+                  onEditPhase={onEditPhase}
+                  onDeletePhase={onDeletePhase}
+                  onAddSubcontractor={onAddSubcontractor}
+                  onEditClassificationBudgets={onEditClassificationBudgets}
+                  onEditClassificationBudget={onEditClassificationBudget}
+                  onOpenPaymentHistory={onOpenPaymentHistory}
+                  onOpenInvoices={onOpenInvoices}
+                  onEditSubcontractor={onEditSubcontractor}
+                  onOpenSubDetails={onOpenSubDetails}
+                  onDeleteSubcontractor={onDeleteSubcontractor}
+                  onManageMilestones={onManageMilestones}
+                  isExpanded={expandedPhases.has(phase.id)}
+                  expandedNodes={expandedNodes}
+                  onToggleExpand={() => onTogglePhase(phase.id)}
+                  onToggleNode={onToggleNode}
+                />
+              )
+            })}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {classificationNodes.map(node => (
+              <ClassificationCard
+                key={node.key}
+                node={node}
                 project={project}
-                phaseSubcontractors={phaseSubcontractors}
-                onEditPhase={onEditPhase}
-                onDeletePhase={onDeletePhase}
+                expandedNodes={expandedNodes}
+                onToggleNode={onToggleNode}
+                onEditClassificationBudget={onEditClassificationBudget}
                 onAddSubcontractor={onAddSubcontractor}
                 onOpenPaymentHistory={onOpenPaymentHistory}
                 onOpenInvoices={onOpenInvoices}
@@ -215,14 +318,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onOpenSubDetails={onOpenSubDetails}
                 onDeleteSubcontractor={onDeleteSubcontractor}
                 onManageMilestones={onManageMilestones}
-                isExpanded={expandedPhases.has(phase.id)}
-                expandedContractTypes={expandedContractTypes.get(phase.id) || new Set()}
-                onToggleExpand={() => onTogglePhase(phase.id)}
-                onToggleContractType={(typeKey) => onToggleContractType(phase.id, typeKey)}
               />
-            )
-          })}
-        </div>
+            ))}
+          </div>
+        )
       ) : (
         <EmptyState
           icon={Building2}
@@ -258,13 +357,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             </div>
           )}
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">€{project.total_subcontractor_cost.toLocaleString('hr-HR')}</div>
+            <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">{formatEuroRounded(project.total_subcontractor_cost)}</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.project_detail.contract_total')}</div>
           </div>
           {canManagePayments && (
             <div className="text-center">
               <div className="text-2xl font-bold text-teal-600">
-                €{project.subcontractors.reduce((sum, s) => sum + s.budget_realized, 0).toLocaleString('hr-HR')}
+                {formatEuroRounded(project.subcontractors.reduce((sum, s) => sum + s.budget_realized, 0))}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.payment_history.total_paid')}</div>
             </div>

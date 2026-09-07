@@ -19,7 +19,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
   editMode = false
 }) => {
   const { t } = useTranslation()
-  const [phaseCount, setPhaseCount] = useState(4)
+  const [phaseCount, setPhaseCount] = useState(1)
   const [phases, setPhases] = useState<PhaseFormInput[]>([])
 
   // Initialise the phase list when the modal opens. Intentionally keyed on
@@ -56,16 +56,20 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
       setPhases(existingPhases)
       setPhaseCount(existingPhases.length)
     } else {
-      const defaultPhases = [
-        { phase_name: 'Zemljište', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Priprema i razvoj', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Izgradnja i uređenje', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Opremanje', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Kontrola', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Financiranje i nadzor', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Nepredviđeni troškovi', budget_allocated: 0, start_date: '', end_date: '' }
-      ]
-      setPhases(defaultPhases.slice(0, phaseCount))
+      // Phases are named "Faza 1", "Faza 2", ... and nothing else.
+      //
+      // These slots used to be pre-filled with the seven cost bucket names (Zemljište,
+      // Priprema i razvoj, ...). That is what conflated the two concepts in the first place:
+      // users accepted the defaults and a project could then never have a second real phase.
+      // Those names now live in the cost_classifications table and are chosen per contract.
+      setPhases(
+        Array.from({ length: phaseCount }, (_, i) => ({
+          phase_name: t('supervision.site_management.phase_setup.default_phase_name', { n: i + 1 }),
+          budget_allocated: 0,
+          start_date: '',
+          end_date: ''
+        }))
+      )
     }
   }
 
@@ -77,7 +81,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
       const newPhases = [...phases]
       for (let i = currentCount; i < count; i++) {
         newPhases.push({
-          phase_name: `${t('common.phase')} ${i + 1}`,
+          phase_name: t('supervision.site_management.phase_setup.default_phase_name', { n: i + 1 }),
           budget_allocated: 0,
           start_date: '',
           end_date: ''
@@ -113,6 +117,12 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
             ))}
           </Select>
         </FormField>
+
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            {t('supervision.site_management.phase_setup.classification_hint')}
+          </p>
+        </div>
 
         <div className="space-y-4 mt-6">
           {phases.map((phase, index) => (

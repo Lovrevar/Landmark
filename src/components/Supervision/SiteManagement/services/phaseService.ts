@@ -44,6 +44,27 @@ export const recalculateAllPhaseBudgets = async () => {
   if (error) throw error
 }
 
+/**
+ * How many contracts and work logs point at a phase.
+ *
+ * contracts.phase_id and work_logs.phase_id are both ON DELETE SET NULL, so deleting a phase
+ * that still has dependants does not fail — it silently detaches them. Callers must check this
+ * first. `budget_used` is NOT a substitute: it is a derived column that only
+ * recalculate_all_phase_budgets() refreshes, so it reads 0 for a phase that has contracts
+ * whenever the recalc has not run since they were added.
+ */
+export const countPhaseDependents = async (phaseId: string): Promise<{ contracts: number; workLogs: number }> => {
+  const [contracts, workLogs] = await Promise.all([
+    supabase.from('contracts').select('id', { count: 'exact', head: true }).eq('phase_id', phaseId),
+    supabase.from('work_logs').select('id', { count: 'exact', head: true }).eq('phase_id', phaseId)
+  ])
+
+  if (contracts.error) throw contracts.error
+  if (workLogs.error) throw workLogs.error
+
+  return { contracts: contracts.count ?? 0, workLogs: workLogs.count ?? 0 }
+}
+
 export const createPhases = async (projectId: string, phases: PhaseFormInput[]) => {
   const phasesToInsert = phases.map((phase, index) => ({
     project_id: projectId,
@@ -80,6 +101,23 @@ export const updateProjectPhases = async (projectId: string, phases: PhaseFormIn
 
   const phasesToDelete = existingPhases.filter(p => !updatedPhaseIds.has(p.id))
   if (phasesToDelete.length > 0) {
+    // Removing a row in the phase-setup modal deletes the phase, and the FKs then NULL out
+    // every contract that pointed at it — silently, because ON DELETE SET NULL does not fail.
+    // The single-phase delete path has always warned about this; the bulk path never did.
+    const dependentCounts = await Promise.all(phasesToDelete.map(p => countPhaseDependents(p.id)))
+    const blocked = phasesToDelete
+      .map((phase, i) => ({ phase, ...dependentCounts[i] }))
+      .filter(entry => entry.contracts > 0 || entry.workLogs > 0)
+
+    if (blocked.length > 0) {
+      const detail = blocked
+        .map(b => `${b.phase.phase_name} (${b.contracts})`)
+        .join(', ')
+      throw new Error(
+        `Ne možete obrisati faze koje imaju ugovore: ${detail}. Prvo premjestite ili obrišite ugovore.`
+      )
+    }
+
     const { error: deleteError } = await supabase
       .from('project_phases')
       .delete()
@@ -187,12 +225,16 @@ export const deletePhase = async (phaseId: string) => {
 }
 
 export const resequencePhases = async (phases: ProjectPhase[]) => {
-  for (let i = 0; i < phases.length; i++) {
-    await supabase
-      .from('project_phases')
-      .update({ phase_number: i + 1 })
-      .eq('id', phases[i].id)
-  }
+  const projectId = phases[0]?.project_id
+  if (!projectId) return
+
+  // One statement, via RPC. The previous row-by-row loop could transiently violate
+  // UNIQUE (project_id, phase_number) mid-way when phases were reordered rather than appended.
+  const { error } = await supabase.rpc('renumber_project_phases', {
+    p_project_id: projectId,
+    p_ordered_ids: phases.map(p => p.id)
+  })
+  if (error) throw error
 
   logActivity({
     action: 'phase.bulk_update',

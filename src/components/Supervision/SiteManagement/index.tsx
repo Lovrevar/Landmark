@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, Modal, ConfirmDialog } from '../../ui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { ProjectPhase, Subcontractor, WirePayment } from '../../../lib/supabase'
-import { ProjectWithPhases, PhaseFormInput, EditPhaseFormData, SubcontractorFormData, CommentWithUser } from './types'
+import { ProjectWithPhases, PhaseFormInput, EditPhaseFormData, SubcontractorFormData, CommentWithUser, SiteGrouping } from './types'
 import { useSiteData } from './hooks/useSiteData'
+import { useCostClassifications } from './hooks/useCostClassifications'
 import { ProjectsGrid } from './ProjectsGrid'
 import { ProjectDetail } from './ProjectDetail'
 import { PhaseSetupModal } from './modals/PhaseSetupModal'
@@ -15,8 +16,13 @@ import { PaymentHistoryModal } from './modals/PaymentHistoryModal'
 import { EditPaymentModal } from './modals/EditPaymentModal'
 import { SubcontractorDetailsModal } from './modals/SubcontractorDetailsModal'
 import { InvoicesModal } from './modals/InvoicesModal'
+import { PhaseClassificationBudgetsModal } from './modals/PhaseClassificationBudgetsModal'
+import { ManageCostClassificationsModal } from './modals/ManageCostClassificationsModal'
 import { MilestoneList } from './MilestoneList'
 import { canManagePayments, getAccessibleProjectIds, isSupervisionRole } from '../../../utils/permissions'
+
+/** Remembers the phase-first vs classification-first choice per browser. */
+const GROUPING_STORAGE_KEY = 'cognilion.site_management_grouping'
 
 const SiteManagement: React.FC = () => {
   const { t } = useTranslation()
@@ -83,7 +89,40 @@ const SiteManagement: React.FC = () => {
   const [showInvoicesModal, setShowInvoicesModal] = useState(false)
   const [selectedSubcontractorForInvoices, setSelectedSubcontractorForInvoices] = useState<Subcontractor | null>(null)
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set())
-  const [expandedContractTypes, setExpandedContractTypes] = useState<Map<string, Set<string>>>(new Map())
+  // One flat set of full path keys ("phase:<id>|cls:12|type:3") rather than a Map of Maps.
+  // The key encodes the dimension order, so the two views never share expansion state.
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
+  const [grouping, setGrouping] = useState<SiteGrouping>(() => {
+    try {
+      const stored = localStorage.getItem(GROUPING_STORAGE_KEY)
+      return stored === 'byClassification' ? 'byClassification' : 'byPhase'
+    } catch {
+      return 'byPhase'
+    }
+  })
+  const [budgetsModalPhase, setBudgetsModalPhase] = useState<ProjectPhase | null>(null)
+  const [showManageClassifications, setShowManageClassifications] = useState(false)
+  const { classifications, load: loadClassifications } = useCostClassifications()
+
+  useEffect(() => { loadClassifications() }, [loadClassifications])
+
+  const changeGrouping = (next: SiteGrouping) => {
+    setGrouping(next)
+    try {
+      localStorage.setItem(GROUPING_STORAGE_KEY, next)
+    } catch {
+      // A viewer with site data blocked still gets a working page, just no remembered view.
+    }
+  }
+
+  const toggleNode = (key: string) => {
+    setExpandedNodes(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   const handleCreatePhases = async (phases: PhaseFormInput[]) => {
     if (!selectedProject) return
@@ -137,6 +176,7 @@ const SiteManagement: React.FC = () => {
       vat_amount: data.vat_amount,
       total_amount: data.total_amount,
       contract_type_id: data.contract_type_id,
+      classification_id: data.classification_id,
       has_contract: data.has_contract,
       financed_by_type: data.financed_by_type,
       financed_by_investor_id: data.financed_by_investor_id,
@@ -290,8 +330,17 @@ const SiteManagement: React.FC = () => {
           onDeleteSubcontractor={handleDeleteSubcontractor}
           onManageMilestones={handleManageMilestones}
           canManagePayments={userCanManagePayments}
+          classifications={classifications}
+          grouping={grouping}
+          onChangeGrouping={changeGrouping}
+          onEditClassificationBudgets={(phase) => setBudgetsModalPhase(phase)}
+          onEditClassificationBudget={(phaseId) => {
+            const phase = selectedProject?.phases.find(p => p.id === phaseId)
+            if (phase) setBudgetsModalPhase(phase)
+          }}
+          onManageClassifications={() => setShowManageClassifications(true)}
           expandedPhases={expandedPhases}
-          expandedContractTypes={expandedContractTypes}
+          expandedNodes={expandedNodes}
           onTogglePhase={(phaseId) => {
             setExpandedPhases(prev => {
               const next = new Set(prev)
@@ -303,23 +352,24 @@ const SiteManagement: React.FC = () => {
               return next
             })
           }}
-          onToggleContractType={(phaseId, typeKey) => {
-            setExpandedContractTypes(prev => {
-              const next = new Map(prev)
-              const phaseTypes = next.get(phaseId) || new Set()
-              const newPhaseTypes = new Set(phaseTypes)
-              if (newPhaseTypes.has(typeKey)) {
-                newPhaseTypes.delete(typeKey)
-              } else {
-                newPhaseTypes.add(typeKey)
-              }
-              next.set(phaseId, newPhaseTypes)
-              return next
-            })
-          }}
+          onToggleNode={toggleNode}
         />
 
-        <PhaseSetupModal
+        <PhaseClassificationBudgetsModal
+        visible={budgetsModalPhase !== null}
+        phase={budgetsModalPhase}
+        classifications={classifications}
+        onClose={() => setBudgetsModalPhase(null)}
+        onSaved={fetchProjects}
+      />
+
+      <ManageCostClassificationsModal
+        visible={showManageClassifications}
+        onClose={() => setShowManageClassifications(false)}
+        onChanged={() => { loadClassifications(); fetchProjects() }}
+      />
+
+      <PhaseSetupModal
           visible={showPhaseSetup}
           onClose={() => {
             setShowPhaseSetup(false)

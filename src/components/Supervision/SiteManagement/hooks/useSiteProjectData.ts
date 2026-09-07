@@ -17,11 +17,12 @@ export const useSiteProjectData = () => {
       setLoading(true)
     }
     try {
-      const [projectsData, phasesData, subcontractorsWithPhaseData, allSubcontractorsData] = await Promise.all([
+      const [projectsData, phasesData, subcontractorsWithPhaseData, allSubcontractorsData, classificationBudgets] = await Promise.all([
         siteService.fetchAllProjects(),
         siteService.fetchProjectPhases(),
         siteService.fetchSubcontractorsWithPhases(),
         siteService.fetchAllSubcontractors(),
+        siteService.fetchPhaseClassificationBudgets(),
       ])
 
       setExistingSubcontractors(allSubcontractorsData)
@@ -32,8 +33,13 @@ export const useSiteProjectData = () => {
 
       const projectsWithPhases = projectsData.map(project => {
         const projectPhases = phasesData.filter(phase => phase.project_id === project.id)
+        const projectPhaseIds = new Set(projectPhases.map(phase => phase.id))
+        const projectClassificationBudgets = classificationBudgets.filter(b => projectPhaseIds.has(b.phase_id))
+        // Scope by the contract's own project_id, not by whether its phase still resolves.
+        // Going through phases meant a contract whose phase was deleted (phase_id set to NULL by
+        // the FK) silently vanished from this screen instead of showing up unassigned.
         const projectSubcontractors = subcontractorsWithPhaseData
-          .filter(sub => projectPhases.some(phase => phase.id === sub.phase_id))
+          .filter(sub => sub.project_id === project.id)
           .map(sub => {
             const stats = invoiceStatsMap.get(sub.id)
             return {
@@ -63,6 +69,7 @@ export const useSiteProjectData = () => {
           ...project,
           phases: projectPhases,
           subcontractors: projectSubcontractors,
+          classification_budgets: projectClassificationBudgets,
           completion_percentage,
           total_subcontractor_cost,
           overdue_subcontractors,

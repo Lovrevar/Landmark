@@ -144,7 +144,9 @@
     "budget": "Budget",
     "note": "Note",
     "project_type": "Project type",
-    "all_project_types": "All types"
+    "all_project_types": "All types",
+    "activate": "Activate",
+    "deactivate": "Deactivate"
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -2237,7 +2239,9 @@
         "over": "over",
         "mismatch_note": "Note: Phase budgets don't match the project budget. You can proceed with this allocation, but be aware of the difference when managing costs.",
         "create": "Create Phases",
-        "update": "Update Phases"
+        "update": "Update Phases",
+        "default_phase_name": "Phase {{n}}",
+        "classification_hint": "This sets the phase budget. Distribute it across cost classifications on the phase card."
       },
       "edit_phase": {
         "title": "Edit Phase",
@@ -2330,7 +2334,13 @@
         "no_subs_title": "No subcontractors yet",
         "no_subs_desc": "No subcontractors assigned to this phase yet",
         "cost": "Contract",
-        "total_owed": "Total Owed"
+        "total_owed": "Total Owed",
+        "classification_label": "Cost classification",
+        "unclassified": "Unclassified",
+        "classification_budget": "Budget",
+        "classification_remaining": "Remaining",
+        "unallocated": "Unallocated",
+        "remaining_budget": "Remaining budget"
       },
       "milestone_list": {
         "title": "Payment Milestones",
@@ -2348,6 +2358,22 @@
         "create_error": "Failed to create milestone",
         "update_error": "Failed to update milestone",
         "delete_error": "Failed to delete milestone"
+      },
+      "classification_budgets": {
+        "title": "Budget by cost classification",
+        "subtitle": "Distribute the phase budget across cost lines.",
+        "phase_budget": "Phase budget",
+        "total_allocated": "Total allocated",
+        "difference": "Difference",
+        "unallocated_note": "Any unallocated amount stays at the phase level.",
+        "over_phase_budget": "The total exceeds the phase budget",
+        "save": "Save budgets",
+        "no_classifications": "No active cost classifications."
+      },
+      "grouping": {
+        "label": "View",
+        "by_phase": "By phase",
+        "by_classification": "By cost classification"
       }
     },
     "subcontractors": {
@@ -2434,8 +2460,13 @@
       "errors": {
         "select_category": "Please select a contract category",
         "select_subcontractor": "Please select a subcontractor",
-        "add_error": "Error adding subcontractor."
-      }
+        "add_error": "Error adding subcontractor.",
+        "select_classification": "Select a cost classification",
+        "exceeds_classification_budget": "Contract amount exceeds the available cost classification budget"
+      },
+      "cost_classification": "Cost classification",
+      "cost_classification_help": "Which cost line this contract belongs to. Independent of the contract category below.",
+      "select_classification": "Select a cost classification"
     },
     "contract_type": {
       "title": "New Contract Category",
@@ -2597,7 +2628,11 @@
         "phase_required": "Phase is required",
         "name_required": "Name is required",
         "job_required": "Job description is required"
-      }
+      },
+      "cost_classification": "Cost classification",
+      "cost_classification_help": "Which cost line this contract belongs to.",
+      "select_classification": "Select a cost classification",
+      "select_category": "Select a contract category"
     },
     "edit_payment": {
       "title": "Edit Payment",
@@ -2737,6 +2772,28 @@
         "name_required": "Category name is required",
         "name_exists": "A category with this name already exists",
         "save_error": "Error saving category"
+      }
+    },
+    "cost_classification": {
+      "title_create": "New cost classification",
+      "title_edit": "Edit cost classification",
+      "subtitle": "Cost classifications group contracts within a project phase.",
+      "manage_title": "Cost classifications",
+      "name_label": "Name",
+      "name_placeholder": "e.g. Priključci",
+      "desc_label": "Description",
+      "desc_placeholder": "Optional",
+      "sort_order_label": "Sort order",
+      "active_label": "Active",
+      "system_badge": "System",
+      "system_hint": "System classifications cannot be renamed or deleted.",
+      "save": "Save",
+      "errors": {
+        "name_required": "Name is required",
+        "already_exists": "A classification with that name already exists",
+        "save_error": "Error saving the classification",
+        "system_readonly": "System classifications cannot be changed",
+        "in_use": "This classification is used by contracts or budgets and cannot be deleted"
       }
     }
   },
@@ -4971,7 +5028,13 @@
       "retail_contract.delete": "Retail contract deleted",
       "retail_milestone.create": "Retail milestone created",
       "retail_milestone.update": "Retail milestone updated",
-      "retail_milestone.delete": "Retail milestone deleted"
+      "retail_milestone.delete": "Retail milestone deleted",
+      "cost_classification.create": "Cost classification created",
+      "cost_classification.update": "Cost classification updated",
+      "cost_classification.delete": "Cost classification deleted",
+      "phase_classification_budget.update": "Classification budget updated",
+      "phase_classification_budget.bulk_update": "Classification budgets bulk updated",
+      "phase_classification_budget.delete": "Classification budget deleted"
     }
   }
 }

@@ -5,11 +5,13 @@ import { ProjectPhase, Subcontractor } from '../../../../lib/supabase'
 import { SubcontractorFormData } from '../types'
 import { fetchProjectFunders } from '../services/siteService'
 import { useContractTypes } from '../hooks/useContractTypes'
+import { useCostClassifications } from '../hooks/useCostClassifications'
 import { useVATCalculation } from '../hooks/useVATCalculation'
 import { Modal, FormField, Input, Select, Textarea, Button, Alert } from '../../../ui'
 import { ContractDocumentUpload } from '../ContractDocumentUpload'
 import { ContractFormFields } from './ContractFormFields'
 import { ContractTypeFormModal } from '../modals/ContractTypeFormModal'
+import { CostClassificationFormModal } from '../modals/CostClassificationFormModal'
 import { formatEuro } from '../../../../utils/formatters'
 
 interface SubcontractorFormModalProps {
@@ -39,7 +41,8 @@ const DEFAULT_FORM_DATA: SubcontractorFormData = {
   vat_amount: 0,
   total_amount: 0,
   phase_id: '',
-  contract_type_id: 0,
+  contract_type_id: null,
+  classification_id: null,
   financed_by_type: null,
   financed_by_bank_id: null,
   has_contract: true
@@ -58,10 +61,12 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const [hasContract, setHasContract] = useState(true)
   const [formData, setFormData] = useState<SubcontractorFormData>(DEFAULT_FORM_DATA)
   const { contractTypes, loading: loadingContractTypes, load: loadContractTypes } = useContractTypes()
+  const { classifications, loading: loadingClassifications, load: loadClassifications } = useCostClassifications()
   const { vatAmount, totalAmount } = useVATCalculation(formData.base_amount, formData.vat_rate)
   const [banks, setBanks] = useState<Funder[]>([])
   const [loadingFunders, setLoadingFunders] = useState(false)
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false)
+  const [showNewClassificationModal, setShowNewClassificationModal] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -108,6 +113,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     if (visible && projectId) {
       loadFunders()
       loadContractTypes()
+      loadClassifications()
     }
   }, [visible, projectId, loadFunders, loadContractTypes])
 
@@ -120,6 +126,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     if (isSubmitting) return
     const errors: Record<string, string> = {}
     if (!formData.contract_type_id) errors.contract_type_id = t('supervision.subcontractor_form.errors.select_category')
+    if (!formData.classification_id) errors.classification_id = t('supervision.subcontractor_form.errors.select_classification')
     if (!useExistingSubcontractor && !formData.name?.trim()) errors.name = t('supervision.subcontractors.form.errors.name_required')
     if (!useExistingSubcontractor && !formData.contact?.trim()) errors.contact = t('supervision.subcontractors.form.errors.contact_required')
     if (useExistingSubcontractor && !formData.existing_subcontractor_id) errors.existing_subcontractor_id = t('supervision.subcontractor_form.errors.select_subcontractor')
@@ -189,11 +196,35 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
           <Alert variant="error" className="mb-2">{fieldErrors._form}</Alert>
         )}
 
+        <FormField
+          label={t('supervision.subcontractor_form.cost_classification')}
+          required
+          helperText={t('supervision.subcontractor_form.cost_classification_help')}
+          error={fieldErrors.classification_id}
+        >
+          <div className="flex gap-2">
+            <Select
+              value={formData.classification_id ?? ''}
+              onChange={(e) => merge({ classification_id: e.target.value ? parseInt(e.target.value) : null })}
+              disabled={loadingClassifications}
+              className="flex-1"
+            >
+              <option value="">{t('supervision.subcontractor_form.select_classification')}</option>
+              {classifications.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </Select>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setShowNewClassificationModal(true)} className="px-3">
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        </FormField>
+
         <FormField label={t('supervision.subcontractor_form.contract_category')} required helperText={t('supervision.subcontractor_form.contract_category_help')} error={fieldErrors.contract_type_id}>
           <div className="flex gap-2">
             <Select
-              value={formData.contract_type_id}
-              onChange={(e) => merge({ contract_type_id: e.target.value ? parseInt(e.target.value) : 0 })}
+              value={formData.contract_type_id ?? ''}
+              onChange={(e) => merge({ contract_type_id: e.target.value ? parseInt(e.target.value) : null })}
               disabled={loadingContractTypes}
               className="flex-1"
             >
@@ -335,6 +366,15 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         onCreated={(newId) => {
           loadContractTypes()
           merge({ contract_type_id: newId })
+        }}
+      />
+
+      <CostClassificationFormModal
+        visible={showNewClassificationModal}
+        onClose={() => setShowNewClassificationModal(false)}
+        onCreated={(newId) => {
+          loadClassifications()
+          merge({ classification_id: newId })
         }}
       />
     </Modal>
