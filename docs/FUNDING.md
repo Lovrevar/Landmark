@@ -284,30 +284,55 @@ Investment project registry — links funding sources (banks, investors) to Gene
 ### TIC
 **Path:** `TIC/`
 
-Troškovna Informatička Struktura (TIC) — structured cost breakdown table per project showing own funds (vlastita sredstva) vs credit funds (kreditna sredstva) in EUR with percentages. Exported for investors.
+Troškovna Informatička Struktura (TIC) — structured cost breakdown per project showing own funds (vlastita sredstva) vs credit funds (kreditna sredstva) in EUR with percentages. Exported for investors.
+
+Two tabs, mirroring the two sheets of the standard client workbook:
+- **Investicija** — a flat list of cost categories (`line_items` jsonb)
+- **Građenje** — a hierarchical construction breakdown: sections `A)` / `B)` / `C)` each holding roman-numeral items (`construction_sections` jsonb, added by migration `20260907120000`)
+
+Both tabs are fully editable per project — rows and sections can be renamed, added, removed and reordered. The hardcoded defaults in `constants.ts` are only the starting point for a project that has no saved TIC yet. Section subtotals (`Ukupno`) and the grand totals (`UKUPNO:` / `SVEUKUPNO:`) are **always derived from the items, never stored**.
+
+The two tabs are deliberately independent: the Građenje grand total is not written into the Investicija `Građenje` row, even though the two normally match in the source workbook.
 
 #### Services
 
 ### ticService.ts
 - `fetchTICProjects()` — fetches projects (id, name) for the TIC project selector
-- `fetchTICForProject(projectId)` — fetches the saved TIC cost structure for a project (or null)
+- `fetchTICForProject(projectId)` — fetches the saved TIC cost structure for a project (or null); `construction_sections` defaults to `[]` for records saved before the Građenje tab existed
 - `createTIC(payload)` — inserts a new TIC cost structure, returns the new id
 - `updateTIC(ticId, payload, projectId)` — updates an existing TIC cost structure
 - **Depends on:** supabase client, activityLog
 
+### ticImport.ts
+- `parseTICWorkbook(sheets)` — pure parser mapping a workbook's sheets onto the two tabs; returns `{ investment, construction, investorName, documentDate, errors }`
+- `parseSheet(sheetName, rows)` — parses one sheet, throwing `missing_header` / `no_rows`
+- `parseTICFile(file)` — browser entry point; dynamically imports `@e965/xlsx` and delegates to `parseTICWorkbook`
+- Parsing is **layout-driven, not column-index-driven**: the header row is found by looking for `NAMJENA`, and the money columns by looking for `VLASTITA SREDSTVA`. This absorbs the one-column offset between the two sheets. A gap of ≥2 columns between the two headers marks the sheet as hierarchical.
+- Blank spacer rows are skipped; `Ukupno` / `SVEUKUPNO:` rows are discarded (recomputed); names are trimmed. Percentage columns are ignored.
+- Sheets are matched by name (`INVESTICIJ*` / `GRAĐENJ*`, diacritic-insensitive), falling back to the detected shape, so renamed and single-sheet files still import.
+- **Depends on:** `@e965/xlsx` (dynamic import), `src/utils/excelParsers.ts` (`parseNumber`, `parseDate`)
+
 ### ticExport.ts
-- `exportToExcel(lineItems, investorName, documentDate, totals, grandTotal, projectName)` — exports TIC table to .xlsx
-- `exportToPDF(lineItems, investorName, documentDate, totals, grandTotal, projectName)` — exports TIC table to PDF
-- **Depends on:** xlsx, jsPDF, activityLog
-- _Note: renamed from `TICExport.ts` (`Services/`) to `ticExport.ts` (`services/`) in the audit refactor._
+- `exportToExcel(data: TICExportData)` — async; writes a real `.xlsx` with two sheets (`INVESTICIJA`, `GRAĐENJE`) laid out in the source workbook's shape, so an export re-imports cleanly (covered by `ticExport.test.ts`)
+- `exportToPDF(data: TICExportData)` — two-page landscape A4 PDF, one page per tab; row height is derived from the row count so a long Građenje breakdown is not clipped
+- `buildInvestmentSheet(data)` / `buildConstructionSheet(data)` — pure AOA builders, exported for the round-trip test
+- **Depends on:** `@e965/xlsx` (dynamic import), jsPDF, activityLog
+- _Note: this previously emitted an HTML table blob named `.xls`, which the docs already described as `.xlsx`; it now genuinely is `.xlsx`._
 
 #### Hooks
 
 ### useTIC.ts
-- `useTIC()` — loads projects and the selected project's TIC line items, manages edits/investor/date, computes totals + grand total, and saves (create or update)
+- `useTIC()` — loads projects and the selected project's line items **and construction sections**, manages edits/investor/date, computes both tabs' totals, applies Excel imports, and saves (create or update)
 - **Calls:** ticService.ts
-- **Uses utils:** ticFormatters (calculateTotals)
-- **Returns:** projects, lineItems, setLineItems, investorName, setInvestorName, documentDate, setDocumentDate, selectedProjectId, setSelectedProjectId, loading, saving, message, totals, grandTotal, saveTIC
+- **Uses utils:** ticFormatters (calculateTotals, calculateConstructionTotals, toRomanNumeral, toSectionCode)
+- **Returns:** projects, lineItems, constructionSections, investorName, documentDate, selectedProjectId, loading, saving, message, totals, grandTotal, constructionTotals, constructionGrandTotal, saveTIC, `applyImport`, and the row/section mutators (`addLineItem`, `updateLineItem`, `removeLineItem`, `moveLineItem`, `addSection`, `updateSection`, `removeSection`, `moveSection`, `addConstructionItem`, `updateConstructionItem`, `removeConstructionItem`, `moveConstructionItem`)
+- `applyImport(parsed, fileName)` replaces the on-screen tables only and logs `tic.import_excel`; nothing reaches the database until the user presses Save
+
+#### Constants
+
+### constants.ts
+- `defaultLineItems` — the 16 default Investicija rows (moved out of `useTIC.ts`)
+- `defaultConstructionSections` — the 3 default Građenje sections (28 items) from the standard workbook
 
 #### Utilities
 
@@ -316,15 +341,33 @@ Troškovna Informatička Struktura (TIC) — structured cost breakdown table per
 - `formatPercentage(num)` — formats a percentage for TIC display (hr-HR, 2 decimals)
 - `calculateRowPercentages(value, total)` — computes a value's percentage of a total (0 when total is 0)
 - `calculateTotals(lineItems)` — sums vlastita and kreditna across line items
+- `calculateSectionTotals(section)` — one Građenje section's `Ukupno` row
+- `calculateConstructionTotals(sections)` — the `SVEUKUPNO:` row across all sections
+- `toRomanNumeral(n)` / `toSectionCode(i)` — next numeral/code when appending an item or section
+- Types: `LineItem`, `ConstructionItem`, `ConstructionSection`, `TICTotals`
+
+#### Modals
+
+### ExcelImportTICModal.tsx
+- 3-step wizard (upload + format help → preview → summary) following `Sales/SalesProjects/modals/ExcelImportGaragesModal.tsx`
+- The preview names which sheet mapped to which tab, lists skipped sheets with their reason, and warns that the import replaces both tables
+- **Uses services:** ticImport
+- **Uses Ui:** Modal, Button, Alert
 
 #### Views
 
 ### index.tsx (TICManagement)
-- Project selector, editable line item table with vlastita/kreditna columns, and Excel/PDF export
+- Project selector, tab switcher, Save / Import Excel / Export Excel / Export PDF toolbar, and the shared investor/signature/date footer
 - **Uses hooks:** useTIC
 - **Uses services:** ticExport
-- **Uses utils:** ticFormatters (formatNumber, formatPercentage, calculateRowPercentages)
-- **Uses Ui:** LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState
+- **Uses components:** InvestmentTable, ConstructionTable
+- **Uses modals:** ExcelImportTICModal
+- **Uses Ui:** LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState, Tabs
+
+### components/InvestmentTable.tsx, components/ConstructionTable.tsx
+- Presentational tables — they take items plus handlers as props and never touch Supabase
+- Per-row controls: move up / move down / delete, with an "Add row" (and "Add section") button
+- `ConstructionTable` confirms section deletion via `ConfirmDialog` because it removes the section's items too
 
 ---
 
@@ -335,6 +378,6 @@ Troškovna Informatička Struktura (TIC) — structured cost breakdown table per
 - Architecture follows UI Component → Custom Hook → Service Layer → Supabase. The May 2026 audit refactor extracted Supabase query logic out of hooks into dedicated `services/*.ts` files; hooks own state and call the services
 - There are two distinct `creditService.ts` files: `Investments/services/creditService.ts` (credit list, allocations, credit invoices) and `Investors/services/creditService.ts` (facility CRUD + company bank accounts)
 - The audit refactor also lowercased the `Modals/`→`modals/` and `Services/`→`services/` directories in Payments, Projects, and TIC
-- Pure calculation/formatting helpers have colocated unit tests: `Investors/utils/creditCalculations.test.ts` and `TIC/utils/ticFormatters.test.ts`
+- Pure calculation/formatting helpers have colocated unit tests: `Investors/utils/creditCalculations.test.ts`, `TIC/utils/ticFormatters.test.ts`, `TIC/services/ticImport.test.ts` and `TIC/services/ticExport.test.ts` (the last verifies an Excel export re-imports byte-for-byte)
 - All service mutations log via `logActivity()` (fire-and-forget)
 - **Deleting a credit facility or an investor detaches invoices first.** `accounting_invoices.bank_credit_id` is the only `ON DELETE RESTRICT` reference to `bank_credits`, so a bare delete fails with Postgres `23503` whenever an invoice is attached (and, for investors, aborts the `bank_credits` cascade). `creditService.detachInvoicesFromCredits()` clears the FK — the invoices are kept, only unlinked — and both delete paths call it before deleting. The confirmation dialog reports the count via `countInvoicesForCredits()`, and the hooks fall back to `isForeignKeyViolation()` from `src/lib/dbErrors.ts` for a readable toast if some other constraint blocks the delete

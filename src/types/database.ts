@@ -3463,6 +3463,7 @@ export type Database = {
       }
       tic_cost_structures: {
         Row: {
+          construction_sections: Json
           created_at: string | null
           created_by: string | null
           document_date: string
@@ -3473,6 +3474,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          construction_sections?: Json
           created_at?: string | null
           created_by?: string | null
           document_date?: string
@@ -3483,6 +3485,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          construction_sections?: Json
           created_at?: string | null
           created_by?: string | null
           document_date?: string

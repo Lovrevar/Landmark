@@ -13,6 +13,6 @@ Praktično služi za:
 - praćenje koliko se za svaku namjenu financira iz vlastitog kapitala, a koliko iz banaka
 - formalnu dokumentaciju koja se podnosi investitorima (ima sekciju za potpis)
 
-Stranica [[tic]] u Funding profilu omogućuje uređivanje TIC tablice po projektu i izvoz u Excel ili PDF.
+Stranica [[tic]] u Funding profilu omogućuje uređivanje TIC tablice po projektu, uvoz iz Excela te izvoz u Excel ili PDF. Tablica ima dvije kartice: **Investicija** (ravan popis namjena) i **Građenje** (razrada troškova građenja po skupinama A/B/C — građevinski, obrtnički i instalaterski radovi). Stavke su uređive po projektu jer se struktura troškova razlikuje od projekta do projekta.
 
 Za općeniti pregled investicija po projektima vidi [[investment-projects]]; za pojedinačne alokacije kredita vidi [[funding-investments]].
