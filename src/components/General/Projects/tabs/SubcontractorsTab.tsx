@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { formatPhaseLabel } from '../../../Supervision/SiteManagement/utils/phaseLabel'
 import { useTranslation } from 'react-i18next'
 import { Users, ChevronUp, ChevronDown } from 'lucide-react'
 import { Badge, Button, EmptyState, Select, SearchInput, StatCard, StatGrid, Table } from '../../../ui'
@@ -10,7 +11,7 @@ interface SubcontractorsTabProps {
   projectId?: string
 }
 
-type SortKey = 'name' | 'phase' | 'contract_amount' | 'realized' | 'remaining' | 'status'
+type SortKey = 'name' | 'phase' | 'classification' | 'contract_amount' | 'realized' | 'remaining' | 'status'
 type SortDir = 'asc' | 'desc'
 
 const NO_PHASE = '__none'
@@ -40,8 +41,10 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
     return contracts.filter(c => {
       if (q && !c.subcontractor.name.toLowerCase().includes(q)) return false
       if (phaseFilter !== 'all') {
-        const name = c.phase?.phase_name
-        if (phaseFilter === NO_PHASE ? !!name : name !== phaseFilter) return false
+        // Filter on phase_id: names are no longer distinctive (every project has a "Faza 1"),
+        // so a name-valued filter matched every phase at once.
+        const phaseId = c.phase_id
+        if (phaseFilter === NO_PHASE ? !!phaseId : phaseId !== phaseFilter) return false
       }
       if (statusFilter !== 'all' && c.status !== statusFilter) return false
       return true
@@ -53,7 +56,8 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
     const value = (c: ContractWithDetails): string | number => {
       switch (sortKey) {
         case 'name': return c.subcontractor.name
-        case 'phase': return c.phase?.phase_name ?? ''
+        case 'phase': return c.phase?.phase_number ?? Number.MAX_SAFE_INTEGER
+        case 'classification': return c.classification?.name ?? ''
         case 'contract_amount': return c.contract_amount
         case 'realized': return c.budget_realized
         case 'remaining': return remainingOf(c)
@@ -129,7 +133,7 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
             <Select className="md:w-56" value={phaseFilter} onChange={(e) => setPhaseFilter(e.target.value)}>
               <option value="all">{t('common.all')}</option>
               {phases.map(p => (
-                <option key={p.id} value={p.phase_name}>{p.phase_name}</option>
+                <option key={p.id} value={p.id}>{formatPhaseLabel(p, t('common.phase'))}</option>
               ))}
               {hasUnphased && (
                 <option value={NO_PHASE}>{t('general_projects.milestone_template.no_phase_label')}</option>
@@ -156,6 +160,7 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
                 <Table.Tr>
                   <SortableTh sortKey="name">{t('common.subcontractor')}</SortableTh>
                   <SortableTh sortKey="phase">{t('common.phase')}</SortableTh>
+                  <SortableTh sortKey="classification">{t('supervision.site_management.phase_card.classification_label')}</SortableTh>
                   <SortableTh sortKey="contract_amount">{t('general_projects.contract_amount')}</SortableTh>
                   <SortableTh sortKey="realized">{t('general_projects.realized')}</SortableTh>
                   <SortableTh sortKey="remaining">{t('common.remaining')}</SortableTh>
@@ -170,6 +175,9 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
                       {contract.subcontractor.name}
                     </Table.Td>
                     <Table.Td label={t('common.phase')}>{contract.phase?.phase_name ?? '-'}</Table.Td>
+                    <Table.Td label={t('supervision.site_management.phase_card.classification_label')}>
+                      {contract.classification?.name ?? t('supervision.site_management.phase_card.unclassified')}
+                    </Table.Td>
                     <Table.Td label={t('general_projects.contract_amount')} className="font-semibold">
                       {formatEur(contract.contract_amount)}
                     </Table.Td>

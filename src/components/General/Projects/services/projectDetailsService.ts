@@ -17,7 +17,8 @@ export async function fetchProjectDetails(id: string): Promise<ProjectWithDetail
       .select(`
         *,
         subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
-        phase:project_phases!contracts_phase_id_fkey(phase_name)
+        phase:project_phases!contracts_phase_id_fkey(phase_name, phase_number),
+        classification:cost_classifications!contracts_classification_id_fkey(id, name, sort_order)
       `)
       .eq('project_id', id)
       .in('status', ['draft', 'active'])
@@ -132,7 +133,8 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
       .select(`
         *,
         subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
-        phase:project_phases!contracts_phase_id_fkey(phase_name)
+        phase:project_phases!contracts_phase_id_fkey(phase_name, phase_number),
+        classification:cost_classifications!contracts_classification_id_fkey(id, name, sort_order)
       `)
       .eq('project_id', id)
       .order('created_at', { ascending: false }),

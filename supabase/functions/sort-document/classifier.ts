@@ -146,7 +146,7 @@ export async function loadEntityCandidates(
     repositories,
   ] = await Promise.all([
     client.from('projects').select('id, name, location, aliases').limit(10000),
-    client.from('project_phases').select('id, phase_name, phase_number').limit(10000),
+    client.from('project_phases').select('id, phase_name, phase_number, project_id').limit(10000),
     client.from('subcontractors').select('id, name').limit(10000),
     client.from('accounting_companies').select('id, name, oib').limit(10000),
     client.from('contracts').select('id, contract_number, job_description').limit(10000),
@@ -160,8 +160,21 @@ export async function loadEntityCandidates(
   for (const p of projects.data ?? []) {
     push('project', p.id, p.name ?? '(bez naziva)', [p.name, p.location], p.aliases ?? [])
   }
+  // Phase names are NOT distinctive on their own: every project has a "Faza 1". Labelling a
+  // phase by its name alone gave the model a candidate list that was byte-identical apart from
+  // the uuid, so `disambiguate` picked arbitrarily and filed documents against a random
+  // project. Qualify by project, and make the project name part of the searchable haystack so a
+  // hint like "faza 1 savska" can actually resolve.
+  const projectNameById = new Map<string, string>(
+    (projects.data ?? []).map((p) => [p.id as string, (p.name ?? '') as string])
+  )
   for (const ph of phases.data ?? []) {
-    push('phase', ph.id, ph.phase_name ?? `Faza ${ph.phase_number}`, [ph.phase_name])
+    const phaseName = ph.phase_name ?? `Faza ${ph.phase_number}`
+    const projectName = projectNameById.get(ph.project_id as string) ?? ''
+    const label = projectName ? `${projectName} — ${phaseName}` : phaseName
+    // The qualified form goes in as an ALIAS, which becomes its own haystack, so
+    // "savska faza 1" can match on it without diluting the plain phase-name haystack.
+    push('phase', ph.id, label, [phaseName], projectName ? [`${projectName} ${phaseName}`] : [])
   }
   for (const s of subcontractors.data ?? []) {
     push('subcontractor', s.id, s.name ?? '(bez naziva)', [s.name])

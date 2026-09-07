@@ -17,10 +17,12 @@ const formatEur = (n: number) => `€${n.toLocaleString('hr-HR')}`
 const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({ phases, contracts, projectId }) => {
   const { t } = useTranslation()
 
+  // Keyed by phase_id, not phase_name. Names are not unique — every project now has a phase
+  // called "Faza 1" — so a name-keyed map merged distinct phases into one bucket.
   const contractsByPhase = useMemo(() => {
     const map = new Map<string, ContractWithDetails[]>()
     for (const c of contracts) {
-      const key = c.phase?.phase_name
+      const key = c.phase_id
       if (!key) continue
       const bucket = map.get(key)
       if (bucket) bucket.push(c)
@@ -31,15 +33,15 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({ phases, contrac
 
   const phaseStatuses = useMemo<PhaseStatus[]>(
     () => phases.map(p => ({
-      key: p.phase_name,
-      total: contractsByPhase.get(p.phase_name)?.length ?? 0,
+      key: p.id,
+      total: contractsByPhase.get(p.id)?.length ?? 0,
       completed: 0,
       overdue: 0,
     })),
     [phases, contractsByPhase]
   )
 
-  const collapse = usePhaseCollapseState(projectId, phaseStatuses, 'phase_contracts_collapse')
+  const collapse = usePhaseCollapseState(projectId, phaseStatuses, 'phase_contracts_collapse_v2')
 
   return (
     <div className="space-y-6">
@@ -63,8 +65,8 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({ phases, contrac
       ) : (
         <div className="space-y-4">
           {phases.map((phase) => {
-            const phaseContracts = contractsByPhase.get(phase.phase_name) ?? []
-            const expanded = collapse.isExpanded(phase.phase_name)
+            const phaseContracts = contractsByPhase.get(phase.id) ?? []
+            const expanded = collapse.isExpanded(phase.id)
             const phaseTotal = phaseContracts.reduce((sum, c) => sum + Number(c.contract_amount || 0), 0)
             const pct = phase.budget_allocated > 0
               ? Math.min(100, Math.round((phase.budget_used / phase.budget_allocated) * 100))
@@ -74,7 +76,7 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({ phases, contrac
               <div key={phase.id} className="space-y-3">
                 <button
                   type="button"
-                  onClick={() => collapse.toggle(phase.phase_name)}
+                  onClick={() => collapse.toggle(phase.id)}
                   aria-expanded={expanded}
                   className="w-full text-left px-4 py-3 bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 >
@@ -115,6 +117,7 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({ phases, contrac
                       <Table.Head>
                         <Table.Tr>
                           <Table.Th>{t('common.subcontractor')}</Table.Th>
+                          <Table.Th>{t('supervision.site_management.phase_card.classification_label')}</Table.Th>
                           <Table.Th>{t('general_projects.job_description')}</Table.Th>
                           <Table.Th>{t('general_projects.contract_amount')}</Table.Th>
                           <Table.Th>{t('general_projects.realized')}</Table.Th>
@@ -125,6 +128,9 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({ phases, contrac
                           <Table.Tr key={contract.id}>
                             <Table.Td label={t('common.subcontractor')} className="font-medium text-gray-900 dark:text-white">
                               {contract.subcontractor.name}
+                            </Table.Td>
+                            <Table.Td label={t('supervision.site_management.phase_card.classification_label')} className="text-gray-600 dark:text-gray-400">
+                              {contract.classification?.name ?? t('supervision.site_management.phase_card.unclassified')}
                             </Table.Td>
                             <Table.Td label={t('general_projects.job_description')} className="text-gray-600 dark:text-gray-400">
                               {contract.job_description}

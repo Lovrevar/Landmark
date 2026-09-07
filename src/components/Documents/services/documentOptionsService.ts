@@ -31,17 +31,27 @@ export async function fetchSubcontractorOptions(): Promise<SearchableOption[]> {
 }
 
 export async function fetchPhaseOptions(): Promise<SearchableOption[]> {
+  // This picker is NOT project-scoped — it lists every phase in the database. Labelling a row
+  // by phase_name alone made most entries read "Faza 1", with nothing to tell the user which
+  // project they were attaching a document to. The project name carries the identity; the phase
+  // is the qualifier, so it goes in the sublabel.
   const { data, error } = await supabase
     .from('project_phases')
-    .select('id, phase_name, phase_number, project_id')
+    .select('id, phase_name, phase_number, project:projects!project_phases_project_id_fkey(name)')
     .order('project_id', { ascending: true })
     .order('phase_number', { ascending: true })
   if (error) throw error
-  return (data ?? []).map(r => ({
-    value: r.id as string,
-    label: r.phase_name as string,
-    sublabel: r.phase_number != null ? `#${r.phase_number}` : undefined,
-  }))
+  return (data ?? []).map(r => {
+    const projectName = (r.project as unknown as { name?: string } | null)?.name
+    const phaseLabel = r.phase_number != null
+      ? `#${r.phase_number} ${r.phase_name as string}`
+      : (r.phase_name as string)
+    return {
+      value: r.id as string,
+      label: projectName ? `${projectName} — ${phaseLabel}` : phaseLabel,
+      sublabel: projectName ? phaseLabel : undefined,
+    }
+  })
 }
 
 export async function fetchContractOptions(): Promise<SearchableOption[]> {

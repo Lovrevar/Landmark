@@ -10,6 +10,12 @@ export interface EVMMetrics {
   VAC: number
   CV: number
   SV: number
+  /**
+   * Whether any phase had both a start and an end date, i.e. whether PV/SPI mean anything.
+   * False means SPI fell back to 1 for lack of a baseline, not that the project is on schedule.
+   * Set only by calculateProjectEVM; per-phase results always have a schedule by construction.
+   */
+  scheduleAvailable?: boolean
 }
 
 export interface MilestoneProgress {
@@ -73,6 +79,7 @@ export function calculateProjectEVM(
   milestones: MilestoneProgress[] = []
 ): EVMMetrics {
   let totalPV = 0, totalEV = 0, totalAC = 0, totalBudget = 0
+  let scheduledPhases = 0
 
   const milestonesByContract = new Map<string, MilestoneProgress[]>()
   milestones.forEach(m => {
@@ -82,7 +89,10 @@ export function calculateProjectEVM(
   })
 
   phases.forEach(phase => {
-    const phaseContracts = contracts.filter(c => c.phase?.phase_name === phase.phase_name)
+    // Join on phase_id, not phase_name. Names are not unique — every project now has a phase
+    // called "Faza 1" — so a name-keyed filter silently pulled in other projects' contracts and,
+    // within a project, could not tell two same-named phases apart.
+    const phaseContracts = contracts.filter(c => c.phase_id === phase.id)
     const phaseCommitted = phaseContracts.reduce((sum, c) => sum + Number(c.contract_amount || 0), 0)
     const phaseAC = phaseContracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
     // Physical completion = contract-value-weighted average of each contract's
@@ -95,7 +105,18 @@ export function calculateProjectEVM(
     }, 0)
     const physicalCompletionPct = phaseCommitted > 0 ? weightedPhysical / phaseCommitted : 0
 
+    // EV and AC need no schedule, so they are always accumulated. Only PV depends on dates.
+    //
+    // Previously the whole phase was skipped when either date was missing, which meant a
+    // project with undated phases reported EV = AC = 0 and therefore CPI = SPI = 1 — a
+    // perfectly on-track project, regardless of reality, with nothing to indicate the figures
+    // were not computed. Splitting them keeps the cost side honest and confines the gap to the
+    // schedule side, which `scheduleAvailable` now reports.
+    totalEV += (Number(phase.budget_allocated) * physicalCompletionPct) / 100
+    totalAC += phaseAC
+
     if (phase.start_date && phase.end_date) {
+      scheduledPhases += 1
       const phaseMetrics = calculatePhaseEVM(
         Number(phase.budget_allocated),
         physicalCompletionPct,
@@ -104,18 +125,21 @@ export function calculateProjectEVM(
         phaseAC
       )
       totalPV += phaseMetrics.PV
-      totalEV += phaseMetrics.EV
-      totalAC += phaseMetrics.AC
     }
     totalBudget += Number(phase.budget_allocated)
   })
 
   const CPI = totalAC > 0 ? totalEV / totalAC : 1
+  // With no dated phase there is no schedule baseline, so SPI is not merely 1 — it is unknown.
+  // Callers should check `scheduleAvailable` before presenting it.
   const SPI = totalPV > 0 ? totalEV / totalPV : 1
   const CV = totalEV - totalAC
   const SV = totalEV - totalPV
   const EAC = CPI !== 0 ? totalBudget / CPI : totalBudget
   const VAC = totalBudget - EAC
 
-  return { PV: totalPV, EV: totalEV, AC: totalAC, CPI, SPI, EAC, VAC, CV, SV }
+  return {
+    PV: totalPV, EV: totalEV, AC: totalAC, CPI, SPI, EAC, VAC, CV, SV,
+    scheduleAvailable: scheduledPhases > 0
+  }
 }

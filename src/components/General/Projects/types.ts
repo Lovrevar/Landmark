@@ -47,7 +47,10 @@ export interface ContractWithDetails {
   status: string
   start_date: string | null
   end_date: string | null
-  phase: { phase_name: string } | null
+  phase_id: string | null
+  phase: { phase_name: string; phase_number?: number } | null
+  classification_id?: number | null
+  classification?: { id: number; name: string; sort_order: number } | null
 }
 
 export interface ApartmentItem {

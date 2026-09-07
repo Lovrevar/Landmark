@@ -37,6 +37,8 @@ import {
   type ListUnpaidInvoicesInput,
   type SearchProjectsInput,
   type SearchSubcontractorsInput,
+  handleListCostClassifications,
+  ListCostClassificationsInput,
 } from './tool-handlers.ts'
 import { handleSearchHelp, type HelpSearchContext, type SearchHelpInput } from './help-search.ts'
 
@@ -127,6 +129,10 @@ export const TOOLS: ToolDefinition[] = [
     description:
       'List all phases for a given project, ordered by phase_number. Each phase includes its name, ' +
       'start/end dates, status, and the static `budget_allocated` figure. ' +
+      'A phase is a TIME division of the project (Faza 1, Faza 2). It is NOT a cost category: ' +
+      'most projects have only one phase, so per-phase figures are effectively whole-project ' +
+      'figures. For "how much did we spend on land / on preparation", use `list_cost_classifications` ' +
+      'and filter contracts by classification_id instead. ' +
       'Note: the `budget_used` column on the phase row is NOT trigger-maintained and may be stale; ' +
       'if the user wants accurate spend numbers, call `get_project_financial_summary` instead.',
     input_schema: {
@@ -176,9 +182,30 @@ export const TOOLS: ToolDefinition[] = [
   },
 
   {
+    name: 'list_cost_classifications',
+    description:
+      'List the global cost classifications (stavke troškovnika) used to group contracts: ' +
+      '"Zemljište", "Priprema i razvoj", "Izgradnja i uređenje", "Opremanje", "Kontrola", ' +
+      '"Financiranje i nadzor", "Nepredviđeni troškovi", plus any the company added. ' +
+      'Call this to resolve a cost category the user named into a classification_id, then pass ' +
+      'that to `list_contracts`.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        include_inactive: { type: 'boolean', description: 'Include deactivated classifications. Defaults to false.' },
+      },
+      additionalProperties: false,
+    },
+    requiredRoles: ALL_ROLES,
+    handler: (input, ctx) => handleListCostClassifications(input as unknown as ListCostClassificationsInput, ctx),
+  },
+
+  {
     name: 'list_contracts',
     description:
-      'List construction contracts with optional filters by project_id, phase_id, subcontractor_id, and status. ' +
+      'List construction contracts with optional filters by project_id, phase_id, classification_id, ' +
+      'subcontractor_id, and status. Cost classification is the axis that identifies WHAT a cost is ' +
+      '(land, preparation, construction...); phase is only WHEN. ' +
       'Use this when the user asks about active or completed contracts, or wants to see work agreements with a ' +
       'particular subcontractor. The `budget_realized` field is automatically maintained from payments and is the ' +
       'authoritative spend figure for a contract.',
@@ -186,7 +213,8 @@ export const TOOLS: ToolDefinition[] = [
       type: 'object',
       properties: {
         project_id: { type: 'string', format: 'uuid', description: 'Filter to contracts on this project.' },
-        phase_id: { type: 'string', format: 'uuid', description: 'Filter to contracts on this phase.' },
+        phase_id: { type: 'string', format: 'uuid', description: 'Filter to contracts on this phase (a time division, not a cost category).' },
+        classification_id: { type: 'integer', description: 'Filter to contracts in this cost classification. This is the right filter for "spend on land", "spend on preparation", etc.' },
         subcontractor_id: { type: 'string', format: 'uuid', description: 'Filter to contracts with this subcontractor.' },
         status: {
           type: 'string',

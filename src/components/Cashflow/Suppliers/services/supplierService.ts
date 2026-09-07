@@ -431,7 +431,13 @@ export const createSupplierContract = async (
     budget_realized: 0,
     status: 'active',
     has_contract: false,
-    contract_type_id: 0,
+    // NOT 0: there is no contract_types row with id 0, so passing it raises a raw FK violation
+    // (23503). The column is nullable and NULL renders as "Nekategorizirano".
+    contract_type_id: null,
+    // classification_id is deliberately left unset. This is an empty placeholder contract
+    // created when linking a supplier from Accounting — nobody has chosen a cost bucket for it
+    // yet, and inventing one here would put made-up data into the cost reporting. It gets a
+    // classification when someone fills the contract in.
     end_date: null
   })
   if (error) throw error
