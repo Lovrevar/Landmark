@@ -43,6 +43,10 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
   const [contracts, setContracts] = useState<ContractWithDetails[]>([])
+  // The project's TIC total (null = no plan) and the invoice-derived paid figures. Both come
+  // from the fetch so this page reports the same budget and the same "paid" as Site Management.
+  const [ticTotal, setTicTotal] = useState<number | null>(null)
+  const [invoiceStats, setInvoiceStats] = useState<Map<string, { totalPaid: number; totalOwed: number }>>(new Map())
   const [apartments, setApartments] = useState<ApartmentItem[]>([])
   const [investments, setInvestments] = useState<CreditAllocationItem[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -61,6 +65,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
       setMilestones(data.milestones)
       setPhases(data.phases)
       setContracts(data.contracts)
+      setTicTotal(data.ticTotal)
+      setInvoiceStats(data.invoiceStats)
       setApartments(data.apartments)
       setInvestments(data.investments)
     } catch (error) {
@@ -88,7 +94,10 @@ const ProjectDetailsEnhanced: React.FC = () => {
   if (loading) return <LoadingSpinner message={t('general_projects.loading')} />
   if (!project) return <EmptyState icon={Building2} title={t('general_projects.not_found')} />
 
-  const totalSpent = contracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
+  // Invoice-derived, not `contracts.budget_realized`. The two disagree, and every other
+  // surface in the app now reports the invoice figure.
+  const totalSpent = contracts.reduce((sum, c) => sum + (invoiceStats.get(c.id)?.totalPaid ?? 0), 0)
+  const hasPlan = ticTotal !== null && ticTotal > 0
   const totalRevenue = apartments.filter(a => a.status === 'Sold').reduce((sum, a) => sum + Number(a.price), 0)
   const completionPercentage = milestones.length > 0
     ? Math.round((milestones.filter(m => m.completed).length / milestones.length) * 100)
@@ -138,7 +147,14 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.budget')}</span>
               <DollarSign className="w-5 h-5 text-gray-400 dark:text-gray-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</p>
+            {/* The TIC is the only writer of planned budget, so a project without one has no
+                budget to show — printing the stored number would contradict Site Management,
+                which says "budget not set" for the same project. */}
+            {hasPlan ? (
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</p>
+            ) : (
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{t('general_projects.budget_not_set')}</p>
+            )}
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('general_projects.card_spent')}: €{totalSpent.toLocaleString('hr-HR')}</p>
           </div>
 
@@ -259,7 +275,13 @@ const ProjectDetailsEnhanced: React.FC = () => {
           )}
 
           {activeTab === 'phases' && (
-            <PhasesContractsTab phases={phases} contracts={contracts} projectId={id} />
+            <PhasesContractsTab
+              phases={phases}
+              contracts={contracts}
+              projectId={id}
+              ticTotal={ticTotal}
+              invoiceStats={invoiceStats}
+            />
           )}
 
           {activeTab === 'apartments' && (
