@@ -170,7 +170,7 @@ export const fetchProjects = async (): Promise<Project[]> => {
 export const fetchPhases = async (projectId: string): Promise<Phase[]> => {
   const { data, error } = await supabase
     .from('project_phases')
-    .select('id, phase_name')
+    .select('id, phase_name, phase_number')
     .eq('project_id', projectId)
     .order('phase_number')
 
@@ -272,7 +272,7 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
   if (supplier.source === 'retail') {
     const { data: rContracts } = await supabase
       .from('retail_contracts')
-      .select(`id, contract_number, contract_amount, budget_realized, end_date, status, phase_id, has_contract, phases:phase_id (phase_name)`)
+      .select(`id, contract_number, contract_amount, budget_realized, end_date, status, phase_id, has_contract, phases:phase_id (phase_name, phase_number)`)
       .eq('supplier_id', supplier.id)
       .in('status', ['Active', 'Completed'])
 
@@ -332,7 +332,7 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
   } else {
     const { data: contractsData } = await supabase
       .from('contracts')
-      .select('id, contract_number, project_id, phase_id, job_description, contract_amount, budget_realized, end_date, status, has_contract, projects:project_id (name), phases:phase_id (phase_name)')
+      .select('id, contract_number, project_id, phase_id, job_description, contract_amount, budget_realized, end_date, status, has_contract, projects:project_id (name), phases:phase_id (phase_name, phase_number)')
       .eq('subcontractor_id', supplier.id)
       .in('status', ['draft', 'active'])
 

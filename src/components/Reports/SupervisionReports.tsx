@@ -164,14 +164,24 @@ const SupervisionReports: React.FC = () => {
                     <span className="text-gray-600 dark:text-gray-400">{t('reports.supervision.budget_used')}</span>
                     <span className="font-bold text-orange-600">€{projectReport.total_payments.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">{t('reports.supervision.remaining')}</span>
-                    <span className="font-bold text-green-600">€{projectReport.remaining_budget.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">{t('reports.supervision.utilization')}</span>
-                    <span className="font-medium">{projectReport.total_budget > 0 ? ((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1) : '0'}%</span>
-                  </div>
+                  {projectReport.has_budget ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">{t('reports.supervision.remaining')}</span>
+                        <span className="font-bold text-green-600">€{projectReport.remaining_budget.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">{t('reports.supervision.utilization')}</span>
+                        <span className="font-medium">{((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1)}%</span>
+                      </div>
+                    </>
+                  ) : (
+                    /* Without a TIC there is no plan to be remaining from, or a share of. */
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">{t('common.budget')}</span>
+                      <span className="font-medium text-orange-600 dark:text-orange-400">{t('general_projects.budget_not_set')}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -321,7 +331,9 @@ const SupervisionReports: React.FC = () => {
               <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                 <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">Performance Highlights</h3>
                 <ul className="space-y-2 text-blue-800 dark:text-blue-200">
-                  <li>• {projectReport.budget_used / projectReport.total_budget > 0.9 ? 'High' : projectReport.budget_used / projectReport.total_budget > 0.75 ? 'Moderate' : 'Good'} budget utilization at {projectReport.total_budget > 0 ? ((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1) : '0'}%</li>
+                  {projectReport.has_budget
+                    ? <li>• {projectReport.budget_used / projectReport.total_budget > 0.9 ? 'High' : projectReport.budget_used / projectReport.total_budget > 0.75 ? 'Moderate' : 'Good'} budget utilization at {((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1)}%</li>
+                    : <li>• No cost plan yet — set up the project's TIC to track budget utilization</li>}
                   <li>• {projectReport.completed_contracts} contracts completed out of {projectReport.total_contracts}</li>
                   <li>• {projectReport.completed_phases} phases completed out of {projectReport.total_phases}</li>
                   <li>• Managing {projectReport.total_subcontractors} subcontractors</li>
@@ -331,7 +343,7 @@ const SupervisionReports: React.FC = () => {
               <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                 <h3 className="font-semibold text-green-900 dark:text-green-300 mb-3">Recommendations</h3>
                 <ul className="space-y-2 text-green-800 dark:text-green-300">
-                  {projectReport.budget_used / projectReport.total_budget > 0.9 && <li>• Monitor remaining budget closely</li>}
+                  {projectReport.has_budget && projectReport.budget_used / projectReport.total_budget > 0.9 && <li>• Monitor remaining budget closely</li>}
                   {projectReport.active_contracts > 0 && <li>• Focus on completing active contracts</li>}
                   {projectReport.completed_phases < projectReport.total_phases && <li>• Coordinate phase completion schedules</li>}
                   <li>• Maintain regular communication with subcontractors</li>

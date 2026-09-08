@@ -10,6 +10,7 @@ import {
   createSupplierContract
 } from '../services/supplierService'
 import { useToast } from '../../../../contexts/ToastContext'
+import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 
 interface LinkSupplierToProjectModalProps {
   visible: boolean
@@ -187,7 +188,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
               <option value="">{t('suppliers.link.select_phase')}</option>
               {phases.map((phase) => (
                 <option key={phase.id} value={phase.id}>
-                  {t('suppliers.link.phase_prefix', { number: phase.phase_number })}{phase.phase_name}
+                  {formatPhaseLabel(phase, t('common.phase'))}
                 </option>
               ))}
             </Select>

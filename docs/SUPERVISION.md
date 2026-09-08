@@ -222,6 +222,11 @@ so a client write would survive only until the next one.
 - **Uses services:** siteFundingService (fetchCreditAllocations, via siteService barrel)
 - **Uses components:** ProjectCategoryBadge, PhaseCard
 
+### utils/phaseLabel.ts → moved
+`formatPhaseLabel` now lives at [`src/utils/phaseLabel.ts`](../src/utils/phaseLabel.ts). It is
+used by Cashflow, Documents, General and Reports as well as this module — anything rendering a
+phase to a user goes through it.
+
 ### utils/contractTree.ts
 - `buildContractTree(contracts, dimensions, ctx)` — the grouping used by both Site Management views. `dimensions` comes from `VIEW_DIMENSIONS`: `['phase','classification','contractType']` or `['classification','phase','contractType']`. Contract type is always innermost; only the top two levels swap
 - `rollupContracts(contracts)` — contracted / paid / unpaid money for any subset. A row counts as contracted only when it has a contract AND a non-zero amount

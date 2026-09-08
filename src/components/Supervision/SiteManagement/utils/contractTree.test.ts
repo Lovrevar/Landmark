@@ -10,7 +10,7 @@ import {
   TreeContext
 } from './contractTree'
 import { SubcontractorWithPhase, VIEW_DIMENSIONS, TreeNode } from '../types'
-import { formatPhaseLabel } from './phaseLabel'
+import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 import { ProjectPhase, CostClassification, PhaseClassificationBudget } from '../../../../lib/supabase'
 
 const phase = (id: string, number: number, name: string, budget = 0): ProjectPhase => ({

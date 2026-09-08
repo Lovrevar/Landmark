@@ -71,10 +71,17 @@ export async function generateSupervisionReportPDF(
     ['Location', projectReport.project.location],
     ['Status', projectReport.project.status],
     ['Start Date', format(new Date(projectReport.project.start_date), 'MMMM dd, yyyy')],
-    ['Total Budget', `€${projectReport.total_budget.toLocaleString()}`],
+    // A project with no TIC has no plan. Printing "Total Budget €0 / Utilization 0%" in a PDF
+    // that leaves the building reads as a finding about the project rather than a gap in the
+    // data, so the rows say what is actually true instead.
+    ['Total Budget', projectReport.has_budget ? `€${projectReport.total_budget.toLocaleString()}` : 'Not set (no TIC)'],
     ['Budget Used', `€${projectReport.total_payments.toLocaleString()}`],
-    ['Remaining Budget', `€${projectReport.remaining_budget.toLocaleString()}`],
-    ['Budget Utilization', `${projectReport.total_budget > 0 ? ((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1) : '0'}%`],
+    ...(projectReport.has_budget
+      ? [
+          ['Remaining Budget', `€${projectReport.remaining_budget.toLocaleString()}`],
+          ['Budget Utilization', `${((projectReport.budget_used / projectReport.total_budget) * 100).toFixed(1)}%`],
+        ]
+      : []),
     ['Total Contracts', projectReport.total_contracts.toString()],
     ['Active Contracts', projectReport.active_contracts.toString()],
     ['Completed Contracts', projectReport.completed_contracts.toString()],

@@ -883,7 +883,6 @@
       "select_supplier": "Odaberi dobavljača",
       "select_project": "Odaberi projekt",
       "select_phase": "Odaberi fazu",
-      "phase_prefix": "Faza {{number}}: ",
       "linking": "Povezivanje...",
       "link_button": "Poveži",
       "error_suppliers": "Greška pri učitavanju dobavljača",

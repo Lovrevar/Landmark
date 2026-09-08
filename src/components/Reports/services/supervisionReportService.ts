@@ -24,6 +24,7 @@ export async function generateProjectReport(
   const [
     { data: contractsData, error: contractsError },
     { data: phasesData, error: phasesError },
+    { data: ticData },
     { data: paymentsData, error: paymentsError },
     { data: subcontractorsData, error: subcontractorsError },
     { data: workLogsData, error: workLogsError },
@@ -32,6 +33,7 @@ export async function generateProjectReport(
   ] = await Promise.all([
     supabase.from('contracts').select('*').eq('project_id', selectedProject),
     supabase.from('project_phases').select('*').eq('project_id', selectedProject),
+    supabase.from('tic_cost_structures').select('line_items').eq('project_id', selectedProject).maybeSingle(),
     supabase
       .from('subcontractor_payments')
       .select(`*, contracts!inner(project_id)`)
@@ -71,7 +73,14 @@ export async function generateProjectReport(
     contractSubcontractorIds.includes(s.id)
   )
 
-  const total_budget = project.budget
+  // The TIC is the only writer of planned budget, so a project without one has none — and a
+  // utilisation percentage computed against a leftover typed figure is worse than no percentage.
+  // `has_budget` lets the report say so instead of printing a confident ratio of two numbers that
+  // no longer mean what they used to.
+  const ticLineItems = (ticData?.line_items || []) as Array<{ vlastita?: number; kreditna?: number }>
+  const tic_total = ticLineItems.reduce((sum, li) => sum + Number(li.vlastita || 0) + Number(li.kreditna || 0), 0)
+  const has_budget = tic_total > 0
+  const total_budget = has_budget ? tic_total : 0
   const budget_used = contracts.reduce((sum, c) => sum + c.budget_realized, 0)
   const remaining_budget = total_budget - budget_used
   const total_contracts = contracts.length
@@ -144,6 +153,7 @@ export async function generateProjectReport(
     project,
     total_budget,
     budget_used,
+    has_budget,
     remaining_budget,
     total_contracts,
     active_contracts,

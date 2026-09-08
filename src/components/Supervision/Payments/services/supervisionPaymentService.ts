@@ -15,6 +15,7 @@ export interface PaymentWithDetails {
   subcontractor_name?: string
   project_name?: string
   phase_name?: string
+  phase_number?: number
   paid_by_company_name?: string
 }
 
@@ -45,7 +46,7 @@ type ContractWithPhase = {
   contract_number: string
   subcontractor_id: string
   phase_id: string | null
-  project_phases?: { id: string; phase_name: string } | null
+  project_phases?: { id: string; phase_name: string; phase_number: number } | null
 }
 
 export async function fetchSupervisionPayments(): Promise<PaymentWithDetails[]> {
@@ -76,7 +77,7 @@ export async function fetchSupervisionPayments(): Promise<PaymentWithDetails[]> 
 
   const [subcontractorsRes, contractsRawRes, projectsRes] = await Promise.all([
     supabase.from('subcontractors').select('id, name'),
-    supabase.from('contracts').select('id, contract_number, subcontractor_id, phase_id, project_phases(id, phase_name)'),
+    supabase.from('contracts').select('id, contract_number, subcontractor_id, phase_id, project_phases(id, phase_name, phase_number)'),
     supabase.from('projects').select('id, name'),
   ])
 
@@ -97,6 +98,7 @@ export async function fetchSupervisionPayments(): Promise<PaymentWithDetails[]> 
     }
 
     const phaseName = contract?.project_phases?.phase_name || null
+    const phaseNumber = contract?.project_phases?.phase_number
 
     let paidByCompanyName = '-'
     if (payment.is_cesija && payment.cesija_company) {
@@ -119,6 +121,7 @@ export async function fetchSupervisionPayments(): Promise<PaymentWithDetails[]> 
       subcontractor_name: subcontractor?.name || 'Unknown',
       project_name: project?.name || 'No Project',
       phase_name: phaseName,
+      phase_number: phaseNumber,
       contract: contract ? {
         id: contract.id,
         contract_number: contract.contract_number,

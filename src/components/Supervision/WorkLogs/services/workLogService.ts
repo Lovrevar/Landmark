@@ -26,7 +26,7 @@ export interface WorkLog {
   contracts?: { contract_number: string; job_description: string }
   subcontractors?: { name: string }
   projects?: { name: string }
-  project_phases?: { phase_name: string }
+  project_phases?: { phase_name: string; phase_number: number }
 }
 
 export interface WorkLogProject {
@@ -37,6 +37,7 @@ export interface WorkLogProject {
 export interface WorkLogPhase {
   id: string
   phase_name: string
+  phase_number: number
 }
 
 export interface WorkLogContract {
@@ -77,7 +78,7 @@ export async function fetchWorkLogs(): Promise<WorkLog[]> {
       contracts!work_logs_contract_id_fkey (contract_number, job_description),
       subcontractors!work_logs_subcontractor_id_fkey (name),
       projects!work_logs_project_id_fkey (name),
-      project_phases!work_logs_phase_id_fkey (phase_name)
+      project_phases!work_logs_phase_id_fkey (phase_name, phase_number)
     `)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
@@ -89,7 +90,7 @@ export async function fetchWorkLogs(): Promise<WorkLog[]> {
 export async function fetchPhasesByProject(projectId: string): Promise<WorkLogPhase[]> {
   const { data, error } = await supabase
     .from('project_phases')
-    .select('id, phase_name')
+    .select('id, phase_name, phase_number')
     .eq('project_id', projectId)
     .order('phase_number')
 

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import { Select, FormField } from '../../ui'
 import type { Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund } from '../Invoices/types'
+import { formatPhaseLabel } from '../../../utils/phaseLabel'
 
 interface Bank {
   id: string
@@ -235,7 +236,7 @@ export const InvoiceEntityFields: React.FC<InvoiceEntityFieldsProps> = ({
               {getSupplierContractsByProject(formData.supplier_id, formData.project_id).map(contract => (
                 <option key={contract.id} value={contract.id}>
                   {contract.contract_number} - {contract.projects?.name || 'N/A'}
-                  {contract.phases?.phase_name && ` - ${contract.phases.phase_name}`}
+                  {contract.phases && ` - ${formatPhaseLabel(contract.phases, t('common.phase'))}`}
                   {contract.job_description && ` (${contract.job_description})`}
                 </option>
               ))}

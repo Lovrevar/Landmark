@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import type { SearchableOption } from '../../ui/SearchableSelect'
+import { formatPhaseLabel } from '../../../utils/phaseLabel'
 
 export type PickerEntity = 'project' | 'subcontractor' | 'contract' | 'unit' | 'customer' | 'credit'
 
@@ -30,7 +31,7 @@ export async function fetchSubcontractorOptions(): Promise<SearchableOption[]> {
   }))
 }
 
-export async function fetchPhaseOptions(): Promise<SearchableOption[]> {
+export async function fetchPhaseOptions(phaseWord: string): Promise<SearchableOption[]> {
   // This picker is NOT project-scoped — it lists every phase in the database. Labelling a row
   // by phase_name alone made most entries read "Faza 1", with nothing to tell the user which
   // project they were attaching a document to. The project name carries the identity; the phase
@@ -43,8 +44,10 @@ export async function fetchPhaseOptions(): Promise<SearchableOption[]> {
   if (error) throw error
   return (data ?? []).map(r => {
     const projectName = (r.project as unknown as { name?: string } | null)?.name
+    // `phaseWord` is passed rather than translated here so this stays a plain service; the
+    // caller owns i18n. Without formatPhaseLabel this read "#1 Faza 1".
     const phaseLabel = r.phase_number != null
-      ? `#${r.phase_number} ${r.phase_name as string}`
+      ? formatPhaseLabel({ phase_number: r.phase_number as number, phase_name: r.phase_name as string }, phaseWord)
       : (r.phase_name as string)
     return {
       value: r.id as string,

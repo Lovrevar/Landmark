@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Modal, Button, Alert, LoadingSpinner } from '../../../ui'
 import { ProjectPhase } from '../../../../lib/supabase'
 import { CostClassification, PhaseClassificationBudget } from '../types'
-import { formatPhaseLabel } from '../utils/phaseLabel'
+import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 import {
   fetchPhaseClassificationBudgets,
   fetchTICClassificationTotals

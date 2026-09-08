@@ -64,6 +64,15 @@ them. Any screen showing a planned figure must gate on whether a TIC exists — 
 one reads "budget not set", never €0. Details in
 [FUNDING.md](./FUNDING.md#the-tic-is-the-only-source-of-planned-budget).
 
+Two companion rules that follow from the same change, and that every module is expected to obey:
+
+- **Render a phase with `formatPhaseLabel`**, never by concatenating `phase_number` and
+  `phase_name`. Phases are now stored as "Faza 1", so the naive form prints "Faza 1 · Faza 1".
+  Any query feeding a phase label therefore needs `phase_number` selected alongside `phase_name`.
+- **Never display `project_phases.budget_used`.** It is a derived counter refreshed only by
+  `recalculate_all_phase_budgets()`, so it reads 0 for a phase that does have contracts. Spend is
+  derived from contracts at read time everywhere that matters.
+
 ---
 
 ## Global Files
@@ -76,6 +85,7 @@ one reads "budget not set", never €0. Details in
 | `src/contexts/AuthContext.tsx` | Global auth state |
 | `src/utils/permissions.ts` | Role-based access control |
 | `src/utils/formatters.ts` | Shared date/currency/number formatters (unit-tested) |
+| `src/utils/phaseLabel.ts` | `formatPhaseLabel(phase, phaseWord)` — the **only** way to render a phase to a user. Since the split, phases are stored as literally "Faza 1", so concatenating number and name gives "Faza 1 · Faza 1"; this collapses it. Matched structurally, so it works with a Croatian name under an English UI. Unit-tested |
 | `src/utils/evm.ts` | EVM calculation utilities (calculatePhaseEVM, calculateProjectEVM) |
 | `src/utils/vatCalculations.ts` | Croatian 4-slot VAT breakdown (`calculateVatBreakdown`, `CROATIAN_VAT_RATES` 25/13/0/5%); unit-tested |
 | `src/utils/yieldToUI.ts` | `yieldToUI()` — yields to the next macrotask to keep the UI responsive during long PDF-builder loops |

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ProjectPhase } from '../../../../lib/supabase'
 import { EditPhaseFormData } from '../types'
 import { Modal, FormField, Input, Select, Button } from '../../../ui'
+import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 
 interface EditPhaseModalProps {
   visible: boolean
@@ -44,7 +45,11 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
     <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header
         title={t('supervision.site_management.edit_phase.title')}
-        subtitle={`${t('supervision.site_management.edit_phase.phase_label')} ${phase.phase_number} • ${t('supervision.site_management.edit_phase.budget_used')} €${phase.budget_used.toLocaleString('hr-HR')}`}
+        // `budget_used` is a derived column refreshed only by recalculate_all_phase_budgets(),
+        // so it reads 0 for a phase that does have contracts. Spend is derived from contracts at
+        // read time everywhere else; showing the stale counter here contradicted the phase card
+        // directly behind this dialog.
+        subtitle={formatPhaseLabel(phase, t('common.phase'))}
         onClose={onClose}
       />
 

@@ -81,7 +81,7 @@ export default function DocumentsPage() {
       fetchCategories(),
       fetchProjectOptions(),
       fetchSubcontractorOptions(),
-      fetchPhaseOptions(),
+      fetchPhaseOptions(t('common.phase')),
       fetchContractOptions(),
       fetchCreditOptions(),
     ])

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { formatPhaseLabel } from '../../../Supervision/SiteManagement/utils/phaseLabel'
+import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 import { useTranslation } from 'react-i18next'
 import { Users, ChevronUp, ChevronDown } from 'lucide-react'
 import { Badge, Button, EmptyState, Select, SearchInput, StatCard, StatGrid, Table } from '../../../ui'
@@ -174,7 +174,11 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
                     <Table.Td label={t('common.subcontractor')} className="font-medium text-gray-900 dark:text-white">
                       {contract.subcontractor.name}
                     </Table.Td>
-                    <Table.Td label={t('common.phase')}>{contract.phase?.phase_name ?? '-'}</Table.Td>
+                    <Table.Td label={t('common.phase')}>
+                      {contract.phase?.phase_number != null
+                        ? formatPhaseLabel({ phase_number: contract.phase.phase_number, phase_name: contract.phase.phase_name }, t('common.phase'))
+                        : '-'}
+                    </Table.Td>
                     <Table.Td label={t('supervision.site_management.phase_card.classification_label')}>
                       {contract.classification?.name ?? t('supervision.site_management.phase_card.unclassified')}
                     </Table.Td>

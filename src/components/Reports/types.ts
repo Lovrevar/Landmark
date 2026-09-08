@@ -232,6 +232,8 @@ export interface WorkLog {
 export interface ProjectSupervisionReport {
   project: Project
   total_budget: number
+  /** False when the project has no TIC: there is no plan, so no utilisation ratio is meaningful. */
+  has_budget: boolean
   budget_used: number
   remaining_budget: number
   total_contracts: number

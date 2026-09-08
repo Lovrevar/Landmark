@@ -7,7 +7,7 @@ import { formatEuroRounded as money } from '../../../../utils/formatters'
 // The label helper and the classification sort come from Site Management on purpose. This tab is
 // a second window onto the same phases and contracts, and the two disagreeing on a phase's name
 // or on the order of its cost classifications is exactly the confusion the split was meant to end.
-import { formatPhaseLabel } from '../../../Supervision/SiteManagement/utils/phaseLabel'
+import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 import type { PhaseStatus } from '../utils'
 import type { Phase, ContractWithDetails } from '../types'
 

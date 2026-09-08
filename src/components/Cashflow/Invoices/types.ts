@@ -74,7 +74,7 @@ export interface Contract {
   job_description: string
   contract_amount: number
   projects?: { name: string }
-  phases?: { phase_name: string }
+  phases?: { phase_name: string; phase_number: number }
 }
 
 export interface Milestone {

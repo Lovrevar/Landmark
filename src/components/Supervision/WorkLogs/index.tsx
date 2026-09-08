@@ -20,6 +20,7 @@ import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textar
 import { format } from 'date-fns'
 import { useWorkLogs } from './hooks/useWorkLogs'
 import type { WorkLog, WorkLogStatus } from './services/workLogService'
+import { formatPhaseLabel } from '../../../utils/phaseLabel'
 
 const statusConfig = {
   work_finished: { tKey: 'supervision.work_logs.status.work_finished', icon: CheckCircle2, color: 'green' },
@@ -136,7 +137,7 @@ const WorkLogs: React.FC = () => {
                 >
                   <option value="">{t('supervision.work_logs.form.select_phase')}</option>
                   {phases.map((phase) => (
-                    <option key={phase.id} value={phase.id}>{phase.phase_name}</option>
+                    <option key={phase.id} value={phase.id}>{formatPhaseLabel(phase, t('common.phase'))}</option>
                   ))}
                 </Select>
               </FormField>
@@ -285,7 +286,7 @@ const WorkLogs: React.FC = () => {
                           <StatusBadge status={log.status} />
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {log.projects?.name} {log.project_phases?.phase_name && `• ${log.project_phases.phase_name}`}
+                          {log.projects?.name} {log.project_phases && `• ${formatPhaseLabel(log.project_phases, t('common.phase'))}`}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {t('supervision.work_logs.contract_label')} {log.contracts?.contract_number} - {log.contracts?.job_description}

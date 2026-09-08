@@ -883,7 +883,6 @@
       "select_supplier": "Select supplier",
       "select_project": "Select project",
       "select_phase": "Select phase",
-      "phase_prefix": "Phase {{number}}: ",
       "linking": "Linking...",
       "link_button": "Link",
       "error_suppliers": "Error loading suppliers",

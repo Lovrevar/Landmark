@@ -4,7 +4,7 @@ import { Plus, Edit2, Trash2, Users, ChevronDown, ChevronUp, Wallet } from 'luci
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases, SubcontractorWithPhase, TreeNode } from './types'
 import { rollupContracts, remainingBudget, unallocatedBudget } from './utils/contractTree'
-import { formatPhaseLabel } from './utils/phaseLabel'
+import { formatPhaseLabel } from '../../../utils/phaseLabel'
 import { TreeGroup } from './TreeGroup'
 import { Button, EmptyState } from '../../ui'
 import { formatEuroRounded } from '../../../utils/formatters'

@@ -6,7 +6,7 @@ import { ProjectWithPhases, SubcontractorWithPhase, SiteGrouping, VIEW_DIMENSION
 import { PhaseCard } from './PhaseCard'
 import { ClassificationCard } from './ClassificationCard'
 import { buildContractTree } from './utils/contractTree'
-import { formatPhaseLabel } from './utils/phaseLabel'
+import { formatPhaseLabel } from '../../../utils/phaseLabel'
 import { formatEuroRounded } from '../../../utils/formatters'
 import { TICBudgetBadge } from './TICBudgetBadge'
 import { ProjectSummaryBanner } from './ProjectSummaryBanner'

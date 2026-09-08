@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Briefcase, FileText } from 'lucide-react'
 import { SupplierSummary } from '../types'
 import { Modal, Badge, Button, StatCard, StatGrid } from '../../../ui'
+import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 
 interface SupplierDetailsModalProps {
   showModal: boolean
@@ -83,7 +84,7 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                       <p className="font-medium text-gray-900 dark:text-white">{contract.contract_number}</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">{contract.projects?.name || 'N/A'}</p>
                       {contract.phases?.phase_name && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{contract.phases.phase_name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{formatPhaseLabel(contract.phases, t('common.phase'))}</p>
                       )}
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{contract.job_description}</p>
                     </div>

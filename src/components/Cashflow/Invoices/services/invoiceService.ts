@@ -94,7 +94,7 @@ export const fetchData = async (
         job_description,
         contract_amount,
         projects:project_id (name),
-        phases:phase_id (phase_name)
+        phases:phase_id (phase_name, phase_number)
       `)
       .in('status', ['draft', 'active'])
       .order('contract_number'),

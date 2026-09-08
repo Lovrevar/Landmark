@@ -37,6 +37,11 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 - **Depends on:** supabase client
 
 ### services/supervisionReportService.ts
+- Budget figures come from the project's **TIC**, not `projects.budget`. `has_budget` is false
+  when the project has no TIC; the view and the PDF then omit "Remaining" and "Utilization"
+  rather than dividing by a leftover typed figure. A utilisation percentage printed against a
+  budget the rest of the app calls unset reads as a finding about the project rather than a gap
+  in the data — particularly in a PDF that leaves the building.
 - `fetchProjects()` — fetches project list for report selector
 - `generateProjectReport(selectedProject, projects, dateRange)` — fetches contracts, phases, payments, subcontractors, work logs, investor names; computes budget utilization and contract status distribution
 - **Depends on:** supabase client

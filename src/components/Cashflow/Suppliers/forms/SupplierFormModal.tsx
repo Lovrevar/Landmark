@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal, Button, Input, Select, FormField, Alert, Form } from '../../../ui'
 import { SupplierFormData, Project, Phase } from '../types'
+import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 
 interface SupplierFormModalProps {
   showModal: boolean
@@ -95,7 +96,7 @@ const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
                       <option value="">{t('suppliers.form.select_phase')}</option>
                       {phases.map((phase) => (
                         <option key={phase.id} value={phase.id}>
-                          {phase.phase_name}
+                          {formatPhaseLabel(phase, t('common.phase'))}
                         </option>
                       ))}
                     </Select>
