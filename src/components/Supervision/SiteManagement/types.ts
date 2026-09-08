@@ -50,18 +50,18 @@ export interface MilestoneWithCalculatedAmount extends SubcontractorMilestone {
   calculated_amount: number
 }
 
+// No budget field on either form input: the TIC is the only writer of planned budget. A form
+// that round-trips `budget_allocated` looks harmless but reverts the phase to whatever figure
+// the client happened to load — silently undoing a sync that ran while the modal was open.
 export interface PhaseFormInput {
   id?: string
   phase_name: string
-  budget_allocated: number
   start_date: string
   end_date: string
 }
 
 export interface EditPhaseFormData {
   phase_name: string
-  budget_allocated: number
-  budget_used?: number
   start_date: string | null
   end_date: string | null
   status: 'planning' | 'active' | 'completed' | 'on_hold'

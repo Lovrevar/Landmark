@@ -4,6 +4,7 @@ import {
   rollupContracts,
   isFullySettled,
   remainingBudget,
+  exceedsPhaseBudget,
   unallocatedBudget,
   nodeKey,
   TreeContext
@@ -315,5 +316,25 @@ describe('isFullySettled', () => {
     expect(isFullySettled(contract({
       has_contract: false, cost: 0, invoice_total_paid: 0, invoice_total_owed: 0
     }))).toBe(false)
+  })
+})
+
+describe('exceedsPhaseBudget', () => {
+  it('blocks a contract that overruns the remaining plan', () => {
+    expect(exceedsPhaseBudget({ budget_allocated: 1000, budget_used: 400 }, 601)).toBe(true)
+  })
+
+  it('allows a contract that exactly consumes the remainder', () => {
+    expect(exceedsPhaseBudget({ budget_allocated: 1000, budget_used: 400 }, 600)).toBe(false)
+  })
+
+  it('allows any contract on a phase with no plan', () => {
+    // The case that matters: without a TIC every phase sits at 0, and treating that as a
+    // budget of zero would block every contract on the project.
+    expect(exceedsPhaseBudget({ budget_allocated: 0, budget_used: 0 }, 1_000_000)).toBe(false)
+  })
+
+  it('still blocks once a plan exists, even if it is fully consumed', () => {
+    expect(exceedsPhaseBudget({ budget_allocated: 1000, budget_used: 1000 }, 1)).toBe(true)
   })
 })

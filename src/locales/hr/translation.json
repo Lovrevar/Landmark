@@ -2255,21 +2255,12 @@
         "phase_name": "Naziv faze",
         "phase_name_placeholder": "Unesite naziv faze",
         "budget": "Alocirani budžet (€)",
-        "budget_warning": "Upozorenje: Budžet je manji od već alociranog iznosa",
-        "available_after": "Dostupno nakon ažuriranja:",
-        "budget_less_error": "Budžet manji od alociranog",
         "start_date": "Datum početka",
         "end_date": "Datum završetka",
         "status": "Status",
-        "note_prefix": "Napomena: Nakon ovog ažuriranja, ukupni budžeti faza",
-        "will_be": "bit će",
-        "over": "iznad",
-        "under": "ispod",
-        "budget_suffix": "budžeta projekta.",
         "update": "Ažuriraj fazu",
         "errors": {
-          "name_required": "Naziv faze je obavezan",
-          "budget_required": "Budžet je obavezan"
+          "name_required": "Naziv faze je obavezan"
         }
       },
       "projects_grid": {

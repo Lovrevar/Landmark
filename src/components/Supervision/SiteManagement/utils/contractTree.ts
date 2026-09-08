@@ -79,6 +79,19 @@ export const isFullySettled = (sub: SubcontractorWithPhase): boolean =>
 export const remainingBudget = (budget: number, rollup: GroupRollup): number =>
   budget - rollup.contracted - rollup.unpaidWithoutContract
 
+/**
+ * Whether a contract of `cost` would overrun what is left of a phase's plan.
+ *
+ * A phase with no allocated budget has nothing to exceed, and that case is not hypothetical: the
+ * TIC is the only writer of planned budget, so every phase of a project without one sits at 0.
+ * Reading that as "a budget of zero, which everything overruns" would make it impossible to
+ * record a single contract — and would blame the contract amount for a missing cost plan.
+ */
+export const exceedsPhaseBudget = (
+  phase: { budget_allocated: number; budget_used: number },
+  cost: number
+): boolean => phase.budget_allocated > 0 && cost > phase.budget_allocated - phase.budget_used
+
 // -------------------------------------------------------------------------- context
 
 export interface TreeContext {

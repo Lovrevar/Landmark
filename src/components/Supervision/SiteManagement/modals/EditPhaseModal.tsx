@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { formatEuroRounded } from '../../../../utils/formatters'
 import { useTranslation } from 'react-i18next'
 import { ProjectPhase } from '../../../../lib/supabase'
-import { ProjectWithPhases, EditPhaseFormData } from '../types'
+import { EditPhaseFormData } from '../types'
 import { Modal, FormField, Input, Select, Button } from '../../../ui'
 
 interface EditPhaseModalProps {
   visible: boolean
   onClose: () => void
   phase: ProjectPhase | null
-  project: ProjectWithPhases
   onSubmit: (updates: EditPhaseFormData) => void
 }
 
@@ -17,13 +16,11 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
   visible,
   onClose,
   phase,
-  project,
   onSubmit
 }) => {
   const { t } = useTranslation()
   const [formData, setFormData] = useState<EditPhaseFormData>({
     phase_name: '',
-    budget_allocated: 0,
     start_date: '',
     end_date: '',
     status: 'planning'
@@ -34,7 +31,6 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
     if (phase) {
       setFormData({
         phase_name: phase.phase_name,
-        budget_allocated: phase.budget_allocated,
         start_date: phase.start_date || '',
         end_date: phase.end_date || '',
         status: phase.status
@@ -43,12 +39,6 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
   }, [phase])
 
   if (!visible || !phase) return null
-
-  const otherPhasesTotalBudget = project.phases
-    .filter(p => p.id !== phase.id)
-    .reduce((sum, p) => sum + p.budget_allocated, 0)
-  const newTotalAllocated = otherPhasesTotalBudget + formData.budget_allocated
-  const projectBudgetDiff = newTotalAllocated - project.budget
 
   return (
     <Modal show={true} onClose={onClose} size="lg">
@@ -75,9 +65,9 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             helperText={t('general_projects.budget_from_tic_hint')}
           >
             <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
-              {formData.budget_allocated > 0 ? (
+              {phase.budget_allocated > 0 ? (
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {formatEuroRounded(formData.budget_allocated)}
+                  {formatEuroRounded(phase.budget_allocated)}
                 </span>
               ) : (
                 <span className="text-gray-500 dark:text-gray-400">
@@ -116,20 +106,6 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             </Select>
           </FormField>
 
-          {projectBudgetDiff !== 0 && (
-            <div className={`p-4 rounded-lg border ${
-              projectBudgetDiff > 0 ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700' : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700'
-            }`}>
-              <p className={`text-sm ${projectBudgetDiff > 0 ? 'text-orange-800 dark:text-orange-400' : 'text-blue-800 dark:text-blue-200'}`}>
-                <span className="font-medium">{t('supervision.site_management.edit_phase.note_prefix')}</span>
-                ({' €' + newTotalAllocated.toLocaleString('hr-HR')}) {t('supervision.site_management.edit_phase.will_be')} {' '}
-                {projectBudgetDiff > 0
-                  ? `€${Math.abs(projectBudgetDiff).toLocaleString('hr-HR')} ${t('supervision.site_management.edit_phase.over')}`
-                  : `€${Math.abs(projectBudgetDiff).toLocaleString('hr-HR')} ${t('supervision.site_management.edit_phase.under')}`
-                } {t('supervision.site_management.edit_phase.budget_suffix')}
-              </p>
-            </div>
-          )}
         </div>
       </Modal.Body>
 

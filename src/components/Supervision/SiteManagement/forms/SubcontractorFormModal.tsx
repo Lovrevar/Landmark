@@ -148,7 +148,9 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
   if (!visible || !phase) return null
 
-  const availableBudget = phase.budget_allocated - phase.budget_used
+  // A phase with no plan has no headroom to report — showing "available budget €0" invites the
+  // reader to think the money ran out, when the TIC that would set it simply does not exist yet.
+  const availableBudget = phase.budget_allocated > 0 ? phase.budget_allocated - phase.budget_used : null
 
   const funderSelect = banks.length > 0 ? (
     <FormField label={t('supervision.subcontractor_form.financed_by')} helperText={t('supervision.subcontractor_form.financed_by_help')}>
@@ -170,7 +172,11 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
     <Modal show={true} onClose={onClose} size="xl">
       <Modal.Header
         title={t('supervision.subcontractor_form.title')}
-        subtitle={`${phase.phase_name} • ${t('supervision.subcontractor_form.available_budget')} ${formatEuro(availableBudget)}`}
+        subtitle={
+          availableBudget === null
+            ? `${phase.phase_name} • ${t('general_projects.budget_not_set')}`
+            : `${phase.phase_name} • ${t('supervision.subcontractor_form.available_budget')} ${formatEuro(availableBudget)}`
+        }
         onClose={onClose}
       />
 
@@ -355,7 +361,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="success" onClick={handleSubmit} disabled={isSubmitting || totalAmount > availableBudget}>
+        <Button variant="success" onClick={handleSubmit} disabled={isSubmitting || (availableBudget !== null && totalAmount > availableBudget)}>
           {isSubmitting ? t('supervision.subcontractor_form.adding') : t('supervision.subcontractor_form.add')}
         </Button>
       </Modal.Footer>

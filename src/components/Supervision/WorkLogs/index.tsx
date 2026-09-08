@@ -19,7 +19,7 @@ import {
 import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, Form, FormField, ConfirmDialog } from '../../ui'
 import { format } from 'date-fns'
 import { useWorkLogs } from './hooks/useWorkLogs'
-import type { WorkLog } from './services/workLogService'
+import type { WorkLog, WorkLogStatus } from './services/workLogService'
 
 const statusConfig = {
   work_finished: { tKey: 'supervision.work_logs.status.work_finished', icon: CheckCircle2, color: 'green' },
@@ -180,7 +180,7 @@ const WorkLogs: React.FC = () => {
               <FormField label={t('supervision.work_logs.form.status')} required>
                 <Select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as WorkLog['status'] })}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as WorkLogStatus })}
                 >
                   {Object.entries(statusConfig).map(([value, config]) => (
                     <option key={value} value={value}>{t(config.tKey)}</option>

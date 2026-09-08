@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ProjectPhase, Subcontractor } from '../../../../lib/supabase'
 import * as siteService from '../services/siteService'
+import { exceedsPhaseBudget } from '../utils/contractTree'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) => {
@@ -56,7 +57,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         if (!data.existing_subcontractor_id) {
           throw new Error('Odaberite podugovaratelja')
         }
-        if (hasContract && data.cost > phase.budget_allocated - phase.budget_used) {
+        if (hasContract && exceedsPhaseBudget(phase, data.cost)) {
           throw new Error('Iznos ugovora premašuje raspoloživi budžet faze')
         }
         const phaseData = await siteService.getPhaseInfo(phase.id)
@@ -87,7 +88,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         if (!data.name?.trim() || !data.contact?.trim()) {
           throw new Error('Naziv tvrtke i kontakt su obavezni')
         }
-        if (hasContract && data.cost > phase.budget_allocated - phase.budget_used) {
+        if (hasContract && exceedsPhaseBudget(phase, data.cost)) {
           throw new Error('Iznos ugovora premašuje raspoloživi budžet faze')
         }
         const phaseData = await siteService.getPhaseInfo(phase.id)

@@ -70,7 +70,8 @@ export const createPhases = async (projectId: string, phases: PhaseFormInput[]) 
     project_id: projectId,
     phase_number: index + 1,
     phase_name: phase.phase_name,
-    budget_allocated: phase.budget_allocated,
+    // budget_allocated is left to its column default of 0; sync_project_from_tic fills it in
+    // when a TIC plans this phase.
     budget_used: 0,
     start_date: phase.start_date || null,
     end_date: phase.end_date || null,
@@ -136,7 +137,6 @@ export const updateProjectPhases = async (projectId: string, phases: PhaseFormIn
         .update({
           phase_number: phaseNumber,
           phase_name: phase.phase_name,
-          budget_allocated: phase.budget_allocated,
           start_date: phase.start_date || null,
           end_date: phase.end_date || null
         })
@@ -150,7 +150,6 @@ export const updateProjectPhases = async (projectId: string, phases: PhaseFormIn
           project_id: projectId,
           phase_number: phaseNumber,
           phase_name: phase.phase_name,
-          budget_allocated: phase.budget_allocated,
           budget_used: 0,
           start_date: phase.start_date || null,
           end_date: phase.end_date || null,
@@ -178,8 +177,6 @@ export const updatePhase = async (
   phaseId: string,
   updates: {
     phase_name?: string
-    budget_allocated?: number
-    budget_used?: number
     start_date?: string | null
     end_date?: string | null
     status?: 'planning' | 'active' | 'completed' | 'on_hold'
@@ -195,7 +192,6 @@ export const updatePhase = async (
     .from('project_phases')
     .update({
       phase_name: updates.phase_name,
-      budget_allocated: updates.budget_allocated,
       start_date: updates.start_date,
       end_date: updates.end_date,
       status: updates.status

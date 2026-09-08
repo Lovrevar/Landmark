@@ -388,7 +388,6 @@ const SiteManagement: React.FC = () => {
             setEditingPhase(null)
           }}
           phase={editingPhase}
-          project={selectedProject}
           onSubmit={handleUpdatePhase}
         />
 

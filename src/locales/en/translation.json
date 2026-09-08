@@ -2251,21 +2251,12 @@
         "phase_name": "Phase Name",
         "phase_name_placeholder": "Enter phase name",
         "budget": "Budget Allocated (€)",
-        "budget_warning": "Warning: Budget is less than already allocated amount",
-        "available_after": "Available after update:",
-        "budget_less_error": "Budget less than allocated",
         "start_date": "Start Date",
         "end_date": "End Date",
         "status": "Status",
-        "note_prefix": "Note: After this update, total phase budgets",
-        "will_be": "will be",
-        "over": "over",
-        "under": "under",
-        "budget_suffix": "the project budget.",
         "update": "Update Phase",
         "errors": {
-          "name_required": "Phase name is required",
-          "budget_required": "Budget is required"
+          "name_required": "Phase name is required"
         }
       },
       "projects_grid": {

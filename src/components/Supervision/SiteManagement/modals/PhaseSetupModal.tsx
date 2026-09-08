@@ -49,7 +49,6 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
         .map(phase => ({
           id: phase.id,
           phase_name: phase.phase_name,
-          budget_allocated: phase.budget_allocated,
           start_date: phase.start_date || '',
           end_date: phase.end_date || ''
         }))
@@ -65,7 +64,6 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
       setPhases(
         Array.from({ length: phaseCount }, (_, i) => ({
           phase_name: t('supervision.site_management.phase_setup.default_phase_name', { n: i + 1 }),
-          budget_allocated: 0,
           start_date: '',
           end_date: ''
         }))
@@ -82,7 +80,6 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
       for (let i = currentCount; i < count; i++) {
         newPhases.push({
           phase_name: t('supervision.site_management.phase_setup.default_phase_name', { n: i + 1 }),
-          budget_allocated: 0,
           start_date: '',
           end_date: ''
         })

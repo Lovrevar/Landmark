@@ -1,5 +1,4 @@
 import { supabase } from '../../../../lib/supabase'
-import { logActivity } from '../../../../lib/activityLog'
 import { PhaseClassificationBudget } from '../types'
 import {
   totalsByClassification,
@@ -29,110 +28,11 @@ export async function fetchPhaseClassificationBudgets(phaseIds?: string[]): Prom
   return data || []
 }
 
-async function projectIdForPhase(phaseId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from('project_phases')
-    .select('project_id')
-    .eq('id', phaseId)
-    .maybeSingle()
-  return data?.project_id ?? null
-}
-
-export async function upsertPhaseClassificationBudget(
-  phaseId: string,
-  classificationId: number,
-  budgetAllocated: number,
-  notes: string | null = null
-): Promise<void> {
-  const { data: upserted, error } = await supabase
-    .from('phase_classification_budgets')
-    .upsert(
-      { phase_id: phaseId, classification_id: classificationId, budget_allocated: budgetAllocated, notes },
-      { onConflict: 'phase_id,classification_id' }
-    )
-    .select('id')
-    .maybeSingle()
-
-  if (error) throw error
-
-  logActivity({
-    action: 'phase_classification_budget.update',
-    entity: 'phase_classification_budget',
-    entityId: upserted?.id ?? null,
-    projectId: await projectIdForPhase(phaseId),
-    metadata: {
-      severity: 'medium',
-      phase_id: phaseId,
-      classification_id: classificationId,
-      budget_allocated: budgetAllocated
-    }
-  })
-}
-
-/**
- * Replace a phase's whole set of sub-allocations in one round trip.
- *
- * Rows set to 0 are deleted rather than stored, so an untouched classification does not linger
- * as an empty group in the phase card. Pass a 0 row explicitly only when the intent is to pin an
- * empty group — the modal distinguishes the two.
- */
-export async function bulkUpsertPhaseClassificationBudgets(
-  phaseId: string,
-  rows: Array<{ classification_id: number; budget_allocated: number; keepEmpty?: boolean }>
-): Promise<void> {
-  const toWrite = rows.filter(r => r.budget_allocated > 0 || r.keepEmpty)
-  const toDelete = rows.filter(r => r.budget_allocated <= 0 && !r.keepEmpty).map(r => r.classification_id)
-
-  if (toWrite.length > 0) {
-    const { error } = await supabase
-      .from('phase_classification_budgets')
-      .upsert(
-        toWrite.map(r => ({
-          phase_id: phaseId,
-          classification_id: r.classification_id,
-          budget_allocated: r.budget_allocated
-        })),
-        { onConflict: 'phase_id,classification_id' }
-      )
-    if (error) throw error
-  }
-
-  if (toDelete.length > 0) {
-    const { error } = await supabase
-      .from('phase_classification_budgets')
-      .delete()
-      .eq('phase_id', phaseId)
-      .in('classification_id', toDelete)
-    if (error) throw error
-  }
-
-  logActivity({
-    action: 'phase_classification_budget.bulk_update',
-    entity: 'phase_classification_budget',
-    projectId: await projectIdForPhase(phaseId),
-    metadata: { severity: 'high', phase_id: phaseId, count: toWrite.length, cleared: toDelete.length }
-  })
-}
-
-export async function deletePhaseClassificationBudget(
-  phaseId: string,
-  classificationId: number
-): Promise<void> {
-  const { error } = await supabase
-    .from('phase_classification_budgets')
-    .delete()
-    .eq('phase_id', phaseId)
-    .eq('classification_id', classificationId)
-
-  if (error) throw error
-
-  logActivity({
-    action: 'phase_classification_budget.delete',
-    entity: 'phase_classification_budget',
-    projectId: await projectIdForPhase(phaseId),
-    metadata: { severity: 'high', phase_id: phaseId, classification_id: classificationId }
-  })
-}
+// No write helpers here any more. sync_project_from_tic() owns this table: it deletes and
+// rebuilds a project's rows whenever the TIC is saved, so anything written from the client would
+// survive only until the next save. The three upsert/delete functions that used to live here
+// were left without callers when the classification budgets modal became read-only, and keeping
+// them would have invited someone to wire the client back into a table the database now owns.
 
 /**
  * Allocated vs already-committed amount for one (phase, classification) pair.

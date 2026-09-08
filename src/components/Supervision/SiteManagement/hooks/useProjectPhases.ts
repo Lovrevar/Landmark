@@ -53,7 +53,6 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     phase: ProjectPhase,
     updates: {
       phase_name: string
-      budget_allocated: number
       start_date: string | null
       end_date: string | null
       status: 'planning' | 'active' | 'completed' | 'on_hold'
@@ -67,7 +66,6 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     try {
       await siteService.updatePhase(phase.id, {
         phase_name: updates.phase_name,
-        budget_allocated: updates.budget_allocated,
         start_date: updates.start_date || null,
         end_date: updates.end_date || null,
         status: updates.status
