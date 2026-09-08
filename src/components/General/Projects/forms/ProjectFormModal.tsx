@@ -26,7 +26,9 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
     if (!form.name?.trim()) errors.name = t('general_projects.form_error_name')
     if (!form.location?.trim()) errors.location = t('general_projects.form_error_location')
     if (!form.start_date) errors.start_date = t('general_projects.form_error_start_date')
-    if (!form.budget) errors.budget = t('general_projects.form_error_budget')
+    // No budget check: the field is read-only and the TIC writes it. A new project has no
+    // budget yet by definition, so requiring one blocked creation entirely — and with no
+    // FormField bound to errors.budget, it did so without showing anything.
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     handleSubmit(e)
