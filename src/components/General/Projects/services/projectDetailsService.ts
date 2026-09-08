@@ -1,9 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
 import type { ProjectWithDetails, Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, ProjectDisplay } from '../types'
-// Imported from Site Management rather than reimplemented: these two screens must agree on what
-// a project's planned budget is and what "paid" means, and the only way to guarantee that is to
-// derive both from the same functions.
-import { fetchInvoiceStatsForContracts } from '../../../Supervision/SiteManagement/services/siteSubcontractorService'
 import { ticGrandTotal } from '../../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../../Funding/TIC/utils/ticFormatters'
 
@@ -116,8 +112,6 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
   investments: CreditAllocationItem[]
   /** The project's TIC investment total; null when it has no TIC, meaning it has no planned budget. */
   ticTotal: number | null
-  /** Invoice-derived paid/owed per contract id. The only definition of "paid" this app now uses. */
-  invoiceStats: Map<string, { totalPaid: number; totalOwed: number }>
 }> {
   const [
     { data: projectData, error: projectError },
@@ -171,8 +165,6 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
   if (projectError) throw projectError
 
   const contracts = (contractsData || []) as unknown as ContractWithDetails[]
-  // Sequenced rather than parallel: the invoice query is keyed by the contract ids above.
-  const invoiceStats = await fetchInvoiceStatsForContracts(contracts.map(c => c.id))
 
   // A TIC row of all zeros is an untouched template, not a plan — the same test the database
   // trigger applies before it writes any budget.
@@ -187,6 +179,5 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
     apartments: (apartmentsData || []) as unknown as ApartmentItem[],
     investments: (investmentsData || []) as unknown as CreditAllocationItem[],
     ticTotal: ticTotal > 0 ? ticTotal : null,
-    invoiceStats,
   }
 }

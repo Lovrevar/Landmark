@@ -789,7 +789,7 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
       pdf.setFont('helvetica', 'normal')
 
       const projectData = [
-        ['Budget:', '€' + (project.budget / 1000000).toFixed(1) + 'M', 'Revenue:', '€' + (project.revenue / 1000000).toFixed(1) + 'M'],
+        ['Budget:', project.has_budget ? '€' + (project.budget / 1000000).toFixed(1) + 'M' : 'not set', 'Revenue:', '€' + (project.revenue / 1000000).toFixed(1) + 'M'],
         ['Expenses:', '€' + (project.expenses / 1000000).toFixed(1) + 'M', 'Profit:', '€' + (project.profit / 1000000).toFixed(1) + 'M'],
         ['Units:', `${project.units_sold}/${project.total_units}`, 'Sales Rate:', `${project.sales_rate.toFixed(1)}%`],
         ['Phases:', `${project.phases_done}/${project.total_phases}`, 'Contracts:', project.contracts.toString()]

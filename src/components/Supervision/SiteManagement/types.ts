@@ -31,7 +31,7 @@ export interface SubcontractorWithPhase extends Subcontractor {
   contract_id?: string
   subcontractor_id?: string
   has_contract?: boolean
-  invoice_total_paid?: number
+  /** Outstanding per invoices. There is no `invoice_total_paid` twin: paid is `budget_realized`. */
   invoice_total_owed?: number
   contract_type_id?: number | null
   contract_type_name?: string | null

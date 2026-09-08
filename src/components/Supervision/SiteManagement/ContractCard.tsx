@@ -36,7 +36,8 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   const { t } = useTranslation()
 
   const hasValidContract = subcontractor.has_contract !== false && subcontractor.cost > 0
-  const actualPaid = subcontractor.invoice_total_paid || 0
+  // One definition of paid across the app: contracts.budget_realized (see 20260910120000).
+  const actualPaid = subcontractor.budget_realized || 0
   const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && actualPaid < subcontractor.cost : false
 
   const subVariance = hasValidContract ? actualPaid - subcontractor.cost : 0
@@ -118,7 +119,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
           <>
             <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
               <span className="text-gray-600 dark:text-gray-400 font-medium">{t('supervision.subcontractor_details.total_paid')}:</span>
-              <span className="font-bold text-green-600"> €{(subcontractor.invoice_total_paid || 0).toLocaleString('hr-HR')}</span>
+              <span className="font-bold text-green-600"> €{actualPaid.toLocaleString('hr-HR')}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-600 dark:text-gray-400 font-medium">{t('supervision.site_management.phase_card.total_owed')}:</span>

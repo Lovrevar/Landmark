@@ -32,7 +32,7 @@ const contract = (over: Partial<SubcontractorWithPhase> = {}): SubcontractorWith
   id: 'c1', name: 'Izvođač', contact: '', created_at: '',
   cost: 1000, budget_realized: 0,
   phase_id: 'ph1', has_contract: true,
-  invoice_total_paid: 0, invoice_total_owed: 0,
+  invoice_total_owed: 0,
   contract_type_id: 3, contract_type_name: 'Razno',
   classification_id: 20, classification_name: 'Priprema i razvoj', classification_sort_order: 20,
   ...over
@@ -61,21 +61,21 @@ const leafContracts = (nodes: TreeNode[]): string[] =>
 describe('rollupContracts', () => {
   it('sums contracted rows and the shortfall still owed on them', () => {
     const r = rollupContracts([
-      contract({ id: 'a', cost: 1000, invoice_total_paid: 400 }),
-      contract({ id: 'b', cost: 500, invoice_total_paid: 0 })
+      contract({ id: 'a', cost: 1000, budget_realized: 400 }),
+      contract({ id: 'b', cost: 500, budget_realized: 0 })
     ])
     expect(r).toEqual({ contracted: 1500, paid: 400, unpaid: 1100, unpaidWithoutContract: 0, count: 2 })
   })
 
   it('never reports negative unpaid when a row is overpaid', () => {
-    const r = rollupContracts([contract({ cost: 1000, invoice_total_paid: 1800 })])
+    const r = rollupContracts([contract({ cost: 1000, budget_realized: 1800 })])
     expect(r.unpaid).toBe(0)
     expect(r.paid).toBe(1800)
   })
 
   it('takes the amount owed from invoices for rows with no contract', () => {
     const r = rollupContracts([
-      contract({ has_contract: false, cost: 0, invoice_total_paid: 100, invoice_total_owed: 250 })
+      contract({ has_contract: false, cost: 0, budget_realized: 100, invoice_total_owed: 250 })
     ])
     expect(r).toEqual({ contracted: 0, paid: 100, unpaid: 250, unpaidWithoutContract: 250, count: 1 })
   })
@@ -92,8 +92,8 @@ describe('rollupContracts', () => {
 
   it('mixes contracted and uncontracted rows without double counting', () => {
     const r = rollupContracts([
-      contract({ id: 'a', cost: 1000, invoice_total_paid: 250 }),
-      contract({ id: 'b', has_contract: false, cost: 0, invoice_total_paid: 50, invoice_total_owed: 300 })
+      contract({ id: 'a', cost: 1000, budget_realized: 250 }),
+      contract({ id: 'b', has_contract: false, cost: 0, budget_realized: 50, invoice_total_owed: 300 })
     ])
     expect(r).toEqual({ contracted: 1000, paid: 300, unpaid: 1050, unpaidWithoutContract: 300, count: 2 })
   })
@@ -305,17 +305,40 @@ describe('isFullySettled', () => {
   it('settles an uncontracted row on invoices instead', () => {
     // No agreed amount to compare against, so it goes on what was paid and what is still owed.
     expect(isFullySettled(contract({
-      has_contract: false, cost: 0, invoice_total_paid: 500, invoice_total_owed: 0
+      has_contract: false, cost: 0, budget_realized: 500, invoice_total_owed: 0
     }))).toBe(true)
     expect(isFullySettled(contract({
-      has_contract: false, cost: 0, invoice_total_paid: 500, invoice_total_owed: 100
+      has_contract: false, cost: 0, budget_realized: 500, invoice_total_owed: 100
     }))).toBe(false)
   })
 
   it('does not count an untouched uncontracted row', () => {
     expect(isFullySettled(contract({
-      has_contract: false, cost: 0, invoice_total_paid: 0, invoice_total_owed: 0
+      has_contract: false, cost: 0, budget_realized: 0, invoice_total_owed: 0
     }))).toBe(false)
+  })
+})
+
+describe('the single definition of paid', () => {
+  it('reads paid from budget_realized and nothing else', () => {
+    // There used to be a second field, `invoice_total_paid`, summed from the invoices. Both were
+    // caches of sum(accounting_payments.amount), but only budget_realized could go stale — and it
+    // did, by €25.000 on Zona 31. Migration 20260910120000 fixed the cache; this pins the app to
+    // one field so a second "paid" cannot quietly reappear.
+    const r = rollupContracts([
+      contract({ id: 'a', cost: 1000, budget_realized: 600 }),
+      contract({ id: 'b', cost: 1000, budget_realized: 0 }),
+    ])
+    expect(r.paid).toBe(600)
+  })
+
+  it('still takes what is OWED from invoices, which payments cannot answer', () => {
+    const r = rollupContracts([
+      contract({ has_contract: false, cost: 0, budget_realized: 100, invoice_total_owed: 250 }),
+    ])
+    expect(r.paid).toBe(100)
+    expect(r.unpaid).toBe(250)
+    expect(r.unpaidWithoutContract).toBe(250)
   })
 })
 

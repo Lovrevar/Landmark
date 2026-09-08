@@ -80,6 +80,17 @@ export async function fetchGeneralReportData(
   const banksArray = banks || []
   const companyBankAccountsArray = companyBankAccounts || []
   const ticCostStructuresArray = ticCostStructures || []
+  // Planned budget comes from the TIC and nowhere else, so a project without one has none.
+  // `projects.budget` still holds whatever was typed before the TIC took over, and reporting
+  // that as the plan is how Precko Zapad's leftover €1.000.000.000 ended up as 89% of a
+  // €1.118M "portfolio value" on a page headed Executive Report.
+  const ticTotalByProject = new Map<string, number>()
+  for (const tic of ticCostStructuresArray) {
+    if (!tic.project_id) continue
+    const total = ticGrandTotal((tic.line_items || []) as LineItem[])
+    if (total > 0) ticTotalByProject.set(tic.project_id as string, total)
+  }
+  const plannedBudget = (projectId: string) => ticTotalByProject.get(projectId) ?? 0
   const officeSuppliersArray = officeSuppliers || []
   const bankCreditsArray = bankCredits || []
   const companyLoansArray = companyLoans || []
@@ -146,7 +157,7 @@ export async function fetchGeneralReportData(
   const totalProfit = totalRevenue - totalExpenses
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
-  const portfolioValue = projectsArray.reduce((sum, p) => sum + p.budget, 0)
+  const portfolioValue = projectsArray.reduce((sum, p) => sum + plannedBudget(p.id), 0)
   const totalEquity = creditAllocationsArray.reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
   const totalDebt = bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0)
   const activeFunderIds = new Set(
@@ -264,7 +275,9 @@ export async function fetchGeneralReportData(
         location: project.location,
         status: project.status,
         category: project.category ?? null,
-        budget: project.budget,
+        budget: plannedBudget(project.id),
+        // False when the project has no TIC, so the renderer can say "not set" rather than €0.
+        has_budget: plannedBudget(project.id) > 0,
         revenue: projectRevenue,
         expenses: projectExpenses,
         units_sold: soldApts.length,

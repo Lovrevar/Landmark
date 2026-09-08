@@ -46,7 +46,12 @@ export function rollupContracts(contracts: SubcontractorWithPhase[]): GroupRollu
   for (const sub of contracts) {
     const cost = sub.cost ?? 0
     const isContracted = sub.has_contract !== false && cost > 0
-    const subPaid = sub.invoice_total_paid || 0
+    // `budget_realized` is the app's single figure for money paid on a contract — a trigger-kept
+    // cache of sum(accounting_payments.amount), repaired and sealed by migration 20260910120000.
+    // Summing the invoices' `paid_amount` gives the same number by construction; this needs no
+    // second query. `invoice_total_owed` below has no equivalent, since payments cannot say what
+    // is still outstanding.
+    const subPaid = sub.budget_realized || 0
 
     paid += subPaid
 
@@ -73,7 +78,7 @@ export function rollupContracts(contracts: SubcontractorWithPhase[]): GroupRollu
 export const isFullySettled = (sub: SubcontractorWithPhase): boolean =>
   sub.has_contract
     ? sub.budget_realized >= sub.cost && sub.cost > 0
-    : (sub.invoice_total_owed ?? 0) === 0 && (sub.invoice_total_paid ?? 0) > 0
+    : (sub.invoice_total_owed ?? 0) === 0 && (sub.budget_realized ?? 0) > 0
 
 /** Budget headroom, matching the phase card's "remaining" tile. */
 export const remainingBudget = (budget: number, rollup: GroupRollup): number =>

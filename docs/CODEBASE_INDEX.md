@@ -72,6 +72,11 @@ Two companion rules that follow from the same change, and that every module is e
 - **Never display `project_phases.budget_used`.** It is a derived counter refreshed only by
   `recalculate_all_phase_budgets()`, so it reads 0 for a phase that does have contracts. Spend is
   derived from contracts at read time everywhere that matters.
+- **"Paid" on a contract is `contracts.budget_realized`, and only that.** `accounting_payments` is
+  the source of truth; `budget_realized` is its per-contract cache, kept by triggers on both
+  `accounting_payments` and `accounting_invoices` (migration `20260910120000` added the second and
+  repaired the drift). Summing the invoices' `paid_amount` gives the same number, so do not add a
+  second field for it. Invoices are still the only answer to what is **owed**.
 
 ---
 

@@ -17,8 +17,6 @@ interface PhasesContractsTabProps {
   projectId?: string
   /** The project's TIC total; null means it has no plan, so no budget figure is meaningful. */
   ticTotal: number | null
-  /** Invoice-derived paid/owed per contract id, the same source Site Management uses. */
-  invoiceStats: Map<string, { totalPaid: number; totalOwed: number }>
 }
 
 interface ClassificationGroup {
@@ -35,18 +33,13 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({
   contracts,
   projectId,
   ticTotal,
-  invoiceStats,
 }) => {
   const { t } = useTranslation()
 
-  // Paid comes from invoices, never from `contracts.budget_realized`. The two disagree — on Zona
-  // 31 by €25.000 — and the invoice figure is the one every phase card and the contract tree in
-  // Site Management shows. A second screen quoting the other number is how a project ends up with
-  // two "total paid" values that are both defended as correct.
-  const paidFor = useMemo(
-    () => (contract: ContractWithDetails) => invoiceStats.get(contract.id)?.totalPaid ?? 0,
-    [invoiceStats]
-  )
+  // `budget_realized` is the app's single "paid" figure — a trigger-kept cache of
+  // accounting_payments. It used to disagree with the invoice-derived sum on Zona 31 by €25.000;
+  // migration 20260910120000 found the leak, repaired the data and closed it.
+  const paidFor = (contract: ContractWithDetails) => Number(contract.budget_realized || 0)
 
   // Keyed by phase_id, not phase_name. Names are not unique — every project now has a phase
   // called "Faza 1" — so a name-keyed map merged distinct phases into one bucket.

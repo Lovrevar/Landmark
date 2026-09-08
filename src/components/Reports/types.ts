@@ -1,4 +1,4 @@
-import type { Project, Apartment, Customer, Sale, Subcontractor, Contract, WirePayment, ProjectPhase, ProjectCategory } from '../../lib/supabase'
+import type { Project, Apartment, Customer, Sale, ProjectCategory } from '../../lib/supabase'
 
 // ── General Report ──────────────────────────────────────────────────────────
 
@@ -8,7 +8,9 @@ export interface ProjectData {
   location: string
   status: string
   category: ProjectCategory | null
+  /** The project's TIC total. 0 when it has no TIC — see `has_budget` before rendering it. */
   budget: number
+  has_budget: boolean
   revenue: number
   expenses: number
   units_sold: number
@@ -229,26 +231,3 @@ export interface WorkLog {
   contracts?: { contract_number: string; job_description: string }
 }
 
-export interface ProjectSupervisionReport {
-  project: Project
-  total_budget: number
-  /** False when the project has no TIC: there is no plan, so no utilisation ratio is meaningful. */
-  has_budget: boolean
-  budget_used: number
-  remaining_budget: number
-  total_contracts: number
-  active_contracts: number
-  completed_contracts: number
-  total_phases: number
-  completed_phases: number
-  total_subcontractors: number
-  total_payments: number
-  total_work_logs: number
-  monthly_data: MonthlyData[]
-  contracts: Contract[]
-  phases: ProjectPhase[]
-  subcontractors: Subcontractor[]
-  payments: WirePayment[]
-  work_logs: WorkLog[]
-  investors: string
-}

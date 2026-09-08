@@ -43,10 +43,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
   const [contracts, setContracts] = useState<ContractWithDetails[]>([])
-  // The project's TIC total (null = no plan) and the invoice-derived paid figures. Both come
-  // from the fetch so this page reports the same budget and the same "paid" as Site Management.
+  // The project's TIC total; null means the project has no plan and no budget to show.
   const [ticTotal, setTicTotal] = useState<number | null>(null)
-  const [invoiceStats, setInvoiceStats] = useState<Map<string, { totalPaid: number; totalOwed: number }>>(new Map())
   const [apartments, setApartments] = useState<ApartmentItem[]>([])
   const [investments, setInvestments] = useState<CreditAllocationItem[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -66,7 +64,6 @@ const ProjectDetailsEnhanced: React.FC = () => {
       setPhases(data.phases)
       setContracts(data.contracts)
       setTicTotal(data.ticTotal)
-      setInvoiceStats(data.invoiceStats)
       setApartments(data.apartments)
       setInvestments(data.investments)
     } catch (error) {
@@ -94,9 +91,9 @@ const ProjectDetailsEnhanced: React.FC = () => {
   if (loading) return <LoadingSpinner message={t('general_projects.loading')} />
   if (!project) return <EmptyState icon={Building2} title={t('general_projects.not_found')} />
 
-  // Invoice-derived, not `contracts.budget_realized`. The two disagree, and every other
-  // surface in the app now reports the invoice figure.
-  const totalSpent = contracts.reduce((sum, c) => sum + (invoiceStats.get(c.id)?.totalPaid ?? 0), 0)
+  // contracts.budget_realized is the app's single "paid" figure — a trigger-kept cache of
+  // accounting_payments, repaired and sealed by migration 20260910120000.
+  const totalSpent = contracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
   const hasPlan = ticTotal !== null && ticTotal > 0
   const totalRevenue = apartments.filter(a => a.status === 'Sold').reduce((sum, a) => sum + Number(a.price), 0)
   const completionPercentage = milestones.length > 0
@@ -280,7 +277,6 @@ const ProjectDetailsEnhanced: React.FC = () => {
               contracts={contracts}
               projectId={id}
               ticTotal={ticTotal}
-              invoiceStats={invoiceStats}
             />
           )}
 

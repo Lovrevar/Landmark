@@ -23,6 +23,11 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 ## Services
 
 ### services/generalReportService.ts
+- Planned budget per project, and the `portfolio_value` KPI, come from the project's **TIC** —
+  never `projects.budget`, which still holds whatever was typed before the TIC took over. Each
+  `ProjectData` carries `has_budget`; render "not set" when it is false. Before this, Precko
+  Zapad's leftover €1.000.000.000 made up 89% of a €1.118M "Portfolio Value" on a page headed
+  Executive Report; the same figure is now €63.6M, the sum of the three real cost plans.
 - `fetchGeneralReportData(selectedProject, dateRange)` — aggregates data from 40+ tables into a ComprehensiveReport covering: executive summary, KPIs (portfolio value, sales rate, D/E ratio), sales performance, funding structure, construction status, accounting overview, TIC cost management, risk assessment, and cash flow analysis
 - **Depends on:** supabase client
 
@@ -36,15 +41,14 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 - `fetchRetailReportData()` — builds RetailReportData with project reports, customer reports, supplier reports, supplier type summary, and invoice summary
 - **Depends on:** supabase client
 
-### services/supervisionReportService.ts
-- Budget figures come from the project's **TIC**, not `projects.budget`. `has_budget` is false
-  when the project has no TIC; the view and the PDF then omit "Remaining" and "Utilization"
-  rather than dividing by a leftover typed figure. A utilisation percentage printed against a
-  budget the rest of the app calls unset reads as a finding about the project rather than a gap
-  in the data — particularly in a PDF that leaves the building.
-- `fetchProjects()` — fetches project list for report selector
-- `generateProjectReport(selectedProject, projects, dateRange)` — fetches contracts, phases, payments, subcontractors, work logs, investor names; computes budget utilization and contract status distribution
-- **Depends on:** supabase client
+> **Removed:** `SupervisionReports.tsx`, `services/supervisionReportService.ts` and
+> `pdf/supervisionReportPdf.ts` were deleted in September 2026. Nothing routed or imported the
+> component — it had no entry in `App.tsx` and zero references — and its service queried
+> `subcontractor_payments`, a table that exists in neither the production nor the dev database.
+> Had anyone reached it, `generateProjectReport` would have thrown `PGRST205` on every call and
+> the page would have rendered nothing at all, because the component destructured only `data` and
+> `loading` from `useCachedData` and ignored its `error`. Supervision figures are available in
+> the general report and in Site Management.
 
 ---
 
@@ -78,10 +82,6 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 - `generateSalesReportPDF(reportType, projectReport, customerReport, dateRange)` — generates a project sales PDF (overview, units, revenue, monthly trend, apartment details) or customer report PDF (distribution, insights)
 - **Depends on:** jsPDF, pdfCharts.ts
 
-### pdf/supervisionReportPdf.ts
-- `generateSupervisionReportPDF(projectReport, dateRange)` — generates a construction PDF with project overview, monthly budget performance, contract details, and work log summary
-- **Depends on:** jsPDF, pdfCharts.ts
-
 ### pdf/retailReportPdf.ts
 - `generateRetailReportPdf(data)` — generates a retail portfolio PDF with project table, customer breakdown, and supplier-by-type analysis; loads Noto Sans (Google Fonts) for Croatian character support
 - **Depends on:** jsPDF, pdfCharts.ts
@@ -99,11 +99,6 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 ### SalesReports.tsx
 - Project sales report (unit status, revenue, monthly trend, apartment list) or customer report (distribution, insights), with project selector, date range picker, and PDF export
 - **Uses services:** salesReportService, salesReportPdf
-- **Uses Ui:** Card, Table, Button, Select, useToast
-
-### SupervisionReports.tsx
-- Construction dashboard: budget performance overview, contract status distribution, monthly performance table, first 10 work logs, highlights & recommendations, and PDF export
-- **Uses services:** supervisionReportService, supervisionReportPdf
 - **Uses Ui:** Card, Table, Button, Select, useToast
 
 ### RetailReports.tsx
@@ -134,7 +129,7 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 - `src/utils/reportGenerator.ts` contains an older shared PDF utility used separately from these module-specific generators
 - `dashboards/investmentReportPdf.ts` is a related PDF generator that lives in the Dashboards folder — not here
 - `retailReportPdf.ts` uses Noto Sans (dynamically loaded from Google Fonts) to ensure Croatian characters render correctly in PDF — do not replace with helvetica for this file
-- During the May 2026 audit the report services (`generalReportService`, `supervisionReportService`) were refactored to batch their queries in a single `Promise.all` instead of sequential awaits — same tables, same output shape
+- During the May 2026 audit the report services were refactored to batch their queries in a single `Promise.all` instead of sequential awaits — same tables, same output shape
 - The long-running PDF generators (`salesReportPdf`, `retailReportPdf`) call `yieldToUI()` (`src/utils/yieldToUI.ts`) inside their row loops so a large export does not freeze the UI; this does not change report content
 - All report views are internationalised (react-i18next, keys under `reports.*`) and dark-mode aware, and long tables expose per-cell `label` props for the mobile card layout — presentational only, the report data and sections are unchanged
 - **EVM is not surfaced in any report.** The Earned Value Management utility (`src/utils/evm.ts`) is consumed only by the Budget Control feature (`src/components/General/BudgetControl/`)
