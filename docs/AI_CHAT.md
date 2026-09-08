@@ -302,6 +302,24 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 
 `search_help` (omitted from the table) is also available to every role.
 
+#### search_help retrieval and the embeddings artifact
+
+`search_help` does **not** read `help-kb/*.md` at runtime. It reads
+`supabase/functions/_shared/help-kb-embeddings.json`, a build-time artifact carrying each entry's
+title, routes, roles, **body**, and its `text-embedding-3-small` vector — see
+[`help-search.ts`](../supabase/functions/_shared/help-search.ts). Retrieval is cosine similarity
+plus a route boost and a role downrank; there is no keyword fallback.
+
+**Editing a markdown file therefore changes nothing until the artifact is rebuilt** with
+`npm run kb:embed` (needs a working `OPENAI_API_KEY`). A new file has no vector and can never be
+retrieved.
+
+`npm run kb:refresh-text` is a stopgap for when the key is unavailable: it copies current bodies
+and frontmatter into the artifact while keeping the existing vectors, so the assistant at least
+quotes correct text, scored by vectors computed from the previous wording. It records what it did
+under the artifact's `stale_vectors` key, including any entry it had to leave out for lack of a
+vector. Run `kb:embed` as soon as a key is available; that clears the marker.
+
 Three role-buckets in code: `ALL_ROLES` (every role), `FINANCE_ROLES` (Director + Accounting), `FINANCE_PLUS_SUPERVISION` (the finance pair plus Supervision, the latter scoped to assigned projects by handler logic).
 
 ### What each tool returns

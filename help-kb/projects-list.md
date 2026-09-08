@@ -8,6 +8,10 @@ roles: [Director, Accounting, Sales, Investment]
 
 Stranica **Projekti** prikazuje sve gradilišne projekte kao mrežu kartica. Svaka kartica pokazuje budžet, vremenski okvir, postotak napretka i broj aktivnih ugovora.
 
+Budžet se ne upisuje ovdje. U obrascu projekta polje **Budžet** je samo za čitanje jer budžet
+dolazi iz [[tic]] projekta; dok TIC ne postoji, piše **budžet nije postavljen**. Novi projekt se
+zato može stvoriti i prije nego što plan troškova postoji — to je uobičajen redoslijed posla.
+
 Filtriranje: koristite tražilicu **Pretraži projekte...** te padajući izbornik statusa s vrijednostima **Svi statusi**, **Planiranje**, **U tijeku**, **Završeno**, **Na čekanju**.
 
 Klikom na karticu otvarate detaljni prikaz projekta. Gumb **Novi projekt** (s + ikonom) otvara obrazac za stvaranje. Korisnici uloge **Supervision** ne vide ovu stranicu jer ih sustav automatski preusmjerava na **Upravljanje gradilištem**.

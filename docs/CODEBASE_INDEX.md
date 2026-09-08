@@ -10,7 +10,7 @@
 | **Cashflow** | [CASHFLOW.md](./CASHFLOW.md) | Invoices, payments, banks, suppliers, approvals |
 | **Sales** | [SALES.md](./SALES.md) | Apartments, customers, projects, payments |
 | **Retail** | [RETAIL.md](./RETAIL.md) | Retail projects, invoices, customers, land plots |
-| **Funding** | [FUNDING.md](./FUNDING.md) | Investors, credits, disbursements, TIC |
+| **Funding** | [FUNDING.md](./FUNDING.md) | Investors, credits, disbursements, TIC — **the TIC is the only writer of planned budget across the whole app** |
 | **Supervision** | [SUPERVISION.md](./SUPERVISION.md) | Site management, subcontractors, work logs |
 | **Reports** | [REPORTS.md](./REPORTS.md) | PDF reports across all domains |
 | **Dashboards** | [DASHBOARDS.md](./DASHBOARDS.md) | Role-based dashboard views |
@@ -55,6 +55,14 @@ Module/
 - **Types** are local to each module; shared types live in `src/types/`
 - **Ui/** components are the only shared primitives — use them everywhere
 - **Casing convention:** Feature/domain directories use PascalCase (`Sales/`, `SalesProjects/`); utility subdirectories always use lowercase (`hooks/`, `services/`, `forms/`, `modals/`, `components/`)
+
+### One cross-cutting invariant worth knowing before you touch budgets
+
+`projects.budget`, `project_phases.budget_allocated` and `phase_classification_budgets` are
+**derived from the project's TIC** by `sync_project_from_tic()`, and nothing in the client writes
+them. Any screen showing a planned figure must gate on whether a TIC exists — a project without
+one reads "budget not set", never €0. Details in
+[FUNDING.md](./FUNDING.md#the-tic-is-the-only-source-of-planned-budget).
 
 ---
 

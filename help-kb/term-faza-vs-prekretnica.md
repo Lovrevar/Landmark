@@ -14,6 +14,11 @@ roles: [Director, Accounting, Sales, Supervision, Investment]
 
 Ranije su se ta dva pojma miješala — nazivi faza su se koristili kao stavke troškovnika, pa je projekt mogao imati samo jednu stvarnu fazu. Sada su razdvojeni: na [[site-management]] možete prebacivati prikaz između **Po fazama** i **Po klasifikaciji troška**.
 
+Obje osi planira [[tic]] projekta: TIC kaže koliko se troši na svaku klasifikaciju i, ako ima
+stupce **FAZA 1**, **FAZA 2** …, u kojoj fazi. Faze projekta i njihovi budžeti izvode se iz toga,
+pa se ne unose ručno. Trošak koji se troši jednom za cijeli projekt ne pripada nijednoj fazi i
+prikazuje se kao **Nije fazirano**.
+
 **Prekretnica** je ključni datum/događaj u životnom vijeku projekta (npr. dobivanje građevinske dozvole, predaja kupcu). Prekretnice se prikazuju u tabu **Prekretnice** s polje **Datum dospijeća** i oznakom završenosti.
 
 Kada netko kaže "faza 3 projekta X", uvijek misli na zapis iz `project_phases`. Kada pita "koliko smo potrošili na zemljište", misli na **klasifikaciju troška**, ne na fazu. AI asistent posebno pazi na obje razlike i nikada ne pomiješa pojmove u odgovorima.

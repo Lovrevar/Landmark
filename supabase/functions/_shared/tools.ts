@@ -128,7 +128,9 @@ export const TOOLS: ToolDefinition[] = [
     name: 'list_project_phases',
     description:
       'List all phases for a given project, ordered by phase_number. Each phase includes its name, ' +
-      'start/end dates, status, and the static `budget_allocated` figure. ' +
+      'start/end dates, status, and the `budget_allocated` figure. ' +
+      '`budget_allocated` is derived from the project TIC, not typed by anyone; it reads 0 for a ' +
+      'project that has no TIC, which means "not planned yet", not "planned to be zero". ' +
       'A phase is a TIME division of the project (Faza 1, Faza 2). It is NOT a cost category: ' +
       'most projects have only one phase, so per-phase figures are effectively whole-project ' +
       'figures. For "how much did we spend on land / on preparation", use `list_cost_classifications` ' +
@@ -351,6 +353,9 @@ export const TOOLS: ToolDefinition[] = [
     description:
       'Compute a project\'s financial rollup: total project budget, sum of contract amounts, sum of contract ' +
       '`budget_realized` (paid via invoices), unpaid invoice total, and remaining budget. ' +
+      'The budget figure is derived from the project TIC. A project with no TIC has no planned budget ' +
+      'at all — say so rather than presenting a stale stored number as the plan, and note that ' +
+      '"remaining budget" is then meaningless. ' +
       'Use this for questions like "how is project X doing financially?" or "is project X over budget?". ' +
       'Construction-side only — retail projects are not included.',
     input_schema: {

@@ -77,6 +77,7 @@ Files live alongside this index; each is self-contained markdown with frontmatte
 - [term-multi-vat](term-multi-vat.md) — **Multi-VAT računi (više PDV stopa)** — Hrvatska računovodstvena specifičnost: do 4 PDV stope po dokumentu.
 - [term-unit-types](term-unit-types.md) — **Tipovi jedinica: stan, garaža, repozitorij** — Tri tipa prodajnih jedinica i njihovo povezivanje.
 - [term-tic](term-tic.md) — **TIC — što znači skraćenica?** — Troškovna Informatička Struktura, strukturirani prikaz troškova investicije.
+- [term-budzet-iz-tic](term-budzet-iz-tic.md) — **Odakle dolazi budžet projekta?** — Budžet se izvodi iz TIC-a i nigdje se ne upisuje ručno; što znači „budžet nije postavljen”.
 - [terminology-dobavljac-vs-podugovaratelj](terminology-dobavljac-vs-podugovaratelj.md) — **Dobavljač vs. podugovaratelj (terminološka razlika)** — Razjašnjenje kako se isti pojam koristi u različitim modulima.
 - [term-status-casing](term-status-casing.md) — **Statusi se razlikuju po tablicama** — Razlika između Title Case, lowercase i SHOUTING_SNAKE_CASE statusa.
 - [term-realised-budget](term-realised-budget.md) — **Realizirani budžet — odakle dolazi?** — Točan iznos potrošnje računa se iz ugovora, ne iz budget_used.

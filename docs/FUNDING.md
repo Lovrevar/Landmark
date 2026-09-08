@@ -294,6 +294,55 @@ Both tabs are fully editable per project — rows and sections can be renamed, a
 
 The two tabs are deliberately independent: the Građenje grand total is not written into the Investicija `Građenje` row, even though the two normally match in the source workbook.
 
+#### The TIC is the only source of planned budget
+
+Since migrations `20260909130000` and `20260909140000`, saving a TIC is what sets a project's
+plan. Nothing else writes one — the project form, the phase setup modal and the classification
+budgets modal all display budget read-only, and a project with no TIC reads **"budget not set"**
+rather than showing a zero that looks like a real figure.
+
+Saving `tic_cost_structures` fires `sync_project_from_tic(project_id)`, which derives:
+
+| Target | From |
+|---|---|
+| `projects.budget` | the Investicija grand total |
+| `project_phases` | the phases the TIC itself names |
+| `project_phases.budget_allocated` | that phase's share of the plan |
+| `phase_classification_budgets` | the (phase × classification) grid |
+
+Three rules the function encodes, each protecting against a way this could destroy data:
+
+- **An all-zero TIC changes nothing.** Every project shows the default template whether or not
+  anything was filled in, so saving an untouched one is easy to do by accident; without the
+  guard it would zero the budget and take EVM, funding ratios and every dashboard with it.
+- **A phase with contracts or work logs is never deleted**, only zeroed, even when the TIC stops
+  planning it. Both FKs are `ON DELETE SET NULL`, so deleting one would silently detach real work.
+- **Only Investicija rows feed budgets.** Građenje is a breakdown of the single `Građenje` line —
+  in both real workbooks its `SVEUKUPNO` equals that line exactly — so counting it too would
+  double the largest item in the plan.
+
+`phase_classification_budgets` is replaced wholesale on each sync rather than merged: the TIC is
+the only author, so a row it no longer contains no longer exists. There are deliberately **no
+client-side write helpers** for that table.
+
+#### Two dimensions on a line item
+
+Each Investicija row carries two optional fields beyond its amounts:
+
+- **`classification_id`** — which cost classification the money belongs to, so the TIC can drive
+  `phase_classification_budgets`. Seeded from `ticClassificationMap.ts` for the 16 canonical row
+  names and editable per row, so a project that files Konzalting under preparation rather than
+  control just changes it there. A row left unmapped shows as *unmapped* and contributes to no
+  classification. **The defaults are mirrored in the backfill in migration `20260909130000`;
+  change the two together.**
+- **`phases`** — `[{ phase_number, vlastita, kreditna }]` when the cost is spread across phases,
+  **absent when it is incurred once for the whole project**. That distinction is not cosmetic:
+  in `1908_TIC_Osijek.xlsx` "Vrijednost zemljišta" prints its full 4.000.000 against each of
+  three phase columns, and summing those would invent 8.000.000 of budget. An unphased line is
+  shown as "—" in each phase column and counted once in the project total.
+
+A TIC with no phased line at all is *unphased* and describes one undifferentiated project.
+
 #### Services
 
 ### ticService.ts
@@ -344,7 +393,28 @@ The two tabs are deliberately independent: the Građenje grand total is not writ
 - `calculateSectionTotals(section)` — one Građenje section's `Ukupno` row
 - `calculateConstructionTotals(sections)` — the `SVEUKUPNO:` row across all sections
 - `toRomanNumeral(n)` / `toSectionCode(i)` — next numeral/code when appending an item or section
-- Types: `LineItem`, `ConstructionItem`, `ConstructionSection`, `TICTotals`
+- Types: `LineItem`, `ConstructionItem`, `ConstructionSection`, `TICTotals`, `LineItemPhaseAmount`
+- `LineItem` carries the optional `classification_id` and `phases` described above; an absent or
+  empty `phases` means the line is **not** phased, never "phased with nothing in it"
+
+### ticBudget.ts
+Pure derivation of everything the budget sync and the TIC screen display. All tested against the
+real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
+- `lineItemTotal(item)` / `ticGrandTotal(items)` — vlastita + kreditna, per row and overall
+- `totalsByClassification(items)` — `{ byClassification: Map, unmapped, total }`; what the phase
+  budgets are populated from
+- `isPhased(item)` — whether a line carries per-phase amounts at all
+- `phaseTotals(items)` — `{ byPhase: Map, notPhased }`; `notPhased` is the money that belongs to
+  the project but to no single phase, and is the only thing explaining why the phase budgets stop
+  short of the project total
+- `lineItemPhaseTotal(item, n)` / `phaseClassificationTotals(items)` / `budgetMatrix(items, order)`
+- `remainingFromTIC(planned, committed)`
+
+### ticClassificationMap.ts
+- `defaultClassificationForLine(name, classifications)` — canonical row name → seeded classification
+- `applyDefaultClassifications(items, classifications)` — stamps the defaults onto rows that have
+  none, which is what stops an Excel import from emptying the mapping
+- `CANONICAL_TIC_LINE_NAMES` — the 16 names the defaults cover
 
 #### Modals
 

@@ -17,4 +17,8 @@ Prikazane su tri kartice (tabovi):
 - **Financiranje** — alokacije investicija i kreditne linije.
 - **Prekretnice** — popis prekretnica projekta s praćenjem ispunjenja.
 
+Metrike budžeta na kartici **Pregled** i budžeti faza na kartici **Faze i ugovori** dolaze iz
+[[tic]] projekta i ovdje se ne mogu mijenjati. Projekt bez TIC-a prikazuje **budžet nije
+postavljen**.
+
 **Faza** i **prekretnica** nisu isto — pogledajte [[term-faza-vs-prekretnica]].
