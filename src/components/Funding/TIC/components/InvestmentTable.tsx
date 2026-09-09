@@ -1,17 +1,19 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
-import { Button, Input, Select } from '../../../ui'
+import { AlertTriangle, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
+import { Button, ConfirmDialog, Input, Select } from '../../../ui'
 import {
   formatNumber,
   formatPercentage,
   calculateRowPercentages,
   type LineItem,
+  type LineItemPhaseAmount,
   type TICTotals,
 } from '../utils/ticFormatters'
 import type { CostClassification } from '../../../../lib/supabase'
 import type { ClassificationTotals } from '../utils/ticBudget'
-import { lineItemPhaseTotal, isPhased } from '../utils/ticBudget'
+import { lineItemPhaseTotal, isPhased, hasPhaseSplitMismatch } from '../utils/ticBudget'
+import PhaseSplitModal from '../modals/PhaseSplitModal'
 
 const CELL = 'border border-gray-300 dark:border-gray-600'
 
@@ -29,6 +31,10 @@ interface InvestmentTableProps {
   onAdd: () => void
   onRemove: (index: number) => void
   onMove: (index: number, direction: -1 | 1) => void
+  /** Replaces one row's split; `undefined` marks the cost as project-level rather than phased. */
+  onSetPhases: (index: number, phases: LineItemPhaseAmount[] | undefined) => void
+  onAddPhase: () => void
+  onRemovePhase: (phaseNumber: number) => void
 }
 
 const InvestmentTable: React.FC<InvestmentTableProps> = ({
@@ -42,8 +48,22 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
   onAdd,
   onRemove,
   onMove,
+  onSetPhases,
+  onAddPhase,
+  onRemovePhase,
 }) => {
   const { t } = useTranslation()
+  // Which row's phase split is open. An index rather than the row itself, so the modal always
+  // reads the live figures after an edit in the table behind it.
+  const [editingPhasesFor, setEditingPhasesFor] = useState<number | null>(null)
+  const editingItem = editingPhasesFor === null ? null : lineItems[editingPhasesFor] ?? null
+  // Dropping a phase takes its amounts out of every row at once, so it is confirmed the same way
+  // removing a whole GRAĐENJE section is.
+  const [phasePendingRemoval, setPhasePendingRemoval] = useState<number | null>(null)
+  const rowsInPendingPhase =
+    phasePendingRemoval === null
+      ? 0
+      : lineItems.filter(i => i.phases?.some(p => p.phase_number === phasePendingRemoval)).length
 
   return (
     <div>
@@ -72,7 +92,17 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
               </th>
               {phaseNumbers.map(n => (
                 <th key={n} className={`${CELL} px-4 py-3 text-center font-bold text-gray-900 dark:text-white`}>
-                  {t('common.phase')} {n}
+                  <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                    <span>{t('common.phase')} {n}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      icon={Trash2}
+                      onClick={() => setPhasePendingRemoval(n)}
+                      title={t('tic.phases.remove_phase', { number: n })}
+                      aria-label={t('tic.phases.remove_phase', { number: n })}
+                    />
+                  </div>
                 </th>
               ))}
               <th className={`${CELL} px-2 py-3 w-px`}>
@@ -148,16 +178,32 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
                     {formatPercentage(kreditnaPercent)}%
                   </td>
                   <td className={`${CELL} px-4 py-2 text-right font-semibold text-gray-900 dark:text-white whitespace-nowrap`}>
-                    {formatNumber(rowTotal)}
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      {/* Editing a row's funds after splitting it pulls the two apart. Neither
+                          side is corrected automatically — only the author knows which is wrong. */}
+                      {hasPhaseSplitMismatch(item) && (
+                        <span title={t('tic.phases.row_mismatch')} aria-label={t('tic.phases.row_mismatch')}>
+                          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        </span>
+                      )}
+                      {formatNumber(rowTotal)}
+                    </span>
                   </td>
                   {phaseNumbers.map(n => (
-                    <td key={n} className={`${CELL} px-4 py-2 text-right whitespace-nowrap ${
-                      isPhased(item) ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-600'
-                    }`}>
+                    <td key={n} className={`${CELL} p-0`}>
                       {/* A cost incurred once for the whole project belongs to no phase. Showing
                           it as "—" rather than repeating the full figure is the difference
                           between a plan that adds up and one that overstates itself. */}
-                      {isPhased(item) ? formatNumber(lineItemPhaseTotal(item, n)) : '—'}
+                      <button
+                        type="button"
+                        onClick={() => setEditingPhasesFor(index)}
+                        title={isPhased(item) ? t('tic.phases.edit_cell_title') : t('tic.phases.unphased_cell_title')}
+                        className={`w-full px-4 py-2 text-right whitespace-nowrap hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
+                          isPhased(item) ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-600'
+                        }`}
+                      >
+                        {isPhased(item) ? formatNumber(lineItemPhaseTotal(item, n)) : '—'}
+                      </button>
                     </td>
                   ))}
                   <td className={`${CELL} px-2 py-2`}>
@@ -222,11 +268,44 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
         </table>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <Button variant="secondary" size="sm" icon={Plus} onClick={onAdd}>
           {t('tic.add_row')}
         </Button>
+        <Button variant="secondary" size="sm" icon={Plus} onClick={onAddPhase}>
+          {t('tic.phases.add_phase')}
+        </Button>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {phaseNumbers.length === 0 ? t('tic.phases.unphased_hint') : t('tic.phases.edit_hint')}
+        </p>
       </div>
+
+      <ConfirmDialog
+        show={phasePendingRemoval !== null}
+        title={t('tic.phases.remove_phase_title', { number: phasePendingRemoval ?? 0 })}
+        message={t('tic.phases.remove_phase_confirm', {
+          number: phasePendingRemoval ?? 0,
+          count: rowsInPendingPhase,
+        })}
+        onConfirm={() => {
+          if (phasePendingRemoval !== null) onRemovePhase(phasePendingRemoval)
+          setPhasePendingRemoval(null)
+        }}
+        onCancel={() => setPhasePendingRemoval(null)}
+      />
+
+      {editingItem && (
+        <PhaseSplitModal
+          show
+          onClose={() => setEditingPhasesFor(null)}
+          itemName={editingItem.name}
+          vlastita={editingItem.vlastita}
+          kreditna={editingItem.kreditna}
+          phaseCount={phaseNumbers.length}
+          phases={editingItem.phases}
+          onSave={(phases) => onSetPhases(editingPhasesFor!, phases)}
+        />
+      )}
 
       {/* What Site Management will populate the phase budgets from. Shown here so the effect of
           a classification choice is visible where the choice is made, rather than only on

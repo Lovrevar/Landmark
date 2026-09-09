@@ -343,6 +343,35 @@ Each Investicija row carries two optional fields beyond its amounts:
 
 A TIC with no phased line at all is *unphased* and describes one undifferentiated project.
 
+#### Editing the phase split
+
+Phases used to arrive only from an Excel import; they are now authored on the screen itself.
+
+- **Add phase** (under the Investicija table) appends a column. A column no row has an amount in
+  lives only in `useTIC`'s `phaseColumns` — it is somewhere to type, and the database never hears
+  about it.
+- **Clicking a phase cell** opens `PhaseSplitModal` for that row: the choice between *project-level
+  cost* and *split across phases*, a `vlastita`/`kreditna` pair per phase, a **Split evenly** helper
+  that gives the rounding remainder to the last phase, and a live comparison of the split against
+  the row it divides.
+- **Removing a phase** (the bin in the column header) takes it out of every row and renumbers the
+  ones after it, behind a confirm dialog.
+
+Two rules the editor is built around:
+
+- **The ordinals stay contiguous.** `sync_project_from_tic` counts the phases a TIC names and then
+  deletes every project phase numbered above that count — so a TIC naming phases 1 and 3 would
+  create phase 3 and delete it in the same call. Removing a phase renumbers, and `saveTIC` runs
+  `normalizePhaseNumbers` over the rows before they reach the database, which closes a gap an
+  imported sheet (a missing `FAZA 2` column) could still open.
+- **A mismatch is shown, never reconciled.** Editing a row's own funds after splitting it pulls the
+  two apart; `hasPhaseSplitMismatch` puts a warning next to the row total and the modal spells out
+  the difference. Neither side is corrected automatically, because only the author knows which of
+  the two is wrong — the same stance the importer takes with a sheet whose columns do not add up.
+
+Clearing a split drops the `phases` key entirely rather than storing an empty array or zeros: a
+zeroed split reads as "planned at nothing", which is not what "not attributed to a phase" means.
+
 #### Services
 
 ### ticService.ts
@@ -374,7 +403,9 @@ A TIC with no phased line at all is *unphased* and describes one undifferentiate
 - `useTIC()` — loads projects and the selected project's line items **and construction sections**, manages edits/investor/date, computes both tabs' totals, applies Excel imports, and saves (create or update)
 - **Calls:** ticService.ts
 - **Uses utils:** ticFormatters (calculateTotals, calculateConstructionTotals, toRomanNumeral, toSectionCode)
-- **Returns:** projects, lineItems, constructionSections, investorName, documentDate, selectedProjectId, loading, saving, message, totals, grandTotal, constructionTotals, constructionGrandTotal, saveTIC, `applyImport`, and the row/section mutators (`addLineItem`, `updateLineItem`, `removeLineItem`, `moveLineItem`, `addSection`, `updateSection`, `removeSection`, `moveSection`, `addConstructionItem`, `updateConstructionItem`, `removeConstructionItem`, `moveConstructionItem`)
+- **Returns:** projects, lineItems, constructionSections, investorName, documentDate, selectedProjectId, loading, saving, message, totals, grandTotal, constructionTotals, constructionGrandTotal, `isDirty`, saveTIC, `applyImport`, and the row/section/phase mutators (`addLineItem`, `updateLineItem`, `removeLineItem`, `moveLineItem`, `setLineItemPhases`, `addPhase`, `removePhase`, `addSection`, `updateSection`, `removeSection`, `moveSection`, `addConstructionItem`, `updateConstructionItem`, `removeConstructionItem`, `moveConstructionItem`)
+- `isDirty` compares a serialized snapshot of the four saved fields against the baseline taken on load and re-taken on save — what the screen arms the unsaved-changes guard from
+- `saveTIC()` resolves `true` on success and `false` on failure. The boolean is not for the Save button but for the guard's "save and leave", which must not navigate away from a save that failed; the error message on screen is still `saveTIC`'s own doing
 - `applyImport(parsed, fileName)` replaces the on-screen tables only and logs `tic.import_excel`; nothing reaches the database until the user presses Save
 
 #### Constants
@@ -409,6 +440,12 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
   short of the project total
 - `lineItemPhaseTotal(item, n)` / `phaseClassificationTotals(items)` / `budgetMatrix(items, order)`
 - `remainingFromTIC(planned, committed)`
+- `phaseSplitCheck(item)` / `hasPhaseSplitMismatch(item)` — whether a row's split still adds up to
+  the row, to a cent's tolerance; an unphased row is never a mismatch
+- `ticPhaseCount(items)` — the highest ordinal used, so a phase left empty in the middle still counts
+- `normalizePhaseNumbers(items)` — closes a gap in the ordinals, returning the same array by
+  identity when there is none. Guards `sync_project_from_tic`, which deletes every project phase
+  numbered above the count of phases the TIC names
 
 ### ticClassificationMap.ts
 - `defaultClassificationForLine(name, classifications)` — canonical row name → seeded classification
@@ -417,6 +454,14 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 - `CANONICAL_TIC_LINE_NAMES` — the 16 names the defaults cover
 
 #### Modals
+
+### PhaseSplitModal.tsx
+- Edits one investment row's per-phase split: project-level vs phased, a `vlastita`/`kreditna` pair
+  per phase, **Split evenly**, and the split compared against the row it divides
+- Kept out of the table because a split is two figures per phase — inline, three phases would add
+  six inputs to every row
+- **Uses utils:** ticFormatters, ticBudget
+- **Uses Ui:** Modal, Button, Input, Alert
 
 ### ExcelImportTICModal.tsx
 - 3-step wizard (upload + format help → preview → summary) following `Sales/SalesProjects/modals/ExcelImportGaragesModal.tsx`
@@ -433,11 +478,18 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 - **Uses components:** InvestmentTable, ConstructionTable
 - **Uses modals:** ExcelImportTICModal
 - **Uses Ui:** LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState, Tabs
+- Arms the app-wide unsaved-changes guard (`useUnsavedChanges(isDirty, saveTIC)`, see `docs/UI.md`)
+  and puts the project selector behind it, because switching project reloads both tables over the
+  top of whatever is on screen. Handing it `saveTIC` is what gives the dialog its **Spremi i izađi**
+  button
 
 ### components/InvestmentTable.tsx, components/ConstructionTable.tsx
 - Presentational tables — they take items plus handlers as props and never touch Supabase
 - Per-row controls: move up / move down / delete, with an "Add row" (and "Add section") button
 - `ConstructionTable` confirms section deletion via `ConfirmDialog` because it removes the section's items too
+- `InvestmentTable` owns the phase columns: a bin per column header (confirmed, because it clears
+  that phase from every row and renumbers the rest), an "Add phase" button, phase cells that open
+  `PhaseSplitModal`, and a warning beside the row total when a split no longer adds up
 
 ---
 

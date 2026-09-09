@@ -146,7 +146,14 @@
     "project_type": "Vrsta projekta",
     "all_project_types": "Sve vrste",
     "activate": "Aktiviraj",
-    "deactivate": "Deaktiviraj"
+    "deactivate": "Deaktiviraj",
+    "unsaved_changes_title": "Nespremljene promjene",
+    "unsaved_changes_message": "Na ovoj stranici postoje promjene koje nisu spremljene. Ako sada izađete, bit će izgubljene.",
+    "leave_without_saving": "Izađi bez spremanja",
+    "stay_on_page": "Ostani na stranici",
+    "unsaved_changes_badge": "Nespremljene promjene",
+    "save_and_leave": "Spremi i izađi",
+    "unsaved_changes_save_failed": "Spremanje nije uspjelo. Pokušajte ponovno, izađite bez spremanja ili ostanite na stranici."
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -3634,7 +3641,28 @@
     "classification_unmapped": "— nije klasificirano —",
     "classification_summary": "Plan po klasifikaciji troška",
     "classification_unmapped_total": "Neraspoređeno u TIC-u",
-    "classification_unmapped_hint": "Ovaj iznos nije uključen u budžete faza dok mu ne dodijelite klasifikaciju troška."
+    "classification_unmapped_hint": "Ovaj iznos nije uključen u budžete faza dok mu ne dodijelite klasifikaciju troška.",
+    "phases": {
+      "edit_title": "Raspodjela po fazama",
+      "add_phase": "Dodaj fazu",
+      "remove_phase": "Ukloni fazu {{number}} iz svih redaka",
+      "edit_cell_title": "Uredi raspodjelu ovog retka po fazama",
+      "unphased_cell_title": "Nije fazirano — kliknite za raspodjelu troška po fazama",
+      "edit_hint": "Kliknite ćeliju faze za raspodjelu tog retka po fazama.",
+      "unphased_hint": "Ovaj TIC nema faza. Dodajte fazu za raspodjelu plana na FAZA 1, 2, 3…",
+      "mode_unphased": "Trošak na razini projekta (nije fazirano)",
+      "mode_unphased_hint": "Trošak nastaje jednom za cijeli projekt — zemljište, priprema projekta. Računa se jednom u ukupnom iznosu i ne pripada nijednoj fazi.",
+      "mode_phased": "Raspodjela po fazama",
+      "mode_phased_hint": "Iznosi ispod su ono što svaka faza planira potrošiti na ovu stavku.",
+      "no_phases_hint": "Najprije dodajte fazu u tablicu.",
+      "sum_label": "Zbroj po fazama",
+      "row_total_label": "Ukupno u retku",
+      "split_evenly": "Ravnomjerno raspodijeli",
+      "mismatch_warning": "Zbroj po fazama odstupa od iznosa u retku za {{difference}} €. Raspodjela se sprema točno kako je upisana — ništa se ne ispravlja automatski.",
+      "row_mismatch": "Zbroj po fazama ne odgovara ukupnom iznosu ovog retka.",
+      "remove_phase_title": "Ukloni fazu {{number}}",
+      "remove_phase_confirm": "Ukloniti fazu {{number}} i njene iznose iz {{count}} redaka? Faze nakon nje se prenumeriraju, a promjena se sprema tek klikom na Spremi."
+    }
   },
   "dashboards": {
     "common": {

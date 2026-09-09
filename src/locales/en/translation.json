@@ -146,7 +146,14 @@
     "project_type": "Project type",
     "all_project_types": "All types",
     "activate": "Activate",
-    "deactivate": "Deactivate"
+    "deactivate": "Deactivate",
+    "unsaved_changes_title": "Unsaved changes",
+    "unsaved_changes_message": "This page has changes that have not been saved. If you leave now they will be lost.",
+    "leave_without_saving": "Leave without saving",
+    "stay_on_page": "Stay on this page",
+    "unsaved_changes_badge": "Unsaved changes",
+    "save_and_leave": "Save and leave",
+    "unsaved_changes_save_failed": "Saving failed. You can try again, leave without saving, or stay on this page."
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -3630,7 +3637,28 @@
     "classification_unmapped": "— unclassified —",
     "classification_summary": "Plan by cost classification",
     "classification_unmapped_total": "Unclassified in TIC",
-    "classification_unmapped_hint": "This amount is excluded from phase budgets until you assign it a cost classification."
+    "classification_unmapped_hint": "This amount is excluded from phase budgets until you assign it a cost classification.",
+    "phases": {
+      "edit_title": "Split across phases",
+      "add_phase": "Add phase",
+      "remove_phase": "Remove phase {{number}} from every row",
+      "edit_cell_title": "Edit this row’s split across phases",
+      "unphased_cell_title": "Not phased — click to split this cost across phases",
+      "edit_hint": "Click a phase cell to split that row across phases.",
+      "unphased_hint": "This TIC has no phases. Add one to split the plan across FAZA 1, 2, 3…",
+      "mode_unphased": "Project-level cost (not phased)",
+      "mode_unphased_hint": "The cost is incurred once for the whole project — land, project preparation. It counts once in the total and belongs to no phase.",
+      "mode_phased": "Split across phases",
+      "mode_phased_hint": "The amounts below are what each phase is planned to spend on this line.",
+      "no_phases_hint": "Add a phase to the table first.",
+      "sum_label": "Sum of phases",
+      "row_total_label": "Row total",
+      "split_evenly": "Split evenly",
+      "mismatch_warning": "The phases add up to {{difference}} € away from the row total. The split is stored exactly as typed — nothing is reconciled for you.",
+      "row_mismatch": "The phase split does not add up to this row’s total.",
+      "remove_phase_title": "Remove phase {{number}}",
+      "remove_phase_confirm": "Remove phase {{number}} and its amounts from {{count}} row(s)? The phases after it are renumbered, and the change is only stored when you press Save."
+    }
   },
   "dashboards": {
     "common": {

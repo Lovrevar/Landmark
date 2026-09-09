@@ -3,6 +3,18 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import Button from './Button'
 
+/**
+ * A third choice, for a question that genuinely has one — "save and leave" alongside "leave
+ * without saving". Rendered between Cancel and Confirm, so the confirm button stays the primary
+ * action wherever it already is.
+ */
+export interface ConfirmDialogAction {
+  label: string
+  onClick: () => void
+  variant?: React.ComponentProps<typeof Button>['variant']
+  disabled?: boolean
+}
+
 interface ConfirmDialogProps {
   show: boolean
   title: string
@@ -13,6 +25,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void
   onCancel: () => void
   loading?: boolean
+  extraAction?: ConfirmDialogAction
 }
 
 export default function ConfirmDialog({
@@ -25,6 +38,7 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   loading = false,
+  extraAction,
 }: ConfirmDialogProps) {
   const { t } = useTranslation()
   const resolvedConfirmLabel = confirmLabel ?? t('common.confirm')
@@ -65,6 +79,16 @@ export default function ConfirmDialog({
           >
             {resolvedCancelLabel}
           </Button>
+          {extraAction && (
+            <Button
+              variant={extraAction.variant ?? 'outline-danger'}
+              type="button"
+              onClick={extraAction.onClick}
+              disabled={loading || extraAction.disabled}
+            >
+              {extraAction.label}
+            </Button>
+          )}
           <Button
             variant={variant === 'danger' ? 'danger' : 'primary'}
             type="button"

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   totalsByClassification, ticGrandTotal, remainingFromTIC, lineItemTotal,
-  phaseTotals, budgetMatrix, phaseClassificationTotals
+  phaseTotals, budgetMatrix, phaseClassificationTotals,
+  phaseSplitCheck, hasPhaseSplitMismatch, ticPhaseCount, normalizePhaseNumbers
 } from './ticBudget'
 import { calculateTotals, LineItem } from './ticFormatters'
 
@@ -327,5 +328,102 @@ describe('phaseClassificationTotals', () => {
       const summed = [...row.values()].reduce((s, v) => s + v, 0)
       expect(Math.abs(summed - totals.byPhase.get(phaseNumber)!)).toBeLessThan(0.05)
     }
+  })
+})
+
+describe('phaseSplitCheck', () => {
+  it('reports a split that matches the row it divides', () => {
+    const check = phaseSplitCheck({
+      name: 'Građenje', vlastita: 300, kreditna: 700,
+      phases: [ph(1, 100, 200), ph(2, 200, 500)],
+    })
+    expect(check.vlastita).toBe(300)
+    expect(check.kreditna).toBe(700)
+    expect(check.balanced).toBe(true)
+  })
+
+  it('tolerates the cent the source rounds each phase cell to', () => {
+    const check = phaseSplitCheck({
+      name: 'x', vlastita: 100, kreditna: 0,
+      phases: [ph(1, 33.33, 0), ph(2, 33.33, 0), ph(3, 33.33, 0)],
+    })
+    expect(check.balanced).toBe(true)
+  })
+
+  it('signs the difference so the UI can say over or under', () => {
+    const over = phaseSplitCheck({ name: 'x', vlastita: 100, kreditna: 0, phases: [ph(1, 150, 0)] })
+    expect(over.vlastitaDiff).toBe(50)
+    expect(over.balanced).toBe(false)
+
+    const under = phaseSplitCheck({ name: 'x', vlastita: 100, kreditna: 0, phases: [ph(1, 40, 0)] })
+    expect(under.vlastitaDiff).toBe(-60)
+  })
+
+  it('treats an unphased row as having no split at all, never as a mismatch', () => {
+    const item: LineItem = { name: 'Vrijednost zemljišta', vlastita: 4000000, kreditna: 0 }
+    expect(phaseSplitCheck(item).vlastita).toBe(0)
+    expect(hasPhaseSplitMismatch(item)).toBe(false)
+  })
+
+  it('flags a row whose funds were edited after it was split', () => {
+    expect(hasPhaseSplitMismatch({
+      name: 'x', vlastita: 500, kreditna: 0, phases: [ph(1, 100, 0), ph(2, 100, 0)],
+    })).toBe(true)
+  })
+
+  it('finds no mismatch anywhere in the Osijek plan', () => {
+    expect(OSIJEK.filter(hasPhaseSplitMismatch)).toEqual([])
+  })
+})
+
+describe('ticPhaseCount', () => {
+  it('is the highest ordinal used, so an empty middle phase keeps its column', () => {
+    expect(ticPhaseCount([
+      { name: 'a', vlastita: 1, kreditna: 0, phases: [ph(1, 1, 0)] },
+      { name: 'b', vlastita: 1, kreditna: 0, phases: [ph(3, 1, 0)] },
+    ])).toBe(3)
+  })
+
+  it('is zero for an unphased TIC', () => {
+    expect(ticPhaseCount(MALA_SAVSKA)).toBe(0)
+  })
+
+  it('counts the three phases of the Osijek plan', () => {
+    expect(ticPhaseCount(OSIJEK)).toBe(3)
+  })
+})
+
+describe('normalizePhaseNumbers', () => {
+  it('leaves a contiguous plan untouched, by identity', () => {
+    expect(normalizePhaseNumbers(OSIJEK)).toBe(OSIJEK)
+    expect(normalizePhaseNumbers(MALA_SAVSKA)).toBe(MALA_SAVSKA)
+  })
+
+  it('closes a gap that would make the sync delete the phase it just created', () => {
+    // A sheet with FAZA 1 and FAZA 3 but no FAZA 2: sync_project_from_tic counts 2 phases and
+    // deletes every project phase numbered above 2 — including the 3 it had just inserted.
+    const gapped: LineItem[] = [
+      { name: 'a', vlastita: 100, kreditna: 0, phases: [ph(1, 60, 0), ph(3, 40, 0)] },
+      { name: 'b', vlastita: 50, kreditna: 0, phases: [ph(3, 50, 0)] },
+    ]
+    const fixed = normalizePhaseNumbers(gapped)
+    expect(fixed[0].phases!.map(p => p.phase_number)).toEqual([1, 2])
+    expect(fixed[1].phases!.map(p => p.phase_number)).toEqual([2])
+  })
+
+  it('keeps the amounts and the ordering of the phases it renumbers', () => {
+    const fixed = normalizePhaseNumbers([
+      { name: 'a', vlastita: 100, kreditna: 25, phases: [ph(2, 100, 25)] },
+    ])
+    expect(fixed[0].phases).toEqual([{ phase_number: 1, vlastita: 100, kreditna: 25 }])
+    expect(fixed[0].vlastita).toBe(100)
+  })
+
+  it('leaves unphased rows without a phases key', () => {
+    const fixed = normalizePhaseNumbers([
+      { name: 'land', vlastita: 400, kreditna: 0 },
+      { name: 'a', vlastita: 100, kreditna: 0, phases: [ph(2, 100, 0)] },
+    ])
+    expect('phases' in fixed[0]).toBe(false)
   })
 })

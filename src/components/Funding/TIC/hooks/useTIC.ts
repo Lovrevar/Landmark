@@ -3,6 +3,7 @@ import { useAuth } from '../../../../contexts/AuthContext'
 import { logActivity } from '../../../../lib/activityLog'
 import {
   LineItem,
+  LineItemPhaseAmount,
   ConstructionItem,
   ConstructionSection,
   calculateTotals,
@@ -12,7 +13,7 @@ import {
 } from '../utils/ticFormatters'
 import { defaultLineItems, defaultConstructionSections } from '../constants'
 import { applyDefaultClassifications } from '../utils/ticClassificationMap'
-import { totalsByClassification } from '../utils/ticBudget'
+import { totalsByClassification, ticPhaseCount, normalizePhaseNumbers } from '../utils/ticBudget'
 // cost_classifications is a global lookup, not a Supervision-owned one — the service simply
 // lives next to its first consumer. Imported directly rather than duplicated here.
 import { fetchCostClassifications } from '../../../Supervision/SiteManagement/services/costClassificationService'
@@ -34,6 +35,20 @@ const moveInArray = <T,>(items: T[], from: number, to: number): T[] => {
   return next
 }
 
+/**
+ * What "unchanged since it was loaded or last saved" means for the TIC screen.
+ *
+ * Compared as a serialized string rather than by reference: every row edit replaces the objects,
+ * so reference equality would call an undone edit a change. The baseline is always taken from
+ * the very values handed to `setState`, so key order matches and a reload cannot look dirty.
+ */
+const snapshot = (
+  lineItems: LineItem[],
+  constructionSections: ConstructionSection[],
+  investorName: string,
+  documentDate: string
+): string => JSON.stringify({ lineItems, constructionSections, investorName, documentDate })
+
 export function useTIC() {
   const { user } = useAuth()
   const [projects, setProjects] = useState<TICProject[]>([])
@@ -44,6 +59,17 @@ export function useTIC() {
   const [investorName, setInvestorName] = useState('RAVNICE CITY D.O.O.')
   const [documentDate, setDocumentDate] = useState(new Date().toISOString().split('T')[0])
   const [classifications, setClassifications] = useState<CostClassification[]>([])
+  /**
+   * How many phase columns the table shows.
+   *
+   * At least as many as the rows use, but the user can add one more to have somewhere to type —
+   * a column no row has an amount in exists only on screen, and the database never hears about
+   * it. Reset to what the data says on every load and save.
+   */
+  const [phaseColumns, setPhaseColumns] = useState(0)
+  const [baseline, setBaseline] = useState(() =>
+    snapshot(defaultLineItems, defaultConstructionSections, 'RAVNICE CITY D.O.O.', new Date().toISOString().split('T')[0])
+  )
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -82,27 +108,25 @@ export function useTIC() {
     setLoading(true)
     try {
       const data = await fetchTICForProject(projectId)
-      if (data) {
-        setTicId(data.id)
-        setInvestorName(data.investor_name)
-        setDocumentDate(data.document_date)
-        setLineItems(
-          applyDefaultClassifications(
-            data.line_items.length > 0 ? data.line_items : defaultLineItems,
-            classifications
-          )
-        )
-        // Records saved before the GRAĐENJE tab existed fall back to the defaults.
-        setConstructionSections(
-          data.construction_sections.length > 0 ? data.construction_sections : defaultConstructionSections
-        )
-      } else {
-        setTicId(null)
-        setInvestorName('RAVNICE CITY D.O.O.')
-        setDocumentDate(new Date().toISOString().split('T')[0])
-        setLineItems(applyDefaultClassifications(defaultLineItems, classifications))
-        setConstructionSections(defaultConstructionSections)
-      }
+
+      const items = applyDefaultClassifications(
+        data && data.line_items.length > 0 ? data.line_items : defaultLineItems,
+        classifications
+      )
+      // Records saved before the GRAĐENJE tab existed fall back to the defaults.
+      const sections =
+        data && data.construction_sections.length > 0 ? data.construction_sections : defaultConstructionSections
+      const investor = data?.investor_name ?? 'RAVNICE CITY D.O.O.'
+      const date = data?.document_date ?? new Date().toISOString().split('T')[0]
+
+      setTicId(data?.id ?? null)
+      setInvestorName(investor)
+      setDocumentDate(date)
+      setLineItems(items)
+      setConstructionSections(sections)
+      setPhaseColumns(ticPhaseCount(items))
+      // Everything just loaded is, by definition, saved.
+      setBaseline(snapshot(items, sections, investor, date))
     } catch (error) {
       console.error('Error loading TIC:', error)
       showMessage('error', 'Greška pri učitavanju TIC podataka')
@@ -111,19 +135,31 @@ export function useTIC() {
     }
   }, [showMessage, classifications])
 
-  const saveTIC = useCallback(async () => {
+  /**
+   * Save, reporting whether it worked.
+   *
+   * The boolean is not for the Save button — it is for the unsaved-changes dialog's "save and
+   * leave", which must not navigate away from work that failed to save. Errors are still reported
+   * here, as a message on the screen; the caller only needs to know whether to proceed.
+   */
+  const saveTIC = useCallback(async (): Promise<boolean> => {
     if (!selectedProjectId) {
       showMessage('error', 'Morate odabrati projekt')
-      return
+      return false
     }
 
     setSaving(true)
     try {
+      // A gap in the phase ordinals makes sync_project_from_tic delete the phase it has just
+      // created, so the numbering is closed up before it ever reaches the database. Written back
+      // to state too, so the screen shows what was actually stored.
+      const items = normalizePhaseNumbers(lineItems)
+
       const payload = {
         project_id: selectedProjectId,
         investor_name: investorName,
         document_date: documentDate,
-        line_items: lineItems,
+        line_items: items,
         construction_sections: constructionSections,
         created_by: user?.id,
       }
@@ -136,9 +172,15 @@ export function useTIC() {
         setTicId(newId)
         showMessage('success', 'TIC uspješno spremljen')
       }
+
+      setLineItems(items)
+      setPhaseColumns(ticPhaseCount(items))
+      setBaseline(snapshot(items, constructionSections, investorName, documentDate))
+      return true
     } catch (error) {
       console.error('Error saving TIC:', error)
       showMessage('error', 'Greška pri spremanju TIC podataka')
+      return false
     } finally {
       setSaving(false)
     }
@@ -160,6 +202,58 @@ export function useTIC() {
 
   const moveLineItem = useCallback((index: number, direction: -1 | 1) => {
     setLineItems((items) => moveInArray(items, index, index + direction))
+  }, [])
+
+  // --- INVESTICIJA phase split -------------------------------------------------
+
+  /**
+   * Replace one row's per-phase split, or clear it.
+   *
+   * `undefined` is not an empty split: it means the cost is incurred once for the whole project
+   * and belongs to no phase. The `phases` key is dropped entirely rather than set to `[]`, so a
+   * saved row reads the same way the importer writes one.
+   */
+  const setLineItemPhases = useCallback((index: number, phases: LineItemPhaseAmount[] | undefined) => {
+    setLineItems((items) =>
+      items.map((item, i) => {
+        if (i !== index) return item
+        if (!phases || phases.length === 0) {
+          const { phases: _dropped, ...rest } = item
+          return rest
+        }
+        return { ...item, phases }
+      })
+    )
+  }, [])
+
+  /** Add an empty phase column at the end. Nothing is written to any row until it is filled in. */
+  const addPhase = useCallback(() => {
+    setPhaseColumns((count) => Math.max(count, ticPhaseCount(lineItems)) + 1)
+  }, [lineItems])
+
+  /**
+   * Drop a phase from every row and close the gap it leaves.
+   *
+   * Renumbering is not cosmetic: `sync_project_from_tic` counts the phases a TIC names and
+   * deletes every project phase numbered above that count, so leaving a hole at 2 would make it
+   * delete the phase that had been 3.
+   */
+  const removePhase = useCallback((phaseNumber: number) => {
+    setLineItems((items) =>
+      items.map((item) => {
+        if (!item.phases) return item
+        const phases = item.phases
+          .filter((p) => p.phase_number !== phaseNumber)
+          .map((p) => (p.phase_number > phaseNumber ? { ...p, phase_number: p.phase_number - 1 } : p))
+        // A row left with no phase at all is project-level again, not a row with an empty split.
+        if (phases.length === 0) {
+          const { phases: _dropped, ...rest } = item
+          return rest
+        }
+        return { ...item, phases }
+      })
+    )
+    setPhaseColumns((count) => Math.max(0, count - 1))
   }, [])
 
   // --- GRAĐENJE section / item editing -----------------------------------------
@@ -289,9 +383,14 @@ export function useTIC() {
 
   // What the phase budgets will be populated from. Derived, like every other TIC total.
   const classificationTotals = totalsByClassification(lineItems)
-  // Phases the plan actually mentions; empty for an unphased TIC.
-  const phaseNumbers = [...new Set(lineItems.flatMap(i => i.phases?.map(p => p.phase_number) ?? []))]
-    .sort((a, b) => a - b)
+  // The phase columns to render: 1..n, contiguous. Derived from the highest ordinal any row uses
+  // rather than the set of ordinals present, so a phase left empty in the middle keeps its column
+  // instead of silently renumbering the ones after it. Empty for an unphased TIC.
+  const phaseCount = Math.max(ticPhaseCount(lineItems), phaseColumns)
+  const phaseNumbers = Array.from({ length: phaseCount }, (_, i) => i + 1)
+
+  // Whether leaving now would lose work — what the unsaved-changes guard is armed from.
+  const isDirty = baseline !== snapshot(lineItems, constructionSections, investorName, documentDate)
 
   return {
     projects,
@@ -315,11 +414,15 @@ export function useTIC() {
     grandTotal,
     constructionTotals,
     constructionGrandTotal,
+    isDirty,
     saveTIC,
     addLineItem,
     updateLineItem,
     removeLineItem,
     moveLineItem,
+    setLineItemPhases,
+    addPhase,
+    removePhase,
     addSection,
     updateSection,
     removeSection,

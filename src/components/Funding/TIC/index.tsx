@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { exportToExcel, exportToPDF, type TICExportData } from './services/ticExport'
 import { LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState, Tabs } from '../../ui'
 import { useTIC } from './hooks/useTIC'
+import { useUnsavedChanges, useLeaveGuard } from '../../../contexts/UnsavedChangesContext'
 import InvestmentTable from './components/InvestmentTable'
 import ConstructionTable from './components/ConstructionTable'
 import ExcelImportTICModal from './modals/ExcelImportTICModal'
@@ -36,11 +37,15 @@ const TICManagement: React.FC = () => {
     phaseNumbers,
     constructionTotals,
     constructionGrandTotal,
+    isDirty,
     saveTIC,
     addLineItem,
     updateLineItem,
     removeLineItem,
     moveLineItem,
+    setLineItemPhases,
+    addPhase,
+    removePhase,
     addSection,
     updateSection,
     removeSection,
@@ -51,6 +56,12 @@ const TICManagement: React.FC = () => {
     moveConstructionItem,
     applyImport,
   } = useTIC()
+
+  // Nothing on this screen touches the database until Save, so leaving with edits pending —
+  // by menu, by profile switch, by reload — loses all of them. Arm the app-wide guard, and hand
+  // it `saveTIC` so the dialog can offer to save rather than only to lose the work or stay put.
+  useUnsavedChanges(isDirty, saveTIC)
+  const requestLeave = useLeaveGuard()
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId)
 
@@ -89,7 +100,12 @@ const TICManagement: React.FC = () => {
           <FormField label={t('tic.select_project_label')} className="mt-4 max-w-md">
             <Select
               value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
+              // Switching project reloads both tables over the top of whatever is on screen, so
+              // it loses unsaved edits exactly as navigating away does.
+              onChange={(e) => {
+                const nextProjectId = e.target.value
+                requestLeave(() => setSelectedProjectId(nextProjectId))
+              }}
               disabled={loading}
             >
               <option value="">{t('tic.select_project_placeholder')}</option>
@@ -102,7 +118,13 @@ const TICManagement: React.FC = () => {
           </FormField>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* The dialog only appears once the user tries to leave; this says so beforehand. */}
+          {isDirty && (
+            <span className="text-sm text-amber-700 dark:text-amber-400 whitespace-nowrap">
+              {t('common.unsaved_changes_badge')}
+            </span>
+          )}
           <Button onClick={saveTIC} disabled={!selectedProjectId} loading={saving} icon={Save}>
             {t('tic.save_button')}
           </Button>
@@ -172,6 +194,9 @@ const TICManagement: React.FC = () => {
               onAdd={addLineItem}
               onRemove={removeLineItem}
               onMove={moveLineItem}
+              onSetPhases={setLineItemPhases}
+              onAddPhase={addPhase}
+              onRemovePhase={removePhase}
             />
           ) : (
             <ConstructionTable

@@ -241,3 +241,80 @@ export function phaseClassificationTotals(
 
   return byPhase
 }
+
+// ------------------------------------------------------------- editing the phase split
+
+/**
+ * Cent-level tolerance, matching the importer's. A split typed against a rounded total is
+ * expected to land within a cent of it, not on it exactly.
+ */
+const RECONCILE_TOLERANCE = 0.02
+
+export interface PhaseSplitCheck {
+  /** What the split adds up to, per fund. */
+  vlastita: number
+  kreditna: number
+  /** How far the split is from the row it is meant to divide. Positive means over-allocated. */
+  vlastitaDiff: number
+  kreditnaDiff: number
+  /** False when the split and the row disagree — surfaced, never silently reconciled. */
+  balanced: boolean
+}
+
+/**
+ * Compare a row's phase split with the row itself.
+ *
+ * The two are allowed to disagree: an imported sheet is stored exactly as written, and editing a
+ * row's own funds after splitting it will pull them apart. The UI flags the gap rather than
+ * rewriting either side, because only the author knows which of the two is wrong.
+ */
+export function phaseSplitCheck(item: LineItem): PhaseSplitCheck {
+  const vlastita = item.phases?.reduce((sum, p) => sum + p.vlastita, 0) ?? 0
+  const kreditna = item.phases?.reduce((sum, p) => sum + p.kreditna, 0) ?? 0
+  const vlastitaDiff = vlastita - item.vlastita
+  const kreditnaDiff = kreditna - item.kreditna
+
+  return {
+    vlastita,
+    kreditna,
+    vlastitaDiff,
+    kreditnaDiff,
+    balanced:
+      Math.abs(vlastitaDiff) < RECONCILE_TOLERANCE && Math.abs(kreditnaDiff) < RECONCILE_TOLERANCE,
+  }
+}
+
+/** True when the row carries a split that does not add up to it. Unphased rows are never flagged. */
+export const hasPhaseSplitMismatch = (item: LineItem): boolean =>
+  isPhased(item) && !phaseSplitCheck(item).balanced
+
+/** How many phases the plan spans — its highest ordinal, so an empty middle phase still counts. */
+export const ticPhaseCount = (lineItems: LineItem[]): number =>
+  lineItems.reduce(
+    (max, item) => item.phases?.reduce((m, p) => Math.max(m, p.phase_number), max) ?? max,
+    0
+  )
+
+/**
+ * Close any gap in the phase ordinals, remapping them onto a contiguous 1..n.
+ *
+ * `sync_project_from_tic` counts the distinct phases a TIC names and then deletes every project
+ * phase numbered above that count — so a TIC naming phases 1 and 3 would create phase 3 and
+ * delete it in the same call. The screen's own controls keep the numbering contiguous; this
+ * protects the rows that do not come from them, above all an Excel sheet with a `FAZA 2` column
+ * missing.
+ */
+export function normalizePhaseNumbers(lineItems: LineItem[]): LineItem[] {
+  const present = [...new Set(lineItems.flatMap(i => i.phases?.map(p => p.phase_number) ?? []))]
+    .sort((a, b) => a - b)
+
+  const isContiguous = present.every((n, i) => n === i + 1)
+  if (isContiguous) return lineItems
+
+  const remapped = new Map(present.map((n, i) => [n, i + 1]))
+  return lineItems.map(item =>
+    item.phases
+      ? { ...item, phases: item.phases.map(p => ({ ...p, phase_number: remapped.get(p.phase_number)! })) }
+      : item
+  )
+}
