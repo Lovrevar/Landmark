@@ -16,23 +16,34 @@ statement is inferred rather than read, it says so.
 
 ### ⚠️ Applied vs. pending
 
-This file describes the schema **as the migrations define it**, which is not the same as what
-is running right now. Check this table before you rely on anything below.
+This file describes the schema **as the migrations define it**, which is not the same as what is
+running right now. Migrations here are applied by hand, so a file in this repo is a specification
+until someone runs it — never read "Added `<migration>`" as "already in the database".
 
-| Surface | Status |
-|---|---|
-| §1–3, §5–9 (tasks, assignees, comments, attachments, reminders, profiles, push) | **Applied.** In production. |
-| §4 `task_subtasks`, and `p_subtasks` on both RPCs | **PENDING.** `20260902110000_task_subtasks.sql` is written but has **not been applied to any database**, not even dev. |
+**Do not trust a status written here.** An earlier version of this file carried a table saying
+`task_subtasks` was pending; it was in fact applied on 2026-09-02, and the stale line went on
+telling the mobile app not to ship a feature it had already shipped. Ask the database instead —
+it is the only answer that cannot go out of date:
 
-A section describing a pending migration is a specification, not an observation. Do not read
-"Added `<migration>`" as "already in the database" — migrations here are applied by hand, and
-this repo carries them for a while before anyone runs them.
+```sql
+-- everything applied, newest first. The top row is the high-water mark.
+select version, name, inserted_at
+  from supabase_migrations.schema_migrations
+ order by version desc
+ limit 20;
 
-**If you are the mobile app: do not ship a bundle that names `task_subtasks` yet.** Your
-`TASK_SELECT` embeds it, so until the migration is applied your whole workspace query fails
-and every screen goes dark. Cognilion fans out one query per relation and degrades quietly, so
-it will look fine while your app is broken. Ask before you deploy; the answer today is "not
-yet".
+-- or ask about one migration
+select exists (
+  select 1 from supabase_migrations.schema_migrations
+   where version = '20260902110000'
+) as task_subtasks_applied;
+```
+
+The Supabase dashboard shows the same table under Database → Migrations.
+
+§1–9 of this file were all applied as of 2026-09-10, `task_subtasks` (`20260902110000`) included —
+that one recorded at 2026-09-02 11:00 UTC and in use by the mobile app. Confirm with the query
+above rather than taking this paragraph's word for it.
 
 ---
 
@@ -157,8 +168,8 @@ update RPC diffs the assignee set instead of wipe-and-reinsert.
 
 ## 4. `public.task_subtasks` — checklists
 
-Specified by `20260902110000_task_subtasks.sql`, which is **not yet applied** — see the
-applied-vs-pending table above. This is the newest surface and the one you are most likely to
+Specified by `20260902110000_task_subtasks.sql`, applied 2026-09-02. This is the newest surface
+and the one you are most likely to
 be verifying, so verify against the migration file, and expect the database not to have it.
 
 ```sql
