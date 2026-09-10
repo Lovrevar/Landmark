@@ -398,7 +398,9 @@ const GeneralReports: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.status_label')}</p><p className="font-bold text-gray-900 dark:text-white">{project.status}</p></div>
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.budget_label')}</p><p className="font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString()}</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.budget_label')}</p>{project.has_budget
+                    ? <p className="font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString()}</p>
+                    : <p className="font-bold text-orange-600 dark:text-orange-400">{t('general_projects.budget_not_set')}</p>}</div>
                   <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.revenue_label')}</p><p className="font-bold text-green-600">€{project.revenue.toLocaleString()}</p></div>
                   <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.expenses_label')}</p><p className="font-bold text-red-600">€{project.expenses.toLocaleString()}</p></div>
                   <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.units_label')}</p><p className="font-bold text-gray-900 dark:text-white">{project.units_sold}/{project.total_units} sold ({project.sales_rate.toFixed(1)}%)</p></div>

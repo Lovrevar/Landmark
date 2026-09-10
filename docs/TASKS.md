@@ -173,7 +173,8 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 ### components/SubtaskList.tsx, subtasks.ts
 - `SubtaskList` — the checklist in the drawer: tick, inline rename (click the text), reorder (↑ / ↓), remove (with `ConfirmDialog`), and an "add line" input that commits on Enter or blur. Local state is seeded from the prop and updated optimistically, then `onChange()` asks the parent to refetch — the same arc `AttachmentList` uses. A failed write restores the prop state and surfaces the message inline rather than rethrowing, because several handlers fire from `onBlur` where a rejected promise would vanish
 - `subtasks.ts` — `isChecklist(task)` and `subtaskProgress(task)`, the only place the derived kind is computed. Unit-tested in `subtasks.test.ts`
-- Subtasks are **not** editable at create time: `TaskModal` stays create-only and the checklist is added from the drawer, the same way attachments are
+- `SubtaskDraftList` — the same editor for `TaskModal`, holding plain strings instead of rows. It cannot be `SubtaskList`: that one writes on every keystroke and needs a `taskId` that does not exist until the task is saved. No checkboxes and no remove-confirm, both following from the rule that a task cannot be born with items already crossed off. `createTask` writes the rows once the insert returns an id
+- Unlike attachments, subtasks **can** be authored at create time. `createTask` writes them directly rather than through `create_task_with_assignees`, which would be atomic but rejects a task with no assignees and never sets `is_private` — a private task created through it would come out public
 
 ### taskColor.ts, components/TaskColorChip.tsx, components/TaskColorPicker.tsx
 - `taskColor.ts` — the closed palette: `TaskColor` union, `TASK_COLORS` (value + locale key, swatch order), `COLOR_STYLES` (full literal Tailwind classes, light + dark), `isTaskColor()` guard for the plain-text column

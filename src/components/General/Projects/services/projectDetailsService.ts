@@ -1,5 +1,7 @@
 import { supabase } from '../../../../lib/supabase'
 import type { ProjectWithDetails, Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, ProjectDisplay } from '../types'
+import { ticGrandTotal } from '../../../Funding/TIC/utils/ticBudget'
+import type { LineItem } from '../../../Funding/TIC/utils/ticFormatters'
 
 export async function fetchProjectDetails(id: string): Promise<ProjectWithDetails> {
   const [
@@ -17,7 +19,8 @@ export async function fetchProjectDetails(id: string): Promise<ProjectWithDetail
       .select(`
         *,
         subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
-        phase:project_phases!contracts_phase_id_fkey(phase_name)
+        phase:project_phases!contracts_phase_id_fkey(phase_name, phase_number),
+        classification:cost_classifications!contracts_classification_id_fkey(id, name, sort_order)
       `)
       .eq('project_id', id)
       .in('status', ['draft', 'active'])
@@ -107,6 +110,8 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
   contracts: ContractWithDetails[]
   apartments: ApartmentItem[]
   investments: CreditAllocationItem[]
+  /** The project's TIC investment total; null when it has no TIC, meaning it has no planned budget. */
+  ticTotal: number | null
 }> {
   const [
     { data: projectData, error: projectError },
@@ -115,6 +120,7 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
     { data: contractsData },
     { data: apartmentsData },
     { data: investmentsData },
+    { data: ticData },
   ] = await Promise.all([
     supabase.from('projects').select('*').eq('id', id).single(),
     supabase
@@ -132,7 +138,8 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
       .select(`
         *,
         subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name, contact),
-        phase:project_phases!contracts_phase_id_fkey(phase_name)
+        phase:project_phases!contracts_phase_id_fkey(phase_name, phase_number),
+        classification:cost_classifications!contracts_classification_id_fkey(id, name, sort_order)
       `)
       .eq('project_id', id)
       .order('created_at', { ascending: false }),
@@ -153,15 +160,24 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
       `)
       .eq('project_id', id)
       .order('created_at', { ascending: false }),
+    supabase.from('tic_cost_structures').select('line_items').eq('project_id', id).maybeSingle(),
   ])
   if (projectError) throw projectError
+
+  const contracts = (contractsData || []) as unknown as ContractWithDetails[]
+
+  // A TIC row of all zeros is an untouched template, not a plan — the same test the database
+  // trigger applies before it writes any budget.
+  const ticLineItems = (ticData?.line_items || []) as LineItem[]
+  const ticTotal = ticLineItems.length > 0 ? ticGrandTotal(ticLineItems) : 0
 
   return {
     project: projectData as unknown as ProjectDisplay,
     milestones: (milestonesData || []) as unknown as Milestone[],
     phases: (phasesData || []) as unknown as Phase[],
-    contracts: (contractsData || []) as unknown as ContractWithDetails[],
+    contracts,
     apartments: (apartmentsData || []) as unknown as ApartmentItem[],
-    investments: (investmentsData || []) as unknown as CreditAllocationItem[]
+    investments: (investmentsData || []) as unknown as CreditAllocationItem[],
+    ticTotal: ticTotal > 0 ? ticTotal : null,
   }
 }

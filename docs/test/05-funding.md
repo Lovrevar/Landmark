@@ -248,6 +248,33 @@ click Save with **no** changes — idempotent save (no error)                   
 save fails (simulate network drop) — error Alert appears                                    ( )
 Save button is **disabled** when no project is selected                                     ( )
 
+### Cost classification mapping
+
+each of the 16 canonical rows loads with a classification pre-selected                      ( )
+change a row's classification — the "po klasifikaciji" summary under the table recomputes   ( )
+set a row to "unmapped" — its amount moves to the orange unmapped total with a hint         ( )
+add a new row, name it freely, pick a classification — it counts toward that classification ( )
+save, then open Site Management for the project — phase budgets match the summary           ( )
+
+### Phased TIC
+
+import `1908_TIC_Osijek.xlsx` — FAZA 1/2/3 columns detected, one column per phase in the table ( )
+a line spread across phases shows a figure in each phase column                             ( )
+a line incurred once for the project (e.g. Vrijednost zemljišta) shows "—" in every phase column, greyed ( )
+the phase column totals plus the unphased lines equal the grand total                       ( )
+import a workbook with **no** FAZA columns — no phase columns appear; the TIC is unphased    ( )
+save a phased TIC — Site Management shows one phase card per TIC phase                      ( )
+save it again after deleting a phase column — a phase with contracts is kept at budget 0, not deleted ( )
+
+### Budget sync (the TIC writes, nothing else does)
+
+save a TIC with real values — `projects.budget` becomes the grand total                     ( )
+open the project form in General — budget is read-only and shows that figure                ( )
+save an **untouched all-zero** TIC — the project's existing budget is NOT wiped             ( )
+a project with no TIC at all — every planned figure reads "budget not set"                  ( )
+open the same project in two tabs and save both — the second save does not create a duplicate TIC row (one per project is enforced) ( )
+
+
 ### Excel / PDF export
 
 click "Export Excel" — .xlsx downloads with all rows + totals + investor name + date        ( )

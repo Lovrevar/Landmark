@@ -1,6 +1,14 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 
+export type WorkLogStatus =
+  | 'work_finished'
+  | 'in_progress'
+  | 'blocker'
+  | 'quality_issue'
+  | 'waiting_materials'
+  | 'weather_delay'
+
 export interface WorkLog {
   id: string
   contract_id: string
@@ -8,7 +16,8 @@ export interface WorkLog {
   phase_id: string | null
   subcontractor_id: string
   date: string
-  status: 'work_finished' | 'in_progress' | 'blocker' | 'quality_issue' | 'waiting_materials' | 'weather_delay'
+  /** Nullable in the database: legacy rows predate the column, and nothing backfilled them. */
+  status: WorkLogStatus | null
   work_description: string
   blocker_details: string | null
   notes: string
@@ -17,7 +26,7 @@ export interface WorkLog {
   contracts?: { contract_number: string; job_description: string }
   subcontractors?: { name: string }
   projects?: { name: string }
-  project_phases?: { phase_name: string }
+  project_phases?: { phase_name: string; phase_number: number }
 }
 
 export interface WorkLogProject {
@@ -28,6 +37,7 @@ export interface WorkLogProject {
 export interface WorkLogPhase {
   id: string
   phase_name: string
+  phase_number: number
 }
 
 export interface WorkLogContract {
@@ -43,7 +53,7 @@ export interface WorkLogFormData {
   phase_id: string
   contract_id: string
   date: string
-  status: WorkLog['status']
+  status: WorkLogStatus
   work_description: string
   blocker_details: string
   notes: string
@@ -68,7 +78,7 @@ export async function fetchWorkLogs(): Promise<WorkLog[]> {
       contracts!work_logs_contract_id_fkey (contract_number, job_description),
       subcontractors!work_logs_subcontractor_id_fkey (name),
       projects!work_logs_project_id_fkey (name),
-      project_phases!work_logs_phase_id_fkey (phase_name)
+      project_phases!work_logs_phase_id_fkey (phase_name, phase_number)
     `)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
@@ -80,7 +90,7 @@ export async function fetchWorkLogs(): Promise<WorkLog[]> {
 export async function fetchPhasesByProject(projectId: string): Promise<WorkLogPhase[]> {
   const { data, error } = await supabase
     .from('project_phases')
-    .select('id, phase_name')
+    .select('id, phase_name, phase_number')
     .eq('project_id', projectId)
     .order('phase_number')
 

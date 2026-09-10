@@ -8,6 +8,7 @@
 // directly from the entity-specific file.
 
 import { supabase } from '../../../../lib/supabase'
+import type { LineItem } from '../../../Funding/TIC/utils/ticFormatters'
 
 export const fetchAllProjects = async () => {
   const { data: projectsData, error: projectsError } = await supabase
@@ -52,6 +53,12 @@ export const fetchSubcontractorsWithPhases = async () => {
         id,
         name,
         description
+      ),
+      classification_id,
+      classification:cost_classifications!contracts_classification_id_fkey(
+        id,
+        name,
+        sort_order
       )
     `)
     .in('status', ['draft', 'active'])
@@ -69,6 +76,7 @@ export const fetchSubcontractorsWithPhases = async () => {
 
     return {
       id: contract.id,
+      project_id: contract.project_id,
       subcontractor_id: contract.subcontractor.id,
       name: contract.subcontractor.name,
       contact: contract.subcontractor.contact,
@@ -88,14 +96,40 @@ export const fetchSubcontractorsWithPhases = async () => {
       project_phases: contract.phase,
       has_contract: contract.has_contract !== false,
       contract_type_id: contract.contract_type_id,
-      contract_type_name: contract.contract_type?.name || null
+      contract_type_name: contract.contract_type?.name || null,
+      classification_id: contract.classification_id,
+      classification_name: contract.classification?.name || null,
+      classification_sort_order: contract.classification?.sort_order ?? null
     }
   })
 
   return subcontractorsWithPhaseData
 }
 
+/**
+ * Every project's TIC investment total, keyed by project id.
+ *
+ * One query for the whole grid rather than one per project — the Site Management landing page
+ * already loads all projects at once, and the badge needs a figure for each of them.
+ */
+export const fetchTICTotalsByProject = async (): Promise<Map<string, LineItem[]>> => {
+  const { data, error } = await supabase
+    .from('tic_cost_structures')
+    .select('project_id, line_items')
+    .not('project_id', 'is', null)
+
+  if (error) throw error
+
+  const byProject = new Map<string, LineItem[]>()
+  for (const row of data || []) {
+    byProject.set(row.project_id as string, (row.line_items || []) as LineItem[])
+  }
+  return byProject
+}
+
 // Re-exports — preserved for backward compatibility with existing consumers.
+export * from './costClassificationService'
+export * from './phaseClassificationBudgetService'
 export * from './phaseService'
 export * from './siteContractService'
 export * from './siteSubcontractorService'

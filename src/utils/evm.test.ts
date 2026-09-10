@@ -5,6 +5,9 @@ import type { Phase, ContractWithDetails } from '../components/General/Projects/
 // Minimal fixture builders — EVM only reads a handful of fields, so we cast
 // trimmed objects rather than constructing the full domain types.
 const phase = (over: Partial<Phase>): Phase => ({
+  // An explicit id matters: contracts are joined to phases by id, and a fixture that leaves
+  // both sides undefined would match everything and silently pass regardless of the join.
+  id: 'ph-default',
   phase_name: 'Phase',
   budget_allocated: 0,
   start_date: null,
@@ -12,13 +15,14 @@ const phase = (over: Partial<Phase>): Phase => ({
   ...over,
 } as unknown as Phase)
 
-const contract = (over: Partial<ContractWithDetails> & { phaseName?: string }): ContractWithDetails => {
-  const { phaseName, ...rest } = over
+const contract = (over: Partial<ContractWithDetails> & { phaseId?: string }): ContractWithDetails => {
+  const { phaseId, ...rest } = over
   return {
     id: 'c',
     contract_amount: 0,
     budget_realized: 0,
-    phase: phaseName ? { phase_name: phaseName } : null,
+    phase_id: phaseId ?? null,
+    phase: null,
     ...rest,
   } as unknown as ContractWithDetails
 }
@@ -114,12 +118,12 @@ describe('calculateProjectEVM', () => {
 
   it('returns guarded zeros for an empty project', () => {
     const m = calculateProjectEVM([], [])
-    expect(m).toEqual({ PV: 0, EV: 0, AC: 0, CPI: 1, SPI: 1, EAC: 0, VAC: 0, CV: 0, SV: 0 })
+    expect(m).toEqual({ PV: 0, EV: 0, AC: 0, CPI: 1, SPI: 1, EAC: 0, VAC: 0, CV: 0, SV: 0, scheduleAvailable: false })
   })
 
   it('derives physical completion from milestones (not money spent)', () => {
-    const phases = [phase({ phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
-    const contracts = [contract({ id: 'c1', phaseName: 'Foundation', contract_amount: 100000, budget_realized: 40000 })]
+    const phases = [phase({ id: 'ph1', phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
+    const contracts = [contract({ id: 'c1', phaseId: 'ph1', contract_amount: 100000, budget_realized: 40000 })]
     const milestones: MilestoneProgress[] = [
       { contract_id: 'c1', percentage: 30, status: 'completed' },
       { contract_id: 'c1', percentage: 20, status: 'paid' },
@@ -138,8 +142,8 @@ describe('calculateProjectEVM', () => {
   })
 
   it('falls back to the financial proxy (realized/amount) when a contract has no milestones', () => {
-    const phases = [phase({ phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
-    const contracts = [contract({ id: 'c1', phaseName: 'Foundation', contract_amount: 100000, budget_realized: 60000 })]
+    const phases = [phase({ id: 'ph1', phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
+    const contracts = [contract({ id: 'c1', phaseId: 'ph1', contract_amount: 100000, budget_realized: 60000 })]
     const m = calculateProjectEVM(phases, contracts, [])
     // No milestones -> physical = 60000/100000 = 60%
     expect(m.EV).toBe(60000)
@@ -148,10 +152,10 @@ describe('calculateProjectEVM', () => {
   })
 
   it('value-weights physical completion across contracts in the same phase', () => {
-    const phases = [phase({ phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
+    const phases = [phase({ id: 'ph1', phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
     const contracts = [
-      contract({ id: 'big', phaseName: 'Foundation', contract_amount: 90000, budget_realized: 0 }),
-      contract({ id: 'small', phaseName: 'Foundation', contract_amount: 10000, budget_realized: 0 }),
+      contract({ id: 'big', phaseId: 'ph1', contract_amount: 90000, budget_realized: 0 }),
+      contract({ id: 'small', phaseId: 'ph1', contract_amount: 10000, budget_realized: 0 }),
     ]
     const milestones: MilestoneProgress[] = [
       { contract_id: 'big', percentage: 10, status: 'completed' },
@@ -163,8 +167,8 @@ describe('calculateProjectEVM', () => {
   })
 
   it('caps milestone-derived completion at 100%', () => {
-    const phases = [phase({ phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
-    const contracts = [contract({ id: 'c1', phaseName: 'Foundation', contract_amount: 100000, budget_realized: 0 })]
+    const phases = [phase({ id: 'ph1', phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
+    const contracts = [contract({ id: 'c1', phaseId: 'ph1', contract_amount: 100000, budget_realized: 0 })]
     const milestones: MilestoneProgress[] = [
       { contract_id: 'c1', percentage: 80, status: 'completed' },
       { contract_id: 'c1', percentage: 80, status: 'paid' }, // 160% -> clamped to 100%
@@ -173,28 +177,66 @@ describe('calculateProjectEVM', () => {
     expect(m.EV).toBe(100000)
   })
 
-  it('excludes phases without start/end dates from PV/EV/AC but still counts their budget', () => {
+  it('counts an undated phase in EV/AC but not in PV, and flags the missing schedule', () => {
     const phases = [
-      phase({ phase_name: 'Scheduled', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END }),
-      phase({ phase_name: 'Undated', budget_allocated: 50000, start_date: null, end_date: null }),
+      phase({ id: 'ph-sched', phase_name: 'Scheduled', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END }),
+      phase({ id: 'ph-undated', phase_name: 'Undated', budget_allocated: 50000, start_date: null, end_date: null }),
     ]
     const contracts = [
-      contract({ id: 'c1', phaseName: 'Scheduled', contract_amount: 100000, budget_realized: 100000 }),
-      contract({ id: 'c2', phaseName: 'Undated', contract_amount: 50000, budget_realized: 50000 }),
+      contract({ id: 'c1', phaseId: 'ph-sched', contract_amount: 100000, budget_realized: 100000 }),
+      contract({ id: 'c2', phaseId: 'ph-undated', contract_amount: 50000, budget_realized: 50000 }),
     ]
     const milestones: MilestoneProgress[] = [
       { contract_id: 'c1', percentage: 100, status: 'paid' },
       { contract_id: 'c2', percentage: 100, status: 'paid' },
     ]
     const m = calculateProjectEVM(phases, contracts, milestones)
-    // Only the scheduled phase contributes to earned/actual...
+
+    // PV needs a schedule, so only the dated phase contributes to it.
     expect(m.PV).toBe(100000)
-    expect(m.EV).toBe(100000)
-    expect(m.AC).toBe(100000)
+    // EV and AC do not need one. The undated phase's work is real and its money is spent, so
+    // both include it. Dropping them (as this previously did) left EV = AC = 0 for a project
+    // with no dated phases, which made CPI fall back to 1 and reported every such project as
+    // perfectly on budget.
+    expect(m.EV).toBe(150000)
+    expect(m.AC).toBe(150000)
     expect(m.CPI).toBe(1)
-    // ...but total budget (150k) drives EAC — proving the unscheduled 50k is
-    // still counted even though it contributed nothing to PV/EV/AC.
     expect(m.EAC).toBe(150000)
-    expect(m.VAC).toBe(0) // CPI=1 here, so EAC==totalBudget
+    expect(m.VAC).toBe(0)
+    // A schedule existed for at least one phase, so SPI is meaningful here.
+    expect(m.scheduleAvailable).toBe(true)
+  })
+
+  it('marks the schedule unavailable when no phase is dated, rather than implying on-track', () => {
+    const phases = [phase({ id: 'ph-u', phase_name: 'Undated', budget_allocated: 100000, start_date: null, end_date: null })]
+    const contracts = [contract({ id: 'c1', phaseId: 'ph-u', contract_amount: 100000, budget_realized: 80000 })]
+    const milestones: MilestoneProgress[] = [{ contract_id: 'c1', percentage: 50, status: 'paid' }]
+
+    const m = calculateProjectEVM(phases, contracts, milestones)
+
+    expect(m.PV).toBe(0)
+    expect(m.scheduleAvailable).toBe(false)
+    // SPI is 1 only because there is no baseline to compare against — callers must check
+    // scheduleAvailable before presenting it as "on schedule".
+    expect(m.SPI).toBe(1)
+    // CPI, by contrast, is genuinely computed: 50k earned against 80k spent.
+    expect(m.EV).toBe(50000)
+    expect(m.AC).toBe(80000)
+    expect(m.CPI).toBeCloseTo(0.625, 5)
+  })
+
+  it('does not pull in a same-named phase belonging to another project', () => {
+    // Every project now has a phase called "Faza 1"; a name-keyed join merged them.
+    const phases = [phase({ id: 'ph-mine', phase_name: 'Faza 1', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
+    const contracts = [
+      contract({ id: 'c1', phaseId: 'ph-mine', contract_amount: 100000, budget_realized: 10000 }),
+      contract({ id: 'c2', phaseId: 'ph-other-project', contract_amount: 999999, budget_realized: 999999 }),
+    ]
+    const milestones: MilestoneProgress[] = [{ contract_id: 'c1', percentage: 100, status: 'paid' }]
+
+    const m = calculateProjectEVM(phases, contracts, milestones)
+
+    expect(m.AC).toBe(10000)
+    expect(m.EV).toBe(100000)
   })
 })

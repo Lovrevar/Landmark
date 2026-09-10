@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth, Profile } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
+import { useLeaveGuard } from '../../contexts/UnsavedChangesContext'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { useIsDesktop } from '../../hooks/useMediaQuery'
 import { useModalOverflow } from '../../hooks/useModalOverflow'
@@ -69,6 +70,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [cashflowUnlocked, setCashflowUnlocked] = useState(() => sessionStorage.getItem('cashflow_unlocked') === 'true')
   const profileDropdownRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+  // Every navigation out of the current screen goes through this, so a screen holding unsaved
+  // edits gets to ask before its work is thrown away.
+  const requestLeave = useLeaveGuard()
   const { unreadCount } = useChatNotifications()
   const { unreadCount: taskUnread } = useTasksNotifications()
   const { unreadCount: eventUnread } = useCalendarNotifications()
@@ -184,15 +188,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const menuItems = getMenuItems()
 
   const handleProfileChange = (profile: Profile) => {
-    if (profile === 'Cashflow' && !cashflowUnlocked) {
-      setPendingProfile(profile)
-      setShowPasswordModal(true)
-      setShowProfileDropdown(false)
-    } else {
-      setCurrentProfile(profile)
-      setShowProfileDropdown(false)
-      navigate('/')
-    }
+    // Switching profile lands on the dashboard, so it leaves the current screen just as a menu
+    // click does — guarded as one.
+    requestLeave(() => {
+      if (profile === 'Cashflow' && !cashflowUnlocked) {
+        setPendingProfile(profile)
+        setShowPasswordModal(true)
+        setShowProfileDropdown(false)
+      } else {
+        setCurrentProfile(profile)
+        setShowProfileDropdown(false)
+        navigate('/')
+      }
+    })
   }
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -285,7 +293,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
               )}
               <button
-                onClick={() => navigate('/chat')}
+                onClick={() => requestLeave(() => navigate('/chat'))}
                 className={`relative p-2 transition-colors duration-200 ${
                   location.pathname === '/chat'
                     ? 'text-blue-600 dark:text-blue-400'
@@ -301,7 +309,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 )}
               </button>
               <button
-                onClick={() => navigate('/tasks')}
+                onClick={() => requestLeave(() => navigate('/tasks'))}
                 className={`relative p-2 transition-colors duration-200 ${
                   location.pathname === '/tasks'
                     ? 'text-blue-600 dark:text-blue-400'
@@ -317,7 +325,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 )}
               </button>
               <button
-                onClick={() => navigate('/calendar')}
+                onClick={() => requestLeave(() => navigate('/calendar'))}
                 className={`relative p-2 transition-colors duration-200 ${
                   location.pathname === '/calendar'
                     ? 'text-blue-600 dark:text-blue-400'
@@ -343,7 +351,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
               <button
-                onClick={logout}
+                onClick={() => requestLeave(logout)}
                 className="hidden lg:flex items-center px-2 lg:px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200"
               >
                 <LogOut className="w-4 h-4 lg:mr-1" />
@@ -398,16 +406,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <nav className="p-2 flex-1">
               <ul className="space-y-1">
                 {menuItems.map((item) => {
-                  const isActive = location.pathname === item.path
+                  // A detail page under a section keeps that section lit — /site-management/<id>
+                  // and /projects/<id> are still "Gradilište" and "Projekti". The '/' guard stops
+                  // the dashboard from matching every route; no two menu paths nest, so nothing
+                  // can light up twice.
+                  const isActive =
+                    location.pathname === item.path ||
+                    (item.path !== '/' && location.pathname.startsWith(`${item.path}/`))
                   return (
                     <li key={item.name}>
                       <Link
                         to={item.path}
                         // Choosing a page closes the drawer (mobile) and collapses
                         // the sidebar to the icon rail (desktop).
-                        onClick={() => {
-                          setMobileNavOpen(false)
-                          setSidebarOpen(false)
+                        onClick={(e) => {
+                          // Modified clicks stay plain <a> behaviour (new tab, new window); only
+                          // an ordinary click is taken over so the guard can hold it back.
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                          e.preventDefault()
+                          requestLeave(() => {
+                            navigate(item.path)
+                            setMobileNavOpen(false)
+                            setSidebarOpen(false)
+                          })
                         }}
                         className={`flex items-center py-2.5 lg:py-2 px-3 rounded-lg transition-colors duration-200 group relative
                           ${isActive
@@ -484,7 +505,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </span>
               </button>
               <button
-                onClick={logout}
+                onClick={() => requestLeave(logout)}
                 className="w-full flex items-center gap-2 py-2.5 px-3 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200"
               >
                 <LogOut className="w-4 h-4" />

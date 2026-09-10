@@ -24,6 +24,17 @@ export interface SubtaskProgress {
   total: number
 }
 
+/**
+ * Cleans up the line titles collected by a draft editor before they are written.
+ *
+ * Blank lines are dropped rather than rejected: an empty trailing row is what an editor with
+ * an "add line" button produces, and it is not worth an error message. Same rule the
+ * create/update RPCs apply to p_subtasks, so both write paths agree on what a blank means.
+ */
+export function normalizeDraftSubtasks(titles: string[]): string[] {
+  return titles.map(t => t.trim()).filter(t => t !== '')
+}
+
 export function subtaskProgress(task: Task): SubtaskProgress {
   const subtasks = task.subtasks ?? []
   return {

@@ -302,7 +302,43 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 
 `search_help` (omitted from the table) is also available to every role.
 
-Three role-buckets in code: `ALL_ROLES` (every role), `FINANCE_ROLES` (Director + Accounting), `FINANCE_PLUS_SUPERVISION` (the finance pair plus Supervision, the latter scoped to assigned projects by handler logic).
+#### search_help retrieval
+
+`search_help` does **not** read `help-kb/*.md` at runtime. It reads
+`supabase/functions/_shared/help-kb-index.json`, a build-time bundle of every entry's title,
+keywords, routes, roles and body. Build it with `npm run kb:build` after any KB edit — a pure file
+transform, no API key and no network.
+
+Scoring is lexical, in [`help-score.ts`](../supabase/functions/_shared/help-score.ts): Croatian
+diacritic folding, stopword removal, prefix stemming to six characters (Croatian inflects by
+suffix), then IDF-weighted term overlap across three fields — title ×3, `keywords` ×3, body ×1 —
+with BM25 saturation and length normalisation, plus a bonus when the query appears verbatim. The
+result is an IDF-weighted fraction of the query that matched, so it lands in 0..1 and a single
+`SCORE_THRESHOLD` is meaningful. `help-search.ts` then applies the route boost and role downrank
+and returns the top 5 above the threshold.
+
+Retrieval quality is pinned by `_shared/help-score.test.ts`, which runs against the **real**
+artifact and asserts that realistic Croatian questions surface the right article — and that
+off-topic questions return nothing rather than the least-bad match. Run it with
+`npm run test:functions`.
+
+**This used OpenAI `text-embedding-3-small` until September 2026.** Anthropic has no embeddings
+endpoint, so keeping semantic search would have meant taking on a second model vendor for one
+feature — on top of a build step that had already gone stale (the artifact was built in May, and
+every help-kb edit after it, including the phase and classification split, was invisible to the
+assistant until someone re-ran the embed with a working key).
+
+In practice nothing was ever served from the stale artifact: `ai_help_searches` shows **zero**
+calls in production, and the `OPENAI_API_KEY` set there was never used. So `search_help` did not
+degrade — it had simply never run. Worth knowing when reading the telemetry table, which starts
+from empty. (That table is written fire-and-forget, so it under-reports if the insert ever fails.)
+
+Against 66 short articles carrying hand-written `keywords`, queried by Claude in the articles' own
+vocabulary, lexical scoring is the better trade — and it cannot silently rot, since the build
+needs no credentials.
+
+If semantic search is ever wanted back, the path is Voyage AI (Anthropic's recommended embeddings
+partner) rather than OpenAI: add vectors alongside the existing fields and blend the two scores.
 
 ### What each tool returns
 
@@ -548,7 +584,7 @@ Target environment: the shared Supabase project `Landmark-Test` (project-ref `nx
 
 Set in the Supabase dashboard under Edge Functions → Secrets:
 
-- **`ANTHROPIC_API_KEY`** (required). Available to all edge functions automatically once set.
+- **`ANTHROPIC_API_KEY`** (required). Available to all edge functions automatically once set. The only model credential the project uses; `search_help` needs none since retrieval became lexical.
 - **`AI_CHAT_MODEL`** (optional). Defaults to `claude-sonnet-4-6` if unset. Override via `npx supabase secrets set AI_CHAT_MODEL=<model-id> --project-ref nxvbglegqcgxlxvyfuht`.
 - **`AI_CHAT_SUMMARY_MODEL`** (optional). Model used for the post-turn context-compaction summary (see [Context-Window Management](#context-window-management)). Defaults to `AI_CHAT_MODEL`'s value. Point it at a cheaper/faster model (e.g. a Haiku) to cut compaction cost.
 - **`AI_CHAT_DEBUG_ENABLED`** (dev only). Set to the literal string `'true'` to unlock the Director-only debug branch. Must be unset or any other value on production-adjacent environments — the function checks for strict equality with `'true'`.

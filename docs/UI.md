@@ -30,7 +30,11 @@ Shared primitive component library. Always check here before building new UI —
 
 ### ConfirmDialog.tsx
 - Yes/No confirmation modal with danger/primary action variants
-- Props: `show`, `title`, `message` (string | ReactNode), `confirmLabel?`, `cancelLabel?`, `variant` ('danger' | 'primary'), `onConfirm`, `onCancel`, `loading?`
+- Props: `show`, `title`, `message` (string | ReactNode), `confirmLabel?`, `cancelLabel?`, `variant` ('danger' | 'primary'), `onConfirm`, `onCancel`, `loading?`, `extraAction?`
+- `extraAction` (`{ label, onClick, variant?, disabled? }`) adds a third button between Cancel and
+  Confirm, for a question that genuinely has three answers — "save and leave" next to "leave
+  without saving". Defaults to the `outline-danger` variant, and is disabled while `loading`. Do
+  not reach for it to fit two unrelated actions into one dialog
 - Default button labels: "Potvrdi" / "Odustani" (Croatian)
 - **Usage pattern (hooks):** Hook exposes `pendingDeleteId` / `confirmDelete` / `cancelDelete` / `deleting`. Component renders `<ConfirmDialog show={!!pendingDeleteId} ... onConfirm={confirmDelete} onCancel={cancelDelete} loading={deleting} />`. Delete buttons set the pending ID instead of calling confirm() directly.
 - **Usage pattern (components):** Component holds `const [pendingDelete, setPendingDelete] = useState<T | null>(null)` locally. Delete button calls `setPendingDelete(item)`. ConfirmDialog rendered at bottom of JSX.
@@ -177,6 +181,33 @@ These hooks live in `src/hooks/` (not `src/components/ui/`) but pair with the li
 - Variants: `'info'` (blue) | `'success'` (green) | `'warning'` (yellow) | `'error'` (red)
 - Import: `import { useToast } from 'src/contexts/ToastContext'`
 - Usage: replace `alert('...')` with `toast.error('...')` / `toast.success('...')` etc.
+
+---
+
+### Unsaved changes (system)
+- One app-wide guard for screens that edit in memory and only write on Save. `UnsavedChangesProvider`
+  is mounted in `App.tsx`; the dialog it shows is a `ConfirmDialog` rendered by the provider itself
+- `useUnsavedChanges(isDirty, save?)` — arms the guard while the screen holds unsaved edits.
+  Re-asserted on every render rather than only when `isDirty` flips, and disarmed on unmount, so
+  nothing can lag behind the screen
+- Pass `save: () => Promise<boolean>` and the dialog offers **Save and leave** as its primary
+  action, with "leave without saving" demoted to the third button. The handler **must** resolve
+  `false` (or throw) when the save fails — the dialog then stays open with an error rather than
+  navigating away from work that was never stored. Reporting *why* it failed stays the screen's job
+- Without a save handler the dialog is the plain two-button question it was, with "leave without
+  saving" as the danger action
+- `useLeaveGuard()` — returns `requestLeave(proceed)`. Runs `proceed` straight through when nothing
+  is dirty, otherwise defers it to the dialog. Use it for any action that abandons the current
+  screen's edits, navigation or not — the TIC screen puts its project selector behind it
+- **Every navigation in `Layout.tsx` already goes through it**: menu links (with modified clicks left
+  as plain `<a>` behaviour so open-in-new-tab still works), the Chat / Tasks / Calendar buttons,
+  the profile switcher and logout. A new screen only needs `useUnsavedChanges`
+- Reloads, closes and links out of the app are caught by the browser's own `beforeunload` prompt,
+  whose wording is not ours to set
+- Only one screen is on show at a time, so the guard is a single flag rather than a registry
+- Deliberately **not** react-router's `useBlocker`: that needs a data router, and the app is mounted
+  on `<BrowserRouter>`
+- Import: `import { useUnsavedChanges, useLeaveGuard } from 'src/contexts/UnsavedChangesContext'`
 
 ---
 

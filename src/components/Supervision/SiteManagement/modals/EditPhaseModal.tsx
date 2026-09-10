@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react'
+import { formatEuroRounded } from '../../../../utils/formatters'
 import { useTranslation } from 'react-i18next'
 import { ProjectPhase } from '../../../../lib/supabase'
-import { ProjectWithPhases, EditPhaseFormData } from '../types'
+import { EditPhaseFormData } from '../types'
 import { Modal, FormField, Input, Select, Button } from '../../../ui'
+import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 
 interface EditPhaseModalProps {
   visible: boolean
   onClose: () => void
   phase: ProjectPhase | null
-  project: ProjectWithPhases
   onSubmit: (updates: EditPhaseFormData) => void
 }
 
@@ -16,13 +17,11 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
   visible,
   onClose,
   phase,
-  project,
   onSubmit
 }) => {
   const { t } = useTranslation()
   const [formData, setFormData] = useState<EditPhaseFormData>({
     phase_name: '',
-    budget_allocated: 0,
     start_date: '',
     end_date: '',
     status: 'planning'
@@ -33,7 +32,6 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
     if (phase) {
       setFormData({
         phase_name: phase.phase_name,
-        budget_allocated: phase.budget_allocated,
         start_date: phase.start_date || '',
         end_date: phase.end_date || '',
         status: phase.status
@@ -43,17 +41,15 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
 
   if (!visible || !phase) return null
 
-  const otherPhasesTotalBudget = project.phases
-    .filter(p => p.id !== phase.id)
-    .reduce((sum, p) => sum + p.budget_allocated, 0)
-  const newTotalAllocated = otherPhasesTotalBudget + formData.budget_allocated
-  const projectBudgetDiff = newTotalAllocated - project.budget
-
   return (
     <Modal show={true} onClose={onClose} size="lg">
       <Modal.Header
         title={t('supervision.site_management.edit_phase.title')}
-        subtitle={`${t('supervision.site_management.edit_phase.phase_label')} ${phase.phase_number} • ${t('supervision.site_management.edit_phase.budget_used')} €${phase.budget_used.toLocaleString('hr-HR')}`}
+        // `budget_used` is a derived column refreshed only by recalculate_all_phase_budgets(),
+        // so it reads 0 for a phase that does have contracts. Spend is derived from contracts at
+        // read time everywhere else; showing the stale counter here contradicted the phase card
+        // directly behind this dialog.
+        subtitle={formatPhaseLabel(phase, t('common.phase'))}
         onClose={onClose}
       />
 
@@ -68,22 +64,22 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             />
           </FormField>
 
+          {/* Read-only: the phase budget is that phase's share of the TIC. */}
           <FormField
             label={t('supervision.site_management.edit_phase.budget')}
-            required
-            helperText={
-              formData.budget_allocated < phase.budget_used
-                ? `${t('supervision.site_management.edit_phase.budget_warning')} (€${phase.budget_used.toLocaleString('hr-HR')})`
-                : `${t('supervision.site_management.edit_phase.available_after')} €${(formData.budget_allocated - phase.budget_used).toLocaleString('hr-HR')}`
-            }
-            error={fieldErrors.budget_allocated ?? (formData.budget_allocated < phase.budget_used ? t('supervision.site_management.edit_phase.budget_less_error') : undefined)}
+            helperText={t('general_projects.budget_from_tic_hint')}
           >
-            <Input
-              type="number"
-              value={formData.budget_allocated}
-              onChange={(e) => setFormData({ ...formData, budget_allocated: parseFloat(e.target.value) || 0 })}
-              placeholder="0"
-            />
+            <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
+              {phase.budget_allocated > 0 ? (
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatEuroRounded(phase.budget_allocated)}
+                </span>
+              ) : (
+                <span className="text-gray-500 dark:text-gray-400">
+                  {t('general_projects.budget_not_set')}
+                </span>
+              )}
+            </div>
           </FormField>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -115,20 +111,6 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             </Select>
           </FormField>
 
-          {projectBudgetDiff !== 0 && (
-            <div className={`p-4 rounded-lg border ${
-              projectBudgetDiff > 0 ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700' : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700'
-            }`}>
-              <p className={`text-sm ${projectBudgetDiff > 0 ? 'text-orange-800 dark:text-orange-400' : 'text-blue-800 dark:text-blue-200'}`}>
-                <span className="font-medium">{t('supervision.site_management.edit_phase.note_prefix')}</span>
-                ({' €' + newTotalAllocated.toLocaleString('hr-HR')}) {t('supervision.site_management.edit_phase.will_be')} {' '}
-                {projectBudgetDiff > 0
-                  ? `€${Math.abs(projectBudgetDiff).toLocaleString('hr-HR')} ${t('supervision.site_management.edit_phase.over')}`
-                  : `€${Math.abs(projectBudgetDiff).toLocaleString('hr-HR')} ${t('supervision.site_management.edit_phase.under')}`
-                } {t('supervision.site_management.edit_phase.budget_suffix')}
-              </p>
-            </div>
-          )}
         </div>
       </Modal.Body>
 
@@ -139,7 +121,6 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
         <Button onClick={() => {
           const errors: Record<string, string> = {}
           if (!formData.phase_name?.trim()) errors.phase_name = t('supervision.site_management.edit_phase.errors.name_required')
-          if (!formData.budget_allocated && formData.budget_allocated !== 0) errors.budget_allocated = t('supervision.site_management.edit_phase.errors.budget_required')
           setFieldErrors(errors)
           if (Object.keys(errors).length > 0) return
           onSubmit(formData)

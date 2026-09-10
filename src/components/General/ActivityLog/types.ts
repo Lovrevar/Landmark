@@ -115,6 +115,8 @@ export const ENTITY_ROUTE_MAP: Record<string, string> = {
   repository: '/sales-projects',
   contract: '/site-management',
   contract_type: '/site-management',
+  cost_classification: '/site-management',
+  phase_classification_budget: '/site-management',
   phase: '/site-management',
   monthly_budget: '/accounting-calendar',
   payment_notification: '/funding-payments',

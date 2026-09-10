@@ -170,7 +170,7 @@ export const fetchProjects = async (): Promise<Project[]> => {
 export const fetchPhases = async (projectId: string): Promise<Phase[]> => {
   const { data, error } = await supabase
     .from('project_phases')
-    .select('id, phase_name')
+    .select('id, phase_name, phase_number')
     .eq('project_id', projectId)
     .order('phase_number')
 
@@ -272,7 +272,7 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
   if (supplier.source === 'retail') {
     const { data: rContracts } = await supabase
       .from('retail_contracts')
-      .select(`id, contract_number, contract_amount, budget_realized, end_date, status, phase_id, has_contract, phases:phase_id (phase_name)`)
+      .select(`id, contract_number, contract_amount, budget_realized, end_date, status, phase_id, has_contract, phases:phase_id (phase_name, phase_number)`)
       .eq('supplier_id', supplier.id)
       .in('status', ['Active', 'Completed'])
 
@@ -332,7 +332,7 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
   } else {
     const { data: contractsData } = await supabase
       .from('contracts')
-      .select('id, contract_number, project_id, phase_id, job_description, contract_amount, budget_realized, end_date, status, has_contract, projects:project_id (name), phases:phase_id (phase_name)')
+      .select('id, contract_number, project_id, phase_id, job_description, contract_amount, budget_realized, end_date, status, has_contract, projects:project_id (name), phases:phase_id (phase_name, phase_number)')
       .eq('subcontractor_id', supplier.id)
       .in('status', ['draft', 'active'])
 
@@ -431,7 +431,13 @@ export const createSupplierContract = async (
     budget_realized: 0,
     status: 'active',
     has_contract: false,
-    contract_type_id: 0,
+    // NOT 0: there is no contract_types row with id 0, so passing it raises a raw FK violation
+    // (23503). The column is nullable and NULL renders as "Nekategorizirano".
+    contract_type_id: null,
+    // classification_id is deliberately left unset. This is an empty placeholder contract
+    // created when linking a supplier from Accounting — nobody has chosen a cost bucket for it
+    // yet, and inventing one here would put made-up data into the cost reporting. It gets a
+    // classification when someone fills the contract in.
     end_date: null
   })
   if (error) throw error

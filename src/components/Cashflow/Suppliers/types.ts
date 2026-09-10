@@ -9,7 +9,7 @@ export interface Contract {
   end_date: string | null
   status: string
   projects?: { name: string }
-  phases?: { phase_name: string }
+  phases?: { phase_name: string; phase_number: number }
   actual_paid?: number
   has_contract?: boolean
   total_invoiced?: number
@@ -69,4 +69,5 @@ export interface Project {
 export interface Phase {
   id: string
   phase_name: string
+  phase_number: number
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatFileSize, formatEuropean, formatEuro } from './formatters'
+import { formatFileSize, formatEuropean, formatEuro, formatEuroRounded } from './formatters'
 
 describe('formatFileSize', () => {
   it('formats bytes under 1 KiB with no decimals', () => {
@@ -54,5 +54,25 @@ describe('formatEuro', () => {
 
   it('keeps the sign after the euro symbol for negatives (locale minus)', () => {
     expect(formatEuro(-50)).toBe('€−50,00')
+  })
+})
+
+describe('formatEuroRounded', () => {
+  it('renders whole euros with thousands separators', () => {
+    expect(formatEuroRounded(73125)).toBe('€73.125')
+    expect(formatEuroRounded(40000000)).toBe('€40.000.000')
+  })
+
+  it('drops the ragged single decimal that plain toLocaleString produces', () => {
+    // (1425597.5).toLocaleString('hr-HR') is "1.425.597,5"
+    expect(formatEuroRounded(1425597.5)).toBe('€1.425.598')
+    expect(formatEuroRounded(58750.39)).toBe('€58.750')
+  })
+
+  it('handles zero and negatives', () => {
+    expect(formatEuroRounded(0)).toBe('€0')
+    // hr-HR uses U+2212 MINUS SIGN, not an ASCII hyphen. Asserted explicitly so a future change
+    // to the locale or formatter shows up here rather than in a snapshot somewhere.
+    expect(formatEuroRounded(-1500.6)).toBe('€\u22121.501')
   })
 })

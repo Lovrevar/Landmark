@@ -2,6 +2,7 @@ export const TOOL_LABELS_HR: Record<string, string> = {
   search_projects: 'Pretraživanje projekata',
   get_project_details: 'Učitavanje detalja projekta',
   list_project_phases: 'Učitavanje faza projekta',
+  list_cost_classifications: 'Učitavanje klasifikacija troška',
   search_subcontractors: 'Pretraživanje izvođača',
   list_contracts: 'Učitavanje ugovora',
   get_subcontractor_payment_status: 'Provjera statusa plaćanja izvođača',

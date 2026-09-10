@@ -284,30 +284,135 @@ Investment project registry — links funding sources (banks, investors) to Gene
 ### TIC
 **Path:** `TIC/`
 
-Troškovna Informatička Struktura (TIC) — structured cost breakdown table per project showing own funds (vlastita sredstva) vs credit funds (kreditna sredstva) in EUR with percentages. Exported for investors.
+Troškovna Informatička Struktura (TIC) — structured cost breakdown per project showing own funds (vlastita sredstva) vs credit funds (kreditna sredstva) in EUR with percentages. Exported for investors.
+
+Two tabs, mirroring the two sheets of the standard client workbook:
+- **Investicija** — a flat list of cost categories (`line_items` jsonb)
+- **Građenje** — a hierarchical construction breakdown: sections `A)` / `B)` / `C)` each holding roman-numeral items (`construction_sections` jsonb, added by migration `20260907120000`)
+
+Both tabs are fully editable per project — rows and sections can be renamed, added, removed and reordered. The hardcoded defaults in `constants.ts` are only the starting point for a project that has no saved TIC yet. Section subtotals (`Ukupno`) and the grand totals (`UKUPNO:` / `SVEUKUPNO:`) are **always derived from the items, never stored**.
+
+The two tabs are deliberately independent: the Građenje grand total is not written into the Investicija `Građenje` row, even though the two normally match in the source workbook.
+
+#### The TIC is the only source of planned budget
+
+Since migrations `20260909130000` and `20260909140000`, saving a TIC is what sets a project's
+plan. Nothing else writes one — the project form, the phase setup modal and the classification
+budgets modal all display budget read-only, and a project with no TIC reads **"budget not set"**
+rather than showing a zero that looks like a real figure.
+
+Saving `tic_cost_structures` fires `sync_project_from_tic(project_id)`, which derives:
+
+| Target | From |
+|---|---|
+| `projects.budget` | the Investicija grand total |
+| `project_phases` | the phases the TIC itself names |
+| `project_phases.budget_allocated` | that phase's share of the plan |
+| `phase_classification_budgets` | the (phase × classification) grid |
+
+Three rules the function encodes, each protecting against a way this could destroy data:
+
+- **An all-zero TIC changes nothing.** Every project shows the default template whether or not
+  anything was filled in, so saving an untouched one is easy to do by accident; without the
+  guard it would zero the budget and take EVM, funding ratios and every dashboard with it.
+- **A phase with contracts or work logs is never deleted**, only zeroed, even when the TIC stops
+  planning it. Both FKs are `ON DELETE SET NULL`, so deleting one would silently detach real work.
+- **Only Investicija rows feed budgets.** Građenje is a breakdown of the single `Građenje` line —
+  in both real workbooks its `SVEUKUPNO` equals that line exactly — so counting it too would
+  double the largest item in the plan.
+
+`phase_classification_budgets` is replaced wholesale on each sync rather than merged: the TIC is
+the only author, so a row it no longer contains no longer exists. There are deliberately **no
+client-side write helpers** for that table.
+
+#### Two dimensions on a line item
+
+Each Investicija row carries two optional fields beyond its amounts:
+
+- **`classification_id`** — which cost classification the money belongs to, so the TIC can drive
+  `phase_classification_budgets`. Seeded from `ticClassificationMap.ts` for the 16 canonical row
+  names and editable per row, so a project that files Konzalting under preparation rather than
+  control just changes it there. A row left unmapped shows as *unmapped* and contributes to no
+  classification. **The defaults are mirrored in the backfill in migration `20260909130000`;
+  change the two together.**
+- **`phases`** — `[{ phase_number, vlastita, kreditna }]` when the cost is spread across phases,
+  **absent when it is incurred once for the whole project**. That distinction is not cosmetic:
+  in `1908_TIC_Osijek.xlsx` "Vrijednost zemljišta" prints its full 4.000.000 against each of
+  three phase columns, and summing those would invent 8.000.000 of budget. An unphased line is
+  shown as "—" in each phase column and counted once in the project total.
+
+A TIC with no phased line at all is *unphased* and describes one undifferentiated project.
+
+#### Editing the phase split
+
+Phases used to arrive only from an Excel import; they are now authored on the screen itself.
+
+- **Add phase** (under the Investicija table) appends a column. A column no row has an amount in
+  lives only in `useTIC`'s `phaseColumns` — it is somewhere to type, and the database never hears
+  about it.
+- **Clicking a phase cell** opens `PhaseSplitModal` for that row: the choice between *project-level
+  cost* and *split across phases*, a `vlastita`/`kreditna` pair per phase, a **Split evenly** helper
+  that gives the rounding remainder to the last phase, and a live comparison of the split against
+  the row it divides.
+- **Removing a phase** (the bin in the column header) takes it out of every row and renumbers the
+  ones after it, behind a confirm dialog.
+
+Two rules the editor is built around:
+
+- **The ordinals stay contiguous.** `sync_project_from_tic` counts the phases a TIC names and then
+  deletes every project phase numbered above that count — so a TIC naming phases 1 and 3 would
+  create phase 3 and delete it in the same call. Removing a phase renumbers, and `saveTIC` runs
+  `normalizePhaseNumbers` over the rows before they reach the database, which closes a gap an
+  imported sheet (a missing `FAZA 2` column) could still open.
+- **A mismatch is shown, never reconciled.** Editing a row's own funds after splitting it pulls the
+  two apart; `hasPhaseSplitMismatch` puts a warning next to the row total and the modal spells out
+  the difference. Neither side is corrected automatically, because only the author knows which of
+  the two is wrong — the same stance the importer takes with a sheet whose columns do not add up.
+
+Clearing a split drops the `phases` key entirely rather than storing an empty array or zeros: a
+zeroed split reads as "planned at nothing", which is not what "not attributed to a phase" means.
 
 #### Services
 
 ### ticService.ts
 - `fetchTICProjects()` — fetches projects (id, name) for the TIC project selector
-- `fetchTICForProject(projectId)` — fetches the saved TIC cost structure for a project (or null)
+- `fetchTICForProject(projectId)` — fetches the saved TIC cost structure for a project (or null); `construction_sections` defaults to `[]` for records saved before the Građenje tab existed
 - `createTIC(payload)` — inserts a new TIC cost structure, returns the new id
 - `updateTIC(ticId, payload, projectId)` — updates an existing TIC cost structure
 - **Depends on:** supabase client, activityLog
 
+### ticImport.ts
+- `parseTICWorkbook(sheets)` — pure parser mapping a workbook's sheets onto the two tabs; returns `{ investment, construction, investorName, documentDate, errors }`
+- `parseSheet(sheetName, rows)` — parses one sheet, throwing `missing_header` / `no_rows`
+- `parseTICFile(file)` — browser entry point; dynamically imports `@e965/xlsx` and delegates to `parseTICWorkbook`
+- Parsing is **layout-driven, not column-index-driven**: the header row is found by looking for `NAMJENA`, and the money columns by looking for `VLASTITA SREDSTVA`. This absorbs the one-column offset between the two sheets. A gap of ≥2 columns between the two headers marks the sheet as hierarchical.
+- Blank spacer rows are skipped; `Ukupno` / `SVEUKUPNO:` rows are discarded (recomputed); names are trimmed. Percentage columns are ignored.
+- Sheets are matched by name (`INVESTICIJ*` / `GRAĐENJ*`, diacritic-insensitive), falling back to the detected shape, so renamed and single-sheet files still import.
+- **Depends on:** `@e965/xlsx` (dynamic import), `src/utils/excelParsers.ts` (`parseNumber`, `parseDate`)
+
 ### ticExport.ts
-- `exportToExcel(lineItems, investorName, documentDate, totals, grandTotal, projectName)` — exports TIC table to .xlsx
-- `exportToPDF(lineItems, investorName, documentDate, totals, grandTotal, projectName)` — exports TIC table to PDF
-- **Depends on:** xlsx, jsPDF, activityLog
-- _Note: renamed from `TICExport.ts` (`Services/`) to `ticExport.ts` (`services/`) in the audit refactor._
+- `exportToExcel(data: TICExportData)` — async; writes a real `.xlsx` with two sheets (`INVESTICIJA`, `GRAĐENJE`) laid out in the source workbook's shape, so an export re-imports cleanly (covered by `ticExport.test.ts`)
+- `exportToPDF(data: TICExportData)` — two-page landscape A4 PDF, one page per tab; row height is derived from the row count so a long Građenje breakdown is not clipped
+- `buildInvestmentSheet(data)` / `buildConstructionSheet(data)` — pure AOA builders, exported for the round-trip test
+- **Depends on:** `@e965/xlsx` (dynamic import), jsPDF, activityLog
+- _Note: this previously emitted an HTML table blob named `.xls`, which the docs already described as `.xlsx`; it now genuinely is `.xlsx`._
 
 #### Hooks
 
 ### useTIC.ts
-- `useTIC()` — loads projects and the selected project's TIC line items, manages edits/investor/date, computes totals + grand total, and saves (create or update)
+- `useTIC()` — loads projects and the selected project's line items **and construction sections**, manages edits/investor/date, computes both tabs' totals, applies Excel imports, and saves (create or update)
 - **Calls:** ticService.ts
-- **Uses utils:** ticFormatters (calculateTotals)
-- **Returns:** projects, lineItems, setLineItems, investorName, setInvestorName, documentDate, setDocumentDate, selectedProjectId, setSelectedProjectId, loading, saving, message, totals, grandTotal, saveTIC
+- **Uses utils:** ticFormatters (calculateTotals, calculateConstructionTotals, toRomanNumeral, toSectionCode)
+- **Returns:** projects, lineItems, constructionSections, investorName, documentDate, selectedProjectId, loading, saving, message, totals, grandTotal, constructionTotals, constructionGrandTotal, `isDirty`, saveTIC, `applyImport`, and the row/section/phase mutators (`addLineItem`, `updateLineItem`, `removeLineItem`, `moveLineItem`, `setLineItemPhases`, `addPhase`, `removePhase`, `addSection`, `updateSection`, `removeSection`, `moveSection`, `addConstructionItem`, `updateConstructionItem`, `removeConstructionItem`, `moveConstructionItem`)
+- `isDirty` compares a serialized snapshot of the four saved fields against the baseline taken on load and re-taken on save — what the screen arms the unsaved-changes guard from
+- `saveTIC()` resolves `true` on success and `false` on failure. The boolean is not for the Save button but for the guard's "save and leave", which must not navigate away from a save that failed; the error message on screen is still `saveTIC`'s own doing
+- `applyImport(parsed, fileName)` replaces the on-screen tables only and logs `tic.import_excel`; nothing reaches the database until the user presses Save
+
+#### Constants
+
+### constants.ts
+- `defaultLineItems` — the 16 default Investicija rows (moved out of `useTIC.ts`)
+- `defaultConstructionSections` — the 3 default Građenje sections (28 items) from the standard workbook
 
 #### Utilities
 
@@ -316,15 +421,75 @@ Troškovna Informatička Struktura (TIC) — structured cost breakdown table per
 - `formatPercentage(num)` — formats a percentage for TIC display (hr-HR, 2 decimals)
 - `calculateRowPercentages(value, total)` — computes a value's percentage of a total (0 when total is 0)
 - `calculateTotals(lineItems)` — sums vlastita and kreditna across line items
+- `calculateSectionTotals(section)` — one Građenje section's `Ukupno` row
+- `calculateConstructionTotals(sections)` — the `SVEUKUPNO:` row across all sections
+- `toRomanNumeral(n)` / `toSectionCode(i)` — next numeral/code when appending an item or section
+- Types: `LineItem`, `ConstructionItem`, `ConstructionSection`, `TICTotals`, `LineItemPhaseAmount`
+- `LineItem` carries the optional `classification_id` and `phases` described above; an absent or
+  empty `phases` means the line is **not** phased, never "phased with nothing in it"
+
+### ticBudget.ts
+Pure derivation of everything the budget sync and the TIC screen display. All tested against the
+real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
+- `lineItemTotal(item)` / `ticGrandTotal(items)` — vlastita + kreditna, per row and overall
+- `totalsByClassification(items)` — `{ byClassification: Map, unmapped, total }`; what the phase
+  budgets are populated from
+- `isPhased(item)` — whether a line carries per-phase amounts at all
+- `phaseTotals(items)` — `{ byPhase: Map, notPhased }`; `notPhased` is the money that belongs to
+  the project but to no single phase, and is the only thing explaining why the phase budgets stop
+  short of the project total
+- `lineItemPhaseTotal(item, n)` / `phaseClassificationTotals(items)` / `budgetMatrix(items, order)`
+- `remainingFromTIC(planned, committed)`
+- `phaseSplitCheck(item)` / `hasPhaseSplitMismatch(item)` — whether a row's split still adds up to
+  the row, to a cent's tolerance; an unphased row is never a mismatch
+- `ticPhaseCount(items)` — the highest ordinal used, so a phase left empty in the middle still counts
+- `normalizePhaseNumbers(items)` — closes a gap in the ordinals, returning the same array by
+  identity when there is none. Guards `sync_project_from_tic`, which deletes every project phase
+  numbered above the count of phases the TIC names
+
+### ticClassificationMap.ts
+- `defaultClassificationForLine(name, classifications)` — canonical row name → seeded classification
+- `applyDefaultClassifications(items, classifications)` — stamps the defaults onto rows that have
+  none, which is what stops an Excel import from emptying the mapping
+- `CANONICAL_TIC_LINE_NAMES` — the 16 names the defaults cover
+
+#### Modals
+
+### PhaseSplitModal.tsx
+- Edits one investment row's per-phase split: project-level vs phased, a `vlastita`/`kreditna` pair
+  per phase, **Split evenly**, and the split compared against the row it divides
+- Kept out of the table because a split is two figures per phase — inline, three phases would add
+  six inputs to every row
+- **Uses utils:** ticFormatters, ticBudget
+- **Uses Ui:** Modal, Button, Input, Alert
+
+### ExcelImportTICModal.tsx
+- 3-step wizard (upload + format help → preview → summary) following `Sales/SalesProjects/modals/ExcelImportGaragesModal.tsx`
+- The preview names which sheet mapped to which tab, lists skipped sheets with their reason, and warns that the import replaces both tables
+- **Uses services:** ticImport
+- **Uses Ui:** Modal, Button, Alert
 
 #### Views
 
 ### index.tsx (TICManagement)
-- Project selector, editable line item table with vlastita/kreditna columns, and Excel/PDF export
+- Project selector, tab switcher, Save / Import Excel / Export Excel / Export PDF toolbar, and the shared investor/signature/date footer
 - **Uses hooks:** useTIC
 - **Uses services:** ticExport
-- **Uses utils:** ticFormatters (formatNumber, formatPercentage, calculateRowPercentages)
-- **Uses Ui:** LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState
+- **Uses components:** InvestmentTable, ConstructionTable
+- **Uses modals:** ExcelImportTICModal
+- **Uses Ui:** LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState, Tabs
+- Arms the app-wide unsaved-changes guard (`useUnsavedChanges(isDirty, saveTIC)`, see `docs/UI.md`)
+  and puts the project selector behind it, because switching project reloads both tables over the
+  top of whatever is on screen. Handing it `saveTIC` is what gives the dialog its **Spremi i izađi**
+  button
+
+### components/InvestmentTable.tsx, components/ConstructionTable.tsx
+- Presentational tables — they take items plus handlers as props and never touch Supabase
+- Per-row controls: move up / move down / delete, with an "Add row" (and "Add section") button
+- `ConstructionTable` confirms section deletion via `ConfirmDialog` because it removes the section's items too
+- `InvestmentTable` owns the phase columns: a bin per column header (confirmed, because it clears
+  that phase from every row and renumbers the rest), an "Add phase" button, phase cells that open
+  `PhaseSplitModal`, and a warning beside the row total when a split no longer adds up
 
 ---
 
@@ -335,6 +500,6 @@ Troškovna Informatička Struktura (TIC) — structured cost breakdown table per
 - Architecture follows UI Component → Custom Hook → Service Layer → Supabase. The May 2026 audit refactor extracted Supabase query logic out of hooks into dedicated `services/*.ts` files; hooks own state and call the services
 - There are two distinct `creditService.ts` files: `Investments/services/creditService.ts` (credit list, allocations, credit invoices) and `Investors/services/creditService.ts` (facility CRUD + company bank accounts)
 - The audit refactor also lowercased the `Modals/`→`modals/` and `Services/`→`services/` directories in Payments, Projects, and TIC
-- Pure calculation/formatting helpers have colocated unit tests: `Investors/utils/creditCalculations.test.ts` and `TIC/utils/ticFormatters.test.ts`
+- Pure calculation/formatting helpers have colocated unit tests: `Investors/utils/creditCalculations.test.ts`, `TIC/utils/ticFormatters.test.ts`, `TIC/services/ticImport.test.ts` and `TIC/services/ticExport.test.ts` (the last verifies an Excel export re-imports byte-for-byte)
 - All service mutations log via `logActivity()` (fire-and-forget)
 - **Deleting a credit facility or an investor detaches invoices first.** `accounting_invoices.bank_credit_id` is the only `ON DELETE RESTRICT` reference to `bank_credits`, so a bare delete fails with Postgres `23503` whenever an invoice is attached (and, for investors, aborts the `bank_credits` cascade). `creditService.detachInvoicesFromCredits()` clears the FK — the invoices are kept, only unlinked — and both delete paths call it before deleting. The confirmation dialog reports the count via `countInvoicesForCredits()`, and the hooks fall back to `isForeignKeyViolation()` from `src/lib/dbErrors.ts` for a readable toast if some other constraint blocks the delete

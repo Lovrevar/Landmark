@@ -15,6 +15,53 @@ Construction site supervision: manages active build sites, subcontractor contrac
 
 The core supervision module. Full project site view with phases, subcontractor contracts, milestone tracking, document management, and financial summaries per phase.
 
+**Phases and cost classifications are two independent axes.** A phase (`project_phases`) is a
+time division of a project — "Faza 1", "Faza 2". A cost classification (`cost_classifications`)
+is a cost-breakdown line — "Zemljište", "Priprema i razvoj", "Izgradnja i uređenje", … — and is
+set per contract via `contracts.classification_id`. Contract type (`contract_types`) is a third,
+narrower axis for the kind of work or vendor. The screen groups contracts three levels deep and
+the user can swap the top two, so the same contracts read either "phase → classification" or
+"classification → phase".
+
+Before migration `20260908120200` the two were conflated: users typed the cost line into
+`phase_name`, which meant a project could never have more than one real phase and the seven
+canonical names drifted into 17 spellings. That migration folded the old rows onto the new
+model. Per-(phase, classification) budgets live in `phase_classification_budgets`.
+
+**Planned budget is read-only here.** Since migrations `20260909130000` / `20260909140000` the
+project's TIC is the only writer of `projects.budget`, `project_phases.budget_allocated` and
+`phase_classification_budgets` — see [FUNDING.md](./FUNDING.md#the-tic-is-the-only-source-of-planned-budget)
+for the sync itself. Three consequences for this module:
+
+- The budget inputs are gone from `PhaseSetupModal` and `EditPhaseModal`, and
+  `PhaseClassificationBudgetsModal` displays the TIC's split rather than editing it. Nothing in
+  `SiteManagement` writes a budget column; `PhaseFormInput` and `EditPhaseFormData` deliberately
+  carry no `budget_allocated`, because round-tripping one reverts a sync that ran while the modal
+  was open.
+- A project with no TIC shows **"budget not set"** in the header, on its card in the grid, and in
+  the subcontractor form — not €0. `ProjectWithPhases.tic_total` (null when there is no TIC) is
+  what every one of those gates on.
+- The phase-budget cap on a new contract applies **only when a plan exists**
+  (`exceedsPhaseBudget` in `utils/contractTree.ts`). Without that guard, every phase of a
+  TIC-less project sits at 0 and no contract could be recorded at all.
+
+#### Project screen layout
+
+`ProjectDetail` renders, top to bottom: the header (name, location, budget + `TICBudgetBadge`),
+then `ProjectSummaryBanner`, then the contract tree.
+
+- **`ProjectSummaryBanner`** totals the whole project in the same five tiles a phase card uses —
+  contracted, paid, unpaid, remaining, and "not phased" — computed with the same
+  `rollupContracts`, so the project total is by construction the sum of what is displayed
+  beneath it. It carries no budget figure of its own (the header has it) and shows the
+  "not phased" tile only when the TIC actually has phases; on an unphased TIC every line would
+  land there, which is true but unreadable.
+- **A single-phase project renders no phase level at all** — its classification groups sit
+  directly under the banner. A phase wrapper around the only phase is pure indentation.
+- There is one definition of "paid" on the screen: invoice-derived, via `rollupContracts`. The
+  old bottom summary block derived it from `contracts.budget_realized` and disagreed with every
+  phase card above it; it was removed rather than reconciled.
+
 #### Services
 
 > The original monolithic `siteService.ts` was split by entity during the May 2026 audit refactor. `siteService.ts` is now a thin barrel that keeps a couple of project-level fetchers and re-exports the per-entity service files below, so existing `import * as siteService` consumers keep working unchanged. New code should import directly from the entity-specific file.
@@ -25,15 +72,30 @@ The core supervision module. Full project site view with phases, subcontractor c
 - Re-exports everything from phaseService, siteContractService, siteSubcontractorService, milestoneService, siteFundingService, and wirePaymentService
 - **Depends on:** supabase client; the six entity service files below
 
+### services/costClassificationService.ts
+- `fetchCostClassifications(includeInactive?)` — global cost breakdown lookup, ordered by sort_order
+- `createCostClassification({ name, description, sort_order })` — returns the new integer id
+- `updateCostClassification(id, updates)` / `deleteCostClassification(id)`
+- `countClassificationUsage(id)` — contracts + budget rows referencing a classification, used to explain a refused delete
+- **Note:** the seven seeded rows are `is_system` and a database trigger refuses to rename or delete them; `is_active` and `sort_order` stay editable
+
+### services/phaseClassificationBudgetService.ts
+Read-only by design — `sync_project_from_tic()` owns this table and rebuilds it on every TIC save,
+so a client write would survive only until the next one.
+- `fetchPhaseClassificationBudgets(phaseIds?)` — per-(phase, classification) sub-allocations
+- `fetchClassificationBudgetStatus(phaseId, classificationId)` — allocated vs committed; the binding limit when adding a contract, since the phase budget is the sum of its classifications
+- `fetchTICClassificationTotals(projectId)` — the project's TIC plan per classification, for the read-only comparison in `PhaseClassificationBudgetsModal`
+
 ### services/phaseService.ts
 - `fetchProjectPhases()` — fetches all phases ordered by project then phase number
 - `recalculatePhaseBudget(phaseId)` — recomputes budget_used for a phase from active/draft contract amounts
 - `recalculateAllPhaseBudgets()` — recomputes budget_used for every phase across all projects via the `recalculate_all_phase_budgets()` Postgres RPC (set-based, avoids the 1000-row client cap)
-- `createPhases(projectId, phases)` — bulk-creates phases for a project
-- `updateProjectPhases(projectId, phases)` — syncs a project's phase set (insert/update/delete and renumber)
-- `updatePhase(phaseId, updates)` — updates a single phase
+- `createPhases(projectId, phases)` — bulk-creates phases for a project. **Writes no budget**: the column default of 0 stands until a TIC plans the phase
+- `updateProjectPhases(projectId, phases)` — syncs a project's phase set (insert/update/delete and renumber); name, dates and ordering only
+- `updatePhase(phaseId, updates)` — updates a single phase's name, dates and status
 - `deletePhase(phaseId)` — removes a phase
-- `resequencePhases(phases)` — renumbers phases sequentially after a deletion
+- `countPhaseDependents(phaseId)` — contracts + work logs pointing at a phase. Both FKs are `ON DELETE SET NULL`, so deleting a phase with dependants silently detaches them; callers must check this first. `budget_used` is **not** a substitute — it is derived and only refreshed by `recalculate_all_phase_budgets()`
+- `resequencePhases(phases)` — renumbers via the `renumber_project_phases` RPC, set-based and collision-free (the old row-by-row loop could transiently violate `UNIQUE (project_id, phase_number)`)
 - `getPhaseInfo(phaseId)` — fetches project_id and phase_name for contract linking
 - **Depends on:** supabase client, logActivity
 
@@ -120,6 +182,9 @@ The core supervision module. Full project site view with phases, subcontractor c
 - **Calls:** siteService barrel → siteSubcontractorService (`fetchSubcontractorComments`, `createSubcontractorComment`)
 - **Returns:** fetchSubcontractorComments, addSubcontractorComment
 
+### hooks/useCostClassifications.ts
+- `useCostClassifications(includeInactive?)` — loads the global classification list once at the SiteManagement root and passes it down, rather than duplicating it onto every project
+
 ### hooks/useContractTypes.ts
 - `useContractTypes()` — loads active contract types from the contract_types table
 - **Calls:** contractTypesService (`fetchActiveContractTypes`)
@@ -157,8 +222,38 @@ The core supervision module. Full project site view with phases, subcontractor c
 - **Uses services:** siteFundingService (fetchCreditAllocations, via siteService barrel)
 - **Uses components:** ProjectCategoryBadge, PhaseCard
 
+### utils/phaseLabel.ts → moved
+`formatPhaseLabel` now lives at [`src/utils/phaseLabel.ts`](../src/utils/phaseLabel.ts). It is
+used by Cashflow, Documents, General and Reports as well as this module — anything rendering a
+phase to a user goes through it.
+
+### utils/contractTree.ts
+- `buildContractTree(contracts, dimensions, ctx)` — the grouping used by both Site Management views. `dimensions` comes from `VIEW_DIMENSIONS`: `['phase','classification','contractType']` or `['classification','phase','contractType']`. Contract type is always innermost; only the top two levels swap
+- `rollupContracts(contracts)` — contracted / paid / unpaid money for any subset. A row counts as contracted only when it has a contract AND a non-zero amount
+- `remainingBudget(budget, rollup)`, `unallocatedBudget(phase, budgets)` — the latter is the phase budget not yet given to any classification, shown as "Neraspoređeno"
+- `isFullySettled(sub)` — the "paid in full" predicate, different for contracted and uncontracted rows
+- `exceedsPhaseBudget(phase, cost)` — whether a new contract overruns the phase plan. **False when the phase has no budget at all**: a project without a TIC has every phase at 0, and reading that as "a budget of zero, which everything overruns" would block every contract on the project while blaming the amount
+- Pure module, covered by `contractTree.test.ts`. The logic used to be inline in PhaseCard where it could not be tested
+
+### ProjectSummaryBanner.tsx
+- The whole project in one strip of five tiles, in the same order and colours a phase card uses, so the project reads as one level up from what sits beneath it. Money comes from `rollupContracts`, the same function every node below uses
+- The "not phased" tile appears only when `tic_phase_count > 0`; on an unphased TIC every line would land there
+- The paid tile is gated on `canManagePayments`, matching the permission behaviour of the summary block it replaced
+
+### TICBudgetBadge.tsx
+- Says where a project's budget comes from — "✓ iz TIC-a" — or that it has none yet. There is no drift warning any more: a budget cannot drift from the plan when the plan is the only thing that writes it
+
 ### PhaseCard.tsx
-- Expanded phase view: phase header, budget metrics, subcontractors grouped by contract type with expandable sections; shows contracted amount, paid out, unpaid, and budget remaining with colour warnings
+- Level 1 of the "by phase" view: phase header, five budget tiles (contracted, paid, unpaid, remaining, unallocated), utilisation bar, then the classification groups nested inside
+
+### ClassificationCard.tsx
+- Level 1 of the "by cost classification" view: a classification with the project's phases nested inside. Its budget is a SUM across phases; like every other planned figure it is read-only and comes from the TIC
+
+### TreeGroup.tsx
+- One collapsible level of the contract tree, rendered recursively and dimension-agnostic, so the same component draws a classification inside a phase and a phase inside a classification
+
+### ContractCard.tsx
+- A single contract card, lifted verbatim out of PhaseCard when the tree gained a third level
 
 ### MilestoneList.tsx
 - Milestone management panel: add/edit/delete milestones, stats summary, and details per milestone
@@ -183,12 +278,36 @@ The core supervision module. Full project site view with phases, subcontractor c
 - **Uses components:** ProjectsGrid, ProjectDetail, all modals
 - **Uses Ui:** Card, Button
 
+#### Which project is open lives in the URL
+
+The route is `/site-management/:projectId?` — **one** route with an optional segment, not two. Two
+routes would swap elements on open/back and remount the component, refetching the whole site data
+set each time; changing a param does not.
+
+`selectedProject` is derived from `useParams` on every render, not held in state:
+
+- Back returns to the project list. It used to leave Site Management altogether, because the
+  address stayed `/site-management` the whole time and opening a project put nothing in history
+- A project page can be linked and reloaded
+- The derivation replaced a `useEffect` that re-synced the stored project object after every list
+  refresh — looking it up fresh does the same thing with nothing to keep in step
+- It resolves against `filteredProjects`, not `projects`, so a hand-typed id cannot open a project
+  the grid would not have offered a Supervision user (RLS is still the real boundary)
+- An id that does not resolve — deleted, or not this user's — redirects to `/site-management` with
+  `replace`, so Back does not walk into the dead URL
+
+Covered by `e2e/supervision/site-management-navigation.spec.ts`.
+
+`Layout` marks a menu item active for its own path **and** anything under it, so a detail page
+keeps its section lit.
+
 #### Modals
 
 SiteManagement contains the following modals (each self-contained):
 
-- **PhaseSetupModal** — bulk-create phases for a project
-- **EditPhaseModal** — edit phase name, budget, dates, and status
+- **PhaseSetupModal** — bulk-create phases for a project (name and dates; budgets come from the TIC)
+- **EditPhaseModal** — edit a phase's name, dates and status; its budget is shown read-only
+- **PhaseClassificationBudgetsModal** — read-only view of a phase's budget split by classification, beside what the project's TIC plans and what other phases already took
 - **SubcontractorDetailsModal** — read-only subcontractor detail with contracts and payment history
 - **EditSubcontractorModal** — edit subcontractor contract fields and documents
 - **PaymentHistoryModal** — payments for a subcontractor with totals

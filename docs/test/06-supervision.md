@@ -13,49 +13,69 @@ _Route: `/site-management`. Master orchestrator: project grid → project detail
 open the page — ProjectsGrid lists all accessible projects with budget, phases count, subcontractors count, timeline    ( )
 open the page with **no** projects — EmptyState shown                                                                ( )
 `getAccessibleProjectIds(user)` filters for non-Directors — a restricted user sees only linked projects               ( )
-budget allocation progress bar reflects allocated vs total budget                                                    ( )
+budget allocation progress bar reflects allocated vs total budget (shown only when the project has a TIC) ( )
 click a project card → ProjectDetail replaces grid with selected project                                             ( )
 
 ### ProjectDetail / credit allocations
 
 credit allocations section shows funder name + allocated amount per allocation                                       ( )
 project with **no** allocations — section renders empty                                                              ( )
-project summary stats reflect totals correctly (budget / allocated / used / remaining)                               ( )
+ProjectSummaryBanner totals equal the sum of the phase cards below it (contracted, paid, unpaid)       ( )
 "Back to projects" button returns to grid                                                                            ( )
+
+### Planned budget comes from the TIC
+
+> Since migrations `20260909130000` / `20260909140000` no screen in this module writes a planned
+> budget. These rows check that the read-only model holds and that nothing is blocked by it.
+
+project **with** a TIC — header shows the amount and a green "iz TIC-a" badge                          ( )
+project **without** a TIC — header shows "—" and an orange "budget not set" badge                     ( )
+same project in the grid — card reads "budget not set", not a stale figure, and no allocation bar     ( )
+save a TIC in Funding for that project, return here — budget and phase budgets now populated          ( )
+TIC with FAZA 1/2/3 columns — one phase card per TIC phase, each with its own budget                  ( )
+unphased TIC — a single phase holding the whole plan, and no "Nije fazirano" tile                     ( )
+phased TIC with an unphased line (e.g. Vrijednost zemljišta) — the "Nije fazirano" tile shows it, and the phase budgets fall short of the project budget by exactly that amount ( )
+single-phase project — classification groups render directly under the banner, with no phase wrapper  ( )
 
 ### Phase setup (PhaseSetupModal — bulk create)
 
-open PhaseSetupModal on a project **with no phases** — 4 default phases loaded                                       ( )
-change num_phases from 4 → 7 — modal renders 7 rows with default names (Zemljište, Priprema i razvoj, …)            ( )
-change num_phases from 4 → 1 — rows collapse; only first phase kept                                                  ( )
-enter custom phase names (Croatian characters ok)                                                                    ( )
-enter budget_allocated values that sum **exactly** to project.budget — "Matched" indicator green                    ( )
-enter sum > project.budget — "Over" indicator orange                                                                 ( )
-enter sum < project.budget — "Under" indicator blue, mismatch note shown                                             ( )
-submit with mismatch — requestConfirm prompt asks to confirm over/under budget                                       ( )
-enter start_date > end_date for a phase — save blocked or warning                                                    ( )
-submit with all fields valid — phases created, refetched                                                             ( )
-cancel — no phases created                                                                                           ( )
+open PhaseSetupModal on a project **with no phases** — default phases loaded, named "Faza 1", "Faza 2", … ( )
+change num_phases from 4 → 7 — modal renders 7 rows, all named "Faza n"                               ( )
+change num_phases from 4 → 1 — rows collapse; only first phase kept                                   ( )
+enter custom phase names (Croatian characters ok)                                                     ( )
+**no budget input is present** — the modal collects names and dates only                              ( )
+enter start_date > end_date for a phase — save blocked or warning                                     ( )
+submit with all fields valid — phases created with budget 0 until a TIC plans them                    ( )
+cancel — no phases created                                                                            ( )
 
 ### Phase setup — edit mode
 
 open PhaseSetupModal on a project **with existing phases** (editMode=true) — existing phases pre-populated sorted by phase_number ( )
-edit a phase's budget_allocated — diff recalculates                                                                  ( )
-reduce num_phases below existing — phases with budget_used > 0 are blocked from deletion                             ( )
-update — phases persist, ProjectDetail re-renders                                                                    ( )
+rename a phase, save, reopen — the TIC-derived budget on its card is **unchanged**                    ( )
+reduce num_phases below existing — phases with contracts or work logs are blocked from deletion       ( )
+update — phases persist, ProjectDetail re-renders                                                     ( )
 
 ### EditPhaseModal (single phase edit)
 
-click edit on a single phase — modal opens with phase_name, budget_allocated, dates, status pre-populated             ( )
-update phase_name only — saves                                                                                       ( )
-change status (e.g. planned → in_progress → completed) — saves and status badge updates                              ( )
-attempt to delete a phase with `budget_used > 0` — error/blocked (service `deletePhase` guards)                     ( )
-delete a phase with `budget_used = 0` — ConfirmDialog chain succeeds                                                 ( )
-cancel — no change                                                                                                   ( )
+click edit on a single phase — modal opens with phase_name, dates and status pre-populated            ( )
+budget is shown read-only, or "budget not set" when the project has no TIC                            ( )
+update phase_name only — saves; the phase budget on the card does not move                            ( )
+change status (e.g. planned → in_progress → completed) — saves and status badge updates               ( )
+attempt to delete a phase with contracts or work logs — error/blocked (service `deletePhase` guards)  ( )
+delete a phase with no dependants — ConfirmDialog chain succeeds                                      ( )
+cancel — no change                                                                                    ( )
+
+### Phase classification budgets (PhaseClassificationBudgetsModal)
+
+open from a phase card — read-only list: classification, TIC plan, taken by other phases, this phase  ( )
+project with no TIC — the "tic missing" note replaces the plan figures                                ( )
+TIC with an unmapped row — orange warning naming the unmapped amount                                  ( )
+
 
 ### Add subcontractor to phase (SubcontractorFormModal)
 
 open the modal from "Add subcontractor" on a phase — header shows phase_name + available_budget                      ( )
+open it on a phase of a project with **no TIC** — header reads "budget not set", and a contract of any amount still saves (the cap applies only where a plan exists) ( )
 select a contract category — save enabled                                                                            ( )
 leave contract_category empty — inline `fieldErrors.contract_type_id` appears on submit                              ( )
 click the "+" button → ContractTypeFormModal opens; create a new category and it's auto-selected                     ( )
@@ -64,7 +84,7 @@ click the "+" button → ContractTypeFormModal opens; create a new category and 
 name + contact required — leave both empty, submit → `fieldErrors.name` + `fieldErrors.contact` inline               ( )
 fill name + contact + base_amount + vat_rate (0/5/13/25) + start_date + deadline — VAT/total summary updates         ( )
 fill name with Croatian characters                                                                                   ( )
-total > phase.available_budget — Add button disabled                                                                 ( )
+total > phase.available_budget **on a phase that has a budget** — Add button disabled                ( )
 submit with pendingFiles (PDF < 25 MB) — files uploaded to Supabase storage after subcontractor insert               ( )
 upload a non-PDF file — ContractDocumentUpload rejects with error message                                            ( )
 upload a PDF > 25 MB — rejected                                                                                      ( )

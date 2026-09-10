@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { UnsavedChangesProvider } from './contexts/UnsavedChangesContext'
 import LoginForm from './components/Auth/LoginForm'
 import Layout from './components/Common/Layout'
 import PageFallback from './components/Common/PageFallback'
@@ -139,8 +140,10 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        {/* One route with an optional segment, not two: the open/back transition then changes only
+            a param, so SiteManagement stays mounted and does not refetch the whole site data set. */}
         <Route
-          path="/site-management"
+          path="/site-management/:projectId?"
           element={
             <ProtectedRoute>
               <SiteManagement />
@@ -456,7 +459,9 @@ function App() {
         <ToastProvider>
           {/* Step 5.5 insertion — provider mounted early to unblock 5.4a verification */}
           <AiChatProvider>
-            <AppContent />
+            <UnsavedChangesProvider>
+              <AppContent />
+            </UnsavedChangesProvider>
           </AiChatProvider>
         </ToastProvider>
       </AuthProvider>

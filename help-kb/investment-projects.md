@@ -16,4 +16,4 @@ Po svakoj kartici projekta vidljive su:
 
 Četiri statističke kartice po projektu: **Investicija kapitala** (zelena), **Financiranje duga** (crvena), **Očekivani povrat** (plava), **Status financiranja** (tirkizna; zelena ako ≥100 %, narančasta ako <80 %).
 
-Traka napretka pokazuje postotak financiranja prema budžetu. Ispod se prikazuju glavni financijeri (top 3 banke, oznaka **+N više** ako ih ima više). Detaljni modal raščlanjuje sve izvore kapitala i duga.
+Traka napretka pokazuje postotak financiranja prema budžetu (budžet dolazi iz [[tic]] projekta; projekt bez TIC-a nema ga postavljenog). Ispod se prikazuju glavni financijeri (top 3 banke, oznaka **+N više** ako ih ima više). Detaljni modal raščlanjuje sve izvore kapitala i duga.

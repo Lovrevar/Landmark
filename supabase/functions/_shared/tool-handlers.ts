@@ -34,6 +34,10 @@ export interface GetProjectDetailsInput {
   project_id: string
 }
 
+export interface ListCostClassificationsInput {
+  include_inactive?: boolean
+}
+
 export interface ListProjectPhasesInput {
   project_id: string
 }
@@ -46,6 +50,7 @@ export interface SearchSubcontractorsInput {
 export interface ListContractsInput {
   project_id?: string
   phase_id?: string
+  classification_id?: number
   subcontractor_id?: string
   status?: 'draft' | 'active' | 'completed' | 'terminated'
   limit?: number
@@ -426,6 +431,34 @@ export async function handleListProjectPhases(
 }
 
 // ---------------------------------------------------------------------------
+// list_cost_classifications
+// ---------------------------------------------------------------------------
+
+export async function handleListCostClassifications(
+  input: ListCostClassificationsInput,
+  ctx: AuthContext,
+): Promise<{ data?: { classifications: unknown[] }; error?: string }> {
+  let query = ctx.userClient
+    .from('cost_classifications')
+    .select('id, name, description, sort_order, is_system, is_active')
+    .order('sort_order', { ascending: true })
+
+  if (!input.include_inactive) query = query.eq('is_active', true)
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[ai-chat:tool] list_cost_classifications failed', {
+      userId: ctx.userId,
+      code: error.code,
+    })
+    return { error: 'Failed to list cost classifications' }
+  }
+
+  return { data: { classifications: data ?? [] } }
+}
+
+// ---------------------------------------------------------------------------
 // search_subcontractors
 // ---------------------------------------------------------------------------
 
@@ -505,6 +538,7 @@ export async function handleListContracts(
       job_description,
       subcontractor:subcontractors!contracts_subcontractor_id_fkey(id, name),
       phase:project_phases!contracts_phase_id_fkey(id, phase_name, phase_number),
+      classification:cost_classifications!contracts_classification_id_fkey(id, name),
       project:projects!contracts_project_id_fkey(id, name)
     `)
     .order('signed_date', { ascending: false, nullsFirst: false })
@@ -513,6 +547,9 @@ export async function handleListContracts(
 
   if (input.project_id) query = query.eq('project_id', input.project_id)
   if (input.phase_id) query = query.eq('phase_id', input.phase_id)
+  // Cost classification is the axis that actually discriminates now that most projects have a
+  // single phase; filtering by phase alone returns very nearly the whole project.
+  if (input.classification_id) query = query.eq('classification_id', input.classification_id)
   if (input.subcontractor_id) query = query.eq('subcontractor_id', input.subcontractor_id)
   if (input.status) query = query.eq('status', input.status)
 

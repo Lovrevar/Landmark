@@ -77,7 +77,7 @@ export function useWorkLogs() {
       phase_id: log.phase_id || '',
       contract_id: log.contract_id,
       date: log.date,
-      status: log.status,
+      status: log.status ?? 'in_progress',
       work_description: log.work_description,
       blocker_details: log.blocker_details || '',
       notes: log.notes || '',

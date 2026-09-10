@@ -51,7 +51,7 @@ export function useBudgetControl(): UseBudgetControlReturn {
       setLoading(true)
       setError(null)
       try {
-        const { project, phases, contracts, milestones } = await fetchProjectBudgetData(selectedProjectId)
+        const { project, phases, contracts, milestones, ticTotal } = await fetchProjectBudgetData(selectedProjectId)
 
         const plannedBudget = phases.reduce((sum, p) => sum + Number(p.budget_allocated || 0), 0)
         const committed = contracts.reduce((sum, c) => sum + Number(c.contract_amount || 0), 0)
@@ -63,7 +63,9 @@ export function useBudgetControl(): UseBudgetControlReturn {
         const metrics = calculateProjectEVM(phases, contracts, milestones)
 
         setData({
-          tic: Number(project.budget || 0),
+          // The real TIC when the project has one; the stored budget only as a fallback, so a
+          // project with no TIC still shows a figure rather than a bare zero.
+          tic: ticTotal ?? Number(project.budget || 0),
           plannedBudget,
           committed,
           paid,

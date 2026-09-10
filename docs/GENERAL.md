@@ -80,7 +80,8 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 #### Forms
 
 ### forms/ProjectFormModal.tsx
-- Modal form for creating and editing projects (name, location, aliases, dates, budget, status, category)
+- Modal form for creating and editing projects (name, location, aliases, dates, status, category)
+- **Budget is displayed, not entered.** The project's TIC is its only writer (see [FUNDING.md](./FUNDING.md#the-tic-is-the-only-source-of-planned-budget)); a project without one reads "budget not set". There is deliberately no budget validation — a new project has no plan yet by definition, and requiring one blocked creation entirely
 - Create/edit/delete are Director-only at the RLS level. The entry-point buttons in `index.tsx` and `ProjectDetailsEnhanced.tsx` are hidden for other roles, and a 42501 from Postgres is surfaced as `general_projects.error_permission_denied` instead of a generic "Failed to save project". RLS stays the real boundary; the UI gate only avoids offering an action that will be refused
 - Category is one of `interno` / `retail` / `stambeno`, from `PROJECT_CATEGORIES` in `lib/supabase.ts`. These are Croatian domain terms and stay untranslated. Note this is unrelated to the Retail module, which models land development in its own `retail_*` tables
 - Edit mode includes a delete button (routes to the optional `onDeleted` callback, falling back to `onSuccess`)

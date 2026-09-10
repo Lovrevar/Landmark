@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase'
 import { logActivity } from '../../../lib/activityLog'
 import { notify } from './pushNotify'
+import { normalizeDraftSubtasks } from '../subtasks'
 import type {
   Task,
   TaskActor,
@@ -241,6 +242,24 @@ export async function createTask(
     })
   }
 
+  // Lines authored in the create modal. Written directly, like everything else here: the
+  // create RPC would do this in one transaction but it rejects a task with no assignees and
+  // never sets is_private, so a private task created through it would come out public.
+  //
+  // Before the notify below, so the push lands on a task that is already whole when its
+  // recipient opens it. The sync trigger fires once per row and has nothing to do — a new
+  // task is open and its new lines are unticked.
+  const subtaskTitles = normalizeDraftSubtasks(input.subtasks || [])
+  if (subtaskTitles.length > 0) {
+    const rows = subtaskTitles.map((title, index) => ({
+      task_id: task.id,
+      title,
+      position: index,
+    }))
+    const { error: sErr } = await supabase.from('task_subtasks').insert(rows)
+    if (sErr) throw sErr
+  }
+
   logActivity({
     userId: actor.id,
     userRole: actor.role,
@@ -252,6 +271,8 @@ export async function createTask(
       entity_name: task.title,
       is_private: task.is_private,
       assignee_count: input.assignee_ids.length,
+      // One event for the create, not one per line — the lines are part of what was created.
+      subtask_count: subtaskTitles.length,
     },
     severity: 'medium',
   })

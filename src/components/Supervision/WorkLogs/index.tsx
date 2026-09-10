@@ -13,12 +13,14 @@ import {
   Edit2,
   Trash2,
   Palette,
-  Wrench
+  Wrench,
+  HelpCircle
 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, Form, FormField, ConfirmDialog } from '../../ui'
 import { format } from 'date-fns'
 import { useWorkLogs } from './hooks/useWorkLogs'
-import type { WorkLog } from './services/workLogService'
+import type { WorkLog, WorkLogStatus } from './services/workLogService'
+import { formatPhaseLabel } from '../../../utils/phaseLabel'
 
 const statusConfig = {
   work_finished: { tKey: 'supervision.work_logs.status.work_finished', icon: CheckCircle2, color: 'green' },
@@ -33,9 +35,18 @@ const variantMap: Record<string, 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 
   green: 'green', red: 'red', yellow: 'yellow', blue: 'blue', gray: 'gray', orange: 'orange',
 }
 
+// `work_logs.status` is a nullable column with no default, so a row can legitimately carry no
+// status — anything written before the column existed, or outside this form. Without a fallback
+// the lookup returns undefined and the whole page unmounts on one such row.
+const unknownStatusConfig = {
+  tKey: 'supervision.work_logs.status.unknown',
+  icon: HelpCircle,
+  color: 'gray',
+} as const
+
 function StatusBadge({ status }: { status: WorkLog['status'] }) {
   const { t } = useTranslation()
-  const config = statusConfig[status]
+  const config = (status ? statusConfig[status] : undefined) ?? unknownStatusConfig
   const Icon = config.icon
   return (
     <Badge variant={variantMap[config.color] || 'gray'}>
@@ -126,7 +137,7 @@ const WorkLogs: React.FC = () => {
                 >
                   <option value="">{t('supervision.work_logs.form.select_phase')}</option>
                   {phases.map((phase) => (
-                    <option key={phase.id} value={phase.id}>{phase.phase_name}</option>
+                    <option key={phase.id} value={phase.id}>{formatPhaseLabel(phase, t('common.phase'))}</option>
                   ))}
                 </Select>
               </FormField>
@@ -170,7 +181,7 @@ const WorkLogs: React.FC = () => {
               <FormField label={t('supervision.work_logs.form.status')} required>
                 <Select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as WorkLog['status'] })}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as WorkLogStatus })}
                 >
                   {Object.entries(statusConfig).map(([value, config]) => (
                     <option key={value} value={value}>{t(config.tKey)}</option>
@@ -275,7 +286,7 @@ const WorkLogs: React.FC = () => {
                           <StatusBadge status={log.status} />
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {log.projects?.name} {log.project_phases?.phase_name && `• ${log.project_phases.phase_name}`}
+                          {log.projects?.name} {log.project_phases && `• ${formatPhaseLabel(log.project_phases, t('common.phase'))}`}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {t('supervision.work_logs.contract_label')} {log.contracts?.contract_number} - {log.contracts?.job_description}

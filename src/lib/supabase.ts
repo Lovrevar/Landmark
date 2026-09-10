@@ -435,6 +435,14 @@ export type ProjectInvestment = {
   credit_seniority: 'junior' | 'senior'
 }
 
+/**
+ * A real phase of a project ("Faza 1", "Faza 2", ...).
+ *
+ * `phase_name` is the phase's own name. It is NOT a cost category -- that axis lives in
+ * `CostClassification` and hangs off the contract via `classification_id`, with per-phase
+ * amounts in `PhaseClassificationBudget`. Before the 20260908120200 migration the two were
+ * conflated into this one free-text field.
+ */
 export type ProjectPhase = {
   id: string
   project_id: string
@@ -446,6 +454,41 @@ export type ProjectPhase = {
   end_date: string | null
   status: 'planning' | 'active' | 'completed' | 'on_hold'
   created_at: string
+}
+
+/**
+ * A cost breakdown bucket ("Zemljište", "Priprema i razvoj", ...), global across projects.
+ *
+ * Orthogonal to `ContractType`: a contract has both a classification (which cost bucket it
+ * belongs to) and a contract type (what kind of work/vendor it is).
+ *
+ * The seven canonical rows are seeded with `is_system = true` and cannot be renamed or deleted
+ * -- enforced by a database trigger, not just the UI. Their Croatian names are domain terms and
+ * are never translated, so they read identically in both locales.
+ */
+export type CostClassification = {
+  id: number
+  code: string | null
+  name: string
+  description: string | null
+  sort_order: number
+  is_system: boolean
+  is_active: boolean
+}
+
+/**
+ * Optional sub-allocation of a phase's budget to one cost classification.
+ *
+ * The sum across a phase is deliberately not forced to equal `ProjectPhase.budget_allocated`;
+ * the difference is a legitimate unallocated remainder, shown as "Neraspoređeno". A row may
+ * exist with `budget_allocated = 0` purely to pin an empty classification group into a phase.
+ */
+export type PhaseClassificationBudget = {
+  id: string
+  phase_id: string
+  classification_id: number
+  budget_allocated: number
+  notes: string | null
 }
 
 export type ProjectMilestone = {
@@ -483,11 +526,14 @@ export type InvestorPayment = {
   updated_at: string
 }
 
+/**
+ * Note: milestones hang off a CONTRACT. There are deliberately no `subcontractor_id`,
+ * `project_id` or `phase_id` fields here -- those columns do not exist on the table; callers
+ * join through `contracts` (see milestoneService.fetchMilestonesBySubcontractor).
+ */
 export type SubcontractorMilestone = {
   id: string
-  subcontractor_id: string
-  project_id: string
-  phase_id: string
+  contract_id: string
   milestone_number: number
   milestone_name: string
   description: string

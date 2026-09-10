@@ -1,6 +1,6 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
-import type { LineItem } from '../utils/ticFormatters'
+import type { LineItem, ConstructionSection } from '../utils/ticFormatters'
 
 export interface TICProject {
   id: string
@@ -12,6 +12,7 @@ export interface TICRecord {
   investor_name: string
   document_date: string
   line_items: LineItem[]
+  construction_sections: ConstructionSection[]
 }
 
 export interface TICUpsertPayload {
@@ -19,6 +20,7 @@ export interface TICUpsertPayload {
   investor_name: string
   document_date: string
   line_items: LineItem[]
+  construction_sections: ConstructionSection[]
   created_by: string | undefined
 }
 
@@ -46,7 +48,9 @@ export async function fetchTICForProject(projectId: string): Promise<TICRecord |
     id: data.id,
     investor_name: data.investor_name,
     document_date: data.document_date,
-    line_items: data.line_items as LineItem[],
+    line_items: (data.line_items ?? []) as LineItem[],
+    // Rows created before the GRAĐENJE tab existed have no construction_sections.
+    construction_sections: (data.construction_sections ?? []) as ConstructionSection[],
   }
 }
 

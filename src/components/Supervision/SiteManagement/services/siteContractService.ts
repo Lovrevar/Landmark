@@ -16,7 +16,8 @@ export const createContract = async (data: {
   start_date?: string | null
   end_date: string | null
   status: string
-  contract_type_id?: number
+  contract_type_id?: number | null
+  classification_id?: number | null
   has_contract?: boolean
 }) => {
   const { data: newContract, error } = await supabase
@@ -234,8 +235,9 @@ export const fetchContractDetails = async (contractId: string): Promise<Contract
 }
 
 export interface ContractFormDataResult {
-  phases: { id: string; phase_name: string; project_id: string }[]
-  contract_type_id: number
+  phases: { id: string; phase_name: string; phase_number: number; project_id: string }[]
+  contract_type_id: number | null
+  classification_id: number | null
   base_amount: number
   vat_rate: number
 }
@@ -243,7 +245,7 @@ export interface ContractFormDataResult {
 export const fetchContractFormData = async (contractId: string): Promise<ContractFormDataResult> => {
   const { data: contractData, error: contractError } = await supabase
     .from('contracts')
-    .select('project_id, contract_type_id, base_amount, vat_rate')
+    .select('project_id, contract_type_id, classification_id, base_amount, vat_rate')
     .eq('id', contractId)
     .single()
 
@@ -251,7 +253,7 @@ export const fetchContractFormData = async (contractId: string): Promise<Contrac
 
   const { data: phasesData, error: phasesError } = await supabase
     .from('project_phases')
-    .select('id, phase_name, project_id')
+    .select('id, phase_name, phase_number, project_id')
     .eq('project_id', contractData.project_id)
     .order('phase_number')
 
@@ -259,7 +261,8 @@ export const fetchContractFormData = async (contractId: string): Promise<Contrac
 
   return {
     phases: phasesData || [],
-    contract_type_id: contractData.contract_type_id || 0,
+    contract_type_id: contractData.contract_type_id ?? null,
+    classification_id: contractData.classification_id ?? null,
     base_amount: contractData.base_amount || 0,
     vat_rate: contractData.vat_rate || 0
   }

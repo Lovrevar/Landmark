@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -1691,7 +1691,8 @@ export type Database = {
           budget_realized: number
           contract_amount: number
           contract_number: string | null
-          contract_type_id: number
+          classification_id: number | null
+          contract_type_id: number | null
           created_at: string | null
           end_date: string | null
           has_contract: boolean
@@ -1717,7 +1718,8 @@ export type Database = {
           budget_realized?: number
           contract_amount?: number
           contract_number?: string | null
-          contract_type_id?: number
+          classification_id?: number | null
+          contract_type_id?: number | null
           created_at?: string | null
           end_date?: string | null
           has_contract?: boolean
@@ -1743,7 +1745,8 @@ export type Database = {
           budget_realized?: number
           contract_amount?: number
           contract_number?: string | null
-          contract_type_id?: number
+          classification_id?: number | null
+          contract_type_id?: number | null
           created_at?: string | null
           end_date?: string | null
           has_contract?: boolean
@@ -1794,6 +1797,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cost_classifications: {
+        Row: {
+          code: string | null
+          created_at: string
+          description: string | null
+          id: number
+          is_active: boolean
+          is_system: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: number
+          is_active?: boolean
+          is_system?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: number
+          is_active?: boolean
+          is_system?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       credit_allocations: {
         Row: {
@@ -2218,6 +2257,51 @@ export type Database = {
           vat_id?: string | null
         }
         Relationships: []
+      }
+      phase_classification_budgets: {
+        Row: {
+          budget_allocated: number
+          classification_id: number
+          created_at: string
+          id: string
+          notes: string | null
+          phase_id: string
+          updated_at: string
+        }
+        Insert: {
+          budget_allocated?: number
+          classification_id: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phase_id: string
+          updated_at?: string
+        }
+        Update: {
+          budget_allocated?: number
+          classification_id?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phase_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase_classification_budgets_classification_id_fkey"
+            columns: ["classification_id"]
+            isOneToOne: false
+            referencedRelation: "cost_classifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phase_classification_budgets_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "project_phases"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       profiles: {
         Row: {
@@ -3357,6 +3441,44 @@ export type Database = {
           },
         ]
       }
+      task_subtasks: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          position: number
+          task_id: string
+          title: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          position: number
+          task_id: string
+          title: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          position?: number
+          task_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_subtasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           color: string | null
@@ -3425,6 +3547,7 @@ export type Database = {
       }
       tic_cost_structures: {
         Row: {
+          construction_sections: Json
           created_at: string | null
           created_by: string | null
           document_date: string
@@ -3435,6 +3558,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          construction_sections?: Json
           created_at?: string | null
           created_by?: string | null
           document_date?: string
@@ -3445,6 +3569,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          construction_sections?: Json
           created_at?: string | null
           created_by?: string | null
           document_date?: string
@@ -3646,6 +3771,7 @@ export type Database = {
           p_deadline: string
           p_description: string
           p_project_id: string
+          p_subtasks?: Json
           p_title: string
         }
         Returns: string
@@ -3899,6 +4025,7 @@ export type Database = {
           p_deadline: string
           p_description: string
           p_project_id: string
+          p_subtasks?: Json
           p_task_id: string
           p_title: string
         }
@@ -3925,12 +4052,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3954,11 +4081,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3979,11 +4106,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4004,11 +4131,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4021,11 +4148,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ProjectPhase, Subcontractor } from '../../../../lib/supabase'
 import * as siteService from '../services/siteService'
+import { exceedsPhaseBudget } from '../utils/contractTree'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) => {
@@ -24,7 +25,8 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
       vat_rate?: number
       vat_amount?: number
       total_amount?: number
-      contract_type_id?: number
+      contract_type_id?: number | null
+      classification_id?: number | null
       has_contract?: boolean
       financed_by_type?: 'investor' | 'bank' | null
       financed_by_investor_id?: string | null
@@ -35,6 +37,19 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
     try {
       const hasContract = data.has_contract !== false
 
+      // The phase-level gate below is now a project-wide ceiling: after the phase/classification
+      // split a phase budget is the SUM of its classification sub-allocations, so it no longer
+      // constrains an individual bucket. Where a sub-allocation exists, IT is the binding limit.
+      if (hasContract && data.classification_id) {
+        const { allocated, used } = await siteService.fetchClassificationBudgetStatus(
+          phase.id,
+          data.classification_id
+        )
+        if (allocated > 0 && data.cost > allocated - used) {
+          throw new Error(t('supervision.subcontractor_form.errors.exceeds_classification_budget'))
+        }
+      }
+
       let newContractId: string | null = null
       let newSubcontractorId: string | null = null
 
@@ -42,7 +57,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         if (!data.existing_subcontractor_id) {
           throw new Error('Odaberite podugovaratelja')
         }
-        if (hasContract && data.cost > phase.budget_allocated - phase.budget_used) {
+        if (hasContract && exceedsPhaseBudget(phase, data.cost)) {
           throw new Error('Iznos ugovora premašuje raspoloživi budžet faze')
         }
         const phaseData = await siteService.getPhaseInfo(phase.id)
@@ -60,19 +75,20 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           start_date: data.start_date || null,
           end_date: data.deadline || null,
           status: 'active',
-          contract_type_id: data.contract_type_id || 0,
+          contract_type_id: data.contract_type_id ?? null,
+          classification_id: data.classification_id ?? null,
           has_contract: hasContract
         })
         newContractId = newContract.id
         newSubcontractorId = data.existing_subcontractor_id
         if (hasContract) {
-          await siteService.updatePhase(phase.id, { budget_used: phase.budget_used + data.cost })
+          await siteService.recalculatePhaseBudget(phase.id)
         }
       } else {
         if (!data.name?.trim() || !data.contact?.trim()) {
           throw new Error('Naziv tvrtke i kontakt su obavezni')
         }
-        if (hasContract && data.cost > phase.budget_allocated - phase.budget_used) {
+        if (hasContract && exceedsPhaseBudget(phase, data.cost)) {
           throw new Error('Iznos ugovora premašuje raspoloživi budžet faze')
         }
         const phaseData = await siteService.getPhaseInfo(phase.id)
@@ -96,13 +112,14 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
           start_date: data.start_date || null,
           end_date: data.deadline || null,
           status: 'active',
-          contract_type_id: data.contract_type_id || 0,
+          contract_type_id: data.contract_type_id ?? null,
+          classification_id: data.classification_id ?? null,
           has_contract: hasContract
         })
         newContractId = newContract.id
         newSubcontractorId = newSubcontractor.id
         if (hasContract) {
-          await siteService.updatePhase(phase.id, { budget_used: phase.budget_used + data.cost })
+          await siteService.recalculatePhaseBudget(phase.id)
         }
       }
 

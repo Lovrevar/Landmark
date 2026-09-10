@@ -144,7 +144,16 @@
     "budget": "Budžet",
     "note": "Napomena",
     "project_type": "Vrsta projekta",
-    "all_project_types": "Sve vrste"
+    "all_project_types": "Sve vrste",
+    "activate": "Aktiviraj",
+    "deactivate": "Deaktiviraj",
+    "unsaved_changes_title": "Nespremljene promjene",
+    "unsaved_changes_message": "Na ovoj stranici postoje promjene koje nisu spremljene. Ako sada izađete, bit će izgubljene.",
+    "leave_without_saving": "Izađi bez spremanja",
+    "stay_on_page": "Ostani na stranici",
+    "unsaved_changes_badge": "Nespremljene promjene",
+    "save_and_leave": "Spremi i izađi",
+    "unsaved_changes_save_failed": "Spremanje nije uspjelo. Pokušajte ponovno, izađite bez spremanja ili ostanite na stranici."
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -881,7 +890,6 @@
       "select_supplier": "Odaberi dobavljača",
       "select_project": "Odaberi projekt",
       "select_phase": "Odaberi fazu",
-      "phase_prefix": "Faza {{number}}: ",
       "linking": "Povezivanje...",
       "link_button": "Poveži",
       "error_suppliers": "Greška pri učitavanju dobavljača",
@@ -1614,7 +1622,6 @@
     "form_error_name": "Naziv projekta je obavezan",
     "form_error_location": "Lokacija je obavezna",
     "form_error_start_date": "Datum početka je obavezan",
-    "form_error_budget": "Budžet je obavezan",
     "error_permission_denied": "Samo Direktor može kreirati, uređivati ili brisati projekte.",
     "confirm_delete_project": "Jeste li sigurni da želite obrisati ovaj projekt? Ova akcija se ne može poništiti.",
     "confirm_delete_milestone": "Jeste li sigurni da želite obrisati ovaj milestone?",
@@ -1742,7 +1749,9 @@
     "no_apartments_desc": "Za ovaj projekt nisu definirani stanovi",
     "size": "Površina",
     "funding_sources": "Izvori financiranja",
-    "no_credit_allocations": "Nema evidentiranih kreditnih alokacija"
+    "no_credit_allocations": "Nema evidentiranih kreditnih alokacija",
+    "budget_not_set": "Budžet nije postavljen",
+    "budget_from_tic_hint": "Budžet se preuzima iz TIC-a projekta."
   },
   "sales_projects": {
     "title": "Projekti",
@@ -2241,7 +2250,9 @@
         "over": "iznad",
         "mismatch_note": "Napomena: Budžeti faza se ne podudaraju s budžetom projekta. Možete nastaviti s ovom raspodjelom, ali budite svjesni razlike pri upravljanju troškovima.",
         "create": "Kreiraj faze",
-        "update": "Ažuriraj faze"
+        "update": "Ažuriraj faze",
+        "default_phase_name": "Faza {{n}}",
+        "classification_hint": "Ovdje postavljate budžet faze. Raspodjelu po klasifikacijama troška uredite na kartici faze."
       },
       "edit_phase": {
         "title": "Uredi fazu",
@@ -2250,21 +2261,12 @@
         "phase_name": "Naziv faze",
         "phase_name_placeholder": "Unesite naziv faze",
         "budget": "Alocirani budžet (€)",
-        "budget_warning": "Upozorenje: Budžet je manji od već alociranog iznosa",
-        "available_after": "Dostupno nakon ažuriranja:",
-        "budget_less_error": "Budžet manji od alociranog",
         "start_date": "Datum početka",
         "end_date": "Datum završetka",
         "status": "Status",
-        "note_prefix": "Napomena: Nakon ovog ažuriranja, ukupni budžeti faza",
-        "will_be": "bit će",
-        "over": "iznad",
-        "under": "ispod",
-        "budget_suffix": "budžeta projekta.",
         "update": "Ažuriraj fazu",
         "errors": {
-          "name_required": "Naziv faze je obavezan",
-          "budget_required": "Budžet je obavezan"
+          "name_required": "Naziv faze je obavezan"
         }
       },
       "projects_grid": {
@@ -2300,7 +2302,11 @@
         "credit_available": "Dostupni kredit",
         "interest_rate": "Kamatna stopa",
         "no_phases_title": "Nema postavljenih faza",
-        "no_phases_desc": "Postavite faze projekta kako biste pratili napredak po fazama"
+        "no_phases_desc": "Postavite faze projekta kako biste pratili napredak po fazama",
+        "budget_from_tic": "iz TIC-a",
+        "budget_differs_from_tic": "odstupa od TIC ({{amount}})",
+        "budget_not_set": "Budžet nije postavljen",
+        "budget_from_tic_hint": "Budžet se preuzima iz TIC-a projekta."
       },
       "loading": "Učitavanje upravljanja gradilištem...",
       "confirm_delete_sub": "Jeste li sigurni da želite obrisati ovog podizvođača?",
@@ -2334,7 +2340,13 @@
         "no_subs_title": "Nema podugovaratelja",
         "no_subs_desc": "Nema podugovaratelja dodijeljenih ovoj fazi",
         "cost": "Ugovor",
-        "total_owed": "Ukupno dugovi"
+        "total_owed": "Ukupno dugovi",
+        "classification_label": "Klasifikacija troška",
+        "unclassified": "Bez klasifikacije",
+        "classification_budget": "Budžet",
+        "classification_remaining": "Preostalo",
+        "unallocated": "Neraspoređeno",
+        "remaining_budget": "Preostali budžet"
       },
       "milestone_list": {
         "title": "Prekretnice plaćanja",
@@ -2352,6 +2364,34 @@
         "create_error": "Greška pri kreiranju prekretnice",
         "update_error": "Greška pri ažuriranju prekretnice",
         "delete_error": "Greška pri brisanju prekretnice"
+      },
+      "classification_budgets": {
+        "title": "Budžet po klasifikaciji troška",
+        "subtitle": "Rasporedite budžet faze po stavkama troškovnika.",
+        "phase_budget": "Budžet faze",
+        "total_allocated": "Ukupno alocirano",
+        "difference": "Razlika",
+        "unallocated_note": "Neraspoređeni iznos ostaje na razini faze.",
+        "over_phase_budget": "Zbroj premašuje budžet faze",
+        "save": "Spremi budžete",
+        "no_classifications": "Nema aktivnih klasifikacija troška.",
+        "populate_from_tic": "Popuni iz TIC-a",
+        "tic_plan": "TIC plan",
+        "other_phases": "Druge faze",
+        "this_phase": "Ova faza",
+        "tic_available": "Iznosi se mogu popuniti iz TIC-a ovog projekta.",
+        "tic_missing": "Ovaj projekt nema popunjen TIC, pa nema iz čega popuniti iznose.",
+        "tic_unmapped": "U TIC-u je {{amount}} bez klasifikacije troška i nije uključeno u ove iznose."
+      },
+      "grouping": {
+        "label": "Prikaz",
+        "by_phase": "Po fazama",
+        "by_classification": "Po klasifikaciji troška"
+      },
+      "budget_matrix": {
+        "title": "Plan investicije po fazama",
+        "subtitle": "Klasifikacije troška po fazama, prema TIC-u projekta.",
+        "not_phased": "Nije fazirano"
       }
     },
     "subcontractors": {
@@ -2438,8 +2478,13 @@
       "errors": {
         "select_category": "Odaberite kategoriju ugovora",
         "select_subcontractor": "Odaberite podugovaratelja",
-        "add_error": "Greška pri dodavanju podugovaratelja."
-      }
+        "add_error": "Greška pri dodavanju podugovaratelja.",
+        "select_classification": "Odaberite klasifikaciju troška",
+        "exceeds_classification_budget": "Iznos ugovora premašuje raspoloživi budžet klasifikacije troška"
+      },
+      "cost_classification": "Klasifikacija troška",
+      "cost_classification_help": "U koju stavku troškovnika ovaj ugovor spada. Neovisno o kategoriji ugovora ispod.",
+      "select_classification": "Odaberite klasifikaciju troška"
     },
     "contract_type": {
       "title": "Nova kategorija ugovora",
@@ -2601,7 +2646,11 @@
         "phase_required": "Faza je obavezna",
         "name_required": "Naziv je obavezan",
         "job_required": "Opis posla je obavezan"
-      }
+      },
+      "cost_classification": "Klasifikacija troška",
+      "cost_classification_help": "U koju stavku troškovnika ovaj ugovor spada.",
+      "select_classification": "Odaberite klasifikaciju troška",
+      "select_category": "Odaberite kategoriju ugovora"
     },
     "edit_payment": {
       "title": "Uredi plaćanje",
@@ -2710,7 +2759,8 @@
         "blocker": "Blokada",
         "quality_issue": "Problem kvalitete",
         "waiting_materials": "Čekanje materijala",
-        "weather_delay": "Kašnjenje zbog vremena"
+        "weather_delay": "Kašnjenje zbog vremena",
+        "unknown": "Nepoznato"
       },
       "errors": {
         "project": "Projekt je obavezan",
@@ -2741,6 +2791,28 @@
         "name_required": "Naziv kategorije je obavezan",
         "name_exists": "Kategorija s tim nazivom već postoji",
         "save_error": "Greška pri spremanju kategorije"
+      }
+    },
+    "cost_classification": {
+      "title_create": "Nova klasifikacija troška",
+      "title_edit": "Uredi klasifikaciju troška",
+      "subtitle": "Klasifikacije troška grupiraju ugovore unutar faze projekta.",
+      "manage_title": "Klasifikacije troškova",
+      "name_label": "Naziv",
+      "name_placeholder": "npr. Priključci",
+      "desc_label": "Opis",
+      "desc_placeholder": "Neobavezno",
+      "sort_order_label": "Redoslijed",
+      "active_label": "Aktivna",
+      "system_badge": "Sistemska",
+      "system_hint": "Sistemske klasifikacije se ne mogu preimenovati ni obrisati.",
+      "save": "Spremi",
+      "errors": {
+        "name_required": "Naziv je obavezan",
+        "already_exists": "Klasifikacija s tim nazivom već postoji",
+        "save_error": "Greška pri spremanju klasifikacije",
+        "system_readonly": "Sistemska klasifikacija se ne može mijenjati",
+        "in_use": "Klasifikacija se koristi na ugovorima ili budžetima i ne može se obrisati"
       }
     }
   },
@@ -3517,7 +3589,80 @@
     "investor_label": "INVESTITOR:",
     "for_investor_label": "Za investitora:",
     "signature_label": "Potpis",
-    "date_label": "Datum:"
+    "date_label": "Datum:",
+    "tab_investment": "Investicija",
+    "tab_construction": "Građenje",
+    "construction_table_heading": "Struktura Troškova Građenja (bez PDV-a)",
+    "section_total_row": "Ukupno",
+    "construction_total_row": "SVEUKUPNO:",
+    "col_actions": "Radnje",
+    "row_name_placeholder": "Naziv stavke",
+    "section_name_placeholder": "Naziv skupine",
+    "add_row": "Dodaj stavku",
+    "add_section": "Dodaj skupinu",
+    "remove_row": "Ukloni stavku",
+    "remove_section": "Ukloni skupinu",
+    "remove_section_confirm": "Ukloniti skupinu \"{{name}}\" i njenih {{count}} stavki? Promjena se sprema tek klikom na Spremi.",
+    "move_up": "Pomakni gore",
+    "move_down": "Pomakni dolje",
+    "move_section_up": "Pomakni skupinu gore",
+    "move_section_down": "Pomakni skupinu dolje",
+    "import_excel_button": "Uvoz iz Excela",
+    "import": {
+      "title": "Uvoz TIC-a iz Excela",
+      "upload_heading": "Odaberite Excel datoteku",
+      "upload_hint": "Datoteka sa strukturom troškova investicije i građenja (.xlsx ili .xls)",
+      "format_heading": "Očekivani format datoteke:",
+      "format_sheets": "Dva lista: INVESTICIJA i GRAĐENJE (ako nedostaju nazivi, koristi se prvi i drugi list)",
+      "format_header": "Redak zaglavlja sadrži NAMJENA i VLASTITA SREDSTVA — stupci se pronalaze automatski",
+      "format_investment": "INVESTICIJA: naziv stavke, pa VLASTITA SREDSTVA (EUR, %) i KREDITNA SREDSTVA (EUR, %)",
+      "format_construction": "GRAĐENJE: prvi stupac je oznaka skupine (A), B), C)) ili rimski broj stavke",
+      "format_totals": "Retci Ukupno i SVEUKUPNO se preskaču — zbrojevi se izračunavaju automatski",
+      "parse_file": "Učitaj datoteku",
+      "confirm": "Zamijeni podatke",
+      "replace_warning": "Uvoz zamjenjuje sve stavke u prikazanim tablicama. Podaci se spremaju tek klikom na Spremi.",
+      "rows_from_sheet": "stavki s lista {{sheet}}",
+      "items_from_sheet": "stavki u {{sections}} skupina s lista {{sheet}}",
+      "tab_unchanged": "Nema odgovarajućeg lista — kartica ostaje nepromijenjena",
+      "skipped_sheets": "Preskočeni listovi",
+      "complete_title": "Uvoz završen",
+      "complete_save_reminder": "Provjerite podatke i kliknite Spremi kako biste ih trajno spremili.",
+      "error_no_sheets": "U datoteci nije pronađena nijedna TIC tablica. Provjerite sadrži li redak zaglavlja NAMJENA i VLASTITA SREDSTVA.",
+      "error_parse_failed": "Datoteku nije moguće pročitati. Provjerite format.",
+      "error_missing_header": "nije pronađen redak zaglavlja (NAMJENA / VLASTITA SREDSTVA)",
+      "error_no_rows": "nije pronađena nijedna stavka",
+      "phases_found": "Pronađeno faza: {{count}}",
+      "unphased_title": "Nije fazirano:",
+      "unphased_body": "ovi troškovi nastaju jednom za cijeli projekt, pa se ne dijele po fazama. U tablici se ponavljaju u svakoj fazi u punom iznosu — zbrajanje tih stupaca uvećalo bi plan.",
+      "inconsistent_title": "Provjerite raspodjelu:",
+      "inconsistent_body": "kod ovih redaka zbroj po fazama ne odgovara ukupnom iznosu. Uvezeni su onako kako su napisani, bez ispravljanja."
+    },
+    "col_classification": "Klasifikacija troška",
+    "classification_unmapped": "— nije klasificirano —",
+    "classification_summary": "Plan po klasifikaciji troška",
+    "classification_unmapped_total": "Neraspoređeno u TIC-u",
+    "classification_unmapped_hint": "Ovaj iznos nije uključen u budžete faza dok mu ne dodijelite klasifikaciju troška.",
+    "phases": {
+      "edit_title": "Raspodjela po fazama",
+      "add_phase": "Dodaj fazu",
+      "remove_phase": "Ukloni fazu {{number}} iz svih redaka",
+      "edit_cell_title": "Uredi raspodjelu ovog retka po fazama",
+      "unphased_cell_title": "Nije fazirano — kliknite za raspodjelu troška po fazama",
+      "edit_hint": "Kliknite ćeliju faze za raspodjelu tog retka po fazama.",
+      "unphased_hint": "Ovaj TIC nema faza. Dodajte fazu za raspodjelu plana na FAZA 1, 2, 3…",
+      "mode_unphased": "Trošak na razini projekta (nije fazirano)",
+      "mode_unphased_hint": "Trošak nastaje jednom za cijeli projekt — zemljište, priprema projekta. Računa se jednom u ukupnom iznosu i ne pripada nijednoj fazi.",
+      "mode_phased": "Raspodjela po fazama",
+      "mode_phased_hint": "Iznosi ispod su ono što svaka faza planira potrošiti na ovu stavku.",
+      "no_phases_hint": "Najprije dodajte fazu u tablicu.",
+      "sum_label": "Zbroj po fazama",
+      "row_total_label": "Ukupno u retku",
+      "split_evenly": "Ravnomjerno raspodijeli",
+      "mismatch_warning": "Zbroj po fazama odstupa od iznosa u retku za {{difference}} €. Raspodjela se sprema točno kako je upisana — ništa se ne ispravlja automatski.",
+      "row_mismatch": "Zbroj po fazama ne odgovara ukupnom iznosu ovog retka.",
+      "remove_phase_title": "Ukloni fazu {{number}}",
+      "remove_phase_confirm": "Ukloniti fazu {{number}} i njene iznose iz {{count}} redaka? Faze nakon nje se prenumeriraju, a promjena se sprema tek klikom na Spremi."
+    }
   },
   "dashboards": {
     "common": {
@@ -3961,55 +4106,6 @@
       "sales_opportunities": "Prodajne prilike",
       "focus_converting": "Fokusirajte se na konverziju zainteresiranih kupaca",
       "targeted_campaigns": "Razvijte ciljane kampanje za segmente potencijalnih kupaca"
-    },
-    "supervision": {
-      "title": "Nadzorni izvještaji",
-      "loading": "Učitavanje izvještaja...",
-      "description": "Generiranje sveobuhvatnih nadzornih i građevinskih izvještaja",
-      "export_report": "Izvozi izvještaj",
-      "config_title": "Konfiguracija izvještaja",
-      "project_label": "Projekt",
-      "select_project": "Odaberi projekt",
-      "start_date": "Datum početka",
-      "end_date": "Datum završetka",
-      "generating": "Generiranje izvještaja...",
-      "pdf_error": "Greška pri generiranju PDF izvještaja. Pokušajte ponovno.",
-      "project_overview": "Pregled nadzora projekta",
-      "location": "Lokacija:",
-      "start_date_label": "Datum početka:",
-      "total_budget": "Ukupni budžet:",
-      "funders": "Financijeri:",
-      "budget_performance": "Učinak budžeta",
-      "budget_used": "Iskorišteni budžet:",
-      "remaining": "Preostalo:",
-      "utilization": "Iskorištenost:",
-      "total_contracts_stat": "Ukupno ugovora",
-      "active_contracts_stat": "Aktivni ugovori",
-      "subcontractors_stat": "Podugovaratelji",
-      "phases_done_stat": "Završene faze",
-      "work_logs_stat": "Dnevnici radova",
-      "contract_status": "Raspored statusa ugovora",
-      "completed_label": "Završeno",
-      "active_label": "Aktivno",
-      "other_label": "Ostalo",
-      "contracts_label": "ugovora",
-      "monthly_budget": "Učinak mjesečnog budžeta",
-      "month_col": "Mjesec",
-      "contracts_col": "Ugovori",
-      "subcontractors_paid": "Plaćeni podugovaratelji",
-      "payments_col": "Plaćanja",
-      "work_logs_title": "Dnevnici radova ({{count}})",
-      "no_work_logs": "Nema dnevnika radova zabilježenih u ovom razdoblju",
-      "contract_label": "Ugovor:",
-      "issue_label": "Problem:",
-      "more_work_logs": "... i još {{count}} dnevnika radova. Potpuni detalji u PDF izvozu.",
-      "summary": "Sažetak i uvidi",
-      "performance_highlights": "Istaknuti rezultati",
-      "recommendations": "Preporuke",
-      "monitor_budget": "Pažljivo pratite preostali budžet",
-      "complete_contracts": "Fokusirajte se na završetak aktivnih ugovora",
-      "coordinate_phases": "Koordinirajte rasporede završetka faza",
-      "maintain_communication": "Održavajte redovitu komunikaciju s podugovarateljima"
     },
     "retail": {
       "title": "Retail izvještaji",
@@ -4857,6 +4953,7 @@
       "equity_investment.create": "Dionički kapital kreiran",
       "tic.create": "TIC kreiran",
       "tic.update": "TIC ažuriran",
+      "tic.import_excel": "TIC uvezen iz Excela",
       "tic.export": "TIC izvezen",
       "retail_project.create": "Retail projekt kreiran",
       "retail_project.update": "Retail projekt ažuriran",
@@ -4933,7 +5030,13 @@
       "retail_contract.delete": "Retail ugovor obrisan",
       "retail_milestone.create": "Retail prekretnica kreirana",
       "retail_milestone.update": "Retail prekretnica ažurirana",
-      "retail_milestone.delete": "Retail prekretnica obrisana"
+      "retail_milestone.delete": "Retail prekretnica obrisana",
+      "cost_classification.create": "Klasifikacija troška kreirana",
+      "cost_classification.update": "Klasifikacija troška ažurirana",
+      "cost_classification.delete": "Klasifikacija troška obrisana",
+      "phase_classification_budget.update": "Budžet klasifikacije ažuriran",
+      "phase_classification_budget.bulk_update": "Budžeti klasifikacija masovno ažurirani",
+      "phase_classification_budget.delete": "Budžet klasifikacije obrisan"
     }
   }
 }

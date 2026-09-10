@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { formatEuroRounded } from '../../../../utils/formatters'
 import { useTranslation } from 'react-i18next'
 import { Modal, FormField, Input, Select, Button, Alert, Form, ConfirmDialog } from '../../../ui'
 import { ProjectCategory, PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS } from '../../../../lib/supabase'
@@ -25,7 +26,9 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
     if (!form.name?.trim()) errors.name = t('general_projects.form_error_name')
     if (!form.location?.trim()) errors.location = t('general_projects.form_error_location')
     if (!form.start_date) errors.start_date = t('general_projects.form_error_start_date')
-    if (!form.budget) errors.budget = t('general_projects.form_error_budget')
+    // No budget check: the field is read-only and the TIC writes it. A new project has no
+    // budget yet by definition, so requiring one blocked creation entirely — and with no
+    // FormField bound to errors.budget, it did so without showing anything.
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     handleSubmit(e)
@@ -90,15 +93,23 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
               />
             </FormField>
 
-            <FormField label={t('general_projects.form_budget_eur')} required error={fieldErrors.budget}>
-              <Input
-                type="number"
-                value={form.budget}
-                onChange={(e) => setForm({ ...form, budget: e.target.value })}
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-              />
+            {/* Read-only: the TIC is the only writer of planned budget. A project without a
+                TIC has no plan yet, and saying so is more honest than a typed placeholder. */}
+            <FormField
+              label={t('general_projects.form_budget_eur')}
+              helperText={t('general_projects.budget_from_tic_hint')}
+            >
+              <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
+                {Number(form.budget) > 0 ? (
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {formatEuroRounded(Number(form.budget))}
+                  </span>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {t('general_projects.budget_not_set')}
+                  </span>
+                )}
+              </div>
             </FormField>
 
             <FormField label={t('general_projects.form.status')}>

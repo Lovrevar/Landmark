@@ -37,18 +37,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     }
   }
 
-  const createProjectPhases = async (projectId: string, phases: PhaseFormInput[], projectBudget: number) => {
-    const totalAllocated = phases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
-    const budgetDifference = totalAllocated - projectBudget
-
-    if (budgetDifference !== 0) {
-      const message = budgetDifference > 0
-        ? `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) exceeds project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-        : `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) is less than project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-      const confirmed = await requestConfirm('Potvrda', message)
-      if (!confirmed) return false
-    }
-
+  const createProjectPhases = async (projectId: string, phases: PhaseFormInput[]) => {
     try {
       await siteService.createPhases(projectId, phases)
       await fetchProjects()
@@ -64,44 +53,19 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     phase: ProjectPhase,
     updates: {
       phase_name: string
-      budget_allocated: number
       start_date: string | null
       end_date: string | null
       status: 'planning' | 'active' | 'completed' | 'on_hold'
-    },
-    project: ProjectWithPhases
+    }
   ) => {
     if (!updates.phase_name.trim()) {
       toast.warning('Phase name is required')
       return false
     }
 
-    if (updates.budget_allocated < phase.budget_used) {
-      const confirmed = await requestConfirm(
-        'Upozorenje',
-        `Warning: New budget (€${updates.budget_allocated.toLocaleString('hr-HR')}) is less than already allocated amount (€${phase.budget_used.toLocaleString('hr-HR')}).\n\nThis means you're reducing the budget below what's already committed to subcontractors.\n\nDo you want to proceed anyway?`
-      )
-      if (!confirmed) return false
-    }
-
-    const otherPhasesTotalBudget = project.phases
-      .filter(p => p.id !== phase.id)
-      .reduce((sum, p) => sum + p.budget_allocated, 0)
-    const newTotalAllocated = otherPhasesTotalBudget + updates.budget_allocated
-    const projectBudgetDiff = newTotalAllocated - project.budget
-
-    if (projectBudgetDiff !== 0) {
-      const message = projectBudgetDiff > 0
-        ? `Total allocated budget across all phases (€${newTotalAllocated.toLocaleString('hr-HR')}) will exceed project budget by €${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
-        : `Total allocated budget across all phases (€${newTotalAllocated.toLocaleString('hr-HR')}) will be less than project budget by €${Math.abs(projectBudgetDiff).toLocaleString()}. Do you want to proceed?`
-      const confirmed = await requestConfirm('Potvrda', message)
-      if (!confirmed) return false
-    }
-
     try {
       await siteService.updatePhase(phase.id, {
         phase_name: updates.phase_name,
-        budget_allocated: updates.budget_allocated,
         start_date: updates.start_date || null,
         end_date: updates.end_date || null,
         status: updates.status
@@ -116,8 +80,22 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
   }
 
   const deletePhase = async (phase: ProjectPhase, _project: ProjectWithPhases) => {
-    if (phase.budget_used > 0) {
-      toast.warning('Cannot delete phase with active subcontractor assignments. Please remove or reassign all subcontractors first.')
+    // Count the actual dependants rather than trusting `budget_used`, which is a derived column
+    // refreshed only by recalculate_all_phase_budgets() and therefore reads 0 for a phase that
+    // does have contracts whenever the recalc has not run since they were added. Getting this
+    // wrong detaches every contract on the phase, silently, via ON DELETE SET NULL.
+    try {
+      const { contracts, workLogs } = await siteService.countPhaseDependents(phase.id)
+      if (contracts > 0 || workLogs > 0) {
+        toast.warning(
+          `Faza "${phase.phase_name}" ima ${contracts} ugovora i ${workLogs} dnevnika rada. ` +
+          'Prvo ih premjestite na drugu fazu ili obrišite.'
+        )
+        return false
+      }
+    } catch (error) {
+      console.error('Error checking phase dependents:', error)
+      toast.error('Provjera ovisnosti faze nije uspjela. Pokušajte ponovno.')
       return false
     }
 
@@ -144,18 +122,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     }
   }
 
-  const updateProjectPhases = async (projectId: string, phases: PhaseFormInput[], projectBudget: number) => {
-    const totalAllocated = phases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
-    const budgetDifference = totalAllocated - projectBudget
-
-    if (budgetDifference !== 0) {
-      const message = budgetDifference > 0
-        ? `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) exceeds project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-        : `Total allocated budget (€${totalAllocated.toLocaleString('hr-HR')}) is less than project budget by €${Math.abs(budgetDifference).toLocaleString()}. Do you want to proceed?`
-      const confirmed = await requestConfirm('Potvrda', message)
-      if (!confirmed) return false
-    }
-
+  const updateProjectPhases = async (projectId: string, phases: PhaseFormInput[]) => {
     try {
       await siteService.updateProjectPhases(projectId, phases)
       await fetchProjects()

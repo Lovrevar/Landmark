@@ -627,7 +627,7 @@ Recorded rather than fixed. Decide these deliberately, don't let them drift furt
    real product disagreement about whether an assignee owns the work or only reports on it.
 2. **Legacy `markdown` descriptions.** Cognilion renders them; the mobile app has no markdown
    renderer and shows the syntax raw. `description_format` says which a row is.
-3. **Authoring lines at create time.** The mobile app's create form can author subtasks;
-   Cognilion's create modal cannot — you make the task, then add lines in the drawer, the same
-   way attachments work. A deliberate scope choice, not an oversight. Both apps agree on the
-   result, only on how many steps it takes.
+
+*(Closed 2026-09-03: both create forms can now author lines. Cognilion writes them directly
+after the task insert rather than through `create_task_with_assignees`, because that function
+rejects a task with no assignees and never sets `is_private`.)*

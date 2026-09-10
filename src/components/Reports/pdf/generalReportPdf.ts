@@ -519,11 +519,9 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.setTextColor(0, 0, 0)
 
   const ticData = [
-    ['Total Companies:', report.tic_cost_management.total_companies.toString()],
-    ['TIC Budget:', '€' + report.tic_cost_management.total_tic_budget.toLocaleString()],
-    ['TIC Spent:', '€' + report.tic_cost_management.total_tic_spent.toLocaleString()],
-    ['TIC Utilization:', report.tic_cost_management.tic_utilization.toFixed(1) + '%'],
-    ['Over Budget:', report.tic_cost_management.companies_over_budget.toString()]
+    ['Planned Investment:', '€' + report.tic_cost_management.total_tic_budget.toLocaleString()],
+    ['Projects with a Plan:', report.tic_cost_management.projects_with_tic.toString()],
+    ['Projects without a Plan:', report.tic_cost_management.projects_without_tic.toString()]
   ]
 
   ticData.forEach((row, index) => {
@@ -791,7 +789,7 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
       pdf.setFont('helvetica', 'normal')
 
       const projectData = [
-        ['Budget:', '€' + (project.budget / 1000000).toFixed(1) + 'M', 'Revenue:', '€' + (project.revenue / 1000000).toFixed(1) + 'M'],
+        ['Budget:', project.has_budget ? '€' + (project.budget / 1000000).toFixed(1) + 'M' : 'not set', 'Revenue:', '€' + (project.revenue / 1000000).toFixed(1) + 'M'],
         ['Expenses:', '€' + (project.expenses / 1000000).toFixed(1) + 'M', 'Profit:', '€' + (project.profit / 1000000).toFixed(1) + 'M'],
         ['Units:', `${project.units_sold}/${project.total_units}`, 'Sales Rate:', `${project.sales_rate.toFixed(1)}%`],
         ['Phases:', `${project.phases_done}/${project.total_phases}`, 'Contracts:', project.contracts.toString()]

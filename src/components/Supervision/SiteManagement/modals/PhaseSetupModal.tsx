@@ -19,7 +19,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
   editMode = false
 }) => {
   const { t } = useTranslation()
-  const [phaseCount, setPhaseCount] = useState(4)
+  const [phaseCount, setPhaseCount] = useState(1)
   const [phases, setPhases] = useState<PhaseFormInput[]>([])
 
   // Initialise the phase list when the modal opens. Intentionally keyed on
@@ -49,23 +49,25 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
         .map(phase => ({
           id: phase.id,
           phase_name: phase.phase_name,
-          budget_allocated: phase.budget_allocated,
           start_date: phase.start_date || '',
           end_date: phase.end_date || ''
         }))
       setPhases(existingPhases)
       setPhaseCount(existingPhases.length)
     } else {
-      const defaultPhases = [
-        { phase_name: 'Zemljište', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Priprema i razvoj', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Izgradnja i uređenje', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Opremanje', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Kontrola', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Financiranje i nadzor', budget_allocated: 0, start_date: '', end_date: '' },
-        { phase_name: 'Nepredviđeni troškovi', budget_allocated: 0, start_date: '', end_date: '' }
-      ]
-      setPhases(defaultPhases.slice(0, phaseCount))
+      // Phases are named "Faza 1", "Faza 2", ... and nothing else.
+      //
+      // These slots used to be pre-filled with the seven cost bucket names (Zemljište,
+      // Priprema i razvoj, ...). That is what conflated the two concepts in the first place:
+      // users accepted the defaults and a project could then never have a second real phase.
+      // Those names now live in the cost_classifications table and are chosen per contract.
+      setPhases(
+        Array.from({ length: phaseCount }, (_, i) => ({
+          phase_name: t('supervision.site_management.phase_setup.default_phase_name', { n: i + 1 }),
+          start_date: '',
+          end_date: ''
+        }))
+      )
     }
   }
 
@@ -77,8 +79,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
       const newPhases = [...phases]
       for (let i = currentCount; i < count; i++) {
         newPhases.push({
-          phase_name: `${t('common.phase')} ${i + 1}`,
-          budget_allocated: 0,
+          phase_name: t('supervision.site_management.phase_setup.default_phase_name', { n: i + 1 }),
           start_date: '',
           end_date: ''
         })
@@ -91,8 +92,6 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
 
   if (!visible) return null
 
-  const totalAllocated = phases.reduce((sum, p) => sum + p.budget_allocated, 0)
-  const difference = project.budget - totalAllocated
 
   return (
     <Modal show={true} onClose={onClose} size="xl">
@@ -114,6 +113,12 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
           </Select>
         </FormField>
 
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            {t('supervision.site_management.phase_setup.classification_hint')}
+          </p>
+        </div>
+
         <div className="space-y-4 mt-6">
           {phases.map((phase, index) => (
             <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
@@ -131,18 +136,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
                     placeholder={`${t('common.phase')} ${index + 1} ${t('common.name').toLowerCase()}`}
                   />
                 </FormField>
-                <FormField label={t('supervision.site_management.phase_setup.budget_allocated')}>
-                  <Input
-                    type="number"
-                    value={phase.budget_allocated}
-                    onChange={(e) => {
-                      const newPhases = [...phases]
-                      newPhases[index].budget_allocated = parseFloat(e.target.value) || 0
-                      setPhases(newPhases)
-                    }}
-                    placeholder="0"
-                  />
-                </FormField>
+
                 <FormField label={t('supervision.site_management.phase_setup.start_date')}>
                   <Input
                     type="date"
@@ -170,51 +164,14 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
           ))}
         </div>
 
-        <div className="mt-6 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-          <h4 className="font-medium text-gray-900 dark:text-white mb-3">{t('supervision.site_management.phase_setup.budget_summary')}</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_setup.total_budget')}</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_setup.total_allocated')}</p>
-              <p className={`text-lg font-bold ${
-                totalAllocated === project.budget
-                  ? 'text-green-600'
-                  : totalAllocated > project.budget
-                  ? 'text-orange-600'
-                  : 'text-blue-600'
-              }`}>
-                €{totalAllocated.toLocaleString('hr-HR')}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.phase_setup.difference')}</p>
-              <p className={`text-lg font-bold ${
-                difference === 0
-                  ? 'text-green-600'
-                  : difference < 0
-                  ? 'text-orange-600'
-                  : 'text-blue-600'
-              }`}>
-                {difference === 0
-                  ? t('supervision.site_management.phase_setup.matched')
-                  : difference > 0
-                  ? `€${difference.toLocaleString('hr-HR')} ${t('supervision.site_management.phase_setup.under')}`
-                  : `€${Math.abs(difference).toLocaleString('hr-HR')} ${t('supervision.site_management.phase_setup.over')}`
-                }
-              </p>
-            </div>
-          </div>
-          {difference !== 0 && (
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                {t('supervision.site_management.phase_setup.mismatch_note')}
-              </p>
-            </div>
-          )}
+        {/* The over/under summary is gone: phase budgets are no longer typed here, so there is
+            nothing left to reconcile against the project total. Both come from the TIC. */}
+        <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            {t('general_projects.budget_from_tic_hint')}
+          </p>
         </div>
+
       </Modal.Body>
 
       <Modal.Footer>

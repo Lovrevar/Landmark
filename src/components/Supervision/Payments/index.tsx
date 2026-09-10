@@ -4,6 +4,7 @@ import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCirc
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, Table } from '../../ui'
 import { format } from 'date-fns'
 import { useSupervisionPayments } from './hooks/useSupervisionPayments'
+import { formatPhaseLabel } from '../../../utils/phaseLabel'
 
 const PaymentsManagement: React.FC = () => {
   const { t } = useTranslation()
@@ -102,7 +103,9 @@ const PaymentsManagement: React.FC = () => {
                 </Table.Td>
                 <Table.Td label={t('supervision.payments.col.subcontractor')} className="font-medium">{payment.subcontractor_name}</Table.Td>
                 <Table.Td label={t('common.project')}>{payment.project_name}</Table.Td>
-                <Table.Td label={t('supervision.payments.col.phase')} className="text-gray-500 dark:text-gray-400">{payment.phase_name || '-'}</Table.Td>
+                <Table.Td label={t('supervision.payments.col.phase')} className="text-gray-500 dark:text-gray-400">{payment.phase_number != null && payment.phase_name
+                    ? formatPhaseLabel({ phase_number: payment.phase_number, phase_name: payment.phase_name }, t('common.phase'))
+                    : '-'}</Table.Td>
                 <Table.Td label={t('supervision.payments.col.paid_by')}>
                   {payment.paid_by_company_name && payment.paid_by_company_name !== '-' ? (
                     <div className="flex items-center space-x-2">

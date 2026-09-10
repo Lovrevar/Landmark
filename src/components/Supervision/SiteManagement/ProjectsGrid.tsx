@@ -36,6 +36,10 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => {
+          // The TIC is the only writer of planned budget, so `project.budget` means nothing
+          // until one exists — and the detail screen already says so. Without this gate the card
+          // shows a stale typed figure that the very next click contradicts.
+          const hasBudget = project.tic_total !== null && project.tic_total > 0
           const daysRemaining = project.end_date ? differenceInDays(new Date(project.end_date), new Date()) : null
           const isProjectOverdue = daysRemaining !== null && daysRemaining < 0 && project.status !== 'Completed'
 
@@ -78,6 +82,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
               </div>
 
               <div className="space-y-3">
+                {hasBudget && (
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.site_management.projects_grid.budget_allocation')}</span>
@@ -109,12 +114,19 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                     </span>
                   </div>
                 </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.projects_grid.budget')}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">€{(project.budget / 1000000).toFixed(1)}M</p>
-                    {project.has_phases && (
+                    {hasBudget ? (
+                      <p className="font-medium text-gray-900 dark:text-white">€{(project.budget / 1000000).toFixed(1)}M</p>
+                    ) : (
+                      <p className="font-medium text-orange-600 dark:text-orange-400">
+                        {t('general_projects.budget_not_set')}
+                      </p>
+                    )}
+                    {hasBudget && project.has_phases && (
                       <>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           €{(project.total_budget_allocated / 1000000).toFixed(1)}M {t('supervision.site_management.projects_grid.allocated')}
