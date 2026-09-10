@@ -278,6 +278,29 @@ phase to a user goes through it.
 - **Uses components:** ProjectsGrid, ProjectDetail, all modals
 - **Uses Ui:** Card, Button
 
+#### Which project is open lives in the URL
+
+The route is `/site-management/:projectId?` — **one** route with an optional segment, not two. Two
+routes would swap elements on open/back and remount the component, refetching the whole site data
+set each time; changing a param does not.
+
+`selectedProject` is derived from `useParams` on every render, not held in state:
+
+- Back returns to the project list. It used to leave Site Management altogether, because the
+  address stayed `/site-management` the whole time and opening a project put nothing in history
+- A project page can be linked and reloaded
+- The derivation replaced a `useEffect` that re-synced the stored project object after every list
+  refresh — looking it up fresh does the same thing with nothing to keep in step
+- It resolves against `filteredProjects`, not `projects`, so a hand-typed id cannot open a project
+  the grid would not have offered a Supervision user (RLS is still the real boundary)
+- An id that does not resolve — deleted, or not this user's — redirects to `/site-management` with
+  `replace`, so Back does not walk into the dead URL
+
+Covered by `e2e/supervision/site-management-navigation.spec.ts`.
+
+`Layout` marks a menu item active for its own path **and** anything under it, so a detail page
+keeps its section lit.
+
 #### Modals
 
 SiteManagement contains the following modals (each self-contained):

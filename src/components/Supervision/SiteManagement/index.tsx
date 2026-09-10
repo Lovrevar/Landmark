@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, Modal, ConfirmDialog } from '../../ui'
 import { useAuth } from '../../../contexts/AuthContext'
@@ -52,17 +53,38 @@ const SiteManagement: React.FC = () => {
     addSubcontractorComment
   } = useSiteData()
 
-  const [selectedProject, setSelectedProject] = useState<ProjectWithPhases | null>(null)
+  /**
+   * Which project is open lives in the URL, not in component state.
+   *
+   * As state it was invisible to history: the address stayed `/site-management` the whole time, so
+   * the browser's Back button left the module altogether instead of returning to the project list.
+   * As a route param, Back does the obvious thing, and a project's page can be linked and reloaded.
+   *
+   * Derived rather than copied into state, which also does what the old re-sync effect did by
+   * hand: the object is looked up fresh on every render, so a refresh of the list is picked up
+   * without anything having to notice.
+   */
+  const { projectId } = useParams<{ projectId?: string }>()
+  const navigate = useNavigate()
+
+  // Resolved against the projects this user may actually see, so a hand-typed id cannot open a
+  // project the grid would not have offered.
+  const accessibleProjectIds = isSupervisionRole(user) ? getAccessibleProjectIds(user) : null
+  const filteredProjects = accessibleProjectIds
+    ? projects.filter(p => accessibleProjectIds.includes(p.id))
+    : projects
+  const selectedProject = projectId
+    ? filteredProjects.find(p => p.id === projectId) ?? null
+    : null
 
   useEffect(() => {
-    // Re-sync the selected project to the freshest object after the list
-    // refreshes. Functional updater avoids needing `selectedProject` as a dep.
-    setSelectedProject(prev => {
-      if (!prev) return prev
-      const updatedProject = projects.find(p => p.id === prev.id)
-      return updatedProject ?? prev
-    })
-  }, [projects])
+    // An id that no longer resolves — deleted, or never this user's to see. Replace rather than
+    // push, so Back does not walk straight back into the dead URL.
+    if (projectId && !loading && !selectedProject) {
+      navigate('/site-management', { replace: true })
+    }
+  }, [projectId, loading, selectedProject, navigate])
+
   const [showPhaseSetup, setShowPhaseSetup] = useState(false)
   const [isPhaseSetupEditMode, setIsPhaseSetupEditMode] = useState(false)
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false)
@@ -289,11 +311,6 @@ const SiteManagement: React.FC = () => {
     setMilestoneContext(null)
   }
 
-  const accessibleProjectIds = isSupervisionRole(user) ? getAccessibleProjectIds(user) : null
-  const filteredProjects = accessibleProjectIds
-    ? projects.filter(p => accessibleProjectIds.includes(p.id))
-    : projects
-
   if (loading && projects.length === 0) {
     return <LoadingSpinner message="Loading site management..." />
   }
@@ -305,7 +322,7 @@ const SiteManagement: React.FC = () => {
       <div>
         <ProjectDetail
           project={selectedProject}
-          onBack={() => setSelectedProject(null)}
+          onBack={() => navigate('/site-management')}
           onOpenPhaseSetup={() => {
             setShowPhaseSetup(true)
             setIsPhaseSetupEditMode(false)
@@ -522,7 +539,7 @@ const SiteManagement: React.FC = () => {
   return (
     <ProjectsGrid
       projects={filteredProjects}
-      onSelectProject={setSelectedProject}
+      onSelectProject={(project) => navigate(`/site-management/${project.id}`)}
       onRefresh={fetchProjects}
       isRefreshing={refreshing}
       emptyStateVariant={isSupervisionRole(user) ? 'no_assignments' : 'no_projects'}

@@ -406,7 +406,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <nav className="p-2 flex-1">
               <ul className="space-y-1">
                 {menuItems.map((item) => {
-                  const isActive = location.pathname === item.path
+                  // A detail page under a section keeps that section lit — /site-management/<id>
+                  // and /projects/<id> are still "Gradilište" and "Projekti". The '/' guard stops
+                  // the dashboard from matching every route; no two menu paths nest, so nothing
+                  // can light up twice.
+                  const isActive =
+                    location.pathname === item.path ||
+                    (item.path !== '/' && location.pathname.startsWith(`${item.path}/`))
                   return (
                     <li key={item.name}>
                       <Link

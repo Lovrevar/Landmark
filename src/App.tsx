@@ -140,8 +140,10 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        {/* One route with an optional segment, not two: the open/back transition then changes only
+            a param, so SiteManagement stays mounted and does not refetch the whole site data set. */}
         <Route
-          path="/site-management"
+          path="/site-management/:projectId?"
           element={
             <ProtectedRoute>
               <SiteManagement />
