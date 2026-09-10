@@ -41,6 +41,12 @@ select exists (
 
 The Supabase dashboard shows the same table under Database → Migrations.
 
+**That table answers in one direction only.** A row proves the migration ran. Its *absence*
+proves nothing — SQL run by hand in the dashboard editor creates the objects without ever
+writing a row, and this project has done exactly that. If a migration you need looks missing,
+check for the object itself (`to_regclass('public.task_subtasks')`) before concluding it is
+not there.
+
 §1–9 of this file were all applied as of 2026-09-10, `task_subtasks` (`20260902110000`) included —
 that one recorded at 2026-09-02 11:00 UTC and in use by the mobile app. Confirm with the query
 above rather than taking this paragraph's word for it.
