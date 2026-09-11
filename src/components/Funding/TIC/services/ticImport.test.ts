@@ -286,3 +286,52 @@ describe('sheet name matching', () => {
     expect(wb.errors).toEqual([])
   })
 })
+
+describe('rounding imported money to the cent', () => {
+  // The exact values 1908_TIC_Osijek.xlsx carries for these two rows.
+  it('rounds a formula result with float residue', () => {
+    const sheet = parseSheet('INVESTICIJA', [
+      ['NAMJENA', 'VLASTITA SREDSTVA', '', 'KREDITNA SREDSTVA', ''],
+      ['', 'EUR', '(%)', 'EUR', '(%)'],
+      ['Komunalni i vodni doprinos', 937136.966971929, 0, 0, 0],
+      ['Projektna dokumentacija, geodetske usluge', 708560.125, 0, 0, 0],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    expect(sheet.lineItems[0].vlastita).toBe(937136.97)
+    expect(sheet.lineItems[1].vlastita).toBe(708560.13)
+  })
+
+  it('rounds the per-phase split too, not only the row total', () => {
+    const sheet = parseSheet('INVESTICIJA', [
+      ['NAMJENA', 'VLASTITA SREDSTVA', '', 'KREDITNA SREDSTVA', '', 'UKUPNO', '', 'FAZA 1', '', '', '', 'FAZA 2'],
+      ['', 'EUR', '(%)', 'EUR', '(%)', '', '', 'EUR', '(%)', '', '', 'EUR'],
+      ['Komunalni i vodni doprinos', 937136.966971929, 0, 0, 0, null, null,
+       440454.3744768066, 0, null, null, 496682.5924951224],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    const phases = sheet.lineItems[0].phases
+    expect(phases?.map(p => p.vlastita)).toEqual([440454.37, 496682.59])
+  })
+
+  it('leaves a figure that is already whole or cent-precise untouched', () => {
+    const sheet = parseSheet('INVESTICIJA', [
+      ['NAMJENA', 'VLASTITA SREDSTVA', '', 'KREDITNA SREDSTVA', ''],
+      ['', 'EUR', '(%)', 'EUR', '(%)'],
+      ['Vrijednost zemljišta', 4000000, 0, 0, 0],
+      ['Stručni nadzor', 46253.4, 0, 0, 0],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    expect(sheet.lineItems[0].vlastita).toBe(4000000)
+    expect(sheet.lineItems[1].vlastita).toBe(46253.4)
+  })
+
+  it('rounds a European-formatted string cell the same way', () => {
+    const sheet = parseSheet('INVESTICIJA', [
+      ['NAMJENA', 'VLASTITA SREDSTVA', '', 'KREDITNA SREDSTVA', ''],
+      ['', 'EUR', '(%)', 'EUR', '(%)'],
+      ['Priprema projekta', '17.526,005', 0, 0, 0],
+    ])
+    if (sheet.kind !== 'investment') throw new Error('expected investment')
+    expect(sheet.lineItems[0].vlastita).toBe(17526.01)
+  })
+})

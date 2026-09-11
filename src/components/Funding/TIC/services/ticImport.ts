@@ -67,14 +67,31 @@ const cellText = (value: unknown): string => String(value ?? '').replace(/\s+/g,
 const isBlank = (value: unknown): boolean => value === null || value === undefined || cellText(value) === ''
 
 /**
+ * Money, to the cent.
+ *
+ * The source workbooks are full of formula results, and a spreadsheet that allocates a total
+ * across categories leaves the remainder in the last digits: 1908_TIC_Osijek.xlsx carries
+ * `937136.966971929` for Komunalni i vodni doprinos and `708560.125` for Projektna
+ * dokumentacija. Stored unrounded, those reach `projects.budget` — Zona 31 synced to
+ * 41.446.111,46 off seven such rows — and show in full in every editable cell, because an
+ * `<input type="number">` has no formatter while every read-only figure goes through
+ * `formatNumber` at zero decimals.
+ *
+ * A plan denominated in euros has no meaning below the cent, so the precision is dropped where
+ * it enters rather than hidden at each of the places it would otherwise surface. The shift is
+ * at most half a cent per line, well inside the 0,02 the phase-split reconciliation allows.
+ */
+const toCents = (value: number): number => Math.round(value * 100) / 100
+
+/**
  * Real .xlsx files give us real numbers; hand-edited or CSV-ish files give European
  * strings ("3.000,00"), which parseNumber handles. Never run a real number through
  * parseNumber — it would strip the decimal point as a thousands separator.
  */
 const cellNumber = (value: unknown): number => {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
+  if (typeof value === 'number') return Number.isFinite(value) ? toCents(value) : 0
   if (isBlank(value)) return 0
-  return parseNumber(value)
+  return toCents(parseNumber(value))
 }
 
 interface SheetLayout {
