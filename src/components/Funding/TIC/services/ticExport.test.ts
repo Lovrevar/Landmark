@@ -3,11 +3,17 @@ import { buildInvestmentSheet, buildConstructionSheet, type TICExportData } from
 import { parseTICWorkbook } from './ticImport'
 import { calculateTotals, calculateConstructionTotals } from '../utils/ticFormatters'
 
+/**
+ * Cent-precise on purpose. The import rounds money to the cent at the door (see `toCents` in
+ * ticImport), so "exact round-trip" is a promise about money, not about arbitrary precision —
+ * this row used to carry .855/.695 and would now come back rounded. The normalisation itself is
+ * covered in ticImport.test.ts; the case that matters here is asserted below.
+ */
 const lineItems = [
   { name: 'Priprema projekta', vlastita: 17526, kreditna: 0 },
   { name: 'Vrijednost zemljišta', vlastita: 380750, kreditna: 0 },
   { name: 'Priključci', vlastita: 0, kreditna: 78500 },
-  { name: 'Građenje', vlastita: 212586.855, kreditna: 1913281.695 },
+  { name: 'Građenje', vlastita: 212586.86, kreditna: 1913281.7 },
 ]
 
 const constructionSections = [
@@ -68,5 +74,18 @@ describe('TIC export → import round-trip', () => {
   it('preserves the investor and date', () => {
     expect(parsed.investorName).toBe('PANNONIA D.O.O.')
     expect(parsed.documentDate).toBe('2026-08-20')
+  })
+})
+
+describe('sub-cent values do not survive a round-trip', () => {
+  it('comes back rounded, because the import normalises money to the cent', () => {
+    const subCent: TICExportData = {
+      ...data,
+      lineItems: [{ name: 'Komunalni i vodni doprinos', vlastita: 937136.966971929, kreditna: 0 }],
+    }
+    const wb = parseTICWorkbook([
+      { name: 'INVESTICIJA', rows: buildInvestmentSheet(subCent) as never },
+    ])
+    expect(wb.investment?.lineItems[0].vlastita).toBe(937136.97)
   })
 })
