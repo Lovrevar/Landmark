@@ -193,10 +193,6 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 - All payments for an apartment with linked units, totals, and progress bar
 - **Uses Ui:** Modal, Table
 
-### modals/WirePaymentModal.tsx
-- Display-only summary of apartment and linked units with total package price
-- **Uses Ui:** Modal
-
 ### modals/LinkUnitsModal.tsx
 - Link/unlink garages and storage units to an apartment
 - **Uses hooks:** useLinkUnits

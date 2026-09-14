@@ -302,10 +302,6 @@ the orchestrator does the writes and re-fetches.
 - Creates a new contract type inline, so adding one does not mean leaving the contract form
 - Props: `visible`, `onClose`, `onCreated(newId: number)`
 
-#### WirePaymentModal.tsx
-- Records a wire payment against a subcontractor
-- Props: `visible`, `onClose`, `subcontractor`, `amount`, `paymentDate`, `notes` (+ their change handlers)
-
 #### EditPaymentModal.tsx
 - Edits an existing wire payment
 - Props: `visible`, `onClose`, `payment` (`WirePayment | null`), `onChange(updated)`, `onSubmit()`
@@ -362,7 +358,6 @@ SiteManagement contains the following modals (each self-contained):
 - **InvoicesModal** — invoices for a subcontractor/contract
 - **MilestoneFormModal** — add/edit a contract milestone
 - **ContractTypeFormModal** — add a new contract type category
-- **WirePaymentModal** — record a wire payment against a subcontractor invoice
 
 ---
 

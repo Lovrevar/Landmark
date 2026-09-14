@@ -167,11 +167,6 @@ This is the flatter list view (vs. the drill-down above). Filters, modals for CR
 - edit a payment (EditPaymentModal) from the history → amount / date / type / notes — save   ( )
 - delete a payment — ConfirmDialog → apartment's remaining total recalculates   ( )
 
-**Wire payment summary (WirePaymentModal)**
-
-- open on a sold apartment with linked garage + repozitorij → display-only summary shows all three units and total package price   ( )
-- values match apartment + garage + repo totals exactly   ( )
-
 **Delete apartment**
 
 - delete an apartment with no sale → Cancel / Confirm   ( )

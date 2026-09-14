@@ -130,22 +130,6 @@ delete milestone — ConfirmDialog chain; paid milestone is blocked             
 milestone status transitions: pending → paid (via payment) — auto-updates                                           ( )
 MilestoneList shows stats summary (count, paid, pending)                                                             ( )
 
-### Record wire payment (WirePaymentModal — from PaymentHistoryModal)
-
-open WirePaymentModal for a subcontractor — contract/paid/remaining summary renders                                  ( )
-pending milestones dropdown lists each with computed amount (`cost × percentage / 100`)                              ( )
-select a milestone — amount auto-fills to computed value                                                             ( )
-select "Manual payment" — amount returns to 0                                                                        ( )
-paid_by_bank defaults to `subcontractor.financed_by_bank_id` when set                                                ( )
-change paid_by_bank to another funder — saves with that bank                                                         ( )
-amount = 0 — Record button disabled                                                                                  ( )
-amount > 0 but total paid > contract.cost — "wouldBeOverBudget" Alert with loss amount                               ( )
-payment_date defaults to today                                                                                       ( )
-submit with milestone + amount → payment recorded, milestone marked paid                                             ( )
-submit manual payment — recorded without milestone link                                                              ( )
-project with no funder banks — paid_by select hidden                                                                 ( )
-cancel — nothing recorded                                                                                             ( )
-
 ### Payment history & edit (PaymentHistoryModal, EditPaymentModal)
 
 open PaymentHistoryModal for a subcontractor — lists all wire payments with totals                                   ( )
