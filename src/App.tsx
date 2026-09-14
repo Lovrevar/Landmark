@@ -7,6 +7,7 @@ import LoginForm from './components/Auth/LoginForm'
 import Layout from './components/Common/Layout'
 import PageFallback from './components/Common/PageFallback'
 import AiChatProvider from './components/AiChat/AiChatProvider'
+import { ERP_INTEGRATION_ENABLED } from './lib/featureFlags'
 
 const Dashboard = lazy(() => import('./components/Common/Dashboard'))
 
@@ -349,22 +350,28 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/sifrarnici"
-          element={
-            <ProtectedRoute>
-              <CashflowRoute><Sifrarnici /></CashflowRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/erp-import"
-          element={
-            <ProtectedRoute>
-              <CashflowRoute><ErpImport /></CashflowRoute>
-            </ProtectedRoute>
-          }
-        />
+        {/* ERP integration is on hold: while the flag is off these paths fall through to the
+            catch-all redirect. See src/lib/featureFlags.ts. */}
+        {ERP_INTEGRATION_ENABLED && (
+          <>
+            <Route
+              path="/sifrarnici"
+              element={
+                <ProtectedRoute>
+                  <CashflowRoute><Sifrarnici /></CashflowRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/erp-import"
+              element={
+                <ProtectedRoute>
+                  <CashflowRoute><ErpImport /></CashflowRoute>
+                </ProtectedRoute>
+              }
+            />
+          </>
+        )}
         <Route
           path="/retail-projects"
           element={
