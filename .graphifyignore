@@ -1,0 +1,15 @@
+# Paths graphify must not index.
+#
+# graphify reads THIS file, not .gitignore — anything gitignored that still
+# contains parseable source has to be repeated here or it lands in the graph.
+# (node_modules/, dist/, build/, out/ and the usual cache dirs are already
+# skipped internally by graphify, so they don't need an entry.)
+
+# Vitest coverage report. Ships vendored, minified viewer JS (prettify.js,
+# sorter.js, block-navigation.js) which previously formed three whole bogus
+# communities of single-letter functions in the graph.
+coverage/
+
+# Playwright artifacts — no source today, but regenerated per run.
+playwright-report/
+test-results/

@@ -26,6 +26,8 @@ Pure functions only — the deterministic calculation and formatting helpers tha
 | Credit calculations | [`src/components/Funding/Investors/utils/creditCalculations.test.ts`](../src/components/Funding/Investors/utils/creditCalculations.test.ts) | annuity payments, equity cashflow, money multiple, payment schedules, risk levels, badge variants |
 | TIC formatters | [`src/components/Funding/TIC/utils/ticFormatters.test.ts`](../src/components/Funding/TIC/utils/ticFormatters.test.ts) | `calculateRowPercentages`, `calculateTotals` (vlastita/kreditna), `formatNumber`, `formatPercentage` |
 | Documents tree helpers | [`src/components/Documents/utils/treeHelpers.test.ts`](../src/components/Documents/utils/treeHelpers.test.ts) | `buildIdMap`, `buildDescendantsMap`, `rollupCounts`, `flattenTree` |
+| EVM | [`src/utils/evm.test.ts`](../src/utils/evm.test.ts) | `calculatePhaseEVM` and `calculateProjectEVM` — PV/EV/AC, CPI/SPI, CV/SV, EAC/VAC, and the phase→project aggregation |
+| Payment payload | [`src/components/Cashflow/Payments/services/paymentPayload.test.ts`](../src/components/Cashflow/Payments/services/paymentPayload.test.ts) | `buildPaymentData` across all five payment methods (bank account, credit, kompenzacija, gotovina, cesija), plus empty-string→null normalisation and passthrough fields |
 
 ### Configuration ([`vitest.config.ts`](../vitest.config.ts))
 
@@ -37,7 +39,7 @@ Pure functions only — the deterministic calculation and formatting helpers tha
 
 ### Conventions
 
-- Tests live **next to the code** as `*.test.ts`, typically inside the module's `utils/` folder (e.g. `src/components/Funding/TIC/utils/ticFormatters.test.ts` sits beside `ticFormatters.ts`).
+- Tests live **next to the code** as `*.test.ts`, in whichever folder the code itself lives in — usually the module's `utils/` (e.g. `src/components/Funding/TIC/utils/ticFormatters.test.ts` sits beside `ticFormatters.ts`), but `services/` where the pure helper was extracted out of a service (`paymentPayload.test.ts`).
 - Targets are **pure functions** — deterministic, dependency-free, no Supabase/React. If a helper needs a DB row or a rendered component, it belongs in E2E, not here.
 - Croatian domain terms (`vlastita`, `kreditna`, the 4 VAT slots) stay in Croatian in the test data, matching the codebase.
 - Assertions are anchored to the code's **actual** output, not the textbook ideal — several specs document real quirks (e.g. the `calculatePaymentSchedule` 119-vs-120 monthly-payment off-by-one, hr-HR's U+2212 minus sign).
@@ -52,22 +54,64 @@ npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 
 ---
 
+## ERP pipeline smoke test
+
+`npm run erp:smoke` — [`scripts/erp-pipeline-smoke.mjs`](../scripts/erp-pipeline-smoke.mjs)
+
+> ⏸️ **Cannot run while the ERP integration is on hold.** No project has the ERP
+> migrations or the `import-erp` function. The Deno unit tests below still run.
+> See [`erp-integration/PROGRESS.md`](./erp-integration/PROGRESS.md) → "On hold".
+
+Exercises the ERP import chain end to end against a **live dev project**:
+upload → parse → stage → resolve → promote, plus the review queue and the
+fix-a-mapping-then-reclassify loop. 25 checks. It writes real rows and cleans up
+after itself, and refuses to run against production.
+
+#### Setting `ERP_IMPORT_SECRET`
+
+The script authenticates as the on-prem agent would, so it needs the same shared
+secret the `import-erp` function checks. Supabase stores that secret write-only —
+it cannot be read back — so it has to be set in **two** places with the same
+value:
+
+```sh
+SECRET="dev-$(openssl rand -hex 16)"
+supabase secrets set ERP_IMPORT_SECRET="$SECRET" --project-ref <dev ref>
+echo "ERP_IMPORT_SECRET=$SECRET" >> .env      # gitignored
+```
+
+If `.env` loses it, generate a new one and repeat both steps — there is no way
+to recover the old value. Rotating it is harmless: nothing else depends on it.
+
+The project also needs the e2e anchor rows (`accounting_companies`,
+`subcontractors`, `projects`); `e2e/support/anchor-setup.sql` creates them.
+
+It exists because the ERP promotion logic lives in SQL and interacts with ~20
+existing triggers, which unit tests cannot reach. It has already caught three
+defects that were invisible to them — most importantly a partially-resolved
+invoice being promoted from only its resolvable lines. **Run it after touching
+anything under `erp.` or the promotion functions.**
+
+The parsing and validation logic has its own Deno unit tests
+(`cd supabase/functions && deno test import-erp/`, 38 tests).
+
 ## E2E suite
 
 **Location:** [`e2e/`](../e2e/). Strategy write-up: [`docs/test/e2e-testing-strategy.md`](./test/e2e-testing-strategy.md). Day-to-day commands live in [`e2e/README.md`](../e2e/README.md).
 
-### Current coverage (25 tests)
+### Current coverage (28 tests)
 
 | Module | Spec | Tests |
 |---|---|---|
 | Auth | `auth/login.spec.ts` | 6 (5 valid-credential logins + 1 invalid password) — runs `describe.serial` to avoid Supabase auth rate limits |
-| Auth | `auth/permissions.spec.ts` | 4 — Sales user redirected from `/accounting-invoices`, `/accounting-payments`, `/accounting-approvals`, `/debt-status` |
+| Auth | `auth/permissions.spec.ts` | 6 — Sales user redirected from `/accounting-invoices`, `/accounting-payments`, `/accounting-approvals`, `/debt-status`, `/sifrarnici`, `/erp-import` (the last two are hidden while the ERP integration is on hold, so they pass via the catch-all redirect rather than `CashflowRoute`) |
 | Auth | `auth/session.spec.ts` | 2 — logout clears session + Cashflow flag; reload on a protected route stays authenticated |
 | Cashflow | `cashflow/approvals.spec.ts` | 1 — Director hides an approved invoice; row lands in `hidden_approved_invoices` |
 | Cashflow | `cashflow/unlock.spec.ts` | 2 — wrong password keeps modal open with `aria-invalid`; correct password sets the sessionStorage flag and opens `/accounting-invoices` |
 | Funding | `funding/access.spec.ts` | 2 — Investment user reaches `/banks` + `/funding-credits` |
 | Retail | `retail/customers.spec.ts` | 1 — Director creates a retail customer via the form; admin client verifies the row |
 | Sales | `sales/customers.spec.ts` | 1 — Sales user creates a customer via the form; admin client verifies the row |
+| Sales | `sales/complete-sale.spec.ts` | 1 — selling an apartment marks it Sold, records sale + buyer, and sells linked units |
 | Supervision | `supervision/work-logs.spec.ts` | 1 — Supervision user reaches `/work-logs` and the E2E anchor project appears in the project select (exercises `project_managers` RLS) |
 | Smoke | `smoke.spec.ts` | 5 — every role's authenticated app shell loads |
 

@@ -30,8 +30,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - **Depends on:** supabase client
 
 ### projectDetailsService.ts
-- `fetchProjectDetails(id)` — parallel fetch (Promise.all) of a single project plus draft/active contracts (with subcontractor + phase joins), invoices, apartments, milestones, bank credits, and credit allocations; flattens contracts into a `subcontractors` array (cost, budget_realized, progress, phase_name), and computes `total_spent`, `total_revenue`, `pending_invoices`, and a joined `investors` string from bank/allocation bank names. Used by `ProjectDetails.tsx`
-- `fetchProjectDataEnhanced(id)` — parallel fetch returning `{ project, milestones, phases, contracts, apartments, investments }`: project row, milestones (by due_date), `project_phases`, contracts (subcontractor + phase joins), apartments, and credit allocations (with bank_credits/banks joins). Used by `ProjectDetailsEnhanced.tsx` to feed the phase, subcontractor, apartment, and financing tabs
+- `fetchProjectDataEnhanced(id)` — parallel fetch returning `{ project, milestones, phases, contracts, apartments, investments, ticTotal }`: project row, milestones (by due_date), `project_phases`, contracts (subcontractor + phase joins), apartments, credit allocations (with bank_credits/banks joins), and the project's TIC grand total (`null` when it has no TIC or an all-zero one). Used by `ProjectDetailsEnhanced.tsx` to feed the phase, subcontractor, apartment, and financing tabs
 - **Depends on:** supabase client
 
 ### milestoneService.ts
@@ -109,15 +108,8 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - **Uses hooks:** (receives milestones as props, actions as callbacks)
 - **Uses Ui:** Badge, Button, EmptyState
 
-### ProjectDetails.tsx
-- Tabbed project detail page: Overview (stats), Milestones (inline form + card list), Subcontractors (contracts), Apartments (grid)
-- Inline milestone form validates name with `milestoneFieldErrors` before calling `handleAddMilestone`/`handleUpdateMilestone`; deletes confirm through a `ConfirmDialog` driven by the hook's pending-delete state
-- **Uses hooks:** useMilestoneManagement
-- **Uses services:** projectDetailsService (fetchProjectDetails)
-- **Uses Ui:** PageHeader, StatGrid, StatCard, Badge, Button, FormField, Input, EmptyState, ConfirmDialog
-
 ### ProjectDetailsEnhanced.tsx
-- Alternative multi-tab project view: Overview, Phases (PhasesContractsTab), Apartments, Subcontractors (SubcontractorsTab), Financing, Milestones
+- The project detail page (lazy-loaded in `App.tsx`; the older `ProjectDetails.tsx` it replaced was deleted on 2026-09-14). Tabs: Overview, Phases (PhasesContractsTab), Apartments, Subcontractors (SubcontractorsTab), Financing, Milestones
 - Header shows the project-category badge next to the status badge, and the Overview tab's project-info grid carries a "Vrsta projekta" tile alongside location/investor/dates
 - Header stat cards (budget/spent, timeline, completion %, contract count); Milestones tab combines an inline add form, the "Use template" action (MilestoneTemplateModal), an expand/collapse-all toggle, and a phase-grouped MilestoneTimeline
 - Computes `phaseStatuses` from milestones (`computePhaseStatuses(buildPhaseBuckets(...))`) and drives both the milestone grouping and `PhasesContractsTab` collapse via `usePhaseCollapseState`
@@ -189,7 +181,7 @@ The earned-value math lives in `src/utils/evm.ts` (a CORE util — see the Codeb
 - `calculatePhaseEVM(plannedBudget, physicalCompletionPct, plannedStartDate, plannedEndDate, actualCost, currentDate?)` — computes a single phase's PV/EV/AC and the derived CPI, SPI, CV, SV, EAC, VAC. Planned completion is time-elapsed-based; EV uses physical completion
 - `calculateProjectEVM(phases, contracts, milestones?)` — aggregates phase EVM across a project. Each contract's *physical* completion is the share of its `subcontractor_milestones` marked completed/paid (falling back to the financial proxy `budget_realized / contract_amount` when a contract has no milestones); a phase's completion is the contract-value-weighted average. Keeping EV independent of money spent is what makes CPI/SPI meaningful
 - **Exports types:** `EVMMetrics`, `MilestoneProgress`
-- Surfaced in General only through BudgetControl (`useBudgetControl` → `calculateProjectEVM`). Project detail views (`ProjectDetails(Enhanced)`) show simpler budget/progress summaries and do not call the EVM utils
+- Surfaced in General only through BudgetControl (`useBudgetControl` → `calculateProjectEVM`). The project detail view (`ProjectDetailsEnhanced`) shows simpler budget/progress summaries and do not call the EVM utils
 
 ---
 

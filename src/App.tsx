@@ -8,6 +8,7 @@ import LoginForm from './components/Auth/LoginForm'
 import Layout from './components/Common/Layout'
 import PageFallback from './components/Common/PageFallback'
 import AiChatProvider from './components/AiChat/AiChatProvider'
+import { ERP_INTEGRATION_ENABLED } from './lib/featureFlags'
 
 const Dashboard = lazy(() => import('./components/Common/Dashboard'))
 
@@ -40,6 +41,8 @@ const AccountingCalendar = lazy(() => import('./components/Cashflow/Calendar/ind
 const AccountingLoans = lazy(() => import('./components/Cashflow/Loans/index'))
 const DebtStatus = lazy(() => import('./components/Cashflow/DebtStatus/index'))
 const AccountingApprovals = lazy(() => import('./components/Cashflow/Approvals/index'))
+const Sifrarnici = lazy(() => import('./components/Cashflow/Sifrarnici/index'))
+const ErpImport = lazy(() => import('./components/Cashflow/ErpImport/index'))
 const RetailLandPlots = lazy(() => import('./components/Retail/LandPlots/index'))
 const RetailCustomers = lazy(() => import('./components/Retail/Customers/index'))
 const RetailSales = lazy(() => import('./components/Retail/Sales/RetailSales'))
@@ -350,6 +353,28 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        {/* ERP integration is on hold: while the flag is off these paths fall through to the
+            catch-all redirect. See src/lib/featureFlags.ts. */}
+        {ERP_INTEGRATION_ENABLED && (
+          <>
+            <Route
+              path="/sifrarnici"
+              element={
+                <ProtectedRoute>
+                  <CashflowRoute><Sifrarnici /></CashflowRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/erp-import"
+              element={
+                <ProtectedRoute>
+                  <CashflowRoute><ErpImport /></CashflowRoute>
+                </ProtectedRoute>
+              }
+            />
+          </>
+        )}
         <Route
           path="/retail-projects"
           element={

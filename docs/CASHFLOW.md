@@ -395,6 +395,14 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 - Full detail modal for a single invoice including payment history
 - **Uses Ui:** Modal
 
+### services/invoiceValidation.ts
+Pure validation helpers, kept out of `invoiceService.ts` so they can be reasoned about (and
+tested) without Supabase.
+- `validateInvoice(...)` — field-level validation; the VAT-base rule rejects an invoice whose summed VAT bases are zero
+- `getCounterpartyColumn(...)` → `InvoiceCounterpartyColumn` — resolves which counterparty column (supplier / customer / company) applies for a given invoice type and direction
+- `checkDuplicateInvoiceNumber({...})` — pre-flight duplicate check
+- `isInvoiceNumberDuplicateError(error)` — recognises the unique-constraint violation when the pre-flight check races
+
 ### InvoiceStats.tsx
 - Summary stat cards (total invoices, unpaid amount, etc.)
 - **Uses Ui:** StatGrid
@@ -533,6 +541,10 @@ Payment records linked to invoices. Supports wire, cash, check, card, kompenzaci
 - Payment list table with column visibility toggle
 - **Uses Ui:** Table
 
+### services/paymentPayload.ts
+- `buildPaymentData(formData, createdBy)` — turns the payment form state into the row that gets inserted, branching on payment method: bank account, credit, **kompenzacija**, **gotovina**, and **cesija** each null out and populate different columns
+- Pure and unit-tested (`paymentPayload.test.ts`, 11 tests) — this is where the Croatian payment-method column rules are pinned down, so change it there rather than inline in a form
+
 ### PaymentStatsCards.tsx
 - Summary stat cards for payment totals
 - **Uses Ui:** StatGrid
@@ -546,6 +558,96 @@ Payment records linked to invoices. Supports wire, cash, check, card, kompenzaci
 - **Uses hooks:** usePayments
 - **Uses components:** PaymentTable, PaymentStatsCards, PaymentDetailView, AccountingPaymentFormModal
 - **Uses Ui:** Card, FilterBar
+
+---
+
+### Šifrarnici
+**Path:** `Sifrarnici/`
+
+> ⏸️ **Hidden — the ERP integration is on hold.** Neither this screen nor ErpImport
+> below has a route or a menu entry while `ERP_INTEGRATION_ENABLED` in
+> `src/lib/featureFlags.ts` is off, and the views they read are not in any
+> database. See [`erp-integration/PROGRESS.md`](./erp-integration/PROGRESS.md) → "On hold".
+
+ERP code mappings. Tells the 4D Wand importer what each ERP code means in
+Cognilion terms, so imported invoices classify themselves without a human.
+Part of the ERP integration rewrite — see [`erp-integration/SPEC.md`](./erp-integration/SPEC.md) §7.
+
+Reads and writes through the `erp_*` views in `public`; the underlying tables
+live in the `erp` schema, which PostgREST does not expose. The three mapping
+views are plain (one table, no joins) so Postgres keeps them auto-updatable —
+adding a join would silently make the screen read-only.
+
+#### Services
+
+### sifrarniciService.ts
+- `fetchAccountRows()` / `fetchCostCenterRows()` / `fetchPartnerRows()` — code list left-joined with its mapping, in memory
+- `fetchInvoiceCategories()`, `fetchBanks()`, `fetchProjectTargets()` — mapping targets
+- `fetchPartnerTargets(kind)` — entities of one partner kind, fetched on demand rather than loading all seven tables up front
+- `saveAccountMapping()` / `saveCostCenterMapping()` / `savePartnerMapping()` — upserts
+- `deleteAccountMapping()` / `deleteCostCenterMapping()` / `deletePartnerMapping()`
+- **Depends on:** supabase client, activityLog
+
+#### Hooks
+
+### useSifrarnici.ts
+- `useSifrarnici()` — tab state, all three code lists with their mappings, search and unmapped filtering, per-tab unmapped counts, and save/clear actions that reload only the affected list
+- **Calls:** sifrarniciService.ts
+- **Returns:** activeTab, loading, error, searchTerm, onlyUnmapped, accounts, costCenters, partners, filtered*, unmappedCounts, categories, banks, projects, retailProjects, partnerTargets, ensurePartnerTargets, save*, clear*, reload
+
+#### Views
+
+### index.tsx (Sifrarnici)
+- Three tabs — Konta, Mjesta troška, Komitenti — with inline editing and an "only unmapped" filter
+- Account rows pick a `role` (what part the account plays in a posting: gross liability, net expense, VAT, bank …) which then decides what the "maps to" column offers: a category, a VAT rate, or a bank
+- Empty until the reference-data feeds land in phase 2, so each tab has a real empty state
+- **Uses hooks:** useSifrarnici
+- **Uses Ui:** Tabs, Table, Select, SearchInput, ToggleSwitch, EmptyState, PageHeader, Card, Badge, Button
+
+---
+
+### ErpImport
+**Path:** `ErpImport/`
+
+> ⏸️ **Hidden — the ERP integration is on hold.** See the note under Šifrarnici above.
+
+Uploads 4D Wand feed exports. Part of the ERP integration rewrite — see
+[`erp-integration/SPEC.md`](./erp-integration/SPEC.md) §2.1 and
+[`erp-integration/AGENT.md`](./erp-integration/AGENT.md).
+
+The browser **uploads the file rather than parsing it**: the `import-erp` edge
+function owns the parser, the validation rules and the audit trail, so a manual
+upload and an agent push are handled identically. The screen therefore doubles
+as the run log for agent-pushed files. Nothing here reaches
+`accounting_invoices` — files are parsed, validated and staged; promotion is a
+later phase.
+
+#### Services
+
+### erpImportService.ts
+- `uploadFeedFile(feed, file)` — POSTs multipart to `/functions/v1/import-erp` with the user's JWT; Content-Type is deliberately unset so the browser adds the multipart boundary
+- `fetchImportRuns(limit)` — run history from `public.erp_import_runs`
+- `fetchRunProblems(runId)` — per-row validation failures from `public.erp_staging_problems`
+- `fetchReviewQueue()` — documents held for classification, from `public.erp_review_queue`
+- `reclassifyRun(runId)` — re-runs resolve + promote via the role-gated `public.erp_reclassify` RPC (the `erp.*` functions are service-role only)
+- **Depends on:** supabase client, activityLog
+
+#### Hooks
+
+### useErpImport.ts
+- `useErpImport()` — selected feed, upload state, last result, run history, and lazily-loaded per-run problem lists
+- **Calls:** erpImportService.ts
+- **Returns:** runs, loading, uploading, feed, setFeed, lastResult, error, upload, reload, expandedRunId, problems, problemsLoading, toggleProblems
+
+#### Views
+
+### index.tsx (ErpImport)
+- Feed picker, file picker, and a result summary listing the first ten rejected rows with their errors
+- Run history table with an expandable problem list per run
+- Review-queue section listing documents that imported cleanly but could not be classified, with a per-run "re-run classification" action. Promotion is all-or-nothing per document, so one unmapped code holds the whole invoice — the fix is to map it in Šifrarnici and re-run here rather than re-exporting the file
+- Reference feeds (accounts, cost centres, partners) must be imported before invoices and payments; the hint text under the picker says which kind is selected
+- **Uses hooks:** useErpImport
+- **Uses Ui:** PageHeader, Card, Select, Button, Alert, Badge, Table, EmptyState, LoadingSpinner
 
 ---
 
@@ -564,9 +666,9 @@ Shared utilities used across multiple Cashflow sub-modules.
 - `getSupplierProjects(supplierId, projects, contracts)` — returns projects linked to a supplier
 - `getSupplierContractsByProject(supplierId, projectId, contracts)` — returns contracts for a supplier in a project
 - `getMilestonesByContract(contractId, milestones)` — returns milestones for a contract
-- `isOverdue(dueDate, status)` — returns true if unpaid invoice is past due date
+- `isOverdue(dueDate, status)` — returns true if unpaid invoice is past due date. Compares whole local days via `daysFromToday`, so an invoice due today is not yet overdue
 - `columnLabels` — Croatian display names for invoice table columns
-- **Depends on:** (none, pure helpers)
+- **Depends on:** `utils/dateOnly` (pure helpers)
 
 ### paymentHelpers.ts
 - `getPaymentMethodLabel(method)` — returns Croatian label for payment method

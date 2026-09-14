@@ -414,27 +414,6 @@ export type Investor = {
   created_at: string
 }
 
-export type ProjectInvestment = {
-  id: string
-  project_id: string
-  investor_id: string | null
-  bank_id: string | null
-  investment_type: 'equity' | 'loan' | 'grant' | 'bond' | 'bridge'
-  amount: number
-  percentage_stake: number
-  expected_return: number
-  investment_date: string
-  maturity_date: string | null
-  status: 'active' | 'completed' | 'defaulted'
-  terms: string
-  mortgages_insurance: number
-  notes: string
-  created_at: string
-  usage_expiration_date: string | null
-  grace_period: number
-  credit_seniority: 'junior' | 'senior'
-}
-
 /**
  * A real phase of a project ("Faza 1", "Faza 2", ...).
  *
@@ -545,19 +524,4 @@ export type SubcontractorMilestone = {
   created_at: string
   updated_at: string
   paid_amount?: number
-}
-
-export type PaymentNotification = {
-  id: string
-  bank_credit_id: string
-  bank_id: string
-  due_date: string
-  amount: number
-  status: 'pending' | 'completed' | 'dismissed' | 'overdue'
-  notification_type: 'first_payment' | 'recurring' | 'final_payment'
-  payment_number: number
-  dismissed_at: string | null
-  dismissed_by: string | null
-  created_at: string
-  updated_at: string
 }

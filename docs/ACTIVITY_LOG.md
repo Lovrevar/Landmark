@@ -136,7 +136,7 @@ logActivity({
 
 ## Instrumented Actions — Full Inventory
 
-~140 discrete actions across 8 categories. Severity: **L**=low, **M**=medium, **H**=high.
+138 discrete actions across 11 categories. Severity: **L**=low, **M**=medium, **H**=high.
 
 ### Auth (2)
 | Action | Severity | File |
@@ -228,16 +228,17 @@ logActivity({
 | `contract.create` | H | `Supervision/SiteManagement/services/siteContractService.ts` |
 | `contract_type.create` | M | `Supervision/SiteManagement/services/siteContractService.ts` |
 | `contract_milestone.create` | L | `Supervision/SiteManagement/services/milestoneService.ts` |
-| `contract_milestone.update` | L–M | `Supervision/SiteManagement/services/milestoneService.ts` + `Funding/Payments/services/paymentNotificationService.ts` |
+| `contract_milestone.update` | L–M | `Supervision/SiteManagement/services/milestoneService.ts` |
 | `contract_milestone.delete` | M | `Supervision/SiteManagement/services/milestoneService.ts` |
 | `document.upload` | M | `Documents/services/documentService.ts` |
+| `document.update` | M | `Documents/services/documentService.ts` |
 | `document.delete` | M | `Documents/services/documentService.ts` |
 | `work_log.create` | L | `Supervision/WorkLogs/services/workLogService.ts` |
 | `work_log.update` | L | `Supervision/WorkLogs/services/workLogService.ts` |
 | `work_log.delete` | M | `Supervision/WorkLogs/services/workLogService.ts` |
 | `invoice.approve` | H | `Supervision/Invoices/services/supervisionInvoiceService.ts` |
 
-### Funding (15)
+### Funding (14)
 | Action | Severity | File |
 |---|---|---|
 | `investor.create` | M | `Funding/Investors/hooks/useBankData.ts` |
@@ -246,17 +247,16 @@ logActivity({
 | `bank_credit.create` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
 | `bank_credit.update` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
 | `bank_credit.delete` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
-| `bank_credit.generate_schedule` | M | `Funding/Payments/services/paymentNotificationService.ts` |
-| `payment_notification.dismiss` | M | `Funding/Payments/services/paymentNotificationService.ts` |
-| `subcontractor_payment.create` | H | `Funding/Payments/services/paymentNotificationService.ts` |
 | `credit_allocation.create` | H | `Funding/Investments/services/creditService.ts` |
 | `credit_allocation.delete` | H | `Funding/Investments/services/creditService.ts` |
 | `equity_investment.create` | H | `Funding/Investors/hooks/useEquityForm.ts` |
+| `invoice.bulk_detach_credit` | H | `Funding/Investors/services/creditService.ts` |
+| `tic.create` | M | `Funding/TIC/services/ticService.ts` |
 | `tic.update` | M | `Funding/TIC/hooks/useTIC.ts` |
 | `export.tic_excel` | L | `Funding/TIC/services/ticExport.ts` |
 | `export.tic_pdf` | L | `Funding/TIC/services/ticExport.ts` |
 
-### Retail (25)
+### Retail (27)
 | Action | Severity | File |
 |---|---|---|
 | `retail_project.create` | M | `Retail/Projects/services/retailProjectService.ts` |
@@ -270,6 +270,7 @@ logActivity({
 | `retail_customer.delete` | M | `Retail/Customers/services/retailCustomerService.ts` |
 | `retail_sale.create` | H | `Retail/Sales/services/retailSalesService.ts` |
 | `retail_sale.delete` | H | `Retail/Sales/services/retailSalesService.ts` |
+| `retail_sale.payment` | H | `Retail/Sales/services/retailSalesService.ts` (`recordRetailSalePayment` — new `paid_amount` + `payment_status`) |
 | `retail_contract.create` | M | `Retail/Projects/services/retailProjectService.ts` |
 | `retail_contract.update` | M | `Retail/Projects/services/retailProjectService.ts` |
 | `retail_contract.delete` | H | `Retail/Projects/services/retailProjectService.ts` |
@@ -284,6 +285,7 @@ logActivity({
 | `retail_invoice.update` | H | `Cashflow/Invoices/services/invoiceService.ts` |
 | `land_plot.create` | M | `Retail/LandPlots/services/landPlotService.ts` |
 | `land_plot.update` | M | `Retail/LandPlots/services/landPlotService.ts` |
+| `land_plot.delete` | H | `Retail/LandPlots/services/landPlotService.ts` (logged only when a row was actually deleted) |
 | `invoice.approve` | H | `Retail/Invoices/services/retailInvoiceService.ts` |
 
 ### Chat / Calendar
@@ -292,9 +294,48 @@ logActivity({
 |---|---|---|
 | `conversation.create` | M | `Chat/services/chatService.ts` |
 | `calendar_event.create` | M | `Calendar/services/calendarService.ts` |
+| `calendar_event.update` | M | `Calendar/services/calendarService.ts` |
 | `calendar_event.respond` | L | `Calendar/services/calendarService.ts` |
 | `calendar_event.delete` | H | `Calendar/services/calendarService.ts` |
+| `calendar_event.exception_create` | M/H | `Calendar/services/calendarService.ts` (H when the override cancels the occurrence) |
+| `calendar_event.exception_delete` | M | `Calendar/services/calendarService.ts` |
 | `calendar_event.acknowledge_all` | L | `Calendar/services/calendarService.ts` |
+
+### Tasks (9)
+| Action | Severity | File |
+|---|---|---|
+| `task.create` | M | `Tasks/services/tasksService.ts` |
+| `task.update` | M | `Tasks/services/tasksService.ts` |
+| `task.status_change` | L | `Tasks/services/tasksService.ts` |
+| `task.delete` | H | `Tasks/services/tasksService.ts` |
+| `task.comment` | L | `Tasks/services/tasksService.ts` |
+| `task.attachment_add` | L | `Tasks/services/tasksService.ts` |
+| `task.attachment_remove` | L | `Tasks/services/tasksService.ts` |
+| `task.comment_delete` | M | `Tasks/services/tasksService.ts` (only the author can delete; an RLS-filtered delete logs nothing) |
+| `task.acknowledge_all` | L | `Tasks/services/tasksService.ts` (runs when `/tasks` opens; logged only when `count > 0`, mirroring `calendar_event.acknowledge_all`) |
+
+### ERP import & mappings (8)
+| Action | Severity | File |
+|---|---|---|
+| `erp_import.upload` | H | `Cashflow/ErpImport/services/erpImportService.ts` |
+| `erp_import.reclassify` | H | `Cashflow/ErpImport/services/erpImportService.ts` |
+| `erp_account_map.upsert` | M | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+| `erp_account_map.delete` | H | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+| `erp_cost_center_map.upsert` | M | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+| `erp_cost_center_map.delete` | H | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+| `erp_partner_map.upsert` | M | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+| `erp_partner_map.delete` | H | `Cashflow/Sifrarnici/services/sifrarniciService.ts` |
+
+Entities are `erp_import_run`, `erp_account_map`, `erp_cost_center_map` and `erp_partner_map`.
+The importer itself runs as the service role inside the `import-erp` edge function and does
+**not** call `logActivity()` — `erp.import_runs` is its own audit trail. What is logged here
+is the *user* action that triggered or corrected a run.
+
+### AI chat (2)
+| Action | Severity | File |
+|---|---|---|
+| `ai_session.update` | M | `AiChat/hooks/useAiChatStore.ts` (session rename) |
+| `ai_session.delete` | H | `AiChat/hooks/useAiChatStore.ts` |
 
 ---
 
@@ -303,10 +344,13 @@ logActivity({
 These writes are deliberately exempt from `logActivity()` — do not "fix" them without reconsidering the rationale:
 
 - **Derived-value recalculations** — system-computed aggregates rewritten from source data, not user actions; logging them would flood the log: `recalculateBankAccountBalance` (companyService), `recalculatePhaseBudget` / `recalculateAllPhaseBudgets` (phaseService), `updateContractBudgetRealized` (siteContractService)
-- **Automatic status sweeps** — `update_overdue_notifications` RPC (runs on page load, no user intent)
 - **Chat traffic** — `chat_messages` inserts, `chat_participants.last_read_at` updates, chat/AI-chat file attachments; conversation create/delete *are* logged
-- **AI session housekeeping** — session title updates and cancel flags (`aiChatService`); session create/delete *are* logged
+- **AI session housekeeping** — session *creation* and cancel flags (`aiChatService`). A session row is created implicitly on the first message, so logging it would just duplicate chat traffic. Renames (`ai_session.update`) and deletes (`ai_session.delete`) *are* logged
 - **Storage rollbacks** — `.remove()` calls that clean up after a failed upload
+
+Some writes look unlogged but are logged by their caller as one user action: `createSale` and
+`updateLinkedUnitsAfterSale` (salesService) run inside `completeSale`, which logs `sale.create`;
+`renameSession` / `deleteSession` (aiChatService) are logged by `useAiChatStore`.
 
 ## Adding Logging to New Features
 
@@ -433,6 +477,7 @@ Add translated action labels in both locale files under the `activity_log.action
 ## Notes
 
 - **Logs are immutable** — no UPDATE or DELETE RLS policies. This is by design for audit integrity.
+- **Retired actions keep their labels.** `bank_credit.generate_schedule`, `payment_notification.dismiss` and `subcontractor_payment.create` stopped being emitted when the Funding payment-notification code was deleted (2026-09-14), but older `activity_logs` rows may carry them. Their `activity_log.actions` labels must stay so those rows keep rendering — a label with no matching `logActivity()` call is not dead by that fact alone.
 - **IP address column** exists but is always NULL — client-side Supabase cannot reliably capture IP. An Edge Function could populate this in the future.
 - **No log retention policy** — at current usage levels the table stays small. Consider `pg_cron` pruning or monthly partitioning if the table grows large.
 - **Mutations live in both service files and hook files** depending on the module. Always trace to wherever the `supabase.from().insert/update/delete` actually executes.

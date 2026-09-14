@@ -4,7 +4,7 @@
 
 ## Overview
 
-Manages the investment and funding side of the business: bank credit facilities, investor relationships, credit allocations, disbursements, repayments, payment notifications, and TIC (Troškovna Informatička Struktura — structured investment cost breakdown).
+Manages the investment and funding side of the business: bank credit facilities, investor relationships, credit allocations, disbursements, repayments, and TIC (Troškovna Informatička Struktura — structured investment cost breakdown).
 
 ---
 
@@ -174,6 +174,24 @@ Bank and investor registry. Manages credit facilities and equity investments per
 - Preview block for a computed payment schedule (principal + interest, frequencies, start date)
 - Props: calculation (PaymentScheduleResult | null), gracePeriodMonths
 
+### utils/creditCalculations.ts
+The module's pure-maths layer, and the most heavily unit-tested file in the codebase
+(32 tests in `creditCalculations.test.ts`). No Supabase, no React — extract new financial
+maths here rather than inlining it in a hook.
+
+- `calculateAnnuityPayment({...})` — standard annuity instalment
+- `calculatePaymentSchedule(params)` → `PaymentScheduleResult | null` — the full schedule
+  driving `PaymentSchedulePreview`
+- `calculateEquityCashflow(equity)` / `calculateMoneyMultiple(equity)` — equity return maths
+- `getPaymentFrequency(type)` — payments per year for `monthly` / `quarterly` / `biyearly` / `yearly`
+- `parseCreditTypeAndSeniority(combined)` — splits the combined form value back into its two fields
+- `getCreditRiskLevel(utilization)` / `getCreditTypeBadgeVariant(creditType)` — display helpers
+- Exports `PaymentScheduleParams` and `PaymentScheduleResult`
+
+> The tests assert the code's **actual** output, including a known 119-vs-120 off-by-one in the
+> monthly-payment count. If you change that behaviour, change the test deliberately — don't
+> "fix" the test to match new output.
+
 ### index.tsx (InvestorsManagement)
 - Bank/investor cards with add investor, credit, and equity buttons; orchestrates all modals
 - **Uses hooks:** useBankData, useBankForm, useCreditForm (passed `fetchData`), useEquityForm (passed `fetchData`)
@@ -186,17 +204,19 @@ Bank and investor registry. Manages credit facilities and equity investments per
 ### Payments
 **Path:** `Payments/`
 
-Wire payment processing and payment notifications for bank credits, investors, and subcontractors.
+Read-only history of accounting payments made against bank credits.
+
+> The payment-notification UI (`PaymentNotifications`, its hook and service) and the bank /
+> investor / subcontractor wire-payment modals were removed on 2026-09-14. Nothing had rendered
+> them since the November 2025 Funding overview rewrite, and migration
+> `20260518110001_deprecate_remaining_unused_tables` had already dropped the `payment_notifications`
+> table and its triggers. One orphan remains in the database: `update_overdue_notifications()`
+> still references that table and would fail if called — nothing calls it.
 
 #### Services
 
 ### bankPaymentsService.ts
 - `fetchBankPayments()` — fetches accounting payments tied to bank credits, enriched with bank name, credit type, and project name
-- **Depends on:** supabase client
-
-### paymentNotificationService.ts
-- Creates and manages payment notification records for scheduled credit repayments
-- Exports include `fetchPaymentNotifications`, `calculateNotificationStats`, `dismissNotification`, `dismissMilestoneNotification`, `updateOverdueNotifications`, `getNotificationUrgency`
 - **Depends on:** supabase client
 
 #### Hooks
@@ -206,44 +226,7 @@ Wire payment processing and payment notifications for bank credits, investors, a
 - **Calls:** bankPaymentsService.ts
 - **Returns:** payments, stats, loading, refetch
 
-### usePaymentNotifications.ts
-- `usePaymentNotifications()` — manages pending payment notification state and actions
-- **Calls:** paymentNotificationService.ts
-- **Returns:** loading, stats, filteredNotifications, totalNotifications, selectedFilter, setSelectedFilter, showDismissed, setShowDismissed, expandedNotification, setExpandedNotification, handleDismiss
-
 #### Views
-
-### PaymentNotifications.tsx
-- Displays pending payment notification alerts for upcoming credit repayments
-- **Uses hooks:** usePaymentNotifications
-- **Calls:** paymentNotificationService.getNotificationUrgency
-- **Uses Ui:** LoadingSpinner, Badge, Button, EmptyState
-
-#### Modals
-Located in `Payments/modals/` (lowercase; renamed from `Payments/Modals/` in the audit refactor).
-
-### NotificationPaymentModal.tsx
-- Records a payment against a credit repayment notification
-- **Calls:** paymentNotificationService.ts (PaymentNotification type)
-- **Uses Ui:** Modal, Button, Select
-
-### BankWirePaymentModal.tsx
-- Form for bank wire payment entry
-- **Uses Ui:** Modal, Button, Select
-
-### InvestorWirePaymentModal.tsx
-- Form for investor wire payment entry
-- **Uses Ui:** Modal, Button, Select
-
-### SubcontractorNotificationPaymentModal.tsx
-- Records a payment against a subcontractor payment notification
-- Validates amount > 0 with inline `fieldErrors` (no toast)
-- **Calls:** paymentNotificationService.ts
-- **Uses Ui:** Modal, Button, Select
-
-### WirePaymentModal.tsx
-- Generic wire payment entry form
-- **Uses Ui:** Modal, Button, Select
 
 ### index.tsx (FundingPaymentsManagement)
 - Payment list with search, status/date filters, CSV export, and stats cards

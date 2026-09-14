@@ -504,17 +504,43 @@ export async function createTaskComment(
   })
 }
 
-export async function deleteTaskComment(commentId: string): Promise<void> {
-  const { error } = await supabase.from('task_comments').delete().eq('id', commentId)
+export async function deleteTaskComment(commentId: string, actor: TaskActor): Promise<void> {
+  // RLS lets only the author delete; a filtered-out delete returns no row, so nothing is logged
+  const { data: deleted, error } = await supabase
+    .from('task_comments')
+    .delete()
+    .eq('id', commentId)
+    .select('task_id')
+    .maybeSingle()
   if (error) throw error
+  if (!deleted) return
+  logActivity({
+    userId: actor.id,
+    userRole: actor.role,
+    action: 'task.comment_delete',
+    entity: 'task',
+    entityId: deleted.task_id,
+    severity: 'medium',
+  })
 }
 
 export async function acknowledgeAllTasks(authUserId: string): Promise<void> {
-  await supabase
+  const { data } = await supabase
     .from('task_assignees')
     .update({ acknowledged_at: new Date().toISOString() })
     .eq('assignee_id', authUserId)
     .is('acknowledged_at', null)
+    .select('id')
+
+  const count = data?.length ?? 0
+  if (count > 0) {
+    logActivity({
+      action: 'task.acknowledge_all',
+      entity: 'task',
+      severity: 'low',
+      metadata: { count },
+    })
+  }
 }
 
 // ----------------------------------------------------------------------------

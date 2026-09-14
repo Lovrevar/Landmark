@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { Subcontractor } from '../../../../lib/supabase'
 import { Modal, Button, Badge, LoadingSpinner, EmptyState } from '../../../ui'
 import { fetchContractInvoices, ContractInvoiceRow } from '../services/siteService'
+import { daysFromToday } from '../../../../utils/dateOnly'
 
 type Invoice = ContractInvoiceRow
 
@@ -91,7 +92,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
 
   const isOverdue = (dueDate: string, status: string) => {
     if (status === 'PAID') return false
-    return new Date(dueDate) < new Date()
+    return daysFromToday(dueDate) < 0
   }
 
   if (!isOpen || !subcontractor) return null

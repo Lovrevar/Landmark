@@ -1,4 +1,5 @@
 import type { Invoice, Project, Contract, Milestone } from '../Invoices/types'
+import { daysFromToday } from '../../../utils/dateOnly'
 
 export const getStatusColor = (status: string): string => {
   switch (status) {
@@ -110,7 +111,7 @@ export const getMilestonesByContract = (
 }
 
 export const isOverdue = (dueDate: string, status: string): boolean => {
-  return status !== 'PAID' && new Date(dueDate) < new Date()
+  return status !== 'PAID' && daysFromToday(dueDate) < 0
 }
 
 export const columnLabels = {

@@ -10,6 +10,10 @@ const CASHFLOW_ROUTES = [
   '/accounting-payments',
   '/accounting-approvals',
   '/debt-status',
+  // Not registered while ERP_INTEGRATION_ENABLED is off (src/lib/featureFlags.ts), so these two
+  // currently redirect via the catch-all route rather than CashflowRoute. Kept for when it returns.
+  '/sifrarnici',
+  '/erp-import',
 ] as const
 
 test.describe('permissions — Sales role and Cashflow routes', () => {

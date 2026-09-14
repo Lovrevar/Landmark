@@ -271,6 +271,49 @@ phase to a user goes through it.
 - **Uses services:** Documents `documentService` (fetchDocumentsByEntity, getDocumentSignedUrl, deleteDocument)
 - **Uses Ui:** ConfirmDialog
 
+### modals/
+
+All ten are controlled components: `SiteManagement/index.tsx` owns their state and passes
+`visible` (or `isOpen` for `InvoicesModal`) plus `onClose`. None of them fetch on their own —
+the orchestrator does the writes and re-fetches.
+
+#### PhaseSetupModal.tsx
+- Bulk-defines a project's phases in one pass; `editMode?` switches it from initial setup to editing
+- Props: `visible`, `onClose`, `project` (`ProjectWithPhases`), `onSubmit(phases: PhaseFormInput[])`, `editMode?`
+
+#### EditPhaseModal.tsx
+- Edits a single phase (name, budget allocation, dates, status)
+- Props: `visible`, `onClose`, `phase` (`ProjectPhase | null`), `project`, `onSubmit(updates: EditPhaseFormData)`
+
+#### EditSubcontractorModal.tsx
+- Edits a subcontractor in the site-management context (contract-adjacent fields, financing source)
+- Props: `visible`, `onClose`, `subcontractor`, `onChange(updated)`, `onSubmit(updated)`
+- Distinct from `Subcontractors/forms/SubcontractorBasicFormModal.tsx`, which edits the base record from the subcontractor register
+
+#### SubcontractorDetailsModal.tsx
+- Read-only detail panel plus the comment thread (`completed` / `issue` / `general`)
+- Props: `visible`, `onClose`, `subcontractor` (`SubcontractorWithPhase | null`), `comments`, `newComment`, `commentType`, `onCommentChange`, `onCommentTypeChange`
+
+#### MilestoneFormModal.tsx
+- Creates a contract milestone; carries the subcontractor / project / phase names and `contractCost` for context so the percentage split is checkable at a glance
+- Props: `visible`, `onClose`, `onSubmit(data: MilestoneFormData)`, `contractId`, `subcontractorName`, `projectName`, `phaseName`, `contractCost`
+
+#### ContractTypeFormModal.tsx
+- Creates a new contract type inline, so adding one does not mean leaving the contract form
+- Props: `visible`, `onClose`, `onCreated(newId: number)`
+
+#### EditPaymentModal.tsx
+- Edits an existing wire payment
+- Props: `visible`, `onClose`, `payment` (`WirePayment | null`), `onChange(updated)`, `onSubmit()`
+
+#### PaymentHistoryModal.tsx
+- Merged payment history for one subcontractor — both `WirePayment` and `AccountingPayment` rows in a single list, since a subcontractor can be paid through either path
+- Props: `visible`, `onClose`, `subcontractor`, `payments: (WirePayment | AccountingPayment)[]`
+
+#### InvoicesModal.tsx
+- Invoices attached to one subcontractor
+- Props: `isOpen` (**not** `visible` — the odd one out), `onClose`, `subcontractor`
+
 ### index.tsx (SiteManagement)
 - Master orchestrator: project/phase/subcontractor CRUD, payment history, comments, milestone context, and all modal state
 - Applies permission checks (canManagePayments, getAccessibleProjectIds)
@@ -315,7 +358,6 @@ SiteManagement contains the following modals (each self-contained):
 - **InvoicesModal** — invoices for a subcontractor/contract
 - **MilestoneFormModal** — add/edit a contract milestone
 - **ContractTypeFormModal** — add a new contract type category
-- **WirePaymentModal** — record a wire payment against a subcontractor invoice
 
 ---
 

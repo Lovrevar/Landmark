@@ -126,7 +126,6 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 ---
 
 ## Notes
-- `src/utils/reportGenerator.ts` contains an older shared PDF utility used separately from these module-specific generators
 - `dashboards/investmentReportPdf.ts` is a related PDF generator that lives in the Dashboards folder — not here
 - `retailReportPdf.ts` uses Noto Sans (dynamically loaded from Google Fonts) to ensure Croatian characters render correctly in PDF — do not replace with helvetica for this file
 - During the May 2026 audit the report services were refactored to batch their queries in a single `Promise.all` instead of sequential awaits — same tables, same output shape

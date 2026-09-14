@@ -2,6 +2,7 @@ import { supabase } from '../../../lib/supabase'
 import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
+import { daysFromToday } from '../../../utils/dateOnly'
 import type { ComprehensiveReport, ProjectData } from '../types'
 
 export async function fetchGeneralReportData(
@@ -330,17 +331,16 @@ export async function fetchGeneralReportData(
     .filter(inv => inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID')
     .reduce((sum, inv) => sum + (inv.remaining_amount || 0), 0)
 
-  const today = new Date()
   const overdueInvoices = accountingInvoicesArray.filter(inv =>
     (inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID') &&
     inv.due_date &&
-    new Date(inv.due_date) < today
+    daysFromToday(inv.due_date) < 0
   ).length
   const overdueValue = accountingInvoicesArray
     .filter(inv =>
       (inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID') &&
       inv.due_date &&
-      new Date(inv.due_date) < today
+      daysFromToday(inv.due_date) < 0
     )
     .reduce((sum, inv) => sum + (inv.remaining_amount || 0), 0)
 

@@ -104,9 +104,9 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - `listSubtasks` / `addSubtask` / `renameSubtask` / `reorderSubtasks` / `deleteSubtask` / `setSubtaskCompleted(taskId, subtaskId, completed, actor, …)` — checklist CRUD; `setSubtaskCompleted` re-reads the parent afterwards and fires the `task_completed` push only on a genuine crossing, and returns the parent's new state. `reorderSubtasks` rewrites positions with one statement per row rather than an upsert, which would have to send `completed` back and could un-tick a line
 - `deleteTask(taskId, actor?, title?)` — cascade remove; logs `task.delete` (high severity)
 - `setAssignees(taskId, ids, actor)` — diff-based add/remove (ids are auth ids); logs `task.assign` / `task.unassign`
-- `fetchTaskComments(taskId)` / `createTaskComment(taskId, actor, comment)` / `deleteTaskComment` — thread CRUD; `createTaskComment` logs `task.comment`
+- `fetchTaskComments(taskId)` / `createTaskComment(taskId, actor, comment)` / `deleteTaskComment(commentId, actor)` — thread CRUD; `createTaskComment` logs `task.comment`, `deleteTaskComment` logs `task.comment_delete` (only when RLS actually let the author delete the row)
 - `listTaskAttachments` / `uploadTaskAttachment(taskId, file, actor)` / `deleteTaskAttachment(id, actor)` / `getAttachmentSignedUrl` — attachment CRUD with 25 MB + 10-per-task enforcement; logs `task.attachment_add` / `task.attachment_remove`. Bucket constant: `TASK_ATTACHMENTS_BUCKET = 'task-attachments'`
-- `getUnacknowledgedTaskCount(authUserId)` / `acknowledgeAllTasks(authUserId)` — global badge helpers
+- `getUnacknowledgedTaskCount(authUserId)` / `acknowledgeAllTasks(authUserId)` — global badge helpers; acknowledging logs `task.acknowledge_all` with the count, only when it cleared something
 - **Depends on:** supabase client, activityLog
 - **Logs:** every mutation listed above
 
@@ -191,7 +191,7 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - Acknowledge semantics: opening `/tasks` clears the current user's badge via `acknowledgeAllTasks` + `dispatchTasksRead` (once per mount)
 - Private tasks skip the assignee picker; the creator becomes the sole pre-acknowledged assignee
 - The calendar's `TaskPill` flips completed on/off, same as the list checkbox (and is disabled on a checklist task for the same reason), and shows the colour as a dot
-- Comment mention notifications are deferred until a notifications table exists (tracked in `docs/tasks-redesign-plan.md` §11)
+- Comment mention notifications are deferred until a notifications table exists (tracked in [`docs/rand/tasks-redesign-plan.md`](./rand/tasks-redesign-plan.md) §11)
 - Migration `20260706120000_simplify_tasks.sql` (data: `in_progress` → `todo`; drops `reminder_offsets`, `priority`, `task_reminder_sends`; broadens SELECT policies) must be applied by a human — after applying, regenerate types with `npm run db:types`
 - Migrations `20260720120000_tasks_mobile_compat.sql` (profiles mirror + `is_admin()`, task tables → auth-id space, `status` → `completed`, `due_date` → `deadline`, RLS on `auth.uid()`) and `20260720130000_task_assignees_mobile_compat.sql` (`user_id` → `assignee_id`, composite PK, `create_task_with_assignees` RPC) must be applied by a human — the frontend on this branch **requires** both. The colleague's standalone mobile app points at this same schema; its own migrations in `todoMigrations/` must **never** be run against this DB
 - Migrations `20260813090000_task_color.sql` (the `color` column + `p_color` on the create RPC), `20260813091000_task_edit_rpc.sql` (`update_task_with_assignees`) and `20260813092000_deadline_reminders.sql` mirror the mobile app's `20260812090000/091000/092000`, **adapted** — this repo is the source of truth for the shared database, and the mobile repo's three copies must not be pushed to it. Apply by hand, then `npm run db:types`. The reminders one has manual prerequisites; see below

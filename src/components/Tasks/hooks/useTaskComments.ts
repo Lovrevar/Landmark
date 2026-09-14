@@ -47,10 +47,10 @@ export function useTaskComments(taskId: string | null) {
   }, [user, taskId, draft, sending, load])
 
   const remove = useCallback(async (commentId: string) => {
-    if (!taskId) return
-    await deleteTaskComment(commentId)
+    if (!taskId || !user) return
+    await deleteTaskComment(commentId, user)
     await load()
-  }, [taskId, load])
+  }, [taskId, user, load])
 
   return {
     comments,

@@ -122,6 +122,14 @@ export async function upsertLandPlot(payload: LandPlotPayload, id?: string): Pro
 }
 
 export async function deleteLandPlot(id: string): Promise<void> {
-  const { error } = await supabase.from('retail_land_plots').delete().eq('id', id)
+  const { data: deleted, error } = await supabase
+    .from('retail_land_plots')
+    .delete()
+    .eq('id', id)
+    .select('plot_number')
+    .maybeSingle()
   if (error) throw error
+  if (!deleted) return
+
+  logActivity({ action: 'land_plot.delete', entity: 'land_plot', entityId: id, metadata: { severity: 'high', entity_name: deleted?.plot_number } })
 }

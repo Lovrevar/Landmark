@@ -61,3 +61,5 @@ vapid.json
 .git.bak/
 
 *.xlsx
+# Real financial data from 4D Wand exports — kept local, never committed.
+docs/erp-samples/
