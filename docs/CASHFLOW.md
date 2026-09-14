@@ -666,9 +666,9 @@ Shared utilities used across multiple Cashflow sub-modules.
 - `getSupplierProjects(supplierId, projects, contracts)` — returns projects linked to a supplier
 - `getSupplierContractsByProject(supplierId, projectId, contracts)` — returns contracts for a supplier in a project
 - `getMilestonesByContract(contractId, milestones)` — returns milestones for a contract
-- `isOverdue(dueDate, status)` — returns true if unpaid invoice is past due date
+- `isOverdue(dueDate, status)` — returns true if unpaid invoice is past due date. Compares whole local days via `daysFromToday`, so an invoice due today is not yet overdue
 - `columnLabels` — Croatian display names for invoice table columns
-- **Depends on:** (none, pure helpers)
+- **Depends on:** `utils/dateOnly` (pure helpers)
 
 ### paymentHelpers.ts
 - `getPaymentMethodLabel(method)` — returns Croatian label for payment method

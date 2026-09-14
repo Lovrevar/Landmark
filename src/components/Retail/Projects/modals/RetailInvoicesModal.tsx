@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
+import { daysFromToday } from '../../../../utils/dateOnly'
 import { Button, Modal, Badge, EmptyState, LoadingSpinner } from '../../../ui'
 
 interface Invoice {
@@ -114,7 +115,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
 
   const isOverdue = (dueDate: string, status: string) => {
     if (status === 'PAID') return false
-    return new Date(dueDate) < new Date()
+    return daysFromToday(dueDate) < 0
   }
 
   return (

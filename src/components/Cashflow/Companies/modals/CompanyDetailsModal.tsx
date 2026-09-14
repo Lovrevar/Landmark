@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { DollarSign, TrendingUp } from 'lucide-react'
 import { CompanyStats } from '../types'
 import { Modal, Button, Badge, StatCard, StatGrid } from '../../../ui'
+import { daysFromToday } from '../../../../utils/dateOnly'
 
 interface CompanyDetailsModalProps {
   show: boolean
@@ -86,7 +87,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                 const usedAmount = credit.used_amount || 0
                 const available = credit.amount - usedAmount
                 const utilizationPercent = credit.amount > 0 ? (usedAmount / credit.amount) * 100 : 0
-                const isExpired = new Date(credit.maturity_date) < new Date()
+                const isExpired = daysFromToday(credit.maturity_date) < 0
                 const isDisbursedToAccount = credit.disbursed_to_account || false
 
                 return (
