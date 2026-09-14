@@ -153,7 +153,8 @@
     "stay_on_page": "Stay on this page",
     "unsaved_changes_badge": "Unsaved changes",
     "save_and_leave": "Save and leave",
-    "unsaved_changes_save_failed": "Saving failed. You can try again, leave without saving, or stay on this page."
+    "unsaved_changes_save_failed": "Saving failed. You can try again, leave without saving, or stay on this page.",
+    "hide": "Hide"
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -244,7 +245,9 @@
     "accounting_banks": "Investments",
     "accounting_customers": "Customers",
     "budget_control": "Budget Control",
-    "activity_log": "Activity Log"
+    "activity_log": "Activity Log",
+    "sifrarnici": "Šifrarnici",
+    "erp_import": "ERP import"
   },
   "profiles": {
     "general": "General",
@@ -5031,7 +5034,119 @@
       "cost_classification.delete": "Cost classification deleted",
       "phase_classification_budget.update": "Classification budget updated",
       "phase_classification_budget.bulk_update": "Classification budgets bulk updated",
-      "phase_classification_budget.delete": "Classification budget deleted"
+      "phase_classification_budget.delete": "Classification budget deleted",
+      "erp_account_map.upsert": "ERP account mapping saved",
+      "erp_account_map.delete": "ERP account mapping removed",
+      "erp_cost_center_map.upsert": "ERP cost centre mapping saved",
+      "erp_cost_center_map.delete": "ERP cost centre mapping removed",
+      "erp_partner_map.upsert": "ERP partner mapping saved",
+      "erp_partner_map.delete": "ERP partner mapping removed",
+      "erp_import.upload": "ERP feed file imported",
+      "erp_import.reclassify": "ERP import reclassified"
     }
+  },
+  "sifrarnici": {
+    "title": "Šifrarnici",
+    "description": "Maps 4D Wand codes onto Cognilion entities so imported invoices classify themselves.",
+    "search_placeholder": "Search by code or name…",
+    "only_unmapped": "Only unmapped",
+    "tab_accounts": "Konta",
+    "tab_cost_centers": "Mjesta troška",
+    "tab_partners": "Komitenti",
+    "col_code": "Code",
+    "col_name": "Name",
+    "col_role": "Role",
+    "col_target": "Maps to",
+    "col_project": "Project",
+    "col_kom_id": "ID",
+    "col_oib": "OIB",
+    "col_kind": "Type",
+    "col_entity": "Entity",
+    "no_category": "No category",
+    "no_project": "Not mapped",
+    "no_oib": "No OIB",
+    "pick_vat_rate": "Pick a rate…",
+    "pick_bank": "Pick a bank…",
+    "pick_kind": "Pick a type…",
+    "pick_entity": "Pick an entity…",
+    "group_projects": "Projects",
+    "group_retail_projects": "Retail projects",
+    "empty_accounts": "No chart of accounts imported yet",
+    "empty_hint": "Reference data arrives with the first ERP import.",
+    "empty_cost_centers": "No cost centres imported yet",
+    "empty_cost_centers_hint": "Cost centres are not currently booked in 4D Wand, so this list may stay empty. Project assignment is manual until that changes.",
+    "empty_partners": "No partners imported yet",
+    "empty_partners_hint": "The komitenti register arrives with the first ERP import. Without it invoices cannot be attributed to a supplier.",
+    "role": {
+      "unclassified": "Unclassified",
+      "liability_supplier": "Supplier liability",
+      "liability_customer": "Customer liability",
+      "liability_other": "Other liability",
+      "receivable_advance": "Advance receivable",
+      "expense": "Expense / cost",
+      "vat_input": "Input VAT (pretporez)",
+      "vat_output": "Output VAT",
+      "bank": "Bank account",
+      "ignore": "Ignore"
+    },
+    "kind": {
+      "subcontractor": "Subcontractor",
+      "retail_supplier": "Retail supplier",
+      "office_supplier": "Office supplier",
+      "customer": "Customer",
+      "retail_customer": "Retail customer",
+      "bank": "Bank",
+      "investor": "Investor"
+    }
+  },
+  "erp_import": {
+    "title": "ERP import",
+    "description": "Upload a 4D Wand feed export. Files are parsed, validated and staged — nothing reaches the invoice ledger until it is promoted.",
+    "feed_label": "Feed",
+    "choose_file": "Choose file…",
+    "hint_reference": "Reference feeds replace the register outright, so a code removed in the ERP disappears here too. Import these before invoices and payments.",
+    "hint_document": "Rows are staged for classification. Import the reference feeds first, or codes will not resolve.",
+    "history": "Import history",
+    "no_runs": "Nothing imported yet",
+    "no_runs_hint": "Uploads and agent-pushed files both appear here.",
+    "col_started": "Started",
+    "col_feed": "Feed",
+    "col_file": "File",
+    "col_transport": "Source",
+    "col_status": "Status",
+    "col_rows": "Rows",
+    "rejected": "rejected",
+    "show_problems": "Show problems",
+    "row": "Row",
+    "and_more": "…and {{count}} more",
+    "result_summary": "{{total}} rows read, {{staged}} staged, {{rejected}} rejected.",
+    "feed": {
+      "accounts": "Chart of accounts (konta)",
+      "cost_centers": "Cost centres (mjesta troška)",
+      "partners": "Partners (komitenti)",
+      "invoices": "Invoices",
+      "payments": "Payments",
+      "bank_balances": "Bank balances"
+    },
+    "transport": {
+      "agent": "Agent",
+      "manual": "Upload"
+    },
+    "status": {
+      "received": "Received",
+      "parsing": "Parsing",
+      "staged": "Staged",
+      "promoting": "Promoting",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "review_title": "{{count}} document(s) need classification",
+    "review_hint": "Promotion is all-or-nothing per document, so one unmapped code holds the whole invoice. Map the code in Šifrarnici, then re-run classification.",
+    "reclassify": "Re-run classification",
+    "col_document": "Document",
+    "col_partner": "Partner",
+    "col_amount": "Amount",
+    "col_problems": "Problems",
+    "lines": "{{count}} line(s)"
   }
 }

@@ -184,11 +184,11 @@ This is the flatter list view (vs. the drill-down above). Filters, modals for CR
 
 _Path: `/customers`. Role: Director / Sales. Profile: Sales. Needs: at least 2 customers per category for meaningful tests._
 
-Sales-side buyer CRM with 5 category tabs and a 5-minute client-side cache.
+Sales-side buyer CRM with 3 category tabs and a 5-minute client-side cache.
 
 **Category tabs**
 
-- tabs: `interested`, `hot_lead`, `negotiating`, `buyer`, `backed_out` — each with a badge count (read from cache)   ( )
+- tabs: `lead` ("Leads"), `interested` ("Interested"), `buyer` ("Buyers") — each with a badge count (read from cache)   ( )
 - click each tab — list updates; URL / active tab state reflects the choice   ( )
 - badge counts refresh after creating / deleting a customer   ( )
 
@@ -222,12 +222,12 @@ Sales-side buyer CRM with 5 category tabs and a 5-minute client-side cache.
 
 **Status / category changes**
 
-- edit a customer and change `status` from `interested` to `hot_lead` — after save, they move to the hot_lead tab; interested count decreases, hot_lead increases   ( )
+- edit a customer and change `status` from `interested` to `lead` — after save, they move to the Leads tab; interested count decreases, lead increases   ( )
 - a customer whose sale was completed via the Sale flow should have status = `buyer`   ( )
 
 **Update last contact**
 
-- click "Update Contact" on a customer card → `last_contact` updates to today; card indicator refreshes   ( )
+- click "Update Contact" on a customer card → `last_contact_date` updates to today; card indicator refreshes   ( )
 
 **Detail modal (CustomerDetailModal)**
 

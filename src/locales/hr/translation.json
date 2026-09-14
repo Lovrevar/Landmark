@@ -153,7 +153,8 @@
     "stay_on_page": "Ostani na stranici",
     "unsaved_changes_badge": "Nespremljene promjene",
     "save_and_leave": "Spremi i izađi",
-    "unsaved_changes_save_failed": "Spremanje nije uspjelo. Pokušajte ponovno, izađite bez spremanja ili ostanite na stranici."
+    "unsaved_changes_save_failed": "Spremanje nije uspjelo. Pokušajte ponovno, izađite bez spremanja ili ostanite na stranici.",
+    "hide": "Sakrij"
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -244,7 +245,9 @@
     "accounting_banks": "Investicije",
     "accounting_customers": "Kupci",
     "budget_control": "Kontrola proračuna",
-    "activity_log": "Dnevnik aktivnosti"
+    "activity_log": "Dnevnik aktivnosti",
+    "sifrarnici": "Šifrarnici",
+    "erp_import": "Uvoz iz ERP-a"
   },
   "profiles": {
     "general": "General",
@@ -5036,7 +5039,119 @@
       "cost_classification.delete": "Klasifikacija troška obrisana",
       "phase_classification_budget.update": "Budžet klasifikacije ažuriran",
       "phase_classification_budget.bulk_update": "Budžeti klasifikacija masovno ažurirani",
-      "phase_classification_budget.delete": "Budžet klasifikacije obrisan"
+      "phase_classification_budget.delete": "Budžet klasifikacije obrisan",
+      "erp_account_map.upsert": "Spremljeno povezivanje konta",
+      "erp_account_map.delete": "Uklonjeno povezivanje konta",
+      "erp_cost_center_map.upsert": "Spremljeno povezivanje mjesta troška",
+      "erp_cost_center_map.delete": "Uklonjeno povezivanje mjesta troška",
+      "erp_partner_map.upsert": "Spremljeno povezivanje komitenta",
+      "erp_partner_map.delete": "Uklonjeno povezivanje komitenta",
+      "erp_import.upload": "Uvezena datoteka iz ERP-a",
+      "erp_import.reclassify": "Ponovljena klasifikacija uvoza"
     }
+  },
+  "sifrarnici": {
+    "title": "Šifrarnici",
+    "description": "Povezuje šifre iz 4D Wanda s entitetima u Cognilionu kako bi se uvezeni računi sami klasificirali.",
+    "search_placeholder": "Pretraži po šifri ili nazivu…",
+    "only_unmapped": "Samo nepovezani",
+    "tab_accounts": "Konta",
+    "tab_cost_centers": "Mjesta troška",
+    "tab_partners": "Komitenti",
+    "col_code": "Šifra",
+    "col_name": "Naziv",
+    "col_role": "Uloga",
+    "col_target": "Povezano s",
+    "col_project": "Projekt",
+    "col_kom_id": "ID",
+    "col_oib": "OIB",
+    "col_kind": "Vrsta",
+    "col_entity": "Entitet",
+    "no_category": "Bez kategorije",
+    "no_project": "Nije povezano",
+    "no_oib": "Nema OIB-a",
+    "pick_vat_rate": "Odaberi stopu…",
+    "pick_bank": "Odaberi banku…",
+    "pick_kind": "Odaberi vrstu…",
+    "pick_entity": "Odaberi entitet…",
+    "group_projects": "Projekti",
+    "group_retail_projects": "Retail projekti",
+    "empty_accounts": "Kontni plan još nije uvezen",
+    "empty_hint": "Šifrarnici stižu s prvim uvozom iz ERP-a.",
+    "empty_cost_centers": "Mjesta troška još nisu uvezena",
+    "empty_cost_centers_hint": "Mjesta troška se trenutno ne knjiže u 4D Wandu, pa ovaj popis može ostati prazan. Dok se to ne promijeni, projekt se dodjeljuje ručno.",
+    "empty_partners": "Komitenti još nisu uvezeni",
+    "empty_partners_hint": "Šifrarnik komitenata stiže s prvim uvozom iz ERP-a. Bez njega se računi ne mogu povezati s dobavljačem.",
+    "role": {
+      "unclassified": "Neklasificirano",
+      "liability_supplier": "Obveza prema dobavljaču",
+      "liability_customer": "Obveza prema kupcu",
+      "liability_other": "Ostale obveze",
+      "receivable_advance": "Potraživanje za predujam",
+      "expense": "Trošak",
+      "vat_input": "Pretporez",
+      "vat_output": "Obveza PDV-a",
+      "bank": "Žiro račun",
+      "ignore": "Zanemari"
+    },
+    "kind": {
+      "subcontractor": "Podizvođač",
+      "retail_supplier": "Retail dobavljač",
+      "office_supplier": "Uredski dobavljač",
+      "customer": "Kupac",
+      "retail_customer": "Retail kupac",
+      "bank": "Banka",
+      "investor": "Investitor"
+    }
+  },
+  "erp_import": {
+    "title": "Uvoz iz ERP-a",
+    "description": "Učitaj izvoz iz 4D Wanda. Datoteke se parsiraju, provjeravaju i pripremaju — ništa ne ulazi u knjigu računa dok se ne potvrdi.",
+    "feed_label": "Vrsta podataka",
+    "choose_file": "Odaberi datoteku…",
+    "hint_reference": "Šifrarnici se u cijelosti zamjenjuju, pa šifra obrisana u ERP-u nestaje i ovdje. Uvezi ih prije računa i plaćanja.",
+    "hint_document": "Redci se pripremaju za klasifikaciju. Prvo uvezi šifrarnike, inače se šifre neće moći povezati.",
+    "history": "Povijest uvoza",
+    "no_runs": "Još ništa nije uvezeno",
+    "no_runs_hint": "Ovdje se prikazuju i ručni uvozi i datoteke poslane s poslužitelja.",
+    "col_started": "Početak",
+    "col_feed": "Vrsta",
+    "col_file": "Datoteka",
+    "col_transport": "Izvor",
+    "col_status": "Status",
+    "col_rows": "Redaka",
+    "rejected": "odbijeno",
+    "show_problems": "Prikaži greške",
+    "row": "Redak",
+    "and_more": "…i još {{count}}",
+    "result_summary": "Pročitano {{total}} redaka, pripremljeno {{staged}}, odbijeno {{rejected}}.",
+    "feed": {
+      "accounts": "Kontni plan (konta)",
+      "cost_centers": "Mjesta troška",
+      "partners": "Komitenti",
+      "invoices": "Računi",
+      "payments": "Plaćanja",
+      "bank_balances": "Stanja žiro računa"
+    },
+    "transport": {
+      "agent": "Agent",
+      "manual": "Ručni uvoz"
+    },
+    "status": {
+      "received": "Zaprimljeno",
+      "parsing": "Obrada",
+      "staged": "Pripremljeno",
+      "promoting": "Potvrđivanje",
+      "completed": "Završeno",
+      "failed": "Greška"
+    },
+    "review_title": "{{count}} dokument(a) čeka klasifikaciju",
+    "review_hint": "Dokument se prenosi u cijelosti ili nikako, pa jedna nepovezana šifra zadržava cijeli račun. Poveži šifru u Šifrarnicima pa ponovno pokreni klasifikaciju.",
+    "reclassify": "Ponovi klasifikaciju",
+    "col_document": "Dokument",
+    "col_partner": "Komitent",
+    "col_amount": "Iznos",
+    "col_problems": "Problemi",
+    "lines": "{{count}} redak/redaka"
   }
 }

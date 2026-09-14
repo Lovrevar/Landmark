@@ -174,6 +174,24 @@ Bank and investor registry. Manages credit facilities and equity investments per
 - Preview block for a computed payment schedule (principal + interest, frequencies, start date)
 - Props: calculation (PaymentScheduleResult | null), gracePeriodMonths
 
+### utils/creditCalculations.ts
+The module's pure-maths layer, and the most heavily unit-tested file in the codebase
+(32 tests in `creditCalculations.test.ts`). No Supabase, no React — extract new financial
+maths here rather than inlining it in a hook.
+
+- `calculateAnnuityPayment({...})` — standard annuity instalment
+- `calculatePaymentSchedule(params)` → `PaymentScheduleResult | null` — the full schedule
+  driving `PaymentSchedulePreview`
+- `calculateEquityCashflow(equity)` / `calculateMoneyMultiple(equity)` — equity return maths
+- `getPaymentFrequency(type)` — payments per year for `monthly` / `quarterly` / `biyearly` / `yearly`
+- `parseCreditTypeAndSeniority(combined)` — splits the combined form value back into its two fields
+- `getCreditRiskLevel(utilization)` / `getCreditTypeBadgeVariant(creditType)` — display helpers
+- Exports `PaymentScheduleParams` and `PaymentScheduleResult`
+
+> The tests assert the code's **actual** output, including a known 119-vs-120 off-by-one in the
+> monthly-payment count. If you change that behaviour, change the test deliberately — don't
+> "fix" the test to match new output.
+
 ### index.tsx (InvestorsManagement)
 - Bank/investor cards with add investor, credit, and equity buttons; orchestrates all modals
 - **Uses hooks:** useBankData, useBankForm, useCreditForm (passed `fetchData`), useEquityForm (passed `fetchData`)

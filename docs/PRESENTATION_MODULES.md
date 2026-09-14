@@ -7,7 +7,7 @@
 > **Napomena o okviru prezentacije:** ERP integracija ovdje je opisana kao sastavni dio
 > proizvoda — računi, plaćanja i stanja žiro računa u Cognilion **stižu automatski iz
 > ERP sustava računovodstva**, bez ručnog unosa. Tako se predstavlja na eventu.
-> Tehnička specifikacija: [`ERP_INTEGRATION_SPEC.md`](./ERP_INTEGRATION_SPEC.md).
+> Tehnička specifikacija: [`erp-integration/SPEC.md`](./erp-integration/SPEC.md).
 
 ---
 

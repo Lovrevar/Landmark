@@ -36,6 +36,8 @@ import {
   MessageCircle,
   CheckSquare,
   Files,
+  BookMarked,
+  Upload,
   Menu as MenuIcon,
   X
 } from 'lucide-react'
@@ -46,6 +48,7 @@ import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
 import AiChatWidget from '../AiChat/AiChatWidget'
 import { useCalendarNotifications } from '../Calendar/hooks/useCalendarNotifications'
 import PageFallback from './PageFallback'
+import { ERP_INTEGRATION_ENABLED } from '../../lib/featureFlags'
 
 interface LayoutProps {
   children: ReactNode
@@ -168,6 +171,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.loans'), icon: TrendingUp, path: '/accounting-loans' },
         { name: t('nav.debt_status'), icon: AlertCircle, path: '/debt-status' },
         { name: t('nav.approvals'), icon: CheckCircle, path: '/accounting-approvals' },
+        // ERP integration is on hold; see src/lib/featureFlags.ts.
+        ...(ERP_INTEGRATION_ENABLED
+          ? [
+              { name: t('nav.sifrarnici'), icon: BookMarked, path: '/sifrarnici' },
+              { name: t('nav.erp_import'), icon: Upload, path: '/erp-import' },
+            ]
+          : []),
         { name: t('nav.documents'), icon: Files, path: '/documents' }
       ],
       Retail: [
