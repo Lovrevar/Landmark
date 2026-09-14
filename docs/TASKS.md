@@ -104,9 +104,9 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - `listSubtasks` / `addSubtask` / `renameSubtask` / `reorderSubtasks` / `deleteSubtask` / `setSubtaskCompleted(taskId, subtaskId, completed, actor, …)` — checklist CRUD; `setSubtaskCompleted` re-reads the parent afterwards and fires the `task_completed` push only on a genuine crossing, and returns the parent's new state. `reorderSubtasks` rewrites positions with one statement per row rather than an upsert, which would have to send `completed` back and could un-tick a line
 - `deleteTask(taskId, actor?, title?)` — cascade remove; logs `task.delete` (high severity)
 - `setAssignees(taskId, ids, actor)` — diff-based add/remove (ids are auth ids); logs `task.assign` / `task.unassign`
-- `fetchTaskComments(taskId)` / `createTaskComment(taskId, actor, comment)` / `deleteTaskComment` — thread CRUD; `createTaskComment` logs `task.comment`
+- `fetchTaskComments(taskId)` / `createTaskComment(taskId, actor, comment)` / `deleteTaskComment(commentId, actor)` — thread CRUD; `createTaskComment` logs `task.comment`, `deleteTaskComment` logs `task.comment_delete` (only when RLS actually let the author delete the row)
 - `listTaskAttachments` / `uploadTaskAttachment(taskId, file, actor)` / `deleteTaskAttachment(id, actor)` / `getAttachmentSignedUrl` — attachment CRUD with 25 MB + 10-per-task enforcement; logs `task.attachment_add` / `task.attachment_remove`. Bucket constant: `TASK_ATTACHMENTS_BUCKET = 'task-attachments'`
-- `getUnacknowledgedTaskCount(authUserId)` / `acknowledgeAllTasks(authUserId)` — global badge helpers
+- `getUnacknowledgedTaskCount(authUserId)` / `acknowledgeAllTasks(authUserId)` — global badge helpers; acknowledging logs `task.acknowledge_all` with the count, only when it cleared something
 - **Depends on:** supabase client, activityLog
 - **Logs:** every mutation listed above
 

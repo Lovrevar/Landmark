@@ -81,6 +81,13 @@ export async function recordRetailSalePayment(
     .update({ paid_amount: newPaidAmount, payment_status: newStatus })
     .eq('id', saleId)
   if (error) throw error
+
+  logActivity({
+    action: 'retail_sale.payment',
+    entity: 'retail_sale',
+    entityId: saleId,
+    metadata: { severity: 'high', changed_fields: ['paid_amount', 'payment_status'], paid_amount: newPaidAmount, payment_status: newStatus }
+  })
 }
 
 export interface RetailSalesPaymentWithDetails {

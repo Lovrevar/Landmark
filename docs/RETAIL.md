@@ -112,7 +112,7 @@ Retail-specific sales tracking (parcel/lot sales to buyers) — distinct from th
 #### Services
 
 ### services/retailSalesService.ts
-- CRUD and fetch operations for retail sales records; `upsertRetailSale` / `deleteRetailSale` log `retail_sale.create` / `retail_sale.delete`
+- CRUD and fetch operations for retail sales records; `upsertRetailSale` / `deleteRetailSale` log `retail_sale.create` / `retail_sale.delete`; `recordRetailSalePayment` logs `retail_sale.payment` (high)
 - **Depends on:** supabase client, activityLog
 
 #### Hooks
@@ -192,7 +192,7 @@ Land plot inventory tracking.
 - `fetchLandPlotStats()` — aggregates totals across all plots; returns `LandPlotStats` (`total_plots`, `total_invested`, `total_area`, `paid_count`)
 - `fetchLandPlotSales(plotId)` — sales for a single plot
 - `upsertLandPlot(payload, id?)` — create/update a plot (logs `land_plot.create` / `land_plot.update`)
-- `deleteLandPlot(id)` — removes a plot
+- `deleteLandPlot(id)` — removes a plot and logs `land_plot.delete` with its plot number
 - Exports types: `LandPlotWithProject`, `LandPlotSaleRow`, `PaginatedLandPlotsResult`, `LandPlotStats`, `LandPlotPayload`
 - **Depends on:** supabase client, activityLog
 

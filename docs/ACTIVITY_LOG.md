@@ -256,7 +256,7 @@ logActivity({
 | `export.tic_excel` | L | `Funding/TIC/services/ticExport.ts` |
 | `export.tic_pdf` | L | `Funding/TIC/services/ticExport.ts` |
 
-### Retail (25)
+### Retail (27)
 | Action | Severity | File |
 |---|---|---|
 | `retail_project.create` | M | `Retail/Projects/services/retailProjectService.ts` |
@@ -270,6 +270,7 @@ logActivity({
 | `retail_customer.delete` | M | `Retail/Customers/services/retailCustomerService.ts` |
 | `retail_sale.create` | H | `Retail/Sales/services/retailSalesService.ts` |
 | `retail_sale.delete` | H | `Retail/Sales/services/retailSalesService.ts` |
+| `retail_sale.payment` | H | `Retail/Sales/services/retailSalesService.ts` (`recordRetailSalePayment` — new `paid_amount` + `payment_status`) |
 | `retail_contract.create` | M | `Retail/Projects/services/retailProjectService.ts` |
 | `retail_contract.update` | M | `Retail/Projects/services/retailProjectService.ts` |
 | `retail_contract.delete` | H | `Retail/Projects/services/retailProjectService.ts` |
@@ -284,6 +285,7 @@ logActivity({
 | `retail_invoice.update` | H | `Cashflow/Invoices/services/invoiceService.ts` |
 | `land_plot.create` | M | `Retail/LandPlots/services/landPlotService.ts` |
 | `land_plot.update` | M | `Retail/LandPlots/services/landPlotService.ts` |
+| `land_plot.delete` | H | `Retail/LandPlots/services/landPlotService.ts` (logged only when a row was actually deleted) |
 | `invoice.approve` | H | `Retail/Invoices/services/retailInvoiceService.ts` |
 
 ### Chat / Calendar
@@ -299,7 +301,7 @@ logActivity({
 | `calendar_event.exception_delete` | M | `Calendar/services/calendarService.ts` |
 | `calendar_event.acknowledge_all` | L | `Calendar/services/calendarService.ts` |
 
-### Tasks (7)
+### Tasks (9)
 | Action | Severity | File |
 |---|---|---|
 | `task.create` | M | `Tasks/services/tasksService.ts` |
@@ -309,6 +311,8 @@ logActivity({
 | `task.comment` | L | `Tasks/services/tasksService.ts` |
 | `task.attachment_add` | L | `Tasks/services/tasksService.ts` |
 | `task.attachment_remove` | L | `Tasks/services/tasksService.ts` |
+| `task.comment_delete` | M | `Tasks/services/tasksService.ts` (only the author can delete; an RLS-filtered delete logs nothing) |
+| `task.acknowledge_all` | L | `Tasks/services/tasksService.ts` (runs when `/tasks` opens; logged only when `count > 0`, mirroring `calendar_event.acknowledge_all`) |
 
 ### ERP import & mappings (8)
 | Action | Severity | File |
@@ -343,6 +347,10 @@ These writes are deliberately exempt from `logActivity()` — do not "fix" them 
 - **Chat traffic** — `chat_messages` inserts, `chat_participants.last_read_at` updates, chat/AI-chat file attachments; conversation create/delete *are* logged
 - **AI session housekeeping** — session *creation* and cancel flags (`aiChatService`). A session row is created implicitly on the first message, so logging it would just duplicate chat traffic. Renames (`ai_session.update`) and deletes (`ai_session.delete`) *are* logged
 - **Storage rollbacks** — `.remove()` calls that clean up after a failed upload
+
+Some writes look unlogged but are logged by their caller as one user action: `createSale` and
+`updateLinkedUnitsAfterSale` (salesService) run inside `completeSale`, which logs `sale.create`;
+`renameSession` / `deleteSession` (aiChatService) are logged by `useAiChatStore`.
 
 ## Adding Logging to New Features
 
