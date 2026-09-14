@@ -58,6 +58,10 @@ npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 
 `npm run erp:smoke` — [`scripts/erp-pipeline-smoke.mjs`](../scripts/erp-pipeline-smoke.mjs)
 
+> ⏸️ **Cannot run while the ERP integration is on hold.** No project has the ERP
+> migrations or the `import-erp` function. The Deno unit tests below still run.
+> See [`erp-integration/PROGRESS.md`](./erp-integration/PROGRESS.md) → "On hold".
+
 Exercises the ERP import chain end to end against a **live dev project**:
 upload → parse → stage → resolve → promote, plus the review queue and the
 fix-a-mapping-then-reclassify loop. 25 checks. It writes real rows and cleans up
@@ -100,7 +104,7 @@ The parsing and validation logic has its own Deno unit tests
 | Module | Spec | Tests |
 |---|---|---|
 | Auth | `auth/login.spec.ts` | 6 (5 valid-credential logins + 1 invalid password) — runs `describe.serial` to avoid Supabase auth rate limits |
-| Auth | `auth/permissions.spec.ts` | 6 — Sales user redirected from `/accounting-invoices`, `/accounting-payments`, `/accounting-approvals`, `/debt-status`, `/sifrarnici`, `/erp-import` |
+| Auth | `auth/permissions.spec.ts` | 6 — Sales user redirected from `/accounting-invoices`, `/accounting-payments`, `/accounting-approvals`, `/debt-status`, `/sifrarnici`, `/erp-import` (the last two are hidden while the ERP integration is on hold, so they pass via the catch-all redirect rather than `CashflowRoute`) |
 | Auth | `auth/session.spec.ts` | 2 — logout clears session + Cashflow flag; reload on a protected route stays authenticated |
 | Cashflow | `cashflow/approvals.spec.ts` | 1 — Director hides an approved invoice; row lands in `hidden_approved_invoices` |
 | Cashflow | `cashflow/unlock.spec.ts` | 2 — wrong password keeps modal open with `aria-invalid`; correct password sets the sessionStorage flag and opens `/accounting-invoices` |

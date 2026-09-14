@@ -75,6 +75,10 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 - `invalidateCachedData(predicate?)` — drops matching cache entries after a mutation
 - Lives in `src/lib/`, not `src/hooks/`, despite being a hook
 
+### featureFlags.ts
+- Compile-time switches for work that is merged but not released. Plain constants, deliberately not `VITE_*` env vars: each guards code whose database side is not applied anywhere, so turning one on has to be a code change shipped with its migrations
+- `ERP_INTEGRATION_ENABLED` (`false`) — hides the Šifrarnici and ERP import routes and their Cashflow menu entries. Read by `App.tsx` and `Common/Layout.tsx`. See [`erp-integration/PROGRESS.md`](./erp-integration/PROGRESS.md) → "On hold" before changing it
+
 ### dbErrors.ts
 - `isForeignKeyViolation(error)` — tells a Postgres FK violation (`23503`) apart from other Supabase errors, so a delete blocked by dependent rows can show a useful message instead of a generic failure
 

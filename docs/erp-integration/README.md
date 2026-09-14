@@ -25,8 +25,13 @@ them.
 
 ## Current status
 
-Phases 0–3 are done and applied to LandmarkDev; the `import-erp` function is
-deployed there. A file now imports, classifies and promotes into
+> **⏸️ On hold since 2026-09-14.** Merged into `development` but switched off:
+> the screens are behind `ERP_INTEGRATION_ENABLED` (off), the migrations are
+> parked in `supabase/parked-migrations/erp/`, and no database or deployment
+> has any of it. What that means and how to resume:
+> the "On hold" section of [PROGRESS.md](./PROGRESS.md).
+
+Phases 0–3 are done. When work stopped, a file imported, classified and promoted into
 `accounting_invoices` / `accounting_payments` on its own, with anything
 unclassifiable held in a review queue. Phase 4 — the historical re-import — is
 next. See [PROGRESS.md](./PROGRESS.md).

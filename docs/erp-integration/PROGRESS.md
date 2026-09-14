@@ -19,6 +19,74 @@ rehearsal.
 
 ---
 
+## ⏸️ On hold (since 2026-09-14)
+
+Phases 0–3 were merged into `development` so the branch would not drift, but the
+integration is **switched off everywhere**. Merging changed nothing a user can
+see and nothing any database receives.
+
+### What is switched off, and how
+
+| Piece | State | Where |
+|---|---|---|
+| Šifrarnici and ERP import screens | Routes not registered, Cashflow menu entries not shown. Typing `/sifrarnici` or `/erp-import` hits the catch-all redirect to `/` | `ERP_INTEGRATION_ENABLED = false` in [`src/lib/featureFlags.ts`](../../src/lib/featureFlags.ts), read by `src/App.tsx` and `src/components/Common/Layout.tsx` |
+| The six migrations | **Parked** outside `supabase/migrations/`, so `supabase db push` does not see them | [`supabase/parked-migrations/erp/`](../../supabase/parked-migrations/erp/) |
+| `import-erp` edge function | Code and Deno tests stay in place and keep running in CI. **Not deployed** anywhere | `supabase/functions/import-erp/` |
+| LandmarkDev | Holds **none** of the ERP schema. The six migrations were reverted from it on 2026-09-07 to unblock pushes from other branches | — |
+
+Why the migrations are parked rather than left in place: they are dated
+`20260831…`, older than migrations `development` had already applied. Left in
+`supabase/migrations/`, every later `db push` would either abort ("local
+migration files to be inserted before the last migration on remote") or, with
+`--include-all`, apply the ERP schema to whichever project is linked —
+production included. Renaming them to fresh timestamps would have been worse:
+the next ordinary push would apply them silently.
+
+Left as they are because they are invisible: the locale keys, the
+`ENTITY_ROUTE_MAP` entries, the `erp:smoke` script, and the ERP parts of the
+generated types.
+
+### Traps while it is on hold
+
+- **Do not deploy `import-erp`.** A bare `supabase functions deploy` deploys every
+  function in the folder. Name the function you mean.
+- **`npm run db:types` strips the ERP types** when run against a project without
+  the `erp` schema (i.e. every project, right now). `supabase/functions/import-erp/index.ts`
+  types its inserts as `Database['erp']`, so it stops type-checking. After
+  regenerating, restore the `erp` block and the `source` / `erp_*` columns on
+  `accounting_invoices` / `accounting_payments` from git history.
+- **Do not flip the flag on its own.** The screens read `public.erp_*` views and
+  the `erp_reclassify` RPC, which exist only once the migrations are applied.
+- **Changes on `development` since the pause may invalidate the SQL.** In
+  particular `public.calculate_invoice_amounts()` is replaced wholesale by
+  `20260831160000_erp_phase3_promotion.sql`, which copies the body as it stood
+  on 2026-08-31. If anyone has changed that function since, re-copy it before
+  applying, or the migration will quietly revert their change.
+
+### Resuming — checklist
+
+1. Branch off `development`.
+2. Check that nothing on `development` has redefined anything the parked SQL
+   replaces — above all `calculate_invoice_amounts()`.
+3. Move the six files back into `supabase/migrations/` **with fresh timestamps**
+   later than the newest migration there, keeping their order. Update the
+   filenames quoted in the phase sections below.
+4. Apply them to LandmarkDev (`supabase db push --project-ref nxvbglegqcgxlxvyfuht`
+   — check the link first). Also add `erp` to the exposed schemas in the
+   dashboard (Settings ▸ API) — see "Notes for whoever picks this up".
+5. Deploy `import-erp` to LandmarkDev and set `ERP_IMPORT_SECRET`
+   (docs/TESTING.md, "ERP pipeline smoke test").
+6. Run `npm run db:types` against LandmarkDev so the types match again.
+7. Set `ERP_INTEGRATION_ENABLED = true`.
+8. `npm run erp:smoke`, `npm run test:functions`, and the e2e permissions spec
+   (it already lists both routes).
+9. Delete this section and `supabase/parked-migrations/erp/`.
+
+The phase sections below record the state when work stopped. "Applied to
+LandmarkDev" means that is where each phase was verified — it is no longer true.
+
+---
+
 ## Phase 0 — Foundation ✅
 
 Migration `20260831120000_erp_phase0_foundation.sql`, applied to LandmarkDev.

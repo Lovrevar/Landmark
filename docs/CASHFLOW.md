@@ -564,6 +564,11 @@ Payment records linked to invoices. Supports wire, cash, check, card, kompenzaci
 ### Šifrarnici
 **Path:** `Sifrarnici/`
 
+> ⏸️ **Hidden — the ERP integration is on hold.** Neither this screen nor ErpImport
+> below has a route or a menu entry while `ERP_INTEGRATION_ENABLED` in
+> `src/lib/featureFlags.ts` is off, and the views they read are not in any
+> database. See [`erp-integration/PROGRESS.md`](./erp-integration/PROGRESS.md) → "On hold".
+
 ERP code mappings. Tells the 4D Wand importer what each ERP code means in
 Cognilion terms, so imported invoices classify themselves without a human.
 Part of the ERP integration rewrite — see [`erp-integration/SPEC.md`](./erp-integration/SPEC.md) §7.
@@ -603,6 +608,8 @@ adding a join would silently make the screen read-only.
 
 ### ErpImport
 **Path:** `ErpImport/`
+
+> ⏸️ **Hidden — the ERP integration is on hold.** See the note under Šifrarnici above.
 
 Uploads 4D Wand feed exports. Part of the ERP integration rewrite — see
 [`erp-integration/SPEC.md`](./erp-integration/SPEC.md) §2.1 and

@@ -34,7 +34,7 @@ Each profile renders a different navigation menu and dashboard. Profile ≠ role
 | General | `src/components/General/` | Project lifecycle, milestones, budget control/EVM, activity log |
 | Sales | `src/components/Sales/` | CRM, unit inventory, buyer tracking, payments |
 | Supervision | `src/components/Supervision/` | Construction site, subcontractors, work logs |
-| Cashflow | `src/components/Cashflow/` | Invoices, payments, suppliers, companies, banks, ERP import, Šifrarnici |
+| Cashflow | `src/components/Cashflow/` | Invoices, payments, suppliers, companies, banks, ERP import and Šifrarnici (both hidden — ERP integration on hold) |
 | Retail | `src/components/Retail/` | Land development, parcels, retail buyers |
 | Funding | `src/components/Funding/` | Bank loans, investors, drawdowns, TIC structure |
 | Dashboards | `src/components/dashboards/` | Per-profile home pages (lowercase directory) |
@@ -59,7 +59,13 @@ These are business-specific — do not simplify or generalize them:
 - **Credit allocation** — bank credit lines can be allocated across multiple projects/contracts
 - **TIC** — Troškovna Informatička Struktura, a cost breakdown structure for investment projects
 
-## ERP Integration (in progress)
+## ERP Integration (⏸️ on hold)
+
+> **On hold since 2026-09-14 — merged but switched off.** The screens are hidden behind
+> `ERP_INTEGRATION_ENABLED` in `src/lib/featureFlags.ts`, the migrations are parked in
+> `supabase/parked-migrations/erp/` (never apply them from there), and `import-erp` is not
+> deployed anywhere. Resume only via the checklist in
+> [`docs/erp-integration/PROGRESS.md`](./docs/erp-integration/PROGRESS.md) → "On hold".
 
 The financial section is being rewritten so that **4D Wand** — the ERP the company adopted —
 becomes the source of truth for invoices, payments and bank balances. Cognilion stops
@@ -83,7 +89,9 @@ changing is *who writes* those two tables.
 - All tables use RLS (Row Level Security) — always respect existing policies
 - Never bypass auth context when writing queries
 - `npm run db:types` regenerates `src/types/database.ts` from the linked project
-  (both the `public` and `erp` schemas) and mirrors it into `supabase/functions/_shared/`
+  (both the `public` and `erp` schemas) and mirrors it into `supabase/functions/_shared/`.
+  While the ERP integration is on hold no project has the `erp` schema, so regenerating
+  drops the ERP types that `import-erp` needs — restore them from git afterwards
 
 ## Architecture Pattern
 

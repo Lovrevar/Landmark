@@ -28,7 +28,7 @@
 
 | Doc | File | Description |
 |---|---|---|
-| **ERP Integration** | [erp-integration/](./erp-integration/README.md) | In-progress rewrite of the financial section: 4D Wand becomes the source of truth for invoices, payments and bank balances; Cognilion stops authoring them and imports/classifies instead. Spec, decision log, progress and open questions |
+| **ERP Integration** | [erp-integration/](./erp-integration/README.md) | ⏸️ **On hold** — merged but switched off (flag off, migrations parked in `supabase/parked-migrations/erp/`). Rewrite of the financial section: 4D Wand becomes the source of truth for invoices, payments and bank balances; Cognilion stops authoring them and imports/classifies instead. Spec, decision log, progress and open questions |
 | **Testing** | [TESTING.md](./TESTING.md) | Vitest unit tests + Playwright e2e setup and conventions |
 | **Security Backlog** | [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) | Tracked security items and RLS hardening status |
 | **Presentation Modules** | [PRESENTATION_MODULES.md](./PRESENTATION_MODULES.md) | Croatian-language module overview + talking points for pitching the platform; ERP sync presented as a built-in product capability |
@@ -89,6 +89,7 @@ Module/
 | `src/contexts/ToastContext.tsx` | App-wide toast queue (`ToastProvider`, `useToast`) |
 | `src/lib/useCachedData.ts` | TTL-cached fetch hook used by every dashboard (`useCachedData`, `invalidateCachedData`); exposes `error` — never render zeros on a failed load |
 | `src/lib/dbErrors.ts` | `isForeignKeyViolation()` — distinguishes FK violations from other Supabase errors |
+| `src/lib/featureFlags.ts` | Compile-time flags for merged-but-unreleased work; `ERP_INTEGRATION_ENABLED` (off) hides the ERP screens |
 | `src/hooks/useMediaQuery.ts` | `useMediaQuery`, `useIsMobile`, `useIsTabletUp`, `useIsDesktop` — the responsive breakpoint hooks |
 | `src/hooks/useListPreferences.ts` | Persisted per-list view mode / sort preferences |
 | `src/hooks/useAsyncExport.ts` | Wraps a long export in pending state so the UI can show progress |
