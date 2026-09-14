@@ -152,7 +152,7 @@ close the modal with X, Esc, and backdrop click — all close the modal         
 
 ## Payments / Disbursements
 
-_Route: `/funding-payments` — Funding Payments Management. CSV export plus four payment modals (NotificationPayment, SubcontractorNotificationPayment, BankWire, InvestorWire, WirePayment)._
+_Route: `/funding-payments` — Funding Payments Management. Read-only list of payments against bank credits, with filters, stats and CSV export._
 
 ### List, filters, search, export
 
@@ -170,49 +170,6 @@ click "Export CSV" — browser downloads `funding-payments-<date>.csv` with visi
 export with filters applied — CSV contains only the filtered rows                           ( )
 export with 0 rows — CSV has header only                                                    ( )
 Filtered Results footer shows correct count and total when filters are active               ( )
-
-### PaymentNotifications (upcoming repayments)
-
-page shows pending payment notifications for upcoming credit repayments                     ( )
-expand a notification — details (bank, loan type, scheduled amount, due date) render        ( )
-dismiss a notification — it disappears; "Show dismissed" toggle brings it back              ( )
-filter notifications by credit type                                                         ( )
-
-### Record payment against a credit notification (NotificationPaymentModal)
-
-open the modal from a notification — details banner renders bank, loan type, due date, scheduled amount, payment_number, project ( )
-submit with amount filled — payment recorded, notification marked done                      ( )
-submit with amount = 0 or empty — submit button disabled                                    ( )
-submit with payment_date empty — today's date used or save blocked                          ( )
-submit with a date far in the future — accepted, flagged in notes                           ( )
-submit with notes containing line breaks / long text                                        ( )
-submit an amount > scheduled — warning banner shown ("Payment exceeds scheduled")          ( )
-cancel — nothing recorded                                                                   ( )
-
-### Record subcontractor milestone payment (SubcontractorNotificationPaymentModal)
-
-open the modal from a subcontractor notification — contract / already-paid / remaining stats render, milestone info shown ( )
-amount auto-populates from notification.amount                                              ( )
-paid_by_bank auto-populates from subcontractor financing bank if one exists                 ( )
-submit with amount > 0 and paid_by_bank selected — success toast shown, onSuccess fires     ( )
-submit with amount = 0 — inline `fieldErrors.amount` appears, submit button disabled        ( )
-submit with amount > remaining — backend behaviour (reject / overpayment flag)              ( )
-change paid_by_bank to "No payer / none" — saves with null bank                             ( )
-change paid_by_bank — amount stays the same                                                 ( )
-project with **no** funder banks — Select hidden, payment still saves                       ( )
-close the modal with loading in-flight — loading spinner prevents cancel until finished     ( )
-errors in recordSubcontractorMilestonePayment show error toast (simulate by network drop)  ( )
-
-### Bank / Investor wire payment (BankWirePaymentModal, InvestorWirePaymentModal, WirePaymentModal)
-
-open BankWirePayment — amount, date, notes form, details banner with recipient info         ( )
-submit with valid amount + date — payment saved                                             ( )
-submit with amount = 0 or empty — save blocked                                              ( )
-submit with date empty — default today used or save blocked                                 ( )
-submit with a very large amount (>1,000,000,000) — renders without overflow                 ( )
-submit with negative amount — blocked (min="0")                                             ( )
-open InvestorWirePayment — same tests apply                                                 ( )
-cancel — nothing saved                                                                      ( )
 
 ---
 

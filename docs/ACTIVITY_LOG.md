@@ -228,7 +228,7 @@ logActivity({
 | `contract.create` | H | `Supervision/SiteManagement/services/siteContractService.ts` |
 | `contract_type.create` | M | `Supervision/SiteManagement/services/siteContractService.ts` |
 | `contract_milestone.create` | L | `Supervision/SiteManagement/services/milestoneService.ts` |
-| `contract_milestone.update` | L–M | `Supervision/SiteManagement/services/milestoneService.ts` + `Funding/Payments/services/paymentNotificationService.ts` |
+| `contract_milestone.update` | L–M | `Supervision/SiteManagement/services/milestoneService.ts` |
 | `contract_milestone.delete` | M | `Supervision/SiteManagement/services/milestoneService.ts` |
 | `document.upload` | M | `Documents/services/documentService.ts` |
 | `document.update` | M | `Documents/services/documentService.ts` |
@@ -238,7 +238,7 @@ logActivity({
 | `work_log.delete` | M | `Supervision/WorkLogs/services/workLogService.ts` |
 | `invoice.approve` | H | `Supervision/Invoices/services/supervisionInvoiceService.ts` |
 
-### Funding (17)
+### Funding (14)
 | Action | Severity | File |
 |---|---|---|
 | `investor.create` | M | `Funding/Investors/hooks/useBankData.ts` |
@@ -247,9 +247,6 @@ logActivity({
 | `bank_credit.create` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
 | `bank_credit.update` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
 | `bank_credit.delete` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
-| `bank_credit.generate_schedule` | M | `Funding/Payments/services/paymentNotificationService.ts` |
-| `payment_notification.dismiss` | M | `Funding/Payments/services/paymentNotificationService.ts` |
-| `subcontractor_payment.create` | H | `Funding/Payments/services/paymentNotificationService.ts` |
 | `credit_allocation.create` | H | `Funding/Investments/services/creditService.ts` |
 | `credit_allocation.delete` | H | `Funding/Investments/services/creditService.ts` |
 | `equity_investment.create` | H | `Funding/Investors/hooks/useEquityForm.ts` |
@@ -343,7 +340,6 @@ is the *user* action that triggered or corrected a run.
 These writes are deliberately exempt from `logActivity()` — do not "fix" them without reconsidering the rationale:
 
 - **Derived-value recalculations** — system-computed aggregates rewritten from source data, not user actions; logging them would flood the log: `recalculateBankAccountBalance` (companyService), `recalculatePhaseBudget` / `recalculateAllPhaseBudgets` (phaseService), `updateContractBudgetRealized` (siteContractService)
-- **Automatic status sweeps** — `update_overdue_notifications` RPC (runs on page load, no user intent)
 - **Chat traffic** — `chat_messages` inserts, `chat_participants.last_read_at` updates, chat/AI-chat file attachments; conversation create/delete *are* logged
 - **AI session housekeeping** — session *creation* and cancel flags (`aiChatService`). A session row is created implicitly on the first message, so logging it would just duplicate chat traffic. Renames (`ai_session.update`) and deletes (`ai_session.delete`) *are* logged
 - **Storage rollbacks** — `.remove()` calls that clean up after a failed upload
@@ -473,6 +469,7 @@ Add translated action labels in both locale files under the `activity_log.action
 ## Notes
 
 - **Logs are immutable** — no UPDATE or DELETE RLS policies. This is by design for audit integrity.
+- **Retired actions keep their labels.** `bank_credit.generate_schedule`, `payment_notification.dismiss` and `subcontractor_payment.create` stopped being emitted when the Funding payment-notification code was deleted (2026-09-14), but older `activity_logs` rows may carry them. Their `activity_log.actions` labels must stay so those rows keep rendering — a label with no matching `logActivity()` call is not dead by that fact alone.
 - **IP address column** exists but is always NULL — client-side Supabase cannot reliably capture IP. An Edge Function could populate this in the future.
 - **No log retention policy** — at current usage levels the table stays small. Consider `pg_cron` pruning or monthly partitioning if the table grows large.
 - **Mutations live in both service files and hook files** depending on the module. Always trace to wherever the `supabase.from().insert/update/delete` actually executes.

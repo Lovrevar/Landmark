@@ -104,7 +104,6 @@ Two companion rules that follow from the same change, and that every module is e
 | `src/utils/vatCalculations.ts` | Croatian 4-slot VAT breakdown (`calculateVatBreakdown`, `CROATIAN_VAT_RATES` 25/13/0/5%); unit-tested |
 | `src/utils/yieldToUI.ts` | `yieldToUI()` — yields to the next macrotask to keep the UI responsive during long PDF-builder loops |
 | `src/utils/excelParsers.ts` | Excel file import helpers |
-| `src/utils/reportGenerator.ts` | Shared PDF generation utilities |
 | `src/types/investment.ts` | Shared investment types |
 | `src/types/retail.ts` | Shared retail types |
 | `src/lib/activityLog.ts` | Fire-and-forget audit logger (`logActivity`) |

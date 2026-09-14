@@ -146,13 +146,6 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 - `detectPaymentType(row)` — detects payment type for apartment import rows from column positions (V–Y = installments, Z = credit)
 - Used by the Sales bulk apartment import feature
 
-### reportGenerator.ts
-- `generateDirectorReport(projects)` — generates a multi-section PDF report for the Director profile covering all projects with financials, tasks, and subcontractors
-- `generateProjectDetailReport(project)` — generates a detailed single-project PDF report
-- `generateComprehensiveExecutiveReport()` — fetches all data from Supabase and generates a full executive-level PDF
-- Loads NotoSans (via Google Fonts CDN) at the start of each export to support Croatian characters (š č ć đ ž); falls back to helvetica if the font fetch fails
-- **Depends on:** jsPDF, date-fns, supabase client
-
 ### vatCalculations.ts
 - `CROATIAN_VAT_RATES` — the four slots (25 / 13 / 5 / 0 %) a Croatian invoice can mix
 - `calculateVatBreakdown(...)` — the 4-slot multi-VAT engine; null-safe, and holds the invariant that the total equals the sum of the per-slot subtotals

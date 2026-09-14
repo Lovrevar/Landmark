@@ -1,4 +1,4 @@
-import type { Project, Apartment, Bank, ProjectCategory } from '../../../lib/supabase'
+import type { Project, Bank, ProjectCategory } from '../../../lib/supabase'
 
 // ── ProjectsManagement ────────────────────────────────────────────────────
 
@@ -78,32 +78,6 @@ export interface CreditAllocationItem {
 }
 
 export type TabType = 'overview' | 'phases' | 'apartments' | 'subcontractors' | 'financing' | 'milestones'
-
-// ── ProjectDetails ────────────────────────────────────────────────────────
-
-export interface SubcontractorMapped {
-  id: string
-  subcontractor_id: string
-  name: string
-  contact: string | null
-  job_description: string | null
-  deadline: string | null
-  cost: number
-  budget_realized: number
-  progress: number
-  phase_name?: string
-}
-
-export interface ProjectWithDetails extends Project {
-  subcontractors: SubcontractorMapped[]
-  invoices: Record<string, unknown>[]
-  apartments: Apartment[]
-  milestones: Milestone[]
-  total_spent: number
-  total_revenue: number
-  pending_invoices: number
-  investors: string
-}
 
 export interface ProjectDisplay {
   id: string
