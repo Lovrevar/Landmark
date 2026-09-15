@@ -5,6 +5,7 @@ import { useAuth, Profile } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLeaveGuard } from '../../contexts/UnsavedChangesContext'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { useIsDesktop } from '../../hooks/useMediaQuery'
 import { useModalOverflow } from '../../hooks/useModalOverflow'
@@ -243,7 +244,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setPendingProfile(null)
   }, [currentProfile, cashflowUnlocked, navigate, setCurrentProfile])
 
+  const passwordDialogRef = useRef<HTMLDivElement>(null)
   useEscapeKey(showPasswordModal, handlePasswordCancel)
+  useFocusTrap(passwordDialogRef, showPasswordModal)
 
   const profiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
 
@@ -527,13 +530,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6">
+          <div
+            ref={passwordDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cashflow-unlock-title"
+            tabIndex={-1}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 outline-none"
+          >
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <Lock className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Cashflow</h2>
+                <h2 id="cashflow-unlock-title" className="text-xl font-bold text-gray-900 dark:text-white">Cashflow</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {cashflowConfigured
                     ? t('profiles.unlock_title')

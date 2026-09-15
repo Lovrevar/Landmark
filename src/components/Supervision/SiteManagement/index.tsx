@@ -498,7 +498,7 @@ const SiteManagement: React.FC = () => {
         />
 
         {showMilestoneManagement && milestoneContext && (
-          <Modal show={true} onClose={closeMilestoneManagement} size="full">
+          <Modal show={true} onClose={closeMilestoneManagement} size="full" ariaLabel={t('supervision.site_management.milestone_list.title')}>
             <MilestoneList
               contractId={milestoneContext.subcontractor.contract_id || milestoneContext.subcontractor.id}
               subcontractorName={milestoneContext.subcontractor.name}

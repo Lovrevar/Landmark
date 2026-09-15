@@ -159,7 +159,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
               </p>
             </FormField>
 
-            <FormField label={t('retail_projects.milestones.form.calculated_amount')}>
+            <FormField group label={t('retail_projects.milestones.form.calculated_amount')}>
               <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-semibold">
                 {formatCurrency(calculateAmount())}
               </div>

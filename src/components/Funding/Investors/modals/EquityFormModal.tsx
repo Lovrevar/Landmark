@@ -158,7 +158,7 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
               />
             </FormField>
           )}
-          <FormField label={t('funding.equity_form.money_multiple_label')} helperText={t('funding.equity_form.money_multiple_helper')}>
+          <FormField group label={t('funding.equity_form.money_multiple_label')} helperText={t('funding.equity_form.money_multiple_helper')}>
             <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200">
               {moneyMultiple}
             </div>

@@ -90,6 +90,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
 
   const baseClasses = [
     'inline-flex items-center justify-center rounded-lg transition-colors duration-200',
+    // Keyboard focus only (focus-visible), so mouse clicks show no ring.
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800',
     'disabled:opacity-50 disabled:cursor-not-allowed',
     variantStyles[variant],
     sizeStyles[size],

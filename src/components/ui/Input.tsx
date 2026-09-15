@@ -1,4 +1,5 @@
 import React from 'react'
+import { useFormFieldControl } from './FormField'
 
 interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value'> {
   compact?: boolean
@@ -33,7 +34,19 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({
       }
     : props.onWheel
 
-  return <input ref={ref} className={baseClasses} value={value ?? undefined} {...props} onFocus={handleFocus} onWheel={handleWheel} />
+  const field = useFormFieldControl()
+  // Inside a FormField, take its id (so the <label> points here) and its error/helper wiring.
+  // Anything passed explicitly still wins.
+  const a11y = field
+    ? {
+        id: props.id ?? field.controlId,
+        'aria-describedby': props['aria-describedby'] ?? field.describedBy,
+        'aria-invalid': props['aria-invalid'] ?? (field.invalid || undefined),
+        'aria-required': props['aria-required'] ?? (field.required || undefined),
+      }
+    : {}
+
+  return <input ref={ref} className={baseClasses} value={value ?? undefined} {...props} {...a11y} onFocus={handleFocus} onWheel={handleWheel} />
 })
 
 Input.displayName = 'Input'

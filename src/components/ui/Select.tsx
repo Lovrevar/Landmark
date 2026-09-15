@@ -1,4 +1,5 @@
 import React from 'react'
+import { useFormFieldControl } from './FormField'
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   compact?: boolean
@@ -18,8 +19,20 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({
     className,
   ].filter(Boolean).join(' ')
 
+  const field = useFormFieldControl()
+  // Inside a FormField, take its id (so the <label> points here) and its error/helper wiring.
+  // Anything passed explicitly still wins.
+  const a11y = field
+    ? {
+        id: props.id ?? field.controlId,
+        'aria-describedby': props['aria-describedby'] ?? field.describedBy,
+        'aria-invalid': props['aria-invalid'] ?? (field.invalid || undefined),
+        'aria-required': props['aria-required'] ?? (field.required || undefined),
+      }
+    : {}
+
   return (
-    <select ref={ref} className={baseClasses} {...props}>
+    <select ref={ref} className={baseClasses} {...props} {...a11y}>
       {children}
     </select>
   )

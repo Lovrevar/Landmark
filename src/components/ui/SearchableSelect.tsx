@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, Search, X } from 'lucide-react'
+import { useFormFieldControl } from './FormField'
 
 export interface SearchableOption {
   value: string
@@ -31,6 +32,8 @@ export default function SearchableSelect({
   size = 'md',
 }: Props) {
   const [open, setOpen] = useState(false)
+  // Inside a FormField the trigger takes the field's id, so the <label> names and focuses it.
+  const field = useFormFieldControl()
   const [query, setQuery] = useState('')
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -71,10 +74,16 @@ export default function SearchableSelect({
     <div ref={rootRef} className="relative">
       <button
         type="button"
+        id={field?.controlId}
+        aria-describedby={field?.describedBy}
+        aria-invalid={field?.invalid || undefined}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         disabled={disabled}
         onClick={() => !disabled && setOpen(v => !v)}
         className={[
           'w-full flex items-center justify-between gap-2 rounded-lg border',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
           'border-gray-300 dark:border-gray-600',
           'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100',
           'hover:border-gray-400 dark:hover:border-gray-500 transition-colors',

@@ -65,7 +65,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
           </FormField>
 
           {/* Read-only: the phase budget is that phase's share of the TIC. */}
-          <FormField
+          <FormField group
             label={t('supervision.site_management.edit_phase.budget')}
             helperText={t('general_projects.budget_from_tic_hint')}
           >

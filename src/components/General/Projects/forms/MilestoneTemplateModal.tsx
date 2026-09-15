@@ -157,13 +157,13 @@ function MilestoneTemplateModal({ show, onClose, projectStartDate, onSubmit }: P
         onClose={onClose}
       />
       <Modal.Body>
-        <FormField label={t('general_projects.milestone_template.template_label')}>
+        <FormField group label={t('general_projects.milestone_template.template_label')}>
           <div className="text-sm text-gray-700 dark:text-gray-200 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-md">
             {t(template.labelKey)}
           </div>
         </FormField>
 
-        <FormField label={t('general_projects.milestone_template.scope_label')}>
+        <FormField group label={t('general_projects.milestone_template.scope_label')}>
           <SegmentedControl<Scope> value={scope} onChange={setScope} options={scopeOptions} />
         </FormField>
 
@@ -227,7 +227,7 @@ function MilestoneTemplateModal({ show, onClose, projectStartDate, onSubmit }: P
           </div>
         )}
 
-        <FormField label={t('general_projects.milestone_template.date_label')}>
+        <FormField group label={t('general_projects.milestone_template.date_label')}>
           <SegmentedControl<DateStrategy> value={dateStrategy} onChange={setDateStrategy} options={dateOptions} />
         </FormField>
 

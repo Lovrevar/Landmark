@@ -33,6 +33,7 @@ Shared primitive component library. Always check here before building new UI —
 - Versatile button with loading state, left/right icons, and multiple size/variant options
 - Props: `variant` (16 types), `size` (6 types), `icon?`, `iconRight?`, `loading?`, `fullWidth?`, `children?`, plus all standard HTML button attributes
 - Uses `forwardRef`; shows `Loader2` spinner when `loading` is true, and on its own while an `onClick` that returns a Promise is pending
+- Shows a blue focus ring on **keyboard** focus only (`focus-visible`), offset against the page background in both themes; mouse clicks show nothing
 - Subtle coloured variants for row actions: `ghost-primary` (edit/view), `ghost-success` (pay/complete), `ghost-warning`, `ghost-danger` (delete) — transparent, coloured icon/text with a dark-mode pair, tinted hover. `info` (soft blue) and `warning` (soft yellow) are the filled-soft pair
 - **Don't recolour a variant through `className`.** The variant's own `dark:` classes outrank a plain colour class, so `variant="ghost" className="text-red-600"` renders grey in dark mode. Pick or add a variant instead; `className` is for layout
 
@@ -52,6 +53,7 @@ Shared primitive component library. Always check here before building new UI —
 - **Usage pattern (components):** Component holds `const [pendingDelete, setPendingDelete] = useState<T | null>(null)` locally. Delete button calls `setPendingDelete(item)`. ConfirmDialog rendered at bottom of JSX.
 - **Never use `window.confirm()` or `confirm()`** — all deletion confirmations must use ConfirmDialog.
 - Escape runs `onCancel` via [`useEscapeKey`](#useescapekey-srchooksuseescapekeyts), and only while this dialog is the topmost open layer — it never also closes the modal, drawer or panel it was opened from
+- `role="alertdialog"` for `variant="danger"` (else `dialog`), named by the title and described by the message. Focus opens on **Cancel**, the always-safe choice, so a reflexive Enter never confirms a delete; Tab stays inside and closing returns focus to the opener
 
 ### EmptyState.tsx
 - Centered empty list / no-results placeholder with icon and optional action
@@ -73,7 +75,11 @@ Shared primitive component library. Always check here before building new UI —
 
 ### FormField.tsx
 - Wraps any form input with label, required marker, helper text, and error display
-- Props: `label`, `required?`, `helperText?` (ReactNode), `error?`, `compact?`, `children`, `className?`
+- Props: `label`, `required?`, `helperText?` (ReactNode), `error?`, `compact?`, `group?`, `children`, `className?`
+- **Links the label to its control automatically.** FormField generates an id and provides it through context; `Input`, `Select`, `Textarea` and `SearchableSelect` (and `DateInput` / `CurrencyInput`, which render `Input`) pick it up as their `id`, plus `aria-describedby` (the error, else the helper text), `aria-invalid` and `aria-required`. Clicking the label focuses the field; screen readers and Playwright's `getByLabel` find it by label. Anything passed explicitly on the control wins
+- One control per FormField — two controls would share the id
+- `group` — for a field that is a set of controls or a read-only value (a `SegmentedControl`, a category tree, "budget from TIC"): the label becomes the name of a `role="group"` wrapper instead of pointing at a single input
+- A custom control can join in with `useFormFieldControl()` (exported from `FormField.tsx`), which returns `{ controlId, describedBy, invalid, required }` or null outside a FormField
 
 ### Input.tsx
 - Styled text input with focus ring
@@ -92,7 +98,9 @@ Shared primitive component library. Always check here before building new UI —
 ### Modal.tsx
 - Full-featured modal dialog with portal rendering and body scroll lock
 - Compound component: `Modal.Header`, `Modal.Body`, `Modal.Footer`
-- Props (root): `show`, `onClose`, `size?` ('sm' | 'md' | 'lg' | 'xl' | 'full'), `children`
+- Props (root): `show`, `onClose`, `size?` ('sm' | 'md' | 'lg' | 'xl' | 'full'), `ariaLabel?`, `children`
+- **Dialog semantics:** the panel is `role="dialog"` + `aria-modal`, named by `Modal.Header`'s title. A modal that draws its own header instead must pass `ariaLabel`
+- **Focus:** on open, focus moves to the panel (or stays on an `autoFocus` field inside it), Tab is kept inside, and on close focus returns to the element that opened it — via [`useFocusTrap`](#usefocustrap-srchooksusefocustrapts). The panel, not the first input, takes focus so a phone's keyboard doesn't pop up on open. The header close button is labelled `common.close`
 - Props (Header): `title`, `subtitle?` (string | null), `onClose`, `children?` — children render
   under the title and subtitle (badges, a contact line); when present the close button pins to the
   top of the header instead of centring on it
@@ -199,6 +207,14 @@ Helpers for list/grid views: a view-mode toggle and a sort dropdown. Re-exported
 - An Escape that something already handled is ignored: an input that uses Escape to cancel its own edit (a title field, a rename box, the @mention list) should call `e.preventDefault()` in its React `onKeyDown`, which runs before the shared document listener
 - **Don't** add a raw `document.addEventListener('keydown', …)` for Escape in a new layer — use this hook, or nested layers break again
 - The stack logic is exported (`pushEscapeLayer`, `dispatchEscape`) and unit-tested in `useEscapeKey.test.ts`
+
+### useFocusTrap (`src/hooks/useFocusTrap.ts`)
+- `useFocusTrap(containerRef, active, { initialFocus? })` — keeps keyboard focus inside the **topmost** open modal layer and returns it when the layer closes
+- Used by `Modal`, `ConfirmDialog`, the task drawer, the Cashflow password dialog, the AI image lightbox and Retail's milestone overlay. Traps stack like Escape layers: a ConfirmDialog over a Modal traps inside the dialog and hands focus back to the Modal on close
+- On activation focus goes to `initialFocus`, else the container (give it `tabIndex={-1}`) — unless something inside already has focus, so `autoFocus` fields still win. Tab and Shift+Tab wrap within the container; focus that lands outside (a click behind the overlay) is pulled back. On deactivation focus returns to the previously focused element if it is still on the page and the user hasn't moved focus elsewhere
+- **Modal layers only.** Non-modal panels and popovers (AI chat panel, chat members panel, calendar cluster popover) take Escape via `useEscapeKey` and no trap
+- **A new modal overlay uses `Modal` / `ConfirmDialog`, or both hooks plus `role="dialog"`, `aria-modal` and an accessible name** — otherwise keyboard and screen-reader users get lost behind it
+- Stack and wrap logic (`pushTrap`, `topTrap`, `nextTabIndex`) are unit-tested in `useFocusTrap.test.ts`; the DOM behaviour is covered by `e2e/sales/customers.spec.ts`
 
 ---
 

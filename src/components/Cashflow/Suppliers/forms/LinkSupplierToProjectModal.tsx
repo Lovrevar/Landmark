@@ -133,7 +133,7 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
   if (!visible) return null
 
   return (
-    <Modal show={visible} onClose={handleClose} size="md">
+    <Modal show={visible} onClose={handleClose} size="md" ariaLabel={t('suppliers.link.title')}>
       <div className="p-6">
         <div className="flex items-center space-x-3 mb-6">
           <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">

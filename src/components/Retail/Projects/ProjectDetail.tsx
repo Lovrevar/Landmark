@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, MapPin, RefreshCw, Link, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button, Badge, LoadingSpinner, EmptyState, ConfirmDialog } from '../../ui'
@@ -16,6 +16,7 @@ import { retailProjectService } from './services/retailProjectService'
 import { useProjectDetail } from './hooks/useProjectDetail'
 import { useToast } from '../../../contexts/ToastContext'
 import { useEscapeKey } from '../../../hooks/useEscapeKey'
+import { useFocusTrap } from '../../../hooks/useFocusTrap'
 import type { RetailProjectWithPhases, RetailProjectPhase, RetailContract } from '../../../types/retail'
 
 interface ProjectDetailProps {
@@ -172,7 +173,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     setMilestoneContext(null)
   }
 
+  const milestoneOverlayRef = useRef<HTMLDivElement>(null)
   useEscapeKey(showMilestoneManagement && !!milestoneContext, closeMilestoneManagement)
+  useFocusTrap(milestoneOverlayRef, showMilestoneManagement && !!milestoneContext)
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -338,7 +341,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
 
       {showMilestoneManagement && milestoneContext && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="max-w-6xl w-full my-8">
+          <div
+            ref={milestoneOverlayRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('retail_projects.milestones.title')}
+            tabIndex={-1}
+            className="max-w-6xl w-full my-8 outline-none"
+          >
             <MilestoneList
               contractId={milestoneContext.contract.id}
               supplierName={

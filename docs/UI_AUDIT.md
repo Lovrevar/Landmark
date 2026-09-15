@@ -71,7 +71,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
    - The Director alerts panel is entirely English.
    - PDF exports ignore the UI language.
    - English placeholders such as "John Smith" and "+1 (555)".
-6. [ ] **The shared library itself.**
+6. [~] **The shared library itself.** *(dialog semantics + focus management, FormField label linking and the dark error text are fixed; toast contrast fixed; Alert `onClose` / StatCard `trend` and the stale docs remain)*
    - Modal and ConfirmDialog have no `role="dialog"` or focus management.
    - `FormField` labels aren't linked to their inputs (419 usages).
    - The warning toast is white on yellow (~2:1 contrast).
@@ -659,7 +659,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 21. **[Tasks/TaskDetail.tsx:615](../src/components/Tasks/TaskDetail.tsx), `components/AttachmentList.tsx:193`** — Rules/UX · med
     - **Problem:** comment and attachment deletes are one click with no confirmation, while subtask removal asks.
     - **Fix:** confirm or undo.
-22. **[ui/Modal.tsx](../src/components/ui/Modal.tsx), [ui/ConfirmDialog.tsx](../src/components/ui/ConfirmDialog.tsx)** — A11y · med
+22. **[ui/Modal.tsx](../src/components/ui/Modal.tsx), [ui/ConfirmDialog.tsx](../src/components/ui/ConfirmDialog.tsx)** — A11y · med · `[x]` (dialog roles, `useFocusTrap`, labelled close button; also the task drawer, password dialog, lightbox and Retail milestone overlay)
     - **Problem:** no `role="dialog"`, `aria-modal` or focus management; the close X has no accessible name; the TaskDetail drawer has no focus handling.
     - **Fix:** dialog semantics, focus trap and restore, aria-label.
 23. **Calendar on phones** — `Calendar/hooks/useCalendarPreferences.ts:16`, `MonthView.tsx:269,279`, `views/WeekView.tsx` — Mobile · med
@@ -674,7 +674,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 26. **[ui/Pagination.tsx:20](../src/components/ui/Pagination.tsx#L20) + `General/ActivityLog/index.tsx:167`** — i18n · low-med
     - **Problem:** the English UI shows "…of 320 stavki".
     - **Fix:** default the label through `t()`.
-27. **[ui/Alert.tsx:26,34-47](../src/components/ui/Alert.tsx#L26) + `Sales/Customers/forms/CustomerFormModal.tsx:117`** — Library · low-med
+27. **[ui/Alert.tsx:26,34-47](../src/components/ui/Alert.tsx#L26) + `Sales/Customers/forms/CustomerFormModal.tsx:117`** — Library · low-med · `[~]` (CurrencyInput `required` fixed; DateInput already passed it; Alert/StatCard/DateInput min-max open)
     - **Problem:** Alert ignores `onClose`; StatCard `trend`, DateInput `min` / `max` and CurrencyInput `required` are ignored too.
     - **Fix:** implement the props or remove them.
 28. **[Chat/MessagePanel.tsx:322-331](../src/components/Chat/MessagePanel.tsx#L322)** — Library/UX · low-med
@@ -712,7 +712,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
   - Badge has duplicate variants and no `error` / `info`.
 - **Icon-only buttons without labels (~12).**
 - **`ui/` focus styling inconsistent.** Inputs have rings; Button, FilterChip, SegmentedControl, Tabs, Pagination and the Modal close button have none. Tabs lacks `role="tab"`.
-- **`FormField` labels aren't linked to inputs (419 usages),** and error text has no dark variant.
+- [x] **`FormField` labels aren't linked to inputs (419 usages),** and error text has no dark variant. *Fixed: FormField context links label, error and helper text to Input/Select/Textarea/SearchableSelect; `group` for the 9 group fields.*
 - **`docs/UI.md` is stale:**
   - ConfirmDialog labels are already `t()`.
   - PageHeader doesn't accept `subtitle` / `icon`.

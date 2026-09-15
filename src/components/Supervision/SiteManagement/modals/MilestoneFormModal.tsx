@@ -144,7 +144,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
               />
             </FormField>
 
-            <FormField
+            <FormField group
               label={t('supervision.milestone_form.calculated_amount')}
               helperText={`${formData.percentage}% ${t('supervision.milestone_form.of')} €${contractCost.toLocaleString('hr-HR')}`}
             >

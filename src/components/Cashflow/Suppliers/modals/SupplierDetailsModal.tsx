@@ -20,7 +20,7 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
   if (!supplier) return null
 
   return (
-    <Modal show={showModal} onClose={onClose} size="xl">
+    <Modal show={showModal} onClose={onClose} size="xl" ariaLabel={supplier.name}>
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center flex-shrink-0 rounded-t-lg">
         <div>
           <div className="flex items-center gap-2">

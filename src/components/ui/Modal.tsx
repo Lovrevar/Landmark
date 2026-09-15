@@ -1,7 +1,9 @@
-import React, { useRef, useEffect } from 'react'
+import React, { createContext, useContext, useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
 
@@ -17,11 +19,18 @@ interface ModalProps {
   show: boolean
   onClose: () => void
   size?: ModalSize
+  /** Accessible name for a modal that renders its own header instead of `Modal.Header`. */
+  ariaLabel?: string
   children: React.ReactNode
 }
 
-function ModalRoot({ show, onClose, size = 'md', children }: ModalProps) {
+// Carries the dialog's title id from the root to Modal.Header, which renders the title.
+const ModalTitleContext = createContext<string | undefined>(undefined)
+
+function ModalRoot({ show, onClose, size = 'md', ariaLabel, children }: ModalProps) {
   const mouseDownOnBackdrop = useRef(false)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const titleId = useId()
 
   useEffect(() => {
     if (show) {
@@ -36,6 +45,7 @@ function ModalRoot({ show, onClose, size = 'md', children }: ModalProps) {
   }, [show])
 
   useEscapeKey(show, onClose)
+  useFocusTrap(panelRef, show)
 
   if (!show) return null
 
@@ -58,8 +68,18 @@ function ModalRoot({ show, onClose, size = 'md', children }: ModalProps) {
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
     >
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col`}>
-        {children}
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={ariaLabel ? undefined : titleId}
+        aria-label={ariaLabel}
+        tabIndex={-1}
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col outline-none`}
+      >
+        <ModalTitleContext.Provider value={titleId}>
+          {children}
+        </ModalTitleContext.Provider>
       </div>
     </div>
   )
@@ -75,19 +95,24 @@ interface ModalHeaderProps {
 }
 
 function ModalHeader({ title, subtitle, onClose, children }: ModalHeaderProps) {
+  const { t } = useTranslation()
+  const titleId = useContext(ModalTitleContext)
   // Extra header content stacks under the title, so the close button pins to the top rather
   // than drifting to the middle of a taller header. Plain headers keep it centred on the title.
   const align = children ? 'items-start' : 'items-center'
   return (
     <div className={`bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex justify-between ${align} gap-3 flex-shrink-0 rounded-t-lg`}>
       <div className="min-w-0">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{title}</h2>
+        <h2 id={titleId} className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{title}</h2>
         {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">{subtitle}</p>}
         {children}
       </div>
       <button
+        type="button"
         onClick={onClose}
-        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+        aria-label={t('common.close')}
+        title={t('common.close')}
+        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
         <X className="w-6 h-6" />
       </button>

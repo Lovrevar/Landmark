@@ -38,6 +38,7 @@ import {
 } from './services/tasksService'
 import { useAuth } from '../../contexts/AuthContext'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { isChecklist, subtaskProgress } from './subtasks'
 import { canEditTask } from './permissions'
 import type {
@@ -102,7 +103,9 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
     }
   }, [task, loadAttachments])
 
+  const drawerRef = useRef<HTMLElement>(null)
   useEscapeKey(!!task, onClose)
+  useFocusTrap(drawerRef, !!task)
 
   const projectOptions = useMemo(
     () => projects.map(p => ({ value: p.id, label: p.name })),
@@ -239,9 +242,12 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
         onClick={onClose}
       />
       <aside
+        ref={drawerRef}
         role="dialog"
         aria-modal="true"
-        className={`ml-auto relative w-full md:w-[560px] h-full bg-white dark:bg-gray-800 shadow-xl flex flex-col transform transition-transform duration-200 ${mounted ? 'translate-x-0' : 'translate-x-full'}`}
+        aria-label={task.title}
+        tabIndex={-1}
+        className={`ml-auto relative w-full md:w-[560px] h-full bg-white dark:bg-gray-800 shadow-xl flex flex-col transform transition-transform duration-200 outline-none ${mounted ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="safe-top px-4 sm:px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
