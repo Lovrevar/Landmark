@@ -20,7 +20,9 @@ interface Props {
   taskOccurrences?: TaskOccurrence[]
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onTaskClick?: (occurrence: TaskOccurrence) => void
-  onTaskToggle?: (occurrence: TaskOccurrence) => void
+  onTaskToggle: (occurrence: TaskOccurrence) => void
+  /** The signed-in user's auth id; decides whether a task's checkbox is live. */
+  currentUserId: string | null | undefined
   onSlotSelect: (selection: SlotSelection) => void
 }
 
@@ -33,6 +35,7 @@ export default function WeekView({
   onEventClick,
   onTaskClick,
   onTaskToggle,
+  currentUserId,
   onSlotSelect,
 }: Props) {
   const { t, i18n } = useTranslation()
@@ -96,6 +99,7 @@ export default function WeekView({
                     occurrence={o}
                     onClick={onTaskClick}
                     onToggle={onTaskToggle}
+                    currentUserId={currentUserId}
                     compact
                     showTime
                     locale={locale}

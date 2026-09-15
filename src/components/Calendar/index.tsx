@@ -2,11 +2,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalIcon, CheckSquare } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useToast } from '../../contexts/ToastContext'
 import { useCalendarPreferences } from './hooks/useCalendarPreferences'
 import { useEventsInRange } from './hooks/useEventsInRange'
 import { useTasksInRange } from './hooks/useTasksInRange'
 import { updateTaskCompleted, deleteTask as deleteTaskSvc } from '../Tasks/services/tasksService'
 import TaskDetail from '../Tasks/TaskDetail'
+import { isChecklist } from '../Tasks/subtasks'
+import { canEditTask } from '../Tasks/permissions'
 import type { Task } from '../../types/tasks'
 import type { TaskOccurrence } from './utils/expandTasks'
 import {
@@ -84,6 +87,7 @@ function minutesToTimeString(minutes: number): string {
 const CalendarPage: React.FC = () => {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
+  const toast = useToast()
   const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
   const {
     prefs,
@@ -157,10 +161,16 @@ const CalendarPage: React.FC = () => {
   }, [])
 
   const handleTaskToggle = useCallback(async (occ: TaskOccurrence) => {
-    if (!user) return
-    await updateTaskCompleted(occ.task.id, !occ.isDone, user, occ.task.title)
-    await refreshTasks()
-  }, [user, refreshTasks])
+    // The pills already disable these cases; this keeps a stray call from reaching the
+    // service, which throws for a checklist task.
+    if (!user || isChecklist(occ.task) || !canEditTask(occ.task, user.auth_user_id)) return
+    try {
+      await updateTaskCompleted(occ.task.id, !occ.isDone, user, occ.task.title)
+      await refreshTasks()
+    } catch {
+      toast.error(t('tasks.row.toggle_failed'))
+    }
+  }, [user, refreshTasks, toast, t])
 
   useEffect(() => {
     if (!user) return
@@ -354,6 +364,7 @@ const CalendarPage: React.FC = () => {
               onEventClick={setSelected}
               onTaskClick={handleTaskClick}
               onTaskToggle={handleTaskToggle}
+              currentUserId={user?.auth_user_id}
               onSlotSelect={handleSlotSelect}
             />
           ) : prefs.view === 'week' ? (
@@ -364,6 +375,7 @@ const CalendarPage: React.FC = () => {
               onEventClick={setSelected}
               onTaskClick={handleTaskClick}
               onTaskToggle={handleTaskToggle}
+              currentUserId={user?.auth_user_id}
               onSlotSelect={handleSlotSelect}
             />
           ) : prefs.view === 'agenda' ? (
@@ -373,6 +385,7 @@ const CalendarPage: React.FC = () => {
               onEventClick={setSelected}
               onTaskClick={handleTaskClick}
               onTaskToggle={handleTaskToggle}
+              currentUserId={user?.auth_user_id}
             />
           ) : (
             <MonthView
@@ -384,6 +397,7 @@ const CalendarPage: React.FC = () => {
               onEventClick={setSelected}
               onTaskClick={handleTaskClick}
               onTaskToggle={handleTaskToggle}
+              currentUserId={user?.auth_user_id}
             />
           )}
         </div>
@@ -400,6 +414,8 @@ const CalendarPage: React.FC = () => {
             taskOccurrences={prefs.showTasks ? taskOccurrences : []}
             onEventClick={setSelected}
             onTaskClick={handleTaskClick}
+            onTaskToggle={handleTaskToggle}
+            currentUserId={user?.auth_user_id}
           />
           <TeamCalendars
             users={users.filter(u => u.id !== user?.id)}
@@ -456,6 +472,8 @@ const CalendarPage: React.FC = () => {
         onClose={() => setSelectedDay(null)}
         onEventClick={(o) => { setSelectedDay(null); setSelected(o) }}
         onTaskClick={(tOcc) => { setSelectedDay(null); setSelectedTask(tOcc.task) }}
+        onTaskToggle={handleTaskToggle}
+        currentUserId={user?.auth_user_id}
       />
       {resolvedSelectedTask && (
         <TaskDetail

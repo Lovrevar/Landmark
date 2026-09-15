@@ -49,7 +49,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - **Returns:** form, setForm, loading, error, setError, handleSubmit, handleDelete, confirmDelete, cancelDelete, showDeleteConfirm, deleting
 
 ### useMilestoneManagement.ts
-- `useMilestoneManagement(projectId, onMutated)` — wraps milestone service calls with toast-based error handling and pending-delete (ConfirmDialog) state
+- `useMilestoneManagement(projectId, onMutated)` — wraps milestone service calls with toast-based error handling and pending-delete (ConfirmDialog) state. `editingMilestone` is typed as the local `Milestone`; `handleUpdateMilestone` resolves `true` on success so the caller only leaves edit mode when the save landed; a failed toggle shows `general_projects.milestone_update_error`
 - **Calls:** milestoneService.ts (add/update/delete/toggle + `bulkAddMilestones`)
 - **Uses:** ToastContext (`useToast`)
 - **Returns:** editingMilestone, setEditingMilestone, handleAddMilestone, handleUpdateMilestone, handleDeleteMilestone, confirmDeleteMilestone, cancelDeleteMilestone, pendingDeleteMilestoneId, deletingMilestone, handleToggleMilestone, handleBulkAddMilestones
@@ -104,6 +104,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - Visual vertical timeline of project milestones sorted by due date, with status colors and edit/delete/toggle actions
 - Optional `groupByPhase` mode renders collapsible per-phase sections (via `buildPhaseBuckets`) with phase progress bars and overdue badges; the parent drives expansion through the `isPhaseExpanded`/`onTogglePhase` props (wired to `usePhaseCollapseState`)
 - Shows summary stats (completed, in-progress, overdue, % progress)
+- Row actions (toggle/edit/delete) are always visible below `md`; from `md` up they appear on hover or keyboard focus (`md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100`, the `TaskRow` convention)
 - **Calls:** `buildPhaseBuckets`, `getMilestoneStatus`, `NO_PHASE_KEY` (utils.ts)
 - **Uses hooks:** (receives milestones as props, actions as callbacks)
 - **Uses Ui:** Badge, Button, EmptyState
@@ -112,12 +113,14 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - The project detail page (lazy-loaded in `App.tsx`; the older `ProjectDetails.tsx` it replaced was deleted on 2026-09-14). Tabs: Overview, Phases (PhasesContractsTab), Apartments, Subcontractors (SubcontractorsTab), Financing, Milestones
 - Header shows the project-category badge next to the status badge, and the Overview tab's project-info grid carries a "Vrsta projekta" tile alongside location/investor/dates
 - Header stat cards (budget/spent, timeline, completion %, contract count); Milestones tab combines an inline add form, the "Use template" action (MilestoneTemplateModal), an expand/collapse-all toggle, and a phase-grouped MilestoneTimeline
+- Milestone edit reuses the inline form: the timeline's Edit action fills it, switches the heading/submit to "Uredi prekretnicu"/Save, and scrolls to and focuses the name field. Cancel (or the header's Add button) returns it to add mode. Saving keeps the milestone's `phase` and reads `completed` from the live list, so a toggle made while the form was open is not reverted. Delete goes through a `ConfirmDialog` (`general_projects.milestone_delete_confirm`)
+- The full-page spinner shows only until this project has loaded (`loading && project?.id !== id`): milestone mutations reload the data, and a spinner then would unmount the form and the delete dialog
 - Computes `phaseStatuses` from milestones (`computePhaseStatuses(buildPhaseBuckets(...))`) and drives both the milestone grouping and `PhasesContractsTab` collapse via `usePhaseCollapseState`
 - **Uses hooks:** useMilestoneManagement, usePhaseCollapseState
 - **Uses services:** projectDetailsService (fetchProjectDataEnhanced)
 - **Uses components:** ProjectCategoryBadge, MilestoneTimeline, ProjectFormModal, MilestoneTemplateModal, PhasesContractsTab, SubcontractorsTab
 - **Calls:** `buildPhaseBuckets`, `computePhaseStatuses` (utils.ts)
-- **Uses Ui:** LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table
+- **Uses Ui:** LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table, ConfirmDialog
 
 #### Tabs
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation, Supplier, OfficeSupplier, Customer, Project, Refund, Contract, Milestone } from '../types'
 import * as invoiceService from '../services/invoiceService'
@@ -28,6 +28,9 @@ export const useInvoices = () => {
   const [customerApartments, setCustomerApartments] = useState<Record<string, unknown>[]>([])
   const [invoiceCategories, setInvoiceCategories] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(true)
+  // True once the first fetch has settled. Later refetches keep the page mounted (so the
+  // search box keeps focus) instead of swapping everything for a full-page spinner.
+  const [hasLoaded, setHasLoaded] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [filteredTotalCount, setFilteredTotalCount] = useState(0)
@@ -44,8 +47,8 @@ export const useInvoices = () => {
     : `${filterDirection}_${filterCategory}`
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PAID' | 'PARTIALLY_PAID' | 'UNPAID_AND_PARTIAL'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
-  const [sortField, setSortField] = useState<'due_date' | 'invoice_number' | null>(null)
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [sortField, setSortField] = useState<invoiceService.InvoiceSortField | null>(null)
+  const [sortDirection, setSortDirection] = useState<invoiceService.InvoiceSortDirection>('asc')
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [isOfficeInvoice, setIsOfficeInvoice] = useState(false)
   const [showRetailInvoiceModal, setShowRetailInvoiceModal] = useState(false)
@@ -70,7 +73,13 @@ export const useInvoices = () => {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
+  // Changing a filter or the sort while on page > 1 fires two fetches (the new criteria on the
+  // old page, then page 1). Only the latest one may write state, or a slow earlier response
+  // could land last and show the wrong page.
+  const latestRequestRef = useRef(0)
+
   const fetchData = useCallback(async () => {
+    const requestId = ++latestRequestRef.current
     try {
       setLoading(true)
 
@@ -80,8 +89,12 @@ export const useInvoices = () => {
         filterCompany,
         debouncedSearchTerm,
         currentPage,
-        pageSize
+        pageSize,
+        sortField,
+        sortDirection
       )
+
+      if (requestId !== latestRequestRef.current) return
 
       setInvoices(result.invoices as unknown as Invoice[])
       setTotalCount(result.stats.filtered_count)
@@ -103,11 +116,16 @@ export const useInvoices = () => {
       setRefunds(result.refunds)
 
     } catch (error) {
-      console.error('Error fetching data:', error)
+      if (requestId === latestRequestRef.current) {
+        console.error('Error fetching data:', error)
+      }
     } finally {
-      setLoading(false)
+      if (requestId === latestRequestRef.current) {
+        setLoading(false)
+        setHasLoaded(true)
+      }
     }
-  }, [filterType, filterStatus, filterCompany, debouncedSearchTerm, currentPage, pageSize])
+  }, [filterType, filterStatus, filterCompany, debouncedSearchTerm, currentPage, pageSize, sortField, sortDirection])
 
   useEffect(() => {
     fetchData()
@@ -115,7 +133,7 @@ export const useInvoices = () => {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [filterDirection, filterCategory, filterStatus, filterCompany, debouncedSearchTerm])
+  }, [filterDirection, filterCategory, filterStatus, filterCompany, debouncedSearchTerm, sortField, sortDirection])
 
   useEffect(() => {
     const loadMilestones = async () => {
@@ -393,6 +411,7 @@ export const useInvoices = () => {
     customerApartments,
     invoiceCategories,
     loading,
+    hasLoaded,
     currentPage,
     totalCount,
     filteredTotalCount,

@@ -9,8 +9,7 @@ interface SingleUnitModalProps {
   unitType: UnitType
   selectedBuilding: { name: string }
   onClose: () => void
-  onSubmit: (data: UnitFormData) => void
-  loading?: boolean
+  onSubmit: (data: UnitFormData) => Promise<void> | void
 }
 
 export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
@@ -18,8 +17,7 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
   buildingId,
   selectedBuilding,
   onClose,
-  onSubmit,
-  loading = false
+  onSubmit
 }) => {
   const { t } = useTranslation()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -53,7 +51,7 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
-    onSubmit(formData)
+    return onSubmit(formData)
   }
 
   return (
@@ -115,7 +113,7 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button loading={loading} onClick={handleSubmit}>
+        <Button onClick={handleSubmit}>
           {t('sales_projects.single_unit_modal.add_unit')}
         </Button>
       </Modal.Footer>

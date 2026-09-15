@@ -99,14 +99,12 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
     setShowAddSupplier(true)
   }
 
-  const handleSupplierCreated = async () => {
-    await loadSuppliers()
+  const handleSupplierCreated = async (supplier?: RetailSupplier) => {
     setShowAddSupplier(false)
-    const updatedSuppliers = await retailProjectService.fetchSuppliers()
-    if (updatedSuppliers.length > 0) {
-      const latestSupplier = updatedSuppliers[updatedSuppliers.length - 1]
-      setFormData(prev => ({ ...prev, supplier_id: latestSupplier.id }))
+    if (supplier) {
+      setFormData(prev => ({ ...prev, supplier_id: supplier.id }))
     }
+    await loadSuppliers()
   }
 
   return (

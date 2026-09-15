@@ -82,6 +82,9 @@ For each of the three unit types, the Single-Unit and Bulk-Unit modals are simil
 
 - on the Units grid, tick multiple unit checkboxes — selection count appears in a bulk-action bar   ( )
 - filter units by status (available, reserved, sold) — grid narrows   ( )
+- "Select all" under a status filter — selects only the visible units, never Sold ones; under "Sold" the button is disabled   ( )
+- a Sold unit's checkbox is disabled   ( )
+- switch the unit type tab or the status filter — the selection clears   ( )
 - change a single unit's status via its row menu — badge updates; revenue/progress on the parent building refreshes   ( )
 
 ### Bulk price update (per m²)
@@ -92,6 +95,8 @@ _Opens `BulkPriceUpdateModal`. Only enabled when units are selected._
 - selection summary shows count and current price range (min-max)   ( )
 - choose "increase", enter +50 €/m² → new price range preview updates; total value delta is shown   ( )
 - submit — prices update on all selected units; units grid re-renders   ( )
+- Sold unit prices never change, even if a unit was sold after it was selected   ( )
+- double-click the update button — one update, button spins while saving   ( )
 - choose "decrease", enter a value larger than the smallest current price (would make some prices negative) — inline error "would result in negative prices", submit blocked   ( )
 - submit with empty adjustment value — error "enter a valid value greater than 0"   ( )
 - submit with `0` — same error   ( )
@@ -116,6 +121,7 @@ _Records a sale against a unit — either using an existing customer or creating
 - same flow with "Existing customer" — dropdown lists customers; pick one; customer's contact fields pre-fill / are hidden   ( )
 - save successfully — apartment status changes to sold; linked garage and repozitorij (if any) also change state; customer's category transitions to `buyer`   ( )
 - submit with missing required fields (sale price empty, no customer picked) — inline errors per field   ( )
+- double-click Complete sale — one sale is created; the button spins while saving and the page does not flash a spinner   ( )
 - sale price lower than the apartment's listed price — document behaviour (warn or allow)   ( )
 - monthly payment × months ≠ sale price − down payment — document whether the app validates   ( )
 - Cancel / Esc — no sale recorded   ( )
@@ -164,8 +170,7 @@ This is the flatter list view (vs. the drill-down above). Filters, modals for CR
 
 - open on an apartment with sale + payments → modal shows: linked units, per-payment rows, total paid, total remaining, progress bar   ( )
 - open on an apartment with no sale — empty state or disabled button   ( )
-- edit a payment (EditPaymentModal) from the history → amount / date / type / notes — save   ( )
-- delete a payment — ConfirmDialog → apartment's remaining total recalculates   ( )
+- rows have no Edit/Delete buttons; each shows "Managed in Accounting" (payments are edited in Cashflow → Payments)   ( )
 
 **Delete apartment**
 

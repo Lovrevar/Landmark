@@ -397,11 +397,6 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
         >
           {t('common.save_changes')}
         </Button>
-        {subcontractor.has_contract !== false && (
-          <Button variant="success">
-            {t('supervision.edit_subcontractor.mark_completed')}
-          </Button>
-        )}
       </Modal.Footer>
     </Modal>
   )

@@ -37,7 +37,9 @@ import {
   type ProjectOption,
 } from './services/tasksService'
 import { useAuth } from '../../contexts/AuthContext'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { isChecklist, subtaskProgress } from './subtasks'
+import { canEditTask } from './permissions'
 import type {
   Task,
   TaskAttachment,
@@ -74,7 +76,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  const { comments, loading: commentsLoading, draft, setDraft, sending, send, remove, refresh } =
+  const { comments, loading: commentsLoading, draft, setDraft, sending, send, remove } =
     useTaskComments(task?.id ?? null)
 
   const taskIdRef = useRef(task?.id)
@@ -100,14 +102,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
     }
   }, [task, loadAttachments])
 
-  useEffect(() => {
-    if (!task) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) onClose()
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [task, onClose])
+  useEscapeKey(!!task, onClose)
 
   const projectOptions = useMemo(
     () => projects.map(p => ({ value: p.id, label: p.name })),
@@ -116,9 +111,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
 
   if (!task || !user) return null
 
-  const canEdit =
-    task.created_by === user.auth_user_id ||
-    (task.assignees || []).some(a => a.assignee_id === user.auth_user_id)
+  const canEdit = canEditTask(task, user.auth_user_id)
   const canDelete = task.created_by === user.auth_user_id
   const done = task.completed
   // On a checklist task the trigger owns `completed`; the checkbox below becomes a readout.
@@ -224,14 +217,6 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
     }
   }
 
-  const handleCommentKey = async (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault()
-      await send()
-      await refresh()
-    }
-  }
-
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleString(dateLocale, {
       day: '2-digit',
@@ -256,7 +241,6 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
       <aside
         role="dialog"
         aria-modal="true"
-        onKeyDown={handleCommentKey}
         className={`ml-auto relative w-full md:w-[560px] h-full bg-white dark:bg-gray-800 shadow-xl flex flex-col transform transition-transform duration-200 ${mounted ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="safe-top px-4 sm:px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">

@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Edit2, Trash2, Calendar, DollarSign, Home, Warehouse, Package } from 'lucide-react'
+import { Calendar, DollarSign, Home, Warehouse, Package } from 'lucide-react'
 import { format } from 'date-fns'
 import { ApartmentWithDetails, PaymentWithCustomer } from '../types'
-import { Modal, Button, EmptyState, ConfirmDialog } from '../../../ui'
+import { Modal, Button, EmptyState } from '../../../ui'
 
 const getPaymentUnitInfo = (
   payment: PaymentWithCustomer,
@@ -33,8 +33,6 @@ interface PaymentHistoryModalProps {
   payments: PaymentWithCustomer[]
   linkedGarages?: Array<{ id: string; number: string; price: number }>
   linkedStorages?: Array<{ id: string; number: string; price: number }>
-  onEditPayment: (payment: PaymentWithCustomer) => void
-  onDeletePayment: (paymentId: string, saleId: string | null, amount: number) => void
 }
 
 export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
@@ -44,11 +42,8 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   payments,
   linkedGarages = [],
   linkedStorages = [],
-  onEditPayment,
-  onDeletePayment
 }) => {
   const { t } = useTranslation()
-  const [pendingDeletePayment, setPendingDeletePayment] = useState<{ id: string; saleId: string | null; amount: number } | null>(null)
 
   const { totalPaid, remainingBalance, garagesTotalPrice, storagesTotalPrice, totalPrice } = useMemo(() => {
     if (!apartment) {
@@ -179,22 +174,9 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                           <p className="text-sm text-gray-700 dark:text-gray-200 mt-2 italic">"{payment.notes}"</p>
                         )}
                       </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => onEditPayment(payment)}
-                        title="Edit payment"
-                        icon={Edit2}
-                      />
-                      <Button
-                        variant="danger"
-                        size="icon-sm"
-                        onClick={() => setPendingDeletePayment({ id: payment.id, saleId: payment.sale_id, amount: payment.amount })}
-                        title="Delete payment"
-                        icon={Trash2}
-                      />
-                    </div>
+                      <div className="ml-4 self-start">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 italic">{t('payments.managed_in_accounting')}</span>
+                      </div>
                     </div>
                   )
                 })}
@@ -208,22 +190,6 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>{t('common.close')}</Button>
       </Modal.Footer>
-
-      <ConfirmDialog
-        show={!!pendingDeletePayment}
-        title={t('confirm.delete_title')}
-        message={t('confirm.delete_payment')}
-        confirmLabel={t('common.delete')}
-        cancelLabel={t('common.cancel')}
-        variant="danger"
-        onConfirm={() => {
-          if (pendingDeletePayment) {
-            onDeletePayment(pendingDeletePayment.id, pendingDeletePayment.saleId, pendingDeletePayment.amount)
-          }
-          setPendingDeletePayment(null)
-        }}
-        onCancel={() => setPendingDeletePayment(null)}
-      />
     </Modal>
   )
 }

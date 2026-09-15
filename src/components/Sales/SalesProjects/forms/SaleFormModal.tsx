@@ -10,7 +10,7 @@ interface SaleFormModalProps {
   unitForSale: UnitForSale | null
   customers: Customer[]
   onClose: () => void
-  onSubmit: (data: SaleFormData, customerMode: CustomerMode) => void
+  onSubmit: (data: SaleFormData, customerMode: CustomerMode) => Promise<void> | void
 }
 
 export const SaleFormModal: React.FC<SaleFormModalProps> = ({
@@ -80,7 +80,8 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
     if (!formData.sale_price) errors.sale_price = 'Sale price is required'
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
-    onSubmit(formData, customerMode)
+    // Returning the promise lets Button spin and disable until the sale is saved
+    return onSubmit(formData, customerMode)
   }
 
   const handleCustomerSelect = (customerId: string) => {

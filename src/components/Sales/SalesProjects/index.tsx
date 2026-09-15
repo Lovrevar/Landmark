@@ -24,6 +24,7 @@ import {
 import { ProjectsGrid } from './ProjectsGrid'
 import { BuildingsGrid } from './BuildingsGrid'
 import { UnitsGrid } from './UnitsGrid'
+import { getSelectableUnitIds, getUnitsOfType } from './unitFilters'
 import { BuildingQuantityModal } from './modals/BuildingQuantityModal'
 import { SingleBuildingModal } from './modals/SingleBuildingModal'
 import { SingleUnitModal } from './modals/SingleUnitModal'
@@ -152,7 +153,7 @@ const SalesProjectsEnhanced: React.FC = () => {
         data.price_per_m2
       )
       setShowUnitForm(false)
-      refetch()
+      await refetch()
     } catch (error) {
       console.error('Error creating unit:', error)
       toast.error('Error creating unit. Please try again.')
@@ -165,7 +166,7 @@ const SalesProjectsEnhanced: React.FC = () => {
     try {
       await salesService.bulkCreateUnits(activeUnitType, selectedBuilding.id, selectedBuilding.project_id, data)
       setShowBulkUnitForm(false)
-      refetch()
+      await refetch()
     } catch (error) {
       console.error('Error bulk creating units:', error)
       toast.error('Error creating units. Please try again.')
@@ -258,13 +259,20 @@ const SalesProjectsEnhanced: React.FC = () => {
 
   const handleSelectAllUnits = () => {
     if (!selectedBuilding) return
-    let units: { id: string }[] = []
-    if (activeUnitType === 'apartment') units = selectedBuilding.apartments
-    else if (activeUnitType === 'garage') units = selectedBuilding.garages
-    else if (activeUnitType === 'repository') units = selectedBuilding.repositories
+    // Same status filter the grid shows, minus Sold units (never bulk-repriced)
+    setSelectedUnitIds(getSelectableUnitIds(getUnitsOfType(selectedBuilding, activeUnitType), filterStatus))
+  }
 
-    const allIds = units.map(u => u.id)
-    setSelectedUnitIds(allIds)
+  // A selection only makes sense for the units on screen, so switching the
+  // unit tab or the status filter starts over
+  const handleSetActiveUnitType = (unitType: UnitType) => {
+    setActiveUnitType(unitType)
+    setSelectedUnitIds([])
+  }
+
+  const handleSetFilterStatus = (status: FilterStatus) => {
+    setFilterStatus(status)
+    setSelectedUnitIds([])
   }
 
   const handleDeselectAllUnits = () => {
@@ -276,13 +284,11 @@ const SalesProjectsEnhanced: React.FC = () => {
   }
 
   const handleBulkPriceUpdate = async (adjustmentType: 'increase' | 'decrease', adjustmentValue: number) => {
-   
-
     try {
       await salesService.bulkUpdateUnitPrice(selectedUnitIds, activeUnitType, adjustmentType, adjustmentValue)
       setShowBulkPriceModal(false)
       setSelectedUnitIds([])
-      refetch()
+      await refetch()
     } catch (error) {
       console.error('Error updating prices:', error)
       toast.error('Error updating prices. Please try again.')
@@ -301,7 +307,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       })
       setShowSaleForm(false)
       setUnitForSale(null)
-      refetch()
+      await refetch()
     } catch (error) {
       console.error('Error completing sale:', error)
       toast.error('Error completing sale. Please try again.')
@@ -320,7 +326,8 @@ const SalesProjectsEnhanced: React.FC = () => {
     return t('common.storage')
   }
 
-  if (loading) {
+  // First load only: a refetch after a mutation must not unmount the open modal
+  if (loading && projects.length === 0) {
     return <LoadingSpinner message={t('common.loading')} />
   }
 
@@ -429,8 +436,8 @@ const SalesProjectsEnhanced: React.FC = () => {
           filterStatus={filterStatus}
           garages={garages}
           repositories={repositories}
-          onSetActiveUnitType={setActiveUnitType}
-          onSetFilterStatus={setFilterStatus}
+          onSetActiveUnitType={handleSetActiveUnitType}
+          onSetFilterStatus={handleSetFilterStatus}
           onDeleteUnit={handleDeleteUnit}
           onUpdateUnitStatus={handleUpdateUnitStatus}
           onSellUnit={handleSellUnit}
@@ -511,12 +518,8 @@ const SalesProjectsEnhanced: React.FC = () => {
         visible={showBulkPriceModal}
         selectedUnits={
           selectedBuilding
-            ? (activeUnitType === 'apartment'
-                ? selectedBuilding.apartments
-                : activeUnitType === 'garage'
-                ? selectedBuilding.garages
-                : selectedBuilding.repositories
-              ).filter(u => selectedUnitIds.includes(u.id))
+            ? getUnitsOfType(selectedBuilding, activeUnitType)
+                .filter(u => selectedUnitIds.includes(u.id) && u.status !== 'Sold')
             : []
         }
         unitType={activeUnitType}

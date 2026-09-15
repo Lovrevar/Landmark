@@ -107,6 +107,7 @@ Bank account management, credit line tracking, and bank-linked invoice creation.
 
 ### index.tsx (AccountingBanks)
 - Displays bank investments, credit lines, and credit allocations with progress indicators
+- `bank_credits.maturity_date` is nullable (credits created from Funding may omit it): the credit card shows `—` unless `isValidDate()` passes, and `useBanks.handleEditCredit` loads a null maturity into the form as `''`
 - Expandable sections per bank and per credit
 - **Uses hooks:** useBanks, useBankeCredits
 - **Uses Ui:** Card, Table
@@ -291,7 +292,7 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 #### Services
 
 ### invoiceService.ts
-- `fetchData(filterType, filterStatus, filterCompany, searchTerm, currentPage, pageSize)` — paginated invoice fetch with filters
+- `fetchData(filterType, filterStatus, filterCompany, searchTerm, currentPage, pageSize, sortField?, sortDirection?)` — paginated invoice fetch with filters via the `get_filtered_invoices` RPC. Sorting (`'due_date' | 'invoice_number'`, `'asc' | 'desc'`) is done **server-side** so it spans every page; `p_sort_field`/`p_sort_dir` are only sent when a sort is active, so the unsorted list still works against a database without the sort migration (see Notes)
 - `handleSubmit(formData, editingInvoice, isOfficeInvoice)` — creates or updates an invoice
 - `handlePaymentSubmit(paymentFormData, invoice)` — records a payment against an invoice
 - `handleDelete(invoiceId)` — deletes an invoice
@@ -331,8 +332,10 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 
 ### useInvoices.ts
 - `useInvoices()` — manages the full invoice list with pagination, filters, sorting, column visibility, and all modal states
+- Sort field/direction are fetch dependencies; changing the sort (like changing a filter) resets to page 1. A request counter drops responses from superseded fetches so a slow earlier response cannot overwrite the current page
+- `hasLoaded` flips after the first fetch settles; the view shows the full-page spinner only while `loading && !hasLoaded`
 - **Calls:** invoiceService.ts, invoiceFormDefaults.ts
-- **Returns:** invoices, companies, companyBankAccounts, companyCredits, creditAllocations, refunds, suppliers, officeSuppliers, customers, banks, projects, contracts, milestones, customerSales, customerApartments, invoiceCategories, loading, currentPage, totalCount, filteredTotalCount, filteredUnpaidAmount, totalUnpaidAmount, pageSize, searchTerm, debouncedSearchTerm, filterType, filterDirection, filterCategory, filterStatus, filterCompany, sortField, sortDirection, showColumnMenu, showInvoiceModal, isOfficeInvoice, showRetailInvoiceModal, showBankInvoiceModal, showLandPurchaseModal, editingInvoice, viewingInvoice, showPaymentModal, payingInvoice, formData, paymentFormData, visibleColumns, setters, handlers
+- **Returns:** invoices, companies, companyBankAccounts, companyCredits, creditAllocations, refunds, suppliers, officeSuppliers, customers, banks, projects, contracts, milestones, customerSales, customerApartments, invoiceCategories, loading, hasLoaded, currentPage, totalCount, filteredTotalCount, filteredUnpaidAmount, totalUnpaidAmount, pageSize, searchTerm, debouncedSearchTerm, filterType, filterDirection, filterCategory, filterStatus, filterCompany, sortField, sortDirection, showColumnMenu, showInvoiceModal, isOfficeInvoice, showRetailInvoiceModal, showBankInvoiceModal, showLandPurchaseModal, editingInvoice, viewingInvoice, showPaymentModal, payingInvoice, formData, paymentFormData, visibleColumns, setters, handlers
 
 ### useInvoiceColumns.ts
 - `useInvoiceColumns()` — manages column visibility state for the invoice table
@@ -387,7 +390,8 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 #### Views
 
 ### InvoiceTable.tsx
-- Paginated, sortable invoice table with column toggle support
+- Paginated, sortable invoice table with column toggle support. Clicking the Broj / Dospijeće headers only sets the sort state; rows arrive already ordered from the server — there is no client-side re-sort
+- In `index.tsx` the table and pagination sit in a wrapper that is dimmed (`opacity-60 pointer-events-none`, `aria-busy`) during refetches, so the filter bar and search box stay mounted and keep focus
 - **Uses hooks:** useInvoices
 - **Uses Ui:** Table
 
@@ -743,6 +747,7 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 ---
 
 ## Notes
+- **Invoice list sorting lives in SQL.** Migration `20260915120000_invoice_list_server_sort.sql` replaces the 6-argument `get_filtered_invoices` with an 8-argument version (`p_sort_field text DEFAULT NULL`, `p_sort_dir text DEFAULT 'asc'`). Sort values are whitelisted via `CASE` (unknown values fall back to `issue_date DESC, id`, which also stays as the tie-breaker); `invoice_number` uses the ICU collation `public.natural_numeric` (`und-u-kn-true`) so `INV-2` sorts before `INV-10`; both directions are `NULLS LAST`. **This migration must be applied manually** (dev/e2e project first) — until it is, sorting a column makes the RPC call fail, while the unsorted list keeps working. Security model unchanged: the function is still `SECURITY DEFINER` without a role check (unlike `get_invoice_statistics`)
 - `retailInvoiceTypes.ts` inside `Invoices/` defines types that bridge Cashflow and Retail invoice structures — handle carefully when modifying
 - Multi-VAT support uses separate `base_amount_1–4`, `vat_rate_1–4`, `vat_amount_1–4` fields for up to 4 VAT rates per invoice (Croatian accounting requirement)
 - Cesija is tracked with `is_cesija`, `cesija_company_id`, and `cesija_bank_account_id` fields on invoices and payments

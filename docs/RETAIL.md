@@ -83,6 +83,7 @@ Core retail module. Tracks development projects through phases (development, con
 
 ### forms/SupplierFormModal.tsx
 - Form for adding a supplier to a project phase
+- `onSuccess(supplier?)` receives the created `RetailSupplier` on create and no argument on update. `ContractFormModal` and `DevelopmentFormModal` use it to close the sub-modal, select the new supplier and reload the supplier list
 
 ### forms/SalesFormModal.tsx
 - Form for creating a sales contract for a parcel

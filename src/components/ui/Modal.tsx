@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
 
@@ -34,17 +35,7 @@ function ModalRoot({ show, onClose, size = 'md', children }: ModalProps) {
     }
   }, [show])
 
-  useEffect(() => {
-    if (!show) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [show, onClose])
+  useEscapeKey(show, onClose)
 
   if (!show) return null
 
@@ -83,12 +74,16 @@ interface ModalHeaderProps {
   children?: React.ReactNode
 }
 
-function ModalHeader({ title, subtitle, onClose }: ModalHeaderProps) {
+function ModalHeader({ title, subtitle, onClose, children }: ModalHeaderProps) {
+  // Extra header content stacks under the title, so the close button pins to the top rather
+  // than drifting to the middle of a taller header. Plain headers keep it centred on the title.
+  const align = children ? 'items-start' : 'items-center'
   return (
-    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex justify-between items-center gap-3 flex-shrink-0 rounded-t-lg">
+    <div className={`bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex justify-between ${align} gap-3 flex-shrink-0 rounded-t-lg`}>
       <div className="min-w-0">
         <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{title}</h2>
         {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">{subtitle}</p>}
+        {children}
       </div>
       <button
         onClick={onClose}

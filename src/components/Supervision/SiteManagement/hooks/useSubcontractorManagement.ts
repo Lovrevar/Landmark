@@ -150,7 +150,28 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
 
   const updateSubcontractor = async (subcontractor: Subcontractor) => {
     try {
-      const subData = subcontractor as Subcontractor & { base_amount?: number; vat_rate?: number; vat_amount?: number; total_amount?: number; phase_id?: string; contract_type_id?: number; has_contract?: boolean }
+      const subData = subcontractor as Subcontractor & { base_amount?: number; vat_rate?: number; vat_amount?: number; total_amount?: number; phase_id?: string; contract_type_id?: number | null; classification_id?: number | null; has_contract?: boolean }
+
+      // Same classification gate as the add path. The contract's own current amount is excluded
+      // from `used`, and an edit that does not raise what this contract commits to the bucket is
+      // never refused — a bucket can already be over-allocated (e.g. the TIC was cut after the
+      // contract was signed) and fixing a name or a date must still save.
+      if (subData.has_contract !== false && subData.phase_id && subData.classification_id) {
+        const { allocated, used, excludedAmount } = await siteService.fetchClassificationBudgetStatus(
+          subData.phase_id,
+          subData.classification_id,
+          subcontractor.id
+        )
+        const cost = subcontractor.cost || 0
+        // Half-cent tolerance: the modal recomputes the total from base and VAT rate, which can
+        // differ from the stored amount by float noise.
+        const raisesCommitment = cost > excludedAmount + 0.005
+        if (allocated > 0 && raisesCommitment && cost > allocated - used + 0.005) {
+          toast.error(t('supervision.subcontractor_form.errors.exceeds_classification_budget'))
+          return false
+        }
+      }
+
       await siteService.updateSubcontractor(subcontractor.id, {
         name: subcontractor.name,
         contact: subcontractor.contact,
@@ -164,6 +185,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         total_amount: subData.total_amount,
         phase_id: subData.phase_id,
         contract_type_id: subData.contract_type_id,
+        classification_id: subData.classification_id ?? null,
         has_contract: subData.has_contract
       })
       await fetchProjects()

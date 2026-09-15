@@ -83,7 +83,7 @@ then `ProjectSummaryBanner`, then the contract tree.
 Read-only by design — `sync_project_from_tic()` owns this table and rebuilds it on every TIC save,
 so a client write would survive only until the next one.
 - `fetchPhaseClassificationBudgets(phaseIds?)` — per-(phase, classification) sub-allocations
-- `fetchClassificationBudgetStatus(phaseId, classificationId)` — allocated vs committed; the binding limit when adding a contract, since the phase budget is the sum of its classifications
+- `fetchClassificationBudgetStatus(phaseId, classificationId, excludeContractId?)` — allocated vs committed (draft/active contracts); the binding limit when adding or editing a contract, since the phase budget is the sum of its classifications. With `excludeContractId` that contract is left out of `used` and its current amount in the bucket comes back as `excludedAmount` (0 when it is not in the bucket)
 - `fetchTICClassificationTotals(projectId)` — the project's TIC plan per classification, for the read-only comparison in `PhaseClassificationBudgetsModal`
 
 ### services/phaseService.ts
@@ -174,6 +174,7 @@ so a client write would survive only until the next one.
 
 ### hooks/useSubcontractorManagement.ts
 - `useSubcontractorManagement(fetchProjects)` — manages subcontractor add/edit/delete with document upload, phase budget recalculation, and unique contract number generation; payment create/update/delete now warn that those moved to the Accounting module
+- `updateSubcontractor` passes `classification_id` through and applies the same classification budget gate as the add path (for contracts with `has_contract` and a classification). The contract's own amount is excluded from `used`, and an edit that does not raise what the contract commits to the bucket is never refused, so an already over-allocated bucket still lets you fix names or dates. A refusal toasts `supervision.subcontractor_form.errors.exceeds_classification_budget` and returns `false`, keeping the modal open
 - **Calls:** siteService barrel → siteContractService (`createContract`, `generateUniqueContractNumber`), siteSubcontractorService (`createSubcontractorWithReturn`, `updateSubcontractor`, `deleteSubcontractor`, `getSubcontractorDetails`, `uploadSubcontractorDocuments`), phaseService (`getPhaseInfo`, `updatePhase`, `recalculatePhaseBudget`), wirePaymentService (`fetchWirePayments`)
 - **Returns:** addSubcontractorToPhase, updateSubcontractor, deleteSubcontractor, pendingDeleteSubcontractor, confirmDeleteSubcontractor, cancelDeleteSubcontractor, deletingSubcontractor, addPaymentToSubcontractor, fetchWirePayments, updateWirePayment, deleteWirePayment
 
@@ -288,6 +289,7 @@ the orchestrator does the writes and re-fetches.
 #### EditSubcontractorModal.tsx
 - Edits a subcontractor in the site-management context (contract-adjacent fields, financing source)
 - Props: `visible`, `onClose`, `subcontractor`, `onChange(updated)`, `onSubmit(updated)`
+- Footer is Cancel + Save changes only. The "Mark as completed" button, which had no handler, was removed on 2026-09-15
 - Distinct from `Subcontractors/forms/SubcontractorBasicFormModal.tsx`, which edits the base record from the subcontractor register
 
 #### SubcontractorDetailsModal.tsx
@@ -497,6 +499,7 @@ Daily or weekly on-site work log entries. Supports cascading project → phase �
 
 ### index.tsx (WorkLogs)
 - Work log modal form with cascading selects, and history cards with status badges (work_finished, in_progress, blocker, quality_issue, waiting_materials, weather_delay)
+- `handleValidatedSubmit` returns `handleSubmit`'s promise, so `Form` blocks re-submits and the submit button spins while saving (a double-click creates one log)
 - **Uses hooks:** useWorkLogs
 - **Uses Ui:** Modal, Button, Select, Card, PageHeader
 

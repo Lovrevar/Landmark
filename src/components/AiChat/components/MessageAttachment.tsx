@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Download, FileText, Image as ImageIcon, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { formatFileSize } from '../../../utils/formatters'
+import { useEscapeKey } from '../../../hooks/useEscapeKey'
 import { getAiAttachmentSignedUrl } from '../services/aiAttachmentsService'
 import { UI_LABELS_HR } from '../lib/labels'
 import type { AiAttachmentRow } from '../../../types/aiChat'
@@ -112,17 +113,14 @@ function ImageLightbox({
   onClose: () => void
   onError: () => void
 }) {
+  useEscapeKey(true, onClose)
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
     return () => {
-      document.removeEventListener('keydown', onKey)
       document.body.style.overflow = 'unset'
     }
-  }, [onClose])
+  }, [])
 
   return createPortal(
     <div

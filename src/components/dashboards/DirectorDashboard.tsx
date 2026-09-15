@@ -142,7 +142,7 @@ const DirectorDashboard: React.FC = () => {
             <Banknote className="w-6 h-6 text-blue-600 mr-2" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.funding_investment')}</h2>
           </div>
-          <Button variant="primary" onClick={() => navigate('/funding-overview')}>{t('dashboards.director.view_details')}</Button>
+          <Button variant="primary" onClick={() => navigate('/funding-credits')}>{t('dashboards.director.view_details')}</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <StatCard label={t('dashboards.director.funded_projects')} value={fundingMetrics.funded_projects} icon={Users} color="green" size="lg" />

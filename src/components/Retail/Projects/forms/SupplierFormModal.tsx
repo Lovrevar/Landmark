@@ -7,7 +7,8 @@ import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../.
 
 interface SupplierFormModalProps {
   onClose: () => void
-  onSuccess: () => void
+  /** Receives the created supplier on create; called with no argument on update. */
+  onSuccess: (supplier?: RetailSupplier) => void
   supplier?: RetailSupplier
 }
 
@@ -90,11 +91,11 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
 
       if (supplier) {
         await retailProjectService.updateSupplier(supplier.id, dataToSubmit)
+        onSuccess()
       } else {
-        await retailProjectService.createSupplier(dataToSubmit)
+        const created = await retailProjectService.createSupplier(dataToSubmit)
+        onSuccess(created)
       }
-
-      onSuccess()
     } catch (err) {
       setError(err instanceof Error ? err.message : t('retail_projects.supplier_form.save_error'))
       console.error('Error saving supplier:', err)

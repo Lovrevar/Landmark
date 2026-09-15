@@ -12,6 +12,9 @@ interface Props {
   taskOccurrences?: TaskOccurrence[]
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onTaskClick?: (occurrence: TaskOccurrence) => void
+  onTaskToggle: (occurrence: TaskOccurrence) => void
+  /** The signed-in user's auth id; decides whether a task's checkbox is live. */
+  currentUserId: string | null | undefined
   limit?: number
 }
 
@@ -31,6 +34,8 @@ export default function NextUp({
   taskOccurrences = [],
   onEventClick,
   onTaskClick,
+  onTaskToggle,
+  currentUserId,
   limit = 6,
 }: Props) {
   const { t, i18n } = useTranslation()
@@ -67,6 +72,8 @@ export default function NextUp({
                   key={item.occ.occurrenceKey}
                   occurrence={item.occ}
                   onClick={onTaskClick}
+                  onToggle={onTaskToggle}
+                  currentUserId={currentUserId}
                   showTime
                   locale={dateLocale}
                 />

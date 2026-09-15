@@ -2,13 +2,15 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Square, CheckSquare, Paperclip, MessageSquare } from 'lucide-react'
 import TaskColorChip from '../../Tasks/components/TaskColorChip'
-import { isChecklist, subtaskProgress } from '../../Tasks/subtasks'
+import { completionToggle } from '../../Tasks/permissions'
 import type { TaskOccurrence } from '../utils/expandTasks'
 
 interface Props {
   occurrence: TaskOccurrence
+  /** The signed-in user's auth id; decides whether the checkbox is live. */
+  currentUserId: string | null | undefined
   onClick?: (occurrence: TaskOccurrence) => void
-  onToggle?: (occurrence: TaskOccurrence) => void
+  onToggle: (occurrence: TaskOccurrence) => void
   compact?: boolean
   showTime?: boolean
   locale?: string
@@ -16,6 +18,7 @@ interface Props {
 
 const TaskPill: React.FC<Props> = ({
   occurrence,
+  currentUserId,
   onClick,
   onToggle,
   compact = false,
@@ -27,10 +30,10 @@ const TaskPill: React.FC<Props> = ({
   const ToggleIcon = isDone ? CheckSquare : Square
   const attachmentCount = task.attachments?.length ?? 0
   const commentCount = task.comment_count ?? 0
-  // Same readout rule as TaskRow: a checklist task's completion belongs to its lines, which
-  // are ticked in the detail drawer. Clicking through to the drawer still works.
-  const checklist = isChecklist(task)
-  const progress = subtaskProgress(task)
+  // Same rules as TaskRow: a checklist task's completion belongs to its lines, which are ticked
+  // in the detail drawer, and someone who can't edit the task gets a read-only box. Clicking
+  // through to the drawer still works either way.
+  const toggle = completionToggle(task, currentUserId, t)
 
   const baseCls = [
     'w-full flex items-center gap-1.5 rounded-sm overflow-hidden',
@@ -45,13 +48,10 @@ const TaskPill: React.FC<Props> = ({
     <div className={baseCls} title={task.title}>
       <button
         type="button"
-        disabled={checklist}
-        onClick={e => { e.stopPropagation(); onToggle?.(occurrence) }}
-        title={
-          checklist
-            ? t('tasks.subtasks.governed_tooltip', { done: progress.done, total: progress.total })
-            : undefined
-        }
+        disabled={toggle.disabled}
+        onClick={e => { e.stopPropagation(); onToggle(occurrence) }}
+        title={toggle.title}
+        aria-label={toggle.title}
         className="flex-shrink-0 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:cursor-not-allowed disabled:hover:text-gray-500"
       >
         <ToggleIcon className={compact ? 'w-3 h-3' : 'w-3.5 h-3.5'} />

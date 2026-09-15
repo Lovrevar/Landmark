@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import Button from './Button'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 /**
  * A third choice, for a question that genuinely has one — "save and leave" alongside "leave
@@ -44,17 +45,7 @@ export default function ConfirmDialog({
   const resolvedConfirmLabel = confirmLabel ?? t('common.confirm')
   const resolvedCancelLabel = cancelLabel ?? t('common.cancel')
 
-  useEffect(() => {
-    if (!show) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) {
-        e.preventDefault()
-        onCancel()
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [show, onCancel])
+  useEscapeKey(show, onCancel)
 
   if (!show) return null
 

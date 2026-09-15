@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { ProjectMilestone } from '../../../../lib/supabase'
+import { useTranslation } from 'react-i18next'
+import type { Milestone } from '../types'
 import {
   addMilestone as svcAddMilestone,
   updateMilestone as svcUpdateMilestone,
@@ -17,7 +18,8 @@ interface MilestoneFormData {
 
 export function useMilestoneManagement(projectId: string | undefined, onMutated: () => void) {
   const toast = useToast()
-  const [editingMilestone, setEditingMilestone] = useState<ProjectMilestone | null>(null)
+  const { t } = useTranslation()
+  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null)
 
   const handleAddMilestone = async (data: MilestoneFormData): Promise<void> => {
     if (!data.name.trim() || !projectId) {
@@ -33,14 +35,17 @@ export function useMilestoneManagement(projectId: string | undefined, onMutated:
     }
   }
 
-  const handleUpdateMilestone = async (id: string, data: MilestoneFormData): Promise<void> => {
-    if (!data.name.trim()) return
+  /** Resolves true when the update was saved, so the caller knows whether to leave edit mode. */
+  const handleUpdateMilestone = async (id: string, data: MilestoneFormData): Promise<boolean> => {
+    if (!data.name.trim()) return false
     try {
       await svcUpdateMilestone(id, { name: data.name, due_date: data.due_date, completed: data.completed })
       onMutated()
+      return true
     } catch (error) {
       console.error('Error updating milestone:', error)
-      toast.error('Error updating milestone.')
+      toast.error(t('general_projects.milestone_update_error'))
+      return false
     }
   }
 
@@ -72,6 +77,7 @@ export function useMilestoneManagement(projectId: string | undefined, onMutated:
       onMutated()
     } catch (error) {
       console.error('Error updating milestone:', error)
+      toast.error(t('general_projects.milestone_update_error'))
     }
   }
 

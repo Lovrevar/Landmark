@@ -14,6 +14,9 @@ interface Props {
   onClose: () => void
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onTaskClick?: (occurrence: TaskOccurrence) => void
+  onTaskToggle: (occurrence: TaskOccurrence) => void
+  /** The signed-in user's auth id; decides whether a task's checkbox is live. */
+  currentUserId: string | null | undefined
 }
 
 const typeBg: Record<EventType, string> = {
@@ -30,6 +33,8 @@ const DayEventsModal: React.FC<Props> = ({
   onClose,
   onEventClick,
   onTaskClick,
+  onTaskToggle,
+  currentUserId,
 }) => {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
@@ -77,6 +82,8 @@ const DayEventsModal: React.FC<Props> = ({
                     key={o.occurrenceKey}
                     occurrence={o}
                     onClick={onTaskClick}
+                    onToggle={onTaskToggle}
+                    currentUserId={currentUserId}
                     showTime
                     locale={dateLocale}
                   />

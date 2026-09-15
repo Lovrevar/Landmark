@@ -669,10 +669,13 @@ export const bulkUpdateUnitPrice = async (
   else if (unitType === 'garage') tableName = 'garages'
   else if (unitType === 'repository') tableName = 'repositories'
 
+  // Sold units keep the price they were sold at: they are skipped here, and
+  // re-checked on each update in case a unit was sold in the meantime
   const { data: units, error: fetchError } = await supabase
     .from(tableName)
     .select('id, size_m2, price_per_m2')
     .in('id', unitIds)
+    .neq('status', 'Sold')
 
   if (fetchError) throw fetchError
   if (!units || units.length === 0) return
@@ -692,14 +695,20 @@ export const bulkUpdateUnitPrice = async (
         price: newTotalPrice
       })
       .eq('id', unit.id)
+      .neq('status', 'Sold')
+      .select('id')
   })
 
   const results = await Promise.all(updates)
 
   const errors = results.filter(result => result.error)
+  const updatedCount = results.reduce((sum, result) => sum + (result.data?.length ?? 0), 0)
+
+  if (updatedCount > 0) {
+    logActivity({ action: `${unitType}.bulk_price_update`, entity: unitType, metadata: { severity: 'high', count: updatedCount, adjustment_type: adjustmentType, adjustment_value: adjustmentValue } })
+  }
+
   if (errors.length > 0) {
     throw new Error(`Failed to update ${errors.length} units`)
   }
-
-  logActivity({ action: `${unitType}.bulk_price_update`, entity: unitType, metadata: { severity: 'high', count: unitIds.length, adjustment_type: adjustmentType, adjustment_value: adjustmentValue } })
 }

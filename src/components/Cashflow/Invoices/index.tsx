@@ -48,6 +48,7 @@ const AccountingInvoices: React.FC = () => {
     customerApartments,
     invoiceCategories,
     loading,
+    hasLoaded,
     currentPage,
     totalCount,
     filteredTotalCount,
@@ -126,26 +127,6 @@ const AccountingInvoices: React.FC = () => {
     }
   }
 
-  const filteredInvoices = [...invoices].sort((a, b) => {
-    if (!sortField) return 0
-
-    if (sortField === 'due_date') {
-      const dateA = new Date(a.due_date).getTime()
-      const dateB = new Date(b.due_date).getTime()
-      return sortDirection === 'asc' ? dateA - dateB : dateB - dateA
-    }
-
-    if (sortField === 'invoice_number') {
-      const numA = a.invoice_number || ''
-      const numB = b.invoice_number || ''
-      return sortDirection === 'asc'
-        ? numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' })
-        : numB.localeCompare(numA, undefined, { numeric: true, sensitivity: 'base' })
-    }
-
-    return 0
-  })
-
   const handleNewOfficeInvoice = () => {
     setIsOfficeInvoice(true)
     setFormData({
@@ -166,7 +147,9 @@ const AccountingInvoices: React.FC = () => {
     setShowInvoiceModal(true)
   }
 
-  if (loading) {
+  // Full-page spinner only for the first load. A refetch (filter, search, sort, page, save)
+  // keeps the page mounted so the search box keeps focus, and just dims the results.
+  if (loading && !hasLoaded) {
     return <LoadingSpinner message={t('common.loading')} />
   }
 
@@ -224,30 +207,35 @@ const AccountingInvoices: React.FC = () => {
         }}
       />
 
-      <InvoiceTable
-        invoices={filteredInvoices}
-        visibleColumns={visibleColumns}
-        sortField={sortField}
-        sortDirection={sortDirection}
-        filterDirection={filterDirection}
-        onSort={handleSort}
-        onView={handleViewInvoice}
-        onEdit={handleOpenModal}
-        onDelete={handleDelete}
-        onPayment={handleOpenPaymentModal}
-        getTypeColor={getTypeColor}
-        getTypeLabel={getTypeLabel}
-        getStatusColor={getStatusColor}
-        getSupplierCustomerName={getSupplierCustomerName}
-        isOverdue={isOverdue}
-      />
+      <div
+        aria-busy={loading}
+        className={`space-y-6 transition-opacity ${loading ? 'opacity-60 pointer-events-none' : ''}`}
+      >
+        <InvoiceTable
+          invoices={invoices}
+          visibleColumns={visibleColumns}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          filterDirection={filterDirection}
+          onSort={handleSort}
+          onView={handleViewInvoice}
+          onEdit={handleOpenModal}
+          onDelete={handleDelete}
+          onPayment={handleOpenPaymentModal}
+          getTypeColor={getTypeColor}
+          getTypeLabel={getTypeLabel}
+          getStatusColor={getStatusColor}
+          getSupplierCustomerName={getSupplierCustomerName}
+          isOverdue={isOverdue}
+        />
 
-      <InvoicePagination
-        currentPage={currentPage}
-        pageSize={pageSize}
-        totalCount={totalCount}
-        onPageChange={setCurrentPage}
-      />
+        <InvoicePagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={setCurrentPage}
+        />
+      </div>
 
       <InvoiceFormModal
         show={showInvoiceModal}

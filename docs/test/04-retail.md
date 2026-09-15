@@ -79,6 +79,7 @@ Retail projects manage land development through phases and milestones — distin
 ### Supplier contracts (SupplierFormModal + ContractFormModal)
 
 - add a retail supplier via the in-project SupplierFormModal — supplier appears in the supplier list for that project   ( )
+- "Add new supplier" from ContractFormModal / DevelopmentFormModal — the new supplier is the one selected afterwards (not the last one alphabetically)   ( )
 - open ContractFormModal, assign the supplier to a phase with contract value and milestones → save — contract appears on the phase card   ( )
 - the project statistics breakdown includes this contract's value in the correct phase-type bucket (land / development / construction)   ( )
 - edit a contract — fields pre-fill; save; statistics refresh   ( )

@@ -10,16 +10,14 @@ interface BulkPriceUpdateModalProps {
   selectedUnits: { id: string; price: number; size_m2: number; price_per_m2?: number }[]
   unitType: UnitType
   onClose: () => void
-  onSubmit: (adjustmentType: 'increase' | 'decrease', adjustmentValue: number) => void
-  loading?: boolean
+  onSubmit: (adjustmentType: 'increase' | 'decrease', adjustmentValue: number) => Promise<void> | void
 }
 
 export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
   visible,
   selectedUnits,
   onClose,
-  onSubmit,
-  loading = false
+  onSubmit
 }) => {
   const { t } = useTranslation()
   const [adjustmentType, setAdjustmentType] = useState<'increase' | 'decrease'>('increase')
@@ -76,7 +74,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
-    onSubmit(adjustmentType, adjustment)
+    return onSubmit(adjustmentType, adjustment)
   }
 
 
@@ -214,7 +212,6 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
         </Button>
         <Button
           variant="success"
-          loading={loading}
           onClick={handleSubmit}
           disabled={wouldCreateNegativePrice}
         >

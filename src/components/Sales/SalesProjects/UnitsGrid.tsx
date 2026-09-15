@@ -12,6 +12,7 @@ import {
 } from './types'
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { Button, Badge } from '../../ui'
+import { filterUnitsByStatus, getSelectableUnitIds, getUnitsOfType } from './unitFilters'
 
 interface UnitsGridProps {
   building: BuildingWithUnits
@@ -71,21 +72,15 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
     return t('sales_projects.units.repositories')
   }
 
-  const filteredUnits = useMemo(() => {
-    let units: { id: string; status: string; [key: string]: unknown }[] = []
-    if (activeUnitType === 'apartment') units = building.apartments
-    else if (activeUnitType === 'garage') units = building.garages
-    else if (activeUnitType === 'repository') units = building.repositories
-
-    if (filterStatus === 'all') return units
-    return units.filter(unit => {
-      if (filterStatus === 'available') return unit.status === 'Available'
-      if (filterStatus === 'reserved') return unit.status === 'Reserved'
-      if (filterStatus === 'sold') return unit.status === 'Sold'
-      return true
-    })
+  const { filteredUnits, selectableUnitIds } = useMemo(() => {
+    const units: { id: string; status: string; [key: string]: unknown }[] = getUnitsOfType(building, activeUnitType)
+    return {
+      filteredUnits: filterUnitsByStatus(units, filterStatus),
+      // Sold units are never bulk-repriced, so "Select all" skips them
+      selectableUnitIds: getSelectableUnitIds(units, filterStatus)
+    }
   }, [activeUnitType, filterStatus, building])
-  const allFilteredSelected = filteredUnits.length > 0 && filteredUnits.every(u => selectedUnitIds.includes(u.id))
+  const allFilteredSelected = selectableUnitIds.length > 0 && selectableUnitIds.every(id => selectedUnitIds.includes(id))
 
   return (
     <div>
@@ -167,7 +162,8 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
         <div className="flex items-center space-x-2">
           <button
             onClick={allFilteredSelected ? onDeselectAllUnits : onSelectAllUnits}
-            className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-700 transition-colors duration-200"
+            disabled={selectableUnitIds.length === 0}
+            className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {allFilteredSelected ? <Square className="w-4 h-4 mr-2" /> : <CheckSquare className="w-4 h-4 mr-2" />}
             {allFilteredSelected ? t('sales_projects.deselect_all') : t('sales_projects.select_all')}
@@ -205,7 +201,8 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => onToggleUnitSelection(unit.id)}
-                    className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors duration-200"
+                    disabled={unit.status === 'Sold' && !isSelected}
+                    className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                   >
                     {isSelected ? (
                       <CheckSquare className="w-5 h-5 text-blue-600" />

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Paperclip } from 'lucide-react'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { useAiChat } from './AiChatProvider'
 import AiChatHeader from './AiChatHeader'
 import AiChatMessageList from './AiChatMessageList'
@@ -14,17 +15,7 @@ export default function AiChatPanel() {
   // overlay only disappears when the cursor truly leaves the panel.
   const dragDepth = useRef(0)
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        close()
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [close])
+  useEscapeKey(true, close)
 
   const canAcceptMore = pendingAttachments.length < MAX_ATTACHMENTS_PER_MESSAGE
   const acceptDrops = canAcceptMore && !inputDisabled

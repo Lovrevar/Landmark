@@ -1,6 +1,7 @@
 import React from 'react'
 import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus } from 'lucide-react'
 import { format } from 'date-fns'
+import { isValidDate, parseLocalDate } from '../../../utils/dateOnly'
 import { useTranslation } from 'react-i18next'
 import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState, Form, ConfirmDialog } from '../../ui'
 import AllocationRow from './AllocationRow'
@@ -236,7 +237,7 @@ const CreditsManagement: React.FC = () => {
                           <div className="flex justify-between">
                             <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.maturity_date_label')}</span>
                             <span className="font-medium text-gray-900 dark:text-white">
-                              {format(new Date(credit.maturity_date), 'MMM dd, yyyy')}
+                              {isValidDate(credit.maturity_date) ? format(parseLocalDate(credit.maturity_date), 'MMM dd, yyyy') : '—'}
                             </span>
                           </div>
                           {credit.usage_expiration_date && (

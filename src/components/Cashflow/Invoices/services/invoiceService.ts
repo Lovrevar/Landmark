@@ -2,13 +2,18 @@ import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import type { Invoice, CreditAllocation, Contract } from '../types'
 
+export type InvoiceSortField = 'due_date' | 'invoice_number'
+export type InvoiceSortDirection = 'asc' | 'desc'
+
 export const fetchData = async (
   filterType: string,
   filterStatus: string,
   filterCompany: string,
   debouncedSearchTerm: string,
   currentPage: number,
-  pageSize: number
+  pageSize: number,
+  sortField: InvoiceSortField | null = null,
+  sortDirection: InvoiceSortDirection = 'asc'
 ) => {
   const [
     invoicesResult,
@@ -32,7 +37,12 @@ export const fetchData = async (
       p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
       p_search_term: debouncedSearchTerm || null,
       p_offset: (currentPage - 1) * pageSize,
-      p_limit: pageSize
+      p_limit: pageSize,
+      // Sorted server-side so the order spans every page, not just the loaded one
+      // (20260915120000_invoice_list_server_sort.sql). Sent only when a sort is active:
+      // the unsorted call keeps the original six arguments, so the default list still
+      // loads against a database where that migration has not been applied yet.
+      ...(sortField ? { p_sort_field: sortField, p_sort_dir: sortDirection } : {})
     }),
 
     supabase.rpc('get_invoice_statistics', {

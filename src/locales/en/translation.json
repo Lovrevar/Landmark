@@ -1655,6 +1655,8 @@
     "milestone_delete": "Delete milestone",
     "milestone_mark_complete": "Mark as complete",
     "milestone_mark_incomplete": "Mark as incomplete",
+    "milestone_delete_confirm": "Are you sure you want to delete this milestone?",
+    "milestone_update_error": "Error updating milestone.",
     "milestone_progress": "Milestone Progress",
     "milestones_empty_title": "No milestones yet",
     "milestones_empty_desc": "Add milestones to track project progress",
@@ -2613,7 +2615,6 @@
       "upload": "Upload",
       "doc_singular": "document",
       "doc_plural": "documents",
-      "mark_completed": "Mark as Completed",
       "errors": {
         "phase_required": "Phase is required",
         "name_required": "Name is required",
@@ -4477,7 +4478,8 @@
       "delete": "Delete",
       "read_only": "Read only",
       "mark_done": "Mark as done",
-      "mark_open": "Mark as not done"
+      "mark_open": "Mark as not done",
+      "toggle_failed": "Couldn't update the task. Please try again."
     },
     "colors": {
       "none": "No colour",

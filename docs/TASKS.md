@@ -125,6 +125,11 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 
 ### hooks/useTaskComments.ts
 - `useTaskComments(taskId)` — comments list + draft + send / delete for a single task
+- `send()` guards with a ref, not only the `sending` state: two calls dispatched by one event both read `sending === false` from the render closure, which is how Ctrl+Enter once posted every comment twice
+
+### permissions.ts
+- `canEditTask(task, userId)` — creator or assignee; mirrors the "Tasks: creator or assignee can update" RLS policy. Used by `TasksPage`, `TaskDetail` and the Calendar
+- `completionToggle(task, userId, t)` → `{ disabled, title }` — the done-checkbox rules for surfaces outside the Tasks page (the Calendar's `TaskPill` and month-view pill): disabled with the `3/6` count on a checklist, disabled with "Read only" for a viewer who can't edit, otherwise live with "Mark as done / not done"
 
 ### hooks/useTasksNotifications.ts
 - `useTasksNotifications()` — powers the global red badge
@@ -142,7 +147,7 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - List is **always grouped by project** (alphabetical, "no project" last). Within a group: open tasks by due date asc (no due date last), then completed tasks by completion desc
 - Group headers are **collapsible** (chevron; collapsed set persisted per-user) and show a task count plus a red **"N overdue"** chip when applicable
 - A **quick-add input** sits at the top of each expanded project group (type a title + Enter → creates an open task in that project; creates a private task on the Private tab; hidden on the Assigned tab where the new task would not appear)
-- `canEdit` (creator or assignee) is computed per task and drives the row checkbox / delete affordances
+- `canEdit` (creator or assignee, via `canEditTask` in [permissions.ts](../src/components/Tasks/permissions.ts)) is computed per task and drives the row checkbox / delete affordances
 - When `rows.length > 100` the list is virtualized via `@tanstack/react-virtual` with mixed header / quick-add / row heights; below the threshold it renders as a plain flow
 - Selected task renders in `TaskDetail` drawer; new task flow opens `TaskModal`; delete flows through a shared `ConfirmDialog`; empty list uses `ui/EmptyState`
 - **Uses hooks:** useTasks, useTasksRealtime, useAuth
@@ -160,7 +165,8 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - Slide-from-right drawer via `createPortal`; inline-editable fields auto-save on change. Header row has a large done-checkbox next to the title
 - Fields: title, project, due date (date only), colour, private toggle, assignees, subtask checklist, plain-text description (legacy markdown rows still render via `MarkdownView`; edits save as `plain`). Read-only viewers see the colour chip instead of the picker, and no colour row at all when the task has none
 - The checklist sits **above** the description, not in place of it — unlike the mobile app's card, this description carries `description_format`, markdown rendering and prose that is not a list. The header checkbox is disabled while the task is a checklist
-- Comments section (no tabs): [MentionPicker](../src/components/Tasks/components/MentionPicker.tsx) composer with `@` autocomplete; mention tokens rendered via `renderCommentWithMentions`. Composer hidden for read-only viewers (matches RLS)
+- Comments section (no tabs): [MentionPicker](../src/components/Tasks/components/MentionPicker.tsx) composer with `@` autocomplete; mention tokens rendered via `renderCommentWithMentions`. Composer hidden for read-only viewers (matches RLS). Ctrl/Cmd+Enter sends — handled by MentionPicker alone; there is deliberately no drawer-level key handler, which used to double-post and also fired from the title, description and subtask fields
+- Escape closes the drawer through `useEscapeKey` (see [UI.md](./UI.md)), so Escape on its "Delete task?" or "Remove subtask?" dialog closes only that dialog
 - **Read-only mode** when the viewer is neither creator nor assignee: all inputs disabled, no attachment mutations, no comment composer, no delete
 - ⚠️ Prop contract `{ task, onClose, onDelete, onChanged }` is shared with [Calendar/index.tsx](../src/components/Calendar/index.tsx) — keep it stable
 - **Uses hooks:** useTaskComments, useAuth

@@ -27,7 +27,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `createBuilding(data)`, `deleteBuilding(id)` — building CRUD
 - `createUnit(data)`, `bulkCreateUnits(data)`, `deleteUnit(id)` — unit CRUD
 - `updateUnitStatus(id, status)` — updates a unit's availability status
-- `bulkUpdateUnitPrice(ids, delta)` — adjusts price per m² for selected units
+- `bulkUpdateUnitPrice(ids, unitType, adjustmentType, value)` — adjusts price per m² for selected units. Sold units are never repriced: they are excluded from the fetch and each update re-checks `status <> 'Sold'`. The `apartment.bulk_price_update` log `count` is the number of rows actually updated, not the number of ids passed
 - `linkGarageToApartment(garageId, apartmentId)`, `unlinkGarageFromApartment(...)` — garage linking
 - `linkRepositoryToApartment(repoId, apartmentId)`, `unlinkRepositoryFromApartment(...)` — storage linking
 - `createCustomer(data)` — creates a new customer from the sale form
@@ -59,11 +59,21 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 ### BuildingsGrid.tsx
 - Building card grid for a selected project showing unit counts and revenue per building
 
+### unitFilters.ts
+- `getUnitsOfType(building, unitType)` — the apartments, garages or repositories of a building
+- `filterUnitsByStatus(units, filterStatus)` — the units the grid shows for a status filter
+- `getSelectableUnitIds(units, filterStatus)` — the ids "Select all" picks: filtered units minus Sold ones
+- Shared by `UnitsGrid` and `index.tsx` so the grid and "Select all" cannot drift; covered by `unitFilters.test.ts`
+
 ### UnitsGrid.tsx
 - Unit grid with type tabs (apartments/garages/repositories), status filters, multi-select checkboxes, linked unit display, and bulk price config button
+- "Select all" selects only the units visible under the current status filter and skips Sold units; it is disabled when nothing is selectable. A Sold unit's checkbox is disabled (it can still be unticked if it was sold after being selected)
 
 ### index.tsx (SalesProjectsEnhanced)
 - Main view orchestrating project → building → unit navigation with all CRUD modals and linking
+- Changing the unit type tab or the status filter clears the unit selection. The bulk price modal receives the selected units minus any Sold ones
+- The full-page spinner shows on the first load only (`loading && projects.length === 0`); later refetches keep the page and any open modal mounted
+- Every modal submit handler is `async`, awaits its service call and `refetch()`, and keeps its own try/catch + toast; the modals return that promise so `Button` spins and disables until it settles (no double submit)
 - **Uses hooks:** useSalesData
 - **Uses components:** ProjectsGrid, BuildingsGrid, UnitsGrid, SaleFormModal, all unit/building modals
 - **Uses Ui:** Card, Button, useToast
@@ -72,12 +82,13 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 ### forms/SaleFormModal.tsx
 - Sale creation form with new/existing customer toggle; collects sale price, payment method, down payment, monthly payment, sale date, contract signed, and notes
+- `onSubmit` returns `Promise<void> | void`; the Complete sale button returns it, so it is disabled while the sale is saving
 - **Uses Ui:** Modal, Button, Select
 
 #### Modals
 
 ### modals/BuildingQuantityModal.tsx
-- Input for number of buildings to bulk-create (1–20); validates with `fieldErrors`
+- Input for number of buildings to bulk-create (1–20); validates with `fieldErrors`; resets the quantity after the submit settles
 - **Uses Ui:** Modal, Button
 
 ### modals/SingleBuildingModal.tsx
@@ -95,6 +106,8 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 ### modals/LinkingModal.tsx
 - Select available garages or storage units to link to an apartment
 - **Uses Ui:** Modal, Button
+
+> `BuildingQuantityModal`, `SingleBuildingModal`, `SingleUnitModal`, `BulkUnitsModal` and `BulkPriceUpdateModal` take `onSubmit: (...) => Promise<void> | void` and return it from their submit button, which is what disables the button while saving. They have no `loading` prop.
 
 ### modals/BulkPriceUpdateModal.tsx
 - Increase/decrease price per m² for selected units with preview of new prices; validates with `fieldErrors`
@@ -129,10 +142,7 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 - `createSingleApartment(data)` — inserts a single apartment
 - `updateApartment(id, data)` — updates apartment fields
 - `deleteApartment(id)` — removes an apartment
-- `fetchApartmentPayments(apartmentId)` — fetches payment records for an apartment
-- `updatePayment(id, data)` — updates a payment record
-- `deletePayment(id)` — removes a payment record
-- `fetchSaleIdForApartment(apartmentId)` — resolves the sale ID for payment creation
+- `fetchApartmentPayments(apartmentId)` — fetches the `accounting_payments` rows for an apartment's invoices (read-only here; payments are edited in Cashflow → Payments)
 - All mutations log via `logActivity()` (`apartment.create`, `apartment.bulk_create`, `apartment.update`, `apartment.delete`)
 - **Depends on:** supabase client, activityLog
 
@@ -185,13 +195,10 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 - Edits an existing apartment; controlled by the Apartments page
 - Props: `visible`, `onClose`, `apartment` (`ApartmentWithDetails | null`), `onSubmit(id, updates)`
 
-### modals/EditPaymentModal.tsx
-- Edit a single payment record (amount, date, type, notes)
-- **Uses Ui:** Modal, Button, Select
-
 ### modals/PaymentHistoryModal.tsx
 - All payments for an apartment with linked units, totals, and progress bar
-- **Uses Ui:** Modal, Table
+- Read-only: each row shows the `payments.managed_in_accounting` note instead of Edit/Delete, since the rows are `accounting_payments` owned by Cashflow
+- **Uses Ui:** Modal, Button, EmptyState
 
 ### modals/LinkUnitsModal.tsx
 - Link/unlink garages and storage units to an apartment

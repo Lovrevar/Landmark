@@ -11,7 +11,9 @@ interface Props {
   taskOccurrences?: TaskOccurrence[]
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onTaskClick?: (occurrence: TaskOccurrence) => void
-  onTaskToggle?: (occurrence: TaskOccurrence) => void
+  onTaskToggle: (occurrence: TaskOccurrence) => void
+  /** The signed-in user's auth id; decides whether a task's checkbox is live. */
+  currentUserId: string | null | undefined
 }
 
 type AgendaItem =
@@ -37,6 +39,7 @@ export default function AgendaView({
   onEventClick,
   onTaskClick,
   onTaskToggle,
+  currentUserId,
 }: Props) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
@@ -89,6 +92,7 @@ export default function AgendaView({
                       occurrence={item.occ}
                       onClick={onTaskClick}
                       onToggle={onTaskToggle}
+                      currentUserId={currentUserId}
                       showTime
                       locale={locale}
                     />

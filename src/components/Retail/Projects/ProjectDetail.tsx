@@ -15,6 +15,7 @@ import { RetailInvoicesModal } from './modals/RetailInvoicesModal'
 import { retailProjectService } from './services/retailProjectService'
 import { useProjectDetail } from './hooks/useProjectDetail'
 import { useToast } from '../../../contexts/ToastContext'
+import { useEscapeKey } from '../../../hooks/useEscapeKey'
 import type { RetailProjectWithPhases, RetailProjectPhase, RetailContract } from '../../../types/retail'
 
 interface ProjectDetailProps {
@@ -171,17 +172,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     setMilestoneContext(null)
   }
 
-  useEffect(() => {
-    if (!showMilestoneManagement || !milestoneContext) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) {
-        e.preventDefault()
-        closeMilestoneManagement()
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [showMilestoneManagement, milestoneContext])
+  useEscapeKey(showMilestoneManagement && !!milestoneContext, closeMilestoneManagement)
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

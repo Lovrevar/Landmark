@@ -16,6 +16,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useTasks } from './hooks/useTasks'
 import { useTasksRealtime } from './hooks/useTasksRealtime'
 import { fetchProjectOptions, type ProjectOption } from './services/tasksService'
+import { canEditTask } from './permissions'
 import Tabs from '../ui/Tabs'
 import Button from '../ui/Button'
 import SearchInput from '../ui/SearchInput'
@@ -130,13 +131,7 @@ const TasksPage: React.FC = () => {
     fetchProjectOptions().then(setProjects).catch(() => setProjects([]))
   }, [])
 
-  const isMine = useCallback(
-    (tk: Task) =>
-      !!user &&
-      (tk.created_by === user.auth_user_id ||
-        (tk.assignees || []).some(a => a.assignee_id === user.auth_user_id)),
-    [user],
-  )
+  const isMine = useCallback((tk: Task) => canEditTask(tk, user?.auth_user_id), [user])
 
   const { all, assigned, created, privateTasks } = useMemo(() => {
     const allList: Task[] = []

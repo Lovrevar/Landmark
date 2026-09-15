@@ -96,7 +96,9 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                 </div>
 
                 {editable && (
-                  <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  // Always visible on touch widths (no hover there); md+ reveals on hover or keyboard focus.
+                  // focus-within needs the md: prefix too, or md:opacity-0's media rule would win.
+                  <div className="flex items-center space-x-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-200">
                     <Button
                       size="icon-sm"
                       variant="ghost"

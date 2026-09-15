@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import type { ChatParticipant } from '../../types/chat'
 
 interface GroupMembersPanelProps {
@@ -23,16 +24,13 @@ const GroupMembersPanel: React.FC<GroupMembersPanelProps> = ({
         onClose()
       }
     }
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
     document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('keydown', handleKeyDown)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('keydown', handleKeyDown)
     }
   }, [onClose])
+
+  useEscapeKey(true, onClose)
 
   const sorted = [...participants].sort((a, b) => {
     if (a.user_id === currentUserId) return -1

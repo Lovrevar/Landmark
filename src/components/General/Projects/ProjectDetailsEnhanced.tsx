@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
@@ -15,7 +15,7 @@ import {
   Target,
   LayoutTemplate
 } from 'lucide-react'
-import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table } from '../../ui'
+import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table, ConfirmDialog } from '../../ui'
 import { format, differenceInDays, parseISO } from 'date-fns'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import MilestoneTimeline from './MilestoneTimeline'
@@ -53,6 +53,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', completed: false })
+  const milestoneNameRef = useRef<HTMLInputElement>(null)
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -73,7 +74,19 @@ const ProjectDetailsEnhanced: React.FC = () => {
     }
   }, [id])
 
-  const { handleAddMilestone, handleToggleMilestone, handleDeleteMilestone, handleBulkAddMilestones } = useMilestoneManagement(id, loadData)
+  const {
+    editingMilestone,
+    setEditingMilestone,
+    handleAddMilestone,
+    handleUpdateMilestone,
+    handleToggleMilestone,
+    handleDeleteMilestone,
+    pendingDeleteMilestoneId,
+    confirmDeleteMilestone,
+    cancelDeleteMilestone,
+    deletingMilestone,
+    handleBulkAddMilestones
+  } = useMilestoneManagement(id, loadData)
 
   const phaseStatuses = useMemo(() => computePhaseStatuses(buildPhaseBuckets(milestones)), [milestones])
   const phaseCollapse = usePhaseCollapseState(id, phaseStatuses)
@@ -82,13 +95,53 @@ const ProjectDetailsEnhanced: React.FC = () => {
     if (id) loadData()
   }, [id, loadData])
 
-  const handleSubmitMilestone = async () => {
-    await handleAddMilestone({ name: newMilestone.name, due_date: newMilestone.due_date || null, completed: false })
-    setNewMilestone({ name: '', due_date: '', completed: false })
+  // The inline form sits above the (possibly long) timeline, so bring it into view on Edit.
+  useEffect(() => {
+    if (!editingMilestone) return
+    const input = milestoneNameRef.current
+    input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    input?.focus({ preventScroll: true })
+  }, [editingMilestone])
+
+  const resetMilestoneForm = () => {
     setShowMilestoneForm(false)
+    setEditingMilestone(null)
+    setNewMilestone({ name: '', due_date: '', completed: false })
   }
 
-  if (loading) return <LoadingSpinner message={t('general_projects.loading')} />
+  const handleEditMilestone = (milestone: Milestone) => {
+    setNewMilestone({ name: milestone.name, due_date: milestone.due_date ?? '', completed: milestone.completed })
+    setEditingMilestone(milestone)
+    setShowMilestoneForm(true)
+  }
+
+  const handleSubmitMilestone = async () => {
+    if (editingMilestone) {
+      // Read completion from the live list, not the form snapshot: the milestone may have been
+      // toggled after Edit was clicked, and saving must not silently revert that.
+      const completed = milestones.find(m => m.id === editingMilestone.id)?.completed ?? newMilestone.completed
+      const saved = await handleUpdateMilestone(editingMilestone.id, {
+        name: newMilestone.name,
+        due_date: newMilestone.due_date || null,
+        completed
+      })
+      if (saved) resetMilestoneForm()
+      return
+    }
+    await handleAddMilestone({ name: newMilestone.name, due_date: newMilestone.due_date || null, completed: false })
+    resetMilestoneForm()
+  }
+
+  const handleConfirmDeleteMilestone = async () => {
+    const deletedId = pendingDeleteMilestoneId
+    await confirmDeleteMilestone()
+    if (deletedId && editingMilestone?.id === deletedId) resetMilestoneForm()
+  }
+
+  // First load only: every milestone mutation calls loadData, and swapping the page for a spinner
+  // then would unmount the inline form and the delete dialog mid-action. A different project id
+  // still spins, so another project's data is never shown under this URL.
+  if (loading && project?.id !== id) return <LoadingSpinner message={t('general_projects.loading')} />
   if (!project) return <EmptyState icon={Building2} title={t('general_projects.not_found')} />
 
   // contracts.budget_realized is the app's single "paid" figure — a trigger-kept cache of
@@ -384,16 +437,33 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
                     {t('general_projects.use_template')}
                   </Button>
-                  <Button icon={Plus} onClick={() => setShowMilestoneForm(!showMilestoneForm)}>{t('general_projects.add_milestone')}</Button>
+                  <Button
+                    icon={Plus}
+                    onClick={() => {
+                      // While editing, Add switches the open form back to add mode instead of closing it.
+                      if (editingMilestone) {
+                        setEditingMilestone(null)
+                        setNewMilestone({ name: '', due_date: '', completed: false })
+                        setShowMilestoneForm(true)
+                      } else {
+                        setShowMilestoneForm(!showMilestoneForm)
+                      }
+                    }}
+                  >
+                    {t('general_projects.add_milestone')}
+                  </Button>
                 </div>
               </div>
 
               {showMilestoneForm && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-4">{t('general_projects.new_milestone')}</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-4">
+                    {editingMilestone ? t('general_projects.milestone_edit') : t('general_projects.new_milestone')}
+                  </h4>
                   <div className="space-y-4">
                     <FormField label={t('general_projects.milestone_name')}>
                       <Input
+                        ref={milestoneNameRef}
                         type="text"
                         value={newMilestone.name}
                         onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
@@ -408,11 +478,13 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       />
                     </FormField>
                     <div className="flex space-x-3">
-                      <Button onClick={handleSubmitMilestone}>{t('general_projects.add_milestone')}</Button>
-                      <Button variant="secondary" onClick={() => {
-                        setShowMilestoneForm(false)
-                        setNewMilestone({ name: '', due_date: '', completed: false })
-                      }}>
+                      <Button
+                        onClick={handleSubmitMilestone}
+                        disabled={!!editingMilestone && !newMilestone.name.trim()}
+                      >
+                        {editingMilestone ? t('common.save') : t('general_projects.add_milestone')}
+                      </Button>
+                      <Button variant="secondary" onClick={resetMilestoneForm}>
                         {t('common.cancel')}
                       </Button>
                     </div>
@@ -440,6 +512,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                 <MilestoneTimeline
                   milestones={milestones}
                   onToggleComplete={handleToggleMilestone}
+                  onEdit={handleEditMilestone}
                   onDelete={handleDeleteMilestone}
                   editable={true}
                   groupByPhase
@@ -473,6 +546,18 @@ const ProjectDetailsEnhanced: React.FC = () => {
         projectId={id ?? ''}
         projectStartDate={project?.start_date ?? null}
         onSubmit={handleBulkAddMilestones}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteMilestoneId}
+        title={t('common.confirm_delete')}
+        message={t('general_projects.milestone_delete_confirm')}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={handleConfirmDeleteMilestone}
+        onCancel={cancelDeleteMilestone}
+        loading={deletingMilestone}
       />
     </div>
   )

@@ -93,7 +93,8 @@ const WorkLogs: React.FC = () => {
     if (!formData.work_description?.trim()) errors.work_description = t('supervision.work_logs.errors.description')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
-    handleSubmit(e)
+    // Returning the promise is what lets Form block re-submits and spin the submit button.
+    return handleSubmit(e)
   }
 
   if (loading) {

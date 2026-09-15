@@ -11,7 +11,6 @@ import { SingleApartmentModal } from './modals/SingleApartmentModal'
 import { EditApartmentModal } from './modals/EditApartmentModal'
 import { ApartmentDetailsModal } from './modals/ApartmentDetailsModal'
 import { PaymentHistoryModal } from './modals/PaymentHistoryModal'
-import { EditPaymentModal } from './modals/EditPaymentModal'
 import { LinkUnitsModal } from './modals/LinkUnitsModal'
 
 const ApartmentManagement: React.FC = () => {
@@ -45,12 +44,10 @@ const ApartmentManagement: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showPaymentHistory, setShowPaymentHistory] = useState(false)
-  const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
   const [showLinkUnitsModal, setShowLinkUnitsModal] = useState(false)
 
   const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
   const [payments, setPayments] = useState<PaymentWithCustomer[]>([])
-  const [editingPayment, setEditingPayment] = useState<PaymentWithCustomer | null>(null)
   const [pendingDeleteApartmentId, setPendingDeleteApartmentId] = useState<string | null>(null)
   const [deletingApartment, setDeletingApartment] = useState(false)
 
@@ -115,41 +112,6 @@ const ApartmentManagement: React.FC = () => {
       setShowPaymentHistory(true)
     } catch (error) {
       console.error('Error fetching payments:', error)
-    }
-  }
-
-  const handleUpdatePayment = async (
-    paymentId: string,
-    amount: number,
-    date: string,
-    paymentType: 'down_payment' | 'installment' | 'final_payment' | 'other',
-    notes: string
-  ) => {
-    if (!selectedApartment) return
-
-    try {
-      const saleId = await apartmentService.fetchSaleIdForApartment(selectedApartment.id)
-      await apartmentService.updatePayment(paymentId, amount, date, paymentType, notes, saleId)
-      setShowEditPaymentModal(false)
-      setEditingPayment(null)
-      const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
-      setPayments(paymentsData)
-      fetchData()
-    } catch (error) {
-      console.error('Error updating payment:', error)
-    }
-  }
-
-  const handleDeletePayment = async (paymentId: string, saleId: string | null, amount: number) => {
-    if (!selectedApartment) return
-
-    try {
-      await apartmentService.deletePayment(paymentId, saleId, amount)
-      const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
-      setPayments(paymentsData)
-      fetchData()
-    } catch (error) {
-      console.error('Error deleting payment:', error)
     }
   }
 
@@ -488,21 +450,6 @@ const ApartmentManagement: React.FC = () => {
         payments={payments}
         linkedGarages={selectedApartment ? (linkedGarages[selectedApartment.id] || []) : []}
         linkedStorages={selectedApartment ? (linkedStorages[selectedApartment.id] || []) : []}
-        onEditPayment={(payment) => {
-          setEditingPayment(payment)
-          setShowEditPaymentModal(true)
-        }}
-        onDeletePayment={handleDeletePayment}
-      />
-
-      <EditPaymentModal
-        visible={showEditPaymentModal}
-        onClose={() => {
-          setShowEditPaymentModal(false)
-          setEditingPayment(null)
-        }}
-        payment={editingPayment}
-        onSubmit={handleUpdatePayment}
       />
 
       <LinkUnitsModal

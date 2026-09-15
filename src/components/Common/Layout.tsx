@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth, Profile } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLeaveGuard } from '../../contexts/UnsavedChangesContext'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { useIsDesktop } from '../../hooks/useMediaQuery'
 import { useModalOverflow } from '../../hooks/useModalOverflow'
@@ -242,17 +243,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setPendingProfile(null)
   }, [currentProfile, cashflowUnlocked, navigate, setCurrentProfile])
 
-  useEffect(() => {
-    if (!showPasswordModal) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) {
-        e.preventDefault()
-        handlePasswordCancel()
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [showPasswordModal, handlePasswordCancel])
+  useEscapeKey(showPasswordModal, handlePasswordCancel)
 
   const profiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
 

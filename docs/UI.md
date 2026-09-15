@@ -49,6 +49,7 @@ Shared primitive component library. Always check here before building new UI —
 - **Usage pattern (hooks):** Hook exposes `pendingDeleteId` / `confirmDelete` / `cancelDelete` / `deleting`. Component renders `<ConfirmDialog show={!!pendingDeleteId} ... onConfirm={confirmDelete} onCancel={cancelDelete} loading={deleting} />`. Delete buttons set the pending ID instead of calling confirm() directly.
 - **Usage pattern (components):** Component holds `const [pendingDelete, setPendingDelete] = useState<T | null>(null)` locally. Delete button calls `setPendingDelete(item)`. ConfirmDialog rendered at bottom of JSX.
 - **Never use `window.confirm()` or `confirm()`** — all deletion confirmations must use ConfirmDialog.
+- Escape runs `onCancel` via [`useEscapeKey`](#useescapekey-srchooksuseescapekeyts), and only while this dialog is the topmost open layer — it never also closes the modal, drawer or panel it was opened from
 
 ### EmptyState.tsx
 - Centered empty list / no-results placeholder with icon and optional action
@@ -90,11 +91,13 @@ Shared primitive component library. Always check here before building new UI —
 - Full-featured modal dialog with portal rendering and body scroll lock
 - Compound component: `Modal.Header`, `Modal.Body`, `Modal.Footer`
 - Props (root): `show`, `onClose`, `size?` ('sm' | 'md' | 'lg' | 'xl' | 'full'), `children`
-- Props (Header): `title`, `subtitle?` (string | null), `onClose`, `children?`
+- Props (Header): `title`, `subtitle?` (string | null), `onClose`, `children?` — children render
+  under the title and subtitle (badges, a contact line); when present the close button pins to the
+  top of the header instead of centring on it
 - Props (Body): `children`, `noPadding?`, `className?`
 - Props (Footer): `children`, `sticky?` (default `true`)
 - Renders via `ReactDOM.createPortal`
-- Closes on `Escape` keypress and on backdrop click (mouse-down + mouse-up tracked so a drag that starts inside the dialog won't dismiss it)
+- Closes on `Escape` keypress and on backdrop click (mouse-down + mouse-up tracked so a drag that starts inside the dialog won't dismiss it). Escape goes through [`useEscapeKey`](#useescapekey-srchooksuseescapekeyts), so a `ConfirmDialog` opened over a modal closes alone rather than taking the modal with it
 - **Mobile-responsive:** tighter padding and taller max-height (`max-h-[95vh]`) on small screens; the footer stacks its actions full-width and reversed on mobile, switching to a right-aligned row on `sm` and up
 
 ### PageHeader.tsx
@@ -181,6 +184,18 @@ Helpers for list/grid views: a view-mode toggle and a sort dropdown. Re-exported
 - Native `<select>` styled as a compact sort control, with leading `ArrowUpDown` and trailing `ChevronDown` icons
 - Props: `value`, `options` (array of `SortOption<T>` = `{value, label}`), `onChange`, `className?`, `ariaLabel?`
 - Generic over the option value type `T extends string`; exports the `SortOption<T>` type
+
+---
+
+## Layer hooks
+
+### useEscapeKey (`src/hooks/useEscapeKey.ts`)
+- `useEscapeKey(active: boolean, onEscape: () => void)` — Escape closes the **topmost** open layer and nothing under it
+- Every layer that closes on Escape registers here instead of adding its own `document` keydown listener: `Modal`, `ConfirmDialog`, the task drawer (`TaskDetail`), the AI chat panel and its image lightbox, the calendar cluster popover, the chat group-members panel, the Cashflow password dialog in `Layout`, and Retail's milestone overlay. Document listeners fire in the order they were added, so with one listener per layer the parent — opened first — heard Escape first and closed over its own confirm dialog
+- `active` is when the layer joins the stack: pass its open flag, or `true` for a component that only exists while open. `onEscape` may be an inline function — it is read from a ref at key time, so a re-render never reorders the stack
+- An Escape that something already handled is ignored: an input that uses Escape to cancel its own edit (a title field, a rename box, the @mention list) should call `e.preventDefault()` in its React `onKeyDown`, which runs before the shared document listener
+- **Don't** add a raw `document.addEventListener('keydown', …)` for Escape in a new layer — use this hook, or nested layers break again
+- The stack logic is exported (`pushEscapeLayer`, `dispatchEscape`) and unit-tested in `useEscapeKey.test.ts`
 
 ---
 

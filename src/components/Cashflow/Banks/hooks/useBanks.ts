@@ -129,7 +129,7 @@ export const useBanks = () => {
       amount: credit.amount,
       interest_rate: credit.interest_rate,
       start_date: credit.start_date,
-      maturity_date: credit.maturity_date,
+      maturity_date: credit.maturity_date || '',
       outstanding_balance: credit.outstanding_balance,
       monthly_payment: credit.monthly_payment,
       purpose: credit.purpose || '',

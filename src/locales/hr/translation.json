@@ -1657,6 +1657,8 @@
     "milestone_delete": "Obriši prekretnicu",
     "milestone_mark_complete": "Označi kao završeno",
     "milestone_mark_incomplete": "Označi kao nedovršeno",
+    "milestone_delete_confirm": "Jeste li sigurni da želite obrisati ovu prekretnicu?",
+    "milestone_update_error": "Greška pri ažuriranju prekretnice.",
     "milestone_progress": "Napredak prekretnica",
     "milestones_empty_title": "Nema prekretnica",
     "milestones_empty_desc": "Dodajte prekretnice za praćenje napretka projekta",
@@ -2617,7 +2619,6 @@
       "upload": "Učitaj",
       "doc_singular": "dokument",
       "doc_plural": "dokumenata",
-      "mark_completed": "Označi kao završeno",
       "errors": {
         "phase_required": "Faza je obavezna",
         "name_required": "Naziv je obavezan",
@@ -4482,7 +4483,8 @@
       "delete": "Obriši",
       "read_only": "Samo za čitanje",
       "mark_done": "Označi kao gotovo",
-      "mark_open": "Označi kao nije gotovo"
+      "mark_open": "Označi kao nije gotovo",
+      "toggle_failed": "Zadatak nije moguće ažurirati. Pokušajte ponovno."
     },
     "colors": {
       "none": "Bez boje",

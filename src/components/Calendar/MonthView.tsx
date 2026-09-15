@@ -5,6 +5,7 @@ import type { EventType } from '../../types/tasks'
 import type { ExpandedOccurrence } from './utils/recurrence'
 import type { TaskOccurrence } from './utils/expandTasks'
 import { computeMonthLayout, type PlacedSegment } from './utils/monthLayout'
+import { completionToggle } from '../Tasks/permissions'
 
 interface Props {
   anchor: Date
@@ -15,6 +16,8 @@ interface Props {
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onTaskClick?: (occurrence: TaskOccurrence) => void
   onTaskToggle?: (occurrence: TaskOccurrence) => void
+  /** The signed-in user's auth id; decides whether a task's checkbox is live. */
+  currentUserId?: string | null
 }
 
 const typeAccent: Record<EventType, string> = {
@@ -125,6 +128,7 @@ const MonthView: React.FC<Props> = ({
   onEventClick,
   onTaskClick,
   onTaskToggle,
+  currentUserId,
 }) => {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
@@ -228,6 +232,9 @@ const MonthView: React.FC<Props> = ({
     const widthPct = (1 / 7) * 100
     const leftPct = (colIdx / 7) * 100
     const ToggleIcon = occ.isDone ? CheckSquare : Square
+    // TaskPill's rules, applied to this hand-placed pill: without them a checklist task's box
+    // threw "governed by its subtasks" and a read-only user's box silently did nothing.
+    const toggle = completionToggle(occ.task, currentUserId, t)
     return (
       <div
         key={occ.occurrenceKey}
@@ -248,8 +255,11 @@ const MonthView: React.FC<Props> = ({
       >
         <button
           type="button"
+          disabled={toggle.disabled || !onTaskToggle}
           onClick={e => { e.stopPropagation(); onTaskToggle?.(occ) }}
-          className="flex-shrink-0 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
+          title={toggle.title}
+          aria-label={toggle.title}
+          className="flex-shrink-0 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:cursor-not-allowed disabled:hover:text-gray-500"
         >
           <ToggleIcon className="w-3 h-3" />
         </button>

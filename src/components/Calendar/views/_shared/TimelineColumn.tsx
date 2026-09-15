@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useEscapeKey } from '../../../../hooks/useEscapeKey'
 import type { ExpandedOccurrence } from '../../utils/recurrence'
 import {
   DAY_HOURS,
@@ -60,16 +61,13 @@ function ClusterPopover({ state, locale, onSelect, onClose }: ClusterPopoverProp
         onClose()
       }
     }
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
     document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('keydown', handleEsc)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('keydown', handleEsc)
     }
   }, [onClose])
+
+  useEscapeKey(true, onClose)
 
   // Place below the chip; shift horizontally to stay inside the viewport.
   const POPOVER_WIDTH = 280

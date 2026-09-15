@@ -49,6 +49,7 @@ Detailed credit management: allocations per project, disbursements, expenses, re
 
 ### index.tsx (CreditsManagement)
 - Expandable credit cards with allocation modal, disbursement, repayment, and expense sections
+- Maturity date renders `—` when the credit has none (guarded with `isValidDate()` from `src/utils/dateOnly.ts`), instead of formatting `new Date(null)` as Jan 01, 1970
 - **Uses hooks:** useCreditManagement
 - **Uses components:** AllocationRow, CreditDisbursements, CreditRepayments, CreditExpenses, CreditInvoiceSection
 - **Uses Ui:** Card, Modal, Button
@@ -98,7 +99,7 @@ Bank and investor registry. Manages credit facilities and equity investments per
 ### creditService.ts
 - `fetchCompanyBankAccounts(companyId)` — fetches a company's bank accounts for disbursement selection
 - `createCredit(newCredit, computed)` — inserts a new bank credit facility (with computed type/seniority/monthly payment)
-- `updateCredit(creditId, newCredit, computed)` — updates a credit facility
+- `updateCredit(creditId, newCredit, computed)` — updates a credit facility. Like `createCredit`, it sends an empty maturity date as `null` (`bank_credits.maturity_date` is a nullable `date`; `''` would be rejected)
 - `countInvoicesForCredits(creditIds)` — how many invoices still reference these facilities (drives the delete-confirmation warning)
 - `detachInvoicesFromCredits(creditIds)` — clears `accounting_invoices.bank_credit_id`, returns the number detached; also imported by `Cashflow/Banks/services/bankService.ts` and by `bankService.deleteBank`
 - `deleteCredit(creditId)` — detaches linked invoices, then deletes the credit facility
