@@ -101,27 +101,24 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                   <div className="flex items-center space-x-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-200">
                     <Button
                       size="icon-sm"
-                      variant="ghost"
+                      variant={milestone.completed ? 'ghost-warning' : 'ghost-success'}
                       icon={milestone.completed ? Circle : CheckCircle}
                       onClick={() => onToggleComplete?.(milestone.id, milestone.completed)}
                       title={milestone.completed ? t('general_projects.milestone_mark_incomplete') : t('general_projects.milestone_mark_complete')}
-                      className={milestone.completed ? 'text-yellow-600 hover:bg-yellow-200' : 'text-green-600 hover:bg-green-200'}
                     />
                     <Button
                       size="icon-sm"
-                      variant="ghost"
+                      variant="ghost-primary"
                       icon={Edit2}
                       onClick={() => onEdit?.(milestone)}
                       title={t('general_projects.milestone_edit')}
-                      className="text-blue-600 hover:bg-blue-200"
                     />
                     <Button
                       size="icon-sm"
-                      variant="ghost"
+                      variant="ghost-danger"
                       icon={Trash2}
                       onClick={() => onDelete?.(milestone.id)}
                       title={t('general_projects.milestone_delete')}
-                      className="text-red-600 hover:bg-red-200"
                     />
                   </div>
                 )}

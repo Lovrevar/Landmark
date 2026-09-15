@@ -91,7 +91,7 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
                     <Table.Td label={t('reports.sales_analysis.contracted')} className="py-3 text-right text-gray-700 dark:text-gray-200">
                       {formatCurrency(customer.total_amount)}
                     </Table.Td>
-                    <Table.Td label={t('common.paid')} className="py-3 text-right text-green-600 font-medium">
+                    <Table.Td label={t('common.paid')} className="py-3 text-right text-green-600 dark:text-green-400 font-medium">
                       {formatCurrency(customer.total_paid)}
                     </Table.Td>
                     <Table.Td label={t('common.unpaid')} className="py-3 text-right">

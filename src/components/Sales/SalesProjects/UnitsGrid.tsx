@@ -345,12 +345,12 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                   {unit.status !== 'Sold' && (
                     <div className="flex space-x-1">
                       {unit.status === 'Available' && (
-                        <Button size="sm" variant="ghost" className="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/40" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Reserved')}>
+                        <Button size="sm" variant="warning" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Reserved')}>
                           {t('sales_projects.unit_detail.reserve')}
                         </Button>
                       )}
                       {unit.status === 'Reserved' && (
-                        <Button size="sm" variant="ghost" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Available')}>
+                        <Button size="sm" variant="info" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Available')}>
                           {t('sales_projects.unit_detail.available')}
                         </Button>
                       )}

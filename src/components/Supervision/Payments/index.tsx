@@ -116,7 +116,7 @@ const PaymentsManagement: React.FC = () => {
                     <span className="text-gray-400 dark:text-gray-500">-</span>
                   )}
                 </Table.Td>
-                <Table.Td label={t('supervision.payments.col.amount')} align="right" className="font-semibold text-green-600">
+                <Table.Td label={t('supervision.payments.col.amount')} align="right" className="font-semibold text-green-600 dark:text-green-400">
                   €{payment.amount.toLocaleString('hr-HR')}
                 </Table.Td>
                 <Table.Td label={t('common.notes')} className="text-gray-500 dark:text-gray-400 max-w-xs truncate">

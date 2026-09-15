@@ -92,7 +92,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                   </Table.Td>
                 )}
                 {visibleColumns.amount && (
-                  <Table.Td label={t('payments.table.amount')} className="font-semibold text-green-600">
+                  <Table.Td label={t('payments.table.amount')} className="font-semibold text-green-600 dark:text-green-400">
                     €{payment.amount.toLocaleString('hr-HR')}
                   </Table.Td>
                 )}
@@ -122,7 +122,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 <Table.Td sticky>
                   <div className="flex items-center space-x-2">
                     <Button
-                      variant="ghost"
+                      variant="ghost-primary"
                       size="icon-sm"
                       icon={Edit}
                       onClick={(e) => {
@@ -130,10 +130,9 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                         onEdit(payment)
                       }}
                       title="Uredi"
-                      className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 bg-transparent"
                     />
                     <Button
-                      variant="ghost"
+                      variant="ghost-danger"
                       size="icon-sm"
                       icon={Trash2}
                       onClick={(e) => {
@@ -141,7 +140,6 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                         onDelete(payment.id)
                       }}
                       title="Obriši"
-                      className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
                     />
                   </div>
                 </Table.Td>

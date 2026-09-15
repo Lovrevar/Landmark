@@ -138,8 +138,12 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
             {invoices.map((invoice) => (
               <div
                 key={invoice.id}
-                className={`bg-white dark:bg-gray-800 border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
-                  isOverdue(invoice.due_date, invoice.status) ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700'
+                className={`border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
+                  // Background and border in either branch, never both: with `bg-white` always
+                  // present, CSS order decided the winner and overdue cards rendered white.
+                  isOverdue(invoice.due_date, invoice.status)
+                    ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                 }`}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -198,8 +202,10 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2 block">{t('retail_projects.invoices_modal.due_date_label')}</label>
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2" />
-                      <p className={`text-sm font-medium ${
-                        isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-bold' : 'text-gray-900 dark:text-white'
+                      <p className={`text-sm ${
+                        isOverdue(invoice.due_date, invoice.status)
+                          ? 'font-bold text-red-600 dark:text-red-400'
+                          : 'font-medium text-gray-900 dark:text-white'
                       }`}>
                         {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
                       </p>

@@ -35,10 +35,10 @@ Found alongside section 1 (not a UI issue):
 
 ### 2. Same kind of bug as the dark-mode stripe (a stronger rule silently overrides a colour)
 
-- [ ] **Mobile table CSS** (`.responsive-table tbody tr { background }`) beats row-tint classes, so on phones the overdue invoice tint, the Cashflow calendar status tint and the Approvals selection highlight disappear. — [index.css](../src/index.css#L124)
-- [ ] **`Table.Td`** has a built-in `dark:text-gray-100`, so callers' `text-green-600` is lost in dark mode (Sales payments, Retail sales).
-- [ ] **Ghost `Button`** has `dark:text-gray-200`, so ~10 red delete icons turn grey in dark mode. — [Button.tsx](../src/components/ui/Button.tsx#L25)
-- [ ] **Supervision `InvoicesModal`:** `bg-white` beats `bg-red-50` in the built CSS, so overdue invoices aren't red even in light mode.
+- [x] **Mobile table CSS** (`.responsive-table tbody tr { background }`) beats row-tint classes, so on phones the overdue invoice tint, the Cashflow calendar status tint and the Approvals selection highlight disappear. Card colours now sit in `:where()` at zero specificity, and sticky cells go transparent in the card view. — [index.css](../src/index.css)
+- [x] **`Table.Td`** has a built-in `dark:text-gray-100`, so callers' `text-green-600` is lost in dark mode (Sales payments, Retail sales). The default colour moved to `Table.Body` and is inherited; 20 coloured cells gained a dark pair.
+- [x] **Ghost `Button`** has `dark:text-gray-200`, so ~10 red delete icons turn grey in dark mode. New `ghost-primary/-success/-warning/-danger` and soft `warning` variants; all 13 recoloured ghost buttons migrated. — [Button.tsx](../src/components/ui/Button.tsx)
+- [x] **Supervision `InvoicesModal`:** `bg-white` beats `bg-red-50` in the built CSS, so overdue invoices aren't red even in light mode. Same bug fixed in Retail's `RetailInvoicesModal`.
 
 The app-wide sweep found no remaining side-border + `dark:border` conflicts, no `confirm()` or `alert()`, and no Tailwind classes built at runtime.
 
@@ -638,7 +638,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 14. **[Documents/components/DocumentListTable.tsx:167](../src/components/Documents/components/DocumentListTable.tsx#L167), `Cashflow/Invoices/InvoiceTable.tsx:263`, `Supervision/WorkLogs/index.tsx:306`, `General/Projects/MilestoneTimeline.tsx:122`** — Dark mode/specificity · med
     - **Problem:** ~10 ghost Buttons pass `text-red-600` via `className`, but Button's `dark:text-gray-200` outranks it.
     - **Fix:** a `ghost-danger` / icon-tone variant.
-15. **[ui/Toast.tsx:9](../src/components/ui/Toast.tsx#L9)** — Contrast · med
+15. **[ui/Toast.tsx:9](../src/components/ui/Toast.tsx#L9)** — Contrast · med · `[x]` (now `bg-amber-500 text-gray-900`)
     - **Problem:** warning toasts are white on `bg-yellow-500` (~2:1).
     - **Fix:** `bg-amber-600`, or dark text.
 16. **Hardcoded or broken strings** — `Calendar/views/_shared/TimelineColumn.tsx:251`, `Common/Layout.tsx` (header aria-labels, "Menu"), `Auth/LoginForm.tsx:178,199,267`, `Common/PageFallback.tsx:7`, `Documents/components/CategoryRow.tsx:47`, `CategoryTree.tsx:71`, `Tasks/TaskDetail.tsx:406-407`, `Calendar/components/ParticipantPicker.tsx:89` — i18n · med

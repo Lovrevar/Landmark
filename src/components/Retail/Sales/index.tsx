@@ -109,14 +109,14 @@ const RetailSalesPaymentsManagement: React.FC = () => {
                 <Table.Td label={t('common.customer')}>{payment.customer_name}</Table.Td>
                 <Table.Td label={t('common.contract')}>{payment.contract_number}</Table.Td>
                 <Table.Td label={t('common.project')}>{payment.project_name}</Table.Td>
-                <Table.Td label={t('retail_sales.payments.table.invoice_total')} align="right" className="text-gray-500">
+                <Table.Td label={t('retail_sales.payments.table.invoice_total')} align="right" className="text-gray-500 dark:text-gray-400">
                   €{payment.invoice_total_amount.toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td label={t('common.payment')} align="right" className="font-semibold text-green-600">
+                <Table.Td label={t('common.payment')} align="right" className="font-semibold text-green-600 dark:text-green-400">
                   €{payment.amount.toLocaleString('hr-HR')}
                 </Table.Td>
                 <Table.Td label={t('retail_sales.payments.table.method')}>{payment.payment_method}</Table.Td>
-                <Table.Td label={t('common.bank')} className="text-gray-500">{payment.bank_account_name}</Table.Td>
+                <Table.Td label={t('common.bank')} className="text-gray-500 dark:text-gray-400">{payment.bank_account_name}</Table.Td>
               </Table.Tr>
             ))}
           </Table.Body>

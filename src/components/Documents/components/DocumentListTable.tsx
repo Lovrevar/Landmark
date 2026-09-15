@@ -159,12 +159,11 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
                         ].join(' ')}
                       />
                       <Button
-                        variant="ghost"
+                        variant="ghost-danger"
                         size="icon-sm"
                         icon={Trash2}
                         onClick={() => onDelete(doc)}
                         title={t('documents.page.actions.delete')}
-                        className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
                       />
                     </div>
                   </Table.Td>

@@ -361,7 +361,7 @@ const GeneralReports: React.FC = () => {
                 <Table.Td label={t('reports.general.month_col')} className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
                 <Table.Td label={t('reports.general.inflow_col')}>€{(month.inflow / 1000).toFixed(0)}K</Table.Td>
                 <Table.Td label={t('reports.general.outflow_col')}>€{(month.outflow / 1000).toFixed(0)}K</Table.Td>
-                <Table.Td label={t('reports.general.net_col')} className={`font-bold ${month.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <Table.Td label={t('reports.general.net_col')} className={`font-bold ${month.net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   €{(month.net / 1000).toFixed(0)}K
                 </Table.Td>
               </Table.Tr>

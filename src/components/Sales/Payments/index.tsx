@@ -101,7 +101,7 @@ const SalesPaymentsManagement: React.FC = () => {
                 <Table.Td label={t('customers.sales_payments.invoice_total')} align="right" className="text-gray-500 dark:text-gray-400">
                   €{payment.invoice_total_amount.toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td label={t('customers.sales_payments.payment')} align="right" className="font-semibold text-green-600">
+                <Table.Td label={t('customers.sales_payments.payment')} align="right" className="font-semibold text-green-600 dark:text-green-400">
                   €{Number(payment.amount).toLocaleString('hr-HR')}
                 </Table.Td>
                 <Table.Td label={t('customers.sales_payments.method')}>{payment.payment_method}</Table.Td>

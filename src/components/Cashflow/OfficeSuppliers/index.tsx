@@ -263,10 +263,10 @@ const OfficeSuppliers: React.FC = () => {
                         <Table.Td label={t('office_suppliers.invoices_modal.table.total')} className="text-right font-medium">
                           €{parseFloat(invoice.total_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Table.Td>
-                        <Table.Td label={t('office_suppliers.invoices_modal.table.paid')} className="text-right text-green-600">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.paid')} className="text-right text-green-600 dark:text-green-400">
                           €{parseFloat(invoice.paid_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Table.Td>
-                        <Table.Td label={t('office_suppliers.invoices_modal.table.remaining')} className="text-right text-orange-600">
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.remaining')} className="text-right text-orange-600 dark:text-orange-400">
                           €{parseFloat(invoice.remaining_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.status')} className="text-center">

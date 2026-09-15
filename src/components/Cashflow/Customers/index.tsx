@@ -104,7 +104,7 @@ const AccountingCustomers: React.FC = () => {
                       <span className="text-sm font-medium text-red-600">€{(customer.property_price - customer.total_paid).toLocaleString('hr-HR')}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Button variant="ghost" size="sm" icon={Eye} onClick={() => handleOpenDetails(customer)} className="text-blue-600 hover:text-blue-900">
+                      <Button variant="ghost-primary" size="sm" icon={Eye} onClick={() => handleOpenDetails(customer)}>
                         {t('accounting_customers.details_button')}
                       </Button>
                     </td>

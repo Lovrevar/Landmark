@@ -209,12 +209,12 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 </Table.Td>
               )}
               {visibleColumns.paid_amount && (
-                <Table.Td label={t('invoices.table.paid')} className="text-green-600">
+                <Table.Td label={t('invoices.table.paid')} className="text-green-600 dark:text-green-400">
                   €{formatCurrency(invoice.paid_amount)}
                 </Table.Td>
               )}
               {visibleColumns.remaining_amount && (
-                <Table.Td label={t('invoices.table.remaining')} className="text-red-600 font-medium">
+                <Table.Td label={t('invoices.table.remaining')} className="text-red-600 dark:text-red-400 font-medium">
                   €{formatCurrency(invoice.remaining_amount)}
                 </Table.Td>
               )}
@@ -238,29 +238,26 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                   />
                   {invoice.status !== 'PAID' && (
                     <Button
-                      variant="ghost"
+                      variant="ghost-success"
                       size="icon-sm"
                       icon={DollarSign}
                       onClick={() => onPayment(invoice)}
                       title="Plaćanje"
-                      className="text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 bg-transparent"
                     />
                   )}
                   <Button
-                    variant="ghost"
+                    variant="ghost-primary"
                     size="icon-sm"
                     icon={Edit}
                     onClick={() => onEdit(invoice)}
                     title="Uredi"
-                    className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 bg-transparent"
                   />
                   <Button
-                    variant="ghost"
+                    variant="ghost-danger"
                     size="icon-sm"
                     icon={Trash2}
                     onClick={() => onDelete(invoice.id)}
                     title="Obriši"
-                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
                   />
                 </div>
               </Table.Td>

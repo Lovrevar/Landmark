@@ -303,8 +303,8 @@ const WorkLogs: React.FC = () => {
                             {t('supervision.work_logs.logged')} {format(new Date(log.created_at), 'MMM dd, HH:mm')}
                           </p>
                         </div>
-                        <Button size="icon-md" variant="ghost" icon={Edit2} onClick={() => openEditForm(log)} title="Edit" className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30" />
-                        <Button size="icon-md" variant="ghost" icon={Trash2} onClick={() => handleDelete(log.id)} title="Delete" className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" />
+                        <Button size="icon-md" variant="ghost-primary" icon={Edit2} onClick={() => openEditForm(log)} title="Edit" />
+                        <Button size="icon-md" variant="ghost-danger" icon={Trash2} onClick={() => handleDelete(log.id)} title="Delete" />
                       </div>
                     </div>
 

@@ -31,8 +31,10 @@ Shared primitive component library. Always check here before building new UI —
 
 ### Button.tsx
 - Versatile button with loading state, left/right icons, and multiple size/variant options
-- Props: `variant` (11 types), `size` (6 types), `icon?`, `iconRight?`, `loading?`, `fullWidth?`, `children?`, plus all standard HTML button attributes
-- Uses `forwardRef`; shows `Loader2` spinner when `loading` is true
+- Props: `variant` (16 types), `size` (6 types), `icon?`, `iconRight?`, `loading?`, `fullWidth?`, `children?`, plus all standard HTML button attributes
+- Uses `forwardRef`; shows `Loader2` spinner when `loading` is true, and on its own while an `onClick` that returns a Promise is pending
+- Subtle coloured variants for row actions: `ghost-primary` (edit/view), `ghost-success` (pay/complete), `ghost-warning`, `ghost-danger` (delete) — transparent, coloured icon/text with a dark-mode pair, tinted hover. `info` (soft blue) and `warning` (soft yellow) are the filled-soft pair
+- **Don't recolour a variant through `className`.** The variant's own `dark:` classes outrank a plain colour class, so `variant="ghost" className="text-red-600"` renders grey in dark mode. Pick or add a variant instead; `className` is for layout
 
 ### Card.tsx
 - Compound card container with optional `Card.Header` and `Card.Body` sub-components
@@ -149,6 +151,7 @@ Shared primitive component library. Always check here before building new UI —
 - Props (`Td`): `sticky?`, `label?` (column label shown beside the value in the mobile card view), plus standard HTML `td` attributes
 - Props (`Tr`): `hoverable?` (default `true`), plus standard HTML `tr` attributes
 - **Mobile-responsive:** the root wrapper carries the `responsive-table` class which switches the table to a stacked card layout on small screens (see `index.css`); each cell's `label` (rendered as `data-label`) is used to label its value in that card view
+- **Colours:** the default cell text colour is set on `Table.Body` and inherited — `Td` sets none — so a colour class on a `Td` wins in both themes. Give it a dark pair (`text-green-600 dark:text-green-400`); a bare `-600` is low-contrast on the dark background. Row tints on `Tr` (`bg-red-50 dark:bg-red-900/20`) also survive the mobile card view: its card background and border are declared inside `:where()`, at zero specificity, precisely so a utility class on the row wins
 
 ### Tabs.tsx
 - Generic tab navigation with optional icon and count badge per tab
@@ -222,7 +225,7 @@ These hooks live in `src/hooks/` (not `src/components/ui/`) but pair with the li
 - **Do not import the visual component directly** — use the hook only
 - `useToast()` — returns `{ toast, success, error, warning, dismiss }`; must be called inside `ToastProvider` (already mounted in `App.tsx`)
 - Each toast auto-dismisses after ~4.5 s; clicking it dismisses immediately
-- Variants: `'info'` (blue) | `'success'` (green) | `'warning'` (yellow) | `'error'` (red)
+- Variants: `'info'` (blue) | `'success'` (green) | `'warning'` (amber, dark text — white on yellow was unreadable) | `'error'` (red)
 - Import: `import { useToast } from 'src/contexts/ToastContext'`
 - Usage: replace `alert('...')` with `toast.error('...')` / `toast.success('...')` etc.
 

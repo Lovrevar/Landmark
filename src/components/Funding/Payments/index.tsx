@@ -147,7 +147,7 @@ const FundingPaymentsManagement: React.FC = () => {
                 <Table.Td label={t('funding.payments.table.category_col')} className="text-gray-500 dark:text-gray-400">
                   {payment.credit_type?.replace('_', ' ').toUpperCase()}
                 </Table.Td>
-                <Table.Td label={t('funding.payments.table.amount_col')} align="right" className="font-semibold text-green-600">
+                <Table.Td label={t('funding.payments.table.amount_col')} align="right" className="font-semibold text-green-600 dark:text-green-400">
                   €{Number(payment.amount).toLocaleString('hr-HR')}
                 </Table.Td>
                 <Table.Td label={t('funding.payments.table.notes_col')} className="text-gray-500 dark:text-gray-400 max-w-xs truncate">

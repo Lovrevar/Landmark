@@ -253,8 +253,8 @@ const AccountingSuppliers: React.FC = () => {
                 <Table.Td label={t('suppliers.stats.total_contracts')}>{supplier.total_contracts}</Table.Td>
                 <Table.Td label={t('suppliers.invoices_label')}>{supplier.total_invoices}</Table.Td>
                 <Table.Td label={t('common.value')} className="text-right font-semibold">€{formatEuropean(supplier.total_contract_value)}</Table.Td>
-                <Table.Td label={t('common.total_paid')} className="text-right text-green-600">€{formatEuropean(supplier.total_paid)}</Table.Td>
-                <Table.Td label={t('common.remaining')} className="text-right text-orange-600">€{formatEuropean(supplier.total_remaining)}</Table.Td>
+                <Table.Td label={t('common.total_paid')} className="text-right text-green-600 dark:text-green-400">€{formatEuropean(supplier.total_paid)}</Table.Td>
+                <Table.Td label={t('common.remaining')} className="text-right text-orange-600 dark:text-orange-400">€{formatEuropean(supplier.total_remaining)}</Table.Td>
                 <Table.Td sticky className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="inline-flex items-center gap-1">
                     {supplier.source === 'site' && (

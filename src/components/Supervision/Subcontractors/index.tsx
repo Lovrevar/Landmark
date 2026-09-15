@@ -250,8 +250,8 @@ const SubcontractorManagement: React.FC = () => {
                   <Table.Td label={t('common.contact')} className="text-gray-500 dark:text-gray-400">{sub.contact || '-'}</Table.Td>
                   <Table.Td label={t('supervision.subcontractors.total_contracts')}>{sub.total_contracts} ({sub.active_contracts})</Table.Td>
                   <Table.Td label={t('supervision.subcontractors.contract_value')} className="text-right font-semibold">€{formatEuropean(sub.total_contract_value)}</Table.Td>
-                  <Table.Td label={t('common.total_paid')} className="text-right text-teal-600">€{formatEuropean(sub.total_paid)}</Table.Td>
-                  <Table.Td label={t('common.remaining')} className="text-right text-orange-600">€{formatEuropean(sub.total_remaining)}</Table.Td>
+                  <Table.Td label={t('common.total_paid')} className="text-right text-teal-600 dark:text-teal-400">€{formatEuropean(sub.total_paid)}</Table.Td>
+                  <Table.Td label={t('common.remaining')} className="text-right text-orange-600 dark:text-orange-400">€{formatEuropean(sub.total_remaining)}</Table.Td>
                   <Table.Td label={t('supervision.subcontractors.payment_progress')}>
                     <div className="flex items-center gap-2 min-w-[120px]">
                       <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
