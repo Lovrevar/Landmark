@@ -29,6 +29,10 @@ These are bugs rather than design issues: buttons that do nothing, data silently
 - [x] **Funding: a credit with no maturity date showed "Jan 01, 1970",** and editing it failed. — [Investments/index.tsx](../src/components/Funding/Investments/index.tsx)
 - [x] **Calendar task checkboxes.** They did nothing in the day list and "Next up", and ignored the read-only and checklist rules in the month view.
 
+Found alongside section 1 (not a UI issue):
+
+- [~] **`get_filtered_invoices` bypassed invoice RLS.** It is SECURITY DEFINER with no role check, so any authenticated user could list every invoice. It now requires Director/Accounting, and EXECUTE is revoked on five unused SECURITY DEFINER finance functions. Waits on migration `20260916100000_lock_down_finance_definer_functions.sql` being applied. — see [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md)
+
 ### 2. Same kind of bug as the dark-mode stripe (a stronger rule silently overrides a colour)
 
 - [ ] **Mobile table CSS** (`.responsive-table tbody tr { background }`) beats row-tint classes, so on phones the overdue invoice tint, the Cashflow calendar status tint and the Approvals selection highlight disappear. — [index.css](../src/index.css#L124)
