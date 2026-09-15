@@ -48,7 +48,7 @@ Every mutation is logged through `logActivity()` with `entity='task'` and action
 
 ### Colours
 
-`tasks.color` is a *label*, not a status — a supervisor grouping tasks by eye ("the blue ones are the electrics"). The overdue red left border stays deadline-driven and must not become paintable, so the chip is rendered squared-off (`rounded-md`, no clock) to stay legible beside a red deadline.
+`tasks.color` is a *label*, not a status — a supervisor grouping tasks by eye ("the blue ones are the electrics"). In the task list (`TaskRow`) the colour **tints the whole card** (`COLOR_STYLES[color].card`: background + border) instead of showing a named chip; the colour name survives only as `sr-only` text. The overdue red left border stays deadline-driven and must not become paintable: it is laid over the tint and carries its own `dark:border-l-red-500`, because with `darkMode: 'class'` any `dark:border-*` on the card would otherwise outrank it. The squared-off chip (`TaskColorChip`, `rounded-md`, no clock) is still used for the read-only colour field in the drawer, and its `dotOnly` form on the calendar `TaskPill`.
 
 The palette is **closed at three points that must be changed together**: `tasks_color_check` in `20260813090000_task_color.sql`, `COLOR_STYLES` in [taskColor.ts](../src/components/Tasks/taskColor.ts), and `src/lib/taskColor.ts` in the mobile app. The reason it cannot be a free hex string is Tailwind: utility classes are emitted by scanning sources for literal class names, so a class assembled at runtime (`bg-${color}-100`) is never generated and the chip would render with no background. `NULL` means "no colour" — no backfill, no default, and a CHECK passes on NULL.
 
@@ -150,7 +150,7 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - **Uses UI:** Tabs, Button, SearchInput, ToggleSwitch, ConfirmDialog, EmptyState
 
 ### TaskRow.tsx
-- Compact row: **checkbox** (Square/CheckSquare; disabled with a "read only" tooltip when the viewer can't edit, and disabled on a checklist task with the `3/6` count in the tooltip instead) toggling open ↔ done, title (strikethrough when done), unread dot, lock icon for private, colour chip, red left accent + relative due label when overdue, attachment/comment counts, stacked avatars via [AvatarStack](../src/components/ui/AvatarStack.tsx), creator-only hover delete. No project tag — the group header carries the project
+- Compact row: **checkbox** (Square/CheckSquare; disabled with a "read only" tooltip when the viewer can't edit, and disabled on a checklist task with the `3/6` count in the tooltip instead) toggling open ↔ done, title (strikethrough when done), unread dot, lock icon for private, card tinted in the task's colour (see [Colours](#colours)), red left accent + relative due label when overdue, attachment/comment counts, stacked avatars via [AvatarStack](../src/components/ui/AvatarStack.tsx), creator-only hover delete. No project tag — the group header carries the project
 
 ### TaskModal.tsx
 - **Create-only** modal (editing happens inline in the detail drawer). Fields: title, project ([SearchableSelect](../src/components/ui/SearchableSelect.tsx)), optional due date (date only), colour ([TaskColorPicker](../src/components/Tasks/components/TaskColorPicker.tsx)), private toggle, assignees ([ParticipantPicker](../src/components/Calendar/components/ParticipantPicker.tsx), hidden for private tasks), plain-text description (`ui/Textarea`)
