@@ -8,6 +8,7 @@ import { importApartmentRow, logApartmentImportSummary } from '../services/apart
 import { useToast } from '../../../../contexts/ToastContext'
 import { importErrorMessage } from '../importOutcome'
 import { ImportOutcomeSummary } from './ImportOutcomeSummary'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface ParsedApartmentRow {
   rowIndex: number
@@ -338,7 +339,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                         <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.number}</td>
                         <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.floor}</td>
                         <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.size_m2}</td>
-                        <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">€{row.price.toLocaleString()}</td>
+                        <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{formatEuro(row.price)}</td>
                         <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.parking_label || '-'}</td>
                         <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{row.storage_label || '-'}</td>
                         <td className="px-3 py-2 text-sm">

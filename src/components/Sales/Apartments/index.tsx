@@ -12,6 +12,7 @@ import { EditApartmentModal } from './modals/EditApartmentModal'
 import { ApartmentDetailsModal } from './modals/ApartmentDetailsModal'
 import { PaymentHistoryModal } from './modals/PaymentHistoryModal'
 import { LinkUnitsModal } from './modals/LinkUnitsModal'
+import { formatEuroRounded } from '../../../utils/formatters'
 
 const ApartmentManagement: React.FC = () => {
   const { t } = useTranslation()
@@ -330,7 +331,7 @@ const ApartmentManagement: React.FC = () => {
                           ></div>
                         </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
-                          €{totalPaid.toLocaleString()} / €{totalPrice.toLocaleString('hr-HR')}
+                          {formatEuroRounded(totalPaid)} / {formatEuroRounded(totalPrice)}
                         </div>
                       </div>
                     </>

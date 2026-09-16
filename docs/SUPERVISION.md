@@ -237,11 +237,11 @@ phase to a user goes through it.
 
 ### utils/contractTree.ts
 - `buildContractTree(contracts, dimensions, ctx)` — the grouping used by both Site Management views. `dimensions` comes from `VIEW_DIMENSIONS`: `['phase','classification','contractType']` or `['classification','phase','contractType']`. Contract type is always innermost; only the top two levels swap
-- `rollupContracts(contracts)` — contracted / paid / unpaid money for any subset. A row counts as contracted only when it has a contract AND a non-zero amount
-- `remainingBudget(budget, rollup)`, `unallocatedBudget(phase, budgets)` — the latter is the phase budget not yet given to any classification, shown as "Neraspoređeno"
+- `rollupContracts(contracts)` — contracted / paid / unpaid money for any subset. A row counts as contracted only when it has a contract AND a non-zero amount. The arithmetic itself lives in [`src/utils/contractRollup.ts`](../src/utils/contractRollup.ts), shared with Retail's phase card; what stays here is the mapping from a subcontractor row onto it — `budget_realized` is "paid", `invoice_total_owed` is "owed"
+- `remainingBudget(budget, rollup)` — re-exported from `contractRollup` so importers keep one path; `unallocatedBudget(phase, budgets)` is the phase budget not yet given to any classification, shown as "Neraspoređeno"
 - `isFullySettled(sub)` — the "paid in full" predicate, different for contracted and uncontracted rows
 - `exceedsPhaseBudget(phase, cost)` — whether a new contract overruns the phase plan. **False when the phase has no budget at all**: a project without a TIC has every phase at 0, and reading that as "a budget of zero, which everything overruns" would block every contract on the project while blaming the amount
-- Pure module, covered by `contractTree.test.ts`. The logic used to be inline in PhaseCard where it could not be tested
+- Pure module, covered by `contractTree.test.ts` (grouping, and the field mapping onto the shared rollup) plus `src/utils/contractRollup.test.ts` (the money rules themselves). The logic used to be inline in PhaseCard where it could not be tested
 
 ### ProjectSummaryBanner.tsx
 - The whole project in one strip of five tiles, in the same order and colours a phase card uses, so the project reads as one level up from what sits beneath it. Money comes from `rollupContracts`, the same function every node below uses

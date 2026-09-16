@@ -3,6 +3,8 @@ import { Plus, Edit2, Trash2, DollarSign, ChevronDown, ChevronUp } from 'lucide-
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { Button, Badge, EmptyState } from '../../ui'
+import { rollupContracts, remainingBudget } from '../../../utils/contractRollup'
+import { formatEuro } from '../../../utils/formatters'
 import type { RetailProjectPhase, RetailContract, RetailProjectWithPhases } from '../../../types/retail'
 
 interface PhaseCardProps {
@@ -35,32 +37,24 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   const { t } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(false)
 
-  const contractsWithContract = phaseContracts.filter(c => c.has_contract && c.contract_amount > 0)
-  const contractsWithoutContract = phaseContracts.filter(c => !c.has_contract || c.contract_amount === 0)
+  // Same four figures as Supervision's phase card, so they share the arithmetic. Retail's "paid"
+  // column is `invoice_total_paid` and its "still owed" is `invoiced_remaining`; mapping them here
+  // is all this card has to say about the maths.
+  const rollup = rollupContracts(phaseContracts.map(c => ({
+    hasContract: c.has_contract,
+    cost: c.contract_amount,
+    paid: c.invoice_total_paid || 0,
+    owed: c.invoiced_remaining || 0
+  })))
 
-  const totalContractCost = contractsWithContract.reduce((sum, c) => sum + c.contract_amount, 0)
-  const totalPaidWithContract = contractsWithContract.reduce((sum, c) => sum + (c.invoice_total_paid || 0), 0)
-  const totalPaidWithoutContract = contractsWithoutContract.reduce((sum, c) => sum + (c.invoice_total_paid || 0), 0)
-  const totalPaidOut = totalPaidWithContract + totalPaidWithoutContract
+  const totalContractCost = rollup.contracted
+  const totalPaidOut = rollup.paid
+  const totalUnpaid = rollup.unpaid
 
-  const totalUnpaidWithContract = contractsWithContract.reduce((sum, c) => {
-    const paid = c.invoice_total_paid || 0
-    return sum + Math.max(0, c.contract_amount - paid)
-  }, 0)
-  const totalUnpaidWithoutContract = contractsWithoutContract.reduce((sum, c) => sum + (c.invoiced_remaining || 0), 0)
-  const totalUnpaid = totalUnpaidWithContract + totalUnpaidWithoutContract
-
-  const availableBudget = phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract
+  const availableBudget = remainingBudget(phase.budget_allocated, rollup)
   const budgetUtilization = phase.budget_allocated > 0 ? (totalPaidOut / phase.budget_allocated) * 100 : 0
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount)
-  }
+  const formatCurrency = formatEuro
 
   const getPhaseIcon = (type: string) => {
     switch (type) {
@@ -146,7 +140,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           {phase.phase_type !== 'sales' && (
             <div className={`p-3 rounded-lg ${availableBudget < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
               <p className={`text-sm ${availableBudget < 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
-                {t('retail_projects.forecasted_budget')}
+                {t('retail_projects.remaining_budget')}
               </p>
               <p className={`text-lg font-bold ${availableBudget < 0 ? 'text-red-900 dark:text-red-400' : 'text-green-900 dark:text-green-400'}`}>
                 {formatCurrency(availableBudget)}

@@ -7,6 +7,7 @@ import type { RetailContractMilestone } from '../../../types/retail'
 import { MilestoneFormModal } from './forms/MilestoneFormModal'
 import { retailProjectService } from './services/retailProjectService'
 import { useToast } from '../../../contexts/ToastContext'
+import { formatEuroRounded } from '../../../utils/formatters'
 
 interface MilestoneStats {
   totalPercentage: number
@@ -123,14 +124,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
-  }
+  const formatCurrency = formatEuroRounded
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl">

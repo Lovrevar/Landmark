@@ -4,6 +4,7 @@ import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Building2, Square, Ch
 import { format } from 'date-fns'
 import { CustomerWithApartments, CustomerCategory } from './types'
 import { Button } from '../../ui'
+import { formatEuroCompact } from '../../../utils/formatters'
 
 interface CustomerCardProps {
   customer: CustomerWithApartments
@@ -138,7 +139,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                       </span>
                     )}
                     <span className="text-xs font-bold text-green-700">
-                      €{totalPackage > 0 ? (totalPackage / 1000).toFixed(0) : '0'}K
+                      {formatEuroCompact(totalPackage)}
                     </span>
                   </div>
 
@@ -147,13 +148,13 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                       {unit.garage && (
                         <div className="flex justify-between">
                           <span className="text-orange-600">+ Garage {unit.garage.number}</span>
-                          <span>€{(unit.garage.price / 1000).toFixed(0)}K</span>
+                          <span>{formatEuroCompact(unit.garage.price)}</span>
                         </div>
                       )}
                       {unit.repository && (
                         <div className="flex justify-between">
                           <span className="text-gray-600 dark:text-gray-400">+ Repository {unit.repository.number}</span>
-                          <span>€{(unit.repository.price / 1000).toFixed(0)}K</span>
+                          <span>{formatEuroCompact(unit.repository.price)}</span>
                         </div>
                       )}
                     </div>
@@ -199,7 +200,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           <p className="text-xs font-semibold text-blue-800 dark:text-blue-200 mb-2">{t('customers.card.preferences')}</p>
           <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
             {customer.preferences.budget_min && customer.preferences.budget_max && (
-              <div>{t('customers.card.budget')} €{(customer.preferences.budget_min / 1000).toFixed(0)}K - €{(customer.preferences.budget_max / 1000).toFixed(0)}K</div>
+              <div>{t('customers.card.budget')} {formatEuroCompact(customer.preferences.budget_min)} - {formatEuroCompact(customer.preferences.budget_max)}</div>
             )}
             {customer.preferences.preferred_size_min && customer.preferences.preferred_size_max && (
               <div>{t('customers.card.size')} {customer.preferences.preferred_size_min}m² - {customer.preferences.preferred_size_max}m²</div>

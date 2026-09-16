@@ -173,6 +173,7 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 - EVM Indices scatter chart (recharts): CPI and SPI plotted against a Target (1.0) and a Warning (0.9) reference line
 - EVM Performance Metrics row: CPI, SPI, EAC, VAC, Completion % with progress bar
 - Index card colors via `getIndexStatus`: green (≥ 1.0), yellow (0.9–1.0), red (< 0.9)
+- Money goes through the shared helpers ([`src/utils/formatters.ts`](../src/utils/formatters.ts)): `compactEuro` (= `formatEuroCompact`) on the EVM tiles and the chart's Y axis, `formatEuroFull` (= `formatEuro`) on the metric cards and the chart tooltip. `compactEuro` was previously a local `formatEuro` that **shadowed the shared name while meaning the opposite** (abbreviated, not exact), abbreviated from €1.000 up (so €1.500 read "€2K") and used a decimal point where the rest of the app uses a comma
 - Empty/edge states: no projects, and "no budget data" when `plannedBudget` is 0
 - **Uses hooks:** useBudgetControl
 - **Uses lib:** recharts (BarChart, ScatterChart, ReferenceLine)

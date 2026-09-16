@@ -10,6 +10,7 @@ import {
   OnSellUnitCallback,
   OnLinkApartmentCallback
 } from './types'
+import { formatEuro, formatEuroRounded } from '../../../utils/formatters'
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { Button, Badge } from '../../ui'
 import { filterUnitsByStatus, getSelectableUnitIds, getUnitsOfType } from './unitFilters'
@@ -268,23 +269,23 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.sale_price')}:</span>
-                      <span className="text-sm font-bold text-green-600">€{unit.sale_info.sale_price.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-green-600">{formatEuro(unit.sale_info.sale_price)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.down_payment')}:</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">€{unit.sale_info.down_payment.toLocaleString('hr-HR')}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{formatEuro(unit.sale_info.down_payment)}</span>
                     </div>
                     {unit.sale_info.monthly_payment > 0 && (
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.monthly')}:</span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">€{unit.sale_info.monthly_payment.toLocaleString()}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{formatEuro(unit.sale_info.monthly_payment)}</span>
                       </div>
                     )}
                     <div className="mt-2">
                       <div className="flex justify-between mb-1">
                         <span className="text-xs text-gray-500 dark:text-gray-400">{t('sales_projects.unit_detail.payment_progress')}</span>
                         <span className="text-xs font-medium text-gray-900 dark:text-white">
-                          €{unit.sale_info.total_paid.toLocaleString()} / €{totalPackagePrice.toLocaleString('hr-HR')}
+                          {formatEuroRounded(unit.sale_info.total_paid)} / {formatEuroRounded(totalPackagePrice)}
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">

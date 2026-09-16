@@ -24,20 +24,16 @@ import {
 import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { useBudgetControl } from './hooks/useBudgetControl'
 import LoadingSpinner from '../../ui/LoadingSpinner'
+import { formatEuro, formatEuroCompact } from '../../../utils/formatters'
 
-function formatEuro(value: number): string {
-  if (Math.abs(value) >= 1_000_000) {
-    return `€${(value / 1_000_000).toFixed(2)}M`
-  }
-  if (Math.abs(value) >= 1_000) {
-    return `€${(value / 1_000).toFixed(0)}K`
-  }
-  return `€${value.toFixed(0)}`
-}
+/**
+ * Abbreviated euros for the EVM tiles and the chart's Y axis. Named for what it does, so it no
+ * longer shadows the shared `formatEuro` — which is the exact-cents renderer, not this one.
+ */
+const compactEuro = formatEuroCompact
 
-function formatEuroFull(value: number): string {
-  return new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(value)
-}
+/** The same figure in full, under a tile and in the chart tooltip. */
+const formatEuroFull = formatEuro
 
 interface IndexCardProps {
   label: string
@@ -209,7 +205,7 @@ export default function BudgetControl() {
                 <BarChart data={barData} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                  <YAxis tickFormatter={formatEuro} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                  <YAxis tickFormatter={compactEuro} tick={{ fill: '#6b7280', fontSize: 11 }} />
                   <Tooltip
                     formatter={(value) => formatEuroFull(Number(value))}
                     contentStyle={tooltipStyle}
@@ -285,12 +281,12 @@ export default function BudgetControl() {
               )}
               <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 p-4">
                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">{t('budget_control.eac')}</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{formatEuro(data.metrics.EAC)}</p>
+                <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{compactEuro(data.metrics.EAC)}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatEuroFull(data.metrics.EAC)}</p>
               </div>
               <div className={`rounded-xl border p-4 ${data.metrics.VAC >= 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'}`}>
                 <p className={`text-sm mb-1 ${data.metrics.VAC >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{t('budget_control.vac')}</p>
-                <p className={`text-xl font-bold ${data.metrics.VAC >= 0 ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}`}>{formatEuro(data.metrics.VAC)}</p>
+                <p className={`text-xl font-bold ${data.metrics.VAC >= 0 ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}`}>{compactEuro(data.metrics.VAC)}</p>
                 <div className={`flex items-center gap-1 mt-1 text-xs ${data.metrics.VAC >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {data.metrics.VAC >= 0
                     ? <><CheckCircle className="w-3 h-3" /><span>{t('budget_control.under_budget')} ✓</span></>

@@ -2898,6 +2898,7 @@
     "total_revenue": "Total Revenue",
     "confirm_delete_phase": "Are you sure you want to delete this phase?",
     "forecasted_budget": "Forecasted Budget",
+    "remaining_budget": "Remaining budget",
     "sales_revenue_label": "Sales Revenue",
     "contracted_amount": "Contracted Amount",
     "paid_out": "Paid Out",

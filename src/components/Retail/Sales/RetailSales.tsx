@@ -6,6 +6,7 @@ import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormF
 import { useRetailSalesManager } from './hooks/useRetailSalesManager'
 import type { SaleWithRelations, RetailSalePayload } from './services/retailSalesService'
 import { useToast } from '../../../contexts/ToastContext'
+import { formatEuro } from '../../../utils/formatters'
 
 const emptyForm = () => ({
   land_plot_id: '',
@@ -187,12 +188,12 @@ const RetailSales: React.FC = () => {
                 <Table.Td label={t('common.parcel')}><div className="text-sm text-gray-900 dark:text-white">{sale.land_plot?.plot_number || 'N/A'}</div></Table.Td>
                 <Table.Td label={t('retail_sales.table.area')}>
                   <div className="text-sm text-gray-900 dark:text-white">{sale.sale_area_m2.toLocaleString()} m²</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">€{sale.sale_price_per_m2}/m²</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatEuro(sale.sale_price_per_m2)}/m²</div>
                 </Table.Td>
-                <Table.Td label={t('common.total')}><div className="text-sm font-semibold text-gray-900 dark:text-white">€{sale.total_sale_price.toLocaleString('hr-HR')}</div></Table.Td>
+                <Table.Td label={t('common.total')}><div className="text-sm font-semibold text-gray-900 dark:text-white">{formatEuro(sale.total_sale_price)}</div></Table.Td>
                 <Table.Td label={t('common.paid')}>
-                  <div className="text-sm text-green-600">€{sale.paid_amount.toLocaleString()}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{t('common.remaining')}: €{sale.remaining_amount.toLocaleString('hr-HR')}</div>
+                  <div className="text-sm text-green-600">{formatEuro(sale.paid_amount)}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t('common.remaining')}: {formatEuro(sale.remaining_amount)}</div>
                 </Table.Td>
                 <Table.Td label={t('retail_sales.table.deadline')}><div className="text-sm text-gray-900 dark:text-white">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div></Table.Td>
                 <Table.Td label={t('common.status')}>

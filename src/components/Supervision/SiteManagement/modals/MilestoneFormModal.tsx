@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { MilestoneFormData } from '../types'
 import { validateMilestonePercentagesForContract } from '../services/siteService'
 import { Modal, FormField, Input, Textarea, Button } from '../../../ui'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface MilestoneFormModalProps {
   visible: boolean
@@ -149,7 +150,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
               helperText={`${formData.percentage}% ${t('supervision.milestone_form.of')} €${contractCost.toLocaleString('hr-HR')}`}
             >
               <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white font-semibold">
-                €{calculateAmount().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatEuro(calculateAmount())}
               </div>
             </FormField>
           </div>

@@ -5,6 +5,7 @@ import { differenceInDays } from 'date-fns'
 import { ProjectWithPhases, OnSelectProjectCallback } from './types'
 import { Button, Badge, EmptyState } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
+import { formatEuroCompact } from '../../../utils/formatters'
 
 interface ProjectsGridProps {
   projects: ProjectWithPhases[]
@@ -120,7 +121,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.projects_grid.budget')}</p>
                     {hasBudget ? (
-                      <p className="font-medium text-gray-900 dark:text-white">€{(project.budget / 1000000).toFixed(1)}M</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{formatEuroCompact(project.budget)}</p>
                     ) : (
                       <p className="font-medium text-orange-600 dark:text-orange-400">
                         {t('general_projects.budget_not_set')}
@@ -129,10 +130,10 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                     {hasBudget && project.has_phases && (
                       <>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          €{(project.total_budget_allocated / 1000000).toFixed(1)}M {t('supervision.site_management.projects_grid.allocated')}
+                          {formatEuroCompact(project.total_budget_allocated)} {t('supervision.site_management.projects_grid.allocated')}
                         </p>
                         <p className="text-xs text-teal-600 font-medium">
-                          €{(project.total_paid_out / 1000000).toFixed(1)}M {t('supervision.site_management.projects_grid.paid_out')}
+                          {formatEuroCompact(project.total_paid_out)} {t('supervision.site_management.projects_grid.paid_out')}
                         </p>
                       </>
                     )}
@@ -141,7 +142,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                     <p className="text-gray-600 dark:text-gray-400">{t('supervision.subcontractors.title')}</p>
                     <p className="font-medium text-gray-900 dark:text-white">{project.subcontractors.length}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      €{(project.total_subcontractor_cost / 1000000).toFixed(1)}M {t('supervision.site_management.projects_grid.costs')}
+                      {formatEuroCompact(project.total_subcontractor_cost)} {t('supervision.site_management.projects_grid.costs')}
                     </p>
                   </div>
                 </div>

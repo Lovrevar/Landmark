@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { UnitFormData, UnitType } from '../types'
 import { Button, Modal, FormField, Input } from '../../../ui'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface SingleUnitModalProps {
   visible: boolean
@@ -100,10 +101,10 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
             <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
               <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('sales_projects.single_unit_modal.total_price')}</label>
               <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                €{(formData.size_m2 * formData.price_per_m2).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatEuro(formData.size_m2 * formData.price_per_m2)}
               </div>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                {formData.size_m2} m² × €{formData.price_per_m2.toLocaleString('en-US', { minimumFractionDigits: 2 })} per m²
+                {formData.size_m2} m² × {formatEuro(formData.price_per_m2)} per m²
               </p>
             </div>
           </div>

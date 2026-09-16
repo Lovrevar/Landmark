@@ -1,6 +1,7 @@
 import React from 'react'
 import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Building2, MapPin } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { formatEuroRounded } from '../../../utils/formatters'
 import type { RetailProjectWithPhases, RetailContract } from '../../../types/retail'
 
 interface ProjectStatisticsProps {
@@ -10,14 +11,7 @@ interface ProjectStatisticsProps {
 
 export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, allContracts }) => {
   const { t } = useTranslation()
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
-  }
+  const formatCurrency = formatEuroRounded
 
   const developmentPhases = project.phases.filter(p => p.phase_type === 'development')
   const constructionPhases = project.phases.filter(p => p.phase_type === 'construction')

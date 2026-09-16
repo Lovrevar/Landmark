@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { CustomerWithApartments } from '../types'
 import { Modal } from '../../../ui'
 import { groupCustomerPurchasesByProject } from '../../utils/customerUtils'
+import { formatEuroCompact } from '../../../../utils/formatters'
 
 interface CustomerDetailModalProps {
   show: boolean
@@ -206,7 +207,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                   <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
                     <p className="text-sm text-gray-600 dark:text-gray-400">{t('customers.detail_modal.budget_range')}</p>
                     <p className="font-medium text-gray-900 dark:text-white">
-                      €{(customer.preferences.budget_min / 1000).toFixed(0)}K - €{(customer.preferences.budget_max / 1000).toFixed(0)}K
+                      {formatEuroCompact(customer.preferences.budget_min)} - {formatEuroCompact(customer.preferences.budget_max)}
                     </p>
                   </div>
                 )}

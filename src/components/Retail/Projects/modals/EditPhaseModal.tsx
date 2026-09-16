@@ -4,6 +4,7 @@ import type { RetailProjectPhase, RetailProjectWithPhases } from '../../../../ty
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { retailProjectService } from '../services/retailProjectService'
 import { useToast } from '../../../../contexts/ToastContext'
+import { formatEuroRounded } from '../../../../utils/formatters'
 
 interface EditPhaseModalProps {
   phase: RetailProjectPhase
@@ -31,14 +32,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
   })
   const [loading, setLoading] = useState(false)
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
-  }
+  const formatCurrency = formatEuroRounded
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

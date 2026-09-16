@@ -5,6 +5,7 @@ import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormF
 import { useLandPlots, type LandPlotWithSales } from './hooks/useLandPlots'
 import type { LandPlotWithProject, LandPlotPayload } from './services/landPlotService'
 import { useToast } from '../../../contexts/ToastContext'
+import { formatEuro, formatEuroRounded } from '../../../utils/formatters'
 
 interface FormState {
   owner_first_name: string
@@ -139,7 +140,7 @@ const RetailLandPlots: React.FC = () => {
       <StatGrid columns={4}>
         <StatCard label={t('retail_land_plots.stats.total_plots')} value={totalStats.total_plots} icon={MapPin} color="blue" />
         <StatCard label={t('retail_land_plots.stats.total_area')} value={`${totalStats.total_area.toLocaleString()} m²`} icon={MapPin} color="green" />
-        <StatCard label={t('retail_land_plots.stats.total_invested')} value={`€${totalStats.total_invested.toLocaleString()}`} icon={Calendar} />
+        <StatCard label={t('retail_land_plots.stats.total_invested')} value={formatEuroRounded(totalStats.total_invested)} icon={Calendar} />
         <StatCard label={t('common.paid')} value={`${totalStats.paid_count}/${totalStats.total_plots}`} icon={Calendar} color="green" />
       </StatGrid>
 
@@ -184,8 +185,8 @@ const RetailLandPlots: React.FC = () => {
                     <div className="text-xs text-gray-500 dark:text-gray-400">{t('retail_land_plots.table.of')} {plot.total_area_m2.toLocaleString()} m²</div>
                   )}
                 </Table.Td>
-                <Table.Td label={t('retail_land_plots.table.price_per_m2')}>€{plot.price_per_m2.toLocaleString()}</Table.Td>
-                <Table.Td label={t('common.total')} className="font-semibold">€{plot.total_price.toLocaleString()}</Table.Td>
+                <Table.Td label={t('retail_land_plots.table.price_per_m2')}>{formatEuro(plot.price_per_m2)}</Table.Td>
+                <Table.Td label={t('common.total')} className="font-semibold">{formatEuro(plot.total_price)}</Table.Td>
                 <Table.Td label={t('common.status')}>
                   <div className="space-y-1">
                     <Badge variant={plot.payment_status === 'paid' ? 'green' : plot.payment_status === 'partial' ? 'yellow' : 'gray'}>
@@ -302,11 +303,11 @@ const RetailLandPlots: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_land_plots.detail.price_per_m2')}</p>
-                  <p className="text-lg font-semibold">€{selectedPlot.price_per_m2.toLocaleString()}</p>
+                  <p className="text-lg font-semibold">{formatEuro(selectedPlot.price_per_m2)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_land_plots.detail.total_price')}</p>
-                  <p className="text-lg font-semibold text-green-600">€{selectedPlot.total_price.toLocaleString()}</p>
+                  <p className="text-lg font-semibold text-green-600">{formatEuro(selectedPlot.total_price)}</p>
                 </div>
               </div>
 
@@ -326,7 +327,7 @@ const RetailLandPlots: React.FC = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-medium">{sale.customer?.name || 'N/A'}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{sale.sale_area_m2} m² x €{sale.sale_price_per_m2} = €{sale.total_sale_price.toLocaleString()}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{sale.sale_area_m2} m² x {formatEuro(sale.sale_price_per_m2)} = {formatEuro(sale.total_sale_price)}</p>
                           </div>
                           <Badge variant={
                             sale.payment_status === 'paid' ? 'green'

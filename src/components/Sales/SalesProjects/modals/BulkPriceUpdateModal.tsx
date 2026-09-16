@@ -4,6 +4,7 @@ import { Plus, Minus } from 'lucide-react'
 import { UnitType } from '../types'
 import { Button, Modal, FormField, Input, Alert, Form } from '../../../ui'
 import { calculateAdjustedPriceRange } from '../../utils/priceUtils'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface BulkPriceUpdateModalProps {
   visible: boolean
@@ -97,9 +98,9 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
               <div>
                 <p className="text-blue-700 dark:text-blue-300">{t('sales_projects.bulk_price.current_price_range')}:</p>
                 <p className="font-bold text-blue-900 dark:text-blue-100">
-                  €{priceRange.min.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatEuro(priceRange.min)}
                   {priceRange.min !== priceRange.max && (
-                    <> - €{priceRange.max.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
+                    <> - {formatEuro(priceRange.max)}</>
                   )}
                 </p>
               </div>
@@ -161,16 +162,16 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
               <div className="space-y-3 text-sm">
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                    {adjustmentType === 'increase' ? '+' : '-'}€{adjustment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/m² will be {adjustmentType === 'increase' ? 'added to' : 'subtracted from'} <strong>each unit's</strong> current price/m²
+                    {adjustmentType === 'increase' ? '+' : '-'}{formatEuro(adjustment)}/m² will be {adjustmentType === 'increase' ? 'added to' : 'subtracted from'} <strong>each unit's</strong> current price/m²
                   </p>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700 dark:text-gray-200">{t('sales_projects.bulk_price.new_price_range')}:</span>
                     <span className={`font-bold text-lg ${
                       adjustmentType === 'increase' ? 'text-green-700' : 'text-red-700'
                     }`}>
-                      €{newPriceRange.min.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatEuro(newPriceRange.min)}
                       {newPriceRange.min !== newPriceRange.max && (
-                        <> - €{newPriceRange.max.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
+                        <> - {formatEuro(newPriceRange.max)}</>
                       )}
                     </span>
                   </div>

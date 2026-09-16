@@ -12,6 +12,7 @@ import {
   deleteMilestone,
   getMilestoneStatsForContract
 } from './services/siteService'
+import { formatEuro } from '../../../utils/formatters'
 import { MilestoneStats, MilestoneFormData } from './types'
 import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
@@ -255,13 +256,13 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                       </td>
                       <td data-label={t('common.amount')} className="py-3 px-4 text-right">
                         <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                          €{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatEuro(amount)}
                         </div>
                       </td>
                       <td data-label={t('common.paid')} className="py-3 px-4 text-right">
                         <div className="space-y-1">
                           <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                            €{paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {formatEuro(paidAmount)}
                           </div>
                           {isPartiallyPaid && (
                             <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -312,10 +313,10 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                     {stats?.total_percentage.toFixed(2)}%
                   </td>
                   <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">
-                    €{stats?.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatEuro(stats?.total_amount)}
                   </td>
                   <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">
-                    €{stats?.total_paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatEuro(stats?.total_paid)}
                   </td>
                   <td colSpan={3}></td>
                 </tr>

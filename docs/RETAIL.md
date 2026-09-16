@@ -11,7 +11,13 @@ Manages retail real estate operations: development projects with phases and mile
 ## Shared Utilities
 
 ### utils.ts
-- `formatCurrency(value)` — formats a currency value for Retail UI display
+- `formatCurrency(value)` — whole-euro display for Retail. Now an alias of the shared
+  `formatEuroRounded` ([`src/utils/formatters.ts`](../src/utils/formatters.ts)), so it renders
+  `€1.235` with the € leading; it used to build its own `Intl` currency formatter, which put the
+  symbol last (`1.235 €`). The same delegation was applied to the per-screen `formatCurrency`
+  copies in `Projects/ProjectStatistics`, `Projects/MilestoneList`, `Projects/PhaseCard`
+  (exact cents, `formatEuro`), `Projects/forms/MilestoneFormModal` (exact cents) and
+  `Projects/modals/EditPhaseModal` — call sites were left untouched
 - `getStatusBadgeVariant(status)` — returns badge variant for a status string
 
 ---

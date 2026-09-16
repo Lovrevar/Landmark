@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Users, Plus, Edit, Trash2, Eye, Phone, Mail } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, StatCard, Form, ConfirmDialog } from '../../ui'
 import { useRetailCustomers } from './hooks/useRetailCustomers'
+import { formatEuro, formatEuroRounded } from '../../../utils/formatters'
 
 const RetailCustomers: React.FC = () => {
   const { t } = useTranslation()
@@ -50,8 +51,8 @@ const RetailCustomers: React.FC = () => {
       <StatGrid columns={4}>
         <StatCard label={t('retail_customers.stats.total_customers')} value={totalStats.total_customers} icon={Users} color="blue" />
         <StatCard label={t('retail_customers.stats.total_area')} value={`${totalStats.total_area.toLocaleString()} m²`} icon={Users} color="green" />
-        <StatCard label={t('retail_customers.stats.total_revenue')} value={`€${totalStats.total_revenue.toLocaleString('hr-HR')}`} icon={Users} color="green" />
-        <StatCard label={t('common.remaining')} value={`€${totalStats.total_remaining.toLocaleString('hr-HR')}`} icon={Users} />
+        <StatCard label={t('retail_customers.stats.total_revenue')} value={formatEuroRounded(totalStats.total_revenue)} icon={Users} color="green" />
+        <StatCard label={t('common.remaining')} value={formatEuroRounded(totalStats.total_remaining)} icon={Users} />
       </StatGrid>
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -104,15 +105,15 @@ const RetailCustomers: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200 dark:border-gray-700">
                   <span className="text-gray-600 dark:text-gray-400">{t('common.total')}:</span>
-                  <span className="font-bold text-gray-900 dark:text-white">€{customer.total_spent.toLocaleString('hr-HR')}</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{formatEuro(customer.total_spent)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">{t('common.paid')}:</span>
-                  <span className="font-medium text-green-600">€{customer.total_paid.toLocaleString()}</span>
+                  <span className="font-medium text-green-600">{formatEuro(customer.total_paid)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">{t('common.remaining')}:</span>
-                  <span className="font-medium text-orange-600">€{customer.total_remaining.toLocaleString()}</span>
+                  <span className="font-medium text-orange-600">{formatEuro(customer.total_remaining)}</span>
                 </div>
               </div>
 
@@ -206,12 +207,12 @@ const RetailCustomers: React.FC = () => {
                             <p className="text-sm text-gray-600 dark:text-gray-400">{t('retail_customers.contract_label')}: {sale.contract_number}</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
                               {(sale.total_surface_m2 || sale.building_surface_m2 || 0).toLocaleString()} m²
-                              {sale.price_per_m2 && ` × €${sale.price_per_m2.toLocaleString()}`}
-                              {' = €'}{(sale.contract_amount || 0).toLocaleString()}
+                              {sale.price_per_m2 && ` × ${formatEuro(sale.price_per_m2)}`}
+                              {' = '}{formatEuro(sale.contract_amount || 0)}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {t('common.paid')}: €{sale.paid_amount.toLocaleString()} |
-                              {t('common.remaining')}: €{sale.remaining_amount.toLocaleString()}
+                              {t('common.paid')}: {formatEuro(sale.paid_amount)} |
+                              {t('common.remaining')}: {formatEuro(sale.remaining_amount)}
                             </p>
                           </div>
                           <Badge variant={
