@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Building2 } from 'lucide-react'
+import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Building2, Square, CheckSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import { CustomerWithApartments, CustomerCategory } from './types'
 import { Button } from '../../ui'
@@ -30,17 +30,48 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
   onUpdateContact
 }) => {
   const { t } = useTranslation()
+  const fullName = `${customer.name} ${customer.surname}`
   return (
+    // Clicking the card opens the customer. It used to toggle selection, which silently added
+    // customers to the email export; selection now has its own checkbox in the header.
     <div
-      onClick={() => onToggleSelect(customer.id)}
-      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 p-6 hover:shadow-md transition-all cursor-pointer ${
+      role="button"
+      tabIndex={0}
+      aria-label={t('customers.card.open_details', { name: fullName })}
+      onClick={() => onViewDetails(customer)}
+      onKeyDown={e => {
+        // Ignore keys bubbling up from the buttons inside the card, or Enter on "Edit" would
+        // be swallowed here and open the details instead.
+        if (e.target !== e.currentTarget) return
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onViewDetails(customer)
+        }
+      }}
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 p-6 hover:shadow-md transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
         isSelected ? 'border-blue-400 shadow-blue-100' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
       }`}
     >
       <div className="flex justify-between items-start mb-4">
+        <button
+          type="button"
+          onClick={e => {
+            e.stopPropagation()
+            onToggleSelect(customer.id)
+          }}
+          aria-pressed={isSelected}
+          aria-label={t('customers.card.select_customer', { name: fullName })}
+          className="p-1 -ml-1 mr-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+          {isSelected ? (
+            <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+          ) : (
+            <Square className="w-5 h-5 text-gray-400" aria-hidden="true" />
+          )}
+        </button>
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {customer.name} {customer.surname}
+            {fullName}
           </h3>
           {interestedProjectName && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300">
@@ -50,9 +81,9 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           )}
         </div>
         <div className="flex space-x-1" onClick={e => e.stopPropagation()}>
-          <Button variant="ghost" size="icon-sm" icon={Eye} onClick={() => onViewDetails(customer)} title="View details" />
-          <Button variant="ghost" size="icon-sm" icon={Edit2} onClick={() => onEdit(customer)} title="Edit" />
-          <Button variant="danger" size="icon-sm" icon={Trash2} onClick={() => onDelete(customer.id)} title="Delete" />
+          <Button variant="ghost" size="icon-sm" icon={Eye} onClick={() => onViewDetails(customer)} title={t('customers.card.view_details')} aria-label={t('customers.card.view_details')} />
+          <Button variant="ghost" size="icon-sm" icon={Edit2} onClick={() => onEdit(customer)} title={t('common.edit')} aria-label={t('common.edit')} />
+          <Button variant="danger" size="icon-sm" icon={Trash2} onClick={() => onDelete(customer.id)} title={t('common.delete')} aria-label={t('common.delete')} />
         </div>
       </div>
 
@@ -168,20 +199,20 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           <p className="text-xs font-semibold text-blue-800 dark:text-blue-200 mb-2">{t('customers.card.preferences')}</p>
           <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
             {customer.preferences.budget_min && customer.preferences.budget_max && (
-              <div>Budget: €{(customer.preferences.budget_min / 1000).toFixed(0)}K - €{(customer.preferences.budget_max / 1000).toFixed(0)}K</div>
+              <div>{t('customers.card.budget')} €{(customer.preferences.budget_min / 1000).toFixed(0)}K - €{(customer.preferences.budget_max / 1000).toFixed(0)}K</div>
             )}
             {customer.preferences.preferred_size_min && customer.preferences.preferred_size_max && (
-              <div>Size: {customer.preferences.preferred_size_min}m² - {customer.preferences.preferred_size_max}m²</div>
+              <div>{t('customers.card.size')} {customer.preferences.preferred_size_min}m² - {customer.preferences.preferred_size_max}m²</div>
             )}
             {customer.preferences.bedrooms && (
-              <div>Bedrooms: {customer.preferences.bedrooms}</div>
+              <div>{t('customers.card.bedrooms')} {customer.preferences.bedrooms}</div>
             )}
             {customer.preferences.preferred_location && (
-              <div>Location: {customer.preferences.preferred_location}</div>
+              <div>{t('customers.card.location')} {customer.preferences.preferred_location}</div>
             )}
             {customer.preferences.notes && (
               <div className="pt-1 border-t border-blue-200 dark:border-blue-700 mt-2">
-                <span className="font-medium">Notes: </span>{customer.preferences.notes}
+                <span className="font-medium">{t('customers.card.notes')} </span>{customer.preferences.notes}
               </div>
             )}
           </div>

@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Users } from 'lucide-react'
+import { Users, Square, CheckSquare, MinusSquare } from 'lucide-react'
 import { CustomerWithApartments, CustomerCategory, ProjectOption } from './types'
 import { CustomerCard } from './CustomerCard'
 import { LoadingSpinner, EmptyState } from '../../ui'
@@ -52,43 +52,36 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
     )
   }
 
-  const allSelected = customers.length > 0 && selectedIds.size === customers.length
-  const someSelected = selectedIds.size > 0 && selectedIds.size < customers.length
+  // Counted against the customers on screen, not `selectedIds.size`: an id can outlive its
+  // card (a deleted customer), and a size match then showed "all selected" when it wasn't.
+  const selectedCount = customers.filter(customer => selectedIds.has(customer.id)).length
+  const allSelected = selectedCount === customers.length
+  const someSelected = selectedCount > 0 && !allSelected
+  const SelectIcon = allSelected ? CheckSquare : someSelected ? MinusSquare : Square
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between px-1">
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <div
-            onClick={onSelectAll}
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors cursor-pointer ${
-              allSelected
-                ? 'bg-blue-600 border-blue-600'
-                : someSelected
-                  ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-400'
-                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:border-blue-400'
-            }`}
-          >
-            {allSelected && (
-              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
-                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-            {someSelected && !allSelected && (
-              <div className="w-2 h-0.5 bg-blue-600 rounded" />
-            )}
-          </div>
+        <button
+          type="button"
+          onClick={onSelectAll}
+          className="flex items-center gap-2 rounded select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+          <SelectIcon
+            className={`w-5 h-5 ${selectedCount > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}
+            aria-hidden="true"
+          />
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {allSelected
-              ? 'Deselect all'
+              ? t('common.deselect_all')
               : someSelected
-                ? `${selectedIds.size} selected`
-                : `Select all (${customers.length})`}
+                ? t('customers.selected_count', { count: selectedCount })
+                : t('customers.select_all_count', { count: customers.length })}
           </span>
-        </label>
-        {selectedIds.size > 0 && (
-          <span className="text-xs text-blue-600 font-medium">
-            {selectedIds.size} of {customers.length} selected
+        </button>
+        {selectedCount > 0 && (
+          <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+            {t('customers.selected_of_total', { selected: selectedCount, total: customers.length })}
           </span>
         )}
       </div>

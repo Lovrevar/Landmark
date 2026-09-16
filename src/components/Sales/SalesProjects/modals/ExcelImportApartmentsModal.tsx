@@ -4,8 +4,10 @@ import * as XLSX from '@e965/xlsx'
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
 import { Modal, Button } from '../../../ui'
 import { parseNumber, parseDate, detectPaymentType } from '../../../../utils/excelParsers'
-import { importApartmentRow } from '../services/apartmentImportService'
+import { importApartmentRow, logApartmentImportSummary } from '../services/apartmentImportService'
 import { useToast } from '../../../../contexts/ToastContext'
+import { importErrorMessage } from '../importOutcome'
+import { ImportOutcomeSummary } from './ImportOutcomeSummary'
 
 interface ParsedApartmentRow {
   rowIndex: number
@@ -64,6 +66,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
     failed: number
     garagesCreated: number
     storagesCreated: number
+    errors: string[]
   } | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,7 +104,10 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
         if (!price) errors.push('Missing price')
 
         const building_id = buildingsMap.get(buildingLabel.toLowerCase())
-        if (!building_id && buildingLabel) {
+        if (!buildingLabel) {
+          // Without this a row with an empty building cell was rejected with no reason given.
+          errors.push('Missing building')
+        } else if (!building_id) {
           errors.push(`Building '${buildingLabel}' not found`)
         }
 
@@ -154,11 +160,16 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
     let failedCount = 0
     let garagesCreated = 0
     let storagesCreated = 0
+    const errors: string[] = []
 
     try {
       for (const row of parsedRows) {
         if (row.errors.length > 0 || !row.building_id) {
           failedCount++
+          errors.push(t('sales_projects.excel_import.row_error', {
+            row: row.rowIndex,
+            message: row.errors.join(', ')
+          }))
           continue
         }
 
@@ -170,20 +181,30 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
         } catch (error) {
           console.error(`Error importing row ${row.rowIndex}:`, error)
           failedCount++
+          errors.push(t('sales_projects.excel_import.row_error', { row: row.rowIndex, message: importErrorMessage(error) }))
         }
       }
 
-      setImportResults({ success: successCount, failed: failedCount, garagesCreated, storagesCreated })
+      logApartmentImportSummary(selectedProject.id, {
+        succeeded: successCount,
+        failed: failedCount,
+        garagesLinked: garagesCreated,
+        storagesLinked: storagesCreated
+      })
+      setImportResults({ success: successCount, failed: failedCount, garagesCreated, storagesCreated, errors })
       setStep(3)
     } catch (error) {
       console.error('Import error:', error)
-      toast.error('An error occurred during import. Please check the console.')
+      toast.error(t('sales_projects.excel_import.import_failed'))
     } finally {
       setImporting(false)
     }
   }
 
   const handleClose = () => {
+    // Escape, the backdrop and the header X all land here. Closing mid-import would unmount the
+    // modal while the row loop keeps writing, and the result screen would never be seen.
+    if (importing) return
     if (importResults && importResults.success > 0) {
       onComplete()
     }
@@ -342,10 +363,11 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
 
         {step === 3 && importResults && (
           <div className="space-y-4">
-            <div className="text-center py-8">
-              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('sales_projects.excel_import.import_complete')}</h3>
-            </div>
+            <ImportOutcomeSummary
+              succeeded={importResults.success}
+              failed={importResults.failed}
+              errors={importResults.errors}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-4">
@@ -385,7 +407,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
 
         {step === 2 && (
           <>
-            <Button variant="secondary" onClick={() => setStep(1)}>{t('common.back')}</Button>
+            <Button variant="secondary" onClick={() => setStep(1)} disabled={importing}>{t('common.back')}</Button>
             <Button
               variant="primary"
               onClick={handleImport}

@@ -5,6 +5,8 @@ import { Upload, CheckCircle } from 'lucide-react'
 import { Modal, Button } from '../../../ui'
 import { importGaragesFromExcel, fetchExistingGarageNumbers } from '../services/garageImportService'
 import { useToast } from '../../../../contexts/ToastContext'
+import { parseNumber } from '../../../../utils/excelParsers'
+import { ImportOutcomeSummary } from './ImportOutcomeSummary'
 
 interface ParsedGarageRow {
   rowIndex: number
@@ -37,6 +39,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
     created: number
     updated: number
     failed: number
+    errors: string[]
   } | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,8 +66,10 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
         .map((row, idx) => ({
           rowIndex: idx + 2,
           number: String(row[0]),
-          size_m2: Number(row[1]) || 0,
-          price: Number(row[2]) || 0,
+          // Same parser as importGaragesFromExcel, so the preview shows the values that will be
+          // written: Number() reads a European "3.000,00" as NaN and previewed it as 0.
+          size_m2: parseNumber(row[1]),
+          price: parseNumber(row[2]),
           exists: existingNumbers.has(String(row[0]))
         }))
 
@@ -82,17 +87,26 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
     setImporting(true)
     try {
       const result = await importGaragesFromExcel(file, selectedBuilding.id)
-      setImportResults({ created: result.created, updated: result.updated, failed: result.errors.length })
+      setImportResults({
+        created: result.created,
+        updated: result.updated,
+        failed: result.errors.length,
+        errors: result.errors.map(({ number, message }) =>
+          t('sales_projects.excel_import.garage_error', { number, message })
+        )
+      })
       setStep(3)
     } catch (error) {
       console.error('Import error:', error)
-      toast.error('An error occurred during import. Please check the console.')
+      toast.error(t('sales_projects.excel_import.import_failed'))
     } finally {
       setImporting(false)
     }
   }
 
   const handleClose = () => {
+    // Escape, the backdrop and the header X all land here; closing mid-import would hide the result.
+    if (importing) return
     if (importResults && (importResults.created > 0 || importResults.updated > 0)) {
       onComplete()
     }
@@ -221,10 +235,11 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
 
         {step === 3 && importResults && (
           <div className="space-y-4">
-            <div className="text-center py-8">
-              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('sales_projects.excel_import.import_complete')}</h3>
-            </div>
+            <ImportOutcomeSummary
+              succeeded={importResults.created + importResults.updated}
+              failed={importResults.failed}
+              errors={importResults.errors}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-4">
@@ -260,7 +275,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
 
         {step === 2 && (
           <>
-            <Button variant="secondary" onClick={() => setStep(1)}>{t('common.back')}</Button>
+            <Button variant="secondary" onClick={() => setStep(1)} disabled={importing}>{t('common.back')}</Button>
             <Button
               variant="primary"
               onClick={handleImport}

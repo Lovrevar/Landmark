@@ -37,9 +37,13 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - **Depends on:** supabase client
 
 ### services/garageImportService.ts
-- `importGaragesFromExcel(file, buildingId)` — parses Excel file and bulk-inserts garage records
+- `importGaragesFromExcel(file, buildingId)` — parses Excel file and bulk-inserts garage records. Returns `{ created, updated, errors }`, where `errors` is `{ number, message }[]` (one per failed garage) so the modal can list them translated
 - `fetchExistingGarageNumbers(buildingId)` — returns existing garage numbers to detect duplicates
-- **Depends on:** supabase client, xlsx
+- **Depends on:** supabase client, xlsx, importOutcome
+
+### services/apartmentImportService.ts
+- `importApartmentRow(row, projectId)` — upserts one apartment plus its parking/storage unit and link; logs `apartment.import_excel` per row
+- `logApartmentImportSummary(projectId, summary)` — one `apartment.import_excel_summary` entry per run (severity high, metadata `count` = rows imported, `failed`, `garages_linked`, `storages_linked`). A run whose rows all fail writes no per-row entry, so this is its only trace
 
 > All mutating functions in `salesService.ts`, `apartmentImportService.ts`, and `garageImportService.ts` fire-and-forget `logActivity()` after a successful write (`building.*`, `sale.create`, `apartment.bulk_price_update`, etc.).
 
@@ -64,6 +68,12 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `filterUnitsByStatus(units, filterStatus)` — the units the grid shows for a status filter
 - `getSelectableUnitIds(units, filterStatus)` — the ids "Select all" picks: filtered units minus Sold ones
 - Shared by `UnitsGrid` and `index.tsx` so the grid and "Select all" cannot drift; covered by `unitFilters.test.ts`
+
+### importOutcome.ts
+- `classifyImportOutcome(succeeded, failed)` — `nothing_imported` (no row succeeded), `partial` (some failed) or `success`; drives the step-3 icon and headline of both Excel imports
+- `importErrorMessage(error)` — message from an `Error` or a plain Supabase error object (which `String()` renders as "[object Object]")
+- `MAX_LISTED_IMPORT_ERRORS` — step 3 lists this many row errors (10), then "…and N more"
+- Covered by `importOutcome.test.ts`
 
 ### UnitsGrid.tsx
 - Unit grid with type tabs (apartments/garages/repositories), status filters, multi-select checkboxes, linked unit display, and bulk price config button
@@ -115,12 +125,20 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 ### modals/ExcelImportApartmentsModal.tsx
 - 3-step apartment bulk import (file upload → preview → results)
+- Collects a per-row error (validation reason or the write error) for every skipped/failed row and logs one run summary via `logApartmentImportSummary`
+- **Uses services:** apartmentImportService
 - **Uses Ui:** Modal, Button, useToast
 
 ### modals/ExcelImportGaragesModal.tsx
 - 3-step garage bulk import (file upload → preview → results)
+- The preview parses sizes and prices with `parseNumber` (the service's parser), so it shows the values that will be written
 - **Uses services:** garageImportService
 - **Uses Ui:** Modal, Button, useToast
+
+### modals/ImportOutcomeSummary.tsx
+- Step-3 headline shared by both Excel imports: red `XCircle` + "Nothing was imported" when no row succeeded, amber "Import completed with errors" when some failed, green tick otherwise; lists the first 10 row errors
+
+> Both import modals ignore close requests (Escape, backdrop, header X) while an import is running, and disable the step-2 Back button, so the result screen cannot be skipped mid-run. The import button shows the row count.
 
 ---
 
@@ -242,13 +260,16 @@ Sales-side buyer CRM with category segmentation (`lead`, `interested`, `buyer` �
 
 ### CustomerGrid.tsx
 - Multi-select customer card grid with edit/delete/view-details/update-contact actions
+- The "Select all" button counts only the customers on screen, so an id left over from a deleted customer cannot make it read "all selected"
 
 ### CustomerCard.tsx
 - Individual customer card with name, contact info, a project-of-interest badge, and purchased units for buyers. Email and phone rows are hidden when absent, since both are optional
+- Clicking the card (or Enter/Space when it has focus — it is `role="button"`) opens the detail modal. Selection is a separate checkbox button in the header (`aria-pressed`); a selected card keeps the blue border
 
 ### index.tsx (Customers)
 - Customer list page with category tabs, grid, and all CRUD modals
 - Filter bar pairs the search box with a project dropdown. The project filter is applied client-side and matches either `interested_project_id` or any purchased apartment's project, so it works for interested customers and buyers alike
+- Changing the category, search or project filter clears the selection, so "Email Selected" can only reach customers that are on screen. With nothing selected the button emails every visible customer with an address
 - **Uses hooks:** useCustomerData
 - **Uses components:** CategoryTabs, CustomerGrid, CustomerCard, CustomerFormModal, CustomerDetailModal
 - **Uses Ui:** SearchInput, useToast

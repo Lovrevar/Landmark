@@ -60,12 +60,35 @@ const CustomersManagement: React.FC = () => {
     })
   }
 
+  // Only customers on screen count as selected. `selectedIds` can still hold the id of a
+  // customer that has since been deleted, so its size is not a reliable count.
+  const selectedCustomers = filteredCustomers.filter(c => selectedIds.has(c.id))
+
   const handleSelectAll = () => {
-    if (selectedIds.size === filteredCustomers.length) {
+    if (filteredCustomers.length > 0 && selectedCustomers.length === filteredCustomers.length) {
       setSelectedIds(new Set())
     } else {
       setSelectedIds(new Set(filteredCustomers.map(c => c.id)))
     }
+  }
+
+  // A filter change drops the selection, so the email export can never reach customers the
+  // user can no longer see.
+  const clearSelection = () => setSelectedIds(new Set())
+
+  const handleCategoryChange = (category: CustomerCategory | null) => {
+    setActiveCategory(category)
+    clearSelection()
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    clearSelection()
+  }
+
+  const handleProjectFilterChange = (projectId: string) => {
+    setProjectFilter(projectId)
+    clearSelection()
   }
 
   const handleAddCustomer = () => {
@@ -111,16 +134,14 @@ const CustomersManagement: React.FC = () => {
   }
 
   const handleExportEmails = () => {
-    const targets = selectedIds.size > 0
-      ? filteredCustomers.filter(c => selectedIds.has(c.id))
-      : filteredCustomers
+    const targets = selectedCustomers.length > 0 ? selectedCustomers : filteredCustomers
 
     const emails = targets
       .map(c => c.email)
       .filter(email => email && email.trim() !== '')
 
     if (emails.length === 0) {
-      toast.warning('No email addresses found for the selected customers.')
+      toast.warning(t('customers.no_emails'))
       return
     }
 
@@ -136,9 +157,9 @@ const CustomersManagement: React.FC = () => {
         actions={
           <>
             <Button variant="success" icon={Mail} onClick={handleExportEmails}>
-              {selectedIds.size > 0
-                ? `Email Selected (${selectedIds.size})`
-                : `Email All (${filteredCustomers.filter(c => c.email).length})`}
+              {selectedCustomers.length > 0
+                ? t('customers.email_selected', { count: selectedCustomers.length })
+                : t('customers.email_all', { count: filteredCustomers.filter(c => c.email).length })}
             </Button>
             <Button variant="primary" icon={Plus} onClick={handleAddCustomer}>
               {t('customers.add')}
@@ -150,7 +171,7 @@ const CustomersManagement: React.FC = () => {
       <CategoryTabs
         activeCategory={activeCategory}
         counts={counts}
-        onCategoryChange={setActiveCategory}
+        onCategoryChange={handleCategoryChange}
       />
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
@@ -158,15 +179,15 @@ const CustomersManagement: React.FC = () => {
           <div className="flex-1">
             <SearchInput
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onClear={() => setSearchTerm('')}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onClear={() => handleSearchChange('')}
               placeholder={t('customers.search')}
             />
           </div>
           <div className="w-full sm:w-64">
             <Select
               value={projectFilter}
-              onChange={(e) => setProjectFilter(e.target.value)}
+              onChange={(e) => handleProjectFilterChange(e.target.value)}
             >
               <option value="">{t('common.all_projects')}</option>
               {projects.map((project) => (
