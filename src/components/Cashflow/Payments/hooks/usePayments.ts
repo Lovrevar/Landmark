@@ -23,6 +23,7 @@ import {
   deletePayment
 } from '../services/paymentService'
 import { fetchCreditAllocations } from '../../Invoices/services/invoiceService'
+import { validatePaymentForm } from '../services/paymentValidation'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import { useToast } from '../../../../contexts/ToastContext'
 import { useTranslation } from 'react-i18next'
@@ -232,44 +233,14 @@ export const usePayments = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const source = formData.payment_source_type
-    const isCesija = formData.is_cesija
-
-    if (!Number.isFinite(formData.amount) || formData.amount <= 0) {
-      toast.error(t('payments.form.error_amount_required'))
-      return
-    }
     const payingInvoice = invoices.find(inv => inv.id === formData.invoice_id)
-    if (payingInvoice && formData.amount > payingInvoice.remaining_amount) {
-      toast.error(t('payments.form.error_amount_exceeds_remaining'))
-      return
-    }
-    if (!isCesija && source === 'bank_account' && !formData.company_bank_account_id) {
-      toast.error(t('payments.form.error_bank_account_required'))
-      return
-    }
-    if (!isCesija && source === 'credit' && !formData.credit_id) {
-      toast.error(t('payments.form.error_credit_required'))
-      return
-    }
-    if (!isCesija && source === 'credit' && !formData.credit_allocation_id) {
-      toast.error(t('payments.form.error_credit_allocation_required'))
-      return
-    }
-    if (isCesija && !formData.cesija_company_id) {
-      toast.error(t('payments.form.error_cesija_company_required'))
-      return
-    }
-    if (isCesija && source === 'bank_account' && !formData.cesija_bank_account_id) {
-      toast.error(t('payments.form.error_bank_account_required'))
-      return
-    }
-    if (isCesija && source === 'credit' && !formData.cesija_credit_id) {
-      toast.error(t('payments.form.error_credit_required'))
-      return
-    }
-    if (isCesija && source === 'credit' && !formData.cesija_credit_allocation_id) {
-      toast.error(t('payments.form.error_credit_allocation_required'))
+    const validationError = validatePaymentForm(formData, {
+      remainingAmount: payingInvoice?.remaining_amount,
+      // remaining_amount already has the edited payment subtracted; add it back.
+      originalAmount: editingPayment?.amount
+    })
+    if (validationError) {
+      toast.error(t(validationError))
       return
     }
 
@@ -284,7 +255,7 @@ export const usePayments = () => {
       handleCloseModal()
     } catch (error) {
       console.error('Error saving payment:', error)
-      toast.error('Greška prilikom spremanja plaćanja')
+      toast.error(t('payments.form.error_save'))
     }
   }
 

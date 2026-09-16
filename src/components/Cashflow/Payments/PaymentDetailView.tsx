@@ -98,7 +98,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.payment_method')}</span>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {getPaymentMethodLabel(payment.payment_method)}
+                  {getPaymentMethodLabel(payment.payment_method, payment.payment_source_type)}
                 </p>
               </div>
               {payment.reference_number && (

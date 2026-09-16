@@ -199,6 +199,7 @@ const AccountingInvoices: React.FC = () => {
         onCompanyChange={setFilterCompany}
         onClearFilters={() => {
           setSearchTerm('')
+          setFilterDirection('INCOMING')
           setFilterCategory('ALL')
           setFilterStatus('ALL')
           setFilterCompany('ALL')

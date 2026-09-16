@@ -7,6 +7,8 @@ import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOver
 import { useInvoiceColumns } from './useInvoiceColumns'
 import { getDefaultInvoiceFormData, getDefaultPaymentFormData } from '../services/invoiceFormDefaults'
 import { useToast } from '../../../../contexts/ToastContext'
+import { isInvoiceCategoryValidForDirection, type InvoiceDirection } from '../../services/invoiceHelpers'
+import { validatePaymentForm } from '../../Payments/services/paymentValidation'
 
 export const useInvoices = () => {
   const toast = useToast()
@@ -40,8 +42,16 @@ export const useInvoices = () => {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
-  const [filterDirection, setFilterDirection] = useState<'INCOMING' | 'OUTGOING'>('INCOMING')
+  const [filterDirection, setFilterDirectionState] = useState<InvoiceDirection>('INCOMING')
   const [filterCategory, setFilterCategory] = useState<string>('ALL')
+  // A category picked under one direction may not exist under the other (there is no
+  // OUTGOING_INVESTMENT), which would request a type no invoice can have. Fall back to ALL.
+  const setFilterDirection = useCallback((direction: InvoiceDirection) => {
+    setFilterDirectionState(direction)
+    setFilterCategory(prev =>
+      prev === 'ALL' || isInvoiceCategoryValidForDirection(direction, prev) ? prev : 'ALL'
+    )
+  }, [])
   const filterType = filterCategory === 'ALL'
     ? (filterDirection === 'INCOMING' ? 'INCOMING' : 'OUTGOING')
     : `${filterDirection}_${filterCategory}`
@@ -324,40 +334,11 @@ export const useInvoices = () => {
 
     if (!payingInvoice) return
 
-    const source = paymentFormData.payment_source_type
-    const isCesija = paymentFormData.is_cesija
-
-    const amount = Number(paymentFormData.amount)
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error(t('payments.form.error_amount_required'))
-      return
-    }
-    if (amount > payingInvoice.remaining_amount) {
-      toast.error(t('payments.form.error_amount_exceeds_remaining'))
-      return
-    }
-    if (!isCesija && source === 'bank_account' && !paymentFormData.company_bank_account_id) {
-      toast.error(t('payments.form.error_bank_account_required'))
-      return
-    }
-    if (!isCesija && source === 'credit' && !paymentFormData.credit_id) {
-      toast.error(t('payments.form.error_credit_required'))
-      return
-    }
-    if (!isCesija && source === 'credit' && !paymentFormData.credit_allocation_id) {
-      toast.error(t('payments.form.error_credit_allocation_required'))
-      return
-    }
-    if (isCesija && !paymentFormData.cesija_company_id) {
-      toast.error(t('payments.form.error_cesija_company_required'))
-      return
-    }
-    if (isCesija && source === 'bank_account' && !paymentFormData.cesija_bank_account_id) {
-      toast.error(t('payments.form.error_bank_account_required'))
-      return
-    }
-    if (isCesija && source === 'credit' && (!paymentFormData.cesija_credit_id || !paymentFormData.cesija_credit_allocation_id)) {
-      toast.error(t('payments.form.error_credit_required'))
+    const validationError = validatePaymentForm(paymentFormData, {
+      remainingAmount: payingInvoice.remaining_amount
+    })
+    if (validationError) {
+      toast.error(t(validationError))
       return
     }
 
@@ -367,7 +348,7 @@ export const useInvoices = () => {
       handleClosePaymentModal()
     } catch (error) {
       console.error('Error saving payment:', error)
-      toast.error('Greška prilikom spremanja plaćanja')
+      toast.error(t('payments.form.error_save'))
     }
   }
 

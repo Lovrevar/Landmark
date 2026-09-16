@@ -349,6 +349,9 @@
       "all_types": "Svi tipovi",
       "all_projects": "Svi projekti",
       "all_suppliers": "Svi dobavljači",
+      "all_companies": "Sve firme",
+      "incoming": "Ulazni",
+      "outgoing": "Izlazni",
       "all_statuses": "Svi statusi",
       "all_banks": "Sve banke",
       "date_from": "Od datuma",
@@ -732,7 +735,9 @@
       "error_bank_account_required": "Morate odabrati bankovni račun",
       "error_credit_required": "Morate odabrati kredit",
       "error_credit_allocation_required": "Morate odabrati projekt za alokaciju kredita",
-      "error_cesija_company_required": "Morate odabrati firmu koja plaća (cesija)"
+      "error_cesija_company_required": "Morate odabrati firmu koja plaća (cesija)",
+      "error_method_mismatch": "Odabrani način plaćanja nije dopušten za ovaj izvor plaćanja",
+      "error_save": "Greška prilikom spremanja plaćanja"
     },
     "no_payments": "Nema plaćanja",
     "filtered_results": "Filtrirani rezultati",

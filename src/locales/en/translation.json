@@ -349,6 +349,9 @@
       "all_types": "All types",
       "all_projects": "All projects",
       "all_suppliers": "All suppliers",
+      "all_companies": "All companies",
+      "incoming": "Incoming",
+      "outgoing": "Outgoing",
       "all_statuses": "All statuses",
       "all_banks": "All banks",
       "date_from": "From date",
@@ -732,7 +735,9 @@
       "error_bank_account_required": "You must select a bank account",
       "error_credit_required": "You must select a credit",
       "error_credit_allocation_required": "You must select a project for the credit allocation",
-      "error_cesija_company_required": "You must select the paying company (cesija)"
+      "error_cesija_company_required": "You must select the paying company (cesija)",
+      "error_method_mismatch": "This payment method is not allowed for the selected payment source",
+      "error_save": "Error saving payment"
     },
     "no_payments": "No payments",
     "filtered_results": "Filtered Results",

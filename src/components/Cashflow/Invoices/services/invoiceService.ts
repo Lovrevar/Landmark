@@ -1,6 +1,8 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import type { Invoice, CreditAllocation, Contract } from '../types'
+import { buildPaymentData } from '../../Payments/services/paymentPayload'
+import type { getDefaultPaymentFormData } from './invoiceFormDefaults'
 
 export type InvoiceSortField = 'due_date' | 'invoice_number'
 export type InvoiceSortDirection = 'asc' | 'desc'
@@ -335,31 +337,15 @@ export const handleSubmit = async (
 }
 
 export const handlePaymentSubmit = async (
-  paymentFormData: Record<string, unknown>,
+  paymentFormData: ReturnType<typeof getDefaultPaymentFormData>,
   payingInvoice: Invoice
 ) => {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isKompenzacija = !paymentFormData.is_cesija && paymentFormData.payment_source_type === 'kompenzacija'
 
-  const paymentData = {
-    invoice_id: payingInvoice.id,
-    payment_source_type: paymentFormData.payment_source_type,
-    company_bank_account_id: paymentFormData.is_cesija || isKompenzacija ? null : (paymentFormData.payment_source_type === 'bank_account' ? (paymentFormData.company_bank_account_id || null) : null),
-    credit_id: paymentFormData.is_cesija || isKompenzacija ? null : (paymentFormData.payment_source_type === 'credit' ? (paymentFormData.credit_id || null) : null),
-    credit_allocation_id: paymentFormData.is_cesija || isKompenzacija ? null : (paymentFormData.payment_source_type === 'credit' ? (paymentFormData.credit_allocation_id || null) : null),
-    is_cesija: paymentFormData.is_cesija,
-    cesija_company_id: paymentFormData.is_cesija ? (paymentFormData.cesija_company_id || null) : null,
-    cesija_bank_account_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'bank_account' ? (paymentFormData.cesija_bank_account_id || null) : null,
-    cesija_credit_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'credit' ? (paymentFormData.cesija_credit_id || null) : null,
-    cesija_credit_allocation_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'credit' ? (paymentFormData.cesija_credit_allocation_id || null) : null,
-    payment_date: paymentFormData.payment_date,
-    amount: paymentFormData.amount,
-    payment_method: paymentFormData.payment_method,
-    reference_number: paymentFormData.reference_number || null,
-    description: paymentFormData.description,
-    created_by: user?.id
-  }
+  // Same row shape as the Payments page (createPayment/updatePayment) — one builder for both.
+  const paymentData = buildPaymentData({ ...paymentFormData, invoice_id: payingInvoice.id }, user?.id)
 
   const { data: inserted, error } = await supabase
     .from('accounting_payments')

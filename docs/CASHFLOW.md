@@ -208,6 +208,10 @@ Shared UI sub-components reused across Cashflow forms and views.
 - Handles source selection (bank_account or credit) and credit allocation display
 - **Uses Ui:** Select
 
+### PaymentMethodField.tsx
+- Payment method select shared by both payment forms. Offers only `allowedPaymentMethods(source, isCesija)` and renders nothing for kompenzacija (no method). A stored method that is no longer allowed (an older row being edited) stays listed so the select shows what is saved; `validatePaymentForm` then rejects it
+- **Uses Ui:** FormField, Select
+
 ### ColumnMenuDropdown.tsx
 - Dropdown menu for toggling table column visibility
 - **Uses Ui:** Button
@@ -294,7 +298,7 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 ### invoiceService.ts
 - `fetchData(filterType, filterStatus, filterCompany, searchTerm, currentPage, pageSize, sortField?, sortDirection?)` — paginated invoice fetch with filters via the `get_filtered_invoices` RPC. Sorting (`'due_date' | 'invoice_number'`, `'asc' | 'desc'`) is done **server-side** so it spans every page; `p_sort_field`/`p_sort_dir` are only sent when a sort is active, so the unsorted list still works against a database without the sort migration (see Notes)
 - `handleSubmit(formData, editingInvoice, isOfficeInvoice)` — creates or updates an invoice
-- `handlePaymentSubmit(paymentFormData, invoice)` — records a payment against an invoice
+- `handlePaymentSubmit(paymentFormData, invoice)` — records a payment against an invoice. Builds the row with `Payments/services/paymentPayload.ts` `buildPaymentData`, the same builder the Payments page uses
 - `handleDelete(invoiceId)` — deletes an invoice
 - `fetchCreditAllocations(creditId)` — fetches allocations for a credit line
 - `createBankInvoice(invoiceData)` — inserts a bank invoice record
@@ -334,7 +338,9 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 - `useInvoices()` — manages the full invoice list with pagination, filters, sorting, column visibility, and all modal states
 - Sort field/direction are fetch dependencies; changing the sort (like changing a filter) resets to page 1. A request counter drops responses from superseded fetches so a slow earlier response cannot overwrite the current page
 - `hasLoaded` flips after the first fetch settles; the view shows the full-page spinner only while `loading && !hasLoaded`
-- **Calls:** invoiceService.ts, invoiceFormDefaults.ts
+- `setFilterDirection` also resets the category to `ALL` when it does not exist for the new direction (`isInvoiceCategoryValidForDirection`), so the list never requests a type like `OUTGOING_INVESTMENT`
+- `handlePaymentSubmit` validates with `validatePaymentForm` (shared with usePayments); failures toast `payments.form.error_save`
+- **Calls:** invoiceService.ts, invoiceFormDefaults.ts, invoiceHelpers.ts, Payments/services/paymentValidation.ts
 - **Returns:** invoices, companies, companyBankAccounts, companyCredits, creditAllocations, refunds, suppliers, officeSuppliers, customers, banks, projects, contracts, milestones, customerSales, customerApartments, invoiceCategories, loading, hasLoaded, currentPage, totalCount, filteredTotalCount, filteredUnpaidAmount, totalUnpaidAmount, pageSize, searchTerm, debouncedSearchTerm, filterType, filterDirection, filterCategory, filterStatus, filterCompany, sortField, sortDirection, showColumnMenu, showInvoiceModal, isOfficeInvoice, showRetailInvoiceModal, showBankInvoiceModal, showLandPurchaseModal, editingInvoice, viewingInvoice, showPaymentModal, payingInvoice, formData, paymentFormData, visibleColumns, setters, handlers
 
 ### useInvoiceColumns.ts
@@ -412,8 +418,9 @@ tested) without Supabase.
 - **Uses Ui:** StatGrid
 
 ### InvoiceFilters.tsx
-- Filter controls: type, direction, category, status, company, search
-- **Uses Ui:** FilterBar, SearchInput, Select
+- Filter controls: search, category, status, company, incoming/outgoing toggle
+- Category options come from `INVOICE_CATEGORIES_BY_DIRECTION[filterDirection]`, so only real types for the chosen direction are offered. "Clear" also resets the direction to incoming
+- **Uses Ui:** SearchInput, Select, Button
 
 ### InvoicePagination.tsx
 - Page navigation controls for the invoice table
@@ -524,20 +531,33 @@ Payment records linked to invoices. Supports wire, cash, check, card, kompenzaci
 
 ### usePayments.ts
 - `usePayments()` — manages payment list, filters (method, invoice type, date range), column visibility, and modal states
-- **Calls:** paymentService.ts
+- `handleSubmit` validates with `validatePaymentForm`, passing the edited payment's old amount as `originalAmount` (the invoice's `remaining_amount` already excludes it, so editing a payment on a fully paid invoice used to fail); failures toast `payments.form.error_save`
+- **Calls:** paymentService.ts, paymentValidation.ts
 - **Returns:** payments, invoices, companies, companyBankAccounts, companyCredits, loading, searchTerm, filterMethod, filterInvoiceType, dateFrom, dateTo, showColumnMenu, showPaymentModal, editingPayment, viewingPayment, formData, visibleColumns, handlers
 
 #### Forms
 
 ### AccountingPaymentFormModal.tsx
-- Full payment form supporting all source types: bank_account, credit, kompenzacija, gotovina
+- Payments page form (create/edit, invoice picked in the form) supporting all source types: bank_account, credit, kompenzacija, gotovina
 - Cesija (debt assignment) fields via CesijaPaymentFields
-- **Uses components:** CesijaPaymentFields
-- **Uses Ui:** Modal, Button, Select
+- Once an invoice is picked: total/paid/remaining summary, max-amount helper and partial-payment alert. When editing, the payable amount is `remaining_amount` + the payment's old amount
+- Amount is a `CurrencyInput` (accepts `1.234,56`); balances use `formatCurrency`; invoice type labels come from `getInvoiceTypeLabelKey` (all nine types)
+- **Uses components:** CesijaPaymentFields, PaymentMethodField, PaymentInvoiceSummary
+- **Uses Ui:** Modal, Button, Select, Input, Textarea, FormField, Form
 
 ### PaymentFormModal.tsx
-- Simplified payment form for standard invoice payments
-- **Uses Ui:** Modal, Button, Select
+- Invoices page form ("pay this invoice"), create only
+- Kept separate from AccountingPaymentFormModal on purpose (the ERP plan's phase 5 may remove in-app authoring), but aligned with it: same validator, payload builder, method rules, summary and partial alert
+- Ticking cesija resets the source to `bank_account` and clears own/cesija credit fields, as AccountingPaymentFormModal does
+- **Uses components:** CesijaPaymentFields, PaymentMethodField, PaymentInvoiceSummary
+- **Uses Ui:** Modal, Button, Select, Input, Textarea, FormField, Form
+
+Both forms route source and cesija changes through a `changeForm` wrapper that snaps the method with `snapPaymentMethod`, so a source change can never leave a method it does not allow.
+
+### PaymentInvoiceSummary.tsx
+- `PaymentInvoiceSummary` — total / paid / remaining box for the invoice being paid
+- `PartialPaymentAlert({ amount, payableAmount })` — "will be paid in full" vs "remaining after payment" info alert
+- **Uses Ui:** Alert
 
 #### Views
 
@@ -546,8 +566,13 @@ Payment records linked to invoices. Supports wire, cash, check, card, kompenzaci
 - **Uses Ui:** Table
 
 ### services/paymentPayload.ts
-- `buildPaymentData(formData, createdBy)` — turns the payment form state into the row that gets inserted, branching on payment method: bank account, credit, **kompenzacija**, **gotovina**, and **cesija** each null out and populate different columns
-- Pure and unit-tested (`paymentPayload.test.ts`, 11 tests) — this is where the Croatian payment-method column rules are pinned down, so change it there rather than inline in a form
+- `buildPaymentData(formData, createdBy)` — turns the payment form state into the row that gets inserted, branching on payment source: bank account, credit, **kompenzacija**, **gotovina**, and **cesija** each null out and populate different columns. Kompenzacija stores `payment_method = 'WIRE'` as a placeholder (the column is `NOT NULL` with a CHECK); the UI shows "—"
+- Used by both `paymentService.createPayment/updatePayment` and `invoiceService.handlePaymentSubmit`
+- Pure and unit-tested (`paymentPayload.test.ts`, 12 tests) — this is where the Croatian payment-source column rules are pinned down, so change it there rather than inline in a form
+
+### services/paymentValidation.ts
+- `validatePaymentForm(formData, { remainingAmount?, originalAmount? })` — returns the i18n key of the first problem or `null`. Checks: amount > 0; amount ≤ `remainingAmount + originalAmount` (in cents; skipped when the invoice is unknown); bank account / credit / credit allocation for the own source; paying company, cesija bank account / credit / allocation for cesija; and the method against `allowedPaymentMethods` (`payments.form.error_method_mismatch`, skipped for kompenzacija)
+- Shared by `useInvoices.handlePaymentSubmit` and `usePayments.handleSubmit`; unit-tested in `paymentValidation.test.ts`
 
 ### PaymentStatsCards.tsx
 - Summary stat cards for payment totals
@@ -664,6 +689,8 @@ Shared utilities used across multiple Cashflow sub-modules.
 - `getStatusColor(status)` — returns CSS class for invoice status badge
 - `getTypeColor(type)` — returns CSS class for invoice type badge
 - `getTypeLabel(type)` — returns Croatian label for invoice type
+- `INVOICE_CATEGORIES_BY_DIRECTION` — per direction, the categories that exist (`${direction}_${value}` is always one of the nine `accounting_invoices_invoice_type_check` values) with their `invoice_type.*` label key. Unit-tested in `invoiceHelpers.test.ts` against the CHECK list
+- `isInvoiceCategoryValidForDirection(direction, category)` / `getInvoiceTypeLabelKey(type)` — lookups on that matrix
 - `getSupplierCustomerName(invoice)` — resolves display name from invoice entity fields
 - `getCustomerProjects(customerId, projects, customerSales)` — returns projects linked to a customer
 - `getCustomerApartmentsByProject(customerId, projectId, customerApartments)` — returns apartments for a customer in a project
@@ -675,8 +702,11 @@ Shared utilities used across multiple Cashflow sub-modules.
 - **Depends on:** `utils/dateOnly` (pure helpers)
 
 ### paymentHelpers.ts
-- `getPaymentMethodLabel(method)` — returns Croatian label for payment method
-- `getPaymentMethodColor(method)` — returns CSS class for payment method badge
+- `allowedPaymentMethods(source, isCesija)` — bank_account → WIRE/CARD/CHECK, credit → WIRE, gotovina → CASH, kompenzacija → none, cesija (any source) → WIRE; unknown source → all four
+- `snapPaymentMethod(method, source, isCesija)` — keeps the method if allowed, else the first allowed one (`'WIRE'` placeholder for kompenzacija)
+- `getPaymentMethodLabel(method, source?)` — returns Croatian label for payment method; "—" when the source is kompenzacija
+- `getPaymentMethodColor(method, source?)` — returns CSS class for payment method badge (neutral for kompenzacija)
+- Unit-tested in `paymentHelpers.test.ts`
 - `columnLabels` — Croatian display names for payment table columns
 - **Depends on:** (none, pure helpers)
 
@@ -747,6 +777,7 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 ---
 
 ## Notes
+- **Payment edits and cached balances — migration `20260917100000_payment_update_balance_triggers.sql` (written, NOT yet applied; apply manually, dev/e2e project first).** Before it, editing a payment left `company_bank_accounts.current_balance` stale on the account the payment was moved *off* (the trigger recomputed only `NEW.*` accounts), and never touched `credit_allocations.used_amount` at all (its trigger was INSERT/DELETE only). The migration extracts the balance recompute verbatim into `recalc_company_bank_account_balance(uuid)` (EXECUTE revoked from public/anon/authenticated) and recomputes every distinct old and new account; the allocation trigger stays incremental (`used_amount` also carries OUTGOING_BANK invoice totals from `update_credit_allocation_used_amount_from_invoice`) and gains an UPDATE branch (undo OLD, apply NEW) on `UPDATE OF amount, credit_allocation_id, cesija_credit_allocation_id`. It does not repair existing drift — its header has read-only drift-check queries for both tables
 - **Invoice list sorting lives in SQL.** Migration `20260915120000_invoice_list_server_sort.sql` replaces the 6-argument `get_filtered_invoices` with an 8-argument version (`p_sort_field text DEFAULT NULL`, `p_sort_dir text DEFAULT 'asc'`). Sort values are whitelisted via `CASE` (unknown values fall back to `issue_date DESC, id`, which also stays as the tie-breaker); `invoice_number` uses the ICU collation `public.natural_numeric` (`und-u-kn-true`) so `INV-2` sorts before `INV-10`; both directions are `NULLS LAST`. **This migration must be applied manually** (dev/e2e project first) — until it is, sorting a column makes the RPC call fail, while the unsorted list keeps working. Security model unchanged: the function is still `SECURITY DEFINER` without a role check (unlike `get_invoice_statistics`)
 - `retailInvoiceTypes.ts` inside `Invoices/` defines types that bridge Cashflow and Retail invoice structures — handle carefully when modifying
 - Multi-VAT support uses separate `base_amount_1–4`, `vat_rate_1–4`, `vat_amount_1–4` fields for up to 4 VAT rates per invoice (Croatian accounting requirement)
