@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Bell, Briefcase, Lock, MapPin, Plus, Repeat, Users, X } from 'lucide-react'
+import { Bell, Briefcase, Check, Info, Lock, MapPin, Plus, Repeat, Users, X } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ToggleSwitch from '../ui/ToggleSwitch'
 import SearchableSelect from '../ui/SearchableSelect'
@@ -11,10 +11,11 @@ import {
   type ProjectOption,
 } from './services/calendarService'
 import ParticipantPicker from './components/ParticipantPicker'
-import type { NewEventInput, EventType } from '../../types/tasks'
+import type { CalendarEvent, NewEventInput, EventType } from '../../types/tasks'
 import { useAuth } from '../../contexts/AuthContext'
 import {
   DEFAULT_RECURRENCE,
+  describeRecurrence,
   serializeRecurrence,
   type RecurrencePreset,
   type RecurrenceEndKind,
@@ -24,7 +25,15 @@ import {
 interface Props {
   show: boolean
   onClose: () => void
-  onCreate: (input: NewEventInput) => Promise<void>
+  /** Create mode: called with the new event. */
+  onCreate?: (input: NewEventInput) => Promise<void>
+  /**
+   * Edit mode: the event to edit, participants included. The form is prefilled from it, and the
+   * date, time and repeat rule of a recurring series render read-only.
+   */
+  event?: CalendarEvent | null
+  /** Edit mode: called with the whole form; the service works out what changed. */
+  onSave?: (input: NewEventInput) => Promise<void>
   defaultDate?: string
   defaultStartTime?: string
   defaultEndTime?: string
@@ -54,10 +63,25 @@ function formatYmd(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
+function formatHm(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 const CUSTOM_WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
-const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, defaultStartTime, defaultEndTime }) => {
-  const { t } = useTranslation()
+const NewEventModal: React.FC<Props> = ({
+  show,
+  onClose,
+  onCreate,
+  event = null,
+  onSave,
+  defaultDate,
+  defaultStartTime,
+  defaultEndTime,
+}) => {
+  const { t, i18n } = useTranslation()
+  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
   const { user } = useAuth()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -77,12 +101,41 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const isEdit = !!event
+  // Exceptions and per-occurrence RSVPs are keyed by the rule-derived start of each occurrence,
+  // so moving a series or changing its rule would orphan them. A one-off event has none.
+  const timingLocked = !!event?.recurrence
+
   useEffect(() => {
     if (!show) return
     Promise.all([
       fetchCalendarUsers().then(setUsers).catch(() => setUsers([])),
       fetchProjectOptions().then(setProjects).catch(() => setProjects([])),
     ])
+    if (event) {
+      const start = new Date(event.start_at)
+      const end = new Date(event.end_at)
+      const startDate = formatYmd(start)
+      setTitle(event.title)
+      setDescription(event.description || '')
+      setLocation(event.location || '')
+      setDate(startDate)
+      setStartTime(formatHm(start))
+      setEndTime(formatHm(end))
+      setEventType(event.event_type)
+      setIsPrivate(event.is_private)
+      // The creator is implicit (the picker hides them), and on a private event their own
+      // accepted row is the only one.
+      setParticipants(
+        (event.participants || []).map(p => p.user_id).filter(id => id !== event.created_by),
+      )
+      setBusy(event.busy)
+      setProjectId(event.project_id)
+      setReminderOffsets([...(event.reminder_offsets || [])].sort((a, b) => a - b))
+      setRecurrence({ ...DEFAULT_RECURRENCE, endDate: startDate })
+      setError(null)
+      return
+    }
     const today = new Date()
     const nextDate = defaultDate || formatYmd(today)
     setTitle('')
@@ -99,18 +152,29 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
     setReminderOffsets([])
     setRecurrence({ ...DEFAULT_RECURRENCE, endDate: nextDate })
     setError(null)
-  }, [show, defaultDate, defaultStartTime, defaultEndTime])
+    // Reset only when the modal opens or is pointed at another event. While it is open, a
+    // realtime refresh hands it a new `event` object for the same row, and re-seeding on that
+    // would wipe whatever the user has typed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show, event?.id, defaultDate, defaultStartTime, defaultEndTime])
 
   const timesValid = useMemo(() => {
+    // A locked series keeps its stored times, which the form does not re-validate.
+    if (timingLocked) return true
     if (!date || !startTime || !endTime) return false
     return `${date}T${endTime}` > `${date}T${startTime}`
-  }, [date, startTime, endTime])
+  }, [timingLocked, date, startTime, endTime])
 
   const canSave = useMemo(() => {
     if (!title.trim() || !date || !timesValid) return false
     if (recurrence.preset !== 'none' && recurrence.endKind === 'on' && !recurrence.endDate) return false
     return true
   }, [title, date, timesValid, recurrence])
+
+  const recurrenceText = useMemo(
+    () => (event?.recurrence ? describeRecurrence(event.recurrence, t, dateLocale) : ''),
+    [event?.recurrence, t, dateLocale],
+  )
 
   const addReminder = (minutes: number) => {
     if (reminderOffsets.includes(minutes)) return
@@ -145,9 +209,16 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
 
   const submit = async () => {
     if (!user || !canSave) return
-    const startAt = new Date(`${date}T${startTime}:00`).toISOString()
-    const endAt = new Date(`${date}T${endTime}:00`).toISOString()
-    const rruleString = serializeRecurrence(recurrence, new Date(`${date}T${startTime}:00`))
+    // A locked series passes its stored timing through; the service never writes it either.
+    const startAt = event && timingLocked
+      ? event.start_at
+      : new Date(`${date}T${startTime}:00`).toISOString()
+    const endAt = event && timingLocked
+      ? event.end_at
+      : new Date(`${date}T${endTime}:00`).toISOString()
+    const rruleString = event && timingLocked
+      ? event.recurrence
+      : serializeRecurrence(recurrence, new Date(`${date}T${startTime}:00`))
     setSaving(true)
     setError(null)
     try {
@@ -166,12 +237,13 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
         reminder_offsets: reminderOffsets,
         busy,
       }
-      await onCreate(input)
+      if (isEdit) await onSave?.(input)
+      else await onCreate?.(input)
       onClose()
     } catch (e) {
-      console.error('Failed to create calendar event', e)
+      console.error(isEdit ? 'Failed to update calendar event' : 'Failed to create calendar event', e)
       const message = (e as { message?: string })?.message
-      setError(message || t('calendar.modal.error_generic'))
+      setError(message || t(isEdit ? 'calendar.modal.error_save' : 'calendar.modal.error_generic'))
     } finally {
       setSaving(false)
     }
@@ -182,7 +254,10 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
 
   return (
     <Modal show={show} onClose={onClose} size="lg">
-      <Modal.Header title={t('calendar.modal.new_title')} onClose={onClose} />
+      <Modal.Header
+        title={isEdit ? t('calendar.modal.edit_title') : t('calendar.modal.new_title')}
+        onClose={onClose}
+      />
       <Modal.Body>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -228,7 +303,8 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              disabled={timingLocked}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
             />
           </div>
           <div>
@@ -239,8 +315,9 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
               type="time"
               value={startTime}
               onChange={e => setStartTime(e.target.value)}
+              disabled={timingLocked}
               className={[
-                'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100',
+                'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60 disabled:cursor-not-allowed',
                 !timesValid ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600',
               ].join(' ')}
             />
@@ -253,8 +330,9 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
               type="time"
               value={endTime}
               onChange={e => setEndTime(e.target.value)}
+              disabled={timingLocked}
               className={[
-                'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100',
+                'w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60 disabled:cursor-not-allowed',
                 !timesValid ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600',
               ].join(' ')}
             />
@@ -263,6 +341,12 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
         {!timesValid && (
           <p className="text-xs text-red-600 dark:text-red-400 -mt-2">
             {t('calendar.modal.end_before_start')}
+          </p>
+        )}
+        {timingLocked && (
+          <p className="-mt-2 flex items-start gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+            <Info className="w-3.5 h-3.5 mt-px flex-shrink-0" />
+            {t('calendar.modal.series_timing_readonly')}
           </p>
         )}
 
@@ -288,118 +372,126 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
           <label className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             <Repeat className="w-4 h-4" /> {t('calendar.modal.recurrence.label')}
           </label>
-          <div className="flex flex-wrap gap-2">
-            {presetOptions.map(p => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => updateRecurrence('preset', p)}
-                className={[
-                  'px-3 py-1.5 text-sm rounded-lg border transition-colors',
-                  recurrence.preset === p
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600',
-                ].join(' ')}
-              >
-                {t(`calendar.modal.recurrence.preset.${p}`)}
-              </button>
-            ))}
-          </div>
-
-          {recurrence.preset === 'custom' && (
-            <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 space-y-3">
-              <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                <span>{t('calendar.modal.recurrence.every')}</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={recurrence.customInterval}
-                  onChange={e => updateRecurrence('customInterval', Math.max(1, parseInt(e.target.value || '1', 10)))}
-                  className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-                />
-                <select
-                  value={recurrence.customFreq}
-                  onChange={e => updateRecurrence('customFreq', e.target.value as RecurrenceState['customFreq'])}
-                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+          {timingLocked ? (
+            <div className="px-3 py-2 text-sm rounded-lg bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
+              {recurrenceText}
+            </div>
+          ) : (
+            <>
+            <div className="flex flex-wrap gap-2">
+              {presetOptions.map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => updateRecurrence('preset', p)}
+                  className={[
+                    'px-3 py-1.5 text-sm rounded-lg border transition-colors',
+                    recurrence.preset === p
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600',
+                  ].join(' ')}
                 >
-                  <option value="daily">{t('calendar.modal.recurrence.freq.daily')}</option>
-                  <option value="weekly">{t('calendar.modal.recurrence.freq.weekly')}</option>
-                  <option value="monthly">{t('calendar.modal.recurrence.freq.monthly')}</option>
-                </select>
-              </div>
-              {recurrence.customFreq === 'weekly' && (
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    {t('calendar.modal.recurrence.on_days')}
-                  </div>
-                  <div className="flex gap-1">
-                    {CUSTOM_WEEKDAY_KEYS.map((key, idx) => {
-                      const active = recurrence.customByWeekday.includes(idx)
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => toggleCustomWeekday(idx)}
-                          className={[
-                            'w-8 h-8 text-xs rounded-full border font-medium',
-                            active
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200',
-                          ].join(' ')}
-                        >
-                          {t(`calendar.day_names.${key}`)}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+                  {t(`calendar.modal.recurrence.preset.${p}`)}
+                </button>
+              ))}
             </div>
-          )}
 
-          {recurrence.preset !== 'none' && (
-            <div className="mt-3">
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {t('calendar.modal.recurrence.ends')}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {endKindOptions.map(kind => (
-                  <button
-                    key={kind}
-                    type="button"
-                    onClick={() => updateRecurrence('endKind', kind)}
-                    className={[
-                      'px-3 py-1.5 text-sm rounded-lg border',
-                      recurrence.endKind === kind
-                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 border-blue-300 dark:border-blue-700'
-                        : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200',
-                    ].join(' ')}
-                  >
-                    {t(`calendar.modal.recurrence.end.${kind}`)}
-                  </button>
-                ))}
-                {recurrence.endKind === 'on' && (
+            {recurrence.preset === 'custom' && (
+              <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                  <span>{t('calendar.modal.recurrence.every')}</span>
                   <input
-                    type="date"
-                    value={recurrence.endDate}
-                    onChange={e => updateRecurrence('endDate', e.target.value)}
-                    className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    type="number"
+                    min={1}
+                    value={recurrence.customInterval}
+                    onChange={e => updateRecurrence('customInterval', Math.max(1, parseInt(e.target.value || '1', 10)))}
+                    className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                   />
-                )}
-                {recurrence.endKind === 'after' && (
-                  <div className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-200">
-                    <input
-                      type="number"
-                      min={1}
-                      value={recurrence.endCount}
-                      onChange={e => updateRecurrence('endCount', Math.max(1, parseInt(e.target.value || '1', 10)))}
-                      className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-                    />
-                    <span>{t('calendar.modal.recurrence.occurrences')}</span>
+                  <select
+                    value={recurrence.customFreq}
+                    onChange={e => updateRecurrence('customFreq', e.target.value as RecurrenceState['customFreq'])}
+                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                  >
+                    <option value="daily">{t('calendar.modal.recurrence.freq.daily')}</option>
+                    <option value="weekly">{t('calendar.modal.recurrence.freq.weekly')}</option>
+                    <option value="monthly">{t('calendar.modal.recurrence.freq.monthly')}</option>
+                  </select>
+                </div>
+                {recurrence.customFreq === 'weekly' && (
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      {t('calendar.modal.recurrence.on_days')}
+                    </div>
+                    <div className="flex gap-1">
+                      {CUSTOM_WEEKDAY_KEYS.map((key, idx) => {
+                        const active = recurrence.customByWeekday.includes(idx)
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => toggleCustomWeekday(idx)}
+                            className={[
+                              'w-8 h-8 text-xs rounded-full border font-medium',
+                              active
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200',
+                            ].join(' ')}
+                          >
+                            {t(`calendar.day_names.${key}`)}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
+            )}
+
+            {recurrence.preset !== 'none' && (
+              <div className="mt-3">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  {t('calendar.modal.recurrence.ends')}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {endKindOptions.map(kind => (
+                    <button
+                      key={kind}
+                      type="button"
+                      onClick={() => updateRecurrence('endKind', kind)}
+                      className={[
+                        'px-3 py-1.5 text-sm rounded-lg border',
+                        recurrence.endKind === kind
+                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200 border-blue-300 dark:border-blue-700'
+                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200',
+                      ].join(' ')}
+                    >
+                      {t(`calendar.modal.recurrence.end.${kind}`)}
+                    </button>
+                  ))}
+                  {recurrence.endKind === 'on' && (
+                    <input
+                      type="date"
+                      value={recurrence.endDate}
+                      onChange={e => updateRecurrence('endDate', e.target.value)}
+                      className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    />
+                  )}
+                  {recurrence.endKind === 'after' && (
+                    <div className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-200">
+                      <input
+                        type="number"
+                        min={1}
+                        value={recurrence.endCount}
+                        onChange={e => updateRecurrence('endCount', Math.max(1, parseInt(e.target.value || '1', 10)))}
+                        className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                      />
+                      <span>{t('calendar.modal.recurrence.occurrences')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            </>
           )}
         </div>
 
@@ -515,8 +607,12 @@ const NewEventModal: React.FC<Props> = ({ show, onClose, onCreate, defaultDate, 
           disabled={saving || !canSave}
           className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed inline-flex items-center gap-1"
         >
-          <Plus className="w-4 h-4" />
-          {saving ? t('calendar.modal.saving') : t('calendar.modal.create_button')}
+          {isEdit ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          {saving
+            ? t('calendar.modal.saving')
+            : isEdit
+              ? t('common.save_changes')
+              : t('calendar.modal.create_button')}
         </button>
       </Modal.Footer>
     </Modal>

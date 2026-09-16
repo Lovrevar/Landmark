@@ -125,6 +125,7 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 
 ### hooks/useTaskComments.ts
 - `useTaskComments(taskId)` — comments list + draft + send / delete for a single task
+- `remove(commentId)` returns `false` when the delete failed instead of throwing; the drawer asks for confirmation first and shows the failure as a toast
 - `send()` guards with a ref, not only the `sending` state: two calls dispatched by one event both read `sending === false` from the render closure, which is how Ctrl+Enter once posted every comment twice
 
 ### permissions.ts
@@ -163,17 +164,21 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 
 ### TaskDetail.tsx
 - Slide-from-right drawer via `createPortal`; inline-editable fields auto-save on change. Header row has a large done-checkbox next to the title
+- **Due date saves on blur or Enter, never per keystroke.** A native date input reports a complete value on every key, so typing a year used to write `0002`, `0020`, `0202` on the way to `2026`. The input edits a `deadlineDraft`, re-seeded only when the task id or its stored `deadline` changes (the list refetches on anyone's edit, and an unrelated refresh must not wipe a half-typed date). Clearing the field saves `null`. Escape unmounts the drawer without blurring the input, so every close path (Escape, X, backdrop, Close) first flushes a changed draft; a ref holding the in-flight value stops Enter + blur or blur + Escape writing the same date twice
+- A failed field save shows a `tasks.detail.save_failed` toast; the title and description editors stay open so the typed text is not lost, and a failed due date snaps back to the stored value. Assignee changes toast the same way
+- Deleting a comment asks first (`ConfirmDialog`, `tasks.detail.delete_comment_confirm_*`)
 - Fields: title, project, due date (date only), colour, private toggle, assignees, subtask checklist, plain-text description (legacy markdown rows still render via `MarkdownView`; edits save as `plain`). Read-only viewers see the colour chip instead of the picker, and no colour row at all when the task has none
 - The checklist sits **above** the description, not in place of it — unlike the mobile app's card, this description carries `description_format`, markdown rendering and prose that is not a list. The header checkbox is disabled while the task is a checklist
 - Comments section (no tabs): [MentionPicker](../src/components/Tasks/components/MentionPicker.tsx) composer with `@` autocomplete; mention tokens rendered via `renderCommentWithMentions`. Composer hidden for read-only viewers (matches RLS). Ctrl/Cmd+Enter sends — handled by MentionPicker alone; there is deliberately no drawer-level key handler, which used to double-post and also fired from the title, description and subtask fields
-- Escape closes the drawer through `useEscapeKey` (see [UI.md](./UI.md)), so Escape on its "Delete task?" or "Remove subtask?" dialog closes only that dialog
+- Escape closes the drawer through `useEscapeKey` (see [UI.md](./UI.md)), so Escape on its "Delete task?", "Delete comment?", "Delete attachment?" or "Remove subtask?" dialog closes only that dialog
 - **Read-only mode** when the viewer is neither creator nor assignee: all inputs disabled, no attachment mutations, no comment composer, no delete
 - ⚠️ Prop contract `{ task, onClose, onDelete, onChanged }` is shared with [Calendar/index.tsx](../src/components/Calendar/index.tsx) — keep it stable
-- **Uses hooks:** useTaskComments, useAuth
-- **Uses components:** AttachmentList, SubtaskList, MarkdownView, MentionPicker, mentions
+- **Uses hooks:** useTaskComments, useAuth, useToast
+- **Uses components:** AttachmentList, SubtaskList, MarkdownView, MentionPicker, mentions, ConfirmDialog
 
 ### components/AttachmentList.tsx
 - Drag-drop zone, signed-URL image thumbnails, per-file progress + delete (RLS-enforced via the passed `canDelete(attachment)` predicate), 25 MB + 10-file client caps
+- Delete asks first (`ConfirmDialog` naming the file, `tasks.attachments.delete_confirm_*`); a failed delete shows `tasks.attachments.delete_failed` in the list's inline error line
 - Requires a persisted `taskId` — create flow adds attachments from the detail drawer after save
 
 ### components/SubtaskList.tsx, subtasks.ts

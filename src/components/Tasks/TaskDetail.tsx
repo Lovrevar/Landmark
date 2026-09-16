@@ -37,6 +37,7 @@ import {
   type ProjectOption,
 } from './services/tasksService'
 import { useAuth } from '../../contexts/AuthContext'
+import { useToast } from '../../contexts/ToastContext'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { isChecklist, subtaskProgress } from './subtasks'
@@ -60,6 +61,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
   const { user } = useAuth()
+  const toast = useToast()
   const [mounted, setMounted] = useState(false)
 
   const [projects, setProjects] = useState<ProjectOption[]>([])
@@ -72,10 +74,19 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   const [addingAssignee, setAddingAssignee] = useState(false)
   const [assigneeQuery, setAssigneeQuery] = useState('')
   const [saving, setSaving] = useState(false)
+  // The date input edits a draft; it is written on blur or Enter, never per keystroke.
+  // A native date input reports a complete value on every key, so typing a year used to
+  // save 0002, 0020 and 0202 on the way to 2026.
+  const [deadlineDraft, setDeadlineDraft] = useState('')
+  // The value last sent to the server, until `task.deadline` catches up. Enter followed by
+  // blur (or blur followed by Escape) would otherwise write the same date twice.
+  const savingDeadlineRef = useRef<string | null>(null)
 
   const [attachments, setAttachments] = useState<TaskAttachment[]>([])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [pendingCommentDelete, setPendingCommentDelete] = useState<string | null>(null)
+  const [deletingComment, setDeletingComment] = useState(false)
 
   const { comments, loading: commentsLoading, draft, setDraft, sending, send, remove } =
     useTaskComments(task?.id ?? null)
@@ -97,14 +108,27 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
       setEditingDescription(false)
       setAddingAssignee(false)
       setAssigneeQuery('')
+      setPendingCommentDelete(null)
       loadAttachments(task.id)
       fetchProjectOptions().then(setProjects).catch(() => setProjects([]))
       fetchTaskUsers().then(setUsers).catch(() => setUsers([]))
     }
   }, [task, loadAttachments])
 
+  // Seeded apart from the drafts above: `task` is a new object on every refetch, and the
+  // task list refetches on anyone's edit. Keying on the stored value means a half-typed date
+  // survives an unrelated refresh but still follows a real change to the deadline.
+  const taskId = task?.id
+  const taskDeadline = task?.deadline
+  useEffect(() => {
+    setDeadlineDraft(taskDeadline || '')
+    savingDeadlineRef.current = null
+  }, [taskId, taskDeadline])
+
   const drawerRef = useRef<HTMLElement>(null)
-  useEscapeKey(!!task, onClose)
+  // Set on every render below the early return, where the flush has what it needs.
+  const requestCloseRef = useRef(onClose)
+  useEscapeKey(!!task, () => requestCloseRef.current())
   useFocusTrap(drawerRef, !!task)
 
   const projectOptions = useMemo(
@@ -121,11 +145,17 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   const checklist = isChecklist(task)
   const progress = subtaskProgress(task)
 
-  const saveField = async (patch: UpdateTaskInput) => {
+  /** Writes one patch. Returns false (after telling the user) when the write failed. */
+  const saveField = async (patch: UpdateTaskInput): Promise<boolean> => {
     setSaving(true)
     try {
       await updateTask(task.id, patch, user, task.title)
       onChanged()
+      return true
+    } catch (e) {
+      console.error('Failed to update task', e)
+      toast.error(t('tasks.detail.save_failed'))
+      return false
     } finally {
       setSaving(false)
     }
@@ -137,8 +167,8 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
       setTitleDraft(task.title)
       return
     }
-    await saveField({ title: titleDraft.trim() })
-    setEditingTitle(false)
+    // A failed save leaves the editor open, so the typed title is not lost.
+    if (await saveField({ title: titleDraft.trim() })) setEditingTitle(false)
   }
 
   const saveDescription = async () => {
@@ -146,11 +176,11 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
       setEditingDescription(false)
       return
     }
-    await saveField({
+    const saved = await saveField({
       description: descriptionDraft,
       description_format: 'plain',
     })
-    setEditingDescription(false)
+    if (saved) setEditingDescription(false)
   }
 
   const toggleDone = async () => {
@@ -162,10 +192,25 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
     await saveField({ project_id: pid })
   }
 
+  // An empty value clears the deadline.
   const saveDueDate = async (value: string) => {
-    if (value === (task.deadline || '')) return
-    await saveField({ deadline: value || null, due_time: null })
+    if (value === (task.deadline || '') || value === savingDeadlineRef.current) return
+    savingDeadlineRef.current = value
+    const saved = await saveField({ deadline: value || null, due_time: null })
+    if (!saved) {
+      savingDeadlineRef.current = null
+      setDeadlineDraft(task.deadline || '')
+    }
   }
+
+  // Escape unmounts the drawer without blurring the date input, so a changed draft is
+  // flushed here first. The X, the backdrop and Close go through the same path; for those
+  // the blur has usually saved already and the ref guard turns this into a no-op.
+  const requestClose = () => {
+    if (canEdit && deadlineDraft !== (task.deadline || '')) void saveDueDate(deadlineDraft)
+    onClose()
+  }
+  requestCloseRef.current = requestClose
 
   const saveColor = async (color: TaskColor | null) => {
     if (color === task.color) return
@@ -186,6 +231,9 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
     try {
       await setAssignees(task.id, ids, user)
       onChanged()
+    } catch (e) {
+      console.error('Failed to update task assignees', e)
+      toast.error(t('tasks.detail.save_failed'))
     } finally {
       setSaving(false)
     }
@@ -220,6 +268,16 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
     }
   }
 
+  const confirmCommentDelete = async () => {
+    const commentId = pendingCommentDelete
+    if (!commentId) return
+    setDeletingComment(true)
+    const removed = await remove(commentId)
+    setDeletingComment(false)
+    setPendingCommentDelete(null)
+    if (!removed) toast.error(t('tasks.detail.delete_comment_failed'))
+  }
+
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleString(dateLocale, {
       day: '2-digit',
@@ -239,7 +297,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
     <div className="fixed inset-0 z-50 flex">
       <div
         className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${mounted ? 'opacity-100' : 'opacity-0'}`}
-        onClick={onClose}
+        onClick={requestClose}
       />
       <aside
         ref={drawerRef}
@@ -257,7 +315,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
             </span>
           </div>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             className="p-2 -m-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             aria-label={t('common.close')}
           >
@@ -344,8 +402,12 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
             <Field icon={<CalendarIcon className="w-4 h-4" />} label={t('tasks.modal.due_date_label')}>
               <input
                 type="date"
-                value={task.deadline || ''}
-                onChange={e => saveDueDate(e.target.value)}
+                value={deadlineDraft}
+                onChange={e => setDeadlineDraft(e.target.value)}
+                onBlur={e => saveDueDate(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { e.preventDefault(); saveDueDate(e.currentTarget.value) }
+                }}
                 disabled={!canEdit}
                 className="w-full px-2 py-1.5 text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60"
               />
@@ -602,7 +664,8 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                         </div>
                         {mine && (
                           <button
-                            onClick={() => remove(c.id)}
+                            type="button"
+                            onClick={() => setPendingCommentDelete(c.id)}
                             className="text-sm text-gray-400 hover:text-red-500 inline-flex items-center gap-1 mt-1"
                           >
                             <Trash2 className="w-3 h-3" /> {t('tasks.detail.delete_comment')}
@@ -641,13 +704,23 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
           ) : <span />}
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="px-4 py-2 text-base text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
           >
             {t('common.close')}
           </button>
         </div>
       </aside>
+      <ConfirmDialog
+        show={!!pendingCommentDelete}
+        title={t('tasks.detail.delete_comment_confirm_title')}
+        message={t('tasks.detail.delete_comment_confirm_message')}
+        variant="danger"
+        confirmLabel={t('tasks.detail.delete_comment')}
+        loading={deletingComment}
+        onConfirm={confirmCommentDelete}
+        onCancel={() => setPendingCommentDelete(null)}
+      />
       <ConfirmDialog
         show={confirmDelete}
         title={t('tasks.detail.delete_task_confirm_title')}

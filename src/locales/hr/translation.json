@@ -29,6 +29,7 @@
     "save_changes": "Spremi promjene",
     "details": "Detalji",
     "refresh": "Osvježi",
+    "remove": "Ukloni",
     "required": "Obavezno",
     "no_results": "Nema rezultata pretrage",
     "loading": "Učitavanje...",
@@ -4371,6 +4372,8 @@
     },
     "modal": {
       "new_title": "Novi događaj",
+      "edit_title": "Uredi događaj",
+      "series_timing_readonly": "Za promjenu vremena ponavljajućeg događaja obrišite ga i kreirajte novi.",
       "title_label": "Naslov",
       "description_label": "Opis",
       "location_label": "Lokacija",
@@ -4428,7 +4431,8 @@
       },
       "create_button": "Kreiraj događaj",
       "saving": "Spremanje...",
-      "error_generic": "Događaj nije moguće kreirati. Pokušajte ponovno."
+      "error_generic": "Događaj nije moguće kreirati. Pokušajte ponovno.",
+      "error_save": "Događaj nije moguće spremiti. Pokušajte ponovno."
     },
     "detail": {
       "private_badge": "Privatno",
@@ -4450,7 +4454,9 @@
       "delete_single": "Obriši ovu pojavu",
       "delete_series": "Obriši cijeli niz",
       "delete_single_title": "Obrisati ovu pojavu?",
-      "delete_single_message": "Uklonit će se samo ova pojava. Ostale pojave u nizu ostaju."
+      "delete_single_message": "Uklonit će se samo ova pojava. Ostale pojave u nizu ostaju.",
+      "delete_failed": "Događaj nije moguće obrisati. Pokušajte ponovno.",
+      "respond_failed": "Odgovor nije moguće spremiti. Pokušajte ponovno."
     },
     "response": {
       "accepted": "Prihvaćeno",
@@ -4541,7 +4547,10 @@
       "uploading": "Prenosi se...",
       "failed": "Prijenos nije uspio",
       "none": "Još nema privitaka",
-      "create_first": "Spremi zadatak za dodavanje privitaka"
+      "create_first": "Spremi zadatak za dodavanje privitaka",
+      "delete_confirm_title": "Obrisati privitak?",
+      "delete_confirm_message": "Datoteka „{{name}}” bit će trajno obrisana.",
+      "delete_failed": "Privitak nije moguće obrisati. Pokušajte ponovno."
     },
     "subtasks": {
       "label": "Podzadaci",
@@ -4572,6 +4581,10 @@
       "comment_placeholder": "Napiši komentar — koristi @ za spominjanje, Ctrl+Enter za slanje",
       "send_comment": "Pošalji",
       "delete_comment": "Obriši",
+      "delete_comment_confirm_title": "Obrisati komentar?",
+      "delete_comment_confirm_message": "Komentar će biti trajno obrisan.",
+      "delete_comment_failed": "Komentar nije moguće obrisati. Pokušajte ponovno.",
+      "save_failed": "Promjenu nije moguće spremiti. Pokušajte ponovno.",
       "delete_task_confirm_title": "Obrisati zadatak?",
       "delete_task_confirm_message": "Ova radnja se ne može poništiti."
     }

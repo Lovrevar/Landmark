@@ -25,12 +25,13 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 - `fetchProjectOptions()` — project list for the project linkage field
 - `createEvent(input, userId)` — inserts the event; inserts a single self-participant for private events, otherwise inserts one row per `participant_ids` member with the creator auto-accepted
 - `updateEvent(eventId, updates, eventTitle?)` — patches any editable field; logs `calendar_event.update` with `changed_fields`
+- `updateEventWithParticipants(eventId, input, previous)` — saves the edit form. Writes only the columns that differ from `previous` ([buildEventUpdate](../src/components/Calendar/utils/eventEdit.ts); never `start_at` / `end_at` / `recurrence` for a recurring series) plus `updated_at` (no trigger maintains it), then reconciles participant rows ([planParticipantChanges](../src/components/Calendar/utils/eventEdit.ts)): removed invitees' rows are deleted, new invitees get `pending` rows, unchanged rows keep their RSVP, the creator's own row is never deleted, and a private event ends with only the creator's accepted row. One `calendar_event.update` log for the whole edit; `changed_fields` includes `participants` when rows were added or removed, with `participants_added` / `participants_removed` counts. No transaction spans the writes — on a partial failure what succeeded is logged and the error is rethrown
 - `deleteEvent(eventId, eventTitle?)` — removes the event (FK cascade removes participants, exceptions, occurrence responses)
 - `respondToEvent(participantId, response, eventId?, eventTitle?)` — **series-scope** RSVP; logs with `scope: 'series'`
 - `respondToOccurrence(eventId, userId, originalStartAtIso, response, eventTitle?)` — **occurrence-scope** RSVP upsert; logs with `scope: 'occurrence'`
-- `createException(eventId, originalStartAt, override, eventTitle?)` — per-occurrence override (reschedule, rename, or cancel a single instance); logs `calendar_event.exception_create`
+- `createException(eventId, originalStartAt, override, eventTitle?)` — per-occurrence override (reschedule, rename, or cancel a single instance); logs `calendar_event.exception_create`. An **upsert** on `(event_id, original_start_at)`: the table is unique on that pair, so a plain insert used to fail when cancelling an occurrence that already had an exception
 - `deleteException(exceptionId, eventId, eventTitle?)` — revert a single occurrence to its RRULE-derived defaults
-- `fetchPendingCount(userId, fromIso, toIso)` — counts `pending` occurrences in the window, used by [MiniMonth](../src/components/Calendar/components/sidebar/MiniMonth.tsx) and other widgets
+- `fetchPendingCount(userId, fromIso, toIso)` — counts `pending` occurrences starting in the window via `countPendingOccurrences`; used by the header badge (`useCalendarNotifications`)
 - `getUnacknowledgedEventCount(userId)` — count of participant rows where `acknowledged_at IS NULL`, used by the global badge
 - `acknowledgeAllEvents(userId)` — bulk-clears unread badges; logs only if at least one row was affected
 - **Depends on:** supabase client, activityLog, `expandEvents`
@@ -52,6 +53,8 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 - `useEventsInRange({ fromIso, toIso, activeTypes, activeProjectId, activeParticipantIds, search })` — fetches raw events for the visible window and memoises the filtered + expanded `occurrences`
 - Tracks the latest request id so stale responses from older ranges do not overwrite newer state
 - Subscribes via Supabase realtime to four channels scoped by user: `calendar_events`, `calendar_event_participants`, `calendar_event_exceptions`, `calendar_occurrence_responses` (filtered to the current user). Any change triggers a refetch
+- Channel names carry a per-instance `useId()` suffix. `supabase.channel(name)` returns the existing channel for a taken name and a channel subscribes only once, so the CalendarPage's two instances (grid + sidebar) would otherwise collide
+- Omitted filters default to a module-level empty array, so an unfiltered caller does not re-expand every recurrence on each render
 - **Returns:** `rawEvents`, `occurrences`, `loading`, `error`, `refresh`
 
 ### hooks/useTasksInRange.ts
@@ -66,19 +69,20 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 
 ### hooks/useCalendarNotifications.ts
 - `useCalendarNotifications()` — powers the global red badge on the calendar icon in [Layout.tsx](../src/components/Common/Layout.tsx)
-- Polls `getUnacknowledgedEventCount` every 20 s; listens for `calendar:marked-read` window events to refresh on demand
-- Exports `dispatchCalendarRead()` helper used by the CalendarPage after acknowledgement
+- Every 20 s counts the occurrences awaiting the user's response in `pendingWindow()` (now → `PENDING_WINDOW_DAYS` = 30) through `fetchPendingCount`; listens for `calendar:marked-read` window events to refresh on demand
+- Exports `dispatchCalendarRead()`, which the CalendarPage calls after acknowledgement, after any change made in the event detail modal, and after a quick accept / decline in the sidebar, so the badge recounts immediately
 - **Mounted in:** [Layout.tsx](../src/components/Common/Layout.tsx) (global)
 
 ---
 
 ## Utils
 
-- `utils/recurrence.ts` — `expandEvents(events, windowStart, windowEnd, currentUserId)` parses `RRULE` strings via the `rrule` library, iterates through occurrences inside the window, applies any matching exception override, and resolves the current user's `myResponse` (occurrence override → series master → `pending`) plus `myParticipantId` for series-scope actions. Each result is an `ExpandedOccurrence` with a stable `originalStartIso` key
-- `utils/recurrencePresets.ts` — maps the modal's recurrence UI (preset + end kind + custom interval/freq/byweekday) to an `RRULE` string via `rrule`. Presets: `none | daily | weekly | monthly | yearly | custom`; end kinds: `never | on | after`
+- `utils/recurrence.ts` — `expandEvents(events, windowStart, windowEnd, currentUserId)` parses `RRULE` strings via the `rrule` library, iterates through occurrences inside the window, applies any matching exception override, and resolves the current user's `myResponse` (occurrence override → series master → **`accepted` if the user created the event** → `pending`) plus `myParticipantId` for series-scope actions. The creator of a public event has no participant row, and before that rule their own meetings counted as invitations in both the badge and the sidebar. `currentUserId` and `created_by` are both `public.users` ids. Each result is an `ExpandedOccurrence` with a stable `originalStartIso` key. Tested in `recurrence.test.ts`
+- `utils/recurrencePresets.ts` — maps the modal's recurrence UI (preset + end kind + custom interval/freq/byweekday) to an `RRULE` string via `rrule`. Presets: `none | daily | weekly | monthly | yearly | custom`; end kinds: `never | on | after`. `describeRecurrence(rule, t, locale)` turns a stored rule back into one line of text for the edit form ("Weekly (Mon) · Ends: After 10 occurrence(s)") from the picker's own i18n labels — not rrule's `toText()`, which is English-only. Tested in `recurrencePresets.test.ts`
+- `utils/eventEdit.ts` — the pure half of editing: `buildEventUpdate(previous, input)` (changed columns only; series timing excluded) and `planParticipantChanges(existing, creatorId, { isPrivate, participantIds })` → `{ removeRowIds, addUserIds, creatorRow }`, plus `hasParticipantChanges`. Tested in `eventEdit.test.ts`
 - `utils/monthLayout.ts` — `computeMonthLayout()` packs multi-day event segments into 7-column week rows with stable vertical slots and `continuesLeft/continuesRight` flags, mirroring Google/Outlook month layout
 - `utils/expandTasks.ts` — turns each `Task` with a `due_date` in the window into a `TaskOccurrence { occurrenceKey, task, due_at, isOverdue, isDone }`. Date-only tasks are anchored at 23:59 local so they sort after timed items for the day
-- `utils/pendingCount.ts` — counts occurrences where the current user's resolved response is `pending`
+- `utils/pendingCount.ts` — `PENDING_WINDOW_DAYS` (30) and `pendingWindow(now)`, the one definition of "awaiting my response"; `selectPendingOccurrences(occurrences, from, to)` (resolved `pending`, starting inside the window, sorted) and `countPendingOccurrences(events, userId, from, to)` built on it. The badge and the sidebar's AwaitingResponse both go through these. Tested in `pendingCount.test.ts`
 - `utils/teamColors.ts` — stable color-per-user-id via simple hash over the user id
 - `utils/relativeLabel.ts` — shared "in 2 h / tomorrow / Fri 14:00" formatter
 
@@ -92,6 +96,8 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 - On mount: `acknowledgeAllEvents` → `dispatchCalendarRead()` (clears the header badge), then fetches projects + users in parallel
 - Fetches team busy-blocks via `fetchBusyBlocks` whenever `prefs.enabledTeams` changes
 - Hosts all modals: `NewEventModal`, `EventDetailModal`, `DayEventsModal`, and the [TaskDetail](../src/components/Tasks/TaskDetail.tsx) drawer (re-used from the Tasks module) for task pills
+- Runs **two** `useEventsInRange` instances: the grid's (view range + filter bar) and the sidebar's (today → `PENDING_WINDOW_DAYS` + 1 day, fixed at mount, unfiltered). AwaitingResponse and NextUp read the sidebar's, so they match the header badge whatever month is shown or filter is set. Mutations refresh both
+- The clicked occurrence is kept as a snapshot and re-resolved from the fresh occurrences after every refresh (event id + `originalStartIso`; event id alone for a one-off event, whose start moves when edited), the same way `resolvedSelectedTask` works. The stored event behind it is passed as `sourceEvent`, so the edit form never loads an occurrence's title override as the series title
 - **Uses hooks:** `useAuth`, `useCalendarPreferences`, `useEventsInRange`, `useTasksInRange`, `useCalendarReminderToasts`
 - **Uses components:** MonthView, DayView, WeekView, AgendaView, ViewSwitcher, CalendarFilterBar, GridSkeleton, sidebar/{MiniMonth, NextUp, AwaitingResponse, TeamCalendars}
 
@@ -130,13 +136,17 @@ the geometry lives here once.
 ### Modals
 
 #### NewEventModal.tsx
-- Form for creating an event (title, description, location, start/end, type, all-day, private toggle, project link, participants picker, recurrence picker, reminder chip list)
-- Reminder presets: `[0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080]` minutes (at time → 1 week before); custom input accepts any positive integer
-- Calls the parent's `onCreate(input)` which delegates to `createEvent`
+- Form for creating an event (title, description, location, start/end, type, private toggle, project link, participants picker, recurrence picker, reminder chip list)
+- Reminder presets: `[0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080]` minutes (at time → 1 week before)
+- **Create mode** calls the parent's `onCreate(input)`, which delegates to `createEvent`
+- **Edit mode** (`event` + `onSave`): prefilled from the stored event, titled "Edit event", saves with "Save Changes". The form resets only when it opens or is pointed at another event — not when a realtime refresh hands it a new object for the same row
+- For a **recurring series** the date, times and repeat rule are read-only: the rule is shown as text (`describeRecurrence`) with the note `calendar.modal.series_timing_readonly`. Exceptions and per-occurrence RSVPs are keyed by each occurrence's rule-derived start, so moving the series would orphan them. A one-off event can change its date and time and gain a rule
 
 #### EventDetailModal.tsx
-- Read-only event details with RSVP buttons (accept / decline). Recurring-event users can scope the response to this single occurrence (via `respondToOccurrence`) or the whole series (via `respondToEvent`)
-- Creator sees edit + delete controls. Delete on a recurring event asks "this occurrence / this and following / all" via `createException` / `updateEvent` combinations
+- Event details with RSVP buttons (accept / decline). Recurring-event users can scope the response to this single occurrence (via `respondToOccurrence`) or the whole series (via `respondToEvent`)
+- Creator sees **Edit**, and delete: "Delete" on a one-off event; "Delete this occurrence" (a cancelling `createException`) and "Delete series" on a recurring one
+- Edit opens `NewEventModal` in edit mode in place of the detail (the detail is hidden, not closed); saving calls `updateEventWithParticipants`, awaits `onChanged()`, and the detail comes back showing the re-resolved occurrence. A small effect keeps the page's scroll lock on across that swap, since the two Modals' own lock effects would otherwise race
+- Failed deletes and RSVPs show a toast (`calendar.detail.delete_failed` / `respond_failed`); a failed edit shows its error inline in the form, which stays open
 - Inline [ConfirmDialog](../src/components/ui/ConfirmDialog.tsx) (variant `danger`) for destructive actions
 
 #### DayEventsModal.tsx
@@ -154,8 +164,8 @@ the geometry lives here once.
 
 ### Sidebar widgets (`components/sidebar/`)
 - `MiniMonth.tsx` — compact month navigator with a busy-day dot indicator; clicking a date drives the parent anchor
-- `NextUp.tsx` — next 24 h of events (and tasks, when the toggle is on) mixed in one list
-- `AwaitingResponse.tsx` — pending RSVPs with inline accept / decline buttons that call `respondToOccurrence`
+- `NextUp.tsx` — upcoming events (and tasks due in the next 24 h, when the toggle is on) mixed in one list. Events come from the sidebar window, not the grid; tasks still come from the grid's range and filters
+- `AwaitingResponse.tsx` — pending RSVPs in `pendingWindow()` with inline accept / decline buttons that call `respondToOccurrence`. Lists the first 10; the header count is the full total, so it equals the header badge
 - `TeamCalendars.tsx` — toggle per-user "overlay my team's busy blocks onto my calendar". Color dot mirrors [teamColors.ts](../src/components/Calendar/utils/teamColors.ts). Total busy-hours summary is rendered in a separate card below when at least one team is enabled
 
 ---

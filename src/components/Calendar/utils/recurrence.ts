@@ -9,7 +9,7 @@ export interface ExpandedOccurrence {
   originalStartIso: string    // the untransformed RRULE occurrence key — stable across exceptions
   isRecurringInstance: boolean
   isException: boolean
-  myResponse: EventResponse          // resolved: occurrence override > master > 'pending'
+  myResponse: EventResponse          // resolved: occurrence override > master > creator 'accepted' > 'pending'
   myParticipantId: string | null     // master participants row id (for series-scope actions)
   isDeclined: boolean                // convenience flag for UI dimming
 }
@@ -51,7 +51,13 @@ function resolveResponse(
     r => r.user_id === currentUserId
       && new Date(r.original_start_at).toISOString() === originalStartIso,
   )
-  const myResponse: EventResponse = override?.response ?? master?.response ?? 'pending'
+  // The creator of a public event has no participant row (createEvent only inserts the invited
+  // users, and the picker hides the creator), so falling straight through to 'pending' counted
+  // everyone's own meetings as invitations awaiting their answer — in the header badge and the
+  // sidebar alike. Nobody is asked to RSVP to an event they organised.
+  // `created_by` and `currentUserId` are both public.users ids, the calendar's id space.
+  const fallback: EventResponse = event.created_by === currentUserId ? 'accepted' : 'pending'
+  const myResponse: EventResponse = override?.response ?? master?.response ?? fallback
   return { myResponse, myParticipantId: master?.id ?? null }
 }
 

@@ -25,6 +25,7 @@ import {
 } from './services/calendarService'
 import { fetchBusyBlocks, type BusyBlock } from './services/busyBlocksService'
 import { dispatchCalendarRead } from './hooks/useCalendarNotifications'
+import { PENDING_WINDOW_DAYS } from './utils/pendingCount'
 import { useCalendarReminderToasts } from './hooks/useCalendarReminderToasts'
 import type { EventResponse, NewEventInput } from '../../types/tasks'
 import type { ExpandedOccurrence } from './utils/recurrence'
@@ -115,7 +116,7 @@ const CalendarPage: React.FC = () => {
   const fromIso = useMemo(() => from.toISOString(), [from])
   const toIso = useMemo(() => to.toISOString(), [to])
 
-  const { occurrences, loading, refresh } = useEventsInRange({
+  const { rawEvents, occurrences, loading, refresh } = useEventsInRange({
     fromIso,
     toIso,
     activeTypes: prefs.activeTypes,
@@ -123,6 +124,28 @@ const CalendarPage: React.FC = () => {
     activeParticipantIds: prefs.activeParticipantIds,
     search,
   })
+
+  // The sidebar's "Awaiting my response" and "Next up" read their own window: the next
+  // PENDING_WINDOW_DAYS from today, with no filters — the set the header badge counts. Fed
+  // from the grid instead, they changed with every month navigated to and every filter chip,
+  // and disagreed with the badge. Fixed at mount (plus a day of slack for a page left open);
+  // the widgets themselves cut at the live "now".
+  const [sidebarRange] = useState(() => {
+    const now = new Date()
+    return {
+      fromIso: startOfDay(now).toISOString(),
+      toIso: endOfDay(addDays(now, PENDING_WINDOW_DAYS + 1)).toISOString(),
+    }
+  })
+  const {
+    rawEvents: sidebarRawEvents,
+    occurrences: sidebarOccurrences,
+    refresh: refreshSidebar,
+  } = useEventsInRange(sidebarRange)
+
+  const refreshEvents = useCallback(async () => {
+    await Promise.all([refresh(), refreshSidebar()])
+  }, [refresh, refreshSidebar])
 
   // Task tables key users by auth id; the participant filter holds app
   // user ids — translate before handing it to the tasks overlay.
@@ -150,6 +173,24 @@ const CalendarPage: React.FC = () => {
   const [selected, setSelected] = useState<ExpandedOccurrence | null>(null)
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+
+  // `selected` is a snapshot taken at click time. Re-resolve it after every refresh, so the
+  // detail modal shows an edit or an RSVP instead of the pre-change copy. A recurring
+  // occurrence is identified by its rule-derived start; a one-off event has one occurrence,
+  // whose start moves when its time is edited.
+  const resolvedSelected = useMemo(() => {
+    if (!selected) return null
+    const matches = (o: ExpandedOccurrence) =>
+      o.event.id === selected.event.id &&
+      (!selected.event.recurrence || o.originalStartIso === selected.originalStartIso)
+    return occurrences.find(matches) ?? sidebarOccurrences.find(matches) ?? selected
+  }, [selected, occurrences, sidebarOccurrences])
+
+  const selectedSourceEvent = useMemo(() => {
+    if (!resolvedSelected) return null
+    const id = resolvedSelected.event.id
+    return rawEvents.find(e => e.id === id) ?? sidebarRawEvents.find(e => e.id === id) ?? null
+  }, [resolvedSelected, rawEvents, sidebarRawEvents])
 
   const resolvedSelectedTask = useMemo(
     () => (selectedTask ? rawTasks.find(t => t.id === selectedTask.id) || selectedTask : null),
@@ -217,8 +258,8 @@ const CalendarPage: React.FC = () => {
   const handleCreate = useCallback(async (input: NewEventInput) => {
     if (!user) return
     await createEvent(input, user.id)
-    await refresh()
-  }, [user, refresh])
+    await refreshEvents()
+  }, [user, refreshEvents])
 
   const handleRespond = useCallback(async (
     participantId: string,
@@ -227,28 +268,42 @@ const CalendarPage: React.FC = () => {
     eventTitle?: string,
   ) => {
     await respondToEvent(participantId, response, eventId, eventTitle)
-    await refresh()
-  }, [refresh])
+    await refreshEvents()
+  }, [refreshEvents])
 
   const handleDelete = useCallback(async (eventId: string, eventTitle?: string) => {
     await deleteEvent(eventId, eventTitle)
-    await refresh()
-  }, [refresh])
+    await refreshEvents()
+  }, [refreshEvents])
+
+  // After anything in the detail modal (RSVP, edit, delete): refetch, and let the header badge
+  // recount now rather than on its next 20-second poll.
+  const handleEventChanged = useCallback(async () => {
+    await refreshEvents()
+    dispatchCalendarRead()
+  }, [refreshEvents])
 
   const handleQuickRespond = useCallback(async (
     occurrence: ExpandedOccurrence,
     response: EventResponse,
   ) => {
     if (!user) return
-    await respondToOccurrence(
-      occurrence.event.id,
-      user.id,
-      occurrence.originalStartIso,
-      response,
-      occurrence.event.title,
-    )
-    await refresh()
-  }, [user, refresh])
+    try {
+      await respondToOccurrence(
+        occurrence.event.id,
+        user.id,
+        occurrence.originalStartIso,
+        response,
+        occurrence.event.title,
+      )
+    } catch (e) {
+      console.error('Failed to respond to calendar occurrence', e)
+      toast.error(t('calendar.detail.respond_failed'))
+      return
+    }
+    await refreshEvents()
+    dispatchCalendarRead()
+  }, [user, refreshEvents, toast, t])
 
   const busyDays = useMemo(() => {
     const set = new Set<string>()
@@ -405,12 +460,12 @@ const CalendarPage: React.FC = () => {
         <aside className="space-y-4">
           <MiniMonth anchor={anchor} busyDays={busyDays} onDateClick={jumpTo} />
           <AwaitingResponse
-            occurrences={occurrences}
+            occurrences={sidebarOccurrences}
             onEventClick={setSelected}
             onQuickRespond={handleQuickRespond}
           />
           <NextUp
-            occurrences={occurrences}
+            occurrences={sidebarOccurrences}
             taskOccurrences={prefs.showTasks ? taskOccurrences : []}
             onEventClick={setSelected}
             onTaskClick={handleTaskClick}
@@ -458,12 +513,13 @@ const CalendarPage: React.FC = () => {
         defaultEndTime={newDefaultEnd}
       />
       <EventDetailModal
-        occurrence={selected}
+        occurrence={resolvedSelected}
+        sourceEvent={selectedSourceEvent}
         projects={projects}
         onClose={() => setSelected(null)}
         onRespond={handleRespond}
         onDelete={handleDelete}
-        onChanged={refresh}
+        onChanged={handleEventChanged}
       />
       <DayEventsModal
         date={selectedDay}

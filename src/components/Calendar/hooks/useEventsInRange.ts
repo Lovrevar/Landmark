@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { supabase } from '../../../lib/supabase'
 import { fetchEventsInRange } from '../services/calendarService'
@@ -22,12 +22,16 @@ export interface UseEventsInRangeResult {
   refresh: () => Promise<void>
 }
 
+// Module-level so an omitted filter keeps the same identity between renders; a fresh `[]`
+// default would invalidate the occurrences memo and re-expand every recurrence each render.
+const NO_FILTER: string[] = []
+
 export function useEventsInRange({
   fromIso,
   toIso,
-  activeTypes = [],
+  activeTypes = NO_FILTER,
   activeProjectId = null,
-  activeParticipantIds = [],
+  activeParticipantIds = NO_FILTER,
   search = '',
 }: UseEventsInRangeArgs): UseEventsInRangeResult {
   const { user } = useAuth()
@@ -35,6 +39,11 @@ export function useEventsInRange({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const reqIdRef = useRef(0)
+  // supabase.channel(name) hands back the existing channel when the name is taken, and a
+  // channel can only be subscribed once — so two instances of this hook (the grid and the
+  // calendar sidebar) sharing a name would throw on the second subscribe, and whichever
+  // unmounted first would remove the other's channel. Each instance gets its own suffix.
+  const instanceId = useId().replace(/[^a-zA-Z0-9]/g, '')
 
   const load = useCallback(async () => {
     if (!user) return
@@ -64,7 +73,7 @@ export function useEventsInRange({
     }
 
     const eventsChannel = supabase
-      .channel(`calendar-events-${user.id}`)
+      .channel(`calendar-events-${user.id}-${instanceId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'calendar_events' },
@@ -73,7 +82,7 @@ export function useEventsInRange({
       .subscribe()
 
     const participantsChannel = supabase
-      .channel(`calendar-event-participants-${user.id}`)
+      .channel(`calendar-event-participants-${user.id}-${instanceId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'calendar_event_participants' },
@@ -82,7 +91,7 @@ export function useEventsInRange({
       .subscribe()
 
     const exceptionsChannel = supabase
-      .channel(`calendar-event-exceptions-${user.id}`)
+      .channel(`calendar-event-exceptions-${user.id}-${instanceId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'calendar_event_exceptions' },
@@ -91,7 +100,7 @@ export function useEventsInRange({
       .subscribe()
 
     const occurrenceResponsesChannel = supabase
-      .channel(`calendar-occurrence-responses-${user.id}`)
+      .channel(`calendar-occurrence-responses-${user.id}-${instanceId}`)
       .on(
         'postgres_changes',
         {
@@ -111,7 +120,7 @@ export function useEventsInRange({
       supabase.removeChannel(exceptionsChannel)
       supabase.removeChannel(occurrenceResponsesChannel)
     }
-  }, [user, load])
+  }, [user, load, instanceId])
 
   const occurrences = useMemo(() => {
     const lowerSearch = search.trim().toLowerCase()

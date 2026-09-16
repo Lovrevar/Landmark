@@ -51,10 +51,22 @@ export function useTaskComments(taskId: string | null) {
     }
   }, [user, taskId, draft, load])
 
-  const remove = useCallback(async (commentId: string) => {
-    if (!taskId || !user) return
-    await deleteTaskComment(commentId, user)
-    await load()
+  /** Deletes one comment. Returns false when the delete failed; the caller tells the user. */
+  const remove = useCallback(async (commentId: string): Promise<boolean> => {
+    if (!taskId || !user) return false
+    try {
+      await deleteTaskComment(commentId, user)
+    } catch (e) {
+      console.error('Failed to delete task comment', e)
+      return false
+    }
+    try {
+      await load()
+    } catch (e) {
+      // The delete went through; a failed reload only leaves the list stale until realtime refreshes it.
+      console.error('Failed to reload task comments', e)
+    }
+    return true
   }, [taskId, user, load])
 
   return {

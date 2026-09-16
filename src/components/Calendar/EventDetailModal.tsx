@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   MapPin,
@@ -12,17 +12,30 @@ import {
   Briefcase,
   CircleDot,
   Circle,
+  Edit2,
 } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ConfirmDialog from '../ui/ConfirmDialog'
-import type { EventResponse, EventType } from '../../types/tasks'
+import type { CalendarEvent, EventResponse, EventType, NewEventInput } from '../../types/tasks'
 import type { ExpandedOccurrence } from './utils/recurrence'
 import { useAuth } from '../../contexts/AuthContext'
-import { createException, respondToOccurrence } from './services/calendarService'
+import { useToast } from '../../contexts/ToastContext'
+import {
+  createException,
+  respondToOccurrence,
+  updateEventWithParticipants,
+} from './services/calendarService'
 import type { ProjectOption } from './services/calendarService'
+import NewEventModal from './NewEventModal'
 
 interface Props {
   occurrence: ExpandedOccurrence | null
+  /**
+   * The stored event behind `occurrence`, which is what the edit form loads. An occurrence with
+   * a title override carries a copy of the event under that title, and saving the copy would
+   * rename the whole series. Falls back to `occurrence.event` when not given.
+   */
+  sourceEvent?: CalendarEvent | null
   projects?: ProjectOption[]
   onClose: () => void
   onRespond: (
@@ -32,7 +45,8 @@ interface Props {
     eventTitle?: string,
   ) => Promise<void>
   onDelete: (eventId: string, eventTitle?: string) => Promise<void>
-  onChanged: () => void
+  /** Refetch after a change. Awaited after an edit, so the detail re-opens on fresh data. */
+  onChanged: () => void | Promise<void>
 }
 
 const typeColor: Record<EventType, string> = {
@@ -46,6 +60,7 @@ type DeleteScope = 'single' | 'series'
 
 const EventDetailModal: React.FC<Props> = ({
   occurrence,
+  sourceEvent,
   projects,
   onClose,
   onRespond,
@@ -54,9 +69,11 @@ const EventDetailModal: React.FC<Props> = ({
 }) => {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
+  const toast = useToast()
   const [confirmScope, setConfirmScope] = useState<DeleteScope | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [responding, setResponding] = useState(false)
+  const [editing, setEditing] = useState(false)
   const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
 
   const event = occurrence?.event ?? null
@@ -66,7 +83,24 @@ const EventDetailModal: React.FC<Props> = ({
     return projects.find(p => p.id === event.project_id)?.name ?? null
   }, [event?.project_id, projects])
 
+  // Closing the detail (or the occurrence disappearing) ends any edit in progress.
+  useEffect(() => {
+    if (!occurrence) setEditing(false)
+  }, [occurrence])
+
+  // Swapping between the detail and the edit form flips two Modal scroll locks in one commit,
+  // and whichever Modal's effect runs last decides whether the page behind can scroll. This
+  // effect belongs to the parent of both, so it runs after them and keeps the lock on.
+  const open = !!occurrence
+  useEffect(() => {
+    if (open) document.body.style.overflow = 'hidden'
+    // Only the swap needs correcting; opening and closing are handled by Modal itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing])
+
   if (!occurrence || !event) return null
+
+  const editSource = sourceEvent && sourceEvent.id === event.id ? sourceEvent : event
 
   const me = event.participants?.find(p => p.user_id === user?.id)
   const isCreator = event.created_by === user?.id
@@ -84,6 +118,9 @@ const EventDetailModal: React.FC<Props> = ({
       await respondToOccurrence(event.id, user.id, originalStartIso, response, event.title)
       onChanged()
       onClose()
+    } catch (e) {
+      console.error('Failed to respond to calendar occurrence', e)
+      toast.error(t('calendar.detail.respond_failed'))
     } finally {
       setResponding(false)
     }
@@ -96,6 +133,9 @@ const EventDetailModal: React.FC<Props> = ({
       await onRespond(me.id, response, event.id, event.title)
       onChanged()
       onClose()
+    } catch (e) {
+      console.error('Failed to respond to calendar event', e)
+      toast.error(t('calendar.detail.respond_failed'))
     } finally {
       setResponding(false)
     }
@@ -122,9 +162,19 @@ const EventDetailModal: React.FC<Props> = ({
       setConfirmScope(null)
       onChanged()
       onClose()
+    } catch (e) {
+      console.error('Failed to delete calendar event', e)
+      setConfirmScope(null)
+      toast.error(t('calendar.detail.delete_failed'))
     } finally {
       setDeleting(false)
     }
+  }
+
+  // Errors propagate to the form, which shows them inline and stays open.
+  const saveEdit = async (input: NewEventInput) => {
+    await updateEventWithParticipants(editSource.id, input, editSource)
+    await onChanged()
   }
 
   const reminderLabel = (minutes: number): string => {
@@ -154,7 +204,13 @@ const EventDetailModal: React.FC<Props> = ({
 
   return (
     <>
-      <Modal show={!!occurrence} onClose={onClose} size="md">
+      <NewEventModal
+        show={editing}
+        event={editSource}
+        onSave={saveEdit}
+        onClose={() => setEditing(false)}
+      />
+      <Modal show={!!occurrence && !editing} onClose={onClose} size="md">
         <Modal.Header title={event.title} onClose={onClose} />
         <Modal.Body>
           <div className="flex items-center gap-2 flex-wrap">
@@ -296,7 +352,14 @@ const EventDetailModal: React.FC<Props> = ({
         </Modal.Body>
         <Modal.Footer>
           {isCreator && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              >
+                <Edit2 className="w-4 h-4" /> {t('common.edit')}
+              </button>
               {isRecurring && (
                 <button
                   onClick={() => setConfirmScope('single')}

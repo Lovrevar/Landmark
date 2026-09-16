@@ -8,6 +8,7 @@ import {
   getAttachmentSignedUrl,
   uploadTaskAttachment,
 } from '../services/tasksService'
+import ConfirmDialog from '../../ui/ConfirmDialog'
 import type { TaskActor, TaskAttachment } from '../../../types/tasks'
 
 interface Props {
@@ -43,6 +44,8 @@ const AttachmentList: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
+  const [pendingDelete, setPendingDelete] = useState<TaskAttachment | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -100,10 +103,24 @@ const AttachmentList: React.FC<Props> = ({
     if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files)
   }
 
-  const handleDelete = async (a: TaskAttachment) => {
-    if (disabled) return
-    await deleteTaskAttachment(a.id, actor)
-    onChange()
+  const confirmDelete = async () => {
+    const a = pendingDelete
+    if (!a || disabled) {
+      setPendingDelete(null)
+      return
+    }
+    setDeleting(true)
+    setError(null)
+    try {
+      await deleteTaskAttachment(a.id, actor)
+      onChange()
+    } catch (e) {
+      console.error('Failed to delete task attachment', e)
+      setError(t('tasks.attachments.delete_failed'))
+    } finally {
+      setDeleting(false)
+      setPendingDelete(null)
+    }
   }
 
   const handleOpen = async (a: TaskAttachment) => {
@@ -190,9 +207,10 @@ const AttachmentList: React.FC<Props> = ({
                 {canDelete(a) && !disabled && (
                   <button
                     type="button"
-                    onClick={() => handleDelete(a)}
+                    onClick={() => setPendingDelete(a)}
                     className="text-gray-400 hover:text-red-500"
                     title={t('common.delete')}
+                    aria-label={t('common.delete')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -220,6 +238,17 @@ const AttachmentList: React.FC<Props> = ({
           {t('tasks.attachments.none')}
         </div>
       )}
+
+      <ConfirmDialog
+        show={!!pendingDelete}
+        title={t('tasks.attachments.delete_confirm_title')}
+        message={t('tasks.attachments.delete_confirm_message', { name: pendingDelete?.file_name || '' })}
+        variant="danger"
+        confirmLabel={t('common.delete')}
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }

@@ -29,6 +29,7 @@
     "save_changes": "Save Changes",
     "details": "Details",
     "refresh": "Refresh",
+    "remove": "Remove",
     "required": "Required",
     "no_results": "No results found",
     "loading": "Loading...",
@@ -4367,6 +4368,8 @@
     },
     "modal": {
       "new_title": "New event",
+      "edit_title": "Edit event",
+      "series_timing_readonly": "To change the timing of a repeating event, delete it and create a new one.",
       "title_label": "Title",
       "description_label": "Description",
       "location_label": "Location",
@@ -4424,7 +4427,8 @@
       },
       "create_button": "Create event",
       "saving": "Saving...",
-      "error_generic": "Couldn't create the event. Please try again."
+      "error_generic": "Couldn't create the event. Please try again.",
+      "error_save": "Couldn't save the event. Please try again."
     },
     "detail": {
       "private_badge": "Private",
@@ -4446,7 +4450,9 @@
       "delete_single": "Delete this occurrence",
       "delete_series": "Delete series",
       "delete_single_title": "Delete this occurrence?",
-      "delete_single_message": "Only this occurrence will be removed. Other occurrences remain."
+      "delete_single_message": "Only this occurrence will be removed. Other occurrences remain.",
+      "delete_failed": "Couldn't delete the event. Please try again.",
+      "respond_failed": "Couldn't save your response. Please try again."
     },
     "response": {
       "accepted": "Accepted",
@@ -4536,7 +4542,10 @@
       "uploading": "Uploading...",
       "failed": "Upload failed",
       "none": "No attachments yet",
-      "create_first": "Save the task to add attachments"
+      "create_first": "Save the task to add attachments",
+      "delete_confirm_title": "Delete attachment?",
+      "delete_confirm_message": "The file “{{name}}” will be permanently deleted.",
+      "delete_failed": "Couldn't delete the attachment. Please try again."
     },
     "subtasks": {
       "label": "Subtasks",
@@ -4567,6 +4576,10 @@
       "comment_placeholder": "Write a comment — use @ to mention, Ctrl+Enter to send",
       "send_comment": "Send",
       "delete_comment": "Delete",
+      "delete_comment_confirm_title": "Delete comment?",
+      "delete_comment_confirm_message": "The comment will be permanently deleted.",
+      "delete_comment_failed": "Couldn't delete the comment. Please try again.",
+      "save_failed": "Couldn't save the change. Please try again.",
       "delete_task_confirm_title": "Delete task?",
       "delete_task_confirm_message": "This action cannot be undone."
     }
