@@ -4,7 +4,7 @@ import { useCachedData } from '../../lib/useCachedData'
 import type { Project } from '../../lib/supabase'
 import {
   TrendingUp,
-  DollarSign,
+  Euro,
   Home,
   Users,
   Download,
@@ -20,6 +20,7 @@ import {
 import { generateSalesReportPDF } from './pdf/salesReportPdf'
 import type { ProjectSalesReport, CustomerReport } from './types'
 import { useToast } from '../../contexts/ToastContext'
+import { formatEuro, formatEuroCompact } from '../../utils/formatters'
 
 const SalesReports: React.FC = () => {
   const toast = useToast()
@@ -166,7 +167,7 @@ const SalesReports: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.location')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.project.location}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium text-gray-900 dark:text-white">{format(new Date(projectReport.project.start_date), 'MMM dd, yyyy')}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">${projectReport.project.budget.toLocaleString('hr-HR')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">{formatEuro(projectReport.project.budget)}</span></div>
                 </div>
               </div>
 
@@ -174,8 +175,8 @@ const SalesReports: React.FC = () => {
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('reports.sales.sales_performance')}</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.sales_rate_label')}</span><span className="font-bold text-green-600">{projectReport.sales_rate.toFixed(1)}%</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.total_revenue')}</span><span className="font-bold text-blue-600">${projectReport.total_revenue.toLocaleString('hr-HR')}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.average_price')}</span><span className="font-medium text-gray-900 dark:text-white">${projectReport.average_price.toLocaleString('hr-HR')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.total_revenue')}</span><span className="font-bold text-blue-600">{formatEuro(projectReport.total_revenue)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.average_price')}</span><span className="font-medium text-gray-900 dark:text-white">{formatEuro(projectReport.average_price)}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.units_sold_label')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.sold_units} / {projectReport.total_units}</span></div>
                 </div>
               </div>
@@ -185,7 +186,7 @@ const SalesReports: React.FC = () => {
           <StatGrid columns={4}>
             <StatCard label={t('reports.sales.total_units_stat')} value={projectReport.total_units} icon={Home} color="blue" />
             <StatCard label={t('reports.sales.units_sold_stat')} value={projectReport.sold_units} icon={TrendingUp} color="green" />
-            <StatCard label={t('reports.sales.total_revenue_stat')} value={`$${(projectReport.total_revenue / 1000000).toFixed(1)}M`} icon={DollarSign} color="teal" />
+            <StatCard label={t('reports.sales.total_revenue_stat')} value={formatEuroCompact(projectReport.total_revenue)} icon={Euro} color="teal" />
             <StatCard label={t('reports.sales.sales_rate_stat')} value={`${projectReport.sales_rate.toFixed(1)}%`} icon={Activity} color="orange" />
           </StatGrid>
 
@@ -290,8 +291,8 @@ const SalesReports: React.FC = () => {
           <StatGrid columns={4}>
             <StatCard label={t('reports.sales.total_customers_stat')} value={customerReport.total_customers} icon={Users} color="blue" />
             <StatCard label={t('reports.sales.buyers_stat')} value={customerReport.buyers} icon={TrendingUp} color="green" />
-            <StatCard label={t('reports.sales.total_revenue_stat')} value={`$${(customerReport.total_revenue / 1000000).toFixed(1)}M`} icon={DollarSign} color="teal" />
-            <StatCard label={t('reports.sales.avg_purchase_stat')} value={`$${customerReport.average_purchase.toLocaleString()}`} icon={Activity} color="orange" />
+            <StatCard label={t('reports.sales.total_revenue_stat')} value={formatEuroCompact(customerReport.total_revenue)} icon={Euro} color="teal" />
+            <StatCard label={t('reports.sales.avg_purchase_stat')} value={formatEuro(customerReport.average_purchase)} icon={Activity} color="orange" />
           </StatGrid>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -346,7 +347,7 @@ const SalesReports: React.FC = () => {
                   <li>• {customerReport.total_customers} total customers in database</li>
                   <li>• {customerReport.buyers} successful conversions to buyers</li>
                   <li>• {customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0'}% conversion rate</li>
-                  <li>• ${customerReport.average_purchase.toLocaleString()} average purchase value</li>
+                  <li>• {formatEuro(customerReport.average_purchase)} average purchase value</li>
                 </ul>
               </div>
 

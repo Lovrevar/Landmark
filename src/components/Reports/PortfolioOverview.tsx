@@ -3,7 +3,7 @@ import {
   MapPin,
   Users,
   Building2,
-  DollarSign,
+  Euro,
   TrendingUp,
   TrendingDown,
   FileText,
@@ -66,7 +66,7 @@ export const PortfolioOverview: React.FC<Props> = ({ data, formatCurrency }) => 
           </div>
         </FinanceCard>
 
-        <FinanceCard title={t('reports.portfolio.revenue')} icon={<DollarSign className="w-5 h-5 text-green-600" />}>
+        <FinanceCard title={t('reports.portfolio.revenue')} icon={<Euro className="w-5 h-5 text-green-600" />}>
           <FinanceLine label={t('reports.portfolio.contracted')} value={formatCurrency(portfolio.total_sales_revenue)} />
           <FinanceLine
             label={t('reports.portfolio.collected')}

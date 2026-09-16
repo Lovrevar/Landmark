@@ -6,6 +6,31 @@
 
 Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Retail, Supervision, and Funding into structured reports and portfolio views. All report services are read-only.
 
+## Money formatting
+
+Every money figure in this module — screen and PDF — goes through the shared helpers in
+`src/utils/formatters.ts`. Nothing here formats currency by hand any more.
+
+| Helper | Output | Used for |
+|---|---|---|
+| `formatEuro` | `€1.234,56` | exact cents — unit prices, per-invoice amounts (sales report) |
+| `formatEuroRounded` | `€1.235` | aggregates — totals, balances, contract and budget rollups |
+| `formatEuroCompact` | `€1,2M` / `€45K` / `€9.500` | KPI tiles, summary lines, chart labels |
+
+All three take `number | null | undefined` and render `—` when the value is not a finite number,
+so a missing budget can never read as `€0`. The euro sign comes **first**, matching `docs/CORE.md`;
+the local `Intl` formatters with `style: 'currency'` (which emitted `1.235 €`) are gone.
+
+Two things to know before adding a figure here:
+
+- **`hr-HR` writes its minus as U+2212, which is not in WinAnsi.** jsPDF's built-in fonts are
+  WinAnsi-encoded, and a single U+2212 makes jsPDF re-encode the *whole* string as two-byte
+  characters that then render as mojibake — a negative net cash flow would come out as garbage.
+  `generalReportPdf.ts` and `salesReportPdf.ts` therefore wrap the helpers in a local `winAnsi()`
+  that swaps U+2212 for an ASCII hyphen. `retailReportPdf.ts` needs no such wrapper: it embeds
+  Noto Sans, which has the character. The euro sign itself is fine in WinAnsi (0x80).
+- **Square metres are not money.** `m²` figures keep their own `toLocaleString('hr-HR')`.
+
 ---
 
 ## Types
@@ -70,8 +95,11 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 - `drawHorizontalBarChart(pdf, ...)` — draws a horizontal bar chart
 - `drawProgressBar(pdf, ...)` — draws a progress bar
 - `hexToRgb(hex)` — converts hex colour to RGB tuple
-- `formatValue(value, type)` — formats a value for chart labels
-- **Depends on:** jsPDF
+- Bar, pie and horizontal-bar charts take a `valueFormat` option: `'currency'` (the default, via
+  `formatEuroCompact`) or `'plain'` for the charts whose data points are counts or percentages —
+  invoice status, contract distribution, unit status, profit margin. Without it those rendered a
+  euro sign on a count ("€12" for twelve invoices)
+- **Depends on:** jsPDF, `src/utils/formatters.ts`
 
 ### pdf/generalReportPdf.ts
 - `generateGeneralReportPDF(report)` — generates a 10+ page executive PDF covering: cover page, KPIs, portfolio analytics, sales performance, funding & finance, construction status, accounting overview, TIC costs, bank accounts, contract distribution, cash flow trend, project portfolio, risk assessment, insights & recommendations
@@ -84,6 +112,7 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 
 ### pdf/retailReportPdf.ts
 - `generateRetailReportPdf(data)` — generates a retail portfolio PDF with project table, customer breakdown, and supplier-by-type analysis; loads Noto Sans (Google Fonts) for Croatian character support
+- Its local `fmt` is `formatEuroRounded`, so amounts read `€1.235`, not `1.235 €`
 - **Depends on:** jsPDF, pdfCharts.ts
 
 ---
@@ -106,10 +135,14 @@ Cross-domain reporting with PDF export. Aggregates data from Cashflow, Sales, Re
 - **Uses services:** retailReportService, retailReportPdf
 - **Uses components:** PortfolioOverview, ProjectPerformanceTable, SalesAnalysis, CostAnalysis
 - **Uses Ui:** Tabs, Button
+- The `formatCurrency` prop it hands to all four panels **is** `formatEuroRounded`
+  (`src/utils/formatters.ts`) — it is no longer a local `Intl` formatter, so the ~40 amounts in
+  those panels now read `€1.235` rather than `1.235 €`. Changing this one binding changes all of
+  them; the panels do not format money themselves
 
 ### PortfolioOverview.tsx
 - Retail portfolio KPI cards and finance summary sections (investments, income, profitability, ROI, overdue invoice alerts)
-- Props: `data: RetailReportData`, `formatCurrency`
+- Props: `data: RetailReportData`, `formatCurrency` (`(n: number | null | undefined) => string`, bound to `formatEuroRounded`)
 
 ### ProjectPerformanceTable.tsx
 - Sortable project comparison table (name, land cost, total costs, revenue, profit, ROI) with expandable phase breakdown rows and totals footer

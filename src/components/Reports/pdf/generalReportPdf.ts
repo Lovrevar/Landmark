@@ -9,6 +9,21 @@ import {
 } from './pdfCharts'
 import type { ComprehensiveReport } from '../types'
 import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
+import { formatEuroCompact, formatEuroRounded } from '../../../utils/formatters'
+
+/**
+ * jsPDF's built-in fonts are WinAnsi-encoded, which has no U+2212. `hr-HR` uses U+2212 as its
+ * minus sign, and a single one of them makes jsPDF re-encode the whole string as two-byte
+ * characters that the WinAnsi font then renders as mojibake — a negative net cash flow would come
+ * out as garbage instead of a number. The euro sign itself is fine (WinAnsi 0x80).
+ */
+const winAnsi = (text: string): string => text.replace(/\u2212/g, '-')
+
+/** Whole euros, for the aggregate figures this report is made of. */
+const money = (value: number | null | undefined): string => winAnsi(formatEuroRounded(value))
+
+/** Abbreviated euros (€1,2M / €45K), for the summary lines and KPI boxes. */
+const moneyCompact = (value: number | null | undefined): string => winAnsi(formatEuroCompact(value))
 
 export async function generateGeneralReportPDF(report: ComprehensiveReport): Promise<void> {
   const { jsPDF } = await import('jspdf')
@@ -67,7 +82,7 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.setFontSize(12)
   const summaryStats = [
     `${report.executive_summary.total_projects} Projects`,
-    `€${(report.executive_summary.total_revenue / 1000000).toFixed(1)}M Revenue`,
+    `${moneyCompact(report.executive_summary.total_revenue)} Revenue`,
     `${report.kpis.roi.toFixed(1)}% ROI`
   ]
   text = summaryStats.join('  |  ')
@@ -120,8 +135,8 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
 
   const summaryLines = [
     `• Portfolio: ${report.executive_summary.total_projects} projects (${report.executive_summary.active_projects} active, ${report.executive_summary.completed_projects} completed)`,
-    `• Financial: €${(report.executive_summary.total_revenue / 1000000).toFixed(1)}M revenue, €${(report.executive_summary.total_expenses / 1000000).toFixed(1)}M expenses, €${(report.executive_summary.total_profit / 1000000).toFixed(1)}M profit (${report.executive_summary.profit_margin.toFixed(1)}% margin)`,
-    `• Capital Structure: €${(report.funding_structure.total_equity / 1000000).toFixed(1)}M equity, €${(report.funding_structure.total_debt / 1000000).toFixed(1)}M debt, ${report.funding_structure.debt_equity_ratio.toFixed(2)} D/E ratio`,
+    `• Financial: ${moneyCompact(report.executive_summary.total_revenue)} revenue, ${moneyCompact(report.executive_summary.total_expenses)} expenses, ${moneyCompact(report.executive_summary.total_profit)} profit (${report.executive_summary.profit_margin.toFixed(1)}% margin)`,
+    `• Capital Structure: ${moneyCompact(report.funding_structure.total_equity)} equity, ${moneyCompact(report.funding_structure.total_debt)} debt, ${report.funding_structure.debt_equity_ratio.toFixed(2)} D/E ratio`,
     `• Sales: ${report.sales_performance.units_sold}/${report.sales_performance.total_units} units sold (${report.sales_performance.units_sold > 0 ? ((report.sales_performance.units_sold / report.sales_performance.total_units) * 100).toFixed(1) : '0'}%), ${report.sales_performance.total_sales} transactions`,
     `• Construction: ${report.construction_status.total_contracts} contracts, ${report.construction_status.total_subcontractors} subcontractors, ${report.construction_status.work_logs_7days} work logs recorded`
   ]
@@ -140,9 +155,9 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   yPosition += 10
 
   const kpiData = [
-    ['€' + (report.kpis.portfolio_value / 1000000).toFixed(1) + 'M', 'Portfolio Value'],
-    ['€' + (report.kpis.total_revenue / 1000000).toFixed(1) + 'M', 'Total Revenue'],
-    ['€' + (report.kpis.net_profit / 1000000).toFixed(1) + 'M', 'Net Profit'],
+    [moneyCompact(report.kpis.portfolio_value), 'Portfolio Value'],
+    [moneyCompact(report.kpis.total_revenue), 'Total Revenue'],
+    [moneyCompact(report.kpis.net_profit), 'Net Profit'],
     [report.kpis.roi.toFixed(1) + '%', 'ROI'],
     [report.kpis.sales_rate.toFixed(1) + '%', 'Sales Rate'],
     [report.kpis.debt_equity_ratio.toFixed(2), 'D/E Ratio'],
@@ -206,7 +221,8 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   ]
   drawPieChart(pdf, pageWidth - margin - 30, yPosition + 30, 25, salesChartData, {
     title: 'Units Status',
-    showLegend: true
+    showLegend: true,
+    valueFormat: 'plain'
   })
 
   yPosition += 85
@@ -268,11 +284,11 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.setTextColor(0, 0, 0)
 
   const salesData = [
-    ['Total Units:', report.sales_performance.total_units.toString(), 'Avg Sale Price:', '€' + report.sales_performance.avg_sale_price.toLocaleString()],
+    ['Total Units:', report.sales_performance.total_units.toString(), 'Avg Sale Price:', money(report.sales_performance.avg_sale_price)],
     ['Units Sold:', `${report.sales_performance.units_sold} (${((report.sales_performance.units_sold / report.sales_performance.total_units) * 100).toFixed(1)}%)`, 'Total Sales:', report.sales_performance.total_sales.toString()],
     ['Available:', report.sales_performance.available_units.toString(), 'Buyers:', report.sales_performance.buyers.toString()],
     ['Reserved:', report.sales_performance.reserved_units.toString(), 'Active Leads:', report.sales_performance.active_leads.toString()],
-    ['Total Revenue:', '€' + report.sales_performance.total_revenue.toLocaleString(), 'Conversion Rate:', report.sales_performance.conversion_rate.toFixed(1) + '%']
+    ['Total Revenue:', money(report.sales_performance.total_revenue), 'Conversion Rate:', report.sales_performance.conversion_rate.toFixed(1) + '%']
   ]
 
   salesData.forEach((row, index) => {
@@ -357,11 +373,11 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.setTextColor(0, 0, 0)
 
   const fundingData = [
-    ['Total Equity Invested:', '€' + report.funding_structure.total_equity.toLocaleString(), 'Active Funders:', report.funding_structure.active_investors.toString()],
-    ['Total Debt:', '€' + report.funding_structure.total_debt.toLocaleString(), 'Active Banks:', report.funding_structure.active_banks.toString()],
+    ['Total Equity Invested:', money(report.funding_structure.total_equity), 'Active Funders:', report.funding_structure.active_investors.toString()],
+    ['Total Debt:', money(report.funding_structure.total_debt), 'Active Banks:', report.funding_structure.active_banks.toString()],
     ['Debt-to-Equity Ratio:', report.funding_structure.debt_equity_ratio.toFixed(2), 'Bank Credits:', report.funding_structure.bank_credits.toString()],
-    ['Total Credit Lines:', '€' + report.funding_structure.total_credit_lines.toLocaleString(), 'Avg Interest Rate:', report.funding_structure.avg_interest_rate.toFixed(2) + '%'],
-    ['Available Credit:', '€' + report.funding_structure.available_credit.toLocaleString(), 'Monthly Debt Service:', '€' + report.funding_structure.monthly_debt_service.toLocaleString()]
+    ['Total Credit Lines:', money(report.funding_structure.total_credit_lines), 'Avg Interest Rate:', report.funding_structure.avg_interest_rate.toFixed(2) + '%'],
+    ['Available Credit:', money(report.funding_structure.available_credit), 'Monthly Debt Service:', money(report.funding_structure.monthly_debt_service)]
   ]
 
   fundingData.forEach((row, index) => {
@@ -407,8 +423,8 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     ['Total Contracts:', report.construction_status.total_contracts.toString(), 'Budget Utilization:', report.construction_status.budget_utilization.toFixed(1) + '%'],
     ['Active Contracts:', report.construction_status.active_contracts.toString(), 'Total Subcontractors:', report.construction_status.total_subcontractors.toString()],
     ['Completed Contracts:', report.construction_status.completed_contracts.toString(), 'Total Phases:', report.construction_status.total_phases.toString()],
-    ['Contract Value:', '€' + report.construction_status.contract_value.toLocaleString(), 'Completed Phases:', report.construction_status.completed_phases.toString()],
-    ['Budget Realized:', '€' + report.construction_status.budget_realized.toLocaleString(), 'Work Logs (7 days):', report.construction_status.work_logs_7days.toString()]
+    ['Contract Value:', money(report.construction_status.contract_value), 'Completed Phases:', report.construction_status.completed_phases.toString()],
+    ['Budget Realized:', money(report.construction_status.budget_realized), 'Work Logs (7 days):', report.construction_status.work_logs_7days.toString()]
   ]
 
   constructionData.forEach((row, index) => {
@@ -452,9 +468,9 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
 
   const accountingData = [
     ['Total Invoices:', report.accounting_overview.total_invoices.toString(), 'Paid Invoices:', report.accounting_overview.paid_invoices.toString()],
-    ['Total Invoice Value:', '€' + (report.accounting_overview.total_invoice_value / 1000000).toFixed(2) + 'M', 'Paid Value:', '€' + (report.accounting_overview.paid_value / 1000000).toFixed(2) + 'M'],
+    ['Total Invoice Value:', moneyCompact(report.accounting_overview.total_invoice_value), 'Paid Value:', moneyCompact(report.accounting_overview.paid_value)],
     ['Pending Invoices:', report.accounting_overview.pending_invoices.toString(), 'Overdue Invoices:', report.accounting_overview.overdue_invoices.toString()],
-    ['Pending Value:', '€' + (report.accounting_overview.pending_value / 1000000).toFixed(2) + 'M', 'Overdue Value:', '€' + (report.accounting_overview.overdue_value / 1000000).toFixed(2) + 'M'],
+    ['Pending Value:', moneyCompact(report.accounting_overview.pending_value), 'Overdue Value:', moneyCompact(report.accounting_overview.overdue_value)],
     ['Payment Completion Rate:', report.accounting_overview.payment_completion_rate.toFixed(1) + '%', '', '']
   ]
 
@@ -488,7 +504,8 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   ]
   drawBarChart(pdf, margin, yPosition, pageWidth - 2 * margin, 45, invoiceStatusData, {
     color: '#06b6d4',
-    showValues: true
+    showValues: true,
+    valueFormat: 'plain'
   })
   yPosition += 55
 
@@ -519,7 +536,7 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.setTextColor(0, 0, 0)
 
   const ticData = [
-    ['Planned Investment:', '€' + report.tic_cost_management.total_tic_budget.toLocaleString()],
+    ['Planned Investment:', money(report.tic_cost_management.total_tic_budget)],
     ['Projects with a Plan:', report.tic_cost_management.projects_with_tic.toString()],
     ['Projects without a Plan:', report.tic_cost_management.projects_without_tic.toString()]
   ]
@@ -545,8 +562,8 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   const officeData = [
     ['Office Suppliers:', report.office_expenses.total_office_suppliers.toString()],
     ['Office Invoices:', report.office_expenses.total_office_invoices.toString()],
-    ['Total Spent:', '€' + report.office_expenses.total_office_spent.toLocaleString()],
-    ['Avg Invoice:', '€' + report.office_expenses.avg_office_invoice.toLocaleString()]
+    ['Total Spent:', money(report.office_expenses.total_office_spent)],
+    ['Avg Invoice:', money(report.office_expenses.avg_office_invoice)]
   ]
 
   officeData.forEach((row, index) => {
@@ -572,11 +589,11 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
 
   const creditsData = [
     ['Total Investments:', report.company_credits.total_credits.toString()],
-    ['Investment Value:', '€' + report.company_credits.total_credit_value.toLocaleString()],
-    ['Available:', '€' + report.company_credits.credits_available.toLocaleString()],
-    ['Used:', '€' + report.company_credits.credits_used.toLocaleString()],
+    ['Investment Value:', money(report.company_credits.total_credit_value)],
+    ['Available:', money(report.company_credits.credits_available)],
+    ['Used:', money(report.company_credits.credits_used)],
     ['Cesija Payments:', report.company_credits.cesija_payments.toString()],
-    ['Cesija Value:', '€' + report.company_credits.cesija_value.toLocaleString()]
+    ['Cesija Value:', money(report.company_credits.cesija_value)]
   ]
 
   creditsData.forEach((row, index) => {
@@ -599,7 +616,7 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
 
   const bankData = [
     ['Total Accounts:', report.bank_accounts.total_accounts.toString()],
-    ['Total Balance:', '€' + report.bank_accounts.total_balance.toLocaleString()],
+    ['Total Balance:', money(report.bank_accounts.total_balance)],
     ['Positive Balance:', report.bank_accounts.positive_balance_accounts.toString()],
     ['Negative Balance:', report.bank_accounts.negative_balance_accounts.toString()]
   ]
@@ -629,12 +646,13 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     }))
 
     if (contractData.length <= 6) {
-      drawPieChart(pdf, pageWidth / 2, yPosition + 35, 28, contractData, { showLegend: true })
+      drawPieChart(pdf, pageWidth / 2, yPosition + 35, 28, contractData, { showLegend: true, valueFormat: 'plain' })
       yPosition += 80
     } else {
       drawBarChart(pdf, margin, yPosition, pageWidth - 2 * margin, 45, contractData.map(cd => ({ label: cd.label, value: cd.value })), {
         color: '#2563eb',
-        showValues: true
+        showValues: true,
+        valueFormat: 'plain'
       })
       yPosition += 55
     }
@@ -686,18 +704,18 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     totalNet += month.net
 
     pdf.text(month.month, margin + 5, yPosition + (index * 5))
-    pdf.text('€' + (month.inflow / 1000).toFixed(0) + 'K', margin + 50, yPosition + (index * 5))
-    pdf.text('€' + (month.outflow / 1000).toFixed(0) + 'K', margin + 90, yPosition + (index * 5))
+    pdf.text(moneyCompact(month.inflow), margin + 50, yPosition + (index * 5))
+    pdf.text(moneyCompact(month.outflow), margin + 90, yPosition + (index * 5))
 
     pdf.setTextColor(month.net >= 0 ? 22 : 220, month.net >= 0 ? 163 : 38, month.net >= 0 ? 74 : 38)
-    pdf.text('€' + (month.net / 1000).toFixed(0) + 'K', margin + 130, yPosition + (index * 5))
+    pdf.text(moneyCompact(month.net), margin + 130, yPosition + (index * 5))
     pdf.setTextColor(0, 0, 0)
   })
 
   yPosition += report.cash_flow.length * 5 + 5
   pdf.setFont('helvetica', 'bold')
   pdf.text(`6-Month Totals:`, margin + 5, yPosition)
-  pdf.text(`Inflow: €${(totalInflow / 1000000).toFixed(2)}M | Outflow: €${(totalOutflow / 1000000).toFixed(2)}M | Net: €${(totalNet / 1000000).toFixed(2)}M`, margin + 5, yPosition + 5)
+  pdf.text(`Inflow: ${moneyCompact(totalInflow)} | Outflow: ${moneyCompact(totalOutflow)} | Net: ${moneyCompact(totalNet)}`, margin + 5, yPosition + 5)
   yPosition += 15
 
   // ── Project Portfolio page ────────────────────────────────────────────────
@@ -734,7 +752,8 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     if (projectPerformance.length > 0) {
       drawHorizontalBarChart(pdf, margin + 50, yPosition, pageWidth - 2 * margin - 50, 70, projectPerformance, {
         title: 'Profit Margin (%)',
-        showValues: true
+        showValues: true,
+        valueFormat: 'plain'
       })
       yPosition += 80
     }
@@ -789,8 +808,8 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
       pdf.setFont('helvetica', 'normal')
 
       const projectData = [
-        ['Budget:', project.has_budget ? '€' + (project.budget / 1000000).toFixed(1) + 'M' : 'not set', 'Revenue:', '€' + (project.revenue / 1000000).toFixed(1) + 'M'],
-        ['Expenses:', '€' + (project.expenses / 1000000).toFixed(1) + 'M', 'Profit:', '€' + (project.profit / 1000000).toFixed(1) + 'M'],
+        ['Budget:', project.has_budget ? moneyCompact(project.budget) : 'not set', 'Revenue:', moneyCompact(project.revenue)],
+        ['Expenses:', moneyCompact(project.expenses), 'Profit:', moneyCompact(project.profit)],
         ['Units:', `${project.units_sold}/${project.total_units}`, 'Sales Rate:', `${project.sales_rate.toFixed(1)}%`],
         ['Phases:', `${project.phases_done}/${project.total_phases}`, 'Contracts:', project.contracts.toString()]
       ]
@@ -887,7 +906,7 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     pdf.setFont('helvetica', 'bold')
     pdf.text(`${index + 1}. ${project.name}`, margin + 5, yPosition)
     pdf.setFont('helvetica', 'normal')
-    pdf.text(`Revenue: €${(project.revenue / 1000000).toFixed(1)}M | Sales Rate: ${project.sales_rate.toFixed(1)}%`, margin + 10, yPosition + 5)
+    pdf.text(`Revenue: ${moneyCompact(project.revenue)} | Sales Rate: ${project.sales_rate.toFixed(1)}%`, margin + 10, yPosition + 5)
     yPosition += 10
   })
 

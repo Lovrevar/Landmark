@@ -1,13 +1,12 @@
 import { format } from 'date-fns'
 import { yieldToUI } from '../../../utils/yieldToUI'
+import { formatEuroRounded } from '../../../utils/formatters'
 import type { RetailReportData } from '../retailReportTypes'
 
-const fmt = (n: number) => new Intl.NumberFormat('hr-HR', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0
-}).format(n)
+// Was a local `Intl` formatter with `style: 'currency'`, which puts the symbol last ("1.235 €");
+// the shared helper puts it first ("€1.235") to match the screen. Same rounding: whole euros.
+// The euro sign and the hr-HR minus sign both come from the Noto Sans face loaded below.
+const fmt = formatEuroRounded
 
 async function loadUnicodeFont(pdf: import('jspdf').jsPDF): Promise<void> {
   const toBase64 = (buffer: ArrayBuffer): string => {

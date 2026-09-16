@@ -1,6 +1,16 @@
 import { format } from 'date-fns'
 import { yieldToUI } from '../../../utils/yieldToUI'
+import { formatEuro } from '../../../utils/formatters'
 import type { ProjectSalesReport, CustomerReport } from '../types'
+
+/**
+ * jsPDF's built-in fonts are WinAnsi-encoded, which has no U+2212. `hr-HR` uses U+2212 as its
+ * minus sign, and a single one of them makes jsPDF re-encode the whole string as two-byte
+ * characters that the WinAnsi font then renders as mojibake — a negative amount would come out
+ * as garbage instead of a number. The euro sign itself is fine (WinAnsi 0x80).
+ */
+const money = (value: number | null | undefined): string =>
+  formatEuro(value).replace(/\u2212/g, '-')
 
 export async function generateSalesReportPDF(
   reportType: 'project' | 'customer',
@@ -92,13 +102,13 @@ export async function generateSalesReportPDF(
       ['Location', projectReport.project.location],
       ['Status', projectReport.project.status],
       ['Start Date', format(new Date(projectReport.project.start_date), 'MMMM dd, yyyy')],
-      ['Budget', `$${projectReport.project.budget.toLocaleString('hr-HR')}`],
+      ['Budget', money(projectReport.project.budget)],
       ['Total Units', projectReport.total_units.toString()],
       ['Units Sold', `${projectReport.sold_units} (${projectReport.sales_rate.toFixed(1)}%)`],
       ['Available Units', projectReport.available_units.toString()],
       ['Reserved Units', projectReport.reserved_units.toString()],
-      ['Total Revenue', `$${projectReport.total_revenue.toLocaleString('hr-HR')}`],
-      ['Average Price', `$${projectReport.average_price.toLocaleString('hr-HR')}`]
+      ['Total Revenue', money(projectReport.total_revenue)],
+      ['Average Price', money(projectReport.average_price)]
     ]
 
     overviewData.forEach(([label, value]) => {
@@ -127,7 +137,7 @@ export async function generateSalesReportPDF(
       checkPageBreak(6)
       pdf.text(`${month.month}:`, margin + 5, yPosition)
       pdf.text(`${month.units_sold} units sold`, margin + 40, yPosition)
-      pdf.text(`$${month.revenue.toLocaleString('hr-HR')} revenue`, margin + 80, yPosition)
+      pdf.text(`${money(month.revenue)} revenue`, margin + 80, yPosition)
       yPosition += 6
     })
 
@@ -151,7 +161,7 @@ export async function generateSalesReportPDF(
 
       pdf.text(`Unit ${apt.number} (Floor ${apt.floor}):`, margin + 5, yPosition)
       pdf.text(`${apt.size_m2}m²`, margin + 50, yPosition)
-      pdf.text(`$${apt.price.toLocaleString('hr-HR')}`, margin + 80, yPosition)
+      pdf.text(money(apt.price), margin + 80, yPosition)
 
       pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2])
       pdf.setFont('helvetica', 'bold')
@@ -199,8 +209,8 @@ export async function generateSalesReportPDF(
       ['Buyers', `${customerReport.buyers} (${customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0'}%)`],
       ['Interested Customers', customerReport.interested.toString()],
       ['Leads', customerReport.leads.toString()],
-      ['Total Revenue', `$${customerReport.total_revenue.toLocaleString('hr-HR')}`],
-      ['Average Purchase', `$${customerReport.average_purchase.toLocaleString('hr-HR')}`],
+      ['Total Revenue', money(customerReport.total_revenue)],
+      ['Average Purchase', money(customerReport.average_purchase)],
       ['Conversion Rate', `${customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0'}%`]
     ]
 

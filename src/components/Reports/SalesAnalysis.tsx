@@ -1,5 +1,5 @@
 import React from 'react'
-import { DollarSign, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import { Euro, AlertCircle, CheckCircle, Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Table, EmptyState } from '../ui'
 import type { CustomerReportData, InvoiceSummary } from './retailReportTypes'
@@ -23,7 +23,7 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
-          icon={<DollarSign className="w-5 h-5 text-blue-600" />}
+          icon={<Euro className="w-5 h-5 text-blue-600" />}
           label={t('reports.sales_analysis.contracted')}
           value={formatCurrency(totalAmount)}
           sub={t('reports.sales_analysis.contracts_count', { count: totalContracts })}

@@ -1,4 +1,8 @@
 import { jsPDF } from 'jspdf'
+import { formatEuroCompact } from '../../../utils/formatters'
+
+/** Whether a chart's data points are money (the default) or bare counts and percentages. */
+export type ValueFormat = 'currency' | 'plain'
 
 export const drawBarChart = (
   pdf: jsPDF,
@@ -12,9 +16,10 @@ export const drawBarChart = (
     color?: string
     showValues?: boolean
     maxValue?: number
+    valueFormat?: ValueFormat
   } = {}
 ) => {
-  const { title, color = '#2563eb', showValues = true, maxValue } = options
+  const { title, color = '#2563eb', showValues = true, maxValue, valueFormat = 'currency' } = options
   const barColor = hexToRgb(color)
 
   if (title) {
@@ -53,7 +58,7 @@ export const drawBarChart = (
 
     if (showValues && item.value > 0) {
       pdf.setFontSize(6)
-      const valueText = formatValue(item.value)
+      const valueText = formatValue(item.value, valueFormat)
       const valueWidth = pdf.getTextWidth(valueText)
       pdf.text(valueText, barX + barWidth / 2 - valueWidth / 2, barY - 1)
     }
@@ -68,9 +73,9 @@ export const drawPieChart = (
   centerY: number,
   radius: number,
   data: Array<{ label: string; value: number; color: string }>,
-  options: { title?: string; showLegend?: boolean } = {}
+  options: { title?: string; showLegend?: boolean; valueFormat?: ValueFormat } = {}
 ) => {
-  const { title, showLegend = true } = options
+  const { title, showLegend = true, valueFormat = 'currency' } = options
 
   if (title) {
     pdf.setFontSize(10)
@@ -139,7 +144,7 @@ export const drawPieChart = (
       pdf.setTextColor(0, 0, 0)
       pdf.setFontSize(7)
       pdf.setFont('helvetica', 'normal')
-      pdf.text(`${item.label}: €${formatValue(item.value)}`, centerX - radius + 5, legendY + 2.5)
+      pdf.text(`${item.label}: ${formatValue(item.value, valueFormat)}`, centerX - radius + 5, legendY + 2.5)
       legendY += 5
     })
   }
@@ -230,9 +235,9 @@ export const drawHorizontalBarChart = (
   width: number,
   height: number,
   data: Array<{ label: string; value: number; color?: string }>,
-  options: { title?: string; showValues?: boolean } = {}
+  options: { title?: string; showValues?: boolean; valueFormat?: ValueFormat } = {}
 ) => {
-  const { title, showValues = true } = options
+  const { title, showValues = true, valueFormat = 'currency' } = options
 
   if (title) {
     pdf.setFontSize(10)
@@ -268,7 +273,7 @@ export const drawHorizontalBarChart = (
 
     if (showValues) {
       pdf.setFont('helvetica', 'bold')
-      pdf.text(formatValue(item.value), x + barWidth + 2, barY + barHeight / 2 + 1)
+      pdf.text(formatValue(item.value, valueFormat), x + barWidth + 2, barY + barHeight / 2 + 1)
     }
   })
 
@@ -331,11 +336,23 @@ export const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   }
 }
 
-const formatValue = (value: number): string => {
-  if (value >= 1000000) {
-    return `€${(value / 1000000).toFixed(1)}M`
-  } else if (value >= 1000) {
-    return `€${(value / 1000).toFixed(0)}K`
-  }
-  return `€${value.toFixed(0)}`
-}
+/**
+ * jsPDF's built-in fonts are WinAnsi-encoded, which has no U+2212. `hr-HR` uses U+2212 as its
+ * minus sign, and a single one of them makes jsPDF re-encode the whole string as two-byte
+ * characters that the WinAnsi font then renders as mojibake. The euro sign is fine (WinAnsi 0x80).
+ */
+const winAnsi = (text: string): string => text.replace(/\u2212/g, '-')
+
+/**
+ * How a data point's value is written next to its bar or legend swatch.
+ *
+ * `'currency'` is the default because most of these charts plot money; `'plain'` exists because
+ * some of them plot counts and percentages, which used to come out with a euro sign in front
+ * ("€12" for twelve invoices).
+ */
+const formatValue = (value: number, valueFormat: ValueFormat = 'currency'): string =>
+  winAnsi(
+    valueFormat === 'currency'
+      ? formatEuroCompact(value)
+      : value.toLocaleString('hr-HR', { maximumFractionDigits: 1 })
+  )
