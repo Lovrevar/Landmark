@@ -60,7 +60,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 
 ### 4. App-wide systemic problems
 
-1. [ ] **Money formatting.** `formatEuro` / `formatEuroRounded` exist in `utils/formatters.ts` but are barely used (0 uses in Cashflow, Sales or Retail). Instead there are hundreds of hand-rolled formats:
+1. [~] **Money formatting.** *(Fixed: the shared helpers now cover exact cents, aggregates and compact tiles and are null-safe; every `en-US`, browser-locale, `$`, `€0.0M` and `€`-suffix render is gone. Left: ~255 hand-rolled `toLocaleString('hr-HR')` money renders that show ragged decimals, and 76 DollarSign icons outside Reports/dashboards.)* `formatEuro` / `formatEuroRounded` exist in `utils/formatters.ts` but are barely used (0 uses in Cashflow, Sales or Retail). Instead there are hundreds of hand-rolled formats:
    - `en-US` ("€1,234,567", which reads wrong to Croatians)
    - browser locale
    - `€X.XM`, so €45.000 shows as "€0.0M"
@@ -120,7 +120,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 5. **[index.css:124-134](../src/index.css#L124) vs `InvoiceTable.tsx:110`, `Calendar/index.tsx:278-284`, `Approvals/index.tsx:233`** — Dark mode/specificity · high
    - **Problem:** below 768px, `.responsive-table tbody tr { background }` outranks `bg-red-50` / `dark:bg-red-900/20`, so the overdue tint, the Calendar status tint and the Approvals selection highlight are silently removed. Separately, the sticky actions cell is `bg-white`, which cuts the overdue tint short on desktop.
    - **Fix:** use `:where()` for the card backgrounds, or a data attribute the mobile CSS respects.
-6. **[OfficeSuppliers/index.tsx:156-165](../src/components/Cashflow/OfficeSuppliers/index.tsx#L156) + `services/officeSupplierService.ts:39-41`** — Information · high
+6. **[OfficeSuppliers/index.tsx:156-165](../src/components/Cashflow/OfficeSuppliers/index.tsx#L156) + `services/officeSupplierService.ts:39-41`** — Information · high · `[x]` (gross basis reconciles; net kept as a labelled line)
    - **Problem:** "Ukupno (bez PDV)" is net, while Plaćeno and Preostalo include VAT. Paid can exceed the total, and the figures never add up.
    - **Fix:** show gross totals next to paid and remaining, or label each figure's basis.
 7. **[Approvals/index.tsx:275-278](../src/components/Cashflow/Approvals/index.tsx#L275)** — Information · high
@@ -396,7 +396,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 11. **Dates** — `Sales/Payments/index.tsx:91,95`, `CustomerCard.tsx:75`, `PhaseCard.tsx:268 vs 302`, `ContractFormModal.tsx:202` vs `SalesFormModal.tsx:184` — Formatting · med
     - **Problem:** English months in Sales vs `dd.MM.yyyy` in Retail, both formats in one card, and a mix of date input types.
     - **Fix:** one date formatter and one date input.
-12. **[Retail/Projects/PhaseCard.tsx:106,149](../src/components/Retail/Projects/PhaseCard.tsx#L106)** — Info · med
+12. **[Retail/Projects/PhaseCard.tsx:106,149](../src/components/Retail/Projects/PhaseCard.tsx#L106)** — Info · med · `[x]` (second tile is Preostali budžet; rollup shared with Supervision)
     - **Problem:** "Predviđeni budžet" appears twice, for allocated and for remaining budget.
     - **Fix:** rename the second to "Preostali budžet".
 13. **[Sales/Payments/index.tsx:104](../src/components/Sales/Payments/index.tsx#L104), `Retail/Sales/index.tsx:112,115,119`** — Dark mode/specificity · med
@@ -480,10 +480,10 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 
 ### Top findings
 
-1. **[Reports/SalesReports.tsx:169,177,178,188,293,294,349](../src/components/Reports/SalesReports.tsx#L169) (also `pdf/salesReportPdf.ts:95`)** — Formatting · high
+1. **[Reports/SalesReports.tsx:169,177,178,188,293,294,349](../src/components/Reports/SalesReports.tsx#L169) (also `pdf/salesReportPdf.ts:95`)** — Formatting · high · `[x]` (formatEuro / formatEuroCompact, Euro icons)
    - **Problem:** budget, revenue, average price and average purchase show a `$` sign in an EUR app.
    - **Fix:** `formatEuro`.
-2. **[Funding/Projects/index.tsx:122-126](../src/components/Funding/Projects/index.tsx#L122), `Projects/modals/InvestmentProjectModal.tsx:106-109,198-199`** — Info · high
+2. **[Funding/Projects/index.tsx:122-126](../src/components/Funding/Projects/index.tsx#L122), `Projects/modals/InvestmentProjectModal.tsx:106-109,198-199`** — Info · high · `[x]` (renamed to average interest rate; now weighted over debt only)
    - **Problem:** `expected_roi` is a plain average of loan interest rates (`investmentService.ts:44-46`), shown green as "Očekivani ROI" and described as a "weighted average".
    - **Fix:** rename it to average interest rate; drop "weighted" and the green.
 3. **[dashboards/DirectorDashboard.tsx:145](../src/components/dashboards/DirectorDashboard.tsx#L145)** — UX · high · `[x]`
@@ -498,10 +498,10 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 6. **[dashboards/services/directorService.ts:445-485](../src/components/dashboards/services/directorService.ts#L445) → `sections/DirectorAlertsSection.tsx:45,51`** — i18n · high
    - **Problem:** the General dashboard's alert panel is entirely English and formats with no locale.
    - **Fix:** return keys and params, translate in the section.
-7. **Cashflow dashboard money in `en-US`** — `AccountingVATSection.tsx:26-47`, `AccountingCashFlowSection.tsx:38-106`, `AccountingBudgetSection.tsx:34-48`, `AccountingMonthlyTrendsSection.tsx:39-55` — Formatting · high
+7. **Cashflow dashboard money in `en-US`** — `AccountingVATSection.tsx:26-47`, `AccountingCashFlowSection.tsx:38-106`, `AccountingBudgetSection.tsx:34-48`, `AccountingMonthlyTrendsSection.tsx:39-55` — Formatting · high · `[x]` (all 18 sites on the shared helpers)
    - **Problem:** "€1,234,567" (en-US), while the same dashboard uses `hr-HR` elsewhere, and decimals vary.
    - **Fix:** `formatEuroRounded` / `formatEuro` only.
-8. **[AccountingCashFlowSection.tsx:98,106](../src/components/dashboards/sections/AccountingCashFlowSection.tsx#L98), `AccountingCompaniesSection.tsx:53`** — Colour-only · high
+8. **[AccountingCashFlowSection.tsx:98,106](../src/components/dashboards/sections/AccountingCashFlowSection.tsx#L98), `AccountingCompaniesSection.tsx:53`** — Colour-only · high · `[x]` (sign shown, not colour alone)
    - **Problem:** `Math.abs` removes the sign, so a negative balance reads as positive with only colour showing it.
    - **Fix:** show the sign or a "deficit" label as text.
 9. **[Funding/Investors/services/creditService.ts:66](../src/components/Funding/Investors/services/creditService.ts#L66) + `Funding/Investments/index.tsx:239`** — UX · high · `[x]`
