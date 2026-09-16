@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { daysFromToday } from '../../../utils/dateOnly'
+import { formatEuroCompact } from '../../../utils/formatters'
 import type { Project, Company, Bank, BankCredit, FinancialSummary, RecentActivity } from '../../../types/investment'
 
 export interface InvestmentDashboardData {
@@ -75,7 +76,7 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
         id: credit.id,
         type: 'credit',
         title: 'Credit facility approved',
-        description: `${credit.company?.name || 'Company'} - €${(Number(credit.amount) / 1000000).toFixed(1)}M ${credit.credit_type.replace(/_/g, ' ')}${credit.project ? ` for ${credit.project.name}` : ''}`,
+        description: `${credit.company?.name || 'Company'} - ${formatEuroCompact(Number(credit.amount))} ${credit.credit_type.replace(/_/g, ' ')}${credit.project ? ` for ${credit.project.name}` : ''}`,
         date: credit.start_date,
         amount: Number(credit.amount)
       })

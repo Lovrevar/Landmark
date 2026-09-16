@@ -4,6 +4,7 @@ import { StatGrid } from '../../ui'
 import StatCard from '../../ui/StatCard'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
+import { formatEuroRounded } from '../../../utils/formatters'
 import type { CashFlowStats, MonthlyBudget } from '../types/accountingDashboardTypes'
 
 interface Props {
@@ -31,21 +32,21 @@ const AccountingBudgetSection: React.FC<Props> = ({ monthlyBudget, cashFlowStats
       <StatGrid columns={4} className="gap-6">
         <StatCard
           label={t('dashboards.accounting.planned_budget')}
-          value={`€${budgetAmount.toLocaleString('en-US')}`}
+          value={formatEuroRounded(budgetAmount)}
           subtitle={t('dashboards.accounting.max_costs')}
           color="white"
           size="md"
         />
         <StatCard
           label={t('dashboards.accounting.current_spent')}
-          value={`€${cashFlowStats.currentMonthOutgoing.toLocaleString('en-US')}`}
+          value={formatEuroRounded(cashFlowStats.currentMonthOutgoing)}
           subtitle={t('dashboards.accounting.monthly_costs')}
           color="white"
           size="md"
         />
         <StatCard
           label={remaining >= 0 ? t('dashboards.accounting.budget_remaining') : t('dashboards.accounting.budget_overage')}
-          value={`€${Math.abs(remaining).toLocaleString('en-US')}`}
+          value={formatEuroRounded(Math.abs(remaining))}
           subtitle={remaining >= 0 ? t('dashboards.accounting.still_can_spend') : t('dashboards.accounting.over_limit')}
           color="white"
           size="md"

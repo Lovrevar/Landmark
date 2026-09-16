@@ -3,8 +3,9 @@ import { LoadingSpinner } from '../ui'
 import { useTranslation } from 'react-i18next'
 import { useCachedData } from '../../lib/useCachedData'
 import StatCard from '../ui/StatCard'
-import { BarChart3, FolderOpen, Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react'
+import { BarChart3, FolderOpen, Users, Euro, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
+import { formatEuro, NO_VALUE } from '../../utils/formatters'
 import type { DashboardStats, OverdueInvoice } from './types/retailDashboardTypes'
 import { fetchRetailDashboardData } from './services/retailDashboardService'
 import DashboardError from './DashboardError'
@@ -27,7 +28,7 @@ const RetailDashboard: React.FC = () => {
   const stats: DashboardStats = data?.stats ?? defaultStats
   const overdueInvoices: OverdueInvoice[] = data?.overdueInvoices ?? []
 
-  const fmt = (n: number) => `€${n.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const fmt = formatEuro
 
   if (loading && !data) {
     return <LoadingSpinner size="lg" message={t('dashboards.retail.loading')} />
@@ -65,7 +66,7 @@ const RetailDashboard: React.FC = () => {
           label={t('dashboards.retail.invested')}
           value={fmt(stats.total_invested)}
           subtitle={t('dashboards.retail.invested_sub')}
-          icon={DollarSign}
+          icon={Euro}
           color="orange"
           size="lg"
         />
@@ -83,7 +84,7 @@ const RetailDashboard: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.retail.collection')}</h3>
-            <DollarSign className="w-6 h-6 text-green-600" />
+            <Euro className="w-6 h-6 text-green-600" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -133,19 +134,19 @@ const RetailDashboard: React.FC = () => {
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.cost_per_project')}</span>
               <span className="font-semibold text-gray-900 dark:text-white">
-                {stats.total_projects > 0 ? fmt(stats.total_costs / stats.total_projects) : '€0'}
+                {stats.total_projects > 0 ? fmt(stats.total_costs / stats.total_projects) : NO_VALUE}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.revenue_per_project')}</span>
               <span className="font-semibold text-gray-900 dark:text-white">
-                {stats.total_projects > 0 ? fmt(stats.total_revenue / stats.total_projects) : '€0'}
+                {stats.total_projects > 0 ? fmt(stats.total_revenue / stats.total_projects) : NO_VALUE}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.per_customer')}</span>
               <span className="font-semibold text-gray-900 dark:text-white">
-                {stats.total_customers > 0 ? fmt(stats.total_revenue / stats.total_customers) : '€0'}
+                {stats.total_customers > 0 ? fmt(stats.total_revenue / stats.total_customers) : NO_VALUE}
               </span>
             </div>
           </div>

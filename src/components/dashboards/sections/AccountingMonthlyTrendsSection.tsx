@@ -1,6 +1,7 @@
 import React from 'react'
 import { Calendar } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { formatEuroRounded } from '../../../utils/formatters'
 import type { MonthlyData } from '../types/accountingDashboardTypes'
 
 interface Props {
@@ -36,7 +37,7 @@ const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
                       style={{ width: `${Math.min((data.incoming / maxVal) * 100, 100)}%` }}
                     >
                       <span className="text-xs font-semibold text-white">
-                        €{data.incoming.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                        {formatEuroRounded(data.incoming)}
                       </span>
                     </div>
                   </div>
@@ -46,13 +47,13 @@ const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
                       style={{ width: `${Math.min((data.outgoing / maxVal) * 100, 100)}%` }}
                     >
                       <span className="text-xs font-semibold text-white">
-                        €{data.outgoing.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                        {formatEuroRounded(data.outgoing)}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className={`w-32 text-right text-sm font-semibold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {net >= 0 ? '+' : '-'}€{Math.abs(net).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  {net >= 0 ? '+' : ''}{formatEuroRounded(net)}
                 </div>
               </div>
             )

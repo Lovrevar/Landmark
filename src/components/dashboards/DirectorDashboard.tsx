@@ -18,6 +18,7 @@ import {
   Calendar
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { formatEuroCompact } from '../../utils/formatters'
 import type { ProjectStats, FinancialMetrics, SalesMetrics, ConstructionMetrics, FundingMetrics, Alert } from './types/directorTypes'
 import * as directorService from './services/directorService'
 import DashboardError from './DashboardError'
@@ -97,12 +98,12 @@ const DirectorDashboard: React.FC = () => {
           <StatCard label={t('dashboards.director.sales_rate')} value={`${salesMetrics.sales_rate.toFixed(1)}%`} icon={Percent} color="teal" size="lg" />
         </div>
         <StatGrid columns={3}>
-          <StatCard label={t('dashboards.director.total_sales_revenue')} value={`€${(salesMetrics.total_sales_revenue / 1000000).toFixed(2)}M`} color="gray" size="md" />
-          <StatCard label={t('dashboards.director.avg_price_per_unit')} value={`€${(salesMetrics.avg_price_per_unit / 1000).toFixed(0)}K`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_sales_revenue')} value={formatEuroCompact(salesMetrics.total_sales_revenue)} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.avg_price_per_unit')} value={formatEuroCompact(salesMetrics.avg_price_per_unit)} color="gray" size="md" />
           <StatCard
             label={t('dashboards.director.monthly_sales', { month: format(new Date(), 'MMM') })}
             value={`${salesMetrics.monthly_sales_count} ${t('dashboards.director.units')}`}
-            subtitle={`€${(salesMetrics.monthly_sales_revenue / 1000).toFixed(0)}K revenue`}
+            subtitle={`${formatEuroCompact(salesMetrics.monthly_sales_revenue)} revenue`}
             color="gray"
             size="md"
           />
@@ -130,9 +131,9 @@ const DirectorDashboard: React.FC = () => {
           <StatCard label={t('dashboards.director.critical_deadlines')} value={constructionMetrics.critical_deadlines} subtitle={t('dashboards.director.within_7_days')} color="orange" size="lg" />
         </div>
         <StatGrid columns={3}>
-          <StatCard label={t('dashboards.director.total_contract_value')} value={`€${(constructionMetrics.total_contract_value / 1000000).toFixed(2)}M`} color="gray" size="md" />
-          <StatCard label={t('dashboards.director.total_paid')} value={`€${(constructionMetrics.total_paid / 1000000).toFixed(2)}M`} color="gray" size="md" />
-          <StatCard label={t('dashboards.director.pending_payments')} value={`€${(constructionMetrics.pending_payments / 1000000).toFixed(2)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_contract_value')} value={formatEuroCompact(constructionMetrics.total_contract_value)} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_paid')} value={formatEuroCompact(constructionMetrics.total_paid)} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.pending_payments')} value={formatEuroCompact(constructionMetrics.pending_payments)} color="gray" size="md" />
         </StatGrid>
       </div>
 
@@ -151,10 +152,10 @@ const DirectorDashboard: React.FC = () => {
           <StatCard label={t('dashboards.director.upcoming_maturities')} value={fundingMetrics.upcoming_maturities} icon={Calendar} color="orange" size="lg" />
         </div>
         <StatGrid columns={4}>
-          <StatCard label={t('dashboards.director.total_credit_facilities')} value={`€${(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_credit_facilities')} value={formatEuroCompact(fundingMetrics.total_bank_credit)} color="gray" size="md" />
           <StatCard label={t('dashboards.director.avg_interest_rate')} value={`${fundingMetrics.avg_interest_rate.toFixed(2)}%`} color="gray" size="md" />
-          <StatCard label={t('dashboards.director.outstanding_debt')} value={`€${(fundingMetrics.outstanding_debt / 1000000).toFixed(1)}M`} color="gray" size="md" />
-          <StatCard label={t('dashboards.director.monthly_debt_service')} value={`€${(fundingMetrics.monthly_debt_service / 1000).toFixed(0)}K`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.outstanding_debt')} value={formatEuroCompact(fundingMetrics.outstanding_debt)} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.monthly_debt_service')} value={formatEuroCompact(fundingMetrics.monthly_debt_service)} color="gray" size="md" />
         </StatGrid>
       </div>
 

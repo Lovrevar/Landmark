@@ -1,6 +1,7 @@
 import React from 'react'
 import { Building2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { formatEuro, formatEuropean } from '../../../utils/formatters'
 import type { TopCompany } from '../types/accountingDashboardTypes'
 
 interface Props {
@@ -50,10 +51,10 @@ const AccountingCompaniesSection: React.FC<Props> = ({ topCompanies }) => {
                 </div>
                 <div className="text-right">
                   <p className={`font-bold ${company.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{Math.abs(company.netBalance).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatEuro(company.netBalance)}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {t('dashboards.accounting.in_out_label', { incoming: company.totalIncoming.toLocaleString('hr-HR'), outgoing: company.totalOutgoing.toLocaleString('hr-HR') })}
+                    {t('dashboards.accounting.in_out_label', { incoming: formatEuropean(company.totalIncoming), outgoing: formatEuropean(company.totalOutgoing) })}
                   </p>
                 </div>
               </div>

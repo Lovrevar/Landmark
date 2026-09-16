@@ -4,6 +4,7 @@ import { Building2 } from 'lucide-react'
 import { Badge } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import { useTranslation } from 'react-i18next'
+import { formatEuroCompact } from '../../../utils/formatters'
 import type { ProjectStats } from '../types/directorTypes'
 
 interface Props {
@@ -72,13 +73,13 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                     </Badge>
                   </td>
                   <td data-label={t('dashboards.director.budget_col')} className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                    €{(project.budget / 1000000).toFixed(2)}M
+                    {formatEuroCompact(project.budget)}
                   </td>
                   <td data-label={t('dashboards.director.expenses_col')} className="px-6 py-4 text-sm font-medium text-red-600">
-                    €{(project.total_expenses / 1000000).toFixed(2)}M
+                    {formatEuroCompact(project.total_expenses)}
                   </td>
                   <td data-label={t('dashboards.director.revenue_col')} className="px-6 py-4 text-sm font-medium text-green-600">
-                    €{(project.apartment_sales / 1000000).toFixed(2)}M
+                    {formatEuroCompact(project.apartment_sales)}
                   </td>
                   <td data-label={t('dashboards.director.profit_margin_col')} className="px-6 py-4">
                     <span className={`inline-flex items-center text-sm font-semibold ${

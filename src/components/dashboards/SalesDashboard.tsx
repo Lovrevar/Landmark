@@ -5,7 +5,7 @@ import { useCachedData } from '../../lib/useCachedData'
 import StatCard from '../ui/StatCard'
 import {
   Home,
-  DollarSign,
+  Euro,
   TrendingUp,
   Users,
   Building2,
@@ -15,6 +15,7 @@ import {
   BarChart3
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { formatEuroCompact } from '../../utils/formatters'
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from './types/salesDashboardTypes'
 import * as salesService from './services/salesDashboardService'
 import DashboardError from './DashboardError'
@@ -55,9 +56,9 @@ const SalesDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           label={t('dashboards.sales.total_revenue')}
-          value={`€${(stats.totalRevenue / 1000000).toFixed(2)}M`}
+          value={formatEuroCompact(stats.totalRevenue)}
           subtitle={`${stats.soldUnits} ${t('dashboards.sales.units_sold')}`}
-          icon={DollarSign}
+          icon={Euro}
           color="green"
           size="lg"
         />
@@ -71,7 +72,7 @@ const SalesDashboard: React.FC = () => {
         />
         <StatCard
           label={t('dashboards.sales.avg_sale_price')}
-          value={`€${(stats.avgSalePrice / 1000).toFixed(0)}K`}
+          value={formatEuroCompact(stats.avgSalePrice)}
           subtitle={t('dashboards.sales.per_unit')}
           icon={Home}
           color="teal"
@@ -91,7 +92,7 @@ const SalesDashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.sales.monthly_target')}</h2>
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            €{(stats.monthlyRevenue / 1000000).toFixed(2)}M / €{(stats.monthlyTarget / 1000000).toFixed(1)}M
+            {formatEuroCompact(stats.monthlyRevenue)} / {formatEuroCompact(stats.monthlyTarget)}
           </span>
         </div>
         <div className="relative">
@@ -119,7 +120,7 @@ const SalesDashboard: React.FC = () => {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-600 dark:text-gray-400">{trend.month}</span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {trend.sales_count} sales - €{(trend.revenue / 1000).toFixed(0)}K
+                    {trend.sales_count} sales - {formatEuroCompact(trend.revenue)}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
@@ -205,7 +206,7 @@ const SalesDashboard: React.FC = () => {
                     </div>
                   </td>
                   <td data-label={t('common.amount')} className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                    €{(project.total_revenue / 1000000).toFixed(2)}M
+                    {formatEuroCompact(project.total_revenue)}
                   </td>
                 </tr>
               ))}
@@ -217,7 +218,7 @@ const SalesDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center mb-6">
-            <DollarSign className="w-5 h-5 text-green-600 mr-2" />
+            <Euro className="w-5 h-5 text-green-600 mr-2" />
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.sales.payment_methods')}</h2>
           </div>
           <div className="space-y-3">
@@ -257,7 +258,7 @@ const SalesDashboard: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-right ml-4">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">€{(sale.sale_price / 1000).toFixed(0)}K</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{formatEuroCompact(sale.sale_price)}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(sale.sale_date), 'MMM dd')}</p>
                 </div>
               </div>

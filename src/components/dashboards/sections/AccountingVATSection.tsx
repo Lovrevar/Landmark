@@ -3,6 +3,7 @@ import { PieChart } from 'lucide-react'
 import { StatGrid } from '../../ui'
 import StatCard from '../../ui/StatCard'
 import { useTranslation } from 'react-i18next'
+import { formatEuroRounded } from '../../../utils/formatters'
 import type { VATStats } from '../types/accountingDashboardTypes'
 
 interface Props {
@@ -23,28 +24,28 @@ const AccountingVATSection: React.FC<Props> = ({ vatStats }) => {
       <StatGrid columns={4} className="gap-6">
         <StatCard
           label={t('dashboards.accounting.vat_collected', { year })}
-          value={`€${vatStats.totalVATCollected.toLocaleString('en-US')}`}
-          subtitle={`${t('dashboards.accounting.this_month')}: €${vatStats.currentMonthVATCollected.toLocaleString('en-US')}`}
+          value={formatEuroRounded(vatStats.totalVATCollected)}
+          subtitle={`${t('dashboards.accounting.this_month')}: ${formatEuroRounded(vatStats.currentMonthVATCollected)}`}
           color="white"
           size="md"
         />
         <StatCard
           label={t('dashboards.accounting.vat_paid', { year })}
-          value={`€${vatStats.totalVATPaid.toLocaleString('en-US')}`}
-          subtitle={`${t('dashboards.accounting.this_month')}: €${vatStats.currentMonthVATPaid.toLocaleString('en-US')}`}
+          value={formatEuroRounded(vatStats.totalVATPaid)}
+          subtitle={`${t('dashboards.accounting.this_month')}: ${formatEuroRounded(vatStats.currentMonthVATPaid)}`}
           color="white"
           size="md"
         />
         <StatCard
           label={t('dashboards.accounting.net_vat_position')}
-          value={`€${Math.abs(vatStats.netVAT).toLocaleString('en-US')}`}
+          value={formatEuroRounded(Math.abs(vatStats.netVAT))}
           subtitle={vatStats.netVAT >= 0 ? t('dashboards.accounting.to_pay_tax') : t('dashboards.accounting.to_receive_tax')}
           color="white"
           size="md"
         />
         <StatCard
           label={t('dashboards.accounting.current_month_net_vat')}
-          value={`€${Math.abs(currentMonthNet).toLocaleString('en-US')}`}
+          value={formatEuroRounded(Math.abs(currentMonthNet))}
           subtitle={currentMonthNet >= 0 ? t('dashboards.accounting.to_pay') : t('dashboards.accounting.to_receive')}
           color="white"
           size="md"

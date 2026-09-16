@@ -1,6 +1,7 @@
 import { supabase, type ProjectCategory } from '../../../lib/supabase'
 import { startOfMonth } from 'date-fns'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
+import { formatEuro } from '../../../utils/formatters'
 import type {
   ProjectStats,
   FinancialMetrics,
@@ -464,7 +465,7 @@ function deriveAlerts(
       alerts.push({
         type: 'warning',
         title: 'Credit Maturity',
-        message: `${label} of €${Number(credit.amount || 0).toLocaleString()} matures in ${daysUntil} days`,
+        message: `${label} of ${formatEuro(Number(credit.amount || 0))} matures in ${daysUntil} days`,
         date: credit.maturity_date
       })
     }

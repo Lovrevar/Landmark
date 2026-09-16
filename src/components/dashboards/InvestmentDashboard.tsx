@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { daysFromToday, isValidDate } from '../../utils/dateOnly'
+import { formatEuroCompact } from '../../utils/formatters'
 import { generateInvestmentReportPDF } from './investmentReportPdf'
 import type { Company, Bank, BankCredit, FinancialSummary, RecentActivity } from '../../types/investment'
 import * as investmentService from './services/investmentDashboardService'
@@ -83,15 +84,15 @@ const InvestmentDashboard: React.FC = () => {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.total_investment_lines')}</span>
-              <span className="font-medium dark:text-gray-200">€{(financialSummary.total_credit_lines / 1000000).toFixed(1)}M</span>
+              <span className="font-medium dark:text-gray-200">{formatEuroCompact(financialSummary.total_credit_lines)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.used_amount')}</span>
-              <span className="font-medium text-blue-600">€{(financialSummary.total_used_credit / 1000000).toFixed(1)}M</span>
+              <span className="font-medium text-blue-600">{formatEuroCompact(financialSummary.total_used_credit)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.repaid_amount')}</span>
-              <span className="font-medium text-green-600">€{(financialSummary.total_repaid_credit / 1000000).toFixed(1)}M</span>
+              <span className="font-medium text-green-600">{formatEuroCompact(financialSummary.total_repaid_credit)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.avg_interest_rate')}</span>
