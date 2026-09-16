@@ -32,6 +32,8 @@ These are bugs rather than design issues: buttons that do nothing, data silently
 Found alongside section 1 (not a UI issue):
 
 - [~] **`get_filtered_invoices` bypassed invoice RLS.** It is SECURITY DEFINER with no role check, so any authenticated user could list every invoice. It now requires Director/Accounting, and EXECUTE is revoked on five unused SECURITY DEFINER finance functions. Waits on migration `20260916100000_lock_down_finance_definer_functions.sql` being applied. — see [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md)
+- [~] **Editing a payment left the old bank account and credit allocation stale.** The triggers handled INSERT and DELETE only. Waits on migration `20260917100000_payment_update_balance_triggers.sql` being applied.
+- [x] **The shared Excel number parser corrupted decimals.** `parseNumber` stripped every dot, so a numeric cell of 12.5 imported as 125 (apartments, garages and the TIC import). Numeric cells now pass through unchanged. — [excelParsers.ts](../src/utils/excelParsers.ts)
 
 ### 2. Same kind of bug as the dark-mode stripe (a stronger rule silently overrides a colour)
 
@@ -109,7 +111,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 2. **`useInvoices.ts:105`, `DebtStatus/hooks/useDebtStatus.ts:34`, `Approvals/hooks/useApprovals.ts:56`, `Loans/hooks/useLoans.ts:42`** — States · high
    - **Problem:** load errors only go to the console, so a failure shows the normal empty state. Debt Status reads "no debt" and Approvals reads "Svi odobreni računi su obrađeni i skriveni", which is false financial information.
    - **Fix:** an error state with a Retry button, separate from the empty state.
-3. **[InvoiceFilters.tsx:57-62](../src/components/Cashflow/Invoices/InvoiceFilters.tsx#L57) + `useInvoices.ts:42-44`** — Terminology/UX · high
+3. **[InvoiceFilters.tsx:57-62](../src/components/Cashflow/Invoices/InvoiceFilters.tsx#L57) + `useInvoices.ts:42-44`** — Terminology/UX · high · `[x]` (categories now follow the direction toggle)
    - **Problem:** the type dropdown always offers "ULAZNI (DOB/URED/INV/BANKA)" and "IZLAZNI (PROD)", whatever the Ulazni/Izlazni toggle says. With Izlazni selected, "ULAZNI (DOB)" actually filters OUTGOING_SUPPLIER, and impossible combinations return an empty table. The company filter says "Svi dobavljači" but lists your own companies.
    - **Fix:** derive the options from the selected direction and rename the company filter to "Sve firme".
 4. **[Invoices/index.tsx:129](../src/components/Cashflow/Invoices/index.tsx#L129)** — UX · high · `[~]` (needs the migration applied)
@@ -127,7 +129,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 8. **[AccountingPaymentFormModal.tsx:88-108](../src/components/Cashflow/Payments/forms/AccountingPaymentFormModal.tsx#L88), `components/InvoiceEntityFields.tsx:78,160,175`, `Suppliers/forms/LinkSupplierToProjectModal.tsx:154`** — Library/UX · high
    - **Problem:** the invoice picker is a native select listing every open invoice as one long string, with no search. The supplier and customer pickers are the same. `SearchableSelect` is used nowhere in Cashflow.
    - **Fix:** use `SearchableSelect` with a sublabel.
-9. **`Payments/forms/PaymentFormModal.tsx` vs `AccountingPaymentFormModal.tsx`** — Consistency · med-high
+9. **`Payments/forms/PaymentFormModal.tsx` vs `AccountingPaymentFormModal.tsx`** — Consistency · med-high · `[x]` (aligned: shared validator/payload, CurrencyInput, summary + partial alert)
    - **Problem:** two different "record payment" dialogs:
 
      | | From the invoice row | From the Payments page |
@@ -141,7 +143,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 10. **[PaymentTable.tsx:95](../src/components/Cashflow/Payments/PaymentTable.tsx#L95) vs `:75-80`; `Payments/index.tsx:103`** — Colour/Info · med
     - **Problem:** amounts are always green, even on red "RASHOD" rows. The 7 stat cards cover all payments while the table and its total follow the filters. The VAT cards format in the browser's locale.
     - **Fix:** colour amounts by direction, compute stats from the filtered set, and use `StatGrid`.
-11. **`AccountingPaymentFormModal.tsx:115-128` + `:294-302` (same in `PaymentFormModal.tsx`)** — UX · med
+11. **`AccountingPaymentFormModal.tsx:115-128` + `:294-302` (same in `PaymentFormModal.tsx`)** — UX · med · `[x]` (method limited by source; Kompenzacija shows "—")
     - **Problem:** users pick both "Izvor plaćanja" and "Način plaćanja", and contradictory pairs such as Gotovina + Virman are accepted.
     - **Fix:** derive one from the other, or constrain the options.
 12. **[Banks/index.tsx:312,318,325](../src/components/Cashflow/Banks/index.tsx#L312)** — Formatting/Colour · med
@@ -290,13 +292,13 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 16. **[ContractCard.tsx:48-79,132-190](../src/components/Supervision/SiteManagement/ContractCard.tsx#L48)** — Info/UX · med
     - **Problem:** six buttons per card (three solid blue primaries, an unlabelled amber icon, a solid red Delete), and payment status shown twice.
     - **Fix:** one primary action, the rest in an overflow menu; show the badge or the tint, not both.
-17. **[SubcontractorBasicFormModal.tsx:212-217](../src/components/Supervision/Subcontractors/forms/SubcontractorBasicFormModal.tsx#L212) + `Subcontractors/index.tsx:280`** — UX · med
+17. **[SubcontractorBasicFormModal.tsx:212-217](../src/components/Supervision/Subcontractors/forms/SubcontractorBasicFormModal.tsx#L212) + `Subcontractors/index.tsx:280`** — UX · med · `[x]` (reset keyed on visible/editingId)
     - **Problem:** `initialData` is a new object on every render, so a failed-save error toast re-renders the parent and wipes the user's input.
     - **Fix:** memoize `initialData`, or reset only when `visible` flips.
-18. **[PhaseSetupModal.tsx:88-100](../src/components/Supervision/SiteManagement/modals/PhaseSetupModal.tsx#L88) + `services/phaseService.ts:103-127`** — i18n/UX · med
+18. **[PhaseSetupModal.tsx:88-100](../src/components/Supervision/SiteManagement/modals/PhaseSetupModal.tsx#L88) + `services/phaseService.ts:103-127`** — i18n/UX · med · `[x]` (confirms removals; translated dependant error)
     - **Problem:** lowering the phase count silently deletes trailing phases on save. The detailed service error is replaced by a generic English toast. The subtitle mentions a budget that now comes from TIC.
     - **Fix:** per-row remove with ConfirmDialog; surface the service message.
-19. **[ManageCostClassificationsModal.tsx:106-121](../src/components/Supervision/SiteManagement/modals/ManageCostClassificationsModal.tsx#L106)** — i18n/A11y/States · med
+19. **[ManageCostClassificationsModal.tsx:106-121](../src/components/Supervision/SiteManagement/modals/ManageCostClassificationsModal.tsx#L106)** — i18n/A11y/States · med · `[x]` (ConfirmDialog, labelled sort input, real error handling)
     - **Problem:** delete fires with no confirmation from an untitled icon. The sort-order input is unlabelled and saves on blur with no feedback.
     - **Fix:** ConfirmDialog, a label, save feedback.
 20. **[PaymentHistoryModal.tsx:84-86,159-161,208-211](../src/components/Supervision/SiteManagement/modals/PaymentHistoryModal.tsx#L84)** — Colour/States · med
@@ -308,7 +310,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 22. **[SubcontractorFormModal.tsx:153,184-199,250-259,364](../src/components/Supervision/SiteManagement/forms/SubcontractorFormModal.tsx#L153)** — States/i18n/Library · med
     - **Problem:** Add is silently disabled when the total exceeds a budget derived from the stale `budget_used`. The has-contract flag is a bare checkbox inside a permanent yellow Alert, and new/existing is a pair of raw radios.
     - **Fix:** show the reason inline; `ToggleSwitch` + `SegmentedControl`.
-23. **[EditSubcontractorModal.tsx:52-86,349-359](../src/components/Supervision/SiteManagement/modals/EditSubcontractorModal.tsx#L52)** — States/UX · med
+23. **[EditSubcontractorModal.tsx:52-86,349-359](../src/components/Supervision/SiteManagement/modals/EditSubcontractorModal.tsx#L52)** — States/UX · med · `[x]` (full reset, stale-response guard, files upload on save)
     - **Problem:** the modal doesn't reset between opens, so the previous contract's values show until the fetch returns, and Save is enabled during loading. Picked files are discarded on Save unless Upload was clicked.
     - **Fix:** reset on open, disable Save while loading, upload on save.
 24. **[ProjectSummaryBanner.tsx:57](../src/components/Supervision/SiteManagement/ProjectSummaryBanner.tsx#L57) vs `PhaseCard.tsx:120-125`, `TreeGroup.tsx:156-162`, `ContractCard.tsx:97-100`** — Colour/permissions · med
@@ -376,7 +378,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 5. **[Sales/SalesProjects/forms/SaleFormModal.tsx:72-84,272](../src/components/Sales/SalesProjects/forms/SaleFormModal.tsx#L72), `SalesProjects/index.tsx:456-525`** — States · high · `[x]`
    - **Problem:** "Complete sale" has no loading or disabled state, so a double-click creates two sales and two customers. The same is true for the Building quantity / Single unit / Bulk units / Bulk price modals.
    - **Fix:** return the promise so `Button` shows loading.
-6. **[Sales/Customers/CustomerCard.tsx:35,80,166](../src/components/Sales/Customers/CustomerCard.tsx#L35)** — Info/UX · high
+6. **[Sales/Customers/CustomerCard.tsx:35,80,166](../src/components/Sales/Customers/CustomerCard.tsx#L35)** — Info/UX · high · `[x]` (card opens details; checkbox selects)
    - **Problem:** clicking anywhere on a card silently toggles selection with no checkbox. The default view shows no lead/buyer status, and purchases only appear once a category tab is active.
    - **Fix:** a visible checkbox, a status badge, always show purchases.
 7. **Raw English DB values in the Croatian UI** — `UnitsGrid.tsx:345`, `ApartmentDetailsModal.tsx:65,151`, `Sales/SalesProjects/ProjectsGrid.tsx:31`, `Retail/Projects/ProjectsGrid.tsx:33`, `Retail/Projects/ProjectDetail.tsx:207`, `Sales/Payments/index.tsx:107`, `Retail/Sales/index.tsx:118`, `PaymentHistoryModal.tsx:177` — i18n/Formatting · med-high
@@ -421,7 +423,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 20. **[Sales/Customers/CategoryTabs.tsx:22-23](../src/components/Sales/Customers/CategoryTabs.tsx#L22)** — Library/UX · med
     - **Problem:** there is no "Svi" tab; clicking the active tab silently shows everyone.
     - **Fix:** `Tabs` with an explicit "all" tab.
-21. **[Sales/SalesProjects/modals/ExcelImportApartmentsModal.tsx:180,235-250,346](../src/components/Sales/SalesProjects/modals/ExcelImportApartmentsModal.tsx#L180)** — i18n/States · med
+21. **[Sales/SalesProjects/modals/ExcelImportApartmentsModal.tsx:180,235-250,346](../src/components/Sales/SalesProjects/modals/ExcelImportApartmentsModal.tsx#L180)** — i18n/States · med · `[x]` (honest result screen, row errors, no closing mid-import)
     - **Problem:** English instructions; "Please check the console." A green tick appears even when 0 rows were imported, and the modal can be closed mid-import.
     - **Fix:** translate, a failure state, block closing during import.
 22. **[BulkPriceUpdateModal.tsx:166-207](../src/components/Sales/SalesProjects/modals/BulkPriceUpdateModal.tsx#L166)** — i18n/Dark · low-med
@@ -623,16 +625,16 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 9. **[Tasks/hooks/useTasks.ts:40](../src/components/Tasks/hooks/useTasks.ts#L40), `TaskRow.tsx:116`, `Common/Layout.tsx:316,332,348`** — Indicators · med
    - **Problem:** opening Tasks acknowledges everything, so the unread dot is never seen. The three red header badges mean three different things.
    - **Fix:** acknowledge per task when opened; one "needs you" colour.
-10. **[Calendar/components/sidebar/AwaitingResponse.tsx:35](../src/components/Calendar/components/sidebar/AwaitingResponse.tsx#L35) via `Calendar/index.tsx:114,393-402`** — States · med
+10. **[Calendar/components/sidebar/AwaitingResponse.tsx:35](../src/components/Calendar/components/sidebar/AwaitingResponse.tsx#L35) via `Calendar/index.tsx:114,393-402`** — States · med · `[x]` (sidebar uses the badge's 30-day unfiltered window)
     - **Problem:** the sidebar is derived from the visible, filtered range, so it disagrees with the header badge.
     - **Fix:** fetch the sidebar data independently.
 11. **[Calendar/index.tsx:269,416](../src/components/Calendar/index.tsx), `sidebar/TeamCalendars.tsx:33`** — UX · med
     - **Problem:** enabling a teammate shows a coloured square but nothing on the grid.
     - **Fix:** draw busy blocks, or rename the section.
-12. **[Calendar/EventDetailModal.tsx:297-323](../src/components/Calendar/EventDetailModal.tsx#L297)** — UX · med
+12. **[Calendar/EventDetailModal.tsx:297-323](../src/components/Calendar/EventDetailModal.tsx#L297)** — UX · med · `[x]` (creator can edit; recurring series timing stays read-only)
     - **Problem:** events can't be edited (`updateEvent` is exported but unused).
     - **Fix:** an Edit action that reuses NewEventModal.
-13. **[Tasks/TaskDetail.tsx:358](../src/components/Tasks/TaskDetail.tsx)** — States/UX · med
+13. **[Tasks/TaskDetail.tsx:358](../src/components/Tasks/TaskDetail.tsx)** — States/UX · med · `[x]` (saves on blur/Enter)
     - **Problem:** the due-date input saves on every `onChange`, so typing a year fires four writes.
     - **Fix:** save on blur or confirm.
 14. **[Documents/components/DocumentListTable.tsx:167](../src/components/Documents/components/DocumentListTable.tsx#L167), `Cashflow/Invoices/InvoiceTable.tsx:263`, `Supervision/WorkLogs/index.tsx:306`, `General/Projects/MilestoneTimeline.tsx:122`** — Dark mode/specificity · med
@@ -656,7 +658,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 20. **Hover-only actions** — `AiChat/AiChatMessage.tsx:122,186`, `AiChatHeader.tsx:162,174`, `Tasks/TaskRow.tsx:165`, `Tasks/components/SubtaskList.tsx:199` — Mobile/A11y · med
     - **Problem:** AI edit/regenerate and session actions are hover-only on phones. Task actions hide from keyboard focus.
     - **Fix:** `opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100`.
-21. **[Tasks/TaskDetail.tsx:615](../src/components/Tasks/TaskDetail.tsx), `components/AttachmentList.tsx:193`** — Rules/UX · med
+21. **[Tasks/TaskDetail.tsx:615](../src/components/Tasks/TaskDetail.tsx), `components/AttachmentList.tsx:193`** — Rules/UX · med · `[x]` (both confirm first)
     - **Problem:** comment and attachment deletes are one click with no confirmation, while subtask removal asks.
     - **Fix:** confirm or undo.
 22. **[ui/Modal.tsx](../src/components/ui/Modal.tsx), [ui/ConfirmDialog.tsx](../src/components/ui/ConfirmDialog.tsx)** — A11y · med · `[x]` (dialog roles, `useFocusTrap`, labelled close button; also the task drawer, password dialog, lightbox and Retail milestone overlay)
