@@ -65,6 +65,20 @@ export const countPhaseDependents = async (phaseId: string): Promise<{ contracts
   return { contracts: contracts.count ?? 0, workLogs: workLogs.count ?? 0 }
 }
 
+/**
+ * Thrown by `updateProjectPhases` when the phases it would delete still have contracts or work
+ * logs. Carries the counts so the caller can word the message in the user's language.
+ */
+export class PhaseHasDependentsError extends Error {
+  readonly phases: { name: string; contracts: number; workLogs: number }[]
+
+  constructor(phases: { name: string; contracts: number; workLogs: number }[]) {
+    super(`Phases still have contracts or work logs: ${phases.map(p => p.name).join(', ')}`)
+    this.name = 'PhaseHasDependentsError'
+    this.phases = phases
+  }
+}
+
 export const createPhases = async (projectId: string, phases: PhaseFormInput[]) => {
   const phasesToInsert = phases.map((phase, index) => ({
     project_id: projectId,
@@ -111,11 +125,8 @@ export const updateProjectPhases = async (projectId: string, phases: PhaseFormIn
       .filter(entry => entry.contracts > 0 || entry.workLogs > 0)
 
     if (blocked.length > 0) {
-      const detail = blocked
-        .map(b => `${b.phase.phase_name} (${b.contracts})`)
-        .join(', ')
-      throw new Error(
-        `Ne možete obrisati faze koje imaju ugovore: ${detail}. Prvo premjestite ili obrišite ugovore.`
+      throw new PhaseHasDependentsError(
+        blocked.map(b => ({ name: b.phase.phase_name, contracts: b.contracts, workLogs: b.workLogs }))
       )
     }
 

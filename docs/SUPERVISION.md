@@ -91,7 +91,7 @@ so a client write would survive only until the next one.
 - `recalculatePhaseBudget(phaseId)` — recomputes budget_used for a phase from active/draft contract amounts
 - `recalculateAllPhaseBudgets()` — recomputes budget_used for every phase across all projects via the `recalculate_all_phase_budgets()` Postgres RPC (set-based, avoids the 1000-row client cap)
 - `createPhases(projectId, phases)` — bulk-creates phases for a project. **Writes no budget**: the column default of 0 stands until a TIC plans the phase
-- `updateProjectPhases(projectId, phases)` — syncs a project's phase set (insert/update/delete and renumber); name, dates and ordering only
+- `updateProjectPhases(projectId, phases)` — syncs a project's phase set (insert/update/delete and renumber); name, dates and ordering only. Existing phases missing from `phases` are deleted; if any of them still has contracts or work logs it deletes nothing and throws `PhaseHasDependentsError` (`phases: { name, contracts, workLogs }[]`) so the caller can word the refusal in the user's language
 - `updatePhase(phaseId, updates)` — updates a single phase's name, dates and status
 - `deletePhase(phaseId)` — removes a phase
 - `countPhaseDependents(phaseId)` — contracts + work logs pointing at a phase. Both FKs are `ON DELETE SET NULL`, so deleting a phase with dependants silently detaches them; callers must check this first. `budget_used` is **not** a substitute — it is derived and only refreshed by `recalculate_all_phase_budgets()`
@@ -169,11 +169,18 @@ so a client write would survive only until the next one.
 
 ### hooks/useProjectPhases.ts
 - `useProjectPhases(fetchProjects)` — manages phase CRUD with budget-allocation validation via a Promise-based requestConfirm flow
+- `createProjectPhases` / `updateProjectPhases` toast `supervision.site_management.phase_setup.errors.has_dependents` (listing each blocked phase with its contract and work-log counts) for a `PhaseHasDependentsError`, and `…errors.create_failed` / `…errors.update_failed` otherwise
+- `deletePhase` (single phase) strings live under `supervision.site_management.delete_phase.*`; the confirm reuses `common.confirm_delete` / `common.yes_delete`
 - **Calls:** siteService barrel → phaseService (`recalculateAllPhaseBudgets`, `createPhases`, `updatePhase`, `deletePhase`, `resequencePhases`, `updateProjectPhases`)
 - **Returns:** recalculateAllPhaseBudgets, createProjectPhases, updatePhase, deletePhase, updateProjectPhases, pendingConfirm
 
+### utils/phaseSetup.ts
+- `findRemovedPhases(existing, phases)` — the saved phases a phase-setup submit would delete (existing ids not in the form). Mirrors `updateProjectPhases`; a phase sliced off by lowering the count and then "re-added" by raising it is still reported, because the re-added row has no id
+- Pure, covered by `phaseSetup.test.ts`
+
 ### hooks/useSubcontractorManagement.ts
 - `useSubcontractorManagement(fetchProjects)` — manages subcontractor add/edit/delete with document upload, phase budget recalculation, and unique contract number generation; payment create/update/delete now warn that those moved to the Accounting module
+- `updateSubcontractor(subcontractor, pendingFiles = [])` — after a successful update, uploads `pendingFiles` via `uploadSubcontractorDocuments` (only when `has_contract`), mirroring the add path; a failed upload only warns with `supervision.edit_subcontractor.document_upload_failed`. Other failures toast `supervision.edit_subcontractor.errors.update_failed`
 - `updateSubcontractor` passes `classification_id` through and applies the same classification budget gate as the add path (for contracts with `has_contract` and a classification). The contract's own amount is excluded from `used`, and an edit that does not raise what the contract commits to the bucket is never refused, so an already over-allocated bucket still lets you fix names or dates. A refusal toasts `supervision.subcontractor_form.errors.exceeds_classification_budget` and returns `false`, keeping the modal open
 - **Calls:** siteService barrel → siteContractService (`createContract`, `generateUniqueContractNumber`), siteSubcontractorService (`createSubcontractorWithReturn`, `updateSubcontractor`, `deleteSubcontractor`, `getSubcontractorDetails`, `uploadSubcontractorDocuments`), phaseService (`getPhaseInfo`, `updatePhase`, `recalculatePhaseBudget`), wirePaymentService (`fetchWirePayments`)
 - **Returns:** addSubcontractorToPhase, updateSubcontractor, deleteSubcontractor, pendingDeleteSubcontractor, confirmDeleteSubcontractor, cancelDeleteSubcontractor, deletingSubcontractor, addPaymentToSubcontractor, fetchWirePayments, updateWirePayment, deleteWirePayment
@@ -280,7 +287,14 @@ the orchestrator does the writes and re-fetches.
 
 #### PhaseSetupModal.tsx
 - Bulk-defines a project's phases in one pass; `editMode?` switches it from initial setup to editing
-- Props: `visible`, `onClose`, `project` (`ProjectWithPhases`), `onSubmit(phases: PhaseFormInput[])`, `editMode?`
+- Props: `visible`, `onClose`, `project` (`ProjectWithPhases`), `onSubmit(phases: PhaseFormInput[]) => Promise<boolean> | void`, `editMode?`
+- In edit mode, submitting a list that drops saved phases (e.g. after lowering the count) first opens a `ConfirmDialog` naming them (`findRemovedPhases`); nothing is deleted unless the user confirms. The submit handler returns the `onSubmit` promise so the button shows loading
+- Subtitle is the project name. The old "Distribute €X budget across phases" subtitle and the classification hint were removed: phase budgets come from the TIC (the hint at the bottom says so)
+
+#### ManageCostClassificationsModal.tsx
+- Lists every cost classification (including inactive) and loads them itself on open
+- Delete asks through a `ConfirmDialog` (`supervision.cost_classification.delete_confirm_message`), then runs the usage pre-check. A refused delete shows `errors.in_use` only when the cause is a foreign-key violation (the FKs are NO ACTION); any other failure shows `errors.save_error`
+- The sort-order input (`aria-label` = `sort_order_label`) keeps a draft while typing and saves on blur only when the value changed, then reloads without the spinner so the list re-sorts and focus is not lost. Failures go to the modal's error `Alert`
 
 #### EditPhaseModal.tsx
 - Edits a single phase (name, budget allocation, dates, status)
@@ -288,7 +302,10 @@ the orchestrator does the writes and re-fetches.
 
 #### EditSubcontractorModal.tsx
 - Edits a subcontractor in the site-management context (contract-adjacent fields, financing source)
-- Props: `visible`, `onClose`, `subcontractor`, `onChange(updated)`, `onSubmit(updated)`
+- Props: `visible`, `onClose`, `subcontractor`, `onChange(updated)`, `onSubmit(updated, pendingFiles) => Promise<boolean>`
+- On open it resets every field, including those `loadContractFormData` fills (phases, contract type, classification, base amount, VAT rate) plus picked files and field errors, so nothing from the previously edited contract lingers. The load is guarded by a request-id ref, so a slow response for an earlier contract is dropped
+- A load failure shows an error `Alert` (`supervision.edit_subcontractor.errors.load_failed`). Save is disabled while the contract data loads, after a load failure, and while the Upload button is running — otherwise it would write the reset placeholders over the real amounts
+- Save returns the `onSubmit` promise (button loading state) and passes the picked-but-not-uploaded files, which `useSubcontractorManagement.updateSubcontractor` uploads after the update. The separate Upload button still uploads without saving
 - Footer is Cancel + Save changes only. The "Mark as completed" button, which had no handler, was removed on 2026-09-15
 - Distinct from `Subcontractors/forms/SubcontractorBasicFormModal.tsx`, which edits the base record from the subcontractor register
 
@@ -386,6 +403,7 @@ Standalone subcontractor registry with aggregated contract and payment summaries
 
 ### forms/SubcontractorBasicFormModal.tsx
 - Add/edit base subcontractor registry entry (name, contact, notes)
+- The form resets only when `visible` or `editingId` changes. It used to reset on `initialData` too, which the parent rebuilt every render, so the error toast's re-render wiped the typed input; the parent now also memoizes `initialData`
 - **Uses services:** siteSubcontractorService (insertSubcontractorRecord, updateSubcontractorRecord — imported via the SiteManagement siteService barrel)
 - **Uses Ui:** Modal, Button, Input, useToast
 

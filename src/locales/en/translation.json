@@ -2208,8 +2208,6 @@
       "phase_setup": {
         "title_create": "Setup Project Phases",
         "title_edit": "Edit Project Phases",
-        "distribute": "Distribute",
-        "budget_across": "budget across construction phases",
         "num_phases": "Number of Phases",
         "phase_name": "Phase Name",
         "budget_allocated": "Budget Allocated (€)",
@@ -2226,7 +2224,18 @@
         "create": "Create Phases",
         "update": "Update Phases",
         "default_phase_name": "Phase {{n}}",
-        "classification_hint": "This sets the phase budget. Distribute it across cost classifications on the phase card."
+        "confirm_remove_message": "Saving will delete these phases: {{names}}. Phases that still have contracts or work logs cannot be deleted.",
+        "errors": {
+          "has_dependents": "These phases still have contracts or work logs and cannot be deleted: {{detail}}. Move or delete those first.",
+          "dependent_item": "{{name}} ({{contracts}} contracts, {{workLogs}} work logs)",
+          "create_failed": "Error creating project phases.",
+          "update_failed": "Error updating project phases."
+        }
+      },
+      "delete_phase": {
+        "confirm_message": "Are you sure you want to delete phase \"{{name}}\"?",
+        "has_dependents": "Phase \"{{name}}\" has {{contracts}} contracts and {{workLogs}} work logs. Move them to another phase or delete them first.",
+        "check_failed": "Could not check what is linked to this phase. Please try again."
       },
       "edit_phase": {
         "title": "Edit Phase",
@@ -2615,10 +2624,13 @@
       "upload": "Upload",
       "doc_singular": "document",
       "doc_plural": "documents",
+      "document_upload_failed": "Changes were saved, but the contract documents failed to upload. Please try attaching them again.",
       "errors": {
         "phase_required": "Phase is required",
         "name_required": "Name is required",
-        "job_required": "Job description is required"
+        "job_required": "Job description is required",
+        "load_failed": "Could not load the contract details. Close the form and try again.",
+        "update_failed": "Error updating subcontractor."
       },
       "cost_classification": "Cost classification",
       "cost_classification_help": "Which cost line this contract belongs to.",
@@ -2779,6 +2791,7 @@
       "active_label": "Active",
       "system_badge": "System",
       "system_hint": "System classifications cannot be renamed or deleted.",
+      "delete_confirm_message": "Delete the cost classification \"{{name}}\"? This cannot be undone.",
       "save": "Save",
       "errors": {
         "name_required": "Name is required",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FileText } from 'lucide-react'
 import { Subcontractor } from '../../../../lib/supabase'
@@ -27,7 +27,11 @@ interface EditSubcontractorModalProps {
   onClose: () => void
   subcontractor: Subcontractor | null
   onChange: (updated: Subcontractor) => void
-  onSubmit: (updated: Subcontractor) => void
+  /**
+   * Saves the contract, then uploads `pendingFiles` (files picked but not yet uploaded with the
+   * separate Upload button). Resolves to whether the save succeeded; the parent closes on success.
+   */
+  onSubmit: (updated: Subcontractor, pendingFiles: File[]) => Promise<boolean>
 }
 
 type SubcontractorWithIds = Subcontractor & { subcontractor_id?: string; contract_id?: string }
@@ -53,6 +57,10 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
   const [hasContract, setHasContract] = useState(true)
   const [loadingPhases, setLoadingPhases] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
+  // Incremented per load, so a slow response for a previously opened contract cannot land on
+  // the form for the one open now.
+  const loadRequestRef = useRef(0)
   const [contractTypeId, setContractTypeId] = useState<number | null>(null)
   const [classificationId, setClassificationId] = useState<number | null>(null)
   const [name, setName] = useState('')
@@ -70,18 +78,23 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const loadContractFormData = useCallback(async () => {
     if (!subcontractor) return
     const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
+    const requestId = ++loadRequestRef.current
     try {
       setLoadingPhases(true)
+      setLoadFailed(false)
       const data = await fetchContractFormData(contractId)
+      if (requestId !== loadRequestRef.current) return
       setPhases(data.phases)
       setContractTypeId(data.contract_type_id)
       setClassificationId(data.classification_id)
       setBaseAmount(data.base_amount)
       setVatRate(data.vat_rate)
     } catch (error) {
+      if (requestId !== loadRequestRef.current) return
       console.error('Error loading contract form data:', error)
+      setLoadFailed(true)
     } finally {
-      setLoadingPhases(false)
+      if (requestId === loadRequestRef.current) setLoadingPhases(false)
     }
   }, [subcontractor])
 
@@ -93,6 +106,16 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       setContact(subcontractor.contact || '')
       setJobDescription(subcontractor.job_description || '')
       setDeadline(subcontractor.deadline || '')
+      // Everything loadContractFormData fills in, plus per-open state, so nothing from the
+      // previously edited contract shows while (or if) the load is still running.
+      setPhases([])
+      setContractTypeId(null)
+      setClassificationId(null)
+      setBaseAmount(0)
+      setVatRate(0)
+      setPendingFiles([])
+      setFieldErrors({})
+      setLoadFailed(false)
 
       loadContractFormData()
       loadContractTypes()
@@ -116,6 +139,35 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
     }
   }
 
+  const handleSave = () => {
+    if (!subcontractor) return
+    const errors: Record<string, string> = {}
+    if (!selectedPhaseId) errors.phase_id = t('supervision.edit_subcontractor.errors.phase_required')
+    if (!name.trim()) errors.name = t('supervision.edit_subcontractor.errors.name_required')
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
+    const updatedSubcontractor = {
+      ...subcontractor,
+      name,
+      contact,
+      job_description: jobDescription,
+      deadline,
+      cost: totalAmount,
+      base_amount: baseAmount,
+      vat_rate: vatRate,
+      vat_amount: vatAmount,
+      total_amount: totalAmount,
+      phase_id: selectedPhaseId,
+      contract_type_id: contractTypeId,
+      classification_id: classificationId,
+      has_contract: hasContract
+    } as unknown as Subcontractor
+
+    // Returned so the Save button shows its loading state until the save (and upload) finishes.
+    return onSubmit(updatedSubcontractor, hasContract ? pendingFiles : [])
+  }
+
   if (!visible || !subcontractor) return null
 
   return (
@@ -124,6 +176,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
       <Modal.Body>
         <div className="space-y-4">
+          {loadFailed && <Alert variant="error">{t('supervision.edit_subcontractor.errors.load_failed')}</Alert>}
+
           <FormField label={t('supervision.edit_subcontractor.name')} required error={fieldErrors.name}>
             <Input
               type="text"
@@ -368,32 +422,11 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
           {t('common.cancel')}
         </Button>
         <Button
-          onClick={() => {
-            const errors: Record<string, string> = {}
-            if (!selectedPhaseId) errors.phase_id = t('supervision.edit_subcontractor.errors.phase_required')
-            if (!name.trim()) errors.name = t('supervision.edit_subcontractor.errors.name_required')
-            setFieldErrors(errors)
-            if (Object.keys(errors).length > 0) return
-
-            const updatedSubcontractor = {
-              ...subcontractor,
-              name,
-              contact,
-              job_description: jobDescription,
-              deadline,
-              cost: totalAmount,
-              base_amount: baseAmount,
-              vat_rate: vatRate,
-              vat_amount: vatAmount,
-              total_amount: totalAmount,
-              phase_id: selectedPhaseId,
-              contract_type_id: contractTypeId,
-              classification_id: classificationId,
-              has_contract: hasContract
-            } as unknown as Subcontractor
-
-            onSubmit(updatedSubcontractor)
-          }}
+          onClick={handleSave}
+          // Saving before the contract's amounts and classification have loaded would write the
+          // reset placeholders (0, null) over the real values. While the Upload button is running,
+          // Save would upload the same files a second time.
+          disabled={loadingPhases || loadFailed || uploadingFiles}
         >
           {t('common.save_changes')}
         </Button>

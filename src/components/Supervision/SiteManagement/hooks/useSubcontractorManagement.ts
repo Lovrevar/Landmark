@@ -148,9 +148,9 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
     }
   }
 
-  const updateSubcontractor = async (subcontractor: Subcontractor) => {
+  const updateSubcontractor = async (subcontractor: Subcontractor, pendingFiles: File[] = []) => {
     try {
-      const subData = subcontractor as Subcontractor & { base_amount?: number; vat_rate?: number; vat_amount?: number; total_amount?: number; phase_id?: string; contract_type_id?: number | null; classification_id?: number | null; has_contract?: boolean }
+      const subData = subcontractor as Subcontractor & { base_amount?: number; vat_rate?: number; vat_amount?: number; total_amount?: number; phase_id?: string; contract_type_id?: number | null; classification_id?: number | null; has_contract?: boolean; subcontractor_id?: string; contract_id?: string }
 
       // Same classification gate as the add path. The contract's own current amount is excluded
       // from `used`, and an edit that does not raise what this contract commits to the bucket is
@@ -188,11 +188,27 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         classification_id: subData.classification_id ?? null,
         has_contract: subData.has_contract
       })
+
+      // Files picked in the edit modal but not uploaded with its own Upload button. Same as the
+      // add path: the save has already succeeded, so a failed upload only warns.
+      if (pendingFiles.length > 0 && subData.has_contract !== false) {
+        try {
+          await siteService.uploadSubcontractorDocuments(
+            subData.subcontractor_id || subcontractor.id,
+            subData.contract_id || subcontractor.id,
+            pendingFiles
+          )
+        } catch (uploadError) {
+          console.error('Error uploading contract documents:', uploadError)
+          toast.warning(t('supervision.edit_subcontractor.document_upload_failed'))
+        }
+      }
+
       await fetchProjects()
       return true
     } catch (error) {
       console.error('Error updating subcontractor:', error)
-      toast.error('Error updating subcontractor.')
+      toast.error(t('supervision.edit_subcontractor.errors.update_failed'))
       return false
     }
   }

@@ -73,6 +73,12 @@ const SubcontractorManagement: React.FC = () => {
 
   const subcontractorsList = useMemo(() => Array.from(subcontractors.values()), [subcontractors])
 
+  const formInitialData = useMemo(() => ({
+    name: editingSubcontractor?.name ?? '',
+    contact: editingSubcontractor?.contact ?? '',
+    notes: editingSubcontractor?.notes ?? ''
+  }), [editingSubcontractor])
+
   const availableProjects = useMemo(() => {
     const set = new Set<string>()
     subcontractorsList.forEach(sub => sub.contracts.forEach(c => { if (c.project_name) set.add(c.project_name) }))
@@ -277,7 +283,7 @@ const SubcontractorManagement: React.FC = () => {
         visible={showFormModal}
         onClose={() => setShowFormModal(false)}
         editingId={editingSubcontractor?.id ?? null}
-        initialData={{ name: editingSubcontractor?.name ?? '', contact: editingSubcontractor?.contact ?? '', notes: editingSubcontractor?.notes ?? '' }}
+        initialData={formInitialData}
         onSaved={fetchData}
       />
 

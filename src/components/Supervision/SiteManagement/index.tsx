@@ -146,8 +146,8 @@ const SiteManagement: React.FC = () => {
     })
   }
 
-  const handleCreatePhases = async (phases: PhaseFormInput[]) => {
-    if (!selectedProject) return
+  const handleCreatePhases = async (phases: PhaseFormInput[]): Promise<boolean> => {
+    if (!selectedProject) return false
 
     if (isPhaseSetupEditMode) {
       const success = await updateProjectPhases(selectedProject.id, phases)
@@ -155,12 +155,14 @@ const SiteManagement: React.FC = () => {
         setShowPhaseSetup(false)
         setIsPhaseSetupEditMode(false)
       }
-    } else {
-      const success = await createProjectPhases(selectedProject.id, phases)
-      if (success) {
-        setShowPhaseSetup(false)
-      }
+      return success
     }
+
+    const success = await createProjectPhases(selectedProject.id, phases)
+    if (success) {
+      setShowPhaseSetup(false)
+    }
+    return success
   }
 
   const handleUpdatePhase = async (updates: EditPhaseFormData) => {
@@ -208,12 +210,13 @@ const SiteManagement: React.FC = () => {
     setSelectedPhase(null)
   }
 
-  const handleUpdateSubcontractor = async (updatedSubcontractor: Subcontractor) => {
-    const success = await updateSubcontractor(updatedSubcontractor)
+  const handleUpdateSubcontractor = async (updatedSubcontractor: Subcontractor, pendingFiles: File[]): Promise<boolean> => {
+    const success = await updateSubcontractor(updatedSubcontractor, pendingFiles)
     if (success) {
       setShowEditModal(false)
       setEditingSubcontractor(null)
     }
+    return success
   }
 
   const handleDeleteSubcontractor = async (subcontractorId: string) => {

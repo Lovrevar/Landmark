@@ -2212,8 +2212,6 @@
       "phase_setup": {
         "title_create": "Postavi faze projekta",
         "title_edit": "Uredi faze projekta",
-        "distribute": "Rasporedi",
-        "budget_across": "budžet po fazama gradnje",
         "num_phases": "Broj faza",
         "phase_name": "Naziv faze",
         "budget_allocated": "Alocirani budžet (€)",
@@ -2230,7 +2228,18 @@
         "create": "Kreiraj faze",
         "update": "Ažuriraj faze",
         "default_phase_name": "Faza {{n}}",
-        "classification_hint": "Ovdje postavljate budžet faze. Raspodjelu po klasifikacijama troška uredite na kartici faze."
+        "confirm_remove_message": "Spremanjem će se obrisati ove faze: {{names}}. Faze koje još imaju ugovore ili dnevnike rada ne mogu se obrisati.",
+        "errors": {
+          "has_dependents": "Ove faze još imaju ugovore ili dnevnike rada i ne mogu se obrisati: {{detail}}. Prvo ih premjestite ili obrišite.",
+          "dependent_item": "{{name}} ({{contracts}} ugovora, {{workLogs}} dnevnika rada)",
+          "create_failed": "Greška pri kreiranju faza projekta.",
+          "update_failed": "Greška pri ažuriranju faza projekta."
+        }
+      },
+      "delete_phase": {
+        "confirm_message": "Jeste li sigurni da želite obrisati fazu \"{{name}}\"?",
+        "has_dependents": "Faza \"{{name}}\" ima {{contracts}} ugovora i {{workLogs}} dnevnika rada. Prvo ih premjestite na drugu fazu ili obrišite.",
+        "check_failed": "Provjera ovisnosti faze nije uspjela. Pokušajte ponovno."
       },
       "edit_phase": {
         "title": "Uredi fazu",
@@ -2619,10 +2628,13 @@
       "upload": "Učitaj",
       "doc_singular": "dokument",
       "doc_plural": "dokumenata",
+      "document_upload_failed": "Promjene su spremljene, ali dokumenti ugovora nisu uspješno učitani. Pokušajte ih ponovno priložiti.",
       "errors": {
         "phase_required": "Faza je obavezna",
         "name_required": "Naziv je obavezan",
-        "job_required": "Opis posla je obavezan"
+        "job_required": "Opis posla je obavezan",
+        "load_failed": "Podaci ugovora nisu učitani. Zatvorite obrazac i pokušajte ponovno.",
+        "update_failed": "Greška pri ažuriranju podugovaratelja."
       },
       "cost_classification": "Klasifikacija troška",
       "cost_classification_help": "U koju stavku troškovnika ovaj ugovor spada.",
@@ -2783,6 +2795,7 @@
       "active_label": "Aktivna",
       "system_badge": "Sistemska",
       "system_hint": "Sistemske klasifikacije se ne mogu preimenovati ni obrisati.",
+      "delete_confirm_message": "Obrisati klasifikaciju troška \"{{name}}\"? Ova radnja se ne može poništiti.",
       "save": "Spremi",
       "errors": {
         "name_required": "Naziv je obavezan",

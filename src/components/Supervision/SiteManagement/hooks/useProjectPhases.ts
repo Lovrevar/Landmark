@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ProjectPhase } from '../../../../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput } from '../types'
 import * as siteService from '../services/siteService'
@@ -14,6 +15,7 @@ export type PendingConfirm = {
 }
 
 export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
+  const { t } = useTranslation()
   const toast = useToast()
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null)
 
@@ -37,6 +39,20 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     }
   }
 
+  /** Toasts a phase-setup save failure, naming the phases that still have dependants when that is the cause. */
+  const toastPhaseSaveError = (error: unknown, fallbackKey: string) => {
+    if (error instanceof siteService.PhaseHasDependentsError) {
+      const detail = error.phases
+        .map(p => t('supervision.site_management.phase_setup.errors.dependent_item', {
+          name: p.name, contracts: p.contracts, workLogs: p.workLogs
+        }))
+        .join(', ')
+      toast.error(t('supervision.site_management.phase_setup.errors.has_dependents', { detail }))
+    } else {
+      toast.error(t(fallbackKey))
+    }
+  }
+
   const createProjectPhases = async (projectId: string, phases: PhaseFormInput[]) => {
     try {
       await siteService.createPhases(projectId, phases)
@@ -44,7 +60,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       return true
     } catch (error) {
       console.error('Error creating phases:', error)
-      toast.error('Error creating project phases.')
+      toastPhaseSaveError(error, 'supervision.site_management.phase_setup.errors.create_failed')
       return false
     }
   }
@@ -87,23 +103,22 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     try {
       const { contracts, workLogs } = await siteService.countPhaseDependents(phase.id)
       if (contracts > 0 || workLogs > 0) {
-        toast.warning(
-          `Faza "${phase.phase_name}" ima ${contracts} ugovora i ${workLogs} dnevnika rada. ` +
-          'Prvo ih premjestite na drugu fazu ili obrišite.'
-        )
+        toast.warning(t('supervision.site_management.delete_phase.has_dependents', {
+          name: phase.phase_name, contracts, workLogs
+        }))
         return false
       }
     } catch (error) {
       console.error('Error checking phase dependents:', error)
-      toast.error('Provjera ovisnosti faze nije uspjela. Pokušajte ponovno.')
+      toast.error(t('supervision.site_management.delete_phase.check_failed'))
       return false
     }
 
     const confirmed = await requestConfirm(
-      'Potvrda brisanja',
-      `Jeste li sigurni da želite obrisati fazu "${phase.phase_name}"?`,
+      t('common.confirm_delete'),
+      t('supervision.site_management.delete_phase.confirm_message', { name: phase.phase_name }),
       'danger',
-      'Da, obriši'
+      t('common.yes_delete')
     )
     if (!confirmed) return false
 
@@ -129,7 +144,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       return true
     } catch (error) {
       console.error('Error updating phases:', error)
-      toast.error('Error updating project phases.')
+      toastPhaseSaveError(error, 'supervision.site_management.phase_setup.errors.update_failed')
       return false
     }
   }
