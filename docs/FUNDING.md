@@ -6,6 +6,18 @@
 
 Manages the investment and funding side of the business: bank credit facilities, investor relationships, credit allocations, disbursements, repayments, and TIC (Troškovna Informatička Struktura — structured investment cost breakdown).
 
+## Money formatting
+
+Amounts go through `src/utils/formatters.ts` — `formatEuro` (exact cents), `formatEuroRounded`
+(aggregates), `formatEuroCompact` (dashboard-style tiles) — with the **€ first** (`€1.234,56`),
+never the viewer's browser locale. Investor cards no longer divide by a million by hand, which
+used to render €450.000 as "€0.5M" and €45.000 as "€0.0M"; `formatEuroCompact` keeps a five-figure
+amount readable (`€45K`) and only abbreviates to `M` at seven figures.
+
+TIC keeps its own `formatNumber` from `TIC/utils/ticFormatters.ts` (0 decimals, hr-HR, unit-tested
+against the spreadsheet layout) — use it for TIC numbers, but write the `€` in front of it, not
+after.
+
 ---
 
 ## Sub-modules
@@ -241,24 +253,43 @@ Read-only history of accounting payments made against bank credits.
 
 Investment project registry — links funding sources (banks, investors) to General/Projects.
 
+**There is no ROI here.** The percentage on the project card and in the modal is
+`avg_interest_rate` — the **cost of debt**, not a return. It was called `expected_roi`, shown in
+green next to a "Return Analysis" heading, and computed as a plain mean of `credit.interest_rate`
+over *all* allocations, so an interest-free equity row pulled it toward zero. Do not restore the
+"Očekivani ROI" label or style the number as a gain; a real ROI would need revenue, which this
+module does not hold.
+
 #### Services
 
 ### investmentService.ts
-- `fetchInvestmentProjects()` — fetches projects with equity, debt, ROI, risk level, and funding source details
+- `fetchInvestmentProjects()` — fetches projects with equity, debt, average interest rate, risk level, and funding source details
 - `fetchFundingUtilization(projectId)` — fetches per-allocation funding utilization (total/spent/available) for a project
+- **Calls:** weightedInterestRate.weightedAverageInterestRate
 - **Depends on:** supabase client, date-fns
+
+#### Utils
+
+### weightedInterestRate.ts
+- `weightedAverageInterestRate(allocations)` — average `credit.interest_rate` weighted by
+  `allocated_amount`; pass **debt allocations only**. Returns 0 rather than `NaN` when the weights
+  sum to zero. €1M @ 3% + €3M @ 5% → 4,5% (the unweighted mean would say 4%)
+- Pure and unit-tested (`weightedInterestRate.test.ts`), deliberately split out of
+  `investmentService.ts` so the maths is testable without the supabase client
 
 #### Modals
 
 ### InvestmentProjectModal.tsx
 - Detail modal for a project showing financing breakdown, funding progress, and funders list
+- The average interest rate appears **once**, on the teal tile; the "Analiza prinosa" panel holds
+  only the investment period and risk level
 - **Calls:** investmentService.fetchFundingUtilization
 - **Uses Ui:** Modal, Table
 
 #### Views
 
 ### index.tsx (InvestmentProjects)
-- Project cards with equity/debt/ROI/funding status, progress bars, and detail modal
+- Project cards with equity/debt/average-interest-rate/funding status, progress bars, and detail modal
 - **Calls:** investmentService.fetchInvestmentProjects
 - **Uses components:** InvestmentProjectModal
 - **Uses Ui:** PageHeader, LoadingSpinner, StatGrid, Badge, Button

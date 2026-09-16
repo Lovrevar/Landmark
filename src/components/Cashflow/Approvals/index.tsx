@@ -16,6 +16,7 @@ import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2 } from 
 import { format } from 'date-fns'
 import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { useApprovals } from './hooks/useApprovals'
+import { formatEuro } from '../../../utils/formatters'
 
 const COLUMN_KEYS = ['category', 'invoice_number', 'supplier_name', 'project_name', 'phase_name', 'contract_number', 'issue_date', 'due_date', 'base_amount', 'vat_amount', 'total_amount', 'status']
 
@@ -161,7 +162,7 @@ const AccountingApprovals: React.FC = () => {
               <>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {t('approvals.selected_info')} <span className="font-semibold text-gray-900 dark:text-white">{selectedCount}</span>
-                  {' '}({selectedTotal.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)
+                  {' '}({formatEuro(selectedTotal)})
                 </span>
                 <Button
                   size="sm"

@@ -76,7 +76,8 @@ export function calculateEquityCashflow(equity: Pick<EquityFormData, 'amount' | 
     const n = repaymentYears * 12
     payment = (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
   }
-  return payment.toLocaleString(undefined, { maximumFractionDigits: 0 })
+  // hr-HR, not the viewer's browser locale: an en-US machine rendered "10,436" for €10.436.
+  return payment.toLocaleString('hr-HR', { maximumFractionDigits: 0 })
 }
 
 export function calculateMoneyMultiple(equity: Pick<EquityFormData, 'amount' | 'expected_return' | 'investment_date' | 'maturity_date'>): string {

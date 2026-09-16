@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '../../Common/CurrencyInput'
+import { formatEuro } from '../../../utils/formatters'
 import { Card } from '../../ui'
 import type { BankInvoiceFormData, CalculatedTotals } from '../Banks/bankInvoiceTypes'
 
@@ -82,7 +83,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ formData, calc }) => {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.vat0')}</span>
-              <span className="font-medium">€0.00</span>
+              <span className="font-medium">{formatEuro(0)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
               <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>

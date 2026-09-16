@@ -1,6 +1,7 @@
 import { supabase } from '../../../../lib/supabase'
 import { differenceInDays } from 'date-fns'
 import type { ProjectWithFinancials, FundingUtilizationItem } from '../../../General/Projects/types'
+import { weightedAverageInterestRate } from '../utils/weightedInterestRate'
 
 export async function fetchInvestmentProjects(): Promise<ProjectWithFinancials[]> {
   const { data: projectsData, error: projectsError } = await supabase
@@ -41,9 +42,9 @@ export async function fetchInvestmentProjects(): Promise<ProjectWithFinancials[]
     // funding_ratio now reflects all financing (debt + equity) against budget
     const funding_ratio = project.budget > 0 ? ((total_debt + total_investment) / project.budget) * 100 : 0
     const debt_to_equity = total_investment > 0 ? total_debt / total_investment : 0
-    const expected_roi = projectAllocations.length > 0
-      ? projectAllocations.reduce((sum, alloc) => sum + (alloc.credit?.interest_rate || 0), 0) / projectAllocations.length
-      : 0
+    // Debt only, weighted by allocated amount — equity rows carry no interest rate and used to
+    // drag the "ponderirani prosjek" caption's number toward zero.
+    const avg_interest_rate = weightedAverageInterestRate(debtAllocations)
 
     const uniqueBanks = projectAllocations
       .filter(alloc => alloc.credit?.bank)
@@ -65,7 +66,7 @@ export async function fetchInvestmentProjects(): Promise<ProjectWithFinancials[]
       banks: uniqueBanks,
       funding_ratio,
       debt_to_equity,
-      expected_roi,
+      avg_interest_rate,
       risk_level
     }
   })

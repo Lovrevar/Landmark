@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { useOfficeSuppliers } from './hooks/useOfficeSuppliers'
 import OfficeSupplierFormModal from './forms/OfficeSupplierFormModal'
 import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
+import { formatEuro, formatEuropean } from '../../../utils/formatters'
 
 const OfficeSuppliers: React.FC = () => {
   const { t } = useTranslation()
@@ -70,14 +71,14 @@ const OfficeSuppliers: React.FC = () => {
 
         <StatCard
           label={t('office_suppliers.stats.total_paid')}
-          value={`€${suppliers.reduce((sum, s) => sum + s.paid_amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={formatEuro(suppliers.reduce((sum, s) => sum + s.paid_amount, 0))}
           icon={Building2}
           color="green"
         />
 
         <StatCard
           label={t('office_suppliers.stats.remaining')}
-          value={`€${suppliers.reduce((sum, s) => sum + s.remaining_amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={formatEuro(suppliers.reduce((sum, s) => sum + s.remaining_amount, 0))}
           icon={Building2}
           color="yellow"
         />
@@ -152,17 +153,22 @@ const OfficeSuppliers: React.FC = () => {
                   <span className="text-gray-600 dark:text-gray-400">{t('office_suppliers.card.invoices')}</span>
                   <span className="font-medium text-gray-900 dark:text-white">{supplier.total_invoices}</span>
                 </div>
+                {/* Gross, paid and remaining are all s PDV, so total − paid = remaining on screen. */}
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">{t('office_suppliers.card.total_no_vat')}</span>
-                  <span className="font-bold text-gray-900 dark:text-white">€{supplier.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('office_suppliers.card.total')}</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{formatEuro(supplier.gross_amount)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 dark:text-gray-500">{t('office_suppliers.card.base')}</span>
+                  <span className="text-gray-500 dark:text-gray-400">{formatEuro(supplier.total_amount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">{t('office_suppliers.card.paid')}</span>
-                  <span className="font-medium text-green-600">€{supplier.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-medium text-green-600">{formatEuro(supplier.paid_amount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">{t('office_suppliers.card.remaining')}</span>
-                  <span className="font-medium text-orange-600">€{supplier.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-medium text-orange-600">{formatEuro(supplier.remaining_amount)}</span>
                 </div>
               </div>
 
@@ -208,7 +214,7 @@ const OfficeSuppliers: React.FC = () => {
           <>
             <Modal.Header
               title={t('office_suppliers.invoices_modal.title', { name: selectedSupplier.name })}
-              subtitle={t('office_suppliers.invoices_modal.subtitle', { count: supplierInvoices.length, paid: selectedSupplier.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), remaining: selectedSupplier.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })}
+              subtitle={t('office_suppliers.invoices_modal.subtitle', { count: supplierInvoices.length, paid: formatEuropean(selectedSupplier.paid_amount), remaining: formatEuropean(selectedSupplier.remaining_amount) })}
               onClose={handleCloseInvoicesModal}
             />
 
@@ -258,16 +264,16 @@ const OfficeSuppliers: React.FC = () => {
                           {invoice.description || '-'}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.base')} className="text-right">
-                          €{parseFloat(invoice.base_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatEuro(parseFloat(invoice.base_amount))}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.total')} className="text-right font-medium">
-                          €{parseFloat(invoice.total_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatEuro(parseFloat(invoice.total_amount))}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.paid')} className="text-right text-green-600 dark:text-green-400">
-                          €{parseFloat(invoice.paid_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatEuro(parseFloat(invoice.paid_amount))}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.remaining')} className="text-right text-orange-600 dark:text-orange-400">
-                          €{parseFloat(invoice.remaining_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatEuro(parseFloat(invoice.remaining_amount))}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.status')} className="text-center">
                           <Badge

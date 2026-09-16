@@ -1420,8 +1420,8 @@
     "stats": {
       "total": "Total Suppliers",
       "total_invoices": "Total Invoices",
-      "total_paid": "Total Paid (excl. VAT)",
-      "remaining": "Remaining (excl. VAT)"
+      "total_paid": "Total Paid",
+      "remaining": "Remaining"
     },
     "search_placeholder": "Search suppliers...",
     "empty": {
@@ -1432,7 +1432,8 @@
     },
     "card": {
       "invoices": "Invoices:",
-      "total_no_vat": "Total (excl. VAT):",
+      "total": "Total (incl. VAT):",
+      "base": "Base:",
       "paid": "Paid:",
       "remaining": "Remaining:",
       "edit": "Edit",
@@ -3323,7 +3324,6 @@
       "view_details_button": "View Details",
       "equity_investment_label": "Equity Investment",
       "debt_financing_label": "Debt Financing",
-      "expected_roi_label": "Expected ROI",
       "weighted_average": "Weighted average",
       "funding_status_label": "Funding Status",
       "of_budget": "of budget",
@@ -3355,7 +3355,6 @@
         "equity_ratio_label": "Equity Ratio:",
         "debt_ratio_label": "Debt Ratio:",
         "return_analysis_heading": "Return Analysis",
-        "expected_roi_label": "Expected ROI:",
         "investment_period_label": "Investment Period:",
         "risk_level_label": "Risk Level:",
         "timeline_heading": "Timeline",

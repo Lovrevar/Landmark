@@ -1422,8 +1422,8 @@
     "stats": {
       "total": "Ukupno dobavljača",
       "total_invoices": "Ukupno računa",
-      "total_paid": "Ukupno plaćeno (bez PDV)",
-      "remaining": "Preostalo (bez PDV)"
+      "total_paid": "Ukupno plaćeno",
+      "remaining": "Preostalo"
     },
     "search_placeholder": "Pretraži dobavljače...",
     "empty": {
@@ -1434,7 +1434,8 @@
     },
     "card": {
       "invoices": "Računi:",
-      "total_no_vat": "Ukupno (bez PDV):",
+      "total": "Ukupno (s PDV):",
+      "base": "Osnovica:",
       "paid": "Plaćeno:",
       "remaining": "Preostalo:",
       "edit": "Uredi",
@@ -3327,7 +3328,6 @@
       "view_details_button": "Pregled detalja",
       "equity_investment_label": "Dionički kapital",
       "debt_financing_label": "Dužničko financiranje",
-      "expected_roi_label": "Očekivani ROI",
       "weighted_average": "Ponderirani prosjek",
       "funding_status_label": "Status financiranja",
       "of_budget": "od budžeta",
@@ -3359,7 +3359,6 @@
         "equity_ratio_label": "Omjer kapitala:",
         "debt_ratio_label": "Omjer duga:",
         "return_analysis_heading": "Analiza prinosa",
-        "expected_roi_label": "Očekivani ROI:",
         "investment_period_label": "Investicijsko razdoblje:",
         "risk_level_label": "Razina rizika:",
         "timeline_heading": "Vremenski okvir",

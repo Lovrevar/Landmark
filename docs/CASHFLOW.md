@@ -6,6 +6,22 @@
 
 The largest module. Manages the full accounting lifecycle: invoices (multi-VAT), payments (with cesija and kompenzacija), bank accounts and credit lines, suppliers, office suppliers, customers, loans, approvals, and debt reporting. All financial flows pass through this module.
 
+## Money formatting
+
+Render amounts through the shared helpers in `src/utils/formatters.ts` — `formatEuro` (exact
+cents), `formatEuroRounded` (aggregates), `formatEuroCompact` (dashboard tiles) — never through a
+hand-rolled `toLocaleString`. Two rules the module used to break:
+
+- **€ goes first** (`€1.234,56`). The trailing-`€` renders in the land-purchase modal and the
+  approvals selection counter are gone.
+- **Never the browser's locale.** `toLocaleString(undefined, …)` renders `1,234.56` on an en-US
+  machine, which a Croatian reader parses as one thousandth of the amount. Where a translated
+  string already contains the `€` (e.g. `office_suppliers.invoices_modal.subtitle`), pass
+  `formatEuropean` so the symbol isn't doubled.
+
+A sweep of the remaining plain `toLocaleString('hr-HR')` money renders (correct locale, ragged
+decimals) is still outstanding — see `docs/UI_AUDIT.md`.
+
 ## Sub-modules
 
 ---
@@ -94,6 +110,12 @@ Bank account management, credit line tracking, and bank-linked invoice creation.
 
 ### BankCreditFormModal.tsx
 - Form for creating and editing bank credit facilities
+- ⚠️ **Currently unreachable.** `Banks/index.tsx` renders it but never destructures
+  `setShowCreditForm` or `handleEditCredit` from `useBanks`, and those are the only callers of
+  `setShowCreditForm(true)` — so `showCreditForm` can never become true and the modal never
+  opens. The equivalent live screen is `Funding/Investors` (`CreditFormModal` +
+  `PaymentSchedulePreview`). Either wire up an entry point or delete this modal and the
+  credit-form half of `useBanks`; do not assume edits here change anything on screen.
 - **Uses hooks:** useBanks
 - **Uses Ui:** Modal, Button, Select
 
@@ -478,10 +500,18 @@ Inter-company loan and transfer tracking.
 
 Suppliers for operational/office expenses, separate from project-linked suppliers.
 
+**Net vs gross.** `OfficeSupplierWithStats` carries both bases and they must not be mixed:
+`total_amount` is Σ`base_amount` (NET, "Osnovica"), while `gross_amount`, `paid_amount` and
+`remaining_amount` are all GROSS (s PDV). Only the gross three reconcile —
+`gross_amount − paid_amount = remaining_amount`. The card and the summary tiles show the gross
+figures with unqualified labels (matching `Suppliers`, which is also gross); the net figure is a
+secondary "Osnovica" line. Do not put "(bez PDV)" back on a label unless the number under it is
+`total_amount`.
+
 #### Services
 
 ### officeSupplierService.ts
-- `fetchSuppliersWithStats()` — fetches office suppliers and aggregates per-supplier invoice stats via a single batched `.in('office_supplier_id', ...)` query (previously a per-supplier N+1 loop)
+- `fetchSuppliersWithStats()` — fetches office suppliers and aggregates per-supplier invoice stats via a single batched `.in('office_supplier_id', ...)` query (previously a per-supplier N+1 loop); returns net (`total_amount`) and gross (`gross_amount`) side by side
 - `createSupplier(formData)` — inserts an office supplier (logs `office_supplier.create`)
 - `updateSupplier(id, formData)` — updates an office supplier
 - `deleteSupplier(id)` — removes an office supplier (logs `office_supplier.delete`)

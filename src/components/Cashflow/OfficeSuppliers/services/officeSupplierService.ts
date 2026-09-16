@@ -37,6 +37,7 @@ export const fetchSuppliersWithStats = async (): Promise<OfficeSupplierWithStats
       ...supplier,
       total_invoices: stats.count,
       total_amount: stats.base,
+      gross_amount: stats.total,
       paid_amount: stats.paid,
       remaining_amount: stats.total - stats.paid
     }

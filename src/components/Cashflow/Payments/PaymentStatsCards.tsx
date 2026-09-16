@@ -2,6 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Payment } from './types'
 import { StatCard } from '../../ui'
+import { formatEuro } from '../../../utils/formatters'
 
 interface PaymentStatsCardsProps {
   payments: Payment[]
@@ -22,7 +23,7 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
     .reduce((sum, p) => sum + p.amount, 0)
     .toLocaleString('hr-HR')
 
-  const vatInAmount = payments
+  const vatInAmount = formatEuro(payments
     .filter(p => {
       const invoice = p.accounting_invoices
       return invoice && invoice.invoice_type.startsWith('INCOMING_')
@@ -32,10 +33,9 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
       if (!invoice) return sum
       const vatRatio = invoice.total_amount ? p.amount / invoice.total_amount : 0
       return sum + (invoice.vat_amount * vatRatio)
-    }, 0)
-    .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    }, 0))
 
-  const vatOutAmount = payments
+  const vatOutAmount = formatEuro(payments
     .filter(p => {
       const invoice = p.accounting_invoices
       return invoice && invoice.invoice_type.startsWith('OUTGOING_')
@@ -45,8 +45,7 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
       if (!invoice) return sum
       const vatRatio = invoice.total_amount ? p.amount / invoice.total_amount : 0
       return sum + (invoice.vat_amount * vatRatio)
-    }, 0)
-    .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    }, 0))
 
   const totalExpense = payments
     .filter(p => {
@@ -86,13 +85,13 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
 
       <StatCard
         label={t('payments.stats.vat_in')}
-        value={`€${vatInAmount}`}
+        value={vatInAmount}
         color="red"
       />
 
       <StatCard
         label={t('payments.stats.vat_out')}
-        value={`€${vatOutAmount}`}
+        value={vatOutAmount}
         color="green"
       />
 

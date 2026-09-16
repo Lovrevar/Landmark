@@ -2,6 +2,7 @@ import React from 'react'
 import { CreditCard as Edit2, Trash2, Eye } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../ui'
+import { formatEuroCompact } from '../../../../utils/formatters'
 import type { BankWithCredits } from '../types'
 
 interface InvestorCardProps {
@@ -48,11 +49,11 @@ const InvestorCard: React.FC<InvestorCardProps> = ({ bank, onSelect, onEdit, onD
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
         <div className="text-center">
-          <p className="text-xl font-bold text-green-600">€{(bank.credit_utilized / 1000000).toFixed(1)}M</p>
+          <p className="text-xl font-bold text-green-600">{formatEuroCompact(bank.credit_utilized)}</p>
           <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.investors.card.credit_utilized')}</p>
         </div>
         <div className="text-center">
-          <p className="text-xl font-bold text-red-600">€{(bank.outstanding_debt / 1000000).toFixed(1)}M</p>
+          <p className="text-xl font-bold text-red-600">{formatEuroCompact(bank.outstanding_debt)}</p>
           <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.investors.card.outstanding')}</p>
         </div>
       </div>

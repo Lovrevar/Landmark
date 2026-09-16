@@ -119,10 +119,10 @@ const InvestmentProjects: React.FC = () => {
 
               <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-blue-700 dark:text-blue-300">{t('funding.projects.expected_roi_label')}</span>
+                  <span className="text-sm text-blue-700 dark:text-blue-300">{t('funding.projects.modal.avg_interest_rate_label')}</span>
                   <Target className="w-4 h-4 text-blue-600" />
                 </div>
-                <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{project.expected_roi.toFixed(1)}%</p>
+                <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{project.avg_interest_rate.toFixed(1)}%</p>
                 <p className="text-xs text-blue-600">{t('funding.projects.weighted_average')}</p>
               </div>
 

@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '../../../Common/CurrencyInput'
+import { formatEuro } from '../../../../utils/formatters'
 import { VatCalculation } from '../retailInvoiceTypes'
 
 interface RetailInvoiceCalculationSummaryProps {
@@ -86,7 +87,7 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-600 dark:text-gray-400">PDV 0%:</span>
-            <span className="font-medium">€0.00</span>
+            <span className="font-medium">{formatEuro(0)}</span>
           </div>
           <div className="flex justify-between text-sm font-semibold">
             <span className="text-gray-600 dark:text-gray-400">{t('invoices.form.subtotal')}</span>

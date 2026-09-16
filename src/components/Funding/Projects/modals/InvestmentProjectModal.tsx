@@ -106,7 +106,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                   <span className="text-sm text-teal-700 dark:text-teal-400">{t('funding.projects.modal.avg_interest_rate_label')}</span>
                   <Target className="w-4 h-4 text-teal-600" />
                 </div>
-                <p className="text-xl font-bold text-teal-900 dark:text-teal-300">{project.expected_roi.toFixed(1)}%</p>
+                <p className="text-xl font-bold text-teal-900 dark:text-teal-300">{project.avg_interest_rate.toFixed(1)}%</p>
                 <p className="text-xs text-teal-600 dark:text-teal-400">{t('funding.projects.weighted_average')}</p>
               </div>
             </StatGrid>
@@ -194,10 +194,8 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
                 <h5 className="font-medium text-gray-900 dark:text-white mb-3">{t('funding.projects.modal.return_analysis_heading')}</h5>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.expected_roi_label')}</span>
-                    <span className="font-medium text-green-600">{project.expected_roi.toFixed(1)}%</span>
-                  </div>
+                  {/* The average interest rate lives on the teal tile above — it is a cost of
+                      debt, not a return, so it does not belong in this panel a second time. */}
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.investment_period_label')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">

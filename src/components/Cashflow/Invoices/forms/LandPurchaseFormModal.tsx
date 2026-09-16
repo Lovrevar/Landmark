@@ -7,6 +7,7 @@ import { useLandPurchaseFormData, Contract } from '../hooks/useLandPurchaseFormD
 import { createLandPurchaseInvoices, LandPurchaseFormData } from '../services/landPurchaseService'
 import { checkDuplicateInvoiceNumber, isInvoiceNumberDuplicateError } from '../services/invoiceValidation'
 import { useToast } from '../../../../contexts/ToastContext'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface LandPurchaseFormModalProps {
   isOpen: boolean
@@ -115,7 +116,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     if (selectedContract) {
       const totalAmount = deposit_amount + remaining_amount
       if (Math.abs(totalAmount - selectedContract.base_amount) > 0.01) {
-        const mismatchMessage = `${t('invoices.land_purchase.amount_mismatch')} ${selectedContract.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €`
+        const mismatchMessage = `${t('invoices.land_purchase.amount_mismatch')} ${formatEuro(selectedContract.base_amount)}`
         errors.deposit_amount = mismatchMessage
         errors.remaining_amount = mismatchMessage
       }
@@ -318,7 +319,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                   <option value="">{t('invoices.land_purchase.select_contract')}</option>
                   {availableContracts.map((contract) => (
                     <option key={contract.id} value={contract.id}>
-                      {contract.contract_number} - {contract.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €
+                      {contract.contract_number} - {formatEuro(contract.base_amount)}
                     </option>
                   ))}
                 </select>
@@ -349,7 +350,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 <div>
                   <span className="text-slate-600 dark:text-gray-400">{t('invoices.land_purchase.contract_amount')}</span>
                   <span className="ml-2 font-semibold text-blue-700 dark:text-blue-300">
-                    {selectedContract.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €
+                    {formatEuro(selectedContract.base_amount)}
                   </span>
                 </div>
               </div>
@@ -438,12 +439,12 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                   <span className="text-lg font-semibold text-slate-700 dark:text-gray-200">{t('invoices.land_purchase.grand_total')}</span>
                   {amountMismatch && (
                     <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                      {t('invoices.land_purchase.amount_mismatch')} {contractAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })} €
+                      {t('invoices.land_purchase.amount_mismatch')} {formatEuro(contractAmount)}
                     </p>
                   )}
                 </div>
                 <span className={`text-2xl font-bold ${amountMismatch ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-300'}`}>
-                  {totalAmount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  {formatEuro(totalAmount)}
                 </span>
               </div>
             </div>

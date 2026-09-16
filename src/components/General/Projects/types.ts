@@ -124,7 +124,12 @@ export interface ProjectWithFinancials extends Project {
   banks: Bank[]
   funding_ratio: number
   debt_to_equity: number
-  expected_roi: number
+  /**
+   * Average interest rate (%) across the project's DEBT allocations, weighted by allocated
+   * amount. Was `expected_roi` and shown as a return — it never was one; see
+   * `Funding/Projects/utils/weightedInterestRate.ts`.
+   */
+  avg_interest_rate: number
   risk_level: 'Low' | 'Medium' | 'High'
 }
 

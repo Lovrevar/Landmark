@@ -5,6 +5,7 @@ import DateInput from '../../../Common/DateInput'
 import { BankWithCredits, Company, BankCredit, NewCreditForm, CompanyBankAccount } from '../bankTypes'
 import { calculatePayments, fetchCompanyBankAccounts } from '../services/bankService'
 import { Modal, Button, Select, Input, Textarea, FormField } from '../../../ui'
+import { formatEuroRounded } from '../../../../utils/formatters'
 
 interface BankCreditFormModalProps {
   showCreditForm: boolean
@@ -83,13 +84,13 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">{t('banks.credit_form.principal_payment')}</p>
-                <p className="text-xl font-bold text-blue-900 dark:text-blue-100">€{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                <p className="text-xl font-bold text-blue-900 dark:text-blue-100">{formatEuroRounded(calculation.principalPerPayment)}</p>
                 <p className="text-xs text-blue-600 dark:text-blue-400">{t('banks.credit_form.every_freq', { frequency: calculation.principalFrequency })}</p>
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalPrincipalPayments })}</p>
               </div>
               <div>
                 <p className="text-sm text-green-700 dark:text-green-400 mb-1">{t('banks.credit_form.interest_payment')}</p>
-                <p className="text-xl font-bold text-green-900 dark:text-green-200">€{calculation.interestPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                <p className="text-xl font-bold text-green-900 dark:text-green-200">{formatEuroRounded(calculation.interestPerPayment)}</p>
                 <p className="text-xs text-green-600 dark:text-green-400">{t('banks.credit_form.every_freq', { frequency: calculation.interestFrequency })}</p>
                 <p className="text-xs text-green-600 dark:text-green-400 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalInterestPayments })}</p>
               </div>
