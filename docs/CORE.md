@@ -117,9 +117,18 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 
 ### formatters.ts
 - `formatFileSize(bytes)` — returns human-readable file size string (B / KB / MB)
-- `formatEuropean(value)` — formats a number using `hr-HR` locale with 2 decimal places (comma as decimal separator)
-- `formatEuro(value)` — returns `€` prefix plus `formatEuropean(value)`
+- `formatEuropean(value)` — `hr-HR` number, always 2 decimals, no symbol: `1.234,56`. Use when the `€` is supplied separately, e.g. it already sits inside a translated string
+- `formatEuro(value)` — `€1.234,56`. **Exact cents**: invoices, contracts, payments, per-record amounts
+- `formatEuroRounded(value)` — `€1.235`. **Aggregates**, where cents are noise (phase and group rollups, yearly totals). Also cures the ragged `toLocaleString('hr-HR')` output, where a whole number renders `73.125` but a fractional one renders `1.425.597,5`
+- `formatEuroCompact(value)` — `€1,2M` / `€45K` / `€9.500`. **Dashboard tiles and chart axes only.** Thousands start at 10.000, so a five-figure amount keeps its digits; every screen used to divide by a million itself, which rendered €45.000 as `€0.0M`
+- All four accept `number | null | undefined` and render `—` (`NO_VALUE`) for a missing value or `NaN`. A budget that was never set must never read as €0
+- **`€` goes first** — `€1.234,56`, not `1.234,56 €`. `Intl` with `style: 'currency'` emits the suffix form, so don't use it; the module-local formatters that did now delegate to these helpers
 - Use these everywhere — do not inline number/currency formatting
+- **PDF exception:** `hr-HR` renders the minus as U+2212, which is outside WinAnsi and garbles a whole string in jsPDF built-in fonts. PDF generators swap it for an ASCII hyphen (see `docs/REPORTS.md`) or embed a Unicode font
+
+### contractRollup.ts
+- `rollupContracts(rows)` / `remainingBudget(budget, rollup)` — the contract totals behind a phase card: contracted value, paid, unpaid, and unpaid-without-contract, then budget headroom
+- Takes a neutral row (`hasContract` / `cost` / `paid` / `owed`), so Supervision and Retail map their own columns onto it instead of keeping two copies of the arithmetic
 
 ### permissions.ts
 - `canManagePayments(user)` — true for Director, Accounting, Investment

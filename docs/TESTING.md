@@ -20,7 +20,7 @@ Pure functions only — the deterministic calculation and formatting helpers tha
 
 | Target | File | Covers |
 |---|---|---|
-| Formatters | [`src/utils/formatters.test.ts`](../src/utils/formatters.test.ts) | `formatFileSize`, `formatEuropean` (hr-HR locale, U+2212 minus), `formatEuro` |
+| Formatters | [`src/utils/formatters.test.ts`](../src/utils/formatters.test.ts) | `formatFileSize`, `formatEuropean` (hr-HR locale, U+2212 minus), `formatEuro`, `formatEuroRounded` (ragged-decimal cure), `formatEuroCompact` (M/K thresholds, never €0.0M), and the nullish/NaN → dash contract on all four |
 | VAT calculations | [`src/utils/vatCalculations.test.ts`](../src/utils/vatCalculations.test.ts) | `CROATIAN_VAT_RATES`, `calculateVatBreakdown` — the 4-slot multi-VAT engine (25/13/0/5%), null-safe, total = sum of subtotals invariant |
 | Sales price utils | [`src/components/Sales/utils/priceUtils.test.ts`](../src/components/Sales/utils/priceUtils.test.ts) | `calculateAdjustedPriceRange` — increase/decrease with clamp-to-zero |
 | Credit calculations | [`src/components/Funding/Investors/utils/creditCalculations.test.ts`](../src/components/Funding/Investors/utils/creditCalculations.test.ts) | annuity payments, equity cashflow, money multiple, payment schedules, risk levels, badge variants |

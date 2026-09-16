@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatFileSize, formatEuropean, formatEuro, formatEuroRounded } from './formatters'
+import { formatFileSize, formatEuropean, formatEuro, formatEuroRounded, formatEuroCompact } from './formatters'
 
 describe('formatFileSize', () => {
   it('formats bytes under 1 KiB with no decimals', () => {
@@ -74,5 +74,52 @@ describe('formatEuroRounded', () => {
     // hr-HR uses U+2212 MINUS SIGN, not an ASCII hyphen. Asserted explicitly so a future change
     // to the locale or formatter shows up here rather than in a snapshot somewhere.
     expect(formatEuroRounded(-1500.6)).toBe('€\u22121.501')
+  })
+})
+
+describe('formatEuroCompact', () => {
+  it('abbreviates millions to one decimal, with the Croatian comma', () => {
+    expect(formatEuroCompact(1234567)).toBe('€1,2M')
+    expect(formatEuroCompact(40000000)).toBe('€40,0M')
+  })
+
+  it('abbreviates from ten thousand upwards', () => {
+    expect(formatEuroCompact(45000)).toBe('€45K')
+    expect(formatEuroCompact(450500)).toBe('€451K')
+  })
+
+  // The bug this helper exists for: every dashboard divided by a million itself, so a real
+  // €45.000 rendered as "€0.0M".
+  it('never collapses a smaller figure to zero', () => {
+    expect(formatEuroCompact(45000)).not.toContain('0,0M')
+    expect(formatEuroCompact(9500)).toBe('€9.500')
+    expect(formatEuroCompact(999)).toBe('€999')
+    expect(formatEuroCompact(0)).toBe('€0')
+  })
+
+  it('abbreviates negatives by magnitude', () => {
+    expect(formatEuroCompact(-2500000)).toBe('€\u22122,5M')
+    expect(formatEuroCompact(-45000)).toBe('€\u221245K')
+  })
+})
+
+// Every money helper takes nullable input: a budget that was never set must read as a dash,
+// not "€0" (the budget invariant in docs/CODEBASE_INDEX.md), and must never throw mid-render.
+describe('missing and invalid values', () => {
+  it.each([
+    ['formatEuropean', formatEuropean],
+    ['formatEuro', formatEuro],
+    ['formatEuroRounded', formatEuroRounded],
+    ['formatEuroCompact', formatEuroCompact],
+  ])('%s renders a dash instead of throwing', (_name, format) => {
+    expect(format(null)).toBe('—')
+    expect(format(undefined)).toBe('—')
+    expect(format(Number.NaN)).toBe('—')
+    expect(format(Number.POSITIVE_INFINITY)).toBe('—')
+  })
+
+  it('still renders a real zero as money', () => {
+    expect(formatEuro(0)).toBe('€0,00')
+    expect(formatEuroCompact(0)).toBe('€0')
   })
 })
