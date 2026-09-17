@@ -12,6 +12,7 @@ export function useSupervisionInvoices() {
   const toast = useToast()
   const [invoices, setInvoices] = useState<InvoiceWithDetails[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [filterApproved, setFilterApproved] = useState<'all' | 'approved' | 'not_approved'>('all')
@@ -24,17 +25,20 @@ export function useSupervisionInvoices() {
 
   const loadInvoices = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await fetchSupervisionInvoices()
       setInvoices(data)
       setStats(calculateInvoiceStats(data))
     } catch (err) {
       console.error('Error fetching invoices:', err)
-      toast.error('Failed to load invoices')
+      // Neither the rows nor the stats are replaced with zeros: the screen renders the failure
+      // instead, so "€0 invoiced" is never shown for a register that simply did not load.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
   useEffect(() => { loadInvoices() }, [loadInvoices])
 
@@ -87,6 +91,10 @@ export function useSupervisionInvoices() {
 
   return {
     loading,
+    error,
+    /** False when nothing has loaded, so the caller can tell a failed load from an empty register. */
+    hasData: invoices.length > 0,
+    refetch: loadInvoices,
     stats,
     filteredInvoices,
     paginatedInvoices,

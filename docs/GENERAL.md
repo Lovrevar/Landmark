@@ -45,6 +45,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 
 ### useProjectForm.ts
 - `useProjectForm(projectId, onSaved, onDeleted)` — manages form state, validation, and save/delete for project create/edit; delete runs through a `ConfirmDialog` (showDeleteConfirm/confirmDelete/cancelDelete)
+- Error text comes from the shared [`src/lib/errorMessage.ts`](../src/lib/errorMessage.ts) (`toErrorMessage` / `isPermissionError`); the local copies of those two helpers were promoted there. A thin local `toFormError` keeps the one project-specific case: a 42501 returns the key `general_projects.error_permission_denied`, which `ProjectFormModal` runs through `t()`. The shared helper also refuses raw Postgres text ("new row violates row-level security policy…") in favour of the caller's fallback
 - **Calls:** projectFormService.ts (`fetchProjectById`, `createProject`, `updateProject`, `deleteProject`)
 - **Returns:** form, setForm, loading, error, setError, handleSubmit, handleDelete, confirmDelete, cancelDelete, showDeleteConfirm, deleting
 
@@ -160,7 +161,9 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 
 ### hooks/useBudgetControl.ts
 - `useBudgetControl()` — loads the projects list on mount and auto-selects the first; on selection fetches budget data and computes `plannedBudget` (sum of phase `budget_allocated`), `committed` (sum of `contract_amount`), `paid` (sum of `budget_realized`), `completionPct` (paid / committed), `tic` (project budget), and the EVM `metrics`
-- **Returns (`BudgetControlData`):** `projects`, `selectedProjectId`, `setSelectedProjectId`, `data` (`tic`, `plannedBudget`, `committed`, `paid`, `completionPct`, `metrics`), `loading`, `error`
+- **Returns (`BudgetControlData`):** `projects`, `selectedProjectId`, `setSelectedProjectId`, `data` (`tic`, `plannedBudget`, `committed`, `paid`, `completionPct`, `metrics`), `loading`, `error`, `refetch`
+- `refetch` re-runs both loads (a reload counter both effects depend on) and preserves the selected project
+- A failed project-data load now **clears `data`**. Leaving the previous project's EVM figures standing attributed one project's numbers to whichever project the selector named
 - **Calls:** budgetControlService.ts (`fetchProjectsList`, `fetchProjectBudgetData`)
 - **Calls:** `calculateProjectEVM` from `src/utils/evm.ts`
 
@@ -175,6 +178,7 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 - Index card colors via `getIndexStatus`: green (≥ 1.0), yellow (0.9–1.0), red (< 0.9)
 - Money goes through the shared helpers ([`src/utils/formatters.ts`](../src/utils/formatters.ts)): `compactEuro` (= `formatEuroCompact`) on the EVM tiles and the chart's Y axis, `formatEuroFull` (= `formatEuro`) on the metric cards and the chart tooltip. `compactEuro` was previously a local `formatEuro` that **shadowed the shared name while meaning the opposite** (abbreviated, not exact), abbreviated from €1.000 up (so €1.500 read "€2K") and used a decimal point where the rest of the app uses a comma
 - Empty/edge states: no projects, and "no budget data" when `plannedBudget` is 0
+- With an error and no figures loaded, an `ErrorState` (with the service's message as its description) and a retry replace the page body; with figures on screen the error stays as the inline red banner above them
 - **Uses hooks:** useBudgetControl
 - **Uses lib:** recharts (BarChart, ScatterChart, ReferenceLine)
 - **Uses Ui:** LoadingSpinner
@@ -207,7 +211,8 @@ Director-only audit trail UI. Displays all logged mutations across the platform 
 ### hooks/useActivityLog.ts
 - `useActivityLog()` — manages filter state, debounced search (500ms), server-side pagination, reference data for dropdowns, and detail modal state
 - **Calls:** activityLogQueryService.ts
-- **Returns:** logs, loading, totalCount, pagination, all filter state + setters, selectedLog, resetFilters, refetch
+- **Returns:** logs, loading, error, totalCount, pagination, all filter state + setters, selectedLog, resetFilters, refetch
+- A failed fetch **no longer clears `logs` / `totalCount`**. This is the audit trail: an empty table reads as "nobody did anything in this period", which a failed query has no business asserting. The rows from the last successful read stay and the page renders the failure over them
 
 #### Views
 
@@ -215,8 +220,9 @@ Director-only audit trail UI. Displays all logged mutations across the platform 
 - Director-only guard via `canViewActivityLog(user)` — redirects to `/` for non-Directors
 - Filter bar: search, user, category, severity, project, date range, reset
 - Results table with pagination
+- Three-way results area: spinner while loading, `ErrorState` with a retry when the query failed and nothing is loaded, `EmptyState` only for a genuinely empty result. With stale rows on screen an `Alert variant="error"` above the table says `activity_log.stale_after_error` ("these entries are from the last successful read, not from the current filters") and offers the retry
 - **Uses hooks:** useActivityLog
-- **Uses Ui:** PageHeader, SearchInput, Select, Pagination, LoadingSpinner, EmptyState, Button
+- **Uses Ui:** PageHeader, SearchInput, Select, Pagination, LoadingSpinner, EmptyState, ErrorState, Alert, Button
 
 ### ActivityLogTable.tsx
 - Table columns: Timestamp (hr-HR), User (name + role badge), Action (i18n), Entity (type + truncated ID), Project, Severity (colored badge), Details (eye icon)
@@ -239,3 +245,4 @@ Director-only audit trail UI. Displays all logged mutations across the platform 
 - This is the canonical project model — `Retail/Projects` and `Supervision/SiteManagement` are domain-specific extensions of this pattern
 - When adding project-level features that apply across domains, consider whether they belong here first
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`
+- **Failed loads are not empty states.** ActivityLog and BudgetControl expose `error` + `refetch` and render `ErrorState` (from `src/components/ui`) in the content area, keeping the header and filters mounted. `Projects/index.tsx` still fetches inline in the component and is **not** yet converted — it is part of the deferred set of in-component fetches from the same audit item

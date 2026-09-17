@@ -4,7 +4,7 @@ import { Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { Subcontractor, WirePayment } from '../../../../lib/supabase'
 import { fetchContractInvoiceTotals } from '../services/siteService'
-import { Modal, Button, Badge, EmptyState } from '../../../ui'
+import { Modal, Button, Badge, EmptyState, ErrorState } from '../../../ui'
 
 interface AccountingPayment {
   id: string
@@ -44,6 +44,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   const [totalInvoiceAmount, setTotalInvoiceAmount] = useState<number>(0)
   const [totalPaidAmount, setTotalPaidAmount] = useState<number>(0)
   const [loading, setLoading] = useState(false)
+  const [totalsError, setTotalsError] = useState<Error | null>(null)
 
   useEffect(() => {
     if (visible) {
@@ -62,14 +63,16 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
     const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
 
     setLoading(true)
+    setTotalsError(null)
     try {
       const { totalInvoiceAmount, totalPaidAmount } = await fetchContractInvoiceTotals(contractId)
       setTotalInvoiceAmount(totalInvoiceAmount)
       setTotalPaidAmount(totalPaidAmount)
     } catch (error) {
       console.error('Error fetching invoice totals:', error)
-      setTotalInvoiceAmount(0)
-      setTotalPaidAmount(0)
+      // Zeroing these read as "never invoiced, never paid, nothing outstanding" on a contract
+      // that may be fully billed. The figures are withheld instead, and the failure is named.
+      setTotalsError(error instanceof Error ? error : new Error(String(error)))
     } finally {
       setLoading(false)
     }
@@ -97,6 +100,9 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
 
       <Modal.Body>
           <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            {totalsError ? (
+              <ErrorState compact onRetry={fetchInvoiceTotals} />
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.payment_history.total_invoices')}</p>
@@ -117,6 +123,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                 </p>
               </div>
             </div>
+            )}
           </div>
 
         <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('supervision.payment_history.all_payments')} ({payments.length})</h4>

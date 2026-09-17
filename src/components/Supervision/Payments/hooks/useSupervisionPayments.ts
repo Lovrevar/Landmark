@@ -5,12 +5,11 @@ import {
   calculatePaymentStats,
   exportPaymentsCSV,
 } from '../services/supervisionPaymentService'
-import { useToast } from '../../../../contexts/ToastContext'
 
 export function useSupervisionPayments() {
-  const toast = useToast()
   const [payments, setPayments] = useState<PaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
@@ -20,17 +19,20 @@ export function useSupervisionPayments() {
 
   const loadPayments = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await fetchSupervisionPayments()
       setPayments(data)
       setStats(calculatePaymentStats(data))
     } catch (err) {
       console.error('Error fetching payments:', err)
-      toast.error('Failed to load payments')
+      // Kept out of the stats deliberately: "€0 paid this month" is a claim, and a failed read
+      // is not entitled to make it.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
   useEffect(() => { loadPayments() }, [loadPayments])
 
@@ -57,6 +59,10 @@ export function useSupervisionPayments() {
 
   return {
     loading,
+    error,
+    /** False when nothing has loaded, so the caller can tell a failed load from "no payments". */
+    hasData: payments.length > 0,
+    refetch: loadPayments,
     stats,
     filteredPayments,
     searchTerm,

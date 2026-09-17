@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Table } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { format } from 'date-fns'
 import { usePaymentsData } from './hooks/usePaymentsData'
 
 const FundingPaymentsManagement: React.FC = () => {
   const { t } = useTranslation()
-  const { payments, stats, loading, refetch } = usePaymentsData()
+  const { payments, stats, loading, error, refetch } = usePaymentsData()
+  const [errorDismissed, setErrorDismissed] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
@@ -55,20 +56,35 @@ const FundingPaymentsManagement: React.FC = () => {
     a.click()
   }
 
-  if (loading) {
+  if (loading && payments.length === 0) {
     return <LoadingSpinner message={t('funding.payments.loading')} />
   }
+
+  // Nothing loaded and the load failed: the four stat cards would report €0 disbursed.
+  const failedWithNothing = !!error && payments.length === 0
 
   return (
     <div className="max-w-7xl mx-auto">
       <PageHeader title={t('funding.payments.title')} description={t('funding.payments.description')} />
 
+      {error && !errorDismissed && !failedWithNothing && (
+        <Alert variant="error" className="mb-6" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            <Button size="sm" variant="secondary" onClick={refetch} loading={loading}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {/* Withheld rather than zeroed when the read failed; the filter bar below stays mounted. */}
+      {!failedWithNothing && (
       <StatGrid columns={4}>
         <StatCard label={t('funding.payments.stats.total_payments_label')} value={stats.totalPayments} subtitle={t('funding.payments.stats.bank_payments_subtitle', { count: stats.bankPayments })} icon={FileText} color="blue" />
         <StatCard label={t('funding.payments.stats.total_amount_label')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
         <StatCard label={t('funding.payments.stats.this_month_label')} value={stats.paymentsThisMonth} subtitle={t('funding.payments.stats.payments_subtitle')} icon={Calendar} color="blue" />
         <StatCard label={t('funding.payments.stats.month_amount_label')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -110,7 +126,9 @@ const FundingPaymentsManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredPayments.length === 0 ? (
+      {failedWithNothing ? (
+        <ErrorState onRetry={refetch} />
+      ) : filteredPayments.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title={t('funding.payments.no_payments_title')}

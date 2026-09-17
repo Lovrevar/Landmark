@@ -4,6 +4,7 @@ import { ProjectPhase } from '../../../../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput } from '../types'
 import * as siteService from '../services/siteService'
 import { useToast } from '../../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../../lib/errorMessage'
 
 export type PendingConfirm = {
   title: string
@@ -34,8 +35,12 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
   const recalculateAllPhaseBudgets = async () => {
     try {
       await siteService.recalculateAllPhaseBudgets()
+      return true
     } catch (error) {
       console.error('Error recalculating phase budgets:', error)
+      // Silence here left every phase budget on screen stale with nothing to say so.
+      toast.error(toErrorMessage(error, t('supervision.site_management.recalculate_budgets_failed')))
+      return false
     }
   }
 

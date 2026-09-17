@@ -8,6 +8,7 @@ export const useSiteProjectData = () => {
   const [projects, setProjects] = useState<ProjectWithPhases[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
   const [existingSubcontractors, setExistingSubcontractors] = useState<Subcontractor[]>([])
   const hasLoadedRef = useRef(false)
 
@@ -17,6 +18,7 @@ export const useSiteProjectData = () => {
     } else {
       setLoading(true)
     }
+    setError(null)
     try {
       const [projectsData, phasesData, subcontractorsWithPhaseData, allSubcontractorsData, classificationBudgets, ticLineItems] = await Promise.all([
         siteService.fetchAllProjects(),
@@ -91,8 +93,11 @@ export const useSiteProjectData = () => {
 
       setProjects(projectsWithPhases)
       hasLoadedRef.current = true
-    } catch (error) {
-      console.error('Error fetching projects:', error)
+    } catch (err) {
+      console.error('Error fetching projects:', err)
+      // Whatever was already on screen is kept: a failed refresh must not turn a project list
+      // into "no projects". The caller renders the error instead of, or above, the grid.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -103,5 +108,5 @@ export const useSiteProjectData = () => {
     fetchProjects()
   }, [])
 
-  return { projects, loading, refreshing, existingSubcontractors, fetchProjects }
+  return { projects, loading, refreshing, error, existingSubcontractors, fetchProjects, refetch: fetchProjects }
 }

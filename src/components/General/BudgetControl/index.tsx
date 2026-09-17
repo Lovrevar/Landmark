@@ -24,6 +24,7 @@ import {
 import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { useBudgetControl } from './hooks/useBudgetControl'
 import LoadingSpinner from '../../ui/LoadingSpinner'
+import ErrorState from '../../ui/ErrorState'
 import { formatEuro, formatEuroCompact } from '../../../utils/formatters'
 
 /**
@@ -87,7 +88,7 @@ const tooltipStyle = {
 
 export default function BudgetControl() {
   const { t } = useTranslation()
-  const { projects, selectedProjectId, setSelectedProjectId, data, loading, error } = useBudgetControl()
+  const { projects, selectedProjectId, setSelectedProjectId, data, loading, error, refetch } = useBudgetControl()
 
   const barData = data
     ? [
@@ -132,7 +133,13 @@ export default function BudgetControl() {
         </div>
       </div>
 
-      {error && (
+      {/* No figures loaded and the load failed: the screen says so and offers a retry, instead of
+          leaving the reader with an empty page that looks like a project with no cost plan. */}
+      {error && !loading && !data && (
+        <ErrorState onRetry={refetch} description={error} />
+      )}
+
+      {error && data && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg px-4 py-3 text-sm">
           {error}
         </div>

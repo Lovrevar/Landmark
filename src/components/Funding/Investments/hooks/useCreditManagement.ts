@@ -12,6 +12,8 @@ import {
   deleteAllocation,
 } from '../services/creditService'
 import { useToast } from '../../../../contexts/ToastContext'
+import { useTranslation } from 'react-i18next'
+import { toErrorMessage } from '../../../../lib/errorMessage'
 
 const EMPTY_FORM: AllocationFormData = {
   allocation_type: 'project',
@@ -24,13 +26,14 @@ const EMPTY_FORM: AllocationFormData = {
 
 export function useCreditManagement() {
   const toast = useToast()
+  const { t } = useTranslation()
   const [credits, setCredits] = useState<BankCredit[]>([])
   const [allocations, setAllocations] = useState<Map<string, CreditAllocation[]>>(new Map())
   const [disbursedAmounts, setDisbursedAmounts] = useState<Map<string, number>>(new Map())
   const [expandedCredits, setExpandedCredits] = useState<Set<string>>(new Set())
   const [expandedAllocations, setExpandedAllocations] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<Error | null>(null)
 
   const [showAllocationModal, setShowAllocationModal] = useState(false)
   const [selectedCredit, setSelectedCredit] = useState<BankCredit | null>(null)
@@ -72,7 +75,9 @@ export function useCreditManagement() {
         await Promise.all(creditData.map(c => loadAllocationsForCredit(c.id)))
       }
     } catch (err) {
-      setError('Greška pri učitavanju podataka')
+      // `credits` is left as it was: an empty list here reads as "this company has no credit
+      // lines", which is the opposite of what a failed read knows.
+      setError(err instanceof Error ? err : new Error(String(err)))
       console.error(err)
     } finally {
       setLoading(false)
@@ -152,11 +157,15 @@ export function useCreditManagement() {
     try {
       await deleteAllocation(pendingDeleteAllocation.allocationId)
       await loadAllocationsForCredit(pendingDeleteAllocation.creditId)
+      toast.success(t('funding.investments.allocation_delete_success'))
+      // Closed only here. Closing it in `finally` made a refused delete — an RLS denial, a
+      // drawdown still referencing the allocation — look exactly like a successful one.
+      setPendingDeleteAllocation(null)
     } catch (err) {
       console.error('Error deleting allocation:', err)
+      toast.error(toErrorMessage(err, t('funding.investments.allocation_delete_failed')))
     } finally {
       setDeletingAllocation(false)
-      setPendingDeleteAllocation(null)
     }
   }
 
@@ -170,6 +179,7 @@ export function useCreditManagement() {
     expandedAllocations,
     loading,
     error,
+    refetch: loadData,
     projects,
     companies,
     banks,

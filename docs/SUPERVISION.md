@@ -161,17 +161,20 @@ so a client write would survive only until the next one.
 ### hooks/useSiteData.ts
 - `useSiteData()` — aggregator hook that composes useSiteProjectData, useProjectPhases, useSubcontractorManagement, and useSubcontractorComments into a single return object
 - **Calls:** useSiteProjectData, useProjectPhases, useSubcontractorManagement, useSubcontractorComments
+- Re-exports `error` and `refetch` from useSiteProjectData alongside `projects` / `loading` / `refreshing`
 
 ### hooks/useSiteProjectData.ts
 - `useSiteProjectData()` — fetches projects with phases, subcontractors, and invoice stats; builds existingSubcontractors array
 - **Calls:** siteService barrel (`fetchAllProjects`, `fetchSubcontractorsWithPhases`; `fetchProjectPhases`, `fetchAllSubcontractors`, `fetchInvoiceStatsForContracts` via re-export from phaseService/siteSubcontractorService)
-- **Returns:** projects, loading, refreshing, existingSubcontractors, fetchProjects
+- On failure the previously loaded projects are **kept** and `error` is set; the grid must never render a failed read as "no projects on site"
+- **Returns:** projects, loading, refreshing, error, existingSubcontractors, fetchProjects, refetch (alias of fetchProjects)
 
 ### hooks/useProjectPhases.ts
 - `useProjectPhases(fetchProjects)` — manages phase CRUD with budget-allocation validation via a Promise-based requestConfirm flow
 - `createProjectPhases` / `updateProjectPhases` toast `supervision.site_management.phase_setup.errors.has_dependents` (listing each blocked phase with its contract and work-log counts) for a `PhaseHasDependentsError`, and `…errors.create_failed` / `…errors.update_failed` otherwise
 - `deletePhase` (single phase) strings live under `supervision.site_management.delete_phase.*`; the confirm reuses `common.confirm_delete` / `common.yes_delete`
 - **Calls:** siteService barrel → phaseService (`recalculateAllPhaseBudgets`, `createPhases`, `updatePhase`, `deletePhase`, `resequencePhases`, `updateProjectPhases`)
+- `recalculateAllPhaseBudgets` toasts `supervision.site_management.recalculate_budgets_failed` and returns `false` on failure — silence there left every phase budget on screen stale with nothing to say so
 - **Returns:** recalculateAllPhaseBudgets, createProjectPhases, updatePhase, deletePhase, updateProjectPhases, pendingConfirm
 
 ### utils/phaseSetup.ts
@@ -183,20 +186,24 @@ so a client write would survive only until the next one.
 - `updateSubcontractor(subcontractor, pendingFiles = [])` — after a successful update, uploads `pendingFiles` via `uploadSubcontractorDocuments` (only when `has_contract`), mirroring the add path; a failed upload only warns with `supervision.edit_subcontractor.document_upload_failed`. Other failures toast `supervision.edit_subcontractor.errors.update_failed`
 - `updateSubcontractor` passes `classification_id` through and applies the same classification budget gate as the add path (for contracts with `has_contract` and a classification). The contract's own amount is excluded from `used`, and an edit that does not raise what the contract commits to the bucket is never refused, so an already over-allocated bucket still lets you fix names or dates. A refusal toasts `supervision.subcontractor_form.errors.exceeds_classification_budget` and returns `false`, keeping the modal open
 - **Calls:** siteService barrel → siteContractService (`createContract`, `generateUniqueContractNumber`), siteSubcontractorService (`createSubcontractorWithReturn`, `updateSubcontractor`, `deleteSubcontractor`, `getSubcontractorDetails`, `uploadSubcontractorDocuments`), phaseService (`getPhaseInfo`, `updatePhase`, `recalculatePhaseBudget`), wirePaymentService (`fetchWirePayments`)
+- `fetchWirePayments` **rejects** on failure (it used to `return []`). `SiteManagement/index.tsx` wraps it in `loadWirePayments`, which toasts `supervision.payment_history.load_failed` and returns `null`; the payment-history modal is not opened on a `null`, so a failed read can never show a paid contract as having no payments
 - **Returns:** addSubcontractorToPhase, updateSubcontractor, deleteSubcontractor, pendingDeleteSubcontractor, confirmDeleteSubcontractor, cancelDeleteSubcontractor, deletingSubcontractor, addPaymentToSubcontractor, fetchWirePayments, updateWirePayment, deleteWirePayment
 
 ### hooks/useSubcontractorComments.ts
 - `useSubcontractorComments()` — fetches and creates subcontractor comments; supports types: completed, issue, general
+- `fetchSubcontractorComments` **rejects** on failure (it used to `return []`, which hid the failure from every caller and read as "nobody has commented"). `SiteManagement/index.tsx` catches it into `commentsError` and the details modal renders a compact `ErrorState` in place of the "no comments" panel
+- `addSubcontractorComment` toasts `supervision.site_management.comments.add_success` on success and `…comments.add_failed` (through `toErrorMessage`) on failure — the caller keeps the typed comment in the box on a `false` return, so the toast is the only explanation for it still being there
 - **Calls:** siteService barrel → siteSubcontractorService (`fetchSubcontractorComments`, `createSubcontractorComment`)
 - **Returns:** fetchSubcontractorComments, addSubcontractorComment
 
 ### hooks/useCostClassifications.ts
 - `useCostClassifications(includeInactive?)` — loads the global classification list once at the SiteManagement root and passes it down, rather than duplicating it onto every project
+- **Returns:** classifications, loading, error, load, refetch (alias of load). A failed load surfaces as an `Alert` with a retry above ProjectDetail and inside the two subcontractor modals — an empty list would otherwise read as "no classifications exist" and silently block the form's required dropdown
 
 ### hooks/useContractTypes.ts
 - `useContractTypes()` — loads active contract types from the contract_types table
 - **Calls:** contractTypesService (`fetchActiveContractTypes`)
-- **Returns:** contractTypes, loading, load
+- **Returns:** contractTypes, loading, error, load, refetch (alias of load). Same reasoning as useCostClassifications: the category dropdown is required to save
 
 ### hooks/useVATCalculation.ts
 - `useVATCalculation(baseAmount, vatRate)` — computes vatAmount and totalAmount via useMemo
@@ -222,6 +229,7 @@ so a client write would survive only until the next one.
 
 ### ProjectsGrid.tsx
 - Project card grid with budget allocation progress bars, phase count, subcontractor count, and timeline
+- Takes an optional `error`: with no projects loaded it replaces the grid (and the "no projects" empty state) with an `ErrorState` wired to `onRefresh`; with projects on screen it shows a dismissible `Alert variant="error"` above them. The title and Refresh button stay mounted either way
 - Each card's badge row carries the project-category badge (ProjectCategoryBadge) next to the status badge
 
 ### ProjectDetail.tsx
@@ -311,7 +319,8 @@ the orchestrator does the writes and re-fetches.
 
 #### SubcontractorDetailsModal.tsx
 - Read-only detail panel plus the comment thread (`completed` / `issue` / `general`)
-- Props: `visible`, `onClose`, `subcontractor` (`SubcontractorWithPhase | null`), `comments`, `newComment`, `commentType`, `onCommentChange`, `onCommentTypeChange`
+- Props: `visible`, `onClose`, `subcontractor` (`SubcontractorWithPhase | null`), `comments`, `commentsError`, `onRetryComments`, `newComment`, `commentType`, `onCommentChange`, `onCommentTypeChange`
+- With `commentsError` set and no comments, the thread area shows a compact `ErrorState` with a retry instead of the "no comments yet" panel
 
 #### MilestoneFormModal.tsx
 - Creates a contract milestone; carries the subcontractor / project / phase names and `contractCost` for context so the percentage split is checkable at a glance
@@ -327,6 +336,7 @@ the orchestrator does the writes and re-fetches.
 
 #### PaymentHistoryModal.tsx
 - Merged payment history for one subcontractor — both `WirePayment` and `AccountingPayment` rows in a single list, since a subcontractor can be paid through either path
+- The three totals (invoiced / paid / remaining) used to be **zeroed** when `fetchContractInvoiceTotals` failed, so a fully billed contract read as unbilled and unpaid. The figures are now withheld and a compact `ErrorState` with a retry takes their place
 - Props: `visible`, `onClose`, `subcontractor`, `payments: (WirePayment | AccountingPayment)[]`
 
 #### InvoicesModal.tsx
@@ -395,7 +405,7 @@ Standalone subcontractor registry with aggregated contract and payment summaries
 #### Hooks
 
 ### hooks/useSubcontractorData.ts
-- `useSubcontractorData()` — wraps the registry fetch and delete; exposes the aggregated summary map and loading state
+- `useSubcontractorData()` — wraps the registry fetch and delete; exposes the aggregated summary map, loading state and `error` (plus `refetch`, an alias of `fetchData`). On a failed load the page hides its four stat cards, shows "—" for the header count and renders an `ErrorState` in the list area, because zeros there would report every subcontractor as unpaid and nothing outstanding
 - **Calls:** subcontractorService (fetchSubcontractorsWithSummary, deleteSubcontractor)
 - **Returns:** subcontractors (`Map<subcontractorId, SubcontractorSummary>`), loading, fetchData, deleteSubcontractor
 
@@ -447,7 +457,7 @@ Invoices raised by subcontractors for work completed on site. Supports approval 
 #### Hooks
 
 ### hooks/useSupervisionInvoices.ts
-- `useSupervisionInvoices()` — manages invoice list with filters (status, approval, date range) and CSV export
+- `useSupervisionInvoices()` — manages invoice list with filters (status, approval, date range) and CSV export; returns `error`, `hasData` and `refetch`. A failed load no longer toasts and empties the register — the stat cards are withheld and the table area carries an `ErrorState`
 - **Calls:** supervisionInvoiceService.ts
 - **Returns:** loading, stats, filteredInvoices, searchTerm, setSearchTerm, filterStatus, setFilterStatus, filterApproved, setFilterApproved, dateRange, setDateRange, handleApprove, handleExportCSV
 
@@ -476,9 +486,9 @@ Payments made to subcontractors against their invoices, including cesija and ban
 #### Hooks
 
 ### hooks/useSupervisionPayments.ts
-- `useSupervisionPayments()` — manages payment list with filters (search, status, date range) and CSV export
+- `useSupervisionPayments()` — manages payment list with filters (search, status, date range) and CSV export; returns `error`, `hasData` and `refetch`, and the screen withholds the stat cards rather than reporting €0 paid on a failed read
 - **Calls:** supervisionPaymentService.ts
-- **Returns:** loading, stats, filteredPayments, searchTerm, setSearchTerm, filterStatus, setFilterStatus, dateRange, setDateRange, handleExportCSV
+- **Returns:** loading, error, hasData, refetch, stats, filteredPayments, searchTerm, setSearchTerm, filterStatus, setFilterStatus, dateRange, setDateRange, handleExportCSV
 
 #### Views
 
@@ -510,8 +520,9 @@ Daily or weekly on-site work log entries. Supports cascading project → phase �
 
 ### hooks/useWorkLogs.ts
 - `useWorkLogs()` — manages work log CRUD with cascading project/phase/contract selects and form state
+- Returns `error` and `refetch`; an empty history under a failed read renders an `ErrorState` instead of "no work logs yet". The cascading phase/contract lookups toast `supervision.work_logs.errors.load_phases_failed` / `…load_contracts_failed` rather than only logging, since an empty dropdown otherwise reads as "no phases in this project"
 - **Calls:** workLogService.ts
-- **Returns:** workLogs, projects, phases, contracts, loading, showForm, editingLog, formData, setFormData, openNewForm, openEditForm, closeForm, handleProjectChange, handlePhaseChange, handleSubmit, handleDelete
+- **Returns:** workLogs, projects, phases, contracts, loading, error, refetch, showForm, editingLog, formData, setFormData, openNewForm, openEditForm, closeForm, handleProjectChange, handlePhaseChange, handleSubmit, handleDelete
 
 #### Views
 
@@ -530,4 +541,5 @@ Daily or weekly on-site work log entries. Supports cascading project → phase �
 - VAT_RATE_OPTIONS = [0, 5, 13, 25] — defined in SiteManagement/types.ts
 - The original monolithic `siteService.ts` was split into per-entity service files (phase, contract, subcontractor, milestone, funding, wire payment) during the May 2026 audit refactor; `siteService.ts` now re-exports them so `import * as siteService` consumers keep working
 - Payment create/update/delete from SiteManagement now only warn the user — those operations moved to the Accounting module (Invoices/Payments)
+- **Failed loads are not empty states.** Every loader in this module returns `error` and a `refetch`, and the screens render a `ErrorState` (from `src/components/ui`) in the list area — page header and filters stay mounted — when nothing loaded, or keep the stale rows under a dismissible `Alert variant="error"` with a retry when something did. Stat cards computed from a failed read are withheld rather than shown as €0. This covers SiteManagement (project grid, comments, wire payments, invoice totals, the classification/category lookups), Subcontractors, Invoices, Payments and WorkLogs
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item hook pattern; `useProjectPhases` uses a Promise-based `requestConfirm` pattern for mid-flow budget-mismatch confirmations — never use `window.confirm()` or `confirm()`

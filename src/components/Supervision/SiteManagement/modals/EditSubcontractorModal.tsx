@@ -50,8 +50,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 }) => {
   const { t } = useTranslation()
   const toast = useToast()
-  const { contractTypes, loading: loadingContractTypes, load: loadContractTypes } = useContractTypes()
-  const { classifications, loading: loadingClassifications, load: loadClassifications } = useCostClassifications()
+  const { contractTypes, loading: loadingContractTypes, error: contractTypesError, load: loadContractTypes } = useContractTypes()
+  const { classifications, loading: loadingClassifications, error: classificationsError, load: loadClassifications } = useCostClassifications()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [phases, setPhases] = useState<Phase[]>([])
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
@@ -176,7 +176,22 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
 
       <Modal.Body>
         <div className="space-y-4">
-          {loadFailed && <Alert variant="error">{t('supervision.edit_subcontractor.errors.load_failed')}</Alert>}
+          {/* The contract read and the two lookups all feed this form; any of them failing leaves
+              a field blank or a dropdown empty, which would otherwise read as saved data. */}
+          {(loadFailed || contractTypesError || classificationsError) && (
+            <Alert variant="error">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span>{t('supervision.edit_subcontractor.errors.load_failed')}</span>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => { loadContractFormData(); loadContractTypes(); loadClassifications() }}
+                >
+                  {t('common.retry')}
+                </Button>
+              </div>
+            </Alert>
+          )}
 
           <FormField label={t('supervision.edit_subcontractor.name')} required error={fieldErrors.name}>
             <Input

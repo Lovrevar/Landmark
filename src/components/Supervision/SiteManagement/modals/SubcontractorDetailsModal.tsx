@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { MessageSquare, Send, Calendar, Building2, FileText, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { CommentWithUser, SubcontractorWithPhase } from '../types'
-import { Modal, FormField, Select, Textarea, Button, Badge } from '../../../ui'
+import { Modal, FormField, Select, Textarea, Button, Badge, ErrorState } from '../../../ui'
 import { fetchContractDetails, fetchBankById, ContractDetailsRow } from '../services/siteService'
 import { ContractDocumentViewer } from '../ContractDocumentViewer'
 import { formatEuro } from '../../../../utils/formatters'
@@ -15,6 +15,9 @@ interface SubcontractorDetailsModalProps {
   onClose: () => void
   subcontractor: SubcontractorWithPhase | null
   comments: CommentWithUser[]
+  /** Set when the comment read failed, so the list does not claim there are no comments. */
+  commentsError?: Error | null
+  onRetryComments?: () => void
   newComment: string
   commentType: 'completed' | 'issue' | 'general'
   onCommentChange: (comment: string) => void
@@ -28,6 +31,8 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   onClose,
   subcontractor,
   comments,
+  commentsError = null,
+  onRetryComments,
   newComment,
   commentType,
   onCommentChange,
@@ -292,7 +297,11 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
             </h4>
 
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-              {comments.length === 0 ? (
+              {commentsError && comments.length === 0 ? (
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <ErrorState compact onRetry={onRetryComments} />
+                </div>
+              ) : comments.length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
                   <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
                   <p className="text-gray-500 dark:text-gray-400 text-sm">{t('supervision.subcontractor_details.no_comments')}</p>

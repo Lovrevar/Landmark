@@ -245,14 +245,12 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
     return false
   }
 
-  const fetchWirePayments = async (subcontractorId: string) => {
-    try {
-      return await siteService.fetchWirePayments(subcontractorId)
-    } catch (error) {
-      console.error('Error fetching wire payments:', error)
-      return []
-    }
-  }
+  /**
+   * Rejects rather than returning `[]` on failure — an empty payment history and an unreachable
+   * server are the opposite of each other on a contract. The caller reports it.
+   */
+  const fetchWirePayments = (subcontractorId: string) =>
+    siteService.fetchWirePayments(subcontractorId)
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const updateWirePayment = async (..._args: unknown[]) => {

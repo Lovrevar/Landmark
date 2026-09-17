@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react'
-import { useToast } from '../../../../contexts/ToastContext'
 import { fetchBankPayments, type BankPaymentWithDetails } from '../services/bankPaymentsService'
 
 type CombinedPayment = BankPaymentWithDetails
@@ -31,7 +30,6 @@ const calculateStats = (paymentsData: CombinedPayment[]): PaymentsStats => {
 }
 
 export function usePaymentsData() {
-  const toast = useToast()
   const [payments, setPayments] = useState<CombinedPayment[]>([])
   const [stats, setStats] = useState<PaymentsStats>({
     totalPayments: 0,
@@ -41,20 +39,24 @@ export function usePaymentsData() {
     bankPayments: 0
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const refetch = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const enrichedBankPayments = await fetchBankPayments()
       setPayments(enrichedBankPayments)
       setStats(calculateStats(enrichedBankPayments))
-    } catch (error) {
-      console.error('Error fetching payments:', error)
-      toast.error('Failed to load payments')
+    } catch (err) {
+      console.error('Error fetching payments:', err)
+      // The stats are left alone rather than recomputed from nothing: "€0 paid this month" is a
+      // figure the screen would stand behind, and a failed read cannot.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
-  return { payments, stats, loading, refetch }
+  return { payments, stats, loading, error, refetch }
 }

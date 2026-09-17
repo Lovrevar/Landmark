@@ -6,6 +6,7 @@ import {
   createProject,
   deleteProject,
 } from '../services/projectFormService'
+import { toErrorMessage, isPermissionError } from '../../../../lib/errorMessage'
 
 interface ProjectForm {
   name: string
@@ -31,18 +32,17 @@ const defaultForm: ProjectForm = {
   description: ''
 }
 
-// Postgres raises 42501 when an RLS policy rejects the write. Only Directors may
-// insert/update/delete projects, so surface that instead of a generic failure.
-// Returns a translation key; ProjectFormModal runs it through t(), which passes
-// unknown strings straight through.
-function toErrorMessage(err: unknown, fallback: string): string {
-  const code = (err as { code?: string } | null)?.code
-  if (code === '42501') return 'general_projects.error_permission_denied'
-  return err instanceof Error ? err.message : fallback
-}
-
-function isPermissionError(err: unknown): boolean {
-  return (err as { code?: string } | null)?.code === '42501'
+/**
+ * Postgres raises 42501 when an RLS policy rejects the write. Only Directors may
+ * insert/update/delete projects, so surface that instead of a generic failure.
+ *
+ * Returns a translation key for that one case; ProjectFormModal runs the result through t(),
+ * which passes unknown strings straight through. Everything else goes to the shared
+ * `toErrorMessage`, which also refuses raw Postgres text in favour of the fallback.
+ */
+function toFormError(err: unknown, fallback: string): string {
+  if (isPermissionError(err)) return 'general_projects.error_permission_denied'
+  return toErrorMessage(err, fallback)
 }
 
 export function useProjectForm(
@@ -73,7 +73,7 @@ export function useProjectForm(
       }
     } catch (err) {
       console.error('Error fetching project:', err)
-      setError('Failed to load project data')
+      setError(toErrorMessage(err, 'Failed to load project data'))
     }
   }, [projectId])
 
@@ -123,7 +123,7 @@ export function useProjectForm(
     } catch (err: unknown) {
       // A permission denial is an expected outcome, not a defect - don't log it.
       if (!isPermissionError(err)) console.error('Error saving project:', err)
-      setError(toErrorMessage(err, 'Failed to save project'))
+      setError(toFormError(err, 'Failed to save project'))
     } finally {
       setLoading(false)
     }
@@ -142,7 +142,7 @@ export function useProjectForm(
       onDeleted()
     } catch (err: unknown) {
       if (!isPermissionError(err)) console.error('Error deleting project:', err)
-      setError(toErrorMessage(err, 'Failed to delete project'))
+      setError(toFormError(err, 'Failed to delete project'))
     } finally {
       setDeleting(false)
       setShowDeleteConfirm(false)

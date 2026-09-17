@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Building2, ArrowRight, RefreshCw } from 'lucide-react'
 import { differenceInDays } from 'date-fns'
 import { ProjectWithPhases, OnSelectProjectCallback } from './types'
-import { Button, Badge, EmptyState } from '../../ui'
+import { Button, Badge, EmptyState, ErrorState, Alert } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import { formatEuroCompact } from '../../../utils/formatters'
 
@@ -13,10 +13,17 @@ interface ProjectsGridProps {
   onRefresh?: () => void
   isRefreshing?: boolean
   emptyStateVariant?: 'no_projects' | 'no_assignments'
+  /** Set when the last load failed. Replaces the grid when nothing loaded, warns above it when something did. */
+  error?: Error | null
 }
 
-export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onRefresh, isRefreshing = false, emptyStateVariant = 'no_projects' }) => {
+export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onRefresh, isRefreshing = false, emptyStateVariant = 'no_projects', error = null }) => {
   const { t } = useTranslation()
+  const [errorDismissed, setErrorDismissed] = React.useState(false)
+  // A failed load must never render as "no projects on site" — the two look identical otherwise,
+  // and this screen is where a supervisor decides there is nothing to visit.
+  const failedWithNothing = !!error && projects.length === 0
+
   return (
     <div>
       <div className="mb-6 flex justify-between items-center">
@@ -34,6 +41,23 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
           </Button>
         )}
       </div>
+
+      {failedWithNothing ? (
+        <ErrorState onRetry={onRefresh} />
+      ) : (
+      <>
+      {error && !errorDismissed && (
+        <Alert variant="error" className="mb-6" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            {onRefresh && (
+              <Button size="sm" variant="secondary" onClick={onRefresh} loading={isRefreshing}>
+                {t('common.retry')}
+              </Button>
+            )}
+          </div>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => {
@@ -179,6 +203,8 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
               : 'supervision.site_management.projects_grid.no_projects_desc'
           )}
         />
+      )}
+      </>
       )}
     </div>
   )

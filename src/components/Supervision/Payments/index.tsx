@@ -1,15 +1,19 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, Table } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { format } from 'date-fns'
 import { useSupervisionPayments } from './hooks/useSupervisionPayments'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
 
 const PaymentsManagement: React.FC = () => {
   const { t } = useTranslation()
+  const [errorDismissed, setErrorDismissed] = React.useState(false)
   const {
     loading,
+    error,
+    hasData,
+    refetch,
     stats,
     filteredPayments,
     searchTerm,
@@ -21,20 +25,36 @@ const PaymentsManagement: React.FC = () => {
     handleExportCSV,
   } = useSupervisionPayments()
 
-  if (loading) {
+  if (loading && !hasData) {
     return <LoadingSpinner message={t('supervision.payments.loading')} />
   }
+
+  // The stat cards are computed from the same read as the table, so they are withheld too rather
+  // than reporting €0 paid on a failure.
+  const failedWithNothing = !!error && !hasData
 
   return (
     <div className="p-6 space-y-6">
       <PageHeader title={t('supervision.payments.title')} description={t('supervision.payments.subtitle')} />
 
+      {error && !errorDismissed && !failedWithNothing && (
+        <Alert variant="error" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            <Button size="sm" variant="secondary" onClick={refetch} loading={loading}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {/* Withheld rather than zeroed when the read failed; the filter bar below stays mounted. */}
+      {!failedWithNothing && (
       <StatGrid columns={4}>
         <StatCard label={t('common.total_payments')} value={stats.totalPayments} icon={FileText} color="blue" />
         <StatCard label={t('common.total_amount')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
         <StatCard label={t('common.this_month')} value={stats.paymentsThisMonth} subtitle={t('common.payments')} icon={Calendar} />
         <StatCard label={t('common.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -76,7 +96,9 @@ const PaymentsManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredPayments.length === 0 ? (
+      {failedWithNothing ? (
+        <ErrorState onRetry={refetch} />
+      ) : filteredPayments.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title={t('supervision.payments.no_found')}

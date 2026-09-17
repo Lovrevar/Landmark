@@ -5,6 +5,7 @@ import * as queryService from '../services/activityLogQueryService'
 export function useActivityLog() {
   const [logs, setLogs] = useState<ActivityLogEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [totalCount, setTotalCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 50
@@ -29,6 +30,7 @@ export function useActivityLog() {
   const fetchLogs = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await queryService.fetchActivityLogs(
         {
           userId: filterUserId !== 'ALL' ? filterUserId : null,
@@ -45,10 +47,12 @@ export function useActivityLog() {
 
       setLogs(data)
       setTotalCount(data.length > 0 ? data[0].total_count : 0)
-    } catch (error) {
-      console.error('Error fetching activity logs:', error)
-      setLogs([])
-      setTotalCount(0)
+    } catch (err) {
+      console.error('Error fetching activity logs:', err)
+      // Deliberately not cleared. This is the audit trail: an empty table here reads as "nobody
+      // did anything in this period", which a failed query has no business asserting. Whatever
+      // was last read stays on screen and the component renders the failure over it.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -107,6 +111,7 @@ export function useActivityLog() {
   return {
     logs,
     loading,
+    error,
     totalCount,
     currentPage,
     pageSize,

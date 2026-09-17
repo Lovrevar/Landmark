@@ -3,7 +3,7 @@ import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus } from 
 import { format } from 'date-fns'
 import { isValidDate, parseLocalDate } from '../../../utils/dateOnly'
 import { useTranslation } from 'react-i18next'
-import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState, Form, ConfirmDialog } from '../../ui'
+import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState, ErrorState, Alert, Form, ConfirmDialog } from '../../ui'
 import AllocationRow from './AllocationRow'
 import CreditDisbursements from './CreditDisbursements'
 import CreditRepayments from './CreditRepayments'
@@ -12,6 +12,7 @@ import { useCreditManagement } from './hooks/useCreditManagement'
 
 const CreditsManagement: React.FC = () => {
   const { t } = useTranslation()
+  const [errorDismissed, setErrorDismissed] = React.useState(false)
   const {
     credits,
     allocations,
@@ -19,6 +20,8 @@ const CreditsManagement: React.FC = () => {
     expandedCredits,
     expandedAllocations,
     loading,
+    error,
+    refetch,
     projects,
     companies,
     banks,
@@ -39,7 +42,7 @@ const CreditsManagement: React.FC = () => {
     fieldErrors,
   } = useCreditManagement()
 
-  if (loading) {
+  if (loading && credits.length === 0) {
     return <LoadingSpinner message={t('funding.investments.loading')} />
   }
 
@@ -50,7 +53,20 @@ const CreditsManagement: React.FC = () => {
         description={t('funding.investments.description')}
       />
 
-      {credits.length === 0 ? (
+      {error && credits.length > 0 && !errorDismissed && (
+        <Alert variant="error" className="mb-4" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            <Button size="sm" variant="secondary" onClick={refetch} loading={loading}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {/* The hook has always returned this error; the screen used to drop it and render the
+          "no credit lines yet" empty state over a failed read of the whole credit register. */}
+      {error && credits.length === 0 ? (
+        <ErrorState onRetry={refetch} />
+      ) : credits.length === 0 ? (
         <EmptyState
           icon={CreditCard}
           title={t('funding.investments.no_investments_title')}

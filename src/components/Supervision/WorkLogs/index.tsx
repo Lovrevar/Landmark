@@ -16,7 +16,7 @@ import {
   Wrench,
   HelpCircle
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, Form, FormField, ConfirmDialog } from '../../ui'
+import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, ErrorState, Alert, Form, FormField, ConfirmDialog } from '../../ui'
 import { format } from 'date-fns'
 import { useWorkLogs } from './hooks/useWorkLogs'
 import type { WorkLog, WorkLogStatus } from './services/workLogService'
@@ -64,6 +64,8 @@ const WorkLogs: React.FC = () => {
     phases,
     contracts,
     loading,
+    error,
+    refetch,
     showForm,
     editingLog,
     formData,
@@ -82,6 +84,7 @@ const WorkLogs: React.FC = () => {
   } = useWorkLogs()
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [errorDismissed, setErrorDismissed] = useState(false)
 
   const handleValidatedSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,7 +100,7 @@ const WorkLogs: React.FC = () => {
     return handleSubmit(e)
   }
 
-  if (loading) {
+  if (loading && workLogs.length === 0) {
     return <LoadingSpinner message={t('supervision.work_logs.loading')} />
   }
 
@@ -108,6 +111,15 @@ const WorkLogs: React.FC = () => {
         description={t('supervision.work_logs.subtitle')}
         actions={<Button icon={Plus} onClick={openNewForm}>{t('supervision.work_logs.new_log')}</Button>}
       />
+
+      {error && workLogs.length > 0 && !errorDismissed && (
+        <Alert variant="error" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            <Button size="sm" variant="secondary" onClick={refetch} loading={loading}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
 
       <Modal show={showForm} onClose={closeForm} size="md">
         <Modal.Header
@@ -263,7 +275,13 @@ const WorkLogs: React.FC = () => {
           </h2>
         </div>
         <div className="p-6">
-          {workLogs.length === 0 ? (
+          {error && workLogs.length === 0 ? (
+            /* "No work logs yet" is a statement about the site. A failed read is not entitled
+               to make it, so the list area carries the failure instead. */
+            <Card variant="bordered" padding="lg" className="bg-gray-50 dark:bg-gray-700/50">
+              <ErrorState onRetry={refetch} />
+            </Card>
+          ) : workLogs.length === 0 ? (
             <Card variant="bordered" padding="lg" className="bg-gray-50 dark:bg-gray-700/50">
               <EmptyState
                 icon={Wrench}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Users, Plus, Briefcase, DollarSign, TrendingUp, Pencil, Trash2 } from 'lucide-react'
 import {
-  LoadingSpinner, PageHeader, Card, Modal, EmptyState, StatCard, StatGrid,
+  LoadingSpinner, PageHeader, Card, Modal, EmptyState, ErrorState, Alert, StatCard, StatGrid,
   SearchInput, Button, ConfirmDialog, Table, FilterBar, FilterChip,
   ListViewToggle, SortDropdown,
 } from '../../ui'
@@ -36,7 +36,8 @@ const paymentPct = (sub: SubcontractorSummary) =>
 const SubcontractorManagement: React.FC = () => {
   const { t } = useTranslation()
   const toast = useToast()
-  const { subcontractors, loading, fetchData, deleteSubcontractor } = useSubcontractorData()
+  const { subcontractors, loading, error, fetchData, refetch, deleteSubcontractor } = useSubcontractorData()
+  const [errorDismissed, setErrorDismissed] = useState(false)
   const [selectedSubcontractor, setSelectedSubcontractor] = useState<SubcontractorSummary | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [prefs, setPrefs] = useListPreferences<ListPrefs>('subcontractors.prefs', DEFAULT_PREFS)
@@ -114,9 +115,14 @@ const SubcontractorManagement: React.FC = () => {
   }, [subcontractorsList, searchTerm, prefs.statusFilter, prefs.projectFilter, prefs.sort])
 
   const isFiltered = !!searchTerm || prefs.statusFilter !== 'all' || !!prefs.projectFilter
-  const displayCount = isFiltered
-    ? `${filteredSubcontractors.length} / ${subcontractorsList.length}`
-    : subcontractorsList.length
+  // Nothing loaded and the load failed: the header count and the four stat cards would all read
+  // zero, which is exactly what a company with no subcontractors looks like.
+  const failedWithNothing = !!error && subcontractorsList.length === 0
+  const displayCount = failedWithNothing
+    ? '—'
+    : isFiltered
+      ? `${filteredSubcontractors.length} / ${subcontractorsList.length}`
+      : subcontractorsList.length
 
   const totals = useMemo(() => subcontractorsList.reduce((acc, s) => {
     acc.active += s.active_contracts
@@ -139,7 +145,7 @@ const SubcontractorManagement: React.FC = () => {
     { value: 'paid' as SortKey, label: t('common.sort_paid') },
   ]
 
-  if (loading) return <LoadingSpinner message={t('supervision.subcontractors.loading')} />
+  if (loading && subcontractorsList.length === 0) return <LoadingSpinner message={t('supervision.subcontractors.loading')} />
 
   const openEdit = (sub: SubcontractorSummary) => {
     setEditingSubcontractor({ id: sub.id, name: sub.name, contact: sub.contact, notes: sub.notes })
@@ -164,12 +170,23 @@ const SubcontractorManagement: React.FC = () => {
         }
       />
 
+      {error && !errorDismissed && !failedWithNothing && (
+        <Alert variant="error" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            <Button size="sm" variant="secondary" onClick={refetch} loading={loading}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {!failedWithNothing && (
       <StatGrid columns={4}>
         <StatCard label={t('supervision.subcontractors.title')} value={subcontractorsList.length} icon={Users} />
         <StatCard label={t('supervision.subcontractors.active_contracts')} value={totals.active} icon={Briefcase} color="blue" />
         <StatCard label={t('common.total_paid')} value={`€${formatEuropean(totals.paid)}`} icon={DollarSign} color="teal" />
         <StatCard label={t('common.remaining')} value={`€${formatEuropean(totals.remaining)}`} icon={TrendingUp} color="yellow" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-3">
         <SearchInput
@@ -213,7 +230,11 @@ const SubcontractorManagement: React.FC = () => {
         </FilterBar>
       </div>
 
-      {subcontractorsList.length === 0 ? (
+      {failedWithNothing ? (
+        <Card variant="default" padding="lg">
+          <ErrorState onRetry={refetch} />
+        </Card>
+      ) : subcontractorsList.length === 0 ? (
         <Card variant="default" padding="lg">
           <EmptyState icon={Users} title={t('supervision.subcontractors.none')} description={t('supervision.subcontractors.none_desc')} />
         </Card>

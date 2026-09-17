@@ -2257,6 +2257,11 @@
     "subtitle": "Construction site management",
     "site_management": {
       "title": "Site Management",
+      "recalculate_budgets_failed": "The phase budgets could not be recalculated. The figures shown may be out of date.",
+      "comments": {
+        "add_success": "Comment added",
+        "add_failed": "The comment could not be saved"
+      },
       "phases": "Phases",
       "setup_phases": "Setup Phases",
       "edit_phases": "Edit Phases",
@@ -2594,7 +2599,8 @@
       "method": "Method:",
       "ref": "Ref:",
       "created": "Created",
-      "managed_in_accounting": "Managed in Accounting"
+      "managed_in_accounting": "Managed in Accounting",
+      "load_failed": "The payment history could not be loaded"
     },
     "invoices_modal": {
       "title": "Invoices -",
@@ -2807,7 +2813,9 @@
         "phase": "Phase is required",
         "contract": "Contract is required",
         "date": "Date is required",
-        "description": "Work description is required"
+        "description": "Work description is required",
+        "load_phases_failed": "The phases for this project could not be loaded",
+        "load_contracts_failed": "The contracts for this phase could not be loaded"
       },
       "history": "Work Log History",
       "contract_label": "Contract:",
@@ -3294,6 +3302,8 @@
       },
       "confirm_delete_allocation_title": "Confirm Deletion",
       "confirm_delete_allocation_message": "Are you sure you want to delete this purpose?",
+      "allocation_delete_success": "Investment purpose deleted",
+      "allocation_delete_failed": "The investment purpose could not be deleted",
       "dug_label": "Debt",
       "iskorišteno_label": "Used",
       "nealocirano_label": "Unallocated"
@@ -4739,6 +4749,7 @@
     "reset_filters": "Reset filters",
     "empty_title": "No activity logs found",
     "empty_description": "No actions match the current filters. Try adjusting your search criteria.",
+    "stale_after_error": "These entries are from the last successful read, not from the current filters.",
     "col_timestamp": "Timestamp",
     "col_user": "User",
     "col_action": "Action",

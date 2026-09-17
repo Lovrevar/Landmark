@@ -2261,6 +2261,11 @@
     "subtitle": "Upravljanje gradilištem",
     "site_management": {
       "title": "Upravljanje gradilištem",
+      "recalculate_budgets_failed": "Budžeti faza nisu ponovno izračunati. Prikazani iznosi možda nisu ažurni.",
+      "comments": {
+        "add_success": "Komentar dodan",
+        "add_failed": "Komentar nije spremljen"
+      },
       "phases": "Faze",
       "setup_phases": "Postavi faze",
       "edit_phases": "Uredi faze",
@@ -2598,7 +2603,8 @@
       "method": "Metoda:",
       "ref": "Ref:",
       "created": "Kreirano",
-      "managed_in_accounting": "Upravljanje u Accounting modulu"
+      "managed_in_accounting": "Upravljanje u Accounting modulu",
+      "load_failed": "Povijest plaćanja nije učitana"
     },
     "invoices_modal": {
       "title": "Fakture -",
@@ -2811,7 +2817,9 @@
         "phase": "Faza je obavezna",
         "contract": "Ugovor je obavezan",
         "date": "Datum je obavezan",
-        "description": "Opis rada je obavezan"
+        "description": "Opis rada je obavezan",
+        "load_phases_failed": "Faze ovog projekta nisu učitane",
+        "load_contracts_failed": "Ugovori ove faze nisu učitani"
       },
       "history": "Povijest radnih zapisa",
       "contract_label": "Ugovor:",
@@ -3298,6 +3306,8 @@
       },
       "confirm_delete_allocation_title": "Potvrda brisanja",
       "confirm_delete_allocation_message": "Jeste li sigurni da želite obrisati ovu namjenu?",
+      "allocation_delete_success": "Namjena investicije obrisana",
+      "allocation_delete_failed": "Namjena investicije nije obrisana",
       "dug_label": "Dug",
       "iskorišteno_label": "Iskorišteno",
       "nealocirano_label": "Nealocirano"
@@ -4744,6 +4754,7 @@
     "reset_filters": "Resetiraj filtere",
     "empty_title": "Nema zapisnika aktivnosti",
     "empty_description": "Nijedna radnja ne odgovara trenutnim filterima. Pokušajte prilagoditi kriterije pretrage.",
+    "stale_after_error": "Ovi zapisi su iz posljednjeg uspješnog učitavanja, a ne iz trenutnih filtera.",
     "col_timestamp": "Vrijeme",
     "col_user": "Korisnik",
     "col_action": "Akcija",

@@ -19,15 +19,20 @@ export function useBankData() {
   const [banks, setBanks] = useState<BankWithCredits[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await fetchFundingBanksData()
       setBanks(data.banks)
       setCompanies(data.companies)
-    } catch (error) {
-      console.error('Error fetching banks data:', error)
+    } catch (err) {
+      console.error('Error fetching banks data:', err)
+      // An empty card grid here reads as "no investors and no credit facilities", which is a
+      // statement about the company's funding, not about the network.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -112,7 +117,9 @@ export function useBankData() {
     banks,
     companies,
     loading,
+    error,
     fetchData,
+    refetch: fetchData,
     addBank,
     updateBank: handleUpdateBank,
     deleteBank: handleDeleteBank,

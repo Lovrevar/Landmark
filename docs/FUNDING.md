@@ -50,8 +50,10 @@ Detailed credit management: allocations per project, disbursements, expenses, re
 ### useCreditManagement.ts
 - `useCreditManagement()` — manages credit list, allocation state, expanded credit/allocation sets, and form state
 - Validates allocation form before submit (project_id or refinancing_entity_id required)
+- `error` is an `Error | null` (was a hardcoded Croatian string) and `credits` is left as it was on a failed load; `refetch` re-runs `loadData`. The screen had always ignored this `error` and rendered the "no recorded investments" empty state over a failed read of the whole credit register
+- `confirmDeleteAllocation` closes the `ConfirmDialog` **only on success** (it used to close in `finally`, so a refused delete looked identical to a completed one), toasts `funding.investments.allocation_delete_success` when it lands and `…allocation_delete_failed` (through `toErrorMessage`) when it does not
 - **Calls:** creditService.ts
-- **Returns:** credits, allocations, disbursedAmounts, expandedCredits, expandedAllocations, loading, projects, companies, banks, showAllocationModal, selectedCredit, allocationForm, setAllocationForm, toggleCredit, toggleAllocation, openAllocationModal, closeAllocationModal, handleCreateAllocation, handleDeleteAllocation, **fieldErrors**
+- **Returns:** credits, allocations, disbursedAmounts, expandedCredits, expandedAllocations, loading, **error**, **refetch**, projects, companies, banks, showAllocationModal, selectedCredit, allocationForm, setAllocationForm, toggleCredit, toggleAllocation, openAllocationModal, closeAllocationModal, handleCreateAllocation, handleDeleteAllocation, **fieldErrors**
 
 ### useLazySection.ts
 - `useLazySection<T>(fetchFn)` — generic hook for lazy-loading a section's data on first expand
@@ -61,6 +63,7 @@ Detailed credit management: allocations per project, disbursements, expenses, re
 
 ### index.tsx (CreditsManagement)
 - Expandable credit cards with allocation modal, disbursement, repayment, and expense sections
+- Destructures `error` / `refetch`: with no credits loaded an `ErrorState` with a retry takes the place of the empty state; with credits on screen a dismissible `Alert variant="error"` sits above them
 - Maturity date renders `—` when the credit has none (guarded with `isValidDate()` from `src/utils/dateOnly.ts`), instead of formatting `new Date(null)` as Jan 01, 1970
 - **Uses hooks:** useCreditManagement
 - **Uses components:** AllocationRow, CreditDisbursements, CreditRepayments, CreditExpenses, CreditInvoiceSection
@@ -126,8 +129,9 @@ Bank and investor registry. Manages credit facilities and equity investments per
 
 ### useBankData.ts
 - `useBankData()` — fetches banks (with credits) and companies, and manages bank create/update/delete with pending-delete confirmation state
+- Returns `error` (plus `refetch`, an alias of `fetchData`). An empty card grid would otherwise say this company has no investors and no credit facilities, so `InvestorsManagement` renders an `ErrorState` in the grid area when nothing loaded, and a dismissible `Alert` above the cards when something did
 - **Calls:** bankService.ts
-- **Returns:** banks, companies, loading, fetchData, addBank, updateBank, deleteBank, confirmDeleteBank, cancelDeleteBank, pendingDeleteId, pendingDeleteInvoiceCount, deleting
+- **Returns:** banks, companies, loading, error, fetchData, refetch, addBank, updateBank, deleteBank, confirmDeleteBank, cancelDeleteBank, pendingDeleteId, pendingDeleteInvoiceCount, deleting
 
 ### useBankForm.ts
 - `useBankForm()` — manages bank add/edit form state
@@ -236,15 +240,17 @@ Read-only history of accounting payments made against bank credits.
 
 ### usePaymentsData.ts
 - `usePaymentsData()` — fetches bank payments and computes stats (totalPayments, totalAmount, paymentsThisMonth, amountThisMonth, bankPayments)
+- Returns `error` instead of toasting; the stats are left alone rather than recomputed from nothing, and the page withholds its four stat cards on a failed read rather than reporting €0 disbursed
 - **Calls:** bankPaymentsService.ts
-- **Returns:** payments, stats, loading, refetch
+- **Returns:** payments, stats, loading, error, refetch
 
 #### Views
 
 ### index.tsx (FundingPaymentsManagement)
 - Payment list with search, status/date filters, CSV export, and stats cards
+- Three-way list area: `EmptyState` only for a genuinely empty result, `ErrorState` with a retry when the read failed and nothing loaded, and a dismissible `Alert` over stale rows. The filter bar stays mounted in every case
 - **Uses hooks:** usePaymentsData
-- **Uses Ui:** PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Table
+- **Uses Ui:** PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Table
 
 ---
 
@@ -517,4 +523,5 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 - The audit refactor also lowercased the `Modals/`→`modals/` and `Services/`→`services/` directories in Payments, Projects, and TIC
 - Pure calculation/formatting helpers have colocated unit tests: `Investors/utils/creditCalculations.test.ts`, `TIC/utils/ticFormatters.test.ts`, `TIC/services/ticImport.test.ts` and `TIC/services/ticExport.test.ts` (the last verifies an Excel export re-imports byte-for-byte)
 - All service mutations log via `logActivity()` (fire-and-forget)
+- **Failed loads are not empty states.** Investments, Investors and Payments expose `error` + `refetch` and render `ErrorState` (from `src/components/ui`) in the content area with the page header kept mounted; money tiles fed by a failed read are withheld rather than shown as €0. `useTIC` was left as it is: it already reports both load failures through its own on-screen message banner, and `loadClassifications` documents why it tolerates a failure (the classification column falls back to "unmapped", which is visible and recoverable). `Projects/index.tsx`, `AllocationRow.tsx` and `useLazySection` still fetch inline and are part of the deferred in-component set
 - **Deleting a credit facility or an investor detaches invoices first.** `accounting_invoices.bank_credit_id` is the only `ON DELETE RESTRICT` reference to `bank_credits`, so a bare delete fails with Postgres `23503` whenever an invoice is attached (and, for investors, aborts the `bank_credits` cascade). `creditService.detachInvoicesFromCredits()` clears the FK — the invoices are kept, only unlinked — and both delete paths call it before deleting. The confirmation dialog reports the count via `countInvoicesForCredits()`, and the hooks fall back to `isForeignKeyViolation()` from `src/lib/dbErrors.ts` for a readable toast if some other constraint blocks the delete
