@@ -3564,11 +3564,6 @@
     }
   },
   "dashboards": {
-    "common": {
-      "load_error_title": "Učitavanje nadzorne ploče nije uspjelo",
-      "load_error_description": "Podatke nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
-      "retry": "Pokušaj ponovno"
-    },
     "director": {
       "title": "Nadzorna ploča direktora",
       "welcome": "Dobrodošli",
@@ -4009,8 +4004,6 @@
     "retail": {
       "title": "Retail izvještaji",
       "loading": "Učitavanje izvještaja...",
-      "error": "Greška pri učitavanju podataka.",
-      "retry": "Pokušaj ponovo",
       "refresh": "Osvježi",
       "export_pdf": "PDF izvještaj",
       "tab_overview": "Pregled",

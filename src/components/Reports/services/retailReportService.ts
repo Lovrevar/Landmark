@@ -20,15 +20,7 @@ const emptyPhase = (): PhaseReportData => ({
 const num = (val: unknown): number => parseFloat(String(val || 0)) || 0
 
 export async function fetchRetailReportData(): Promise<RetailReportData> {
-  const [
-    { data: projects },
-    { data: phases },
-    { data: contracts },
-    { data: plots },
-    { data: customers },
-    { data: suppliers },
-    { data: invoices }
-  ] = await Promise.all([
+  const responses = await Promise.all([
     supabase.from('retail_projects').select('*').order('name'),
     supabase.from('retail_project_phases').select('*'),
     supabase.from('retail_contracts').select(`
@@ -43,6 +35,23 @@ export async function fetchRetailReportData(): Promise<RetailReportData> {
       .select('id, status, total_amount, paid_amount, remaining_amount, due_date, retail_contract_id, retail_customer_id')
       .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
   ])
+
+  // supabase-js resolves a failed query as `{ data: null, error }` instead of rejecting, and each
+  // read below falls back to `[]`. Unchecked, a dropped request rendered as a retail portfolio of
+  // zeros — indistinguishable from a company that owns no land. Fail the report instead, so the
+  // page can say so and offer a retry.
+  const failed = responses.find(response => response.error !== null)
+  if (failed?.error) throw new Error(failed.error.message)
+
+  const [
+    { data: projects },
+    { data: phases },
+    { data: contracts },
+    { data: plots },
+    { data: customers },
+    { data: suppliers },
+    { data: invoices }
+  ] = responses
 
   const allProjects = projects || []
   const allPhases = phases || []

@@ -11,7 +11,7 @@ import {
   Activity
 } from 'lucide-react'
 import { format, subMonths } from 'date-fns'
-import { PageHeader, StatGrid, LoadingSpinner, Button, Badge, Select, FormField, Input, Table, StatCard } from '../ui'
+import { PageHeader, StatGrid, LoadingSpinner, Button, Badge, Select, FormField, Input, Table, StatCard, ErrorState } from '../ui'
 import {
   fetchProjects,
   generateProjectReport,
@@ -34,19 +34,36 @@ const SalesReports: React.FC = () => {
   })
   const [loading, setLoading] = useState(true)
 
-  const { data: projectReport, loading: loadingProjectReport } = useCachedData<ProjectSalesReport>(
+  const {
+    data: projectReport,
+    loading: loadingProjectReport,
+    error: projectReportError,
+    refetch: refetchProjectReport
+  } = useCachedData<ProjectSalesReport>(
     `report:sales:project:${selectedProject}:${dateRange.start}:${dateRange.end}`,
     () => generateProjectReport(selectedProject, projects, dateRange),
     { enabled: reportType === 'project' && !!selectedProject && projects.length > 0 }
   )
 
-  const { data: customerReport, loading: loadingCustomerReport } = useCachedData<CustomerReport>(
+  const {
+    data: customerReport,
+    loading: loadingCustomerReport,
+    error: customerReportError,
+    refetch: refetchCustomerReport
+  } = useCachedData<CustomerReport>(
     `report:sales:customer:${dateRange.start}:${dateRange.end}`,
     () => generateCustomerReport(dateRange),
     { enabled: reportType === 'customer' }
   )
 
   const generatingReport = reportType === 'project' ? loadingProjectReport : loadingCustomerReport
+
+  // Both report types are rendered by the same page, so the error belongs to whichever one the
+  // user is looking at. Without this the page simply showed nothing below the filters — the
+  // configuration panel stayed, and a failed report looked like a report not requested yet.
+  const reportError = reportType === 'project' ? projectReportError : customerReportError
+  const currentReport = reportType === 'project' ? projectReport : customerReport
+  const retryReport = reportType === 'project' ? refetchProjectReport : refetchCustomerReport
 
   useEffect(() => {
     loadProjects()
@@ -144,6 +161,10 @@ const SalesReports: React.FC = () => {
 
       {generatingReport && (
         <LoadingSpinner message={t('reports.sales.generating')} />
+      )}
+
+      {!generatingReport && reportError && !currentReport && (
+        <ErrorState onRetry={retryReport} />
       )}
 
       {/* Project Report */}

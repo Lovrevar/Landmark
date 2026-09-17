@@ -3560,11 +3560,6 @@
     }
   },
   "dashboards": {
-    "common": {
-      "load_error_title": "Failed to load dashboard",
-      "load_error_description": "The data could not be loaded. This is a loading error, not an absence of data.",
-      "retry": "Try again"
-    },
     "director": {
       "title": "Director Dashboard",
       "welcome": "Welcome",
@@ -4005,8 +4000,6 @@
     "retail": {
       "title": "Retail Reports",
       "loading": "Loading reports...",
-      "error": "Error loading data.",
-      "retry": "Try again",
       "refresh": "Refresh",
       "export_pdf": "PDF Report",
       "tab_overview": "Overview",

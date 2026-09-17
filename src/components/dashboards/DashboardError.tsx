@@ -1,7 +1,5 @@
 import React from 'react'
-import { useTranslation } from 'react-i18next'
-import { AlertTriangle } from 'lucide-react'
-import { EmptyState, Button } from '../ui'
+import { ErrorState } from '../ui'
 
 interface DashboardErrorProps {
   onRetry?: () => void
@@ -11,17 +9,13 @@ interface DashboardErrorProps {
  * Shown when a dashboard's data fetch fails. Critical: a load error must never
  * be rendered as legitimate zeros on a financial dashboard — this makes the
  * failure explicit and offers a retry.
+ *
+ * Now a thin wrapper over the shared `ErrorState`, which was promoted out of here so list
+ * pages and modals can make the same distinction. The wording (`common.load_error_*`,
+ * `common.retry`) and the layout live there; the six dashboards keep this import.
  */
-const DashboardError: React.FC<DashboardErrorProps> = ({ onRetry }) => {
-  const { t } = useTranslation()
-  return (
-    <EmptyState
-      icon={AlertTriangle}
-      title={t('dashboards.common.load_error_title')}
-      description={t('dashboards.common.load_error_description')}
-      action={onRetry ? <Button onClick={onRetry}>{t('dashboards.common.retry')}</Button> : undefined}
-    />
-  )
-}
+const DashboardError: React.FC<DashboardErrorProps> = ({ onRetry }) => (
+  <ErrorState onRetry={onRetry} />
+)
 
 export default DashboardError

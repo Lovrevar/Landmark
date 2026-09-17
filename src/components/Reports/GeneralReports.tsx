@@ -13,7 +13,7 @@ import {
   Home
 } from 'lucide-react'
 import { format } from 'date-fns'
-import { LoadingSpinner, Button, Badge, EmptyState, Table } from '../ui'
+import { LoadingSpinner, Button, Badge, EmptyState, ErrorState, Table } from '../ui'
 import ProjectCategoryBadge from '../Common/ProjectCategoryBadge'
 import { generateGeneralReportPDF } from './pdf/generalReportPdf'
 import { useGeneralReportData } from './hooks/useGeneralReportData'
@@ -24,7 +24,7 @@ import { formatEuroCompact, formatEuroRounded } from '../../utils/formatters'
 const GeneralReports: React.FC = () => {
   const toast = useToast()
   const { t } = useTranslation()
-  const { report, loading, fetchedAt, refetch } = useGeneralReportData()
+  const { report, loading, error, fetchedAt, refetch } = useGeneralReportData()
   const [generatingPDF, setGeneratingPDF] = useState(false)
 
   const handleGeneratePDF = async () => {
@@ -40,34 +40,30 @@ const GeneralReports: React.FC = () => {
     }
   }
 
-  if (loading && !report) {
-    return (
-      <LoadingSpinner size="lg" message={t('reports.general.loading')} className="min-h-screen" />
-    )
-  }
-
-  if (!report) {
-    return <EmptyState icon={FileText} title={t('reports.general.no_data')} />
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}</h1>
-            <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
-            <p className="text-sm opacity-90">{t('reports.general.generated')} {format(fetchedAt ? new Date(fetchedAt) : new Date(), 'MMMM dd, yyyy HH:mm')}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              icon={RefreshCw}
-              onClick={refetch}
-              loading={loading}
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-semibold"
-            >
-              {t('common.refresh')}
-            </Button>
+  // Hoisted out of the report body so it stays mounted when the load fails: the user keeps the
+  // refresh affordance and the page identity instead of dropping to a bare error card. The
+  // "generated at" line and the PDF export only appear with a report behind them — exporting
+  // a report nobody could load would produce a PDF full of zeros.
+  const header = (
+    <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}</h1>
+          <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
+          {fetchedAt && (
+            <p className="text-sm opacity-90">{t('reports.general.generated')} {format(new Date(fetchedAt), 'MMMM dd, yyyy HH:mm')}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            icon={RefreshCw}
+            onClick={refetch}
+            loading={loading}
+            className="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-semibold"
+          >
+            {t('common.refresh')}
+          </Button>
+          {report && (
             <Button
               icon={Download}
               onClick={handleGeneratePDF}
@@ -76,9 +72,34 @@ const GeneralReports: React.FC = () => {
             >
               {t('reports.general.export_pdf')}
             </Button>
-          </div>
+          )}
         </div>
       </div>
+    </div>
+  )
+
+  if (loading && !report) {
+    return (
+      <LoadingSpinner size="lg" message={t('reports.general.loading')} className="min-h-screen" />
+    )
+  }
+
+  // A failed fetch and an empty portfolio are different answers. "No data available" next to a
+  // dead connection is the bug this page had: it told a Director there was nothing to report.
+  if (!report) {
+    return (
+      <div className="space-y-6">
+        {header}
+        {error
+          ? <ErrorState onRetry={refetch} />
+          : <EmptyState icon={FileText} title={t('reports.general.no_data')} />}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {header}
 
       <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/30 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center mb-4">

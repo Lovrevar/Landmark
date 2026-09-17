@@ -54,6 +54,7 @@ Two things to know before adding a figure here:
   Zapad's leftover €1.000.000.000 made up 89% of a €1.118M "Portfolio Value" on a page headed
   Executive Report; the same figure is now €63.6M, the sum of the three real cost plans.
 - `fetchGeneralReportData(selectedProject, dateRange)` — aggregates data from 40+ tables into a ComprehensiveReport covering: executive summary, KPIs (portfolio value, sales rate, D/E ratio), sales performance, funding structure, construction status, accounting overview, TIC cost management, risk assessment, and cash flow analysis
+- **One failed query fails the whole report.** supabase-js resolves a failure as `{ data: null, error }` rather than rejecting, and every read here falls back to `[]`, so until September 2026 a dropped request produced an executive report of zeros — and exported it to PDF. `throwIfAnyFailed()` checks both `Promise.all` batches (the 27 top-level reads and the garage/repository price lookup) and throws, which `useCachedData` hands the page as an `error`
 - **Depends on:** supabase client
 
 ### services/salesReportService.ts
@@ -64,6 +65,7 @@ Two things to know before adding a figure here:
 
 ### services/retailReportService.ts
 - `fetchRetailReportData()` — builds RetailReportData with project reports, customer reports, supplier reports, supplier type summary, and invoice summary
+- Same rule as the general report: any of its seven reads failing throws, rather than rendering a retail portfolio of zeros that is indistinguishable from a company that owns no land
 - **Depends on:** supabase client
 
 > **Removed:** `SupervisionReports.tsx`, `services/supervisionReportService.ts` and
@@ -82,7 +84,8 @@ Two things to know before adding a figure here:
 ### hooks/useGeneralReportData.ts
 - `useGeneralReportData()` — fetches ComprehensiveReport data for the last 6 months on mount with loading state
 - **Calls:** generalReportService
-- **Returns:** report, loading, refetch
+- **Returns:** report, loading, error, fetchedAt, refetch — `error` was deliberately omitted from
+  the result interface until September 2026, which is why the page could only say "No data"
 
 ---
 
@@ -119,22 +122,46 @@ Two things to know before adding a figure here:
 
 ## Views
 
+> **Failed load vs. empty result.** All three `useCachedData` screens now separate the two, and
+> none of them may render a failure as zeros:
+> - **Loading, nothing yet** → spinner (unchanged).
+> - **Failed, nothing loaded** → `<ErrorState onRetry={refetch} />` (`src/components/ui`) in the
+>   content area, with the page header and filters left mounted so the user can retry in place.
+> - **Genuinely empty** → the ordinary empty state (`reports.general.no_data`, `common.no_data`).
+>
+> `e2e/reports/load-failure.spec.ts` pins this end to end: it aborts the report's own REST reads
+> (narrowly — aborting all of `/rest/v1/` also kills AuthContext's `users` lookup and bounces the
+> session to `/login`), asserts the error copy and retry are shown and the "no data" copy is not,
+> then unroutes and retries and asserts the report renders.
+
 ### GeneralReports.tsx
 - Full executive dashboard: 9 KPI summary cards, sales performance, funding structure, construction status, accounting overview, TIC costs, company investments, buildings summary, retail portfolio, contract distribution, cash flow analysis, per-project breakdown with project-category and risk badges, risk assessment, and PDF export
 - **Uses hooks:** useGeneralReportData
 - **Uses services:** generalReportPdf (for PDF export)
-- **Uses Ui:** Card, StatGrid, Button, useToast
+- **Uses Ui:** Card, StatGrid, Button, ErrorState, EmptyState, useToast
+- The blue gradient header is hoisted above the loading/error branches so it survives a failed
+  load; the "generated at" line and the PDF export button render only with a report behind them,
+  since exporting a report nobody could load would produce a PDF of zeros
 
 ### SalesReports.tsx
 - Project sales report (unit status, revenue, monthly trend, apartment list) or customer report (distribution, insights), with project selector, date range picker, and PDF export
 - **Uses services:** salesReportService, salesReportPdf
-- **Uses Ui:** Card, Table, Button, Select, useToast
+- **Uses Ui:** Card, Table, Button, Select, ErrorState, useToast
+- Two `useCachedData` calls back the two report types; the error surfaced belongs to whichever
+  type is selected (`reportError` / `retryReport`). The configuration panel stays mounted, so the
+  date range and project selection survive a failure
+- Still open: `loadProjects()` is an inline fetch that logs and leaves the project list empty on
+  failure — one of the ~23 in-component fetches deferred by the September 2026 batch
 
 ### RetailReports.tsx
 - Tabbed retail portfolio view (Pregled, Projekti, Prodaja, Troškovi) with refresh and PDF export buttons
 - **Uses services:** retailReportService, retailReportPdf
 - **Uses components:** PortfolioOverview, ProjectPerformanceTable, SalesAnalysis, CostAnalysis
-- **Uses Ui:** Tabs, Button
+- **Uses Ui:** Tabs, Button, ErrorState, EmptyState
+- It used to show "Error loading data" off `!data` alone, so an empty portfolio read as a failure
+  and a failure could not be told from an empty portfolio. The error state is gated on `error`;
+  the no-data case uses `common.no_data`, and `reports.retail.error` / `.retry` are gone (the
+  latter also carried the odd-one-out "Pokušaj ponovo" — the shared key says "ponovno")
 - The `formatCurrency` prop it hands to all four panels **is** `formatEuroRounded`
   (`src/utils/formatters.ts`) — it is no longer a local `Intl` formatter, so the ~40 amounts in
   those panels now read `€1.235` rather than `1.235 €`. Changing this one binding changes all of
