@@ -155,7 +155,10 @@
     "unsaved_changes_badge": "Nespremljene promjene",
     "save_and_leave": "Spremi i izađi",
     "unsaved_changes_save_failed": "Spremanje nije uspjelo. Pokušajte ponovno, izađite bez spremanja ili ostanite na stranici.",
-    "hide": "Sakrij"
+    "hide": "Sakrij",
+    "load_error_title": "Učitavanje nije uspjelo",
+    "load_error_description": "Podatke nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
+    "retry": "Pokušaj ponovno"
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",

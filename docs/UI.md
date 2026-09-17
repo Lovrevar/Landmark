@@ -18,6 +18,8 @@ Shared primitive component library. Always check here before building new UI —
 ### Alert.tsx
 - Styled alert banner with dismiss button
 - Props: `variant` ('info' | 'success' | 'warning' | 'error'), `title?`, `children`, `onDismiss?`, `className?`
+- ⚠️ An `onClose` prop is also declared but **never rendered** — use `onDismiss` for the X button
+- Use it for a failure over data that is still on screen; use `ErrorState` when there is nothing to show
 - **Uses Ui:** (none — standalone primitive)
 
 ### AvatarStack.tsx
@@ -58,6 +60,18 @@ Shared primitive component library. Always check here before building new UI —
 ### EmptyState.tsx
 - Centered empty list / no-results placeholder with icon and optional action
 - Props: `icon?` (LucideIcon), `title`, `description?`, `action?` (ReactNode), `className?`
+
+### ErrorState.tsx
+- Shown when data could not be **loaded**. Built on `EmptyState`, so it matches the empty look but says something different
+- Props: `onRetry?` (no button without it), `title?`, `description?`, `compact?` (tighter padding for a card or modal body), `className?`
+- Defaults to `common.load_error_title` / `common.load_error_description` / `common.retry`
+- **The three-way rule every list page follows:**
+  1. first load, nothing yet → `LoadingSpinner`
+  2. load failed, nothing to show → `ErrorState` **in the content area**, with the page header, filter bar and search left mounted so filters survive and retry works in place
+  3. load failed but stale rows are on screen → keep the rows, put a dismissible `Alert variant="error"` with a retry above them
+  4. loaded fine, genuinely no rows → `EmptyState`
+- Figures derived from a failed load (stat cards, totals, counts) must be withheld or shown as `—`, never as 0 or €0
+- A page whose data failed must not offer an export of it (see Debt Status)
 
 ### FilterBar.tsx
 - Responsive filter controls row (column on mobile, row on desktop)

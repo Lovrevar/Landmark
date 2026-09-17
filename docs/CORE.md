@@ -130,6 +130,16 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 - `rollupContracts(rows)` / `remainingBudget(budget, rollup)` — the contract totals behind a phase card: contracted value, paid, unpaid, and unpaid-without-contract, then budget headroom
 - Takes a neutral row (`hasContract` / `cost` / `paid` / `owed`), so Supervision and Retail map their own columns onto it instead of keeping two copies of the arithmetic
 
+### errorMessage.ts (`src/lib/`)
+- `toErrorMessage(error, fallback)` — the sentence to show a user for a rejected promise. Prefers a message written for people (a service's own "Ne možete obrisati faze koje imaju ugovore: …"), and falls back to the caller's translated string when the error is machine text (`violates … constraint`, a bare `PGRST301`) or an RLS refusal
+- `isPermissionError(error)` — Postgres `42501`
+- Pair with `isForeignKeyViolation` from `src/lib/dbErrors.ts`
+
+### Data-loading hook contract
+- A loader hook returns `error: Error | null` alongside its data and a `refetch` (add `refetch` as an alias where the loader is already exported under another name)
+- A service must **throw** on a failed query — never `return []`. An empty array below the hook makes the failure invisible to everything above it, and the page then says "no rows"
+- Rendering rule: see `ErrorState` in [UI.md](./UI.md)
+
 ### permissions.ts
 - `canManagePayments(user)` — true for Director, Accounting, Investment
 - `canViewAllProjects(user)` — true for Director, Accounting, Investment, Sales

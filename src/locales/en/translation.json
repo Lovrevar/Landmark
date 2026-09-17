@@ -155,7 +155,10 @@
     "unsaved_changes_badge": "Unsaved changes",
     "save_and_leave": "Save and leave",
     "unsaved_changes_save_failed": "Saving failed. You can try again, leave without saving, or stay on this page.",
-    "hide": "Hide"
+    "hide": "Hide",
+    "load_error_title": "Failed to load",
+    "load_error_description": "The data could not be loaded. This is a loading error, not an absence of data.",
+    "retry": "Try again"
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
