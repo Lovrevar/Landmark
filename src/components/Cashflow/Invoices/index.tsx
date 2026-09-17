@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingSpinner, PageHeader, ConfirmDialog } from '../../ui'
+import { Alert, Button, LoadingSpinner, PageHeader, ConfirmDialog, ErrorState } from '../../ui'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { RetailInvoiceFormModal } from './forms/RetailInvoiceFormModal'
 import BankInvoiceFormModal from '../Banks/forms/BankInvoiceFormModal'
 import { LandPurchaseFormModal } from './forms/LandPurchaseFormModal'
@@ -48,6 +49,9 @@ const AccountingInvoices: React.FC = () => {
     customerApartments,
     invoiceCategories,
     loading,
+    error,
+    refetch,
+    dismissError,
     hasLoaded,
     currentPage,
     totalCount,
@@ -153,6 +157,10 @@ const AccountingInvoices: React.FC = () => {
     return <LoadingSpinner message={t('common.loading')} />
   }
 
+  // With no rows loaded the stats read "0 invoices / €0 unpaid", which on the invoice register
+  // is a statement about the company's liabilities. Replace both with the failure.
+  const loadFailedEmpty = !!error && invoices.length === 0
+
   return (
     <div className="space-y-6 max-w-full">
       <PageHeader
@@ -178,12 +186,25 @@ const AccountingInvoices: React.FC = () => {
         }
       />
 
-      <InvoiceStats
-        filteredTotalCount={filteredTotalCount}
-        filteredUnpaidAmount={filteredUnpaidAmount}
-        totalUnpaidAmount={totalUnpaidAmount}
-        filterDirection={filterDirection}
-      />
+      {error && invoices.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('invoices.toast.refresh_error'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {!loadFailedEmpty && (
+        <InvoiceStats
+          filteredTotalCount={filteredTotalCount}
+          filteredUnpaidAmount={filteredUnpaidAmount}
+          totalUnpaidAmount={totalUnpaidAmount}
+          filterDirection={filterDirection}
+        />
+      )}
 
       <InvoiceFilters
         searchTerm={searchTerm}
@@ -208,6 +229,11 @@ const AccountingInvoices: React.FC = () => {
         }}
       />
 
+      {loadFailedEmpty ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <ErrorState onRetry={() => void refetch()} />
+        </div>
+      ) : (
       <div
         aria-busy={loading}
         className={`space-y-6 transition-opacity ${loading ? 'opacity-60 pointer-events-none' : ''}`}
@@ -237,6 +263,7 @@ const AccountingInvoices: React.FC = () => {
           onPageChange={setCurrentPage}
         />
       </div>
+      )}
 
       <InvoiceFormModal
         show={showInvoiceModal}

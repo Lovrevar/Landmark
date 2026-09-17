@@ -6,7 +6,8 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { isValidDate, parseLocalDate } from '../../../utils/dateOnly'
-import { LoadingSpinner, PageHeader, StatGrid, Badge, StatCard, EmptyState } from '../../ui'
+import { Alert, Button, LoadingSpinner, PageHeader, StatGrid, Badge, StatCard, EmptyState, ErrorState } from '../../ui'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { useBanks } from './hooks/useBanks'
 import useBankeCredits from './hooks/useBankeCredits'
 import BankCreditFormModal from './forms/BankCreditFormModal'
@@ -21,6 +22,8 @@ const AccountingBanks: React.FC = () => {
     banks: banksMeta,
     companies,
     loading: banksLoading,
+    error: banksError,
+    refetch: refetchBanks,
     showCreditForm,
     editingCredit,
     newCredit,
@@ -29,17 +32,30 @@ const AccountingBanks: React.FC = () => {
     resetCreditForm
   } = useBanks()
 
-  const { banks, credits, allocations, disbursedAmounts, loading: creditsLoading } = useBankeCredits()
+  const {
+    banks, credits, allocations, disbursedAmounts,
+    loading: creditsLoading, error: creditsError, refetch: refetchCredits,
+  } = useBankeCredits()
 
   const [expandedBanks, setExpandedBanks] = useState<Set<string>>(new Set())
   const [expandedCredits, setExpandedCredits] = useState<Set<string>>(new Set())
   const [expandedAllocations, setExpandedAllocations] = useState<Set<string>>(new Set())
 
   const loading = banksLoading || creditsLoading
+  const error = banksError ?? creditsError
+
+  const retry = () => {
+    void refetchBanks()
+    void refetchCredits()
+  }
 
   if (loading) {
     return <LoadingSpinner message={t('common.loading')} />
   }
+
+  // Every figure on this page is a sum over `banksMeta` / `banks`. With neither loaded the
+  // page would report a bank with no credit lines and no debt.
+  const loadFailedEmpty = !!error && banksMeta.length === 0 && banks.length === 0
 
   const totalCreditAcrossAllBanks = banksMeta.reduce((sum, b) => sum + b.total_credit_limit, 0)
   const totalUsedAcrossAllBanks = banksMeta.reduce((sum, b) => sum + b.total_used, 0)
@@ -85,14 +101,27 @@ const AccountingBanks: React.FC = () => {
         description={t('banks.index.subtitle')}
       />
 
+      {error && !loadFailedEmpty && (
+        <Alert variant="error" title={t('common.load_error_title')}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={retry}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {!loadFailedEmpty && (
       <StatGrid columns={4}>
         <StatCard label={t('banks.index.stats.total_credit_limit')} value={`€${totalCreditAcrossAllBanks.toLocaleString('hr-HR')}`} icon={CreditCard} />
         <StatCard label={t('banks.index.stats.total_used')} value={`€${totalUsedAcrossAllBanks.toLocaleString('hr-HR')}`} icon={TrendingDown} color="blue" />
         <StatCard label={t('banks.index.stats.total_repaid')} value={`€${totalRepaidAcrossAllBanks.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
         <StatCard label={t('banks.index.stats.total_outstanding')} value={`€${totalOutstandingAcrossAllBanks.toLocaleString('hr-HR')}`} icon={DollarSign} color="red" />
       </StatGrid>
+      )}
 
-      {banks.length === 0 ? (
+      {loadFailedEmpty ? (
+        <ErrorState onRetry={retry} />
+      ) : banks.length === 0 ? (
         <EmptyState icon={Building2} title={t('banks.no_banks')} description={t('banks.no_banks_description')} />
       ) : (
         <div className="space-y-4">

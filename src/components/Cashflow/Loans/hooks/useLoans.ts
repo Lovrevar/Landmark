@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { CompanyLoan, Company, BankAccount, LoanFormData } from '../types'
 import { fetchLoans, fetchCompanies, fetchBankAccounts, createLoan, deleteLoan } from '../services/loanService'
 import { useToast } from '../../../../contexts/ToastContext'
+import { toLoadError } from '../../services/loadError'
 
 export const useLoans = () => {
   const toast = useToast()
@@ -10,6 +11,7 @@ export const useLoans = () => {
   const [companies, setCompanies] = useState<Company[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
 
@@ -29,6 +31,7 @@ export const useLoans = () => {
 
   const fetchData = async () => {
     setLoading(true)
+    setError(null)
     try {
       const [loansData, companiesData, accountsData] = await Promise.all([
         fetchLoans(),
@@ -41,6 +44,7 @@ export const useLoans = () => {
       setBankAccounts(accountsData)
     } catch (error) {
       console.error('Error fetching data:', error)
+      setError(toLoadError(error))
     } finally {
       setLoading(false)
     }
@@ -129,6 +133,9 @@ export const useLoans = () => {
     companies,
     bankAccounts,
     loading,
+    error,
+    refetch: fetchData,
+    dismissError: () => setError(null),
     searchTerm,
     setSearchTerm,
     showAddModal,

@@ -1,7 +1,8 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Columns, Check, X } from 'lucide-react'
-import { LoadingSpinner, PageHeader, SearchInput, Button, Select, ConfirmDialog, Pagination } from '../../ui'
+import { Alert, LoadingSpinner, PageHeader, SearchInput, Button, Select, ConfirmDialog, Pagination, ErrorState } from '../../ui'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import DateInput from '../../Common/DateInput'
 import { usePayments } from './hooks/usePayments'
 import AccountingPaymentFormModal from './forms/AccountingPaymentFormModal'
@@ -22,6 +23,9 @@ const AccountingPayments: React.FC = () => {
     creditAllocations,
     handleCreditChange,
     loading,
+    error,
+    refetch,
+    dismissError,
     searchTerm,
     setSearchTerm,
     filterMethod,
@@ -64,6 +68,10 @@ const AccountingPayments: React.FC = () => {
     return <LoadingSpinner message={t('common.loading')} />
   }
 
+  // Nothing came back: the zeros in the stat cards would be a claim about the money, not a
+  // description of an empty table. Say the load failed instead.
+  const loadFailedEmpty = !!error && payments.length === 0
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -100,7 +108,18 @@ const AccountingPayments: React.FC = () => {
         }
       />
 
-      <PaymentStatsCards payments={payments} />
+      {error && payments.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('payments.toast.load_error_partial'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {!loadFailedEmpty && <PaymentStatsCards payments={payments} />}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -161,19 +180,26 @@ const AccountingPayments: React.FC = () => {
         </div>
       </div>
 
-      <PaymentTable
-        payments={paginatedPayments}
-        visibleColumns={visibleColumns}
-        onView={handleViewPayment}
-        onEdit={handleOpenModal}
-        onDelete={handleDelete}
-      />
+      {loadFailedEmpty ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <ErrorState onRetry={() => void refetch()} />
+        </div>
+      ) : (
+        <PaymentTable
+          payments={paginatedPayments}
+          visibleColumns={visibleColumns}
+          onView={handleViewPayment}
+          onEdit={handleOpenModal}
+          onDelete={handleDelete}
+        />
+      )}
 
       <PaymentDetailView
         payment={viewingPayment}
         onClose={handleCloseDetailView}
       />
 
+      {!loadFailedEmpty && (
       <Pagination
         currentPage={currentPage}
         pageSize={pageSize}
@@ -189,6 +215,7 @@ const AccountingPayments: React.FC = () => {
           </span>
         }
       />
+      )}
 
       <AccountingPaymentFormModal
         showModal={showPaymentModal}

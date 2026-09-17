@@ -559,7 +559,11 @@
       "base_25": "Osnovica PDV 25% (€)",
       "base_13": "Osnovica PDV 13% (€)",
       "base_5": "Osnovica PDV 5% (€)",
-      "base_0": "Osnovica PDV 0% (€)"
+      "base_0": "Osnovica PDV 0% (€)",
+      "error_load": "Podatke obrasca nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
+      "error_load_entities": "Popis dobavljača i kupaca nije moguće učitati.",
+      "error_load_contracts": "Ugovore nije moguće učitati.",
+      "error_load_milestones": "Milestones nije moguće učitati."
     },
     "land_purchase": {
       "title": "Kupoprodaja Zemljišta",
@@ -605,7 +609,13 @@
       "error_company": "Firma je obavezna",
       "error_supplier": "Dobavljač je obavezan",
       "error_contract": "Ugovor je obavezan",
-      "error_invoice_name": "Ime računa je obavezno"
+      "error_invoice_name": "Ime računa je obavezno",
+      "error_load": "Popise u obrascu nije moguće učitati, pa mogu biti nepotpuni."
+    },
+    "toast": {
+      "delete_error": "Greška pri brisanju računa",
+      "refresh_error": "Popis računa nije moguće osvježiti. Prikazani iznosi su iz zadnjeg uspješnog učitavanja.",
+      "milestones_load_error": "Milestones ugovora nije moguće učitati"
     },
     "preview": {
       "title": "Pregled računa:",
@@ -620,6 +630,15 @@
     }
   },
   "payments": {
+    "toast": {
+      "create_success": "Plaćanje zabilježeno",
+      "update_success": "Plaćanje ažurirano",
+      "delete_success": "Plaćanje obrisano",
+      "delete_error": "Greška pri brisanju plaćanja",
+      "load_error_partial": "Dio ove stranice nije učitan, pa ukupni iznosi mogu biti nepotpuni.",
+      "allocations_load_error": "Namjene kredita nije moguće učitati",
+      "invoice_load_error": "Račun na koji se plaćanje odnosi nije moguće učitati"
+    },
     "title": "Plaćanja",
     "subtitle": "Upravljanje plaćanjima",
     "add": "Dodaj plaćanje",
@@ -803,6 +822,10 @@
     }
   },
   "suppliers": {
+    "toast": {
+      "projects_load_error": "Popis projekata nije moguće učitati",
+      "phases_load_error": "Popis faza nije moguće učitati"
+    },
     "source_label": "Vrsta",
     "source_site": "Site",
     "source_retail": "Retail",
@@ -915,6 +938,9 @@
     }
   },
   "companies": {
+    "toast": {
+      "accounts_load_error": "Bankovne račune firme nije moguće učitati pa obrazac nije otvoren"
+    },
     "title": "Moje firme",
     "subtitle": "Financijski pregled svih firmi pod Landmarkom",
     "add": "Dodaj novu firmu",
@@ -1128,6 +1154,8 @@
       }
     },
     "invoice_form": {
+      "error_load_banks": "Popis investitora nije moguće učitati",
+      "error_load_form": "Neke popise u obrascu nije moguće učitati, pa mogu biti nepotpuni.",
       "title": "Novi Račun Banka",
       "type_label": "Tip",
       "type_outflow": "Odljev",
@@ -1495,6 +1523,7 @@
   "accounting_customers": {
     "title": "Kupci",
     "description": "Pregled svih kupaca i njihovih računa",
+    "load_error_partial": "Iznose nekih kupaca nije moguće učitati, pa su popis i ukupni iznosi nepotpuni.",
     "stats": {
       "total_invoices": "Ukupno računa",
       "property_value": "Vrijednost nekretnina",
@@ -4960,6 +4989,13 @@
   "sifrarnici": {
     "title": "Šifrarnici",
     "description": "Povezuje šifre iz 4D Wanda s entitetima u Cognilionu kako bi se uvezeni računi sami klasificirali.",
+    "toast": {
+      "save_success": "Povezivanje spremljeno",
+      "save_error": "Povezivanje nije spremljeno",
+      "clear_success": "Povezivanje uklonjeno",
+      "clear_error": "Povezivanje nije uklonjeno",
+      "targets_error": "Popis entiteta nije moguće učitati"
+    },
     "search_placeholder": "Pretraži po šifri ili nazivu…",
     "only_unmapped": "Samo nepovezani",
     "tab_accounts": "Konta",

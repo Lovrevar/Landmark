@@ -1,9 +1,10 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react'
-import { LoadingSpinner, Button, Badge, StatCard, StatGrid } from '../../ui'
+import { Alert, LoadingSpinner, Button, Badge, StatCard, StatGrid, ErrorState } from '../../ui'
 import { useCalendar } from './hooks/useCalendar'
 import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { handleSaveBudgets } from './services/calendarService'
 import BudgetModal from './forms/BudgetModal'
 import { Invoice } from './types'
@@ -15,7 +16,10 @@ const AccountingCalendar: React.FC = () => {
   const dayNames = t('cashflow_calendar.days', { returnObjects: true }) as string[]
   const {
     currentDate,
+    invoices,
     loading,
+    error,
+    refetch,
     selectedDate,
     selectedInvoices,
     budgets,
@@ -48,7 +52,7 @@ const AccountingCalendar: React.FC = () => {
       setShowBudgetModal(false)
     } catch (error) {
       console.error('Error saving budgets:', error)
-      toast.error(t('cashflow_calendar.budget_save_error'))
+      toast.error(toErrorMessage(error, t('cashflow_calendar.budget_save_error')))
     }
   }
 
@@ -85,8 +89,28 @@ const AccountingCalendar: React.FC = () => {
     return <LoadingSpinner />
   }
 
+  // The month grid, the stat cards and the net figure are all derived from `invoices`. With
+  // none loaded they describe a month with nothing due, so none of them may be drawn.
+  if (error && invoices.length === 0) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <ErrorState onRetry={() => void refetch()} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
+      {error && (
+        <Alert variant="error" title={t('common.load_error_title')}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
       <StatGrid columns={2}>
         <StatCard label={t('cashflow_calendar.stats.total')} value={monthStats.total} icon={CalendarIcon} color="blue" size="sm" />
         <StatCard label={t('cashflow_calendar.stats.paid')} value={monthStats.paid} icon={CheckCircle} color="green" size="sm" />

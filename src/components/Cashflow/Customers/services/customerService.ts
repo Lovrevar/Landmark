@@ -12,8 +12,11 @@ export const fetchCustomers = async () => {
   return customersData as Customer[]
 }
 
+// Both of these used to drop their error and return `[]`, which turned a failed query into
+// "this customer has paid nothing" — and, with the property price still loading, into a debt
+// figure equal to the whole apartment. They throw now; the hook decides what to show.
 export const fetchCustomerInvoices = async (customerId: string) => {
-  const { data: invoicesData } = await supabase
+  const { data: invoicesData, error: invoicesError } = await supabase
     .from('accounting_invoices')
     .select(`
       id,
@@ -29,11 +32,13 @@ export const fetchCustomerInvoices = async (customerId: string) => {
     .eq('customer_id', customerId)
     .order('issue_date', { ascending: false })
 
+  if (invoicesError) throw invoicesError
+
   return (invoicesData || []) as unknown as Invoice[]
 }
 
 export const fetchCustomerProperties = async (customerId: string) => {
-  const { data: propertyData } = await supabase
+  const { data: propertyData, error: propertyError } = await supabase
     .from('sales')
     .select(`
       apartment_id,
@@ -48,6 +53,8 @@ export const fetchCustomerProperties = async (customerId: string) => {
       )
     `)
     .eq('customer_id', customerId)
+
+  if (propertyError) throw propertyError
 
   return propertyData || []
 }

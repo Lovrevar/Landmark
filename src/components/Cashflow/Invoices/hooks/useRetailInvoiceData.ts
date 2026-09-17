@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Company,
   RetailSupplier,
@@ -19,6 +20,7 @@ import {
 } from '../services/retailInvoiceFormDataService'
 
 export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
+  const { t } = useTranslation()
   const [companies, setCompanies] = useState<Company[]>([])
   const [suppliers, setSuppliers] = useState<RetailSupplier[]>([])
   const [customers, setCustomers] = useState<RetailCustomer[]>([])
@@ -38,15 +40,18 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
       setRefunds(data.refunds)
     } catch (err) {
       console.error('Error loading initial data:', err)
-      setError('Greška pri učitavanju podataka')
+      setError(t('invoices.retail.error_load'))
     }
   }
 
+  // An empty supplier or customer dropdown is indistinguishable from a failed query, and the
+  // form silently refuses to save without one — so say which it is.
   const loadSuppliers = async () => {
     try {
       setSuppliers(await fetchRetailSuppliers())
     } catch (err) {
       console.error('Error loading suppliers:', err)
+      setError(t('invoices.retail.error_load_entities'))
     }
   }
 
@@ -55,6 +60,7 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
       setCustomers(await fetchRetailCustomers())
     } catch (err) {
       console.error('Error loading customers:', err)
+      setError(t('invoices.retail.error_load_entities'))
     }
   }
 
@@ -68,18 +74,18 @@ export const useRetailInvoiceData = (formData: RetailInvoiceFormData) => {
       setContracts(data)
     } catch (err) {
       console.error('Error loading contracts:', err)
-      setError('Greška pri učitavanju ugovora')
+      setError(t('invoices.retail.error_load_contracts'))
     }
-  }, [formData.retail_project_id, formData.entity_type, formData.entity_id])
+  }, [formData.retail_project_id, formData.entity_type, formData.entity_id, t])
 
   const loadMilestones = useCallback(async () => {
     try {
       setMilestones(await fetchRetailMilestones(formData.retail_contract_id))
     } catch (err) {
       console.error('Error loading milestones:', err)
-      setError('Greška pri učitavanju milestones')
+      setError(t('invoices.retail.error_load_milestones'))
     }
-  }, [formData.retail_contract_id])
+  }, [formData.retail_contract_id, t])
 
   useEffect(() => {
     loadInitialData()

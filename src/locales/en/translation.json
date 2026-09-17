@@ -559,7 +559,11 @@
       "base_25": "Base VAT 25% (€)",
       "base_13": "Base VAT 13% (€)",
       "base_5": "Base VAT 5% (€)",
-      "base_0": "Base VAT 0% (€)"
+      "base_0": "Base VAT 0% (€)",
+      "error_load": "The form's data could not be loaded. This is a loading error, not an absence of data.",
+      "error_load_entities": "The supplier and customer lists could not be loaded.",
+      "error_load_contracts": "The contracts could not be loaded.",
+      "error_load_milestones": "The milestones could not be loaded."
     },
     "land_purchase": {
       "title": "Land Purchase",
@@ -605,7 +609,13 @@
       "error_company": "Company is required",
       "error_supplier": "Supplier is required",
       "error_contract": "Contract is required",
-      "error_invoice_name": "Invoice name is required"
+      "error_invoice_name": "Invoice name is required",
+      "error_load": "The form's lists could not be loaded, so they may be incomplete."
+    },
+    "toast": {
+      "delete_error": "Failed to delete the invoice",
+      "refresh_error": "The invoice list could not be refreshed. The figures shown are from the last successful load.",
+      "milestones_load_error": "The contract's milestones could not be loaded"
     },
     "preview": {
       "title": "Invoice Preview:",
@@ -620,6 +630,15 @@
     }
   },
   "payments": {
+    "toast": {
+      "create_success": "Payment recorded",
+      "update_success": "Payment updated",
+      "delete_success": "Payment deleted",
+      "delete_error": "Failed to delete the payment",
+      "load_error_partial": "Part of this page could not be loaded, so the totals may be incomplete.",
+      "allocations_load_error": "The credit's allocations could not be loaded",
+      "invoice_load_error": "The invoice this payment belongs to could not be loaded"
+    },
     "title": "Payments",
     "subtitle": "Manage payments",
     "add": "Add Payment",
@@ -803,6 +822,10 @@
     }
   },
   "suppliers": {
+    "toast": {
+      "projects_load_error": "The project list could not be loaded",
+      "phases_load_error": "The phase list could not be loaded"
+    },
     "source_label": "Source",
     "source_site": "Site",
     "source_retail": "Retail",
@@ -915,6 +938,9 @@
     }
   },
   "companies": {
+    "toast": {
+      "accounts_load_error": "The company's bank accounts could not be loaded, so the form was not opened"
+    },
     "title": "My Companies",
     "subtitle": "Financial overview of all companies under Landmark",
     "add": "Add New Company",
@@ -1126,6 +1152,8 @@
       }
     },
     "invoice_form": {
+      "error_load_banks": "The investor list could not be loaded",
+      "error_load_form": "Some of the form's lists could not be loaded, so they may be incomplete.",
       "title": "New Bank Invoice",
       "type_label": "Type",
       "type_outflow": "Outflow",
@@ -1493,6 +1521,7 @@
   "accounting_customers": {
     "title": "Customers",
     "description": "Overview of all customers and their invoices",
+    "load_error_partial": "Some customers' figures could not be loaded, so the list and the totals are incomplete.",
     "stats": {
       "total_invoices": "Total Invoices",
       "property_value": "Property Value",
@@ -4955,6 +4984,13 @@
   "sifrarnici": {
     "title": "Šifrarnici",
     "description": "Maps 4D Wand codes onto Cognilion entities so imported invoices classify themselves.",
+    "toast": {
+      "save_success": "Mapping saved",
+      "save_error": "The mapping was not saved",
+      "clear_success": "Mapping cleared",
+      "clear_error": "The mapping was not cleared",
+      "targets_error": "The entity list could not be loaded"
+    },
     "search_placeholder": "Search by code or name…",
     "only_unmapped": "Only unmapped",
     "tab_accounts": "Konta",

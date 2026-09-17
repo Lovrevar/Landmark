@@ -3,6 +3,7 @@ import { BankWithCredits, Project, Company, BankCredit, NewCreditForm } from '..
 import { fetchProjects, fetchCompanies, fetchBanksWithCredits, createCredit, updateCredit, deleteCredit } from '../services/bankService'
 import { useModalOverflow } from '../../../../hooks/useModalOverflow'
 import { useToast } from '../../../../contexts/ToastContext'
+import { toLoadError } from '../../services/loadError'
 
 export const useBanks = () => {
   const toast = useToast()
@@ -10,6 +11,7 @@ export const useBanks = () => {
   const [projects, setProjects] = useState<Project[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [showCreditForm, setShowCreditForm] = useState(false)
   const [editingCredit, setEditingCredit] = useState<BankCredit | null>(null)
   const [newCredit, setNewCredit] = useState<NewCreditForm>({
@@ -34,8 +36,9 @@ export const useBanks = () => {
   })
 
   const fetchData = async () => {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
       const [projectsData, companiesData, banksData] = await Promise.all([
         fetchProjects(),
         fetchCompanies(),
@@ -46,6 +49,7 @@ export const useBanks = () => {
       setBanks(banksData)
     } catch (error) {
       console.error('Error fetching banks:', error)
+      setError(toLoadError(error))
     } finally {
       setLoading(false)
     }
@@ -173,6 +177,9 @@ export const useBanks = () => {
     projects,
     companies,
     loading,
+    error,
+    refetch: fetchData,
+    dismissError: () => setError(null),
     showCreditForm,
     setShowCreditForm,
     editingCredit,

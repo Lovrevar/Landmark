@@ -4,13 +4,18 @@ import { Plus, Trash2, Building2, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import DateInput from '../../Common/DateInput'
 import { useLoans } from './hooks/useLoans'
-import { PageHeader, LoadingSpinner, SearchInput, Button, Modal, FormField, Select, Input, Form, ConfirmDialog } from '../../ui'
+import { Alert, PageHeader, LoadingSpinner, SearchInput, Button, Modal, FormField, Select, Input, Form, ConfirmDialog, ErrorState } from '../../ui'
+import { toErrorMessage } from '../../../lib/errorMessage'
 
 const AccountingLoans: React.FC = () => {
   const { t } = useTranslation()
   const {
+    loans,
     companies,
     loading,
+    error,
+    refetch,
+    dismissError,
     searchTerm,
     setSearchTerm,
     showAddModal,
@@ -46,6 +51,17 @@ const AccountingLoans: React.FC = () => {
         }
       />
 
+      {error && loans.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
+
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <SearchInput
@@ -56,6 +72,9 @@ const AccountingLoans: React.FC = () => {
           />
         </div>
 
+        {error && loans.length === 0 ? (
+          <ErrorState onRetry={() => void refetch()} />
+        ) : (
         <div className="overflow-x-auto responsive-table">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
@@ -136,6 +155,7 @@ const AccountingLoans: React.FC = () => {
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       <Modal show={showAddModal} onClose={() => { setShowAddModal(false); resetForm() }} size="md">

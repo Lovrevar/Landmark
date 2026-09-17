@@ -4,14 +4,18 @@ import { Building2, Plus, Edit, Trash2, Mail, Phone, MapPin, FileText, Calendar 
 import { format } from 'date-fns'
 import { useOfficeSuppliers } from './hooks/useOfficeSuppliers'
 import OfficeSupplierFormModal from './forms/OfficeSupplierFormModal'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
+import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
 import { formatEuro, formatEuropean } from '../../../utils/formatters'
+import { toErrorMessage } from '../../../lib/errorMessage'
 
 const OfficeSuppliers: React.FC = () => {
   const { t } = useTranslation()
   const {
     suppliers,
     loading,
+    error,
+    refetch,
+    dismissError,
     searchTerm,
     setSearchTerm,
     showModal,
@@ -54,6 +58,16 @@ const OfficeSuppliers: React.FC = () => {
         }
       />
 
+      {error && suppliers.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {!(error && suppliers.length === 0) && (
       <StatGrid columns={4}>
         <StatCard
           label={t('office_suppliers.stats.total')}
@@ -83,6 +97,7 @@ const OfficeSuppliers: React.FC = () => {
           color="yellow"
         />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <SearchInput
@@ -93,7 +108,11 @@ const OfficeSuppliers: React.FC = () => {
         />
       </div>
 
-      {filteredSuppliers.length === 0 ? (
+      {error && suppliers.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <ErrorState onRetry={() => void refetch()} />
+        </div>
+      ) : filteredSuppliers.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <EmptyState
             icon={Building2}

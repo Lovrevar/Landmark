@@ -2,11 +2,13 @@ import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { Invoice, MonthlyBudget } from '../types'
 
+// These two used to swallow their error and return `[]`, which drew an empty month — no
+// invoices due, nothing overdue, a net of €0 — that looked exactly like a quiet month. They
+// throw now, and `useCalendar` decides what the page says.
 export const fetchInvoices = async (): Promise<Invoice[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('accounting_invoices')
-      .select(`
+  const { data, error } = await supabase
+    .from('accounting_invoices')
+    .select(`
         *,
         company:accounting_companies!accounting_invoices_company_id_fkey(name),
         supplier:subcontractors(name),
@@ -16,31 +18,22 @@ export const fetchInvoices = async (): Promise<Invoice[]> => {
         retail_supplier:retail_suppliers(name),
         retail_contracts(retail_suppliers(name))
       `)
-      .not('due_date', 'is', null)
-      .order('due_date', { ascending: true })
+    .not('due_date', 'is', null)
+    .order('due_date', { ascending: true })
 
-    if (error) throw error
-    return data || []
-  } catch (error) {
-    console.error('Error fetching invoices:', error)
-    return []
-  }
+  if (error) throw error
+  return data || []
 }
 
 export const fetchBudgets = async (): Promise<MonthlyBudget[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('monthly_budgets')
-      .select('*')
-      .order('year', { ascending: false })
-      .order('month', { ascending: true })
+  const { data, error } = await supabase
+    .from('monthly_budgets')
+    .select('*')
+    .order('year', { ascending: false })
+    .order('month', { ascending: true })
 
-    if (error) throw error
-    return data || []
-  } catch (error) {
-    console.error('Error fetching budgets:', error)
-    return []
-  }
+  if (error) throw error
+  return data || []
 }
 
 export const handleSaveBudgets = async (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  Alert,
   LoadingSpinner,
   PageHeader,
   StatGrid,
@@ -9,9 +10,11 @@ import {
   Button,
   Badge,
   EmptyState,
+  ErrorState,
   ConfirmDialog
 } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
@@ -48,6 +51,9 @@ const AccountingApprovals: React.FC = () => {
     filteredInvoices,
     stats,
     loading,
+    error,
+    refetch,
+    dismissError,
     searchTerm,
     setSearchTerm,
     selectedIds,
@@ -114,6 +120,10 @@ const AccountingApprovals: React.FC = () => {
     return <LoadingSpinner size="lg" message={t('common.loading')} />
   }
 
+  // A failed load leaves `invoices` empty, which would otherwise read as "everything is
+  // approved and processed" — and the stat cards would agree, in euros. Say it failed instead.
+  const loadFailedEmpty = !!error && invoices.length === 0
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -121,6 +131,18 @@ const AccountingApprovals: React.FC = () => {
         description={t('approvals.subtitle')}
       />
 
+      {error && invoices.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {!loadFailedEmpty && (
       <StatGrid columns={3}>
         <StatCard
           title={t('approvals.stats.pending')}
@@ -148,6 +170,7 @@ const AccountingApprovals: React.FC = () => {
           trend={stats.oldestInvoice ? 'down' : 'neutral'}
         />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -191,7 +214,11 @@ const AccountingApprovals: React.FC = () => {
           </div>
         </div>
 
-        {filteredInvoices.length === 0 ? (
+        {loadFailedEmpty ? (
+          <div className="p-8">
+            <ErrorState onRetry={() => void refetch()} />
+          </div>
+        ) : filteredInvoices.length === 0 ? (
           <div className="p-8">
             <EmptyState
               icon={CheckCircle}

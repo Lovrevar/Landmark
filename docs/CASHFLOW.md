@@ -22,6 +22,58 @@ hand-rolled `toLocaleString`. Two rules the module used to break:
 A sweep of the remaining plain `toLocaleString('hr-HR')` money renders (correct locale, ragged
 decimals) is still outstanding — see `docs/UI_AUDIT.md`.
 
+## Load failures must not look like data
+
+On a financial screen, an empty list and a failed query render identically unless the page is
+told them apart. Debt Status used to say "no outstanding debt" when its query failed, and
+Approvals said "all approved invoices are processed".
+
+**The hook contract.** Every loader hook in this module returns, alongside its data:
+
+| Field | Meaning |
+|---|---|
+| `error: Error \| null` | the last load failure; `null` once a load succeeds |
+| `refetch()` | re-runs the load. An alias where the loader already had a name (`fetchData`, `load`, `fetchAll`) — existing call sites keep using the old name |
+| `dismissError()` | clears `error` without reloading, for the dismissible stale-data alert |
+
+Errors are coerced with `toLoadError` (`Cashflow/services/loadError.ts`) rather than
+`new Error(String(err))`: Supabase rejects with a plain `{ code, message }` object, which
+`String()` turns into `"[object Object]"` — and `toErrorMessage` would then show it. `toLoadError`
+keeps the message and the SQLSTATE, so `toErrorMessage` / `isPermissionError` still work.
+
+**The rendering rule** (`ErrorState` and `Alert` both come from `src/components/ui`; `Alert`'s
+`onClose` prop is dead — use `onDismiss`):
+
+- loading, nothing loaded yet → spinner, as before
+- `error` and nothing loaded → `<ErrorState onRetry={refetch} />` **in place of the list**, with
+  the page header, filter bar and search left mounted, **and the stat cards not rendered at all**
+  — a €0 tile is a claim about the money, not a description of an empty table
+- `error` with data still on screen → keep the data, and put a dismissible
+  `<Alert variant="error">` with a retry button above it
+- inside a modal or a card → `<ErrorState compact />`, or the modal's existing inline `Alert`
+  (the bank-invoice and land-purchase forms use the latter)
+
+**Partial loads.** `usePayments` (five parallel fetches) and `useAccountingCustomers` (one fetch
+per customer) use `Promise.allSettled`, so one failure no longer empties the page: what resolved
+is shown, and `error` drives the alert. `useAccountingCustomers` also exposes `partial`, and the
+Customers page hides its totals whenever `error` is set, because a total summed over a partial
+list reads as the whole book.
+
+**Exports are gated on a clean load.** `useDebtStatus` returns `canExport`
+(`!debtError && debtData.length > 0`); the Excel and PDF buttons are disabled when it is false and
+both handlers return early. An exported "no debt" spreadsheet outlives the screen it came from.
+
+Services in this module **throw**; they never return `[]` on failure. `calendarService`
+(`fetchInvoices`, `fetchBudgets`) and `customerService` (`fetchCustomerInvoices`,
+`fetchCustomerProperties`) used to swallow, which hid the failure below the hook where no page
+could see it.
+
+Still outstanding (deferred with the rest of the batch): the fetches written inline inside
+components — `Suppliers/forms/RetailSupplierModal.tsx`,
+`Suppliers/forms/LinkSupplierToProjectModal.tsx`, `Banks/forms/BankCreditFormModal.tsx` — and
+`invoiceService.fetchData`, which logs but does not throw for the bank-account and credit
+sub-queries, so those two dropdowns can still be silently empty.
+
 ## Sub-modules
 
 ---
@@ -44,7 +96,9 @@ Manages approved invoices that are pending processing. Supports bulk hide/select
 ### useApprovals.ts
 - `useApprovals()` — manages approved invoice list, search filtering, selection state, and hide actions
 - **Calls:** approvalsService.ts
-- **Returns:** invoices, filteredInvoices, stats, loading, searchTerm, selectedIds, toggleSelect, toggleSelectAll, allFilteredSelected, selectedCount, selectedTotal, hideInvoice, bulkHide
+- **Returns:** invoices, filteredInvoices, stats, loading, error, refetch, dismissError, searchTerm, selectedIds, toggleSelect, toggleSelectAll, allFilteredSelected, selectedCount, selectedTotal, hideInvoice, bulkHide
+- `error` non-null with `invoices` empty means "we don't know", never "everything is processed" —
+  the page then renders `ErrorState` instead of the empty state and drops the stat cards
 
 #### Views
 
@@ -103,8 +157,13 @@ Bank account management, credit line tracking, and bank-linked invoice creation.
 
 ### useBankInvoiceData.ts
 - `useBankInvoiceData(bankId, creditId?)` — loads all reference data needed for the bank invoice form; refetches credits when `bankId` changes and allocations when `creditId` changes
+- Every list here is a dropdown, so one `error` slot covers them all and `BankInvoiceFormModal`
+  renders it as an inline `Alert` above the fields
+- `fetchMyCompanies` **rethrows** after recording the error (it used to return `[]`): the modal
+  preselects the first company from it, so a silent empty list read as "this company has none".
+  The modal's own `initializeCompany` catches it — the `Alert` is the report
 - **Uses services:** bankInvoiceFormDataService.ts
-- **Returns:** banks, credits, creditAllocations, myCompanies, invoiceCategories, fetchMyCompanies
+- **Returns:** banks, credits, creditAllocations, myCompanies, invoiceCategories, error, dismissError, fetchMyCompanies
 
 #### Forms
 
@@ -144,8 +203,9 @@ Monthly calendar view showing scheduled invoice payments and due dates. Supports
 #### Services
 
 ### calendarService.ts
-- `fetchInvoices()` — fetches all invoices for calendar display
-- `fetchBudgets()` — fetches monthly budget records
+- `fetchInvoices()` — fetches all invoices for calendar display. **Throws** on failure (it used to
+  swallow into `[]`, which drew a month with nothing due)
+- `fetchBudgets()` — fetches monthly budget records. Also throws
 - `handleSaveBudgets(year, budgetFormData, budgets)` — upserts 12-month budget entries for a year
 - **Depends on:** supabase client
 
@@ -153,8 +213,11 @@ Monthly calendar view showing scheduled invoice payments and due dates. Supports
 
 ### useCalendar.ts
 - `useCalendar()` — manages calendar navigation, date selection, daily invoice display, and budget state
+- A failed invoice load clears `invoices` and sets `error`; the page then replaces the whole
+  calendar (grid, stat cards and the net figure are all derived from it) with `ErrorState`, and
+  shows an `Alert` when only the budgets failed
 - **Calls:** calendarService.ts
-- **Returns:** currentDate, invoices, loading, selectedDate, selectedInvoices, budgets, showBudgetModal, budgetYear, budgetFormData, getDaysInMonth, getInvoicesForDate, getMonthStats, handlePreviousMonth, handleNextMonth, handleDateClick, handleOpenBudgetModal, getCurrentMonthBudget
+- **Returns:** currentDate, invoices, loading, error, refetch, selectedDate, selectedInvoices, budgets, showBudgetModal, budgetYear, budgetFormData, getDaysInMonth, getInvoicesForDate, getMonthStats, handlePreviousMonth, handleNextMonth, handleDateClick, handleOpenBudgetModal, getCurrentMonthBudget
 
 #### Forms
 
@@ -254,8 +317,9 @@ Accounting-side customer records (distinct from Sales CRM customers). Tracks inv
 
 ### customerService.ts
 - `fetchCustomers()` — fetches all accounting customers
-- `fetchCustomerInvoices(customerId)` — fetches all invoices for a customer
-- `fetchCustomerProperties(customerId)` — fetches linked apartments, garages, and repositories
+- `fetchCustomerInvoices(customerId)` — fetches all invoices for a customer. **Throws**; it used to
+  drop its error, which made a failed query read as "this customer has paid nothing"
+- `fetchCustomerProperties(customerId)` — fetches linked apartments, garages, and repositories. Also throws
 - `buildCustomerStats(customer)` — aggregates all customer data into a stats summary
 - **Depends on:** supabase client
 
@@ -263,15 +327,20 @@ Accounting-side customer records (distinct from Sales CRM customers). Tracks inv
 
 ### useAccountingCustomers.ts
 - `useAccountingCustomers()` — manages customer list, search, details modal, and aggregated totals
+- Per-customer stats are gathered with `Promise.allSettled`, so one customer's failing invoice
+  query no longer empties the table and all four stat cards. `partial` is true when some
+  customers loaded and others did not
 - **Calls:** customerService.ts
-- **Returns:** customers, loading, searchTerm, showDetailsModal, selectedCustomer, isIncomeInvoice, handleOpenDetails, handleCloseDetails, filteredCustomers, totalStats
+- **Returns:** customers, loading, error, partial, refetch, dismissError, searchTerm, showDetailsModal, selectedCustomer, isIncomeInvoice, handleOpenDetails, handleCloseDetails, filteredCustomers, totalStats
 
 #### Views
 
 ### index.tsx (AccountingCustomers)
 - Customer list with stats, contact info, invoice tracking, and detail modal
+- The stat grid is hidden whenever `error` is set — a total over a partial list would read as the
+  whole book — and the table area shows `ErrorState` when nothing loaded at all
 - **Uses hooks:** useAccountingCustomers
-- **Uses Ui:** Card, Table, SearchInput
+- **Uses Ui:** Card, Table, SearchInput, ErrorState, Alert
 
 ---
 
@@ -298,15 +367,22 @@ Aggregated supplier debt overview. Shows total unpaid and paid amounts per suppl
 ### useDebtStatus.ts
 - `useDebtStatus()` — manages debt data, project filter, column sorting, and aggregated totals
 - **Calls:** debtService.ts
-- **Returns:** debtData, loading, sortBy, sortOrder, sortedData, totalUnpaid, totalPaid, totalSuppliers, suppliersWithDebt, projects, selectedProjectId, setSelectedProjectId, handleSort
+- **Returns:** debtData, loading, error, refetch, dismissError, canExport, sortBy, sortOrder, sortedData, totalUnpaid, totalPaid, totalSuppliers, suppliersWithDebt, projects, selectedProjectId, setSelectedProjectId, handleSort
+- Debt and project errors are tracked separately so a debt reload cannot clear a failed project
+  list; `error` is whichever is set. A failed debt load also clears `debtData`, so the previous
+  project's figures never stand in for the one that failed
+- `canExport` is `false` whenever the debt load failed or there is nothing to export
 
 #### Views
 
 ### index.tsx (DebtStatus)
 - Supplier debt summary table with project filter, sortable columns, and Excel/PDF export
+- Export buttons are `disabled={!canExport}` **and** both handlers return early on `!canExport`;
+  the stat cards are not rendered when the load failed with nothing loaded, and the table area
+  carries `ErrorState` instead of the "no debt" empty state
 - **Uses hooks:** useDebtStatus
 - **Uses services:** debtExport
-- **Uses Ui:** Table, Button, Select
+- **Uses Ui:** Table, Button, Select, ErrorState, Alert
 
 ---
 
@@ -562,8 +638,12 @@ Payment records linked to invoices. Supports wire, cash, check, card, kompenzaci
 ### usePayments.ts
 - `usePayments()` — manages payment list, filters (method, invoice type, date range), column visibility, and modal states
 - `handleSubmit` validates with `validatePaymentForm`, passing the edited payment's old amount as `originalAmount` (the invoice's `remaining_amount` already excludes it, so editing a payment on a fully paid invoice used to fail); failures toast `payments.form.error_save`
+- Create, update and delete each toast on success (`payments.toast.*`). Before this the only
+  signal was the whole page flashing a spinner, so a save and a no-op looked the same
+- `fetchData` uses `Promise.allSettled` across its five fetches: whatever resolved is shown and
+  `error` carries the first rejection, so a failing credit list no longer blanks the payments table
 - **Calls:** paymentService.ts, paymentValidation.ts
-- **Returns:** payments, invoices, companies, companyBankAccounts, companyCredits, loading, searchTerm, filterMethod, filterInvoiceType, dateFrom, dateTo, showColumnMenu, showPaymentModal, editingPayment, viewingPayment, formData, visibleColumns, handlers
+- **Returns:** payments, invoices, companies, companyBankAccounts, companyCredits, loading, error, refetch, dismissError, searchTerm, filterMethod, filterInvoiceType, dateFrom, dateTo, showColumnMenu, showPaymentModal, editingPayment, viewingPayment, formData, visibleColumns, handlers
 
 #### Forms
 
@@ -651,17 +731,24 @@ adding a join would silently make the screen read-only.
 
 ### useSifrarnici.ts
 - `useSifrarnici()` — tab state, all three code lists with their mappings, search and unmapped filtering, per-tab unmapped counts, and save/clear actions that reload only the affected list
+- `save*` / `clear*` and `ensurePartnerTargets` all reject on failure — the view is what reports.
+  `error` is an `Error` (was a string) and `reload` is also exposed as `refetch`
 - **Calls:** sifrarniciService.ts
-- **Returns:** activeTab, loading, error, searchTerm, onlyUnmapped, accounts, costCenters, partners, filtered*, unmappedCounts, categories, banks, projects, retailProjects, partnerTargets, ensurePartnerTargets, save*, clear*, reload
+- **Returns:** activeTab, loading, error, dismissError, searchTerm, onlyUnmapped, accounts, costCenters, partners, filtered*, unmappedCounts, categories, banks, projects, retailProjects, partnerTargets, ensurePartnerTargets, save*, clear*, reload, refetch
 
 #### Views
 
 ### index.tsx (Sifrarnici)
 - Three tabs — Konta, Mjesta troška, Komitenti — with inline editing and an "only unmapped" filter
 - Account rows pick a `role` (what part the account plays in a posting: gross liability, net expense, VAT, bank …) which then decides what the "maps to" column offers: a category, a VAT rate, or a bank
-- Empty until the reference-data feeds land in phase 2, so each tab has a real empty state
+- Empty until the reference-data feeds land in phase 2, so each tab has a real empty state — which
+  is why a failed load may not fall through to it: with all three lists empty the page renders
+  `ErrorState` with a retry instead, and shows a dismissible `Alert` when some data did load
+- Every mapping save and clear is awaited and reported: `toast.success` on success,
+  `toast.error(toErrorMessage(e, …))` on failure (`sifrarnici.toast.*`). Previously these were
+  `void s.save*(…)` / `void s.clear*(…)` and a failed save only snapped the select back
 - **Uses hooks:** useSifrarnici
-- **Uses Ui:** Tabs, Table, Select, SearchInput, ToggleSwitch, EmptyState, PageHeader, Card, Badge, Button
+- **Uses Ui:** Tabs, Table, Select, SearchInput, ToggleSwitch, EmptyState, ErrorState, Alert, PageHeader, Card, Badge, Button, useToast
 
 ---
 

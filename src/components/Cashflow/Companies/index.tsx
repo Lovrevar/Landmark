@@ -4,13 +4,17 @@ import { Building2, Plus, DollarSign, TrendingUp, TrendingDown, Eye, Edit, Trash
 import { useCompanies } from './hooks/useCompanies'
 import CompanyFormModal from './forms/CompanyFormModal'
 import CompanyDetailsModal from './modals/CompanyDetailsModal'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ConfirmDialog } from '../../ui'
+import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, ConfirmDialog } from '../../ui'
+import { toErrorMessage } from '../../../lib/errorMessage'
 
 const AccountingCompanies: React.FC = () => {
   const { t } = useTranslation()
   const {
     companies,
     loading,
+    error,
+    refetch,
+    dismissError,
     searchTerm,
     setSearchTerm,
     showAddModal,
@@ -53,12 +57,23 @@ const AccountingCompanies: React.FC = () => {
         }
       />
 
+      {error && companies.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {!(error && companies.length === 0) && (
       <StatGrid columns={4}>
         <StatCard label={t('companies.stats.total_count')} value={companies.length} icon={Building2} />
         <StatCard label={t('companies.stats.total_balance')} value={`€${totalBalance.toLocaleString('hr-HR')}`} icon={DollarSign} color={totalBalance >= 0 ? 'green' : 'red'} />
         <StatCard label={t('companies.stats.total_revenue')} value={`€${totalRevenue.toLocaleString('hr-HR')}`} icon={TrendingUp} color="blue" />
         <StatCard label={t('companies.stats.profit_loss')} value={`€${totalProfit.toLocaleString('hr-HR')}`} icon={totalProfit >= 0 ? TrendingUp : TrendingDown} color={totalProfit >= 0 ? 'green' : 'red'} />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <SearchInput
@@ -69,7 +84,9 @@ const AccountingCompanies: React.FC = () => {
         />
       </div>
 
-      {filteredCompanies.length === 0 ? (
+      {error && companies.length === 0 ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : filteredCompanies.length === 0 ? (
         <EmptyState
           icon={Building2}
           title={searchTerm ? t('common.no_results') : t('companies.no_companies')}

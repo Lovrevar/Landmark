@@ -9,6 +9,8 @@ import { getDefaultInvoiceFormData, getDefaultPaymentFormData } from '../service
 import { useToast } from '../../../../contexts/ToastContext'
 import { isInvoiceCategoryValidForDirection, type InvoiceDirection } from '../../services/invoiceHelpers'
 import { validatePaymentForm } from '../../Payments/services/paymentValidation'
+import { toLoadError } from '../../services/loadError'
+import { toErrorMessage } from '../../../../lib/errorMessage'
 
 export const useInvoices = () => {
   const toast = useToast()
@@ -30,6 +32,7 @@ export const useInvoices = () => {
   const [customerApartments, setCustomerApartments] = useState<Record<string, unknown>[]>([])
   const [invoiceCategories, setInvoiceCategories] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   // True once the first fetch has settled. Later refetches keep the page mounted (so the
   // search box keeps focus) instead of swapping everything for a full-page spinner.
   const [hasLoaded, setHasLoaded] = useState(false)
@@ -92,6 +95,7 @@ export const useInvoices = () => {
     const requestId = ++latestRequestRef.current
     try {
       setLoading(true)
+      setError(null)
 
       const result = await invoiceService.fetchData(
         filterType,
@@ -128,6 +132,9 @@ export const useInvoices = () => {
     } catch (error) {
       if (requestId === latestRequestRef.current) {
         console.error('Error fetching data:', error)
+        // Whatever is on screen stays, with the stats it was loaded with — the page shows a
+        // retry rather than swapping in a register that reads "0 invoices, €0 unpaid".
+        setError(toLoadError(error))
       }
     } finally {
       if (requestId === latestRequestRef.current) {
@@ -152,8 +159,10 @@ export const useInvoices = () => {
           const data = await invoiceService.fetchMilestones(formData.contract_id)
           setMilestones(data)
         } catch (error) {
+          // "No milestones available" in the form would be a claim about the contract.
           console.error('Error loading milestones:', error)
           setMilestones([])
+          toast.error(t('invoices.toast.milestones_load_error'))
         }
       } else {
         setMilestones([])
@@ -162,6 +171,9 @@ export const useInvoices = () => {
     }
 
     loadMilestones()
+    // `toast` is context-stable and `t` only changes on a language switch; neither should
+    // re-trigger a milestone fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.contract_id])
 
   const handleOpenModal = (invoice?: Invoice) => {
@@ -287,7 +299,7 @@ export const useInvoices = () => {
           invoice_number: t('invoices.form.error_invoice_number_duplicate'),
         })
       } else {
-        toast.error(t('invoices.form.error_save'))
+        toast.error(toErrorMessage(error, t('invoices.form.error_save')))
       }
     }
   }
@@ -299,6 +311,7 @@ export const useInvoices = () => {
     } catch (error) {
       console.error('Error fetching credit allocations:', error)
       setCreditAllocations([])
+      toast.error(t('payments.toast.allocations_load_error'))
     }
   }
 
@@ -346,9 +359,10 @@ export const useInvoices = () => {
       await invoiceService.handlePaymentSubmit(paymentFormData, payingInvoice)
       await fetchData()
       handleClosePaymentModal()
+      toast.success(t('payments.toast.create_success'))
     } catch (error) {
       console.error('Error saving payment:', error)
-      toast.error(t('payments.form.error_save'))
+      toast.error(toErrorMessage(error, t('payments.form.error_save')))
     }
   }
 
@@ -365,7 +379,7 @@ export const useInvoices = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting invoice:', error)
-      toast.error('Greška prilikom brisanja računa')
+      toast.error(toErrorMessage(error, t('invoices.toast.delete_error')))
     } finally {
       setDeleting(false)
       setPendingDeleteId(null)
@@ -392,6 +406,9 @@ export const useInvoices = () => {
     customerApartments,
     invoiceCategories,
     loading,
+    error,
+    refetch: fetchData,
+    dismissError: () => setError(null),
     hasLoaded,
     currentPage,
     totalCount,

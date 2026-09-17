@@ -61,8 +61,10 @@ export function useErpImport() {
     try {
       setProblems(await fetchRunProblems(runId))
     } catch (e) {
+      // An empty problem list reads as "this run was clean", which is the opposite of unknown.
       console.error('Error loading run problems:', e)
       setProblems([])
+      setError(e instanceof Error ? e.message : 'Failed to load the run problems')
     } finally {
       setProblemsLoading(false)
     }

@@ -2,12 +2,18 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Users, DollarSign, TrendingUp, TrendingDown, FileText, Eye, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import { useAccountingCustomers } from './hooks/useAccountingCustomers'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, StatCard, EmptyState, Button, Badge, Modal } from '../../ui'
+import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, StatCard, EmptyState, ErrorState, Button, Badge, Modal } from '../../ui'
+import { toErrorMessage } from '../../../lib/errorMessage'
 
 const AccountingCustomers: React.FC = () => {
   const { t } = useTranslation()
   const {
+    customers,
     loading,
+    error,
+    partial,
+    refetch,
+    dismissError,
     searchTerm,
     setSearchTerm,
     showDetailsModal,
@@ -26,12 +32,31 @@ const AccountingCustomers: React.FC = () => {
         description={t('accounting_customers.description')}
       />
 
-      <StatGrid columns={4}>
-        <StatCard label={t('accounting_customers.stats.total_invoices')} value={totalStats.total_invoices} icon={FileText} />
-        <StatCard label={t('accounting_customers.stats.property_value')} value={`€${totalStats.total_property_value.toLocaleString('hr-HR')}`} icon={DollarSign} color="gray" />
-        <StatCard label={t('accounting_customers.stats.paid')} value={`€${totalStats.total_paid.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
-        <StatCard label={t('accounting_customers.stats.debt')} value={`€${totalStats.total_debt.toLocaleString('hr-HR')}`} icon={TrendingDown} color="red" />
-      </StatGrid>
+      {error && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">
+              {partial
+                ? t('accounting_customers.load_error_partial')
+                : toErrorMessage(error, t('common.load_error_description'))}
+            </span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {/* Totals summed over a partial list would read as the whole book, so they stay hidden
+          until every customer's figures are in. */}
+      {!error && (
+        <StatGrid columns={4}>
+          <StatCard label={t('accounting_customers.stats.total_invoices')} value={totalStats.total_invoices} icon={FileText} />
+          <StatCard label={t('accounting_customers.stats.property_value')} value={`€${totalStats.total_property_value.toLocaleString('hr-HR')}`} icon={DollarSign} color="gray" />
+          <StatCard label={t('accounting_customers.stats.paid')} value={`€${totalStats.total_paid.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
+          <StatCard label={t('accounting_customers.stats.debt')} value={`€${totalStats.total_debt.toLocaleString('hr-HR')}`} icon={TrendingDown} color="red" />
+        </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -46,6 +71,8 @@ const AccountingCustomers: React.FC = () => {
         <div className="overflow-x-auto responsive-table">
           {loading ? (
             <LoadingSpinner size="sm" message={t('common.loading')} />
+          ) : error && customers.length === 0 ? (
+            <ErrorState onRetry={() => void refetch()} />
           ) : filteredCustomers.length === 0 ? (
             <EmptyState icon={Users} title={t('accounting_customers.empty')} />
           ) : (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Modal, Form, Input } from '../../../ui'
+import { Alert, Button, Modal, Form, Input } from '../../../ui'
+import { toErrorMessage } from '../../../../lib/errorMessage'
 import CurrencyInput from '../../../Common/CurrencyInput'
 import DateInput from '../../../Common/DateInput'
 import { useLandPurchaseFormData, Contract } from '../hooks/useLandPurchaseFormData'
@@ -41,7 +42,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
     remaining_due_date: new Date().toISOString().split('T')[0]
   })
 
-  const { companies, suppliers, projects, phases, availableContracts } = useLandPurchaseFormData(
+  const { companies, suppliers, projects, phases, availableContracts, error: dataError, dismissError } = useLandPurchaseFormData(
     projectType,
     formData.supplier_id || null,
     formData.project_id || null,
@@ -163,7 +164,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
       if (isInvoiceNumberDuplicateError(error)) {
         setFieldErrors({ invoice_name: t('invoices.form.error_invoice_number_duplicate') })
       } else {
-        toast.error(t('invoices.land_purchase.error_create'))
+        toast.error(toErrorMessage(error, t('invoices.land_purchase.error_create')))
       }
     } finally {
       setLoading(false)
@@ -227,6 +228,12 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
               </button>
             </div>
           </div>
+
+          {dataError && (
+            <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError} className="mb-4">
+              {toErrorMessage(dataError, t('invoices.land_purchase.error_load'))}
+            </Alert>
+          )}
 
           <h3 className="text-base font-semibold text-slate-800 dark:text-gray-100 mb-4">{t('invoices.land_purchase.basic_info')}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
