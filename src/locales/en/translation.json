@@ -1866,7 +1866,10 @@
       "current_total_value": "Current Total Value:",
       "new_total_value": "New Total Value:",
       "total_value_change": "Total Value Change:",
-      "update_units": "Update Units"
+      "update_units": "Update Units",
+      "toast_success": "Updated {{updated}} of {{selected}} selected units (sold units are skipped)",
+      "toast_partial": "Updated {{updated}} of {{selected}} units; {{failed}} could not be updated",
+      "toast_failed": "The prices could not be updated"
     },
     "bulk_units_modal": {
       "title": "Bulk Create Units",
@@ -1966,6 +1969,16 @@
   "apartments": {
     "title": "Apartments",
     "subtitle": "Manage apartments",
+    "toast": {
+      "create_success": "Apartment added",
+      "bulk_create_success": "Apartments added",
+      "update_success": "Apartment saved",
+      "delete_success": "Apartment deleted",
+      "create_error": "Failed to add the apartment",
+      "update_error": "Failed to save the apartment",
+      "delete_error": "Failed to delete the apartment",
+      "payments_load_error": "Failed to load the payment history"
+    },
     "item_label": "apartments",
     "add": "Add Apartment",
     "bulk_create": "Bulk Create",
@@ -2241,7 +2254,8 @@
       "bank": "Bank",
       "filtered_results": "Filtered Results",
       "payments_totaling": "payments totaling",
-      "project": "Project"
+      "project": "Project",
+      "load_failed": "The payments could not be loaded"
     },
     "errors": {
       "email_exists": "A customer with this email already exists.",
@@ -2249,7 +2263,9 @@
       "first_name_required": "First name is required.",
       "last_name_required": "Last name is required.",
       "email_required": "Email is required.",
-      "phone_required": "Phone is required."
+      "phone_required": "Phone is required.",
+      "delete_failed": "The customer could not be deleted.",
+      "update_contact_failed": "The contact date could not be updated."
     }
   },
   "supervision": {
@@ -4346,6 +4362,7 @@
     "members": "Members ({{count}})",
     "file_too_large": "File exceeds 25 MB limit",
     "send_failed": "Send failed. Try again.",
+    "create_failed": "The conversation could not be created. Try again.",
     "time_now": "now",
     "today": "Today",
     "yesterday": "Yesterday",
@@ -4554,7 +4571,8 @@
       "read_only": "Read only",
       "mark_done": "Mark as done",
       "mark_open": "Mark as not done",
-      "toggle_failed": "Couldn't update the task. Please try again."
+      "toggle_failed": "Couldn't update the task. Please try again.",
+      "delete_failed": "Couldn't delete the task. Please try again."
     },
     "colors": {
       "none": "No colour",
@@ -4580,6 +4598,7 @@
       "assign_label": "Assign to users",
       "assign_placeholder": "Search users",
       "create_button": "Create task",
+      "create_failed": "Couldn't create the task. Please try again.",
       "discard_title": "Discard changes?",
       "discard_message": "You have unsaved changes. Close without saving?",
       "discard_confirm": "Discard"
@@ -4630,6 +4649,7 @@
       "delete_comment_confirm_title": "Delete comment?",
       "delete_comment_confirm_message": "The comment will be permanently deleted.",
       "delete_comment_failed": "Couldn't delete the comment. Please try again.",
+      "comment_failed": "Couldn't post the comment. Please try again.",
       "save_failed": "Couldn't save the change. Please try again.",
       "delete_task_confirm_title": "Delete task?",
       "delete_task_confirm_message": "This action cannot be undone."

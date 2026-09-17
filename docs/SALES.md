@@ -28,6 +28,13 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `createUnit(data)`, `bulkCreateUnits(data)`, `deleteUnit(id)` — unit CRUD
 - `updateUnitStatus(id, status)` — updates a unit's availability status
 - `bulkUpdateUnitPrice(ids, unitType, adjustmentType, value)` — adjusts price per m² for selected units. Sold units are never repriced: they are excluded from the fetch and each update re-checks `status <> 'Sold'`. The `apartment.bulk_price_update` log `count` is the number of rows actually updated, not the number of ids passed
+  - **Returns `{ selected, updated, failed }`** (`bulkPriceResult.ts`, folded by the pure
+    `summarizeBulkPriceUpdate`, unit-tested) instead of throwing on a partial failure. It used
+    to throw `Failed to update N units`, which both discarded the count and skipped the page's
+    `refetch()` — so rows that *had* changed kept showing their old price. The page now always
+    refetches and reports "n of m"
+  - `updated < selected` is normal, because sold units are skipped by design; only `failed > 0`
+    is an error. A failure to even read the units still throws — there is nothing to report then
 - `linkGarageToApartment(garageId, apartmentId)`, `unlinkGarageFromApartment(...)` — garage linking
 - `linkRepositoryToApartment(repoId, apartmentId)`, `unlinkRepositoryFromApartment(...)` — storage linking
 - `createCustomer(data)` — creates a new customer from the sale form
@@ -52,7 +59,10 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 ### hooks/useSalesData.ts
 - `useSalesData()` — fetches projects, buildings, apartments, garages, repositories, customers, and sales; enriches apartments with sale_info; calculates totals
 - **Calls:** salesService.ts
-- **Returns:** projects, buildings, apartments, garages, repositories, customers, loading, refetch
+- **Returns:** projects, buildings, apartments, garages, repositories, customers, loading, error, dismissError, refetch
+- One `try` wraps all seven queries plus the aggregation, so any failure used to leave every
+  total at 0. It now records `error`; the page renders `ErrorState` when nothing loaded and a
+  dismissible `Alert` over the stale cards when something did
 
 #### Views
 
@@ -83,6 +93,8 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - Main view orchestrating project → building → unit navigation with all CRUD modals and linking
 - Changing the unit type tab or the status filter clears the unit selection. The bulk price modal receives the selected units minus any Sold ones
 - The full-page spinner shows on the first load only (`loading && projects.length === 0`); later refetches keep the page and any open modal mounted
+- `loadFailed` (`error && projects.length === 0`) replaces the project grid with `ErrorState`, keeping the header mounted; with stale projects on screen the error is a dismissible `Alert` above them instead
+- Both delete confirmations close only after the delete succeeds — never in `finally`
 - Every modal submit handler is `async`, awaits its service call and `refetch()`, and keeps its own try/catch + toast; the modals return that promise so `Button` spins and disables until it settles (no double submit)
 - **Uses hooks:** useSalesData
 - **Uses components:** ProjectsGrid, BuildingsGrid, UnitsGrid, SaleFormModal, all unit/building modals
@@ -175,13 +187,16 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 ### hooks/useApartmentData.ts
 - `useApartmentData()` — owns server-side pagination and filter state (search is debounced 500ms; changing any filter resets to page 1). Fetches filter options once, then re-fetches the current page whenever page/search/filters change. Exports `APARTMENTS_PAGE_SIZE` (24)
 - **Calls:** apartmentListService.ts (`fetchApartmentFilterOptions`, `fetchApartmentListPage`)
-- **Returns:** apartments, totalCount, projects, buildings, apartmentPaymentTotals, garagePaymentTotals, storagePaymentTotals, linkedGarages, linkedStorages, loading, refreshing, refetch, pageSize, currentPage, setCurrentPage, searchTerm, setSearchTerm, filterProject, setFilterProject, filterBuilding, setFilterBuilding, filterStatus, setFilterStatus
+- **Returns:** apartments, totalCount, projects, buildings, apartmentPaymentTotals, garagePaymentTotals, storagePaymentTotals, linkedGarages, linkedStorages, loading, refreshing, error, dismissError, refetch, pageSize, currentPage, setCurrentPage, searchTerm, setSearchTerm, filterProject, setFilterProject, filterBuilding, setFilterBuilding, filterStatus, setFilterStatus
 - **Note:** `garagePaymentTotals` and `storagePaymentTotals` are kept in the return shape but are always empty — only apartment-level payment totals are computed by the service
 
 ### hooks/useLinkUnits.ts
 - `useLinkUnits(apartmentId, buildingId, enabled)` — manages available/selected garage and storage IDs with save
 - **Calls:** linkUnitsService.ts
-- **Returns:** availableGarages, availableStorages, selectedGarageIds, selectedStorageIds, loading, saving, setSelectedGarageIds, setSelectedStorageIds, save
+- **Returns:** availableGarages, availableStorages, selectedGarageIds, selectedStorageIds, loading, saving, error, refetch, setSelectedGarageIds, setSelectedStorageIds, save
+- `error` is load-bearing, not cosmetic: `save()` writes the selection as the complete link
+  set, so saving on top of a failed load would unlink everything. `LinkUnitsModal` shows a
+  compact `ErrorState` and disables Save while `error` is set
 
 #### Views
 
@@ -191,8 +206,14 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 
 ### index.tsx (Apartments)
 - Apartment management page: project/building/status filters and search now come from `useApartmentData` (server-side); the page renders the current page and a `Pagination` control. Header shows `totalCount`. CRUD modals, payment history, and unit linking unchanged
+- Create / bulk create / update / delete each show a success toast and, on failure, a
+  `toErrorMessage` toast under `apartments.toast.*`. The delete confirmation closes only after
+  the row is gone — it used to close in `finally`, so a refused delete looked identical to a
+  completed one. The header count renders "—" rather than 0 when the load failed
+- The list area carries `ErrorState` when nothing loaded; with stale rows on screen a
+  dismissible `Alert` sits above them. Header, filters and search stay mounted either way
 - **Uses hooks:** useApartmentData, useLinkUnits
-- **Uses Ui:** SearchInput, Button, Select, EmptyState, PageHeader, ConfirmDialog, Pagination, LoadingSpinner
+- **Uses Ui:** SearchInput, Button, Select, EmptyState, ErrorState, Alert, PageHeader, ConfirmDialog, Pagination, LoadingSpinner, useToast
 
 #### Modals
 
@@ -251,12 +272,18 @@ Sales-side buyer CRM with category segmentation (`lead`, `interested`, `buyer` �
 ### hooks/useCustomerData.ts
 - `useCustomerData(activeCategory)` — fetches customers for the active category, reads counts from cache, fetches the project list once per mount, exposes CRUD actions
 - **Calls:** customerService.ts, customerCache.ts
-- **Returns:** customers, counts, projects, loading, saveCustomer, deleteCustomer, updateLastContact
+- **Returns:** customers, counts, projects, loading, error, refetch, dismissError, saveCustomer, deleteCustomer, updateLastContact
+- A failed customer fetch *or* a failed counts fetch sets `error`; the page passes
+  `loadFailed` into `CustomerGrid` (which then renders `ErrorState` instead of its empty
+  state) and `countsUnknown` into `CategoryTabs`, whose badges show "—" rather than 0
+- `updateLastContact` still rethrows; the page wraps it so the card's button can stay a
+  plain `(id) => void` without dropping a rejection
 
 #### Views
 
 ### CategoryTabs.tsx
 - Tab bar with 3 category tabs (Leads / Interested / Buyers) showing badge counts; clicking the active tab clears the filter
+- `countsUnknown` renders every badge as "—": after a failed counts query a 0 would be a claim about the pipeline
 
 ### CustomerGrid.tsx
 - Multi-select customer card grid with edit/delete/view-details/update-contact actions
@@ -270,9 +297,12 @@ Sales-side buyer CRM with category segmentation (`lead`, `interested`, `buyer` �
 - Customer list page with category tabs, grid, and all CRUD modals
 - Filter bar pairs the search box with a project dropdown. The project filter is applied client-side and matches either `interested_project_id` or any purchased apartment's project, so it works for interested customers and buyers alike
 - Changing the category, search or project filter clears the selection, so "Email Selected" can only reach customers that are on screen. With nothing selected the button emails every visible customer with an address
+- A failed load renders `ErrorState` (with retry) inside the grid, not the "no customers"
+  empty state, and the delete confirmation stays open — with the reason in a toast — when the
+  delete is refused
 - **Uses hooks:** useCustomerData
 - **Uses components:** CategoryTabs, CustomerGrid, CustomerCard, CustomerFormModal, CustomerDetailModal
-- **Uses Ui:** SearchInput, useToast
+- **Uses Ui:** SearchInput, Alert, useToast
 
 #### Forms
 
@@ -308,12 +338,15 @@ Payment tracking for apartment sales contracts.
 ### hooks/useSalesPayments.ts
 - `useSalesPayments()` — fetches and filters payments by search term, status (all/recent/large), and date range
 - **Calls:** salesPaymentsService.ts
-- **Returns:** loading, stats, filteredPayments, searchTerm, setSearchTerm, filterStatus, setFilterStatus, dateRange, setDateRange
+- **Returns:** loading, error, dismissError, hasData, refetch, stats, filteredPayments, searchTerm, setSearchTerm, filterStatus, setFilterStatus, dateRange, setDateRange
 
 #### Views
 
 ### index.tsx (SalesPayments)
 - Payment dashboard with stat cards (total, this month), filterable table, and CSV export
+- When the load failed with nothing to show, the stat cards are hidden entirely (€0 totals
+  would be a claim about the business) and the table area carries `ErrorState`; the header and
+  the filter card stay mounted
 - **Uses hooks:** useSalesPayments
 - **Uses Ui:** Card, Table, StatGrid, Button
 

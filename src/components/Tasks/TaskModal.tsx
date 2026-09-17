@@ -13,6 +13,8 @@ import TaskColorPicker from './components/TaskColorPicker'
 import SubtaskDraftList from './components/SubtaskDraftList'
 import { fetchProjectOptions, fetchTaskUsers, type ProjectOption } from './services/tasksService'
 import { useAuth } from '../../contexts/AuthContext'
+import { useToast } from '../../contexts/ToastContext'
+import { toErrorMessage } from '../../lib/errorMessage'
 import type { NewTaskInput, TaskUser } from '../../types/tasks'
 import type { TaskColor } from './taskColor'
 
@@ -55,6 +57,7 @@ const TaskModal: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const toast = useToast()
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [projects, setProjects] = useState<ProjectOption[]>([])
@@ -111,6 +114,10 @@ const TaskModal: React.FC<Props> = ({
       }
       await onCreate(input)
       onClose()
+    } catch (e) {
+      // Left open on failure: everything typed here is still in the form.
+      console.error('Failed to create task', e)
+      toast.error(toErrorMessage(e, t('tasks.modal.create_failed')))
     } finally {
       setSaving(false)
     }
@@ -119,7 +126,7 @@ const TaskModal: React.FC<Props> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
-      submit()
+      void submit()
     }
   }
 

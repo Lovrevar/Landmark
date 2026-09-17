@@ -7,6 +7,7 @@ export function useRetailSales() {
   const toast = useToast()
   const [payments, setPayments] = useState<RetailSalesPaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
@@ -16,19 +17,23 @@ export function useRetailSales() {
 
   const loadPayments = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await fetchRetailSalesPayments()
       setPayments(data)
       setStats(calculateSalesStats(data))
     } catch (err) {
       console.error('Error fetching retail sales payments:', err)
-      toast.error('Failed to load payments')
+      setError(err instanceof Error ? err : new Error(String(err)))
+      toast.error('Greška pri učitavanju plaćanja')
     } finally {
       setLoading(false)
     }
   }, [toast])
 
   useEffect(() => { loadPayments() }, [loadPayments])
+
+  const dismissError = useCallback(() => setError(null), [])
 
   const filteredPayments = useMemo(() => payments.filter(payment => {
     const matchesSearch =
@@ -54,6 +59,10 @@ export function useRetailSales() {
 
   return {
     loading,
+    error,
+    dismissError,
+    refetch: loadPayments,
+    hasData: payments.length > 0,
     stats,
     filteredPayments,
     searchTerm,

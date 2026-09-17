@@ -4,12 +4,16 @@ import { Plus, Users, User, MessageCircle, Paperclip } from 'lucide-react'
 import type { ChatConversation } from '../../types/chat'
 import SearchInput from '../ui/SearchInput'
 import LoadingSpinner from '../ui/LoadingSpinner'
+import ErrorState from '../ui/ErrorState'
 
 interface ConversationListProps {
   conversations: ChatConversation[]
   activeConversationId: string | null
   currentUserId: string
   loading: boolean
+  /** The list could not be read — distinct from having no conversations. */
+  loadFailed?: boolean
+  onRetry?: () => void
   onSelect: (id: string) => void
   onNewConversation: () => void
 }
@@ -52,6 +56,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
   activeConversationId,
   currentUserId,
   loading,
+  loadFailed = false,
+  onRetry,
   onSelect,
   onNewConversation,
 }) => {
@@ -93,6 +99,8 @@ const ConversationList: React.FC<ConversationListProps> = ({
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <LoadingSpinner size="sm" className="mt-8" />
+        ) : loadFailed ? (
+          <ErrorState compact onRetry={onRetry} />
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 px-4">
             <MessageCircle className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />

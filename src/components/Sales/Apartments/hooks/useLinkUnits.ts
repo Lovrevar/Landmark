@@ -13,6 +13,13 @@ interface UseLinkUnitsResult {
   selectedStorageIds: string[]
   loading: boolean
   saving: boolean
+  /**
+   * The current links and the available units could not be read. Load-bearing: `save()`
+   * writes the selection as the complete set, so saving on top of a failed load would
+   * unlink everything the apartment already had.
+   */
+  error: Error | null
+  refetch: () => Promise<void>
   setSelectedGarageIds: React.Dispatch<React.SetStateAction<string[]>>
   setSelectedStorageIds: React.Dispatch<React.SetStateAction<string[]>>
   save: () => Promise<void>
@@ -29,10 +36,12 @@ export function useLinkUnits(
   const [selectedStorageIds, setSelectedStorageIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchData = useCallback(async () => {
     if (!apartmentId || !buildingId) return
     setLoading(true)
+    setError(null)
     try {
       const [linkedIds, available] = await Promise.all([
         fetchLinkedUnitIds(apartmentId),
@@ -42,8 +51,9 @@ export function useLinkUnits(
       setSelectedStorageIds(linkedIds.storageIds)
       setAvailableGarages(available.garages)
       setAvailableStorages(available.storages)
-    } catch (error) {
-      console.error('Error fetching units:', error)
+    } catch (err) {
+      console.error('Error fetching units:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -72,6 +82,8 @@ export function useLinkUnits(
     selectedStorageIds,
     loading,
     saving,
+    error,
+    refetch: fetchData,
     setSelectedGarageIds,
     setSelectedStorageIds,
     save

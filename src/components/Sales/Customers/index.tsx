@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Mail } from 'lucide-react'
-import { PageHeader, SearchInput, Button, ConfirmDialog, Select } from '../../ui'
+import { PageHeader, SearchInput, Button, ConfirmDialog, Select, Alert } from '../../ui'
 import { CustomerCategory } from './types'
 import { useCustomerData } from './hooks/useCustomerData'
 import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { CategoryTabs } from './CategoryTabs'
 import { CustomerGrid } from './CustomerGrid'
 import { CustomerFormModal } from './forms/CustomerFormModal'
@@ -30,10 +31,17 @@ const CustomersManagement: React.FC = () => {
     counts,
     projects,
     loading,
+    error,
+    refetch,
+    dismissError,
     saveCustomer,
     deleteCustomer,
     updateLastContact
   } = useCustomerData(activeCategory)
+
+  // Nothing came back and the request failed: the grid must say so rather than render its
+  // "no customers" empty state.
+  const loadFailed = !!error && customers.length === 0
 
   // A customer's project comes from two places: interested/lead customers carry
   // `interested_project_id`, while buyers are linked through the apartments they
@@ -115,11 +123,22 @@ const CustomersManagement: React.FC = () => {
     setDeletingCustomer(true)
     try {
       await deleteCustomer(pendingDeleteCustomerId)
-    } catch {
-      toast.error('Error deleting customer')
+      setPendingDeleteCustomerId(null)
+    } catch (err) {
+      // The dialog stays open on failure, so the user can see what it refers to and retry.
+      toast.error(toErrorMessage(err, t('customers.errors.delete_failed')))
     } finally {
       setDeletingCustomer(false)
-      setPendingDeleteCustomerId(null)
+    }
+  }
+
+  // `updateLastContact` rejects (the hook rethrows); the card's button used to drop that
+  // promise on the floor, leaving an unhandled rejection and a date that never moved.
+  const handleUpdateContact = async (id: string) => {
+    try {
+      await updateLastContact(id)
+    } catch (err) {
+      toast.error(toErrorMessage(err, t('customers.errors.update_contact_failed')))
     }
   }
 
@@ -171,6 +190,7 @@ const CustomersManagement: React.FC = () => {
       <CategoryTabs
         activeCategory={activeCategory}
         counts={counts}
+        countsUnknown={loadFailed}
         onCategoryChange={handleCategoryChange}
       />
 
@@ -198,18 +218,29 @@ const CustomersManagement: React.FC = () => {
         </div>
       </div>
 
+      {error && !loadFailed && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
       <CustomerGrid
         customers={filteredCustomers}
         projects={projects}
         activeCategory={activeCategory}
-        loading={loading}
+        loading={loading && customers.length === 0}
+        loadFailed={loadFailed}
+        onRetry={() => { void refetch() }}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
         onSelectAll={handleSelectAll}
         onViewDetails={handleViewDetails}
         onEdit={handleEditCustomer}
         onDelete={handleDeleteCustomer}
-        onUpdateContact={updateLastContact}
+        onUpdateContact={(id) => { void handleUpdateContact(id) }}
       />
 
       <CustomerFormModal

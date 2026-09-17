@@ -6,11 +6,13 @@ import { ProjectDetail } from './ProjectDetail'
 import { ProjectFormModal } from './forms/ProjectFormModal'
 import { useRetailProjects } from './hooks/useRetailProjects'
 import type { RetailProjectWithPhases } from '../../../types/retail'
-import { LoadingSpinner, PageHeader, Button } from '../../ui'
+import { LoadingSpinner, PageHeader, Button, ErrorState, Alert } from '../../ui'
 
 const RetailProjects: React.FC = () => {
   const { t } = useTranslation()
-  const { projects, loading, refetch } = useRetailProjects()
+  // `error` was already on the hook and simply dropped here, so a failed fetch rendered the
+  // same empty grid as a company with no projects.
+  const { projects, loading, error, dismissError, refetch } = useRetailProjects()
   const [selectedProject, setSelectedProject] = useState<RetailProjectWithPhases | null>(null)
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [editingProject, setEditingProject] = useState<RetailProjectWithPhases | null>(null)
@@ -36,9 +38,11 @@ const RetailProjects: React.FC = () => {
     setSelectedProject(null)
   }
 
-  if (loading) {
+  if (loading && projects.length === 0) {
     return <LoadingSpinner message={t('retail_projects.loading_projects')} size="lg" />
   }
+
+  const loadFailed = !!error && projects.length === 0
 
   if (selectedProject) {
     return (
@@ -76,11 +80,24 @@ const RetailProjects: React.FC = () => {
         }
       />
 
-      <ProjectsGrid
-        projects={projects}
-        onSelectProject={setSelectedProject}
-        onEditProject={handleEditProject}
-      />
+      {error && !loadFailed && (
+        <Alert variant="error" className="mb-6" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {loadFailed ? (
+        <ErrorState onRetry={() => { void refetch() }} />
+      ) : (
+        <ProjectsGrid
+          projects={projects}
+          onSelectProject={setSelectedProject}
+          onEditProject={handleEditProject}
+        />
+      )}
 
       {(showProjectModal || editingProject) && (
         <ProjectFormModal

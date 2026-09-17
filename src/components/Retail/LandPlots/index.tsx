@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MapPin, Plus, Edit, Trash2, Eye, Calendar, Link } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form, ConfirmDialog, Pagination } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, ErrorState, Alert, StatCard, Table, Form, ConfirmDialog, Pagination } from '../../ui'
 import { useLandPlots, type LandPlotWithSales } from './hooks/useLandPlots'
 import type { LandPlotWithProject, LandPlotPayload } from './services/landPlotService'
 import { useToast } from '../../../contexts/ToastContext'
@@ -36,7 +36,7 @@ const emptyForm = (): FormState => ({
 const RetailLandPlots: React.FC = () => {
   const { t } = useTranslation()
   const toast = useToast()
-  const { loading, plots, totalCount, pageSize, currentPage, setCurrentPage, totalStats, searchTerm, setSearchTerm, handleSave, handleDelete, confirmDelete, cancelDelete, pendingDeleteId, deleting, loadPlotDetails } = useLandPlots()
+  const { loading, error, dismissError, refetch, plots, totalCount, pageSize, currentPage, setCurrentPage, totalStats, searchTerm, setSearchTerm, handleSave, handleDelete, confirmDelete, cancelDelete, pendingDeleteId, deleting, loadPlotDetails } = useLandPlots()
 
   const [showFormModal, setShowFormModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -129,6 +129,8 @@ const RetailLandPlots: React.FC = () => {
 
   if (loading && plots.length === 0) return <LoadingSpinner message={t('common.loading')} />
 
+  const loadFailed = !!error && plots.length === 0
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -137,12 +139,23 @@ const RetailLandPlots: React.FC = () => {
         actions={<Button icon={Plus} onClick={() => openFormModal()}>{t('retail_land_plots.new_plot')}</Button>}
       />
 
+      {error && !loadFailed && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {!loadFailed && (
       <StatGrid columns={4}>
         <StatCard label={t('retail_land_plots.stats.total_plots')} value={totalStats.total_plots} icon={MapPin} color="blue" />
         <StatCard label={t('retail_land_plots.stats.total_area')} value={`${totalStats.total_area.toLocaleString()} m²`} icon={MapPin} color="green" />
         <StatCard label={t('retail_land_plots.stats.total_invested')} value={formatEuroRounded(totalStats.total_invested)} icon={Calendar} />
         <StatCard label={t('common.paid')} value={`${totalStats.paid_count}/${totalStats.total_plots}`} icon={Calendar} color="green" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <SearchInput
@@ -153,7 +166,9 @@ const RetailLandPlots: React.FC = () => {
         />
       </div>
 
-      {plots.length === 0 ? (
+      {loadFailed ? (
+        <ErrorState onRetry={() => { void refetch() }} />
+      ) : plots.length === 0 ? (
         <EmptyState
           icon={MapPin}
           title={searchTerm ? t('common.no_results') : t('retail_land_plots.no_plots')}

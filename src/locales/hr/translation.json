@@ -1870,7 +1870,10 @@
       "current_total_value": "Trenutna ukupna vrijednost:",
       "new_total_value": "Nova ukupna vrijednost:",
       "total_value_change": "Promjena ukupne vrijednosti:",
-      "update_units": "Ažuriraj jedinice"
+      "update_units": "Ažuriraj jedinice",
+      "toast_success": "Ažurirano {{updated}} od {{selected}} odabranih jedinica (prodane se preskaču)",
+      "toast_partial": "Ažurirano {{updated}} od {{selected}} jedinica; {{failed}} nije ažurirano",
+      "toast_failed": "Cijene nije moguće ažurirati"
     },
     "bulk_units_modal": {
       "title": "Masovno kreiranje jedinica",
@@ -1970,6 +1973,16 @@
   "apartments": {
     "title": "Stanovi",
     "subtitle": "Upravljanje stanovima",
+    "toast": {
+      "create_success": "Stan dodan",
+      "bulk_create_success": "Stanovi dodani",
+      "update_success": "Stan spremljen",
+      "delete_success": "Stan obrisan",
+      "create_error": "Dodavanje stana nije uspjelo",
+      "update_error": "Spremanje stana nije uspjelo",
+      "delete_error": "Brisanje stana nije uspjelo",
+      "payments_load_error": "Učitavanje povijesti plaćanja nije uspjelo"
+    },
     "item_label": "stanova",
     "add": "Dodaj stan",
     "bulk_create": "Masovno dodavanje",
@@ -2245,7 +2258,8 @@
       "bank": "Banka",
       "filtered_results": "Filtrirani rezultati",
       "payments_totaling": "plaćanja u iznosu od",
-      "project": "Projekt"
+      "project": "Projekt",
+      "load_failed": "Plaćanja nije moguće učitati"
     },
     "errors": {
       "email_exists": "Kupac s ovim emailom već postoji.",
@@ -2253,7 +2267,9 @@
       "first_name_required": "Ime je obavezno.",
       "last_name_required": "Prezime je obavezno.",
       "email_required": "Email je obavezan.",
-      "phone_required": "Telefon je obavezan."
+      "phone_required": "Telefon je obavezan.",
+      "delete_failed": "Kupca nije moguće obrisati.",
+      "update_contact_failed": "Datum kontakta nije moguće ažurirati."
     }
   },
   "supervision": {
@@ -4350,6 +4366,7 @@
     "members": "Članovi ({{count}})",
     "file_too_large": "Datoteka prelazi limit od 25 MB",
     "send_failed": "Slanje nije uspjelo. Pokušajte ponovno.",
+    "create_failed": "Razgovor nije moguće kreirati. Pokušajte ponovno.",
     "time_now": "sada",
     "today": "Danas",
     "yesterday": "Jučer",
@@ -4559,7 +4576,8 @@
       "read_only": "Samo za čitanje",
       "mark_done": "Označi kao gotovo",
       "mark_open": "Označi kao nije gotovo",
-      "toggle_failed": "Zadatak nije moguće ažurirati. Pokušajte ponovno."
+      "toggle_failed": "Zadatak nije moguće ažurirati. Pokušajte ponovno.",
+      "delete_failed": "Zadatak nije moguće obrisati. Pokušajte ponovno."
     },
     "colors": {
       "none": "Bez boje",
@@ -4585,6 +4603,7 @@
       "assign_label": "Dodijeli korisnicima",
       "assign_placeholder": "Pretraži korisnike",
       "create_button": "Kreiraj zadatak",
+      "create_failed": "Zadatak nije moguće kreirati. Pokušajte ponovno.",
       "discard_title": "Odbaciti promjene?",
       "discard_message": "Imate nespremljene promjene. Zatvoriti bez spremanja?",
       "discard_confirm": "Odbaci"
@@ -4635,6 +4654,7 @@
       "delete_comment_confirm_title": "Obrisati komentar?",
       "delete_comment_confirm_message": "Komentar će biti trajno obrisan.",
       "delete_comment_failed": "Komentar nije moguće obrisati. Pokušajte ponovno.",
+      "comment_failed": "Komentar nije moguće objaviti. Pokušajte ponovno.",
       "save_failed": "Promjenu nije moguće spremiti. Pokušajte ponovno.",
       "delete_task_confirm_title": "Obrisati zadatak?",
       "delete_task_confirm_message": "Ova radnja se ne može poništiti."

@@ -1,6 +1,7 @@
 import { supabase, Apartment } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { UnitType, BulkCreateData, SaleFormData, CustomerMode, UnitForSale, SALES_PROJECT_CATEGORIES } from '../types'
+import { summarizeBulkPriceUpdate, type BulkPriceUpdateResult } from '../bulkPriceResult'
 
 export interface CompleteSalePayload {
   unitForSale: UnitForSale
@@ -658,12 +659,19 @@ export const updateUnitAfterSale = async (
   })
 }
 
+/**
+ * Adjusts the price per m² of every selected unit that is not sold.
+ *
+ * Returns a report rather than throwing on a partial failure: some rows will have been
+ * written, and the caller has to refetch and say "n of m" instead of implying nothing
+ * happened. A failure to even read the units still throws — there is nothing to report then.
+ */
 export const bulkUpdateUnitPrice = async (
   unitIds: string[],
   unitType: UnitType,
   adjustmentType: 'increase' | 'decrease',
   adjustmentValue: number
-) => {
+): Promise<BulkPriceUpdateResult> => {
   let tableName = ''
   if (unitType === 'apartment') tableName = 'apartments'
   else if (unitType === 'garage') tableName = 'garages'
@@ -678,7 +686,8 @@ export const bulkUpdateUnitPrice = async (
     .neq('status', 'Sold')
 
   if (fetchError) throw fetchError
-  if (!units || units.length === 0) return
+  // Every selected unit was already sold — nothing to do, and not a failure.
+  if (!units || units.length === 0) return summarizeBulkPriceUpdate(unitIds.length, [])
 
   const updates = units.map((unit: { id: string; size_m2: number; price_per_m2: number | null }) => {
     const currentPricePerM2 = unit.price_per_m2 || 0
@@ -700,15 +709,11 @@ export const bulkUpdateUnitPrice = async (
   })
 
   const results = await Promise.all(updates)
+  const outcome = summarizeBulkPriceUpdate(unitIds.length, results)
 
-  const errors = results.filter(result => result.error)
-  const updatedCount = results.reduce((sum, result) => sum + (result.data?.length ?? 0), 0)
-
-  if (updatedCount > 0) {
-    logActivity({ action: `${unitType}.bulk_price_update`, entity: unitType, metadata: { severity: 'high', count: updatedCount, adjustment_type: adjustmentType, adjustment_value: adjustmentValue } })
+  if (outcome.updated > 0) {
+    logActivity({ action: `${unitType}.bulk_price_update`, entity: unitType, metadata: { severity: 'high', count: outcome.updated, failed: outcome.failed, adjustment_type: adjustmentType, adjustment_value: adjustmentValue } })
   }
 
-  if (errors.length > 0) {
-    throw new Error(`Failed to update ${errors.length} units`)
-  }
+  return outcome
 }

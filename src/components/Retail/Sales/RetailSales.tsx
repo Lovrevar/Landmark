@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ShoppingCart, Plus, Edit, Trash2, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, StatCard, Table, Form, ConfirmDialog } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, ErrorState, Alert, StatCard, Table, Form, ConfirmDialog } from '../../ui'
 import { useRetailSalesManager } from './hooks/useRetailSalesManager'
 import type { SaleWithRelations, RetailSalePayload } from './services/retailSalesService'
 import { useToast } from '../../../contexts/ToastContext'
@@ -24,7 +24,7 @@ const RetailSales: React.FC = () => {
   const { t } = useTranslation()
   const toast = useToast()
   const {
-    loading, landPlots, customers, filteredSales, totalStats,
+    loading, error, dismissError, refetch, hasData, landPlots, customers, filteredSales, totalStats,
     searchTerm, setSearchTerm, statusFilter, setStatusFilter,
     handleSave, handleDelete, confirmDelete, cancelDelete, pendingDeleteId, deleting, handleAddPayment
   } = useRetailSalesManager()
@@ -125,7 +125,9 @@ const RetailSales: React.FC = () => {
   const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setFormData(prev => ({ ...prev, [key]: e.target.value }))
 
-  if (loading) return <LoadingSpinner message={t('common.loading')} />
+  if (loading && !hasData) return <LoadingSpinner message={t('common.loading')} />
+
+  const loadFailed = !!error && !hasData
 
   return (
     <div className="space-y-6">
@@ -135,12 +137,23 @@ const RetailSales: React.FC = () => {
         actions={<Button icon={Plus} onClick={() => openFormModal()}>{t('retail_sales.new_sale')}</Button>}
       />
 
+      {error && !loadFailed && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {!loadFailed && (
       <StatGrid columns={4}>
         <StatCard label={t('retail_sales.stats.total_sales')} value={totalStats.total_sales} icon={ShoppingCart} color="blue" />
         <StatCard label={t('retail_sales.stats.total_revenue')} value={'€' + totalStats.total_revenue.toLocaleString('hr-HR')} icon={DollarSign} color="green" />
         <StatCard label={t('common.paid')} value={'€' + totalStats.total_paid.toLocaleString('hr-HR')} icon={DollarSign} color="green" />
         <StatCard label={t('retail_sales.stats.to_collect')} value={'€' + totalStats.total_remaining.toLocaleString('hr-HR')} icon={DollarSign} />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row gap-4">
@@ -161,7 +174,9 @@ const RetailSales: React.FC = () => {
         </div>
       </div>
 
-      {filteredSales.length === 0 ? (
+      {loadFailed ? (
+        <ErrorState onRetry={() => { void refetch() }} />
+      ) : filteredSales.length === 0 ? (
         <EmptyState
           icon={ShoppingCart}
           title={searchTerm || statusFilter !== 'all' ? t('common.no_results') : t('retail_sales.no_sales')}

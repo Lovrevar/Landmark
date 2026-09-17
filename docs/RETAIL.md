@@ -42,12 +42,16 @@ Core retail module. Tracks development projects through phases (development, con
 ### hooks/useRetailProjects.ts
 - `useRetailProjects()` — fetches all retail projects list
 - **Calls:** retailProjectService
-- **Returns:** projects, loading, error, refetch
+- **Returns:** projects, loading, error, dismissError, refetch
 
 ### hooks/useProjectDetail.ts
 - `useProjectDetail(projectId)` — fetches a single retail project with its phases, then loads all phase contracts in one `fetchContractsByPhases` call (was a `Promise.all` of per-phase fetches) and builds `contractsMap`
 - **Calls:** retailProjectService (`fetchProjectById`, `fetchContractsByPhases`)
-- **Returns:** project, contractsMap, loading, refetch
+- **Returns:** project, contractsMap, loading, error, dismissError, refetch
+- Phases, their contracts and the statistics all hang off this one load, so a failure used to
+  render the project as if it had no phases. `ProjectDetail` now shows a compact `ErrorState`
+  with retry in the phase area and suppresses `ProjectStatistics` (its totals are summed from
+  the contracts this load returns)
 
 #### Views
 
@@ -61,20 +65,27 @@ Core retail module. Tracks development projects through phases (development, con
 
 ### ProjectDetail.tsx
 - Detailed project view with phase cards, milestones, and contract management
-- **Uses Ui:** useToast
+- The phase and contract delete confirmations close only after the delete succeeds
+- **Uses Ui:** useToast, ErrorState
 
 ### PhaseCard.tsx
 - Card component for a single project phase showing budget, status, and contracts
 
 ### MilestoneList.tsx
 - List of milestones for a project with status display
-- **Uses Ui:** useToast
+- A failed load shows a compact `ErrorState` with retry instead of the "no milestones" empty
+  state — the difference matters, since the milestones carry the invoiced percentages. The
+  delete confirmation closes only after the delete succeeds
+- **Uses Ui:** useToast, ErrorState
 
 ### index.tsx (RetailProjects)
 - Main retail projects view: list → project detail navigation with modals for add/edit
+- The hook's `error` was previously dropped here, so a failed fetch rendered the same empty
+  grid as a company with no projects. It now renders `ErrorState` with retry in place of the
+  grid (header and actions stay mounted), or a dismissible `Alert` above stale projects
 - **Uses hooks:** useRetailProjects, useProjectDetail
 - **Uses components:** ProjectsGrid, ProjectDetail, ProjectStatistics
-- **Uses Ui:** Card, Button
+- **Uses Ui:** Card, Button, ErrorState, Alert
 
 #### Forms
 
@@ -105,9 +116,12 @@ Core retail module. Tracks development projects through phases (development, con
 
 ### modals/RetailInvoicesModal.tsx
 - View invoices linked to a contract or phase
+- A failed fetch renders a compact `ErrorState` with retry, not "no invoices"
 
 ### modals/RetailPaymentHistoryModal.tsx
 - View payment history for a contract
+- Same rule: "no payments recorded" and "we could not read the payments" are opposite answers
+  to "has this contract been paid?", so the failure gets its own state
 
 ---
 
@@ -126,15 +140,20 @@ Retail-specific sales tracking (parcel/lot sales to buyers) — distinct from th
 
 ### hooks/useRetailSales.ts
 - `useRetailSales()` — fetches retail sales list with customer and land plot data
+- **Returns** (additions): error, dismissError, refetch, hasData
 
 ### hooks/useRetailSalesManager.ts
 - Manages retail sale creation and editing state
+- **Returns** (additions): error, dismissError, refetch, hasData
+- `confirmDelete` closes the dialog only after the delete succeeds, never in `finally`
 
 #### Views
 
 ### RetailSales.tsx
 - Retail sales view with sale cards, payment status, and CRUD actions
-- **Uses Ui:** useToast
+- Revenue / paid / to-collect are summed from the loaded sales, so on a failed load the stat
+  grid is hidden rather than reporting €0, and the table area carries `ErrorState`
+- **Uses Ui:** useToast, ErrorState, Alert
 
 ### index.tsx (RetailSales)
 - Retail sales entry point
@@ -156,11 +175,15 @@ Retail customer records (land/parcel buyers) — distinct from Sales/Customers (
 
 ### hooks/useRetailCustomers.ts
 - `useRetailCustomers()` — fetches retail customer list with linked sales; validates customer name before save (returns `fieldErrors`)
+- **Returns** (additions): error, dismissError, refetch, hasData
+- `confirmDelete` closes the dialog only after the delete succeeds, never in `finally`
 
 #### Views
 
 ### index.tsx (RetailCustomers)
 - Retail customer list with search and detail modal
+- On a failed load the stat cards (area, revenue, remaining) are hidden and the list area
+  carries `ErrorState`; with stale rows a dismissible `Alert` sits above them
 
 ---
 
@@ -179,11 +202,13 @@ Retail-specific invoicing separate from Cashflow invoices.
 
 ### hooks/useRetailInvoices.ts
 - `useRetailInvoices()` — fetches retail invoices with contract and supplier data
+- **Returns** (additions): error, dismissError, refetch, hasData
 
 #### Views
 
 ### index.tsx (RetailInvoices)
 - Retail invoice list with status filters and detail view
+- A failed load hides the invoice-total stat cards and puts `ErrorState` where the table goes
 
 ---
 
@@ -208,7 +233,10 @@ Land plot inventory tracking.
 ### hooks/useLandPlots.ts
 - `useLandPlots()` — owns server-side pagination, debounced search (500ms, resets to page 1), and the global stat totals. Loads the current page and stats together; exposes the pending-item delete pattern and `loadPlotDetails(plot)` (lazy-loads sales for the detail view). Exports `LAND_PLOTS_PAGE_SIZE` (50) and the `LandPlotWithSales` type
 - **Calls:** landPlotService (`fetchLandPlotsWithProjects`, `fetchLandPlotStats`, `fetchLandPlotSales`, `upsertLandPlot`, `deleteLandPlot`)
-- **Returns:** loading, refreshing, plots, totalCount, pageSize, currentPage, setCurrentPage, totalStats, searchTerm, setSearchTerm, handleSave, handleDelete, confirmDelete, cancelDelete, pendingDeleteId, deleting, loadPlotDetails
+- **Returns:** loading, refreshing, error, dismissError, refetch, plots, totalCount, pageSize, currentPage, setCurrentPage, totalStats, searchTerm, setSearchTerm, handleSave, handleDelete, confirmDelete, cancelDelete, pendingDeleteId, deleting, loadPlotDetails
+- `confirmDelete` closes the dialog only after the delete succeeds, never in `finally`. On a
+  failed load the page hides the invested/area stat cards and shows `ErrorState` instead of the
+  "no plots" empty state
 
 #### Views
 

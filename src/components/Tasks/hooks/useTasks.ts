@@ -17,6 +17,9 @@ export function useTasks() {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  // A failed fetch used to reject out of the effect and leave the page on its "no tasks"
+  // empty state, which is indistinguishable from an inbox that is genuinely clear.
+  const [error, setError] = useState<Error | null>(null)
   const loadedOnceRef = useRef(false)
 
   // Only the first load shows the spinner; mutation/realtime refreshes
@@ -24,10 +27,14 @@ export function useTasks() {
   const load = useCallback(async () => {
     if (!user) return
     if (!loadedOnceRef.current) setLoading(true)
+    setError(null)
     try {
       const data = await fetchAllTasks()
       setTasks(data)
       loadedOnceRef.current = true
+    } catch (err) {
+      console.error('Failed to load tasks', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -100,14 +107,20 @@ export function useTasks() {
     [user, load],
   )
 
+  const dismissError = useCallback(() => setError(null), [])
+
   return {
     tasks,
     loading,
+    error,
+    dismissError,
     create,
     update,
     setCompleted,
     toggleStatus,
     remove,
     refresh: load,
+    // Alias, so a retry button and the realtime refresh can share one name.
+    refetch: load,
   }
 }

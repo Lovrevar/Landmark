@@ -23,6 +23,10 @@ import SearchInput from '../ui/SearchInput'
 import ToggleSwitch from '../ui/ToggleSwitch'
 import ConfirmDialog from '../ui/ConfirmDialog'
 import EmptyState from '../ui/EmptyState'
+import ErrorState from '../ui/ErrorState'
+import Alert from '../ui/Alert'
+import { useToast } from '../../contexts/ToastContext'
+import { toErrorMessage } from '../../lib/errorMessage'
 import type { Task } from '../../types/tasks'
 import TaskRow from './TaskRow'
 import TaskModal from './TaskModal'
@@ -89,7 +93,8 @@ type Row =
 const TasksPage: React.FC = () => {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const { tasks, loading, create, toggleStatus, remove, refresh } = useTasks()
+  const toast = useToast()
+  const { tasks, loading, error, dismissError, create, toggleStatus, remove, refresh } = useTasks()
   useTasksRealtime(user?.auth_user_id, refresh)
 
   const [tab, setTab] = useState<TabKey>('all')
@@ -264,6 +269,10 @@ const TasksPage: React.FC = () => {
     try {
       await remove(pendingDelete)
       setPendingDelete(null)
+    } catch (e) {
+      // The dialog stays open, naming the task it could not delete.
+      console.error('Failed to delete task', e)
+      toast.error(toErrorMessage(e, t('tasks.row.delete_failed')))
     } finally {
       setDeleting(false)
     }
@@ -284,10 +293,26 @@ const TasksPage: React.FC = () => {
         assignee_ids: [],
       })
       setQuickAddDrafts(d => ({ ...d, [group.key]: '' }))
+    } catch (e) {
+      // The typed title stays in the box so the user can retry it.
+      console.error('Failed to create task', e)
+      toast.error(toErrorMessage(e, t('tasks.modal.create_failed')))
     } finally {
       setQuickAddBusy(null)
     }
   }
+
+  // `toggleStatus` reverts the optimistic flip and rethrows; the checkbox handler used to
+  // drop that promise, so the tick just slid back with no explanation.
+  const handleToggleDone = async (task: Task) => {
+    try {
+      await toggleStatus(task)
+    } catch (e) {
+      console.error('Failed to toggle task', e)
+      toast.error(toErrorMessage(e, t('tasks.row.toggle_failed')))
+    }
+  }
+
 
   const renderHeader = (group: Group) => (
     <button
@@ -319,7 +344,7 @@ const TasksPage: React.FC = () => {
     <div className="flex items-center gap-2 px-1 py-1">
       <button
         type="button"
-        onClick={() => submitQuickAdd(group)}
+        onClick={() => { void submitQuickAdd(group) }}
         disabled={quickAddBusy === group.key || !(quickAddDrafts[group.key] || '').trim()}
         className="flex-shrink-0 p-2 -m-2 text-gray-400 enabled:text-blue-600 enabled:hover:text-blue-700 dark:enabled:text-blue-400 dark:enabled:hover:text-blue-300 disabled:cursor-default"
         title={t('tasks.new_task')}
@@ -333,7 +358,7 @@ const TasksPage: React.FC = () => {
         onKeyDown={e => {
           if (e.key === 'Enter') {
             e.preventDefault()
-            submitQuickAdd(group)
+            void submitQuickAdd(group)
           }
         }}
         disabled={quickAddBusy === group.key}
@@ -348,7 +373,7 @@ const TasksPage: React.FC = () => {
       task={task}
       currentUserId={user?.auth_user_id || ''}
       canEdit={isMine(task)}
-      onToggleDone={toggleStatus}
+      onToggleDone={tk => { void handleToggleDone(tk) }}
       onDelete={tk => setPendingDelete(tk)}
       onClick={tk => setSelected(tk)}
     />
@@ -398,8 +423,19 @@ const TasksPage: React.FC = () => {
         />
       </div>
 
-      {loading ? (
+      {error && tasks.length > 0 && (
+        <Alert variant="error" className="mb-4" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refresh() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {loading && tasks.length === 0 ? (
         <div className="py-12 text-center text-gray-500 dark:text-gray-400">{t('tasks.loading')}</div>
+      ) : error && tasks.length === 0 ? (
+        <ErrorState onRetry={() => { void refresh() }} />
       ) : rows.length === 0 ? (
         <EmptyState
           icon={CheckSquare}

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
 import { daysFromToday } from '../../../../utils/dateOnly'
-import { Button, Modal, Badge, EmptyState, LoadingSpinner } from '../../../ui'
+import { Button, Modal, Badge, EmptyState, ErrorState, LoadingSpinner } from '../../../ui'
 
 interface Invoice {
   id: string
@@ -39,17 +39,21 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
   const { t } = useTranslation()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  // "No invoices on this contract" is a different claim from "we could not read them".
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchInvoices = useCallback(async () => {
     const contractId = contract?.id
     if (!contractId) return
 
     setLoading(true)
+    setError(null)
     try {
       const formattedInvoices = await retailProjectService.fetchRetailContractInvoices(contractId)
       setInvoices(formattedInvoices)
-    } catch (error) {
-      console.error('Error fetching invoices:', error)
+    } catch (err) {
+      console.error('Error fetching invoices:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -128,6 +132,8 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
       <Modal.Body>
         {loading ? (
           <LoadingSpinner />
+        ) : error ? (
+          <ErrorState compact onRetry={() => { void fetchInvoices() }} />
         ) : invoices.length === 0 ? (
           <EmptyState
             icon={FileText}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
+import { Button, Badge, EmptyState, ErrorState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import type { RetailContractMilestone } from '../../../types/retail'
 import { MilestoneFormModal } from './forms/MilestoneFormModal'
 import { retailProjectService } from './services/retailProjectService'
@@ -42,19 +42,23 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<RetailContractMilestone | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [pendingDeleteMilestoneId, setPendingDeleteMilestoneId] = useState<string | null>(null)
   const [deletingMilestone, setDeletingMilestone] = useState(false)
 
   const loadMilestones = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await retailProjectService.fetchMilestonesByContract(contractId)
       setMilestones(data)
 
       const statsData = await retailProjectService.getMilestoneStatsForContract(contractId, contractCost)
       setStats(statsData)
-    } catch (error) {
-      console.error('Error loading milestones:', error)
+    } catch (err) {
+      // Without this the panel showed "no milestones" and no invoiced percentage at all.
+      console.error('Error loading milestones:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -114,13 +118,14 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     setDeletingMilestone(true)
     try {
       await retailProjectService.deleteMilestone(pendingDeleteMilestoneId)
+      // Closed only on success, so a refused delete does not look like a done one.
+      setPendingDeleteMilestoneId(null)
       loadMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
       toast.error(t('retail_projects.milestones.error_delete'))
     } finally {
       setDeletingMilestone(false)
-      setPendingDeleteMilestoneId(null)
     }
   }
 
@@ -219,6 +224,8 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
 
         {loading ? (
           <LoadingSpinner message={t('retail_projects.milestones.loading')} />
+        ) : error ? (
+          <ErrorState compact onRetry={() => { void loadMilestones() }} />
         ) : milestones.length === 0 ? (
           <EmptyState
             icon={Calendar}

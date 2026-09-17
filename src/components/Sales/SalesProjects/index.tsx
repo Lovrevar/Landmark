@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Building2, FileUp } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Button, ConfirmDialog, Tabs } from '../../ui'
+import { LoadingSpinner, PageHeader, Button, ConfirmDialog, Tabs, ErrorState, Alert } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { Apartment, Garage, Repository, PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { useSalesData } from './hooks/useSalesData'
 import * as salesService from './services/salesService'
@@ -38,7 +39,7 @@ import { ExcelImportGaragesModal } from './modals/ExcelImportGaragesModal'
 const SalesProjectsEnhanced: React.FC = () => {
   const { t } = useTranslation()
   const toast = useToast()
-  const { projects, garages, repositories, customers, loading, refetch } = useSalesData()
+  const { projects, garages, repositories, customers, loading, error, dismissError, refetch } = useSalesData()
 
   const [selectedProject, setSelectedProject] = useState<ProjectWithBuildings | null>(null)
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingWithUnits | null>(null)
@@ -103,13 +104,15 @@ const SalesProjectsEnhanced: React.FC = () => {
     setDeletingBuilding(true)
     try {
       await salesService.deleteBuilding(pendingDeleteBuildingId)
+      // Closed only on success: a `finally` dismissed the dialog even when the delete was
+      // refused, so a failure was indistinguishable from a completed one.
+      setPendingDeleteBuildingId(null)
       await refetch()
     } catch (error) {
       console.error('Error deleting building:', error)
       toast.error('Error deleting building.')
     } finally {
       setDeletingBuilding(false)
-      setPendingDeleteBuildingId(null)
     }
   }
 
@@ -182,13 +185,13 @@ const SalesProjectsEnhanced: React.FC = () => {
     setDeletingUnit(true)
     try {
       await salesService.deleteUnit(pendingDeleteUnit.id, pendingDeleteUnit.unitType)
+      setPendingDeleteUnit(null)
       refetch()
     } catch (error) {
       console.error('Error deleting unit:', error)
       toast.error('Error deleting unit.')
     } finally {
       setDeletingUnit(false)
-      setPendingDeleteUnit(null)
     }
   }
 
@@ -285,13 +288,21 @@ const SalesProjectsEnhanced: React.FC = () => {
 
   const handleBulkPriceUpdate = async (adjustmentType: 'increase' | 'decrease', adjustmentValue: number) => {
     try {
-      await salesService.bulkUpdateUnitPrice(selectedUnitIds, activeUnitType, adjustmentType, adjustmentValue)
+      const result = await salesService.bulkUpdateUnitPrice(selectedUnitIds, activeUnitType, adjustmentType, adjustmentValue)
       setShowBulkPriceModal(false)
       setSelectedUnitIds([])
+      // Refetch whichever way it went: rows that were written must not keep showing the
+      // old price just because a sibling update failed.
       await refetch()
-    } catch (error) {
-      console.error('Error updating prices:', error)
-      toast.error('Error updating prices. Please try again.')
+      if (result.failed > 0) {
+        toast.error(t('sales_projects.bulk_price.toast_partial', { updated: result.updated, selected: result.selected, failed: result.failed }))
+      } else {
+        // Sold units are skipped by design, so `updated` is routinely below `selected`.
+        toast.success(t('sales_projects.bulk_price.toast_success', { updated: result.updated, selected: result.selected }))
+      }
+    } catch (err) {
+      console.error('Error updating prices:', err)
+      toast.error(toErrorMessage(err, t('sales_projects.bulk_price.toast_failed')))
     }
   }
 
@@ -330,6 +341,10 @@ const SalesProjectsEnhanced: React.FC = () => {
   if (loading && projects.length === 0) {
     return <LoadingSpinner message={t('common.loading')} />
   }
+
+  // The project cards carry revenue, sold and total counts. A failed aggregation left all
+  // three at 0, which reads as a project that has sold nothing.
+  const loadFailed = !!error && projects.length === 0
 
   return (
     <div>
@@ -397,7 +412,18 @@ const SalesProjectsEnhanced: React.FC = () => {
         }
       />
 
-      {viewMode === 'projects' && (
+      {error && !loadFailed && (
+        <Alert variant="error" className="mb-4" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {loadFailed && <ErrorState onRetry={() => { void refetch() }} />}
+
+      {!loadFailed && viewMode === 'projects' && (
         <>
           {/* Category names are Croatian domain terms and stay untranslated. */}
           <Tabs

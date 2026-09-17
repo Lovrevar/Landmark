@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   fetchSalesPayments,
   calculateSalesPaymentStats,
@@ -9,27 +10,32 @@ import { useToast } from '../../../../contexts/ToastContext'
 
 export function useSalesPayments() {
   const toast = useToast()
+  const { t } = useTranslation()
   const [payments, setPayments] = useState<SalesPaymentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      try {
-        const data = await fetchSalesPayments()
-        setPayments(data)
-      } catch (error) {
-        console.error('Error fetching payments:', error)
-        toast.error('Failed to load payments')
-      } finally {
-        setLoading(false)
-      }
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchSalesPayments()
+      setPayments(data)
+    } catch (err) {
+      console.error('Error fetching payments:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
+      toast.error(t('customers.sales_payments.load_failed'))
+    } finally {
+      setLoading(false)
     }
+  }, [toast, t])
+
+  useEffect(() => {
     load()
-  }, [toast])
+  }, [load])
 
   const stats: SalesPaymentStats = useMemo(() => calculateSalesPaymentStats(payments), [payments])
 
@@ -56,8 +62,16 @@ export function useSalesPayments() {
     [payments, searchTerm, filterStatus, dateRange]
   )
 
+  const dismissError = useCallback(() => setError(null), [])
+
   return {
     loading,
+    error,
+    dismissError,
+    // Distinguishes "the load failed and there is nothing on screen" from "the load failed
+    // but the previous rows are still shown" — the two get different treatments.
+    hasData: payments.length > 0,
+    refetch: load,
     stats,
     filteredPayments,
     searchTerm,

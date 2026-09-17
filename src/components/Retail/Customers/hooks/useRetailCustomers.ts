@@ -21,6 +21,9 @@ export function useRetailCustomers() {
   const toast = useToast()
   const [customers, setCustomers] = useState<CustomerWithStats[]>([])
   const [loading, setLoading] = useState(true)
+  // The stat cards total area, revenue and remaining debt. On a failed load they all read
+  // 0 — a statement about the business rather than about the request.
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
   const [showFormModal, setShowFormModal] = useState(false)
@@ -32,10 +35,12 @@ export function useRetailCustomers() {
 
   const loadCustomers = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       setCustomers(await fetchCustomersWithStats())
     } catch (err) {
       console.error('Error fetching customers:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
       toast.error('Greška pri učitavanju kupaca')
     } finally {
       setLoading(false)
@@ -111,13 +116,14 @@ export function useRetailCustomers() {
     setDeleting(true)
     try {
       await deleteCustomer(pendingDeleteId)
+      // Closed only on success: a `finally` here made a refused delete look like a done one.
+      setPendingDeleteId(null)
       await loadCustomers()
     } catch (err) {
       console.error('Error deleting customer:', err)
       toast.error('Greška pri brisanju kupca. Provjerite ima li kupac povezane prodaje.')
     } finally {
       setDeleting(false)
-      setPendingDeleteId(null)
     }
   }
 
@@ -141,8 +147,14 @@ export function useRetailCustomers() {
     setSelectedCustomer(null)
   }
 
+  const dismissError = useCallback(() => setError(null), [])
+
   return {
     loading,
+    error,
+    dismissError,
+    refetch: loadCustomers,
+    hasData: customers.length > 0,
     searchTerm,
     setSearchTerm,
     filteredCustomers,

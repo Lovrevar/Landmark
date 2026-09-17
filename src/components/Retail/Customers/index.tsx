@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Users, Plus, Edit, Trash2, Eye, Phone, Mail } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, StatCard, Form, ConfirmDialog } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Textarea, Badge, EmptyState, ErrorState, Alert, StatCard, Form, ConfirmDialog } from '../../ui'
 import { useRetailCustomers } from './hooks/useRetailCustomers'
 import { formatEuro, formatEuroRounded } from '../../../utils/formatters'
 
@@ -9,6 +9,10 @@ const RetailCustomers: React.FC = () => {
   const { t } = useTranslation()
   const {
     loading,
+    error,
+    dismissError,
+    refetch,
+    hasData,
     searchTerm,
     setSearchTerm,
     filteredCustomers,
@@ -32,9 +36,11 @@ const RetailCustomers: React.FC = () => {
     closeDetailsModal,
   } = useRetailCustomers()
 
-  if (loading) {
+  if (loading && !hasData) {
     return <LoadingSpinner message={t('common.loading')} />
   }
+
+  const loadFailed = !!error && !hasData
 
   return (
     <div className="space-y-6">
@@ -48,12 +54,23 @@ const RetailCustomers: React.FC = () => {
         }
       />
 
+      {error && !loadFailed && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {!loadFailed && (
       <StatGrid columns={4}>
         <StatCard label={t('retail_customers.stats.total_customers')} value={totalStats.total_customers} icon={Users} color="blue" />
         <StatCard label={t('retail_customers.stats.total_area')} value={`${totalStats.total_area.toLocaleString()} m²`} icon={Users} color="green" />
         <StatCard label={t('retail_customers.stats.total_revenue')} value={formatEuroRounded(totalStats.total_revenue)} icon={Users} color="green" />
         <StatCard label={t('common.remaining')} value={formatEuroRounded(totalStats.total_remaining)} icon={Users} />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <SearchInput
@@ -64,7 +81,9 @@ const RetailCustomers: React.FC = () => {
         />
       </div>
 
-      {filteredCustomers.length === 0 ? (
+      {loadFailed ? (
+        <ErrorState onRetry={() => { void refetch() }} />
+      ) : filteredCustomers.length === 0 ? (
         <EmptyState
           icon={Users}
           title={searchTerm ? t('common.no_results') : t('retail_customers.no_customers')}

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { Button, Badge, Modal, LoadingSpinner } from '../../../ui'
+import { Button, Badge, Modal, LoadingSpinner, ErrorState } from '../../../ui'
 import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
 
@@ -47,17 +47,22 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
   const { t } = useTranslation()
   const [payments, setPayments] = useState<AccountingPayment[]>([])
   const [loading, setLoading] = useState(true)
+  // "No payments recorded" and "we could not read the payments" are opposite answers to
+  // "has this contract been paid?".
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchPayments = useCallback(async () => {
     const contractId = contract?.id
     if (!contractId) return
 
     setLoading(true)
+    setError(null)
     try {
       const formattedPayments = await retailProjectService.fetchRetailContractPayments(contractId)
       setPayments(formattedPayments)
-    } catch (error) {
-      console.error('Error fetching payments:', error)
+    } catch (err) {
+      console.error('Error fetching payments:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -115,6 +120,8 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
 
         {loading ? (
           <LoadingSpinner message={t('common.loading')} />
+        ) : error ? (
+          <ErrorState compact onRetry={() => { void fetchPayments() }} />
         ) : payments.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             {t('retail_projects.payment_history_modal.no_payments')}

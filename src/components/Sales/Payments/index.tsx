@@ -1,32 +1,38 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, Table } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { format } from 'date-fns'
 import { useSalesPayments } from './hooks/useSalesPayments'
 import { exportSalesPaymentsCSV } from './services/salesPaymentsService'
 
 const SalesPaymentsManagement: React.FC = () => {
   const {
-    loading, stats, filteredPayments,
+    loading, error, hasData, refetch, dismissError, stats, filteredPayments,
     searchTerm, setSearchTerm,
     filterStatus, setFilterStatus,
     dateRange, setDateRange
   } = useSalesPayments()
 
   const { t } = useTranslation()
-  if (loading) return <LoadingSpinner message={t('common.loading')} />
+  if (loading && !hasData) return <LoadingSpinner message={t('common.loading')} />
+
+  // Nothing loaded: the stat cards would read €0, which is a claim about the business
+  // rather than about the request. They stay off until there is data to put in them.
+  const loadFailed = !!error && !hasData
 
   return (
     <div className="max-w-7xl mx-auto">
       <PageHeader title={t('customers.sales_payments.title')} description={t('customers.sales_payments.subtitle')} />
 
+      {!loadFailed && (
       <StatGrid columns={4}>
         <StatCard label={t('customers.sales_payments.total_payments')} value={stats.totalPayments} icon={FileText} color="blue" />
         <StatCard label={t('customers.sales_payments.total_amount')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
         <StatCard label={t('customers.sales_payments.this_month')} value={stats.paymentsThisMonth} subtitle={t('customers.sales_payments.title')} icon={Calendar} color="blue" />
         <StatCard label={t('customers.sales_payments.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -68,7 +74,18 @@ const SalesPaymentsManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredPayments.length === 0 ? (
+      {error && hasData && (
+        <Alert variant="error" className="mb-6" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={refetch} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {loadFailed ? (
+        <ErrorState onRetry={refetch} />
+      ) : filteredPayments.length === 0 ? (
         <EmptyState icon={AlertCircle} title={t('customers.sales_payments.no_payments')} description={t('customers.sales_payments.adjust_search')} />
       ) : (
         <Table>

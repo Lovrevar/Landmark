@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert } from '../../ui'
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
 import { format } from 'date-fns'
 import { useRetailInvoices } from './hooks/useRetailInvoices'
@@ -9,6 +9,10 @@ const RetailInvoicesManagement: React.FC = () => {
   const { t } = useTranslation()
   const {
     loading,
+    error,
+    dismissError,
+    refetch,
+    hasData,
     stats,
     filteredInvoices,
     searchTerm,
@@ -36,7 +40,9 @@ const RetailInvoicesManagement: React.FC = () => {
     UNPAID: t('common.unpaid'),
   }
 
-  if (loading) return <LoadingSpinner message={t('retail_invoices.loading')} />
+  if (loading && !hasData) return <LoadingSpinner message={t('retail_invoices.loading')} />
+
+  const loadFailed = !!error && !hasData
 
   return (
     <div className="p-6">
@@ -45,12 +51,23 @@ const RetailInvoicesManagement: React.FC = () => {
         description={t('retail_invoices.description')}
       />
 
+      {error && !loadFailed && (
+        <Alert variant="error" className="mb-6" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {!loadFailed && (
       <StatGrid columns={4} className="mb-8">
         <StatCard label={t('common.total_invoices')} value={stats.totalInvoices} icon={FileText} color="blue" />
         <StatCard label={t('common.total_amount')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={FileText} color="green" />
         <StatCard label={t('common.this_month')} value={stats.invoicesThisMonth} subtitle={t('retail_invoices.invoices_subtitle')} icon={Calendar} />
         <StatCard label={t('common.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -98,7 +115,9 @@ const RetailInvoicesManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredInvoices.length === 0 ? (
+      {loadFailed ? (
+        <ErrorState onRetry={() => { void refetch() }} />
+      ) : filteredInvoices.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title={t('retail_invoices.no_invoices')}

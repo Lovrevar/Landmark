@@ -116,7 +116,9 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 
 ### hooks/useTasks.ts
 - `useTasks()` — loads `fetchAllTasks()` on mount; also calls `acknowledgeAllTasks` + `dispatchTasksRead` once per session so opening `/tasks` clears the badge
-- Exposes `tasks`, `loading`, and mutation callbacks: `create`, `update`, `setCompleted`, `toggleStatus` (open ↔ done, the checkbox handler), `remove`, `refresh`. All mutations call `load()` after success so the list is always source-of-truth
+- Exposes `tasks`, `loading`, `error`, `dismissError`, and mutation callbacks: `create`, `update`, `setCompleted`, `toggleStatus` (open ↔ done, the checkbox handler), `remove`, `refresh` (aliased as `refetch`). All mutations call `load()` after success so the list is always source-of-truth
+- `load()` used to have no `catch` at all, so a failed fetch rejected out of the effect and left the page on its "no tasks" empty state — the same thing an inbox that is genuinely clear looks like. It now records `error` and the page renders `ErrorState`
+- The mutations still **throw**; every caller is expected to catch and tell the user (see index.tsx and TaskModal)
 - View state (search, show-completed, collapsed groups) lives in [index.tsx](../src/components/Tasks/index.tsx); `showCompleted` + `collapsed` persist per-user to `localStorage` under `tasks.view.${userId}` (the legacy `tasks.filters.${userId}` key is removed on mount)
 
 ### hooks/useTasksRealtime.ts
@@ -126,6 +128,8 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 ### hooks/useTaskComments.ts
 - `useTaskComments(taskId)` — comments list + draft + send / delete for a single task
 - `remove(commentId)` returns `false` when the delete failed instead of throwing; the drawer asks for confirmation first and shows the failure as a toast
+- `send()` follows the same contract: it returns `false` on failure and **keeps the draft**, so a rejected comment is not lost. The drawer toasts `tasks.detail.comment_failed`
+- A failed initial load sets `error`; the comments area shows a compact `ErrorState` with retry rather than "no comments yet". The reload inside `remove()` deliberately still tolerates its own failure — the delete went through, and a stale list only lasts until realtime refreshes it
 - `send()` guards with a ref, not only the `sending` state: two calls dispatched by one event both read `sending === false` from the render closure, which is how Ctrl+Enter once posted every comment twice
 
 ### permissions.ts
@@ -151,9 +155,11 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - `canEdit` (creator or assignee, via `canEditTask` in [permissions.ts](../src/components/Tasks/permissions.ts)) is computed per task and drives the row checkbox / delete affordances
 - When `rows.length > 100` the list is virtualized via `@tanstack/react-virtual` with mixed header / quick-add / row heights; below the threshold it renders as a plain flow
 - Selected task renders in `TaskDetail` drawer; new task flow opens `TaskModal`; delete flows through a shared `ConfirmDialog`; empty list uses `ui/EmptyState`
-- **Uses hooks:** useTasks, useTasksRealtime, useAuth
+- Every mutation reached from this page now reports its failure: quick-add (`tasks.modal.create_failed`, keeping the typed title in the box), the row checkbox (`tasks.row.toggle_failed` — the optimistic tick used to just slide back), and the delete confirm (`tasks.row.delete_failed`, dialog left open). No handler passes a bare promise into JSX any more
+- A failed load renders `ErrorState` with retry in the list area; with stale tasks on screen it is a dismissible `Alert` above them. Tabs, search and the show-completed toggle stay mounted
+- **Uses hooks:** useTasks, useTasksRealtime, useAuth, useToast
 - **Uses components:** TaskRow, TaskModal, TaskDetail
-- **Uses UI:** Tabs, Button, SearchInput, ToggleSwitch, ConfirmDialog, EmptyState
+- **Uses UI:** Tabs, Button, SearchInput, ToggleSwitch, ConfirmDialog, EmptyState, ErrorState, Alert
 
 ### TaskRow.tsx
 - Compact row: **checkbox** (Square/CheckSquare; disabled with a "read only" tooltip when the viewer can't edit, and disabled on a checklist task with the `3/6` count in the tooltip instead) toggling open ↔ done, title (strikethrough when done), unread dot, lock icon for private, card tinted in the task's colour (see [Colours](#colours)), red left accent + relative due label when overdue, attachment/comment counts, stacked avatars via [AvatarStack](../src/components/ui/AvatarStack.tsx), creator-only hover delete. No project tag — the group header carries the project
@@ -161,12 +167,14 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 ### TaskModal.tsx
 - **Create-only** modal (editing happens inline in the detail drawer). Fields: title, project ([SearchableSelect](../src/components/ui/SearchableSelect.tsx)), optional due date (date only), colour ([TaskColorPicker](../src/components/Tasks/components/TaskColorPicker.tsx)), private toggle, assignees ([ParticipantPicker](../src/components/Calendar/components/ParticipantPicker.tsx), hidden for private tasks), plain-text description (`ui/Textarea`)
 - Ctrl+Enter submits; Esc cancels with dirty-state confirm; attachments hint points at the detail drawer
+- A failed create leaves the modal open with everything still typed and toasts `tasks.modal.create_failed`; it used to close only on success but say nothing at all
 
 ### TaskDetail.tsx
 - Slide-from-right drawer via `createPortal`; inline-editable fields auto-save on change. Header row has a large done-checkbox next to the title
 - **Due date saves on blur or Enter, never per keystroke.** A native date input reports a complete value on every key, so typing a year used to write `0002`, `0020`, `0202` on the way to `2026`. The input edits a `deadlineDraft`, re-seeded only when the task id or its stored `deadline` changes (the list refetches on anyone's edit, and an unrelated refresh must not wipe a half-typed date). Clearing the field saves `null`. Escape unmounts the drawer without blurring the input, so every close path (Escape, X, backdrop, Close) first flushes a changed draft; a ref holding the in-flight value stops Enter + blur or blur + Escape writing the same date twice
 - A failed field save shows a `tasks.detail.save_failed` toast; the title and description editors stay open so the typed text is not lost, and a failed due date snaps back to the stored value. Assignee changes toast the same way
 - Deleting a comment asks first (`ConfirmDialog`, `tasks.detail.delete_comment_confirm_*`)
+- Deleting the **task** keeps the drawer and its confirm dialog open when the delete is refused, with the reason in a `tasks.row.delete_failed` toast
 - Fields: title, project, due date (date only), colour, private toggle, assignees, subtask checklist, plain-text description (legacy markdown rows still render via `MarkdownView`; edits save as `plain`). Read-only viewers see the colour chip instead of the picker, and no colour row at all when the task has none
 - The checklist sits **above** the description, not in place of it — unlike the mobile app's card, this description carries `description_format`, markdown rendering and prose that is not a list. The header checkbox is disabled while the task is a checklist
 - Comments section (no tabs): [MentionPicker](../src/components/Tasks/components/MentionPicker.tsx) composer with `@` autocomplete; mention tokens rendered via `renderCommentWithMentions`. Composer hidden for read-only viewers (matches RLS). Ctrl/Cmd+Enter sends — handled by MentionPicker alone; there is deliberately no drawer-level key handler, which used to double-post and also fired from the title, description and subtask fields

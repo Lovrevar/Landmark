@@ -25,10 +25,13 @@ export const useRetailProjects = () => {
     fetchProjects()
   }, [fetchProjects])
 
+  const dismissError = useCallback(() => setError(null), [])
+
   return {
     projects,
     loading,
     error,
+    dismissError,
     refetch: fetchProjects
   }
 }

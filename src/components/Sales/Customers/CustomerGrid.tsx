@@ -3,13 +3,16 @@ import { useTranslation } from 'react-i18next'
 import { Users, Square, CheckSquare, MinusSquare } from 'lucide-react'
 import { CustomerWithApartments, CustomerCategory, ProjectOption } from './types'
 import { CustomerCard } from './CustomerCard'
-import { LoadingSpinner, EmptyState } from '../../ui'
+import { LoadingSpinner, EmptyState, ErrorState } from '../../ui'
 
 interface CustomerGridProps {
   customers: CustomerWithApartments[]
   projects: ProjectOption[]
   activeCategory: CustomerCategory | null
   loading: boolean
+  /** The load failed and nothing is on screen — never render this as "no customers". */
+  loadFailed?: boolean
+  onRetry?: () => void
   selectedIds: Set<string>
   onToggleSelect: (id: string) => void
   onSelectAll: () => void
@@ -24,6 +27,8 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
   projects,
   activeCategory,
   loading,
+  loadFailed = false,
+  onRetry,
   selectedIds,
   onToggleSelect,
   onSelectAll,
@@ -41,6 +46,10 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
 
   if (loading) {
     return <LoadingSpinner message={t('common.loading')} />
+  }
+
+  if (loadFailed) {
+    return <ErrorState onRetry={onRetry} />
   }
 
   if (customers.length === 0) {

@@ -6,10 +6,14 @@ export function useProjectDetail(projectId: string) {
   const [project, setProject] = useState<RetailProjectWithPhases | null>(null)
   const [contractsMap, setContractsMap] = useState<Record<string, RetailContract[]>>({})
   const [loading, setLoading] = useState(false)
+  // Phases, their contracts and the statistics all hang off this one load; a failure used
+  // to render the project as if it had no phases at all.
+  const [error, setError] = useState<Error | null>(null)
 
   const refetch = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await retailProjectService.fetchProjectById(projectId)
       if (data) {
         setProject(data)
@@ -22,12 +26,15 @@ export function useProjectDetail(projectId: string) {
         }
         setContractsMap(map)
       }
-    } catch (error) {
-      console.error('Error loading project details:', error)
+    } catch (err) {
+      console.error('Error loading project details:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
   }, [projectId])
 
-  return { project, contractsMap, loading, refetch }
+  const dismissError = useCallback(() => setError(null), [])
+
+  return { project, contractsMap, loading, error, dismissError, refetch }
 }

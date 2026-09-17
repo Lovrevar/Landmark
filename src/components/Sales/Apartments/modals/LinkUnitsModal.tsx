@@ -2,7 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Warehouse, Package, X } from 'lucide-react'
 import { ApartmentWithDetails } from '../types'
-import { Modal, Button, LoadingSpinner } from '../../../ui'
+import { Modal, Button, LoadingSpinner, ErrorState } from '../../../ui'
 import { useLinkUnits } from '../hooks/useLinkUnits'
 import { useToast } from '../../../../contexts/ToastContext'
 
@@ -28,6 +28,8 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
     selectedStorageIds,
     loading,
     saving,
+    error,
+    refetch,
     setSelectedGarageIds,
     setSelectedStorageIds,
     save
@@ -80,6 +82,8 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
       <Modal.Body>
         {loading ? (
           <LoadingSpinner message={t('apartments.link_units_modal.loading')} />
+        ) : error ? (
+          <ErrorState compact onRetry={() => { void refetch() }} />
         ) : (
           <div className="space-y-6">
             <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
@@ -191,8 +195,8 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
         <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
         <Button
           variant="primary"
-          onClick={handleSave}
-          disabled={saving}
+          onClick={() => { void handleSave() }}
+          disabled={saving || !!error}
         >
           {saving ? t('common.saving') : t('apartments.link_units_modal.save')}
         </Button>

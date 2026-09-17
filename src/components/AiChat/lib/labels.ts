@@ -31,6 +31,12 @@ export const ERROR_LABELS_HR: Record<string, string> = {
   internal_error: 'Interna greška.',
   load_failed: 'Greška pri učitavanju razgovora.',
   unknown_error: 'Neočekivana greška. Pokušajte ponovno.',
+  // Client-side action failures. Each one used to be a console line only, so a rename that
+  // was refused looked as if it had been applied until the panel was reopened.
+  sessions_load_failed: 'Greška pri učitavanju popisa razgovora.',
+  rename_failed: 'Preimenovanje razgovora nije uspjelo. Pokušajte ponovno.',
+  delete_failed: 'Brisanje razgovora nije uspjelo. Pokušajte ponovno.',
+  attachment_remove_failed: 'Uklanjanje priloga nije uspjelo. Pokušajte ponovno.',
   // Attachment-related (server-side codes; mirror the strings the edge
   // function returns so a generic error rendering still picks the right
   // Croatian text if the message bubble path is bypassed).

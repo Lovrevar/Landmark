@@ -18,6 +18,7 @@ import {
   Tag,
 } from 'lucide-react'
 import ConfirmDialog from '../ui/ConfirmDialog'
+import ErrorState from '../ui/ErrorState'
 import SearchableSelect from '../ui/SearchableSelect'
 import ToggleSwitch from '../ui/ToggleSwitch'
 import MarkdownView from '../ui/MarkdownView'
@@ -88,8 +89,17 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   const [pendingCommentDelete, setPendingCommentDelete] = useState<string | null>(null)
   const [deletingComment, setDeletingComment] = useState(false)
 
-  const { comments, loading: commentsLoading, draft, setDraft, sending, send, remove } =
-    useTaskComments(task?.id ?? null)
+  const {
+    comments,
+    loading: commentsLoading,
+    error: commentsError,
+    draft,
+    setDraft,
+    sending,
+    send,
+    remove,
+    refresh: refreshComments,
+  } = useTaskComments(task?.id ?? null)
 
   const taskIdRef = useRef(task?.id)
 
@@ -263,9 +273,19 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
       await onDelete(task)
       setConfirmDelete(false)
       onClose()
+    } catch (e) {
+      // The drawer and its confirm dialog both stay open: the task is still there.
+      console.error('Failed to delete task', e)
+      toast.error(t('tasks.row.delete_failed'))
     } finally {
       setDeleting(false)
     }
+  }
+
+  /** The composer keeps the draft when the insert fails, so nothing typed is lost. */
+  const handleSendComment = async () => {
+    const sent = await send()
+    if (!sent) toast.error(t('tasks.detail.comment_failed'))
   }
 
   const confirmCommentDelete = async () => {
@@ -627,6 +647,8 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
             <div className="space-y-3">
               {commentsLoading ? (
                 <div className="text-center text-sm text-gray-500 py-3">{t('tasks.loading')}</div>
+              ) : commentsError && comments.length === 0 ? (
+                <ErrorState compact onRetry={() => { void refreshComments() }} />
               ) : comments.length === 0 ? (
                 <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-3">
                   {t('tasks.detail.no_comments')}
@@ -682,7 +704,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                   users={users}
                   value={draft}
                   onChange={setDraft}
-                  onSubmit={send}
+                  onSubmit={() => { void handleSendComment() }}
                   submitting={sending}
                   placeholder={t('tasks.detail.comment_placeholder')}
                 />

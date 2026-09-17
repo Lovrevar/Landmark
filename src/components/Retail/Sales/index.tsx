@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, Table } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { format } from 'date-fns'
 import { useRetailSales } from './hooks/useRetailSales'
 
@@ -9,6 +9,10 @@ const RetailSalesPaymentsManagement: React.FC = () => {
   const { t } = useTranslation()
   const {
     loading,
+    error,
+    dismissError,
+    refetch,
+    hasData,
     stats,
     filteredPayments,
     searchTerm,
@@ -20,20 +24,33 @@ const RetailSalesPaymentsManagement: React.FC = () => {
     handleExportCSV,
   } = useRetailSales()
 
-  if (loading) {
+  if (loading && !hasData) {
     return <LoadingSpinner message={t('common.loading')} />
   }
+
+  const loadFailed = !!error && !hasData
 
   return (
     <div className="max-w-7xl mx-auto">
       <PageHeader title={t('retail_sales.payments.title')} description={t('retail_sales.payments.description')} />
 
+      {error && !loadFailed && (
+        <Alert variant="error" className="mb-6" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {!loadFailed && (
       <StatGrid columns={4}>
         <StatCard label={t('common.total_payments')} value={stats.totalPayments} icon={FileText} color="blue" />
         <StatCard label={t('common.total_amount')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
         <StatCard label={t('common.this_month')} value={stats.paymentsThisMonth} subtitle={t('retail_sales.payments.payments_subtitle')} icon={Calendar} color="blue" />
         <StatCard label={t('common.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -75,7 +92,9 @@ const RetailSalesPaymentsManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredPayments.length === 0 ? (
+      {loadFailed ? (
+        <ErrorState onRetry={() => { void refetch() }} />
+      ) : filteredPayments.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title={t('common.no_found')}
