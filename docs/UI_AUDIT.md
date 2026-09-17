@@ -67,7 +67,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
    - € sometimes before the number, sometimes after
 2. [ ] **Dates.** ~50 `'MMM dd, yyyy'` with no locale, so month names are English in the Croatian UI. 5+ formats overall, and 60 native date inputs vs 11 uses of `DateInput`.
 3. [ ] **Status colours and labels.** The same status is coloured differently per screen: UNPAID is red, grey or yellow; On Hold is red, orange, grey or yellow; "Paid" is teal, orange, green, blue or red. Raw English DB enums show in 20+ places. Needs one shared status → {label, variant} map per domain.
-4. [ ] **Silent failures.** In ~35 hooks a load error looks like an empty state ("no debt", "all approved invoices processed"). Tasks, Calendar and Chat have no error toasts, and success toasts are nearly absent app-wide. Cashflow (×9 pages) and Funding swap the whole page for a spinner on every refetch.
+4. [~] **Silent failures.** *(Fixed: ~60 hook-shaped loaders now expose `error` + `refetch` and render `ErrorState` with a retry instead of an empty state, with figures withheld rather than shown as 0; the services that hid failures behind `return []` or a dropped `error` now throw; all 25 silent mutations report, and no dialog closes in a `finally` any more; success feedback added where the only signal was a spinner flash. Two e2e tests pin the behaviour by aborting the API. Left: the ~23 fetches written inline inside components, and the full-page spinner on refetch.)*
 5. [ ] **Hardcoded strings (~300).**
    - Sales has ~150, the most of any module.
    - The Director alerts panel is entirely English.
