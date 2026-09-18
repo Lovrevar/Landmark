@@ -124,6 +124,10 @@ Core retail module. Tracks development projects through phases (development, con
 - View payment history for a contract
 - Same rule: "no payments recorded" and "we could not read the payments" are opposite answers
   to "has this contract been paid?", so the failure gets its own state
+- Both modals label and colour invoice status through the shared `getInvoiceStatusVariant` /
+  `getInvoiceStatusLabel` in `Cashflow/services/invoiceHelpers.ts` (UNPAID red, PARTIALLY_PAID
+  yellow, PAID green), the same as every other screen that uses them. The payment-history modal
+  used to show any unrecognised status as a red "Unpaid"; it now shows the raw value
 
 ---
 

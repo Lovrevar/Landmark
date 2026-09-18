@@ -115,6 +115,24 @@ export function getCreditTypeBadgeVariant(creditType: string): 'blue' | 'green' 
   }
 }
 
+/**
+ * i18n key for a stored `bank_credits.credit_type` (term_loan | line_of_credit | construction_loan
+ * | bridge_loan | equity), reusing the credit form's option labels. A line of credit's label
+ * carries its seniority, as it does in the form. Null for anything else — callers fall back to
+ * the raw value with every underscore replaced (`replace('_', ' ')` only replaced the first, so
+ * `line_of_credit` rendered as "LINE OF_CREDIT").
+ */
+export function getCreditTypeLabelKey(creditType: string | null | undefined, seniority?: string | null): string | null {
+  switch (creditType) {
+    case 'term_loan':         return 'banks.credit_form.term_loan'
+    case 'construction_loan': return 'banks.credit_form.construction_loan'
+    case 'bridge_loan':       return 'banks.credit_form.bridge_loan'
+    case 'line_of_credit':    return seniority === 'junior' ? 'banks.credit_form.loc_junior' : 'banks.credit_form.loc_senior'
+    case 'equity':            return 'funding.equity'
+    default:                  return null
+  }
+}
+
 export interface PaymentScheduleParams {
   start_date: string
   maturity_date: string

@@ -1423,7 +1423,6 @@
     "table_actions": "Akcije",
     "category_retail": "Retail",
     "category_subcontractor": "Podizvodjač",
-    "approved_badge": "Odobreno",
     "hide_button": "Sakrij",
     "empty": {
       "title": "Nema računa za prikaz",
@@ -3165,10 +3164,7 @@
       "reference_label": "Referenca:",
       "created_label": "Kreirano",
       "no_date": "Datum nije postavljen",
-      "managed_in_accounting": "Upravljano u Računovodstvu",
-      "status_paid": "Plaćeno",
-      "status_partial": "Djelomično",
-      "status_unpaid": "Neplaćeno"
+      "managed_in_accounting": "Upravljano u Računovodstvu"
     },
     "invoices_modal": {
       "title": "Računi - {{contract}}",
@@ -3469,19 +3465,16 @@
         "project_col": "Projekt",
         "category_col": "Kategorija",
         "amount_col": "Iznos",
-        "notes_col": "Napomene",
-        "bank_badge": "Banka"
+        "notes_col": "Napomene"
       },
       "stats": {
-        "total_payments_label": "Ukupno plaćanja",
-        "bank_payments_subtitle": "{{count}} bankovnih kreditnih plaćanja",
-        "total_amount_label": "Ukupan iznos",
-        "this_month_label": "Ovaj mjesec",
-        "payments_subtitle": "plaćanja",
-        "month_amount_label": "Iznos ovog mjeseca"
+        "inflow_label": "Ukupno isplate",
+        "outflow_label": "Ukupno otplate i troškovi",
+        "net_label": "Neto",
+        "this_month_label": "Ovaj mjesec"
       },
       "filtered_results_label": "Filtrirani rezultati",
-      "filtered_summary": "{{count}} plaćanja ukupno {{total}}"
+      "filtered_summary": "{{count}} plaćanja · isplate {{inflow}} · otplate i troškovi {{outflow}} · neto {{net}}"
     },
     "equity_form": {
       "title": "Dodaj novu investiciju",

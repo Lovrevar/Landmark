@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { Subcontractor, WirePayment } from '../../../../lib/supabase'
 import { fetchContractInvoiceTotals } from '../services/siteService'
 import { Modal, Button, Badge, EmptyState, ErrorState } from '../../../ui'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
 
 interface AccountingPayment {
   id: string
@@ -84,10 +85,6 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
     }
   }, [visible, subcontractor, fetchInvoiceTotals])
 
-  const getStatusVariant = (status: string): 'green' | 'yellow' => {
-    return status === 'paid' ? 'green' : 'yellow'
-  }
-
   if (!visible || !subcontractor) return null
 
   return (
@@ -163,8 +160,10 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                                 {accountingPayment.invoice.invoice_number}
                               </span>
                             </span>
-                            <Badge variant={getStatusVariant(accountingPayment.invoice.status)} size="sm">
-                              {accountingPayment.invoice.status}
+                            {/* Shared renderer: the local copy compared against lowercase 'paid', which
+                                accounting statuses never are, so every invoice showed yellow. */}
+                            <Badge variant={getInvoiceStatusVariant(accountingPayment.invoice.status)} size="sm">
+                              {getInvoiceStatusLabel(accountingPayment.invoice.status, t)}
                             </Badge>
                           </div>
                         )}

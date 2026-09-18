@@ -7,6 +7,7 @@ import {
   parseCreditTypeAndSeniority,
   getCreditRiskLevel,
   getCreditTypeBadgeVariant,
+  getCreditTypeLabelKey,
   calculatePaymentSchedule,
 } from './creditCalculations'
 
@@ -214,6 +215,26 @@ describe('getCreditTypeBadgeVariant', () => {
   it('defaults unknown types to gray', () => {
     expect(getCreditTypeBadgeVariant('unknown')).toBe('gray')
     expect(getCreditTypeBadgeVariant('')).toBe('gray')
+  })
+})
+
+describe('getCreditTypeLabelKey', () => {
+  it('maps every stored credit_type to an existing label key', () => {
+    expect(getCreditTypeLabelKey('term_loan')).toBe('banks.credit_form.term_loan')
+    expect(getCreditTypeLabelKey('construction_loan')).toBe('banks.credit_form.construction_loan')
+    expect(getCreditTypeLabelKey('bridge_loan')).toBe('banks.credit_form.bridge_loan')
+    expect(getCreditTypeLabelKey('equity')).toBe('funding.equity')
+  })
+
+  it('labels a line of credit by seniority, senior when unknown', () => {
+    expect(getCreditTypeLabelKey('line_of_credit', 'junior')).toBe('banks.credit_form.loc_junior')
+    expect(getCreditTypeLabelKey('line_of_credit', 'senior')).toBe('banks.credit_form.loc_senior')
+    expect(getCreditTypeLabelKey('line_of_credit', null)).toBe('banks.credit_form.loc_senior')
+  })
+
+  it('returns null for anything else', () => {
+    expect(getCreditTypeLabelKey('N/A')).toBeNull()
+    expect(getCreditTypeLabelKey(undefined)).toBeNull()
   })
 })
 

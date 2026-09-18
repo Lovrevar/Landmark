@@ -3,6 +3,7 @@ import { FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { Button, Badge, Modal, LoadingSpinner, ErrorState } from '../../../ui'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
 import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
 
@@ -159,15 +160,8 @@ export const RetailPaymentHistoryModal: React.FC<RetailPaymentHistoryModalProps>
                             {payment.invoice.invoice_number}
                           </span>
                         </span>
-                        <Badge variant={
-                          payment.invoice.status === 'PAID'
-                            ? 'green'
-                            : payment.invoice.status === 'PARTIALLY_PAID'
-                            ? 'yellow'
-                            : 'red'
-                        } size="sm">
-                          {payment.invoice.status === 'PAID' ? t('retail_projects.payment_history_modal.status_paid') :
-                           payment.invoice.status === 'PARTIALLY_PAID' ? t('retail_projects.payment_history_modal.status_partial') : t('retail_projects.payment_history_modal.status_unpaid')}
+                        <Badge variant={getInvoiceStatusVariant(payment.invoice.status)} size="sm">
+                          {getInvoiceStatusLabel(payment.invoice.status, t)}
                         </Badge>
                       </div>
                     )}

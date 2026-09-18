@@ -1,43 +1,34 @@
 import { useState, useCallback } from 'react'
+import { format } from 'date-fns'
+import { monthKey } from '../../../../utils/dateOnly'
 import { fetchBankPayments, type BankPaymentWithDetails } from '../services/bankPaymentsService'
+import { bankPaymentTotals, type PaymentTotals } from '../paymentTotals'
 
 type CombinedPayment = BankPaymentWithDetails
 
 interface PaymentsStats {
-  totalPayments: number
-  totalAmount: number
-  paymentsThisMonth: number
-  amountThisMonth: number
-  bankPayments: number
+  /** Split by direction: drawdowns in, repayments and fees out. Never one summed amount. */
+  all: PaymentTotals
+  thisMonth: PaymentTotals
 }
 
-const calculateStats = (paymentsData: CombinedPayment[]): PaymentsStats => {
-  const now = new Date()
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+const EMPTY_TOTALS: PaymentTotals = { inflow: 0, outflow: 0, net: 0, count: 0 }
 
-  const totalAmount = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0)
-  const paymentsThisMonth = paymentsData.filter(p => new Date(p.payment_date || p.created_at) >= firstDayOfMonth)
-  const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
-  const bankPayments = paymentsData.length
+const calculateStats = (paymentsData: CombinedPayment[]): PaymentsStats => {
+  // Same calendar month, compared as 'YYYY-MM' strings: a `>= first of the month` test also
+  // counted future-dated payments, and `new Date('YYYY-MM-DD')` parses as UTC midnight.
+  const currentMonth = format(new Date(), 'yyyy-MM')
+  const paymentsThisMonth = paymentsData.filter(p => monthKey(p.payment_date || p.created_at) === currentMonth)
 
   return {
-    totalPayments: paymentsData.length,
-    totalAmount,
-    paymentsThisMonth: paymentsThisMonth.length,
-    amountThisMonth,
-    bankPayments
+    all: bankPaymentTotals(paymentsData),
+    thisMonth: bankPaymentTotals(paymentsThisMonth),
   }
 }
 
 export function usePaymentsData() {
   const [payments, setPayments] = useState<CombinedPayment[]>([])
-  const [stats, setStats] = useState<PaymentsStats>({
-    totalPayments: 0,
-    totalAmount: 0,
-    paymentsThisMonth: 0,
-    amountThisMonth: 0,
-    bankPayments: 0
-  })
+  const [stats, setStats] = useState<PaymentsStats>({ all: EMPTY_TOTALS, thisMonth: EMPTY_TOTALS })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 

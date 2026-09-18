@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Badge, LoadingSpinner } from '../../ui'
 import { format } from 'date-fns'
 import { useLazySection } from './hooks/useLazySection'
-import { INVOICE_STATUS_CONFIG } from './constants'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 import { fetchCreditInvoices } from './services/creditService'
 
 const COLOR_CLASSES = {
@@ -125,7 +125,6 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {invoices.map((inv) => {
-                    const statusCfg = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, variant: 'gray' as const }
                     return (
                       <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <td className="px-4 py-2.5 font-medium text-gray-900 dark:text-white">
@@ -165,8 +164,8 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
                           €{inv.total_amount.toLocaleString('hr-HR')}
                         </td>
                         <td className="px-4 py-2.5 text-center">
-                          <Badge variant={statusCfg.variant}>
-                            {statusCfg.label}
+                          <Badge variant={getInvoiceStatusVariant(inv.status)}>
+                            {getInvoiceStatusLabel(inv.status, t)}
                           </Badge>
                         </td>
                       </tr>

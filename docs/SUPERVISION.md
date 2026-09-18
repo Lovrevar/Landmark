@@ -348,6 +348,11 @@ the orchestrator does the writes and re-fetches.
 - Invoices attached to one subcontractor
 - Props: `isOpen` (**not** `visible` — the odd one out), `onClose`, `subcontractor`
 
+Both of these modals label and colour invoice status through the shared `getInvoiceStatusVariant` /
+`getInvoiceStatusLabel` in `Cashflow/services/invoiceHelpers.ts` (UNPAID red, PARTIALLY_PAID yellow,
+PAID green). `PaymentHistoryModal`'s own map compared against lowercase `'paid'`, which the column
+never holds, so every invoice rendered yellow with its raw enum as the label.
+
 ### index.tsx (SiteManagement)
 - Master orchestrator: project/phase/subcontractor CRUD, payment history, comments, milestone context, and all modal state
 - Applies permission checks (canManagePayments, getAccessibleProjectIds)

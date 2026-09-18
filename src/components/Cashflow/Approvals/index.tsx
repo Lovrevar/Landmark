@@ -20,6 +20,7 @@ import { format } from 'date-fns'
 import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { useApprovals } from './hooks/useApprovals'
 import { formatEuro } from '../../../utils/formatters'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 const COLUMN_KEYS = ['category', 'invoice_number', 'supplier_name', 'project_name', 'phase_name', 'contract_number', 'issue_date', 'due_date', 'base_amount', 'vat_amount', 'total_amount', 'status']
 
@@ -299,12 +300,12 @@ const AccountingApprovals: React.FC = () => {
                     )}
                     {visibleColumns.status && (
                       <td data-label={t('approvals.column_labels.status')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'UNPAID' ? 'warning' : 'default'}>
-                            {invoice.status}
-                          </Badge>
-                          <Badge variant="success">{t('approvals.approved_badge')}</Badge>
-                        </div>
+                        {/* Payment status only: every row here is approved by construction
+                            (approvalsService filters approved = true), so an "Approved" badge
+                            would be the same on every row. */}
+                        <Badge variant={getInvoiceStatusVariant(invoice.status)}>
+                          {getInvoiceStatusLabel(invoice.status, t)}
+                        </Badge>
                       </td>
                     )}
                     <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">

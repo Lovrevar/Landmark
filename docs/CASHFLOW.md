@@ -104,6 +104,10 @@ Manages approved invoices that are pending processing. Supports bulk hide/select
 
 ### index.tsx (AccountingApprovals)
 - Approved invoice table with search, column toggle, and bulk hide
+- The status column shows the invoice's **payment** status through the shared
+  `getInvoiceStatusVariant` / `getInvoiceStatusLabel` (see `invoiceHelpers.ts`). There is no
+  "Approved" badge: every row is approved by construction (`fetchApprovedInvoices` filters
+  `approved = true`), so it said the same thing on every row
 - **Uses hooks:** useApprovals
 - **Uses Ui:** Table, SearchInput, ColumnMenuDropdown, useToast
 
@@ -804,6 +808,26 @@ Shared utilities used across multiple Cashflow sub-modules.
 
 ### invoiceHelpers.ts
 - `getStatusColor(status)` — returns CSS class for invoice status badge
+- **The shared invoice-status renderer** — use it rather than a local switch (the copies had
+  drifted: UNPAID yellow on Approvals and red elsewhere, a lowercase `'paid'` check that never
+  matched, the raw enum shown as the label):
+  - `getInvoiceStatusVariant(status)` → `Badge` variant: PAID `green`, PARTIALLY_PAID `yellow`,
+    UNPAID `red`, anything else `gray`
+  - `getInvoiceStatusLabelKey(status)` → `common.paid` / `common.partial` / `common.unpaid`, or
+    `null` for an unknown status
+  - `getInvoiceStatusLabel(status, t)` → the translated label; an unknown status is shown as-is,
+    a missing one as `—`
+  - Used by Approvals, Supervision's `InvoicesModal` and `PaymentHistoryModal`, Retail's
+    `RetailInvoicesModal` and `RetailPaymentHistoryModal`, and Funding's `CreditInvoiceSection`
+    and `AllocationRow`. Other invoice screens (the main invoice list via `getStatusColor`,
+    Customers, Suppliers, Office Suppliers, Cashflow Calendar, Retail/Supervision invoice lists)
+    still render status their own way
+- `paymentDirection(invoiceType)` → `'IN' | 'OUT' | null` — which way cash moves when an invoice
+  of that type is paid: `OUTGOING_*` (we issued it — a sale, a credit drawdown) is money **in**,
+  `INCOMING_*` (we received it — a supplier bill, a repayment, credit fees) is money **out**. Same
+  sign convention as the bank-balance trigger. Used by Funding → Payments. Note that it puts
+  `INCOMING_INVESTMENT` on the OUT side, as the trigger does, whereas the accounting dashboard and
+  `getTypeColor` treat it as incoming cash
 - `getTypeColor(type)` — returns CSS class for invoice type badge
 - `getTypeLabel(type)` — returns Croatian label for invoice type
 - `INVOICE_CATEGORIES_BY_DIRECTION` — per direction, the categories that exist (`${direction}_${value}` is always one of the nine `accounting_invoices_invoice_type_check` values) with their `invoice_type.*` label key. Unit-tested in `invoiceHelpers.test.ts` against the CHECK list

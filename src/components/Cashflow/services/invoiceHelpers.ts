@@ -1,5 +1,7 @@
+import type { TFunction } from 'i18next'
 import type { Invoice, Project, Contract, Milestone } from '../Invoices/types'
 import { daysFromToday } from '../../../utils/dateOnly'
+import { NO_VALUE } from '../../../utils/formatters'
 
 export const getStatusColor = (status: string): string => {
   switch (status) {
@@ -10,11 +12,60 @@ export const getStatusColor = (status: string): string => {
   }
 }
 
+/**
+ * The one invoice-status renderer: Badge variant + i18n label key. Use these rather than a local
+ * switch — hand-rolled copies had drifted (UNPAID yellow on one screen, red on the rest; a
+ * lowercase 'paid' check that never matched; the raw enum shown as the label).
+ */
+export type InvoiceStatusVariant = 'green' | 'yellow' | 'red' | 'gray'
+
+export const getInvoiceStatusVariant = (status: string | null | undefined): InvoiceStatusVariant => {
+  switch (status) {
+    case 'PAID': return 'green'
+    case 'PARTIALLY_PAID': return 'yellow'
+    case 'UNPAID': return 'red'
+    default: return 'gray'
+  }
+}
+
+/** i18n key for an invoice status, or null for an unknown one (callers fall back to the raw value). */
+export const getInvoiceStatusLabelKey = (status: string | null | undefined): string | null => {
+  switch (status) {
+    case 'PAID': return 'common.paid'
+    case 'PARTIALLY_PAID': return 'common.partial'
+    case 'UNPAID': return 'common.unpaid'
+    default: return null
+  }
+}
+
+/** Translated status label. An unknown status is shown as-is rather than hidden. */
+export const getInvoiceStatusLabel = (status: string | null | undefined, t: TFunction): string => {
+  const key = getInvoiceStatusLabelKey(status)
+  return key ? t(key) : (status || NO_VALUE)
+}
+
 export const getTypeColor = (type: string): string => {
   if (type === 'INCOMING_SUPPLIER' || type === 'INCOMING_OFFICE' || type === 'INCOMING_BANK' || type === 'INCOMING_BANK_EXPENSES') {
     return 'text-red-600'
   }
   return 'text-green-600'
+}
+
+/**
+ * Which way money moves when an invoice of this type is paid, from the company's side. The prefix
+ * names the invoice, not the cash: paying an INCOMING_* invoice (a bill we received — a supplier,
+ * a loan repayment, credit fees) is money OUT; an OUTGOING_* invoice (one we issued — a sale, a
+ * credit drawdown booked as OUTGOING_BANK) is money IN. Same sign convention as the bank-balance
+ * trigger in 20260917100000_payment_update_balance_triggers.sql. Null for a type with neither prefix.
+ * Caveat: INCOMING_INVESTMENT is OUT here (and in the trigger) but counted as cash IN by the
+ * accounting dashboard and `getTypeColor` — settle that before using this for those screens.
+ */
+export type PaymentDirection = 'IN' | 'OUT'
+
+export const paymentDirection = (invoiceType: string | null | undefined): PaymentDirection | null => {
+  if (invoiceType?.startsWith('OUTGOING_')) return 'IN'
+  if (invoiceType?.startsWith('INCOMING_')) return 'OUT'
+  return null
 }
 
 export type InvoiceDirection = 'INCOMING' | 'OUTGOING'

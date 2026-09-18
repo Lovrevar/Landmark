@@ -6,6 +6,7 @@ import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
 import { daysFromToday } from '../../../../utils/dateOnly'
 import { Button, Modal, Badge, EmptyState, ErrorState, LoadingSpinner } from '../../../ui'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
 
 interface Invoice {
   id: string
@@ -76,32 +77,6 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
     }
   }, [isOpen])
 
-  const getStatusBadgeVariant = (status: string): 'green' | 'yellow' | 'red' | 'gray' => {
-    switch (status) {
-      case 'PAID':
-        return 'green'
-      case 'PARTIALLY_PAID':
-        return 'yellow'
-      case 'UNPAID':
-        return 'red'
-      default:
-        return 'gray'
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'PAID':
-        return t('retail_projects.payment_history_modal.status_paid')
-      case 'PARTIALLY_PAID':
-        return t('retail_projects.payment_history_modal.status_partial')
-      case 'UNPAID':
-        return t('retail_projects.payment_history_modal.status_unpaid')
-      default:
-        return status
-    }
-  }
-
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'INCOMING_SUPPLIER':
@@ -156,8 +131,8 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('retail_projects.invoices_modal.invoice_number_label')}</label>
-                      <Badge variant={getStatusBadgeVariant(invoice.status)} size="sm">
-                        {getStatusLabel(invoice.status)}
+                      <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
+                        {getInvoiceStatusLabel(invoice.status, t)}
                       </Badge>
                     </div>
                     <p className="text-lg font-bold text-gray-900 dark:text-white">{invoice.invoice_number}</p>

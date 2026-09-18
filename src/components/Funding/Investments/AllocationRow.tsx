@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Trash2, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Badge, LoadingSpinner } from '../../ui'
 import { format } from 'date-fns'
-import { INVOICE_STATUS_CONFIG } from './constants'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 import { fetchAllocationInvoices, AllocationInvoice } from './services/allocationService'
 
 interface CreditAllocation {
@@ -249,7 +249,6 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                       </thead>
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {invoices.map((inv) => {
-                          const statusCfg = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, variant: 'gray' as const }
                           return (
                             <tr key={inv.payment_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                               <td data-label={t('funding.allocation_row.table.invoice_number')} className="px-4 py-2.5 font-medium text-gray-900 dark:text-white">
@@ -268,8 +267,8 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                                 €{inv.total_amount.toLocaleString('hr-HR')}
                               </td>
                               <td data-label={t('funding.allocation_row.table.status')} className="px-4 py-2.5 text-center">
-                                <Badge variant={statusCfg.variant}>
-                                  {statusCfg.label}
+                                <Badge variant={getInvoiceStatusVariant(inv.status)}>
+                                  {getInvoiceStatusLabel(inv.status, t)}
                                 </Badge>
                               </td>
                             </tr>

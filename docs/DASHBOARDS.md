@@ -132,7 +132,10 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 - Props: `TopCompany[]`
 
 ### AccountingMonthlyTrendsSection.tsx
-- Stacked horizontal bar chart of monthly incoming vs outgoing amounts
+- One row per month: an incoming (green) and an outgoing (red) horizontal bar, and the month's signed net
+- Every bar shares one denominator — `monthlyBarMax(monthlyData)`, the largest value in either series across the year — so bar length compares across months. It used to be computed per month, which made each month's larger bar full width
+- Each € figure sits in a fixed-width column beside its bar, not inside the `overflow-hidden` track, where short bars clipped it
+- Below `md` the row wraps: month and net on one line, the two bars stacked beneath
 - Props: `MonthlyData[]`
 
 ### DirectorAlertsSection.tsx
@@ -174,6 +177,7 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 - **`DashboardError.tsx`** — error panel (icon + message + retry). Every dashboard renders it when `useCachedData` reports an `error` and there is no cached data, so a failed fetch never renders as legitimate zeros. Since September 2026 it is a thin wrapper over the shared **`ErrorState`** (`src/components/ui/ErrorState.tsx`), which was promoted out of it so list pages and modals can make the same distinction; the wording moved with it to `common.load_error_title` / `common.load_error_description` / `common.retry`, and the `dashboards.common.*` trio is gone from both locale files. Rendering is unchanged apart from the title, which is now the generic "Failed to load" / "Učitavanje nije uspjelo" rather than "…dashboard". New code can import `ErrorState` directly — this wrapper exists so the six dashboards' call sites stayed put.
 - **`src/utils/dateOnly.ts`** — helpers for SQL `date` (date-only) columns: `parseLocalDate` (parse as local midnight, not UTC), `monthKey` (`'YYYY-MM'` bucket key), `daysFromToday` (whole-day diff, inclusive of today), `isValidDate`. All dashboard services use these for month bucketing, overdue/maturity windows, and "this week" math to avoid the UTC-vs-local off-by-one.
 - **`useCachedData` now exposes `error`** alongside `data`/`loading`/`fetchedAt`/`refetch`.
+- **`utils/barScale.ts`** — `monthlyBarMax(data)` (the shared denominator for incoming/outgoing month bars, floored at 1 so an empty or all-zero year is safe) and `barPercent(value, max)` (clamped 0–100). Unit-tested in `barScale.test.ts`. `SalesDashboard` hoists its own denominator inline the same way.
 - **`src/utils/formatters.ts`** — every money figure on every dashboard goes through a shared helper; no dashboard renders its own `toLocaleString` or divides by a million any more. `formatEuroRounded` (`€1.235`) for the Cashflow/accounting rollups, `formatEuroCompact` (`€1,2M` / `€45K` / `€9.500`) for the Director, Investment and Sales tiles, `formatEuro` (`€1.234,56`) where cents are real (Retail totals, per-company net balance), `formatEuropean` (bare `1.234,56`) where the translated string already carries the `€` (`dashboards.accounting.in_out_label`), and `NO_VALUE` (`—`) where an average has no denominator. All emit the Croatian `€` -first form and the locale minus `€−1.234`, whatever the browser locale.
 
 ### Signed figures

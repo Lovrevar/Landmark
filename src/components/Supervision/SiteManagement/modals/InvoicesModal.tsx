@@ -6,6 +6,7 @@ import { Subcontractor } from '../../../../lib/supabase'
 import { Modal, Button, Badge, LoadingSpinner, EmptyState } from '../../../ui'
 import { fetchContractInvoices, ContractInvoiceRow } from '../services/siteService'
 import { daysFromToday } from '../../../../utils/dateOnly'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
 
 type Invoice = ContractInvoiceRow
 
@@ -64,32 +65,6 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
     }
   }, [isOpen])
 
-  const getStatusVariant = (status: string): 'green' | 'yellow' | 'red' | 'gray' => {
-    switch (status) {
-      case 'PAID':
-        return 'green'
-      case 'PARTIALLY_PAID':
-        return 'yellow'
-      case 'UNPAID':
-        return 'red'
-      default:
-        return 'gray'
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'PAID':
-        return t('common.paid')
-      case 'PARTIALLY_PAID':
-        return t('common.partial')
-      case 'UNPAID':
-        return t('common.unpaid')
-      default:
-        return status
-    }
-  }
-
   const isOverdue = (dueDate: string, status: string) => {
     if (status === 'PAID') return false
     return daysFromToday(dueDate) < 0
@@ -133,8 +108,8 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('supervision.invoices_modal.invoice_number')}</label>
-                        <Badge variant={getStatusVariant(invoice.status)} size="sm">
-                          {getStatusLabel(invoice.status)}
+                        <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
+                          {getInvoiceStatusLabel(invoice.status, t)}
                         </Badge>
                       </div>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">{invoice.invoice_number}</p>

@@ -89,6 +89,9 @@ Detailed credit management: allocations per project, disbursements, expenses, re
 
 ### CreditInvoiceSection.tsx
 - Lazy-loaded table of invoices for a credit filtered by invoice type, with payment info and status badges
+- Status badges (here and in `AllocationRow`) come from the shared `getInvoiceStatusVariant` /
+  `getInvoiceStatusLabel` in `Cashflow/services/invoiceHelpers.ts`. The module's own
+  `Investments/constants.ts` (`INVOICE_STATUS_CONFIG`, with hardcoded Croatian labels) is gone
 - Props: creditId, invoiceType, title, totalLabel, paymentAmountLabel, emptyMessage, accentColor, icon, showAllocation?
 - **Uses hooks:** useLazySection
 - **Calls:** creditService.fetchCreditInvoices
@@ -193,7 +196,7 @@ Bank and investor registry. Manages credit facilities and equity investments per
 
 ### utils/creditCalculations.ts
 The module's pure-maths layer, and the most heavily unit-tested file in the codebase
-(32 tests in `creditCalculations.test.ts`). No Supabase, no React — extract new financial
+(35 tests in `creditCalculations.test.ts`). No Supabase, no React — extract new financial
 maths here rather than inlining it in a hook.
 
 - `calculateAnnuityPayment({...})` — standard annuity instalment
@@ -203,6 +206,10 @@ maths here rather than inlining it in a hook.
 - `getPaymentFrequency(type)` — payments per year for `monthly` / `quarterly` / `biyearly` / `yearly`
 - `parseCreditTypeAndSeniority(combined)` — splits the combined form value back into its two fields
 - `getCreditRiskLevel(utilization)` / `getCreditTypeBadgeVariant(creditType)` — display helpers
+- `getCreditTypeLabelKey(creditType, seniority?)` — i18n key for a stored `credit_type`, reusing the
+  credit form's `banks.credit_form.*` option labels (a `line_of_credit` picks `loc_senior` /
+  `loc_junior` by seniority; `equity` → `funding.equity`); `null` for anything else, where callers
+  show the value with every `_` replaced
 - Exports `PaymentScheduleParams` and `PaymentScheduleResult`
 
 > The tests assert the code's **actual** output, including a known 119-vs-120 off-by-one in the
@@ -233,21 +240,29 @@ Read-only history of accounting payments made against bank credits.
 #### Services
 
 ### bankPaymentsService.ts
-- `fetchBankPayments()` — fetches accounting payments tied to bank credits, enriched with bank name, credit type, and project name
+- `fetchBankPayments()` — fetches accounting payments tied to bank credits, enriched with bank name, credit type and seniority, project name, the invoice's `invoice_type`, and a `direction` (`'IN' | 'OUT'`, from `paymentDirection` in `Cashflow/services/invoiceHelpers.ts`). A drawdown (`OUTGOING_BANK`) is money **in**; a repayment (`INCOMING_BANK`) or credit fee (`INCOMING_BANK_EXPENSES`) is money **out**
 - **Depends on:** supabase client
 
 #### Hooks
 
 ### usePaymentsData.ts
-- `usePaymentsData()` — fetches bank payments and computes stats (totalPayments, totalAmount, paymentsThisMonth, amountThisMonth, bankPayments)
+- `usePaymentsData()` — fetches bank payments and computes `stats.all` and `stats.thisMonth`, each a `PaymentTotals` (`{ inflow, outflow, net, count }`). "This month" is the current calendar month by `monthKey`, so future-dated payments are not counted in it
 - Returns `error` instead of toasting; the stats are left alone rather than recomputed from nothing, and the page withholds its four stat cards on a failed read rather than reporting €0 disbursed
 - **Calls:** bankPaymentsService.ts
 - **Returns:** payments, stats, loading, error, refetch
 
 #### Views
 
+#### Utilities
+
+### paymentTotals.ts
+- `bankPaymentTotals(rows)` → `{ inflow, outflow, net, count }`. Sums by direction, never across it — one summed amount added a €500k drawdown to its €500k repayment and showed €1.000.000. Sums in whole cents so equal flows net to exactly 0. Unit-tested in `paymentTotals.test.ts`
+
 ### index.tsx (FundingPaymentsManagement)
 - Payment list with search, status/date filters, CSV export, and stats cards
+- Stat cards: total disbursements (in), total repayments and fees (out), net, and this month's net. There is no single "total amount" and no payment-count card
+- The type column is the direction (PRIHOD green / RASHOD red, the Cashflow payment screen's `payments.table.income` / `expense` wording), and the amount takes the same colour. The CSV's Type column carries the same label. The credit type column is translated through `getCreditTypeLabelKey`
+- The filtered-results footer shows the count, in, out and net of the filtered rows. The "Large (> €50k)" filter is by magnitude, whichever way the money went
 - Three-way list area: `EmptyState` only for a genuinely empty result, `ErrorState` with a retry when the read failed and nothing loaded, and a dismissible `Alert` over stale rows. The filter bar stays mounted in every case
 - **Uses hooks:** usePaymentsData
 - **Uses Ui:** PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Table

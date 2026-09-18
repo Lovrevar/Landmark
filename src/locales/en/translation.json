@@ -1421,7 +1421,6 @@
     "table_actions": "Actions",
     "category_retail": "Retail",
     "category_subcontractor": "Subcontractor",
-    "approved_badge": "Approved",
     "hide_button": "Hide",
     "empty": {
       "title": "No invoices to display",
@@ -3161,10 +3160,7 @@
       "reference_label": "Reference:",
       "created_label": "Created",
       "no_date": "Date not set",
-      "managed_in_accounting": "Managed in Accounting",
-      "status_paid": "Paid",
-      "status_partial": "Partial",
-      "status_unpaid": "Unpaid"
+      "managed_in_accounting": "Managed in Accounting"
     },
     "invoices_modal": {
       "title": "Invoices - {{contract}}",
@@ -3465,19 +3461,16 @@
         "project_col": "Project",
         "category_col": "Category",
         "amount_col": "Amount",
-        "notes_col": "Notes",
-        "bank_badge": "Bank"
+        "notes_col": "Notes"
       },
       "stats": {
-        "total_payments_label": "Total Payments",
-        "bank_payments_subtitle": "{{count}} bank credit payments",
-        "total_amount_label": "Total Amount",
-        "this_month_label": "This Month",
-        "payments_subtitle": "payments",
-        "month_amount_label": "Month Amount"
+        "inflow_label": "Total disbursements",
+        "outflow_label": "Total repayments and fees",
+        "net_label": "Net",
+        "this_month_label": "This Month"
       },
       "filtered_results_label": "Filtered Results",
-      "filtered_summary": "{{count}} payments totaling {{total}}"
+      "filtered_summary": "{{count}} payments · disbursements {{inflow}} · repayments and fees {{outflow}} · net {{net}}"
     },
     "equity_form": {
       "title": "Add New Investment",

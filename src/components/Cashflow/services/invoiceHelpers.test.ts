@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest'
+import type { TFunction } from 'i18next'
 import {
   INVOICE_CATEGORIES_BY_DIRECTION,
   isInvoiceCategoryValidForDirection,
   getInvoiceTypeLabelKey,
+  getInvoiceStatusVariant,
+  getInvoiceStatusLabelKey,
+  getInvoiceStatusLabel,
+  paymentDirection,
   type InvoiceDirection,
 } from './invoiceHelpers'
 
@@ -72,5 +77,76 @@ describe('getInvoiceTypeLabelKey', () => {
 
   it('returns null for an unknown type', () => {
     expect(getInvoiceTypeLabelKey('OUTGOING_INVESTMENT')).toBeNull()
+  })
+})
+
+describe('getInvoiceStatusVariant', () => {
+  it('matches the colours the rest of the app uses', () => {
+    expect(getInvoiceStatusVariant('PAID')).toBe('green')
+    expect(getInvoiceStatusVariant('PARTIALLY_PAID')).toBe('yellow')
+    // Approvals once showed UNPAID yellow and PARTIALLY_PAID grey; everywhere else these are the rule.
+    expect(getInvoiceStatusVariant('UNPAID')).toBe('red')
+  })
+
+  it('falls back to gray for anything else, including lowercase and missing values', () => {
+    expect(getInvoiceStatusVariant('paid')).toBe('gray')
+    expect(getInvoiceStatusVariant('')).toBe('gray')
+    expect(getInvoiceStatusVariant(null)).toBe('gray')
+    expect(getInvoiceStatusVariant(undefined)).toBe('gray')
+  })
+})
+
+describe('getInvoiceStatusLabelKey', () => {
+  it('maps each known status to its shared common.* key', () => {
+    expect(getInvoiceStatusLabelKey('PAID')).toBe('common.paid')
+    expect(getInvoiceStatusLabelKey('PARTIALLY_PAID')).toBe('common.partial')
+    expect(getInvoiceStatusLabelKey('UNPAID')).toBe('common.unpaid')
+  })
+
+  it('returns null for an unknown status so the caller decides the fallback', () => {
+    expect(getInvoiceStatusLabelKey('OVERDUE')).toBeNull()
+    expect(getInvoiceStatusLabelKey(null)).toBeNull()
+  })
+})
+
+describe('paymentDirection', () => {
+  it('treats paying an OUTGOING_* invoice as money in, e.g. a credit drawdown', () => {
+    for (const type of DB_INVOICE_TYPES.filter(t => t.startsWith('OUTGOING_'))) {
+      expect(paymentDirection(type)).toBe('IN')
+    }
+    expect(paymentDirection('OUTGOING_BANK')).toBe('IN')
+  })
+
+  it('treats paying an INCOMING_* invoice as money out, e.g. a repayment or credit fees', () => {
+    for (const type of DB_INVOICE_TYPES.filter(t => t.startsWith('INCOMING_'))) {
+      expect(paymentDirection(type)).toBe('OUT')
+    }
+    expect(paymentDirection('INCOMING_BANK')).toBe('OUT')
+    expect(paymentDirection('INCOMING_BANK_EXPENSES')).toBe('OUT')
+  })
+
+  it('gives every database invoice type a direction', () => {
+    for (const type of DB_INVOICE_TYPES) {
+      expect(paymentDirection(type)).not.toBeNull()
+    }
+  })
+
+  it('returns null when the type carries neither prefix', () => {
+    expect(paymentDirection('BANK')).toBeNull()
+    expect(paymentDirection(null)).toBeNull()
+    expect(paymentDirection(undefined)).toBeNull()
+  })
+})
+
+describe('getInvoiceStatusLabel', () => {
+  const t = ((key: string) => `t(${key})`) as unknown as TFunction
+
+  it('translates a known status through its shared key', () => {
+    expect(getInvoiceStatusLabel('UNPAID', t)).toBe('t(common.unpaid)')
+  })
+
+  it('shows an unknown status as-is, and a missing one as the no-value dash', () => {
+    expect(getInvoiceStatusLabel('OVERDUE', t)).toBe('OVERDUE')
+    expect(getInvoiceStatusLabel(null, t)).toBe('—')
   })
 })
