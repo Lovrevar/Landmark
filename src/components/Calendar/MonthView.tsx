@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Repeat, MapPin, Users, Square, CheckSquare } from 'lucide-react'
-import type { EventType } from '../../types/tasks'
+import { Repeat, MapPin, Users } from 'lucide-react'
 import type { ExpandedOccurrence } from './utils/recurrence'
 import type { TaskOccurrence } from './utils/expandTasks'
-import { computeMonthLayout, type PlacedSegment } from './utils/monthLayout'
-import { completionToggle } from '../Tasks/permissions'
+import { cellRows, computeMonthLayout, type CellRows, type PlacedSegment } from './utils/monthLayout'
+import { EVENT_TYPE_COLORS } from './utils/eventTypeColors'
+import TaskPill from './components/TaskPill'
 
 interface Props {
   anchor: Date
@@ -20,28 +20,19 @@ interface Props {
   currentUserId?: string | null
 }
 
-const typeAccent: Record<EventType, string> = {
-  meeting: 'border-l-blue-500',
-  personal: 'border-l-gray-400',
-  deadline: 'border-l-red-500',
-  reminder: 'border-l-amber-500',
-}
-
-const typeBarBg: Record<EventType, string> = {
-  meeting: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200',
-  personal: 'bg-gray-100 text-gray-700 dark:bg-gray-700/60 dark:text-gray-200',
-  deadline: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-200',
-  reminder: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
-}
-
 const dayNameKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
+// The height budget of one cell: the date header, then MAX_VISIBLE_SLOTS rows, then the "+N more"
+// line pinned to the bottom (bottom-1 + one 11px line, so it starts ~99px down). 28 + 3 × 22 = 94
+// clears it. Event bars and task pills share those rows (see cellRows): tasks used to get three
+// rows of their own below the events, and on a busy day ran past the cell into the next week.
+// Both are 20px tall in a 22px row — TaskPill's compact size is h-5.
 const MAX_VISIBLE_SLOTS = 3
 const SLOT_HEIGHT_PX = 22
 const HEADER_HEIGHT_PX = 28
 const ROW_MIN_HEIGHT_PX = 120
-const TASK_SLOT_HEIGHT_PX = 18
-const MAX_TASK_SLOTS = 3
+
+const NO_SLOTS: number[] = []
 
 interface DayCellProps {
   date: Date
@@ -163,6 +154,18 @@ const MonthView: React.FC<Props> = ({
     return map
   }, [taskOccurrences])
 
+  // Which rows each day's tasks take and how many items go to "+N more" — one computation, so
+  // the pills drawn and the count shown cannot disagree.
+  const rowsByDay = useMemo(() => {
+    const map = new Map<string, CellRows>()
+    for (const d of cells) {
+      const key = d.toDateString()
+      const taskCount = tasksByDay.get(key)?.length ?? 0
+      map.set(key, cellRows(layout.eventSlotsByDay.get(key) ?? NO_SLOTS, taskCount, MAX_VISIBLE_SLOTS))
+    }
+    return map
+  }, [cells, layout, tasksByDay])
+
   const todayStr = new Date().toDateString()
 
   const renderSegment = (seg: PlacedSegment) => {
@@ -188,10 +191,10 @@ const MonthView: React.FC<Props> = ({
           height: SLOT_HEIGHT_PX - 2,
         }}
         className={[
-          'text-left text-xs px-1.5 flex items-center gap-1 overflow-hidden',
+          'pointer-events-auto text-left text-xs px-1.5 flex items-center gap-1 overflow-hidden',
           'border-l-[3px] rounded-sm',
-          typeAccent[ev.event_type],
-          typeBarBg[ev.event_type],
+          EVENT_TYPE_COLORS[ev.event_type].border,
+          EVENT_TYPE_COLORS[ev.event_type].surface,
           seg.continuesLeft ? 'rounded-l-none' : '',
           seg.continuesRight ? 'rounded-r-none' : '',
           'hover:shadow-sm hover:brightness-105 dark:hover:brightness-125 transition-all',
@@ -214,62 +217,35 @@ const MonthView: React.FC<Props> = ({
     )
   }
 
-  const overflowForCell = (date: Date): number => {
-    const used = layout.slotsByDay.get(date.toDateString()) ?? 0
-    const eventOverflow = Math.max(0, used - MAX_VISIBLE_SLOTS)
-    const taskCount = tasksByDay.get(date.toDateString())?.length ?? 0
-    const taskOverflow = Math.max(0, taskCount - MAX_TASK_SLOTS)
-    return eventOverflow + taskOverflow
-  }
+  const overflowForCell = (date: Date): number => rowsByDay.get(date.toDateString())?.hiddenCount ?? 0
 
-  const renderTaskPill = (occ: TaskOccurrence, colIdx: number, slotIdx: number) => {
-    if (slotIdx >= MAX_TASK_SLOTS) return null
-    const usedEventSlots = Math.min(
-      layout.slotsByDay.get(occ.due_at.toDateString()) ?? 0,
-      MAX_VISIBLE_SLOTS,
-    )
-    const top = HEADER_HEIGHT_PX + usedEventSlots * SLOT_HEIGHT_PX + slotIdx * TASK_SLOT_HEIGHT_PX
+  // The shared TaskPill, not a hand-drawn copy of it: the copy showed no task colour and had to
+  // re-implement the checkbox rules (checklist, read-only). With no onTaskToggle the pill's
+  // checkbox renders disabled.
+  const renderTaskPill = (occ: TaskOccurrence, colIdx: number, row: number) => {
+    const top = HEADER_HEIGHT_PX + row * SLOT_HEIGHT_PX
     const widthPct = (1 / 7) * 100
     const leftPct = (colIdx / 7) * 100
-    const ToggleIcon = occ.isDone ? CheckSquare : Square
-    // TaskPill's rules, applied to this hand-placed pill: without them a checklist task's box
-    // threw "governed by its subtasks" and a read-only user's box silently did nothing.
-    const toggle = completionToggle(occ.task, currentUserId, t)
     return (
       <div
         key={occ.occurrenceKey}
+        className="pointer-events-auto"
         style={{
           position: 'absolute',
           top,
           left: `calc(${leftPct}% + 4px)`,
           width: `calc(${widthPct}% - 8px)`,
-          height: TASK_SLOT_HEIGHT_PX - 2,
+          height: SLOT_HEIGHT_PX - 2,
         }}
-        className={[
-          'flex items-center gap-1 px-1 overflow-hidden text-[11px]',
-          'rounded-sm bg-gray-100 dark:bg-gray-700/60 text-gray-800 dark:text-gray-200',
-          occ.isOverdue ? 'border-l-[3px] border-l-red-500' : 'border-l-[3px] border-l-transparent',
-          occ.isDone ? 'opacity-60 line-through' : '',
-        ].filter(Boolean).join(' ')}
-        title={occ.task.title}
       >
-        <button
-          type="button"
-          disabled={toggle.disabled || !onTaskToggle}
-          onClick={e => { e.stopPropagation(); onTaskToggle?.(occ) }}
-          title={toggle.title}
-          aria-label={toggle.title}
-          className="flex-shrink-0 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:cursor-not-allowed disabled:hover:text-gray-500"
-        >
-          <ToggleIcon className="w-3 h-3" />
-        </button>
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); onTaskClick?.(occ) }}
-          className="truncate text-left flex-1 hover:underline"
-        >
-          {occ.task.title}
-        </button>
+        <TaskPill
+          compact
+          occurrence={occ}
+          currentUserId={currentUserId}
+          onClick={onTaskClick}
+          onToggle={onTaskToggle}
+          locale={dateLocale}
+        />
       </div>
     )
   }
@@ -308,12 +284,17 @@ const MonthView: React.FC<Props> = ({
                 />
               )
             })}
+            {/* Only the bars and pills take clicks. The layer itself stays click-through, so a
+                click on empty space still reaches the cell below it (new event) and its
+                "+N more" link — a pointer-events-auto layer the size of the row swallowed both. */}
             <div className="absolute inset-0 pointer-events-none">
-              <div className="relative w-full h-full pointer-events-auto">
+              <div className="relative w-full h-full">
                 {layout.segmentsByWeek[rowIdx].map(seg => renderSegment(seg))}
                 {cells.slice(rowIdx * 7, rowIdx * 7 + 7).map((d, colIdx) => {
-                  const items = tasksByDay.get(d.toDateString()) || []
-                  return items.map((occ, slotIdx) => renderTaskPill(occ, colIdx, slotIdx))
+                  const key = d.toDateString()
+                  const items = tasksByDay.get(key) || []
+                  const rows = rowsByDay.get(key)?.taskRows ?? NO_SLOTS
+                  return rows.map((row, i) => renderTaskPill(items[i], colIdx, row))
                 })}
               </div>
             </div>

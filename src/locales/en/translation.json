@@ -160,7 +160,15 @@
     "hide": "Hide",
     "load_error_title": "Failed to load",
     "load_error_description": "The data could not be loaded. This is a loading error, not an absence of data.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "badge": {
+      "unread_messages_one": "{{count}} unread message",
+      "unread_messages_other": "{{count}} unread messages",
+      "new_tasks_one": "{{count}} new task",
+      "new_tasks_other": "{{count}} new tasks",
+      "pending_invitations_one": "{{count}} invitation awaiting response",
+      "pending_invitations_other": "{{count}} invitations awaiting response"
+    }
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -4542,6 +4550,8 @@
     "loading": "Loading...",
     "empty": "No tasks in this category",
     "quick_add_placeholder": "Add a task and press Enter",
+    "mark_all_read": "Mark all as read",
+    "mark_all_read_failed": "Couldn't mark the tasks as read. Please try again.",
     "tabs": {
       "all": "All tasks",
       "assigned": "Assigned to me",
@@ -4954,6 +4964,7 @@
       "task.subtask_rename": "renamed a subtask",
       "task.subtask_reorder": "reordered subtasks",
       "task.subtask_delete": "removed a subtask",
+      "task.acknowledge": "acknowledged the task",
       "task.acknowledge_all": "acknowledged tasks",
       "invoice.bulk_create": "Invoices bulk created",
       "payment_notification.dismiss": "Payment notification dismissed",

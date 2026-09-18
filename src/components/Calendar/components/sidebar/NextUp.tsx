@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Clock, MapPin, Repeat, Users } from 'lucide-react'
-import type { EventType } from '../../../../types/tasks'
 import type { ExpandedOccurrence } from '../../utils/recurrence'
 import type { TaskOccurrence } from '../../utils/expandTasks'
 import { relativeLabel } from '../../utils/relativeLabel'
 import TaskPill from '../TaskPill'
+import { EVENT_TYPE_COLORS } from '../../utils/eventTypeColors'
 
 interface Props {
   occurrences: ExpandedOccurrence[]
@@ -21,13 +21,6 @@ interface Props {
 type Item =
   | { kind: 'event'; occ: ExpandedOccurrence; sortAt: number }
   | { kind: 'task'; occ: TaskOccurrence; sortAt: number }
-
-const typeDot: Record<EventType, string> = {
-  meeting: 'bg-blue-500',
-  personal: 'bg-gray-400',
-  deadline: 'bg-red-500',
-  reminder: 'bg-amber-500',
-}
 
 export default function NextUp({
   occurrences,
@@ -90,7 +83,7 @@ export default function NextUp({
                 className={`w-full text-left p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group ${o.isDeclined ? 'opacity-60' : ''}`}
               >
                 <div className="flex items-start gap-2">
-                  <span className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${typeDot[ev.event_type]}`} />
+                  <span className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${EVENT_TYPE_COLORS[ev.event_type].dot}`} />
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate ${o.isDeclined ? 'line-through' : ''}`}>
                       {ev.title}

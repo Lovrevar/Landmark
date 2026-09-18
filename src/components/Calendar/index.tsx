@@ -8,12 +8,12 @@ import { useEventsInRange } from './hooks/useEventsInRange'
 import { useTasksInRange } from './hooks/useTasksInRange'
 import { updateTaskCompleted, deleteTask as deleteTaskSvc } from '../Tasks/services/tasksService'
 import TaskDetail from '../Tasks/TaskDetail'
+import { acknowledgeOpenedTask } from '../Tasks/hooks/useTasksNotifications'
 import { isChecklist } from '../Tasks/subtasks'
 import { canEditTask } from '../Tasks/permissions'
 import type { Task } from '../../types/tasks'
 import type { TaskOccurrence } from './utils/expandTasks'
 import {
-  acknowledgeAllEvents,
   createEvent,
   deleteEvent,
   fetchCalendarUsers,
@@ -197,9 +197,16 @@ const CalendarPage: React.FC = () => {
     [selectedTask, rawTasks],
   )
 
+  // Opening a task's drawer here marks it read, as it does on the Tasks page. Nothing on the
+  // calendar shows the unread dot, so there is no local state to update — only the header badge.
+  const openTask = useCallback((task: Task) => {
+    setSelectedTask(task)
+    void acknowledgeOpenedTask(task, user?.auth_user_id)
+  }, [user])
+
   const handleTaskClick = useCallback((occ: TaskOccurrence) => {
-    setSelectedTask(occ.task)
-  }, [])
+    openTask(occ.task)
+  }, [openTask])
 
   const handleTaskToggle = useCallback(async (occ: TaskOccurrence) => {
     // The pills already disable these cases; this keeps a stray call from reaching the
@@ -215,7 +222,11 @@ const CalendarPage: React.FC = () => {
 
   useEffect(() => {
     if (!user) return
-    acknowledgeAllEvents(user.id).then(() => dispatchCalendarRead())
+    // Recount the header badge now rather than on its next 20-second poll. There is nothing to
+    // mark read on the way in: the badge counts invitations awaiting a response, and only an
+    // RSVP clears one. (Visiting used to bulk-stamp calendar_event_participants.acknowledged_at,
+    // which nothing displays.)
+    dispatchCalendarRead()
     Promise.all([
       fetchProjectOptions().then(setProjects).catch(() => setProjects([])),
       fetchCalendarUsers().then(setUsers).catch(() => setUsers([])),
@@ -527,7 +538,7 @@ const CalendarPage: React.FC = () => {
         taskOccurrences={taskOccurrences}
         onClose={() => setSelectedDay(null)}
         onEventClick={(o) => { setSelectedDay(null); setSelected(o) }}
-        onTaskClick={(tOcc) => { setSelectedDay(null); setSelectedTask(tOcc.task) }}
+        onTaskClick={(tOcc) => { setSelectedDay(null); openTask(tOcc.task) }}
         onTaskToggle={handleTaskToggle}
         currentUserId={user?.auth_user_id}
       />

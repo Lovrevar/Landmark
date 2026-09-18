@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Clock, MapPin } from 'lucide-react'
-import type { EventType } from '../../../types/tasks'
 import type { ExpandedOccurrence } from '../utils/recurrence'
 import type { TaskOccurrence } from '../utils/expandTasks'
 import TaskPill from '../components/TaskPill'
+import { EVENT_TYPE_COLORS } from '../utils/eventTypeColors'
 
 interface Props {
   occurrences: ExpandedOccurrence[]
@@ -19,13 +19,6 @@ interface Props {
 type AgendaItem =
   | { kind: 'event'; occ: ExpandedOccurrence; sortAt: number }
   | { kind: 'task'; occ: TaskOccurrence; sortAt: number }
-
-const typeAccent: Record<EventType, string> = {
-  meeting: 'border-l-blue-500',
-  personal: 'border-l-gray-400',
-  deadline: 'border-l-red-500',
-  reminder: 'border-l-yellow-500',
-}
 
 interface DayGroup {
   key: string
@@ -103,7 +96,7 @@ export default function AgendaView({
                   <button
                     key={o.occurrenceKey}
                     onClick={() => onEventClick(o)}
-                    className={`w-full text-left pl-3 pr-2 py-2 rounded border-l-[3px] bg-gray-50 dark:bg-gray-900/40 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${typeAccent[o.event.event_type]} ${o.isDeclined ? 'opacity-60' : ''}`}
+                    className={`w-full text-left pl-3 pr-2 py-2 rounded border-l-[3px] bg-gray-50 dark:bg-gray-900/40 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${EVENT_TYPE_COLORS[o.event.event_type].border} ${o.isDeclined ? 'opacity-60' : ''}`}
                   >
                     <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                       <Clock className="w-3 h-3" />

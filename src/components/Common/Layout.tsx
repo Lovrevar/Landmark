@@ -82,6 +82,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { unreadCount: taskUnread } = useTasksNotifications()
   const { unreadCount: eventUnread } = useCalendarNotifications()
 
+  // The three header badges look identical but count three different things, so each button's
+  // name says what its number is. The calendar's is not "unread": it is invitations still waiting
+  // for an RSVP within the next 30 days, and only answering them clears it.
+  const withBadge = (name: string, count: number, badgeKey: string) =>
+    count > 0 ? `${name} — ${t(badgeKey, { count })}` : name
+  const chatLabel = withBadge(t('chat.title'), unreadCount, 'common.badge.unread_messages')
+  const tasksLabel = withBadge(t('tasks.title'), taskUnread, 'common.badge.new_tasks')
+  const calendarLabel = withBadge(t('calendar.title'), eventUnread, 'common.badge.pending_invitations')
+
   // Below lg the sidebar is a full-width drawer; the collapsed (w-16) state only applies to desktop.
   const sidebarExpanded = !isDesktop || sidebarOpen
 
@@ -303,7 +312,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     ? 'text-blue-600 dark:text-blue-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
-                title="Chat"
+                title={chatLabel}
+                aria-label={chatLabel}
               >
                 <MessageCircle className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -319,7 +329,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     ? 'text-blue-600 dark:text-blue-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
-                title="Zadaci"
+                title={tasksLabel}
+                aria-label={tasksLabel}
               >
                 <CheckSquare className="w-5 h-5" />
                 {taskUnread > 0 && (
@@ -335,7 +346,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     ? 'text-blue-600 dark:text-blue-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
-                title="Kalendar"
+                title={calendarLabel}
+                aria-label={calendarLabel}
               >
                 <Calendar className="w-5 h-5" />
                 {eventUnread > 0 && (

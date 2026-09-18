@@ -1,10 +1,15 @@
 // The user-chosen colour label on a task.
 //
-// This is deliberately NOT the deadline colour. The red left border on TaskRow says whether a
-// task is late; this says whatever the crew decides it says (trade, floor, urgency). In the
-// task list the colour tints the whole card (`card`) and the thick red left border is laid over
-// it, so a red task that is also late still shows the late stripe. The chip is kept for the
-// read-only drawer field, squared off (rounded-md, no clock) to stay apart from a deadline.
+// This is deliberately NOT the deadline colour. It says whatever the crew decides it says (trade,
+// floor, urgency); lateness is shown separately, and differently in the two places tasks appear:
+//   - In the task list (TaskRow) the colour tints the whole card (`card`) and a thick red left
+//     border is laid over it when the task is late, so a red task that is also late still shows
+//     the late stripe. Nothing else on that page competes for a red stripe.
+//   - On the calendar (TaskPill) the pill gets the same `card` tint, but a left border there
+//     belongs to the event type (Calendar/utils/eventTypeColors.ts) and red means a deadline
+//     event, so a late task shows a warning icon instead of a stripe.
+// The chip is kept for the read-only drawer field, squared off (rounded-md, no clock) to stay
+// apart from a deadline.
 //
 // The palette is closed. Tailwind generates utility classes by scanning source files for
 // literal class names, so `bg-${color}-100` built at runtime is never emitted and the chip
@@ -35,7 +40,7 @@ export const COLOR_STYLES: Record<
     dot: string
     swatch: string
     ring: string
-    /** Background + border for a whole task card tinted in this colour (TaskRow). */
+    /** Background + border colour for a task tinted in this colour (TaskRow, calendar TaskPill). */
     card: string
   }
 > = {

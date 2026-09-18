@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Inbox, Check, X } from 'lucide-react'
-import type { EventResponse, EventType } from '../../../../types/tasks'
+import type { EventResponse } from '../../../../types/tasks'
 import type { ExpandedOccurrence } from '../../utils/recurrence'
 import { relativeLabel } from '../../utils/relativeLabel'
 import { pendingWindow, selectPendingOccurrences } from '../../utils/pendingCount'
+import { EVENT_TYPE_COLORS } from '../../utils/eventTypeColors'
 
 interface Props {
   /**
@@ -15,13 +16,6 @@ interface Props {
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onQuickRespond: (occurrence: ExpandedOccurrence, response: EventResponse) => Promise<void>
   limit?: number
-}
-
-const typeDot: Record<EventType, string> = {
-  meeting: 'bg-blue-500',
-  personal: 'bg-gray-400',
-  deadline: 'bg-red-500',
-  reminder: 'bg-amber-500',
 }
 
 export default function AwaitingResponse({
@@ -85,7 +79,7 @@ export default function AwaitingResponse({
                   className="flex-1 min-w-0 text-left"
                 >
                   <div className="flex items-start gap-2">
-                    <span className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${typeDot[ev.event_type]}`} />
+                    <span className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${EVENT_TYPE_COLORS[ev.event_type].dot}`} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {ev.title}

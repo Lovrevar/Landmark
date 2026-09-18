@@ -2,8 +2,9 @@ import { useTranslation } from 'react-i18next'
 import { Search, X } from 'lucide-react'
 import FilterChip from '../../ui/FilterChip'
 import SearchableSelect from '../../ui/SearchableSelect'
-import type { EventType, TaskUser } from '../../../types/tasks'
+import type { TaskUser } from '../../../types/tasks'
 import type { ProjectOption } from '../services/calendarService'
+import { EVENT_TYPES, EVENT_TYPE_COLORS } from '../utils/eventTypeColors'
 
 interface Props {
   activeTypes: string[]
@@ -16,15 +17,6 @@ interface Props {
   onChangeParticipants: (ids: string[]) => void
   search: string
   onChangeSearch: (s: string) => void
-}
-
-const TYPES: EventType[] = ['meeting', 'personal', 'deadline', 'reminder']
-
-const typeDot: Record<EventType, string> = {
-  meeting: 'bg-blue-500',
-  personal: 'bg-gray-400',
-  deadline: 'bg-red-500',
-  reminder: 'bg-amber-500',
 }
 
 export default function CalendarFilterBar({
@@ -62,12 +54,12 @@ export default function CalendarFilterBar({
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-4">
       <div className="flex flex-wrap items-center gap-2">
-        {TYPES.map(type => (
+        {EVENT_TYPES.map(type => (
           <FilterChip
             key={type}
             active={activeTypes.includes(type)}
             onClick={() => onToggleType(type)}
-            dotColor={typeDot[type]}
+            dotColor={EVENT_TYPE_COLORS[type].dot}
             size="sm"
           >
             {t(`calendar.event_type.${type}`)}

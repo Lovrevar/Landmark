@@ -563,32 +563,3 @@ export async function fetchPendingCount(
   const events = await fetchEventsInRange(userId, fromIso, toIso)
   return countPendingOccurrences(events, userId, new Date(fromIso), new Date(toIso))
 }
-
-export async function getUnacknowledgedEventCount(userId: string): Promise<number> {
-  const { count, error } = await supabase
-    .from('calendar_event_participants')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .is('acknowledged_at', null)
-  if (error) return 0
-  return count || 0
-}
-
-export async function acknowledgeAllEvents(userId: string): Promise<void> {
-  const { data } = await supabase
-    .from('calendar_event_participants')
-    .update({ acknowledged_at: new Date().toISOString() })
-    .eq('user_id', userId)
-    .is('acknowledged_at', null)
-    .select('id')
-
-  const count = data?.length ?? 0
-  if (count > 0) {
-    logActivity({
-      action: 'calendar_event.acknowledge_all',
-      entity: 'calendar_event',
-      severity: 'low',
-      metadata: { count },
-    })
-  }
-}

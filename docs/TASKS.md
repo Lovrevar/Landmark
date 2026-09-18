@@ -32,7 +32,7 @@ Six tables (schema baseline + `20260706120000_simplify_tasks.sql` + `20260720120
 > assumptions — and it is the file to hand that app's author when a feature spans both.
 
 - `tasks` — carries `project_id`, `description_format ('markdown'|'plain')`; `completed` boolean; `completed_at` flips with it. `deadline` is the due date. New descriptions are always saved as `plain`; legacy `markdown` rows still render through `MarkdownView`. `due_time` remains in the schema for legacy Calendar rendering but has no UI (and is invisible to the mobile app). `color` is a nullable label colour constrained to six values by `tasks_color_check` — see [Colours](#colours)
-- `task_assignees` — junction (`assignee_id`, composite PK `(task_id, assignee_id)` so PostgREST supports the mobile app's flat `profiles!task_assignees` embed; surrogate `id` kept as UNIQUE for web delete-by-id) with `acknowledged_at` (badge clears on visit). The mobile app creates and edits tasks via the `create_task_with_assignees(...)` / `update_task_with_assignees(...)` RPCs, which exist here too but which the web paths do not use (see [Editing](#editing-create-vs-update-rpcs))
+- `task_assignees` — junction (`assignee_id`, composite PK `(task_id, assignee_id)` so PostgREST supports the mobile app's flat `profiles!task_assignees` embed; surrogate `id` kept as UNIQUE for web delete-by-id) with `acknowledged_at` (NULL until the assignee opens the task — see [Unread](#unread-new-assignments)). The mobile app creates and edits tasks via the `create_task_with_assignees(...)` / `update_task_with_assignees(...)` RPCs, which exist here too but which the web paths do not use (see [Editing](#editing-create-vs-update-rpcs))
 - `task_subtasks` — checklist lines: `(task_id, title, position, completed, completed_at)`, cascade-deleted with the task. Zero rows for a task means a simple task; one or more makes it a checklist whose `completed` is written by a trigger. See [Subtasks](#subtasks-checklists)
 - `task_reminders` — scheduler bookkeeping for [deadline reminders](#deadline-reminders), keyed `(task_id, kind, sent_on)`. No client reads it; `REVOKE ALL` from `anon`/`authenticated`
 - `task_comments` — thread per task; bodies may embed `@[username](uuid)` mention tokens
@@ -44,11 +44,13 @@ Six tables (schema baseline + `20260706120000_simplify_tasks.sql` + `20260720120
 - **UPDATE**: creator, assignee, or admin (`public.is_admin()`, i.e. `profiles.role='admin'`) — the UI mirrors creator/assignee as `canEdit`; admin rights exist for the mobile app
 - **INSERT/DELETE** on tasks: creator (delete also admin); comment/attachment INSERT: assignee or creator only
 
-Every mutation is logged through `logActivity()` with `entity='task'` and action `task.<verb>` (create / update / status_change / delete / assign / unassign / comment / attachment_add / attachment_remove / subtask_add / subtask_toggle / subtask_rename / subtask_reorder / subtask_delete). Colour changes ride on `task.update` with `changed_fields: ["color"]`. Subtask actions log against the **parent task's** id, so `ENTITY_ROUTE_MAP` needs no new entity.
+Every mutation is logged through `logActivity()` with `entity='task'` and action `task.<verb>` (create / update / status_change / delete / assign / unassign / comment / attachment_add / attachment_remove / subtask_add / subtask_toggle / subtask_rename / subtask_reorder / subtask_delete / acknowledge / acknowledge_all). Colour changes ride on `task.update` with `changed_fields: ["color"]`. Subtask actions log against the **parent task's** id, so `ENTITY_ROUTE_MAP` needs no new entity.
 
 ### Colours
 
-`tasks.color` is a *label*, not a status — a supervisor grouping tasks by eye ("the blue ones are the electrics"). In the task list (`TaskRow`) the colour **tints the whole card** (`COLOR_STYLES[color].card`: background + border) instead of showing a named chip; the colour name survives only as `sr-only` text. The overdue red left border stays deadline-driven and must not become paintable: it is laid over the tint and carries its own `dark:border-l-red-500`, because with `darkMode: 'class'` any `dark:border-*` on the card would otherwise outrank it. The squared-off chip (`TaskColorChip`, `rounded-md`, no clock) is still used for the read-only colour field in the drawer, and its `dotOnly` form on the calendar `TaskPill`.
+`tasks.color` is a *label*, not a status — a supervisor grouping tasks by eye ("the blue ones are the electrics"). In the task list (`TaskRow`) the colour **tints the whole card** (`COLOR_STYLES[color].card`: background + border) instead of showing a named chip; the colour name survives only as `sr-only` text. The overdue red left border stays deadline-driven and must not become paintable: it is laid over the tint and carries its own `dark:border-l-red-500`, because with `darkMode: 'class'` any `dark:border-*` on the card would otherwise outrank it. The squared-off chip (`TaskColorChip`, `rounded-md`, no clock) is still used for the read-only colour field in the drawer, and its `dotOnly` form on the full-size calendar `TaskPill`.
+
+The calendar's `TaskPill` takes the same `card` tint, but shows lateness differently: there a left border belongs to the **event type**, and red means a deadline event, so an overdue task gets a red warning icon instead of a stripe (see [CALENDAR.md](./CALENDAR.md#tasks-overlay)). The two rules are deliberately different and recorded in the header of `taskColor.ts`; do not "unify" `TaskRow` onto the icon — nothing in the task list competes for the stripe.
 
 The palette is **closed at three points that must be changed together**: `tasks_color_check` in `20260813090000_task_color.sql`, `COLOR_STYLES` in [taskColor.ts](../src/components/Tasks/taskColor.ts), and `src/lib/taskColor.ts` in the mobile app. The reason it cannot be a free hex string is Tailwind: utility classes are emitted by scanning sources for literal class names, so a class assembled at runtime (`bg-${color}-100`) is never generated and the chip would render with no background. `NULL` means "no colour" — no backfill, no default, and a CHECK passes on NULL.
 
@@ -106,7 +108,9 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - `setAssignees(taskId, ids, actor)` — diff-based add/remove (ids are auth ids); logs `task.assign` / `task.unassign`
 - `fetchTaskComments(taskId)` / `createTaskComment(taskId, actor, comment)` / `deleteTaskComment(commentId, actor)` — thread CRUD; `createTaskComment` logs `task.comment`, `deleteTaskComment` logs `task.comment_delete` (only when RLS actually let the author delete the row)
 - `listTaskAttachments` / `uploadTaskAttachment(taskId, file, actor)` / `deleteTaskAttachment(id, actor)` / `getAttachmentSignedUrl` — attachment CRUD with 25 MB + 10-per-task enforcement; logs `task.attachment_add` / `task.attachment_remove`. Bucket constant: `TASK_ATTACHMENTS_BUCKET = 'task-attachments'`
-- `getUnacknowledgedTaskCount(authUserId)` / `acknowledgeAllTasks(authUserId)` — global badge helpers; acknowledging logs `task.acknowledge_all` with the count, only when it cleared something
+- `getUnacknowledgedTaskCount(authUserId)` — the header badge's count of the user's `task_assignees` rows with `acknowledged_at IS NULL`
+- `acknowledgeTask(taskId, authUserId)` — stamps the user's own row on one task; resolves to whether a row changed and logs `task.acknowledge` (low, `entityId` = the task) only then. Throws on error — see `acknowledgeOpenedTask` for why the callers do not toast it
+- `acknowledgeAllTasks(authUserId)` — "mark all as read"; logs `task.acknowledge_all` with the count, only when it cleared something. Throws on error (it used to ignore it)
 - **Depends on:** supabase client, activityLog
 - **Logs:** every mutation listed above
 
@@ -115,8 +119,10 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 ## Hooks
 
 ### hooks/useTasks.ts
-- `useTasks()` — loads `fetchAllTasks()` on mount; also calls `acknowledgeAllTasks` + `dispatchTasksRead` once per session so opening `/tasks` clears the badge
-- Exposes `tasks`, `loading`, `error`, `dismissError`, and mutation callbacks: `create`, `update`, `setCompleted`, `toggleStatus` (open ↔ done, the checkbox handler), `remove`, `refresh` (aliased as `refetch`). All mutations call `load()` after success so the list is always source-of-truth
+- `useTasks()` — loads `fetchAllTasks()` on mount. It used to acknowledge every assignment on mount too; it no longer does (see [Unread](#unread-new-assignments))
+- Exposes `tasks`, `loading`, `error`, `dismissError`, and mutation callbacks: `create`, `update`, `setCompleted`, `toggleStatus` (open ↔ done, the checkbox handler), `remove`, `acknowledge`, `acknowledgeAll`, `refresh` (aliased as `refetch`). All mutations call `load()` after success so the list is always source-of-truth
+- `acknowledge(taskId)` — for a task the user has just opened: does nothing unless they have an unread assignment on it, otherwise marks it read in local state **optimistically** (the row's dot goes as the drawer opens) and calls `acknowledgeOpenedTask`. A failed write reloads, which brings the dot back
+- `acknowledgeAll()` — `acknowledgeAllTasks`, then marks every row read locally and dispatches `tasks:marked-read`. Throws; the page toasts `tasks.mark_all_read_failed`
 - `load()` used to have no `catch` at all, so a failed fetch rejected out of the effect and left the page on its "no tasks" empty state — the same thing an inbox that is genuinely clear looks like. It now records `error` and the page renders `ErrorState`
 - The mutations still **throw**; every caller is expected to catch and tell the user (see index.tsx and TaskModal)
 - View state (search, show-completed, collapsed groups) lives in [index.tsx](../src/components/Tasks/index.tsx); `showCompleted` + `collapsed` persist per-user to `localStorage` under `tasks.view.${userId}` (the legacy `tasks.filters.${userId}` key is removed on mount)
@@ -134,12 +140,13 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 
 ### permissions.ts
 - `canEditTask(task, userId)` — creator or assignee; mirrors the "Tasks: creator or assignee can update" RLS policy. Used by `TasksPage`, `TaskDetail` and the Calendar
-- `completionToggle(task, userId, t)` → `{ disabled, title }` — the done-checkbox rules for surfaces outside the Tasks page (the Calendar's `TaskPill` and month-view pill): disabled with the `3/6` count on a checklist, disabled with "Read only" for a viewer who can't edit, otherwise live with "Mark as done / not done"
+- `completionToggle(task, userId, t)` → `{ disabled, title }` — the done-checkbox rules for surfaces outside the Tasks page (the Calendar's `TaskPill`, which every calendar view including the month grid now uses): disabled with the `3/6` count on a checklist, disabled with "Read only" for a viewer who can't edit, otherwise live with "Mark as done / not done"
 
 ### hooks/useTasksNotifications.ts
 - `useTasksNotifications()` — powers the global red badge
 - Polls `getUnacknowledgedTaskCount` every 20 s; listens for `tasks:marked-read` window events
 - Exports `dispatchTasksRead()` helper
+- Exports `acknowledgeOpenedTask(task, authUserId)` — the one "a task was opened" routine, shared by the Tasks page (through `useTasks().acknowledge`) and the Calendar: checks `hasUnreadAssignment` (no request otherwise), calls `acknowledgeTask`, then `dispatchTasksRead()`. A failure is `console.error`ed and **not toasted** — marking read is bookkeeping, not something the user asked for; they asked to open the task, and that worked. Resolves `false` only on failure
 - **Mounted in:** [Layout.tsx](../src/components/Common/Layout.tsx) (global)
 
 ---
@@ -148,7 +155,8 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 
 ### index.tsx (TasksPage)
 - Header + "New task" button (`ui/Button`), then `ui/Tabs`: **All** (default) / Assigned to me / Created by me / Private, each with a live count. The tab always resets to All on entry
-- Toolbar is intentionally minimal: `ui/SearchInput` + "Show completed" `ui/ToggleSwitch` (defaults ON; completed tasks sort to the bottom of their group instead of vanishing)
+- Toolbar is intentionally minimal: `ui/SearchInput` + "Show completed" `ui/ToggleSwitch` (defaults ON; completed tasks sort to the bottom of their group instead of vanishing), plus a **"Mark all as read"** button (`tasks.mark_all_read`, `ghost-primary`) shown only while the user has an unread assignment. It sits in the toolbar rather than beside "New task" because the title row has no room for a second button on a phone; the toolbar wraps
+- Clicking a row opens the `TaskDetail` drawer **and** marks that task read (`openTask` → `useTasks().acknowledge`)
 - List is **always grouped by project** (alphabetical, "no project" last). Within a group: open tasks by due date asc (no due date last), then completed tasks by completion desc
 - Group headers are **collapsible** (chevron; collapsed set persisted per-user) and show a task count plus a red **"N overdue"** chip when applicable
 - A **quick-add input** sits at the top of each expanded project group (type a title + Enter → creates an open task in that project; creates a private task on the Private tab; hidden on the Assigned tab where the new task would not appear)
@@ -162,7 +170,7 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - **Uses UI:** Tabs, Button, SearchInput, ToggleSwitch, ConfirmDialog, EmptyState, ErrorState, Alert
 
 ### TaskRow.tsx
-- Compact row: **checkbox** (Square/CheckSquare; disabled with a "read only" tooltip when the viewer can't edit, and disabled on a checklist task with the `3/6` count in the tooltip instead) toggling open ↔ done, title (strikethrough when done), unread dot, lock icon for private, card tinted in the task's colour (see [Colours](#colours)), red left accent + relative due label when overdue, attachment/comment counts, stacked avatars via [AvatarStack](../src/components/ui/AvatarStack.tsx), creator-only hover delete. No project tag — the group header carries the project
+- Compact row: **checkbox** (Square/CheckSquare; disabled with a "read only" tooltip when the viewer can't edit, and disabled on a checklist task with the `3/6` count in the tooltip instead) toggling open ↔ done, title (strikethrough when done), blue unread dot (`hasUnreadAssignment` — assigned to the viewer and not opened yet), lock icon for private, card tinted in the task's colour (see [Colours](#colours)), red left accent + relative due label when overdue, attachment/comment counts, stacked avatars via [AvatarStack](../src/components/ui/AvatarStack.tsx), creator-only hover delete. No project tag — the group header carries the project
 
 ### TaskModal.tsx
 - **Create-only** modal (editing happens inline in the detail drawer). Fields: title, project ([SearchableSelect](../src/components/ui/SearchableSelect.tsx)), optional due date (date only), colour ([TaskColorPicker](../src/components/Tasks/components/TaskColorPicker.tsx)), private toggle, assignees ([ParticipantPicker](../src/components/Calendar/components/ParticipantPicker.tsx), hidden for private tasks), plain-text description (`ui/Textarea`)
@@ -200,16 +208,30 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - `TaskColorChip` — the chip beside the deadline; `dotOnly` renders just the dot for the calendar pill. Returns `null` for a null/unknown colour
 - `TaskColorPicker` — six swatches + a "no colour" button; clicking the selected swatch clears it
 
+### unread.ts
+- `hasUnreadAssignment(task, userId)` — the one definition of "unread": the user has a `task_assignees` row on the task with `acknowledged_at` NULL. Used by `TaskRow`'s dot, the page's "mark all as read" visibility, `useTasks().acknowledge` and `acknowledgeOpenedTask`
+- `markAssignmentRead(task, userId, atIso)` — the optimistic update; returns the same object when there is nothing to mark
+- Unit-tested in `unread.test.ts`
+
 ### components/MentionPicker.tsx, components/mentions.ts
 - Textarea with `@` detection popover + arrow-key navigation. Mentions are stored inline as `@[username](uuid)` tokens
 - `renderCommentWithMentions(comment)` returns a `{ type: 'text' | 'mention', value, userId? }[]` sequence for the renderer
 
 ---
 
+## Unread (new assignments)
+
+The header badge on the Tasks icon and the blue dot on a row mean the same thing: **you have been assigned this task and have not opened it yet.** The marker is `task_assignees.acknowledged_at`, NULL on assignment (a private task's creator row is born acknowledged).
+
+- **Opening a task clears it** — clicking its row on `/tasks`, or its pill in the Calendar (month cell, day list, agenda, "Next up"), which opens the same `TaskDetail` drawer. Both go through `acknowledgeOpenedTask`, and the badge drops by exactly one
+- **"Mark all as read"** in the Tasks toolbar clears the backlog in one go (`acknowledgeAllTasks`)
+- Visiting `/tasks` no longer clears anything. It used to acknowledge every assignment on mount, so the dot lived for the ~300 ms before that write landed and the badge only ever meant "you have not been to /tasks lately"
+- The column is re-stamped by nothing else: an edit or a comment does not make a task unread again. (`tasks.row.unread` still says "Unread updates" / "Nepročitane izmjene", which over-promises)
+- The mobile app never reads the column; see [SHARED_SCHEMA.md §3](./SHARED_SCHEMA.md#3-publictask_assignees)
+
 ## Notes
-- Acknowledge semantics: opening `/tasks` clears the current user's badge via `acknowledgeAllTasks` + `dispatchTasksRead` (once per mount)
 - Private tasks skip the assignee picker; the creator becomes the sole pre-acknowledged assignee
-- The calendar's `TaskPill` flips completed on/off, same as the list checkbox (and is disabled on a checklist task for the same reason), and shows the colour as a dot
+- The calendar's `TaskPill` flips completed on/off, same as the list checkbox (and is disabled on a checklist task for the same reason), and is tinted in the task's colour, with a red warning icon when overdue
 - Comment mention notifications are deferred until a notifications table exists (tracked in [`docs/rand/tasks-redesign-plan.md`](./rand/tasks-redesign-plan.md) §11)
 - Migration `20260706120000_simplify_tasks.sql` (data: `in_progress` → `todo`; drops `reminder_offsets`, `priority`, `task_reminder_sends`; broadens SELECT policies) must be applied by a human — after applying, regenerate types with `npm run db:types`
 - Migrations `20260720120000_tasks_mobile_compat.sql` (profiles mirror + `is_admin()`, task tables → auth-id space, `status` → `completed`, `due_date` → `deadline`, RLS on `auth.uid()`) and `20260720130000_task_assignees_mobile_compat.sql` (`user_id` → `assignee_id`, composite PK, `create_task_with_assignees` RPC) must be applied by a human — the frontend on this branch **requires** both. The colleague's standalone mobile app points at this same schema; its own migrations in `todoMigrations/` must **never** be run against this DB

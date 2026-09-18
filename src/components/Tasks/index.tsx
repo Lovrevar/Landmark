@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Plus,
   CheckSquare,
+  CheckCheck,
   Inbox,
   Send,
   Lock,
@@ -17,6 +18,7 @@ import { useTasks } from './hooks/useTasks'
 import { useTasksRealtime } from './hooks/useTasksRealtime'
 import { fetchProjectOptions, type ProjectOption } from './services/tasksService'
 import { canEditTask } from './permissions'
+import { hasUnreadAssignment } from './unread'
 import Tabs from '../ui/Tabs'
 import Button from '../ui/Button'
 import SearchInput from '../ui/SearchInput'
@@ -94,7 +96,18 @@ const TasksPage: React.FC = () => {
   const { t } = useTranslation()
   const { user } = useAuth()
   const toast = useToast()
-  const { tasks, loading, error, dismissError, create, toggleStatus, remove, refresh } = useTasks()
+  const {
+    tasks,
+    loading,
+    error,
+    dismissError,
+    create,
+    toggleStatus,
+    remove,
+    acknowledge,
+    acknowledgeAll,
+    refresh,
+  } = useTasks()
   useTasksRealtime(user?.auth_user_id, refresh)
 
   const [tab, setTab] = useState<TabKey>('all')
@@ -137,6 +150,17 @@ const TasksPage: React.FC = () => {
   }, [])
 
   const isMine = useCallback((tk: Task) => canEditTask(tk, user?.auth_user_id), [user])
+
+  // Opening a task is what marks it read (the row's blue dot, one off the header badge).
+  const openTask = useCallback((tk: Task) => {
+    setSelected(tk)
+    void acknowledge(tk.id)
+  }, [acknowledge])
+
+  const hasUnread = useMemo(
+    () => tasks.some(tk => hasUnreadAssignment(tk, user?.auth_user_id)),
+    [tasks, user],
+  )
 
   const { all, assigned, created, privateTasks } = useMemo(() => {
     const allList: Task[] = []
@@ -313,6 +337,16 @@ const TasksPage: React.FC = () => {
     }
   }
 
+  // Unlike opening one task, this is something the user asked for, so a failure is reported.
+  const handleMarkAllRead = async () => {
+    try {
+      await acknowledgeAll()
+    } catch (e) {
+      console.error('Failed to mark tasks as read', e)
+      toast.error(toErrorMessage(e, t('tasks.mark_all_read_failed')))
+    }
+  }
+
 
   const renderHeader = (group: Group) => (
     <button
@@ -375,7 +409,7 @@ const TasksPage: React.FC = () => {
       canEdit={isMine(task)}
       onToggleDone={tk => { void handleToggleDone(tk) }}
       onDelete={tk => setPendingDelete(tk)}
-      onClick={tk => setSelected(tk)}
+      onClick={openTask}
     />
   )
 
@@ -421,6 +455,13 @@ const TasksPage: React.FC = () => {
           onChange={v => patchPrefs({ showCompleted: v })}
           label={t('tasks.toolbar.show_completed')}
         />
+        {/* Here rather than beside "New task": that row has no room for a second button on a
+            phone, and this one wraps. Shown only while there is something to clear. */}
+        {hasUnread && (
+          <Button variant="ghost-primary" size="sm" icon={CheckCheck} onClick={handleMarkAllRead}>
+            {t('tasks.mark_all_read')}
+          </Button>
+        )}
       </div>
 
       {error && tasks.length > 0 && (

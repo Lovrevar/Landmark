@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ConfirmDialog from '../ui/ConfirmDialog'
-import type { CalendarEvent, EventResponse, EventType, NewEventInput } from '../../types/tasks'
+import type { CalendarEvent, EventResponse, NewEventInput } from '../../types/tasks'
 import type { ExpandedOccurrence } from './utils/recurrence'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -27,6 +27,7 @@ import {
 } from './services/calendarService'
 import type { ProjectOption } from './services/calendarService'
 import NewEventModal from './NewEventModal'
+import { EVENT_TYPE_COLORS } from './utils/eventTypeColors'
 
 interface Props {
   occurrence: ExpandedOccurrence | null
@@ -47,13 +48,6 @@ interface Props {
   onDelete: (eventId: string, eventTitle?: string) => Promise<void>
   /** Refetch after a change. Awaited after an edit, so the detail re-opens on fresh data. */
   onChanged: () => void | Promise<void>
-}
-
-const typeColor: Record<EventType, string> = {
-  meeting: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  personal: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  deadline: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-  reminder: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
 }
 
 type DeleteScope = 'single' | 'series'
@@ -214,7 +208,7 @@ const EventDetailModal: React.FC<Props> = ({
         <Modal.Header title={event.title} onClose={onClose} />
         <Modal.Body>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`px-2 py-1 text-xs rounded ${typeColor[event.event_type]}`}>
+            <span className={`px-2 py-1 text-xs rounded ${EVENT_TYPE_COLORS[event.event_type].badge}`}>
               {t(`calendar.event_type.${event.event_type}`)}
             </span>
             {event.is_private && (

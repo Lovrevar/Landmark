@@ -13,6 +13,7 @@ import {
 import { layoutOccurrences, type PositionedOccurrence } from './overlappingLayout'
 import NowIndicator from './NowIndicator'
 import { minutesToStyle, useClickToCreate, type SlotSelection } from './useClickToCreate'
+import { EVENT_TYPE_COLORS } from '../../utils/eventTypeColors'
 
 // Below this card height, drop the secondary time-range line entirely — the
 // title alone is more useful than a clipped "11:00 A..." below a clipped title.
@@ -25,13 +26,6 @@ interface Props {
   onSlotSelect: (selection: SlotSelection) => void
   showNowIndicator?: boolean
   locale?: string
-}
-
-const typeAccent: Record<string, { bar: string; bg: string; text: string }> = {
-  meeting:  { bar: 'bg-blue-500',  bg: 'bg-blue-50 dark:bg-blue-900/25',  text: 'text-blue-800 dark:text-blue-200' },
-  personal: { bar: 'bg-gray-400',  bg: 'bg-gray-50 dark:bg-gray-700/40',  text: 'text-gray-800 dark:text-gray-200' },
-  deadline: { bar: 'bg-red-500',   bg: 'bg-red-50 dark:bg-red-900/25',    text: 'text-red-800 dark:text-red-200' },
-  reminder: { bar: 'bg-yellow-500',bg: 'bg-yellow-50 dark:bg-yellow-900/25', text: 'text-yellow-800 dark:text-yellow-200' },
 }
 
 function compactTime(d: Date): string {
@@ -82,7 +76,7 @@ function ClusterPopover({ state, locale, onSelect, onClose }: ClusterPopoverProp
       style={{ top, left, width: POPOVER_WIDTH, maxHeight: 320, overflowY: 'auto' }}
     >
       {state.items.map(({ occurrence }) => {
-        const accent = typeAccent[occurrence.event.event_type] || typeAccent.meeting
+        const accent = EVENT_TYPE_COLORS[occurrence.event.event_type] ?? EVENT_TYPE_COLORS.meeting
         return (
           <button
             key={occurrence.occurrenceKey}
@@ -90,7 +84,7 @@ function ClusterPopover({ state, locale, onSelect, onClose }: ClusterPopoverProp
             onClick={() => { onSelect(occurrence); onClose() }}
             className="w-full text-left px-2 py-1.5 rounded flex items-start gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
           >
-            <span className={`flex-shrink-0 mt-1 w-1 h-6 rounded-full ${accent.bar}`} />
+            <span className={`flex-shrink-0 mt-1 w-1 h-6 rounded-full ${accent.dot}`} />
             <span className="flex-1 min-w-0">
               <span className={`block text-sm font-medium truncate ${occurrence.isDeclined ? 'line-through opacity-60' : ''} text-gray-900 dark:text-white`}>
                 {occurrence.event.title}
@@ -169,7 +163,7 @@ export default function TimelineColumn({
               }
               const startMin = Math.max(0, fromMidnightStart - VISIBLE_START_MIN)
               const endMin = Math.min(DAY_HOURS * 60, fromMidnightEnd - VISIBLE_START_MIN)
-              const accent = typeAccent[occurrence.event.event_type] || typeAccent.meeting
+              const accent = EVENT_TYPE_COLORS[occurrence.event.event_type] ?? EVENT_TYPE_COLORS.meeting
 
               // When we force the first event of a collapsed cluster to
               // full-width, override its column assignment.
@@ -199,8 +193,7 @@ export default function TimelineColumn({
                     'absolute rounded-md text-left overflow-hidden border-l-[3px]',
                     'transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-inset',
                     'hover:brightness-110 dark:hover:brightness-125',
-                    accent.bg,
-                    accent.text,
+                    accent.surface,
                     occurrence.isDeclined ? 'opacity-60' : '',
                   ].filter(Boolean).join(' ')}
                   style={{
@@ -212,7 +205,7 @@ export default function TimelineColumn({
                     boxSizing: 'border-box',
                   }}
                 >
-                  <span className={`pointer-events-none absolute left-0 top-0 bottom-0 w-[3px] ${accent.bar}`} />
+                  <span className={`pointer-events-none absolute left-0 top-0 bottom-0 w-[3px] ${accent.dot}`} />
                   <div className={`pl-2 pr-1 pt-0.5 text-xs font-semibold truncate leading-tight ${occurrence.isDeclined ? 'line-through' : ''}`}>
                     {occurrence.event.title}
                   </div>

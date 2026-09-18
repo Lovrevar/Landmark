@@ -21,6 +21,7 @@ import {
   type RecurrenceEndKind,
   type RecurrenceState,
 } from './utils/recurrencePresets'
+import { EVENT_TYPES, EVENT_TYPE_COLORS } from './utils/eventTypeColors'
 
 interface Props {
   show: boolean
@@ -38,15 +39,6 @@ interface Props {
   defaultStartTime?: string
   defaultEndTime?: string
 }
-
-const eventTypeColors: Record<EventType, string> = {
-  meeting: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  personal: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  deadline: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-  reminder: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-}
-
-const eventTypeOrder: EventType[] = ['meeting', 'personal', 'deadline', 'reminder']
 
 const REMINDER_PRESETS: number[] = [0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080]
 
@@ -355,12 +347,12 @@ const NewEventModal: React.FC<Props> = ({
             {t('calendar.modal.type_label')}
           </label>
           <div className="flex flex-wrap gap-2">
-            {eventTypeOrder.map(value => (
+            {EVENT_TYPES.map(value => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setEventType(value)}
-                className={`px-3 py-1.5 text-sm rounded-lg border ${eventType === value ? 'border-blue-500' : 'border-transparent'} ${eventTypeColors[value]}`}
+                className={`px-3 py-1.5 text-sm rounded-lg border ${eventType === value ? 'border-blue-500' : 'border-transparent'} ${EVENT_TYPE_COLORS[value].badge}`}
               >
                 {t(`calendar.event_type.${value}`)}
               </button>

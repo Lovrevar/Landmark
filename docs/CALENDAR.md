@@ -4,7 +4,7 @@
 
 ## Overview
 
-Personal and shared scheduling with four views (Day / Week / Month / Agenda), RSVP responses at both the series and single-occurrence scope, RFC-5545 RRULE recurrence with per-occurrence exceptions, reminder toasts delivered via Supabase realtime, a team busy-hours overlay, a per-user "Show tasks" toggle that merges task due-dates into the calendar, and a global header badge for unacknowledged events.
+Personal and shared scheduling with four views (Day / Week / Month / Agenda), RSVP responses at both the series and single-occurrence scope, RFC-5545 RRULE recurrence with per-occurrence exceptions, reminder toasts delivered via Supabase realtime, a team busy-hours overlay, a per-user "Show tasks" toggle that merges task due-dates into the calendar, and a global header badge counting invitations that await your response.
 
 ---
 
@@ -32,10 +32,8 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 - `createException(eventId, originalStartAt, override, eventTitle?)` — per-occurrence override (reschedule, rename, or cancel a single instance); logs `calendar_event.exception_create`. An **upsert** on `(event_id, original_start_at)`: the table is unique on that pair, so a plain insert used to fail when cancelling an occurrence that already had an exception
 - `deleteException(exceptionId, eventId, eventTitle?)` — revert a single occurrence to its RRULE-derived defaults
 - `fetchPendingCount(userId, fromIso, toIso)` — counts `pending` occurrences starting in the window via `countPendingOccurrences`; used by the header badge (`useCalendarNotifications`)
-- `getUnacknowledgedEventCount(userId)` — count of participant rows where `acknowledged_at IS NULL`, used by the global badge
-- `acknowledgeAllEvents(userId)` — bulk-clears unread badges; logs only if at least one row was affected
 - **Depends on:** supabase client, activityLog, `expandEvents`
-- **Logs:** `calendar_event.create` (medium), `calendar_event.update` (medium), `calendar_event.respond` (low), `calendar_event.delete` (high), `calendar_event.exception_create` (medium/high when cancelling), `calendar_event.exception_delete` (medium), `calendar_event.acknowledge_all` (low)
+- **Logs:** `calendar_event.create` (medium), `calendar_event.update` (medium), `calendar_event.respond` (low), `calendar_event.delete` (high), `calendar_event.exception_create` (medium/high when cancelling), `calendar_event.exception_delete` (medium). `calendar_event.acknowledge_all` is no longer written (see [Notes](#notes)); its label stays in the locale files so older log rows still render
 
 ### services/busyBlocksService.ts
 - `fetchBusyBlocks(userIds, fromIso, toIso)` — RPC into `get_busy_blocks`. Returns `{ user_id, start_at, end_at }[]` for the team-calendars overlay; the RPC hides private events and de-duplicates overlapping occurrences server-side
@@ -70,7 +68,8 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 ### hooks/useCalendarNotifications.ts
 - `useCalendarNotifications()` — powers the global red badge on the calendar icon in [Layout.tsx](../src/components/Common/Layout.tsx)
 - Every 20 s counts the occurrences awaiting the user's response in `pendingWindow()` (now → `PENDING_WINDOW_DAYS` = 30) through `fetchPendingCount`; listens for `calendar:marked-read` window events to refresh on demand
-- Exports `dispatchCalendarRead()`, which the CalendarPage calls after acknowledgement, after any change made in the event detail modal, and after a quick accept / decline in the sidebar, so the badge recounts immediately
+- Exports `dispatchCalendarRead()`, which the CalendarPage calls on mount, after any change made in the event detail modal, and after a quick accept / decline in the sidebar, so the badge recounts immediately
+- The header button's `title` / `aria-label` says what the number is — `common.badge.pending_invitations` ("N invitations awaiting response"), not "unread": only an RSVP clears one
 - **Mounted in:** [Layout.tsx](../src/components/Common/Layout.tsx) (global)
 
 ---
@@ -80,7 +79,8 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 - `utils/recurrence.ts` — `expandEvents(events, windowStart, windowEnd, currentUserId)` parses `RRULE` strings via the `rrule` library, iterates through occurrences inside the window, applies any matching exception override, and resolves the current user's `myResponse` (occurrence override → series master → **`accepted` if the user created the event** → `pending`) plus `myParticipantId` for series-scope actions. The creator of a public event has no participant row, and before that rule their own meetings counted as invitations in both the badge and the sidebar. `currentUserId` and `created_by` are both `public.users` ids. Each result is an `ExpandedOccurrence` with a stable `originalStartIso` key. Tested in `recurrence.test.ts`
 - `utils/recurrencePresets.ts` — maps the modal's recurrence UI (preset + end kind + custom interval/freq/byweekday) to an `RRULE` string via `rrule`. Presets: `none | daily | weekly | monthly | yearly | custom`; end kinds: `never | on | after`. `describeRecurrence(rule, t, locale)` turns a stored rule back into one line of text for the edit form ("Weekly (Mon) · Ends: After 10 occurrence(s)") from the picker's own i18n labels — not rrule's `toText()`, which is English-only. Tested in `recurrencePresets.test.ts`
 - `utils/eventEdit.ts` — the pure half of editing: `buildEventUpdate(previous, input)` (changed columns only; series timing excluded) and `planParticipantChanges(existing, creatorId, { isPrivate, participantIds })` → `{ removeRowIds, addUserIds, creatorRow }`, plus `hasParticipantChanges`. Tested in `eventEdit.test.ts`
-- `utils/monthLayout.ts` — `computeMonthLayout()` packs multi-day event segments into 7-column week rows with stable vertical slots and `continuesLeft/continuesRight` flags, mirroring Google/Outlook month layout
+- `utils/monthLayout.ts` — `computeMonthLayout()` packs multi-day event segments into 7-column week rows with stable vertical slots and `continuesLeft/continuesRight` flags, mirroring Google/Outlook month layout. `eventSlotsByDay` lists the slots covering each day — gaps included, since a slot is stable across the week. `cellRows(eventSlots, taskCount, maxRows)` decides which rows a day's task pills take (the ones events leave free, top down) and the "+N more" count, in one place so the two cannot disagree. Tested in `monthLayout.test.ts`
+- `utils/eventTypeColors.ts` — `EVENT_TYPE_COLORS`, the only event-type colour map, and `EVENT_TYPES` (filter-bar / form order). See [Colours](#colours). Tested in `eventTypeColors.test.ts`
 - `utils/expandTasks.ts` — turns each `Task` with a `due_date` in the window into a `TaskOccurrence { occurrenceKey, task, due_at, isOverdue, isDone }`. Date-only tasks are anchored at 23:59 local so they sort after timed items for the day
 - `utils/pendingCount.ts` — `PENDING_WINDOW_DAYS` (30) and `pendingWindow(now)`, the one definition of "awaiting my response"; `selectPendingOccurrences(occurrences, from, to)` (resolved `pending`, starting inside the window, sorted) and `countPendingOccurrences(events, userId, from, to)` built on it. The badge and the sidebar's AwaitingResponse both go through these. Tested in `pendingCount.test.ts`
 - `utils/teamColors.ts` — stable color-per-user-id via simple hash over the user id
@@ -93,16 +93,18 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 ### index.tsx (CalendarPage)
 - Header, nav row (prev/next/today + view switcher + "Show tasks" toggle), [CalendarFilterBar](../src/components/Calendar/components/CalendarFilterBar.tsx), main grid, sidebar
 - Delegates to Day/Week/Month/Agenda view components based on `prefs.view`
-- On mount: `acknowledgeAllEvents` → `dispatchCalendarRead()` (clears the header badge), then fetches projects + users in parallel
+- On mount: `dispatchCalendarRead()` (the header badge recounts now instead of on its next poll), then fetches projects + users in parallel. It used to call `acknowledgeAllEvents` first, which stamped `calendar_event_participants.acknowledged_at` for display nothing reads — the badge counts pending RSVPs — so that call and the service function are gone
 - Fetches team busy-blocks via `fetchBusyBlocks` whenever `prefs.enabledTeams` changes
-- Hosts all modals: `NewEventModal`, `EventDetailModal`, `DayEventsModal`, and the [TaskDetail](../src/components/Tasks/TaskDetail.tsx) drawer (re-used from the Tasks module) for task pills
+- Hosts all modals: `NewEventModal`, `EventDetailModal`, `DayEventsModal`, and the [TaskDetail](../src/components/Tasks/TaskDetail.tsx) drawer (re-used from the Tasks module) for task pills. Opening that drawer (`openTask`) also marks the task read through `acknowledgeOpenedTask`, exactly as the Tasks page does — see [TASKS.md → Unread](./TASKS.md#unread-new-assignments)
 - Runs **two** `useEventsInRange` instances: the grid's (view range + filter bar) and the sidebar's (today → `PENDING_WINDOW_DAYS` + 1 day, fixed at mount, unfiltered). AwaitingResponse and NextUp read the sidebar's, so they match the header badge whatever month is shown or filter is set. Mutations refresh both
 - The clicked occurrence is kept as a snapshot and re-resolved from the fresh occurrences after every refresh (event id + `originalStartIso`; event id alone for a one-off event, whose start moves when edited), the same way `resolvedSelectedTask` works. The stored event behind it is passed as `sourceEvent`, so the edit form never loads an occurrence's title override as the series title
 - **Uses hooks:** `useAuth`, `useCalendarPreferences`, `useEventsInRange`, `useTasksInRange`, `useCalendarReminderToasts`
 - **Uses components:** MonthView, DayView, WeekView, AgendaView, ViewSwitcher, CalendarFilterBar, GridSkeleton, sidebar/{MiniMonth, NextUp, AwaitingResponse, TeamCalendars}
 
 ### MonthView.tsx
-- 6-row × 7-column month grid using `computeMonthLayout` for multi-day event segments; each cell shows up to 3 event slots + up to 3 task slots with a combined "+N more" affordance that opens `DayEventsModal`
+- 6-row × 7-column month grid using `computeMonthLayout` for multi-day event segments. Each 120 px cell has **3 rows of 22 px, shared** by event bars and task pills (`cellRows`): events keep their week-stable slots, tasks fill the rows left free, and everything else is counted into a "+N more" link that opens `DayEventsModal`. Tasks used to get 3 rows of their own below the events, which on a busy day ran past the cell into the next week; the trade-off is that a day with 3 events shows its tasks only behind "+N more"
+- Task pills are the shared `TaskPill` in its compact size (they were a hand-drawn copy with no task colour)
+- The bar/pill layer over each week row is click-through (`pointer-events-none`, with `pointer-events-auto` on each bar and pill). It used to be a full-size `pointer-events-auto` layer, which swallowed clicks meant for the empty cell (new event) and its "+N more" link
 - Empty-cell click → creates a 09:00–10:00 event on that date via the parent's `handleMonthCellClick`
 - Day-of-week headers translated via `t('calendar.day_names.*')`
 
@@ -154,11 +156,22 @@ the geometry lives here once.
 
 ---
 
+## Colours
+
+[`utils/eventTypeColors.ts`](../src/components/Calendar/utils/eventTypeColors.ts) is the only event-type colour map. It replaced nine hand-copied ones (month grid, timeline, agenda, filter bar, both sidebar widgets, three modals) that had drifted apart — a reminder was amber in the month grid and yellow in the day view.
+
+- One hue per type, in every slot: **meeting blue · personal gray · deadline red · reminder amber**. Reminder is amber to match the task palette, whose "yellow" is amber too
+- Slots: `border` (the `border-l-*` accent on month bars and agenda rows), `dot` (filter-chip and sidebar dots, and the timeline card's 3 px bar), `surface` (tinted bar/card background + text), `outline` (the day-list card's border), `badge` (the type label in the detail modal and the type picker)
+- Every class is a literal (Tailwind only emits what it finds in source) and every background / text / border colour has a `dark:` pair. `eventTypeColors.test.ts` checks the map covers every type, that each type uses one hue across its slots and no two types share one, and the dark pairs
+- **Red belongs to deadlines.** Task pills therefore show lateness as an icon, not a red stripe (see [Tasks overlay](#tasks-overlay)). `utils/teamColors.ts` is a separate thing — a colour per *user* for the busy-hours overlay — and is not part of this map
+
+---
+
 ## Components
 
 - `components/ViewSwitcher.tsx` — SegmentedControl for Day/Week/Month/Agenda
 - `components/CalendarFilterBar.tsx` — event-type chips, project select, participant picker, search input. Types / project / participants also scope the tasks overlay
-- `components/TaskPill.tsx` — shared pill used by Week/Day/Agenda/NextUp/DayEventsModal. Square/CheckSquare icon toggles `todo ↔ done` via `updateTaskStatus`; red left accent for overdue, strikethrough for done, paperclip + comment-count indicators
+- `components/TaskPill.tsx` — shared pill used by every view: Month (compact), Week/Day, Agenda, NextUp, DayEventsModal. Tinted in the task's colour label (`COLOR_STYLES[color].card`, neutral grey without one); Square/CheckSquare icon toggles done via `updateTaskCompleted` (disabled when no `onToggle` is passed); a red `AlertTriangle` before the title when overdue (`calendar.task_pill.overdue` as its tooltip and accessible name); strikethrough for done; the colour dot and paperclip / comment indicators only in the full size
 - `components/ParticipantPicker.tsx` — searchable multi-select of users, shared with [TaskModal](../src/components/Tasks/TaskModal.tsx)
 - `components/GridSkeleton.tsx` — 42-cell shimmering skeleton rendered while the first fetch is in flight
 
@@ -174,10 +187,11 @@ the geometry lives here once.
 
 A per-user "Show tasks" toolbar toggle (next to `ViewSwitcher`) merges task due-dates into the calendar as read-only `TaskOccurrence` pills. Data path runs in parallel to events — no schema unification.
 
-- **Click target:** the pill title opens the `TaskDetail` drawer (not the event modal); the checkbox toggles status
+- **Click target:** the pill title opens the `TaskDetail` drawer (not the event modal) and marks the task read; the checkbox toggles status
+- **Colour:** pills are tinted like the task list's cards. A **left border on the calendar belongs to the event type**, and red there means a deadline event, so an overdue task shows a red warning icon rather than the red stripe `TaskRow` uses in the task list
 - **Filtering:** the `CalendarFilterBar` project + participant + search fields apply to tasks too; event-type chips do not
 - **View-specific rendering:**
-  - **MonthView** — per-day task pills layered below event segments (18 px slot vs. 22 px event slot, up to 3 tasks); task overflow feeds the "+N more" count
+  - **MonthView** — compact `TaskPill`s in the rows the day's events leave free (same 22 px row as an event bar, 3 rows per cell shared with events); what does not fit feeds the "+N more" count
   - **WeekView / DayView** — a dedicated "Tasks" lane above the hour grid
   - **AgendaView** — interleaved with events per-day, sorted by `due_at`
   - **NextUp sidebar** — includes tasks due within the next 24 h when the toggle is on
@@ -186,7 +200,7 @@ A per-user "Show tasks" toolbar toggle (next to `ViewSwitcher`) merges task due-
 ---
 
 ## Notes
-- Acknowledgement vs. response are independent: `acknowledged_at` clears the badge; `response` is the RSVP. Opening `/calendar` acknowledges everything but does not auto-RSVP
+- The header badge counts **pending responses**, not unread events: only an RSVP (series or occurrence) clears one. `calendar_event_participants.acknowledged_at` is still stamped when a user creates an event or responds, but nothing reads it for display, and opening `/calendar` no longer bulk-stamps it
 - Series-scope vs. occurrence-scope RSVPs are resolved in [recurrence.ts#resolveResponse](../src/components/Calendar/utils/recurrence.ts): an occurrence override wins over the series master
 - The 3-month range fetch on Month view is intentional — it covers the visible month plus the lead-in/lead-out days from neighbouring months that the grid renders. Day/Week/Agenda use tighter windows
 - All native `confirm()` calls have been replaced with `ConfirmDialog` per CLAUDE.md

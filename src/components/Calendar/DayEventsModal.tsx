@@ -2,10 +2,10 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Clock, MapPin } from 'lucide-react'
 import Modal from '../ui/Modal'
-import type { EventType } from '../../types/tasks'
 import type { ExpandedOccurrence } from './utils/recurrence'
 import type { TaskOccurrence } from './utils/expandTasks'
 import TaskPill from './components/TaskPill'
+import { EVENT_TYPE_COLORS } from './utils/eventTypeColors'
 
 interface Props {
   date: Date | null
@@ -17,13 +17,6 @@ interface Props {
   onTaskToggle: (occurrence: TaskOccurrence) => void
   /** The signed-in user's auth id; decides whether a task's checkbox is live. */
   currentUserId: string | null | undefined
-}
-
-const typeBg: Record<EventType, string> = {
-  meeting: 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200 border-blue-200 dark:border-blue-800',
-  personal: 'bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700',
-  deadline: 'bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-200 border-red-200 dark:border-red-800',
-  reminder: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800',
 }
 
 const DayEventsModal: React.FC<Props> = ({
@@ -94,7 +87,7 @@ const DayEventsModal: React.FC<Props> = ({
               <button
                 key={o.occurrenceKey}
                 onClick={() => onEventClick(o)}
-                className={`w-full text-left border rounded-lg p-3 hover:shadow-md transition-shadow ${typeBg[o.event.event_type]} ${o.isDeclined ? 'opacity-60' : ''}`}
+                className={`w-full text-left border rounded-lg p-3 hover:shadow-md transition-shadow ${EVENT_TYPE_COLORS[o.event.event_type].surface} ${EVENT_TYPE_COLORS[o.event.event_type].outline} ${o.isDeclined ? 'opacity-60' : ''}`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-semibold uppercase tracking-wide opacity-80">

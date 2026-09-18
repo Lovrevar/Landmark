@@ -62,13 +62,14 @@ cancel delete → event still present                                           
 open a private event as someone other than the creator → forbidden / not visible in list    ( )
 ```
 
-### Global unread badge (cross-screen)
+### Global pending-invitations badge (cross-screen)
 
 ```
-user A creates an event assigning user B → within 20 s user B's header badge increments     ( )
-user B opens /calendar → badge clears immediately (acknowledgeAllEvents + dispatchCalendarRead) ( )
-user B's acknowledgement does NOT auto-RSVP (response still 'pending' in event detail)      ( )
-user A deletes the event before B opens /calendar → B's badge decrements on next 20 s poll  ( )
+user A creates an event inviting user B → within 20 s user B's header badge increments      ( )
+hovering B's calendar icon says "N invitations awaiting response", not "unread"             ( )
+user B opens /calendar → badge does NOT clear (it counts pending RSVPs, not visits)         ( )
+user B accepts or declines → badge drops by one immediately (dispatchCalendarRead)          ( )
+user A deletes the event before B responds → B's badge decrements on next 20 s poll         ( )
 ```
 
 ---
@@ -207,7 +208,11 @@ Delete button bottom-left → ConfirmDialog (danger); confirm → cascade delete
 
 ```
 user A creates a task assigning user B → within 20 s B's header badge increments            ( )
-B opens /tasks → badge clears on mount (acknowledgeAllTasks + dispatchTasksRead)            ( )
+B opens /tasks → badge does NOT clear; the new task's row shows a blue dot                  ( )
+B clicks that row → drawer opens, the dot goes, the badge drops by exactly one              ( )
+B opens a task with a due date from a calendar pill instead → same: badge drops by one      ( )
+with several unread: "Mark all as read" in the toolbar clears every dot and the badge       ( )
+the button is hidden once nothing is unread                                                 ( )
 task stays in B's list until completed or deleted (badge ≠ visibility)                      ( )
 A deletes the task before B sees it → B's badge decrements on next 20 s poll                ( )
 ```
@@ -242,10 +247,14 @@ search input narrows tasks by title + description as well                       
 ### MonthView rendering
 
 ```
-task pills render BELOW the up-to-3 event segments in each day cell                         ( )
-task pills are thinner (h-4) and use Square/CheckSquare icon instead of left accent bar     ( )
-overdue task → red left accent; completed → line-through + dim                              ( )
-cell with 4+ events AND 4+ tasks → "+N more" count sums the overflows                       ( )
+task pills fill the rows the day's events leave free — 3 rows per cell, shared             ( )
+no pill or bar ever runs past the bottom of its cell into the next week                     ( )
+a coloured task's pill is tinted in its colour (same tint as its card on /tasks)            ( )
+overdue task → red warning icon before the title, NO red left border; completed → line-through + dim ( )
+the only red left border in a cell belongs to a deadline event                              ( )
+reminder events are amber in every view (month, week/day, agenda, sidebar, modals)          ( )
+cell with 3 events AND 2 tasks → no pills shown, "+2 more"; with 4 events AND 4 tasks → "+5 more" ( )
+click empty space in a cell → new-event modal opens for that date                           ( )
 click the checkbox icon → completed flips on ↔ off (optimistic, refreshes from server)      ( )
 click the title → TaskDetail drawer opens (NOT the event modal)                             ( )
 ```

@@ -160,7 +160,18 @@
     "hide": "Sakrij",
     "load_error_title": "Učitavanje nije uspjelo",
     "load_error_description": "Podatke nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
-    "retry": "Pokušaj ponovno"
+    "retry": "Pokušaj ponovno",
+    "badge": {
+      "unread_messages_one": "{{count}} nepročitana poruka",
+      "unread_messages_few": "{{count}} nepročitane poruke",
+      "unread_messages_other": "{{count}} nepročitanih poruka",
+      "new_tasks_one": "{{count}} novi zadatak",
+      "new_tasks_few": "{{count}} nova zadatka",
+      "new_tasks_other": "{{count}} novih zadataka",
+      "pending_invitations_one": "{{count}} pozivnica čeka odgovor",
+      "pending_invitations_few": "{{count}} pozivnice čekaju odgovor",
+      "pending_invitations_other": "{{count}} pozivnica čeka odgovor"
+    }
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -4546,6 +4557,8 @@
     "loading": "Učitavanje...",
     "empty": "Nema zadataka u ovoj kategoriji",
     "quick_add_placeholder": "Dodaj zadatak i pritisni Enter",
+    "mark_all_read": "Označi sve kao pročitano",
+    "mark_all_read_failed": "Zadatke nije moguće označiti kao pročitane. Pokušajte ponovno.",
     "tabs": {
       "all": "Svi zadaci",
       "assigned": "Dodijeljeni meni",
@@ -4959,6 +4972,7 @@
       "task.subtask_rename": "preimenovao je podzadatak",
       "task.subtask_reorder": "presložio je podzadatke",
       "task.subtask_delete": "uklonio je podzadatak",
+      "task.acknowledge": "označio je zadatak pregledanim",
       "task.acknowledge_all": "označio je zadatke pregledanima",
       "invoice.bulk_create": "Računi masovno kreirani",
       "payment_notification.dismiss": "Obavijest o plaćanju odbačena",

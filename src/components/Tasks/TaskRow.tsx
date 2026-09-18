@@ -5,6 +5,7 @@ import AvatarStack from '../ui/AvatarStack'
 import { COLOR_STYLES, isTaskColor } from './taskColor'
 import { relativeLabel } from '../Calendar/utils/relativeLabel'
 import { isChecklist, subtaskProgress } from './subtasks'
+import { hasUnreadAssignment } from './unread'
 import type { Task } from '../../types/tasks'
 
 interface Props {
@@ -54,9 +55,7 @@ const TaskRow: React.FC<Props> = ({
     [task.assignees],
   )
 
-  const hasUnread = !!(task.assignees || []).find(
-    a => a.assignee_id === currentUserId && a.acknowledged_at == null,
-  )
+  const hasUnread = hasUnreadAssignment(task, currentUserId)
   const attachmentCount = task.attachments?.length || 0
   const commentCount = task.comment_count || 0
 
