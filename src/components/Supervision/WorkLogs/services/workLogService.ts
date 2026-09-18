@@ -9,6 +9,11 @@ export type WorkLogStatus =
   | 'waiting_materials'
   | 'weather_delay'
 
+/**
+ * `work_logs.color` is left out on purpose. The card's stripe is the status (workLogStatus.ts);
+ * the hand-picked colour contradicted it. The column keeps its database default and is neither
+ * written nor read.
+ */
 export interface WorkLog {
   id: string
   contract_id: string
@@ -21,7 +26,6 @@ export interface WorkLog {
   work_description: string
   blocker_details: string | null
   notes: string
-  color: string
   created_at: string
   contracts?: { contract_number: string; job_description: string }
   subcontractors?: { name: string }
@@ -57,7 +61,6 @@ export interface WorkLogFormData {
   work_description: string
   blocker_details: string
   notes: string
-  color: string
 }
 
 export async function fetchProjects(): Promise<WorkLogProject[]> {
@@ -121,7 +124,6 @@ export async function createWorkLog(data: WorkLogFormData, subcontractorId: stri
     work_description: data.work_description,
     blocker_details: data.status === 'blocker' || data.status === 'quality_issue' ? data.blocker_details : null,
     notes: data.notes,
-    color: data.color,
     created_by: userId,
   }]).select('id').maybeSingle()
 
@@ -143,7 +145,6 @@ export async function updateWorkLog(id: string, data: WorkLogFormData, subcontra
       work_description: data.work_description,
       blocker_details: data.status === 'blocker' || data.status === 'quality_issue' ? data.blocker_details : null,
       notes: data.notes,
-      color: data.color,
     })
     .eq('id', id)
 

@@ -24,7 +24,6 @@ const emptyForm = (): WorkLogFormData => ({
   work_description: '',
   blocker_details: '',
   notes: '',
-  color: 'blue',
 })
 
 export function useWorkLogs() {
@@ -105,7 +104,6 @@ export function useWorkLogs() {
       work_description: log.work_description,
       blocker_details: log.blocker_details || '',
       notes: log.notes || '',
-      color: log.color,
     })
     if (log.project_id) loadPhases(log.project_id)
     if (log.phase_id) loadContracts(log.phase_id)

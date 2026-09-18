@@ -4,6 +4,8 @@ import { format } from 'date-fns'
 import { parseLocalDate, isValidDate } from '../../../utils/dateOnly'
 import { useTranslation } from 'react-i18next'
 import type { WorkLog } from '../types/supervisionTypes'
+import { StatusBadge } from '../../Supervision/WorkLogs/StatusBadge'
+import { stripeClass } from '../../Supervision/WorkLogs/workLogStatus'
 
 interface Props {
   weekLogs: WorkLog[]
@@ -32,12 +34,14 @@ const SupervisionWeekView: React.FC<Props> = ({ weekLogs }) => {
             {weekLogs.map((log) => (
               <div
                 key={log.id}
-                className="border-l-4 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700"
-                style={{ borderLeftColor: log.color || 'blue' }}
+                className={`border-l-4 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 ${stripeClass(log.status)}`}
               >
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{log.subcontractor_name}</h3>
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{log.subcontractor_name}</h3>
+                      <StatusBadge status={log.status} />
+                    </div>
                     {log.contracts && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                         {t('dashboards.supervision.contract_label')} {log.contracts.contract_number} - {log.contracts.job_description}
@@ -45,7 +49,7 @@ const SupervisionWeekView: React.FC<Props> = ({ weekLogs }) => {
                     )}
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{log.work_description}</p>
                   </div>
-                  <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full text-xs font-semibold">
+                  <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full text-xs font-semibold">
                     {isValidDate(log.date) ? format(parseLocalDate(log.date), 'MMM dd') : '—'}
                   </span>
                 </div>

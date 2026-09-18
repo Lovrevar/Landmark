@@ -130,6 +130,13 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 - `rollupContracts(rows)` / `remainingBudget(budget, rollup)` — the contract totals behind a phase card: contracted value, paid, unpaid, and unpaid-without-contract, then budget headroom
 - Takes a neutral row (`hasContract` / `cost` / `paid` / `owed`), so Supervision and Retail map their own columns onto it instead of keeping two copies of the arithmetic
 
+### contractVariance.ts
+- `contractVariance({ contracted, paid, settled })` → `{ kind: 'none' } | { kind: 'overrun', amount } | { kind: 'saving', amount }` — what one contract's payments say about its price. **Overrun** when paid exceeds contracted (at any time); **saving** only when the caller says the contract is `settled` and it closed below its value; otherwise **none**, and the caller renders no row — an open, part-paid contract has nothing to report that "Remaining" doesn't already say
+- Replaces the "Gain/Loss" rows (paid − contracted with the sign inverted) on Supervision's `ContractCard` and `SubcontractorDetailsModal` and Retail's `PhaseCard`. Each caller defines `settled` for its own rows
+- Compares in whole cents, so floating-point noise from summing payments (`0.1 + 0.2`) is neither an overrun nor a saving, and amounts come back cent-rounded. `contracted <= 0` (no contract amount) or a non-number is always `none`
+- Both amounts must be in the same unit — compare gross with gross. Comparing gross payments against a net `base_amount` is what made every fully-paid subcontractor contract show a 25% overrun
+- Pure; covered by `contractVariance.test.ts`
+
 ### errorMessage.ts (`src/lib/`)
 - `toErrorMessage(error, fallback)` — the sentence to show a user for a rejected promise. Prefers a message written for people (a service's own "Ne možete obrisati faze koje imaju ugovore: …"), and falls back to the caller's translated string when the error is machine text (`violates … constraint`, a bare `PGRST301`) or an RLS refusal
 - `isPermissionError(error)` — Postgres `42501`

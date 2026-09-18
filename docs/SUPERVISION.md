@@ -269,7 +269,10 @@ phase to a user goes through it.
 - One collapsible level of the contract tree, rendered recursively and dimension-agnostic, so the same component draws a classification inside a phase and a phase inside a classification
 
 ### ContractCard.tsx
-- A single contract card, lifted verbatim out of PhaseCard when the tree gained a third level
+- A single contract card, lifted out of PhaseCard when the tree gained a third level
+- Money renders through `formatEuro`
+- The old "Dobit/Gubitak" row (paid − contracted, sign inverted, so an unpaid €200.000 contract read as a €200.000 gain) is gone. The card now shows a variance from [`contractVariance`](../src/utils/contractVariance.ts) with `settled` = `isFullySettled(sub)`, and only when there is one: a red "Prekoračenje" row when paid exceeds the contract, a green "Ušteda" row for a contract settled below its value. An open contract still being paid shows no row — "Preostalo" already says what it owes
+- Because this screen lists only `draft`/`active` contracts, settled can only mean paid in full, so in practice the row appears only for an overrun. The status badge and card tint use the same variance, so a badge never says "over budget" when the row does not
 
 ### MilestoneList.tsx
 - Milestone management panel: add/edit/delete milestones, stats summary, and details per milestone
@@ -321,6 +324,8 @@ the orchestrator does the writes and re-fetches.
 - Read-only detail panel plus the comment thread (`completed` / `issue` / `general`)
 - Props: `visible`, `onClose`, `subcontractor` (`SubcontractorWithPhase | null`), `comments`, `commentsError`, `onRetryComments`, `newComment`, `commentType`, `onCommentChange`, `onCommentTypeChange`
 - With `commentsError` set and no comments, the thread area shows a compact `ErrorState` with a retry instead of the "no comments yet" panel
+- **Gross against gross.** `budget_realized` is a sum of payments, VAT included, so the payment tiles compare it with the contract's `total_amount` (falling back to `subcontractor.cost`, i.e. `contract_amount`, which a trigger keeps equal to it). They used to compare it with `base_amount` — net — so a fully-paid contract showed a red 25% overrun here and €0 on the card beside it. The "Ugovoreno" and "Plaćeno" tiles are both gross now; the "(osnova)" in their labels, which was wrong for the paid one, was dropped (the net/VAT breakdown stays in the contract-details block above)
+- The third tile is the `contractVariance` result — red "Prekoračenje" or green "Ušteda" — and when there is none it shows "Preostalo" instead of leaving a hole. The header badge (over budget / fully paid / partial / unpaid) is derived from the same contracted, paid and settled values, so badge and tiles cannot contradict each other
 
 #### MilestoneFormModal.tsx
 - Creates a contract milestone; carries the subcontractor / project / phase names and `contractCost` for context so the percentage split is checkable at a glance
@@ -504,7 +509,18 @@ Payments made to subcontractors against their invoices, including cesija and ban
 
 Daily or weekly on-site work log entries. Supports cascading project → phase → contract selection and status categorisation.
 
+**Colour is the status.** A log's left stripe and its badge both come from its status, via `workLogStatus.ts`. There used to be a hand-picked colour (`work_logs.color`, free text, default `'blue'`) whose picker disagreed with the list's renderer for all eight swatches and could paint a finished log red. The picker was removed; the column is retained in the database (the default fills it on insert) but is **no longer written or read** — it is absent from the `WorkLog` type and from the dashboard's select. Do not reintroduce it.
+
 #### Services
+
+### workLogStatus.ts
+- `statusConfig` — per status: label key, icon, `Badge` variant and a **literal** stripe class (`border-l-green-500`, `-blue-`, `-red-`, `-orange-`, `-yellow-`, `border-l-gray-400`), each with a `dark:` twin. The stripe uses the badge's own hue so the two read as one colour. Literal because Tailwind only emits classes written out in the source; the `dark:` twin because the cards' `dark:border-gray-700` would otherwise outrank a bare `border-l-*` and grey every stripe in dark mode
+- `unknownStatusConfig` / `statusConfigFor(status)` — the fallback for a null or unrecognised status (`work_logs.status` is nullable with no default); an own-property lookup, so `"constructor"` is not a status
+- `stripeClass(status)` — the left-border class for a card
+- Pure; covered by `workLogStatus.test.ts`
+
+### StatusBadge.tsx
+- `StatusBadge({ status })` — icon + label badge. Takes `string | null | undefined` so the Supervision dashboard's week view (`dashboards/sections/SupervisionWeekView.tsx`, whose row type has `status: string`) uses it too; that view previously showed no status at all
 
 ### services/workLogService.ts
 - `fetchProjects()` — fetches projects for the log form selector
@@ -527,7 +543,7 @@ Daily or weekly on-site work log entries. Supports cascading project → phase �
 #### Views
 
 ### index.tsx (WorkLogs)
-- Work log modal form with cascading selects, and history cards with status badges (work_finished, in_progress, blocker, quality_issue, waiting_materials, weather_delay)
+- Work log modal form with cascading selects, and history cards with status badges (work_finished, in_progress, blocker, quality_issue, waiting_materials, weather_delay); each card's left stripe is `stripeClass(log.status)`
 - `handleValidatedSubmit` returns `handleSubmit`'s promise, so `Form` blocks re-submits and the submit button spins while saving (a double-click creates one log)
 - **Uses hooks:** useWorkLogs
 - **Uses Ui:** Modal, Button, Select, Card, PageHeader

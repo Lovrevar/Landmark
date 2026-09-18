@@ -4,57 +4,17 @@ import {
   ClipboardCheck,
   Plus,
   Calendar,
-  AlertTriangle,
-  CheckCircle2,
-  Loader,
-  AlertCircle,
-  CloudRain,
-  Package,
   Edit2,
   Trash2,
-  Palette,
-  Wrench,
-  HelpCircle
+  Wrench
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, ErrorState, Alert, Form, FormField, ConfirmDialog } from '../../ui'
+import { LoadingSpinner, PageHeader, Modal, Button, Input, Select, Textarea, Card, EmptyState, ErrorState, Alert, Form, FormField, ConfirmDialog } from '../../ui'
 import { format } from 'date-fns'
 import { useWorkLogs } from './hooks/useWorkLogs'
-import type { WorkLog, WorkLogStatus } from './services/workLogService'
+import type { WorkLogStatus } from './services/workLogService'
+import { statusConfig, stripeClass } from './workLogStatus'
+import { StatusBadge } from './StatusBadge'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
-
-const statusConfig = {
-  work_finished: { tKey: 'supervision.work_logs.status.work_finished', icon: CheckCircle2, color: 'green' },
-  in_progress: { tKey: 'supervision.work_logs.status.in_progress', icon: Loader, color: 'blue' },
-  blocker: { tKey: 'supervision.work_logs.status.blocker', icon: AlertTriangle, color: 'red' },
-  quality_issue: { tKey: 'supervision.work_logs.status.quality_issue', icon: AlertCircle, color: 'orange' },
-  waiting_materials: { tKey: 'supervision.work_logs.status.waiting_materials', icon: Package, color: 'yellow' },
-  weather_delay: { tKey: 'supervision.work_logs.status.weather_delay', icon: CloudRain, color: 'gray' },
-}
-
-const variantMap: Record<string, 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 'orange'> = {
-  green: 'green', red: 'red', yellow: 'yellow', blue: 'blue', gray: 'gray', orange: 'orange',
-}
-
-// `work_logs.status` is a nullable column with no default, so a row can legitimately carry no
-// status — anything written before the column existed, or outside this form. Without a fallback
-// the lookup returns undefined and the whole page unmounts on one such row.
-const unknownStatusConfig = {
-  tKey: 'supervision.work_logs.status.unknown',
-  icon: HelpCircle,
-  color: 'gray',
-} as const
-
-function StatusBadge({ status }: { status: WorkLog['status'] }) {
-  const { t } = useTranslation()
-  const config = (status ? statusConfig[status] : undefined) ?? unknownStatusConfig
-  const Icon = config.icon
-  return (
-    <Badge variant={variantMap[config.color] || 'gray'}>
-      <Icon className="w-3 h-3 mr-1" />
-      {t(config.tKey)}
-    </Badge>
-  )
-}
 
 const WorkLogs: React.FC = () => {
   const { t } = useTranslation()
@@ -235,27 +195,6 @@ const WorkLogs: React.FC = () => {
                 placeholder={t('supervision.work_logs.form.notes_placeholder')}
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                <Palette className="w-4 h-4 inline mr-1" />
-                {t('supervision.work_logs.form.color_label')}
-              </label>
-              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                {['blue', 'green', 'red', 'yellow', 'orange', 'purple', 'pink', 'gray'].map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, color })}
-                    className={`h-10 rounded-lg border-2 transition-all ${
-                      formData.color === color ? 'border-gray-900 dark:border-white scale-110' : 'border-gray-300 dark:border-gray-600'
-                    }`}
-                    style={{ backgroundColor: color === 'yellow' ? '#fbbf24' : color === 'orange' ? '#f97316' : color === 'purple' ? '#a855f7' : color === 'pink' ? '#ec4899' : color === 'gray' ? '#6b7280' : color }}
-                    title={color}
-                  />
-                ))}
-              </div>
-            </div>
           </Modal.Body>
 
           <Modal.Footer>
@@ -294,8 +233,7 @@ const WorkLogs: React.FC = () => {
               {workLogs.map((log) => (
                 <div
                   key={log.id}
-                  className="border-l-4 rounded-lg hover:shadow-md transition-shadow bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
-                  style={{ borderLeftColor: log.color || 'blue' }}
+                  className={`border-l-4 rounded-lg hover:shadow-md transition-shadow bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 ${stripeClass(log.status)}`}
                 >
                   <Card variant="bordered" padding="md">
                     <div className="flex justify-between items-start mb-3">

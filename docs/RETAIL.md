@@ -70,6 +70,8 @@ Core retail module. Tracks development projects through phases (development, con
 
 ### PhaseCard.tsx
 - Card component for a single project phase showing budget, status, and contracts
+- Per contract, the old "Dobitak/Gubitak" row (paid − contracted with the sign inverted, so an unpaid contract read as a gain of its whole value) is replaced by [`contractVariance`](../src/utils/contractVariance.ts), shared with Supervision: a red "Prekoračenje" row when paid exceeds the contract, a green "Ušteda" row when a settled contract closed below its value, and **no row** while a contract is simply being paid. Settled = paid in full, or status `Completed` — except in the sales phase, where money comes in and a sale closed below its price is lost revenue, not a saving, so only full payment settles it there. A saving replaces the "Preostalo" row (it is the same remainder, no longer owed), and the card's badge/tint treat it as settled
+- Completed and Cancelled contracts carry a muted grey badge next to the name (`retail_projects.contract_form.status_completed` / `status_cancelled`); this screen has no status filter, and they used to look exactly like active ones
 
 ### MilestoneList.tsx
 - List of milestones for a project with status display

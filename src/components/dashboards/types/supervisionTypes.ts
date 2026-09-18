@@ -6,7 +6,6 @@ export interface WorkLog {
   work_description: string
   notes: string
   status: string
-  color: string
   blocker_details?: string
   created_at: string
   contracts?: {
