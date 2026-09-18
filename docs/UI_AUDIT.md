@@ -46,17 +46,17 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 
 ### 3. Information shown in a misleading way (the "Yellow" chip class)
 
-- [ ] **Work log stripe colour** is user-picked (red/green/yellow) and sits next to a status badge that uses the same colours to mean blocker or finished. The dashboard week view shows only the stripe and hides the status.
-- [ ] **Calendar:** a task's colour doesn't appear at all in the month view (the default), and elsewhere it's a 2px dot, which no longer matches the tinted task list. A red stripe means both "deadline event" and "overdue task" side by side.
-- [ ] **Approvals:** every row carries the same green "Odobreno" badge, next to a raw `UNPAID` value.
-- [ ] **Funding payments:** every row shows the same "BANKA" badge. Disbursements, repayments and expenses are all green and summed into one total.
-- [ ] **"Gain/Loss" shows the unpaid remainder as green profit** in Supervision contract cards and Retail phase cards.
-- [ ] **"Očekivani ROI"** is really the average interest rate, shown green as if it were a return.
-- [ ] **Cashflow dashboard:** monthly bars are scaled per month, so the larger bar is always full width. Net cash flow uses `Math.abs`, so a negative value is shown only by colour.
-- [ ] **Office suppliers:** "Ukupno (bez PDV)" is net while Plaćeno and Preostalo are gross, so the three never add up.
-- [ ] **Sales reports show `$` on EUR amounts.**
-- [ ] **Retail phase card** shows "Predviđeni budžet" twice, for two different numbers.
-- [ ] **Unread indicators:** the three red header badges mean three different things, and opening Tasks marks everything read, so the blue unread dot is never seen.
+- [x] **Work log stripe colour** is user-picked (red/green/yellow) and sits next to a status badge that uses the same colours to mean blocker or finished. The dashboard week view shows only the stripe and hides the status. *(The picker is gone; the stripe is the status everywhere, and the week view shows the badge.)*
+- [x] **Calendar:** a task's colour doesn't appear at all in the month view (the default), and elsewhere it's a 2px dot, which no longer matches the tinted task list. A red stripe means both "deadline event" and "overdue task" side by side. *(Month view uses the shared `TaskPill`, tinted like the task list; overdue is an icon, so the left border belongs to the event type. One shared event-type colour map replaces nine.)*
+- [x] **Approvals:** every row carries the same green "Odobreno" badge, next to a raw `UNPAID` value.
+- [x] **Funding payments:** every row shows the same "BANKA" badge. Disbursements, repayments and expenses are all green and summed into one total.
+- [x] **"Gain/Loss" shows the unpaid remainder as green profit** in Supervision contract cards and Retail phase cards. *(Replaced by a variance shown only when there is one: an overrun, or a saving on a settled contract. The details modal now compares gross with gross.)*
+- [x] **"Očekivani ROI"** is really the average interest rate, shown green as if it were a return.
+- [x] **Cashflow dashboard:** monthly bars are scaled per month, so the larger bar is always full width. Net cash flow uses `Math.abs`, so a negative value is shown only by colour.
+- [x] **Office suppliers:** "Ukupno (bez PDV)" is net while Plaćeno and Preostalo are gross, so the three never add up.
+- [x] **Sales reports show `$` on EUR amounts.**
+- [x] **Retail phase card** shows "Predviđeni budžet" twice, for two different numbers.
+- [x] **Unread indicators:** the three red header badges mean three different things, and opening Tasks marks everything read, so the blue unread dot is never seen. *(A task is marked read when opened, with an explicit "mark all as read"; each header badge now says what it counts.)*
 
 ### 4. App-wide systemic problems
 
@@ -66,7 +66,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
    - `€X.XM`, so €45.000 shows as "€0.0M"
    - € sometimes before the number, sometimes after
 2. [ ] **Dates.** ~50 `'MMM dd, yyyy'` with no locale, so month names are English in the Croatian UI. 5+ formats overall, and 60 native date inputs vs 11 uses of `DateInput`.
-3. [ ] **Status colours and labels.** The same status is coloured differently per screen: UNPAID is red, grey or yellow; On Hold is red, orange, grey or yellow; "Paid" is teal, orange, green, blue or red. Raw English DB enums show in 20+ places. Needs one shared status → {label, variant} map per domain.
+3. [ ] **Status colours and labels.** The same status is coloured differently per screen: UNPAID is red, grey or yellow; On Hold is red, orange, grey or yellow; "Paid" is teal, orange, green, blue or red. Raw English DB enums show in 20+ places. Needs one shared status → {label, variant} map per domain. *(Started: invoice payment status has one — `getInvoiceStatusVariant` / `getInvoiceStatusLabel` in `Cashflow/services/invoiceHelpers.ts` — used by Approvals, Supervision and Retail invoice/payment modals and Funding credit invoices. Still hand-rolled: Cashflow Invoices, Customers, InvoiceDetailView, OfficeSuppliers, SupplierDetailsModal, Cashflow Calendar, Retail Invoices, Supervision Invoices; and every non-invoice vocabulary.)*
 4. [~] **Silent failures.** *(Fixed: ~60 hook-shaped loaders now expose `error` + `refetch` and render `ErrorState` with a retry instead of an empty state, with figures withheld rather than shown as 0; the services that hid failures behind `return []` or a dropped `error` now throw; all 25 silent mutations report, and no dialog closes in a `finally` any more; success feedback added where the only signal was a spinner flash. Two e2e tests pin the behaviour by aborting the API. Left: the ~23 fetches written inline inside components, and the full-page spinner on refetch.)*
 5. [ ] **Hardcoded strings (~300).**
    - Sales has ~150, the most of any module.
@@ -123,7 +123,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 6. **[OfficeSuppliers/index.tsx:156-165](../src/components/Cashflow/OfficeSuppliers/index.tsx#L156) + `services/officeSupplierService.ts:39-41`** — Information · high · `[x]` (gross basis reconciles; net kept as a labelled line)
    - **Problem:** "Ukupno (bez PDV)" is net, while Plaćeno and Preostalo include VAT. Paid can exceed the total, and the figures never add up.
    - **Fix:** show gross totals next to paid and remaining, or label each figure's basis.
-7. **[Approvals/index.tsx:275-278](../src/components/Cashflow/Approvals/index.tsx#L275)** — Information · high
+7. **[Approvals/index.tsx:275-278](../src/components/Cashflow/Approvals/index.tsx#L275)** — Information · high · `[x]` (constant badge removed; status through the shared `invoiceHelpers` label + variant, also adopted by five other invoice-status renderers)
    - **Problem:** every row has the same green "Odobreno" badge, next to the raw `UNPAID` / `PARTIALLY_PAID` enum, coloured differently from everywhere else.
    - **Fix:** drop the constant badge and reuse the shared translated status label and colours.
 8. **[AccountingPaymentFormModal.tsx:88-108](../src/components/Cashflow/Payments/forms/AccountingPaymentFormModal.tsx#L88), `components/InvoiceEntityFields.tsx:78,160,175`, `Suppliers/forms/LinkSupplierToProjectModal.tsx:154`** — Library/UX · high
@@ -256,7 +256,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 4. **[EditSubcontractorModal.tsx:400-404](../src/components/Supervision/SiteManagement/modals/EditSubcontractorModal.tsx#L400)** — UX · high · `[x]`
    - **Problem:** the green "Mark as completed" button has no `onClick`.
    - **Fix:** removed.
-5. **[ContractCard.tsx:43,101-116](../src/components/Supervision/SiteManagement/ContractCard.tsx#L43)** — Info/Colour · high
+5. **[ContractCard.tsx:43,101-116](../src/components/Supervision/SiteManagement/ContractCard.tsx#L43)** — Info/Colour · high · `[x]` (shared `contractVariance`; modal compares gross with gross)
    - **Problem:** for an unpaid contract, "Gain/Loss" shows the unpaid amount as green "+€50.000", under an orange "Remaining €50.000". `SubcontractorDetailsModal` computes it against net (`base_amount`) instead of gross (`cost`), so the two disagree.
    - **Fix:** show a variance only once settled or overpaid, from one consistent base.
 6. **[ProjectDetail.tsx:132-206](../src/components/Supervision/SiteManagement/ProjectDetail.tsx#L132), `PhaseCard.tsx:74-110`** — Mobile · high
@@ -268,7 +268,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 8. **[Supervision/Invoices/index.tsx:104,135,157](../src/components/Supervision/Invoices/index.tsx#L104)** — Mobile/Library/Info · high
    - **Problem:** a hand-rolled `min-w-[1400px]` table with no mobile view. Status and category badges show raw enums ("PARTIALLY_PAID", "SUPERVISION"), while `InvoicesModal` translates the same statuses.
    - **Fix:** `Table` with `Td label`, plus a shared status map.
-9. **[WorkLogs/index.tsx:231-243,279,286](../src/components/Supervision/WorkLogs/index.tsx#L231)** — Info/Colour · high
+9. **[WorkLogs/index.tsx:231-243,279,286](../src/components/Supervision/WorkLogs/index.tsx#L231)** — Info/Colour · high · `[x]` (colour dropped; stripe from status)
    - **Problem:** a user-picked stripe colour (red/green/yellow/orange) sits next to a status badge that uses the same colours for blocker/finished/waiting, so a "red" log can be "work finished". Swatch tooltips are raw English, and the stripes are CSS named colours (#0000ff) rather than Tailwind's palette.
    - **Fix:** drop the free colour, or derive the stripe from status.
 10. **Project status shown four ways** (`ProjectsGrid.tsx:57-63`, `ProjectDetail.tsx:153-158`, `ProjectDetailsEnhanced.tsx:131-136`, `ProjectCard.tsx:171-177` via `utils.ts:153-161`) — Formatting/Colour/i18n · med-high
@@ -366,7 +366,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 1. **[Sales/Apartments/modals/PaymentHistoryModal.tsx:183-196](../src/components/Sales/Apartments/modals/PaymentHistoryModal.tsx#L183), `Apartments/index.tsx:121-154`, `services/apartmentService.ts:142-150`** — States/UX · high · `[x]`
    - **Problem:** every payment row shows Edit and Delete, but both services always throw. The user confirms and nothing happens.
    - **Fix:** remove them; show the "managed in accounting" note.
-2. **[Retail/Projects/PhaseCard.tsx:206,322-330](../src/components/Retail/Projects/PhaseCard.tsx#L206)** — Info/Colour · high
+2. **[Retail/Projects/PhaseCard.tsx:206,322-330](../src/components/Retail/Projects/PhaseCard.tsx#L206)** — Info/Colour · high · `[x]` (shared `contractVariance`; Completed/Cancelled contracts badged)
    - **Problem:** a partly paid contract shows the unpaid remainder as a green "+€X" gain under an orange "Preostalo" of the same amount.
    - **Fix:** show gain/loss only once fully paid.
 3. **[Retail/Projects/modals/ContractFormModal.tsx:102-110](../src/components/Retail/Projects/modals/ContractFormModal.tsx#L102), `forms/DevelopmentFormModal.tsx:100-108`** — UX · high · `[x]`
@@ -489,10 +489,10 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 3. **[dashboards/DirectorDashboard.tsx:145](../src/components/dashboards/DirectorDashboard.tsx#L145)** — UX · high · `[x]`
    - **Problem:** "View details" navigates to the non-existent `/funding-overview`.
    - **Fix:** `/funding-credits`.
-4. **[dashboards/sections/AccountingMonthlyTrendsSection.tsx:27,36,46](../src/components/dashboards/sections/AccountingMonthlyTrendsSection.tsx#L27)** — Misleading chart · high
+4. **[dashboards/sections/AccountingMonthlyTrendsSection.tsx:27,36,46](../src/components/dashboards/sections/AccountingMonthlyTrendsSection.tsx#L27)** — Misleading chart · high · `[x]` (one denominator across months; labels beside the bars)
    - **Problem:** each month's bars are scaled to that month's max, so they aren't comparable. The white € label is clipped inside short bars.
    - **Fix:** scale across all months and put labels outside the bars.
-5. **[Funding/Payments/index.tsx:140-151,68,172](../src/components/Funding/Payments/index.tsx#L140)** — Info/Colour · high
+5. **[Funding/Payments/index.tsx:140-151,68,172](../src/components/Funding/Payments/index.tsx#L140)** — Info/Colour · high · `[x]` (PRIHOD/RASHOD by direction; inflow, outflow and net totalled separately)
    - **Problem:** the same "BANKA" badge on every row. Disbursements, repayments and expenses are all green and summed into one total.
    - **Fix:** show the direction as the type, colour by direction, total each separately.
 6. **[dashboards/services/directorService.ts:445-485](../src/components/dashboards/services/directorService.ts#L445) → `sections/DirectorAlertsSection.tsx:45,51`** — i18n · high
@@ -516,7 +516,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 12. **Utilisation colour scales** — `InvestorCard.tsx:67-71` vs `InvestmentCreditsTable.tsx:131-133` vs `InvestmentProjectModal.tsx:329-331` vs `:347-350` — Colour · med
     - **Problem:** three different thresholds and palettes for utilisation; text and bar disagree for the same value.
     - **Fix:** one `utilizationTone()` helper.
-13. **[dashboards/sections/SupervisionWeekView.tsx:36,48](../src/components/dashboards/sections/SupervisionWeekView.tsx#L36)** — Colour · med
+13. **[dashboards/sections/SupervisionWeekView.tsx:36,48](../src/components/dashboards/sections/SupervisionWeekView.tsx#L36)** — Colour · med · `[x]`
     - **Problem:** the user-picked stripe uses raw CSS keywords (pure #FFFF00). The real status (blocker, quality issue…) is never shown, and every date pill is green.
     - **Fix:** a status badge, a neutral date pill, and the Tailwind palette.
 14. **[CreditFacilityCard.tsx:21,32-47,62](../src/components/Funding/Investors/components/CreditFacilityCard.tsx#L21)** — Info/Colour/i18n · med
@@ -607,7 +607,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 3. **[Tasks/hooks/useTasks.ts:24-47](../src/components/Tasks/hooks/useTasks.ts#L24), `TaskDetail.tsx:128-136`, `Calendar/index.tsx:114,159-163`, `Chat/NewConversationModal.tsx:72-73`, `Chat/hooks/useChat.ts:43`** — States · high · `[~]` (the calendar toggle now shows an error toast; the rest is open)
    - **Problem:** no error toasts in Tasks, Calendar or Chat for mutations. NewConversationModal closes on failure, and failed loads show empty states.
    - **Fix:** catch, `toast.error`, and a separate error state.
-4. **[Calendar/MonthView.tsx:221-265](../src/components/Calendar/MonthView.tsx#L221), `components/TaskPill.tsx:61`** — Info/Consistency · med-high
+4. **[Calendar/MonthView.tsx:221-265](../src/components/Calendar/MonthView.tsx#L221), `components/TaskPill.tsx:61`** — Info/Consistency · med-high · `[x]` (TaskPill in MonthView, tinted; events and tasks share the cell's three rows)
    - **Problem:** the default month view draws its own task pill with no task colour at all; other views show a 2px dot, while the task list tints the whole card.
    - **Fix:** use TaskPill in MonthView and tint with `COLOR_STYLES[color].card`, or add a colour bar.
 5. **[Calendar/MonthView.tsx:249-255](../src/components/Calendar/MonthView.tsx#L249), `components/TaskPill.tsx:48`** — States/UX · med · `[x]`
@@ -622,7 +622,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 8. **[Calendar/MonthView.tsx:39,97,227](../src/components/Calendar/MonthView.tsx#L39)** — Mobile/Layout · med
    - **Problem:** 120px rows can't fit 3 events plus 2 tasks, so pills spill into the next week or overlap "+N more".
    - **Fix:** size rows to content, or count task slots into the overflow.
-9. **[Tasks/hooks/useTasks.ts:40](../src/components/Tasks/hooks/useTasks.ts#L40), `TaskRow.tsx:116`, `Common/Layout.tsx:316,332,348`** — Indicators · med
+9. **[Tasks/hooks/useTasks.ts:40](../src/components/Tasks/hooks/useTasks.ts#L40), `TaskRow.tsx:116`, `Common/Layout.tsx:316,332,348`** — Indicators · med · `[x]` (acknowledge per task opened; badges labelled)
    - **Problem:** opening Tasks acknowledges everything, so the unread dot is never seen. The three red header badges mean three different things.
    - **Fix:** acknowledge per task when opened; one "needs you" colour.
 10. **[Calendar/components/sidebar/AwaitingResponse.tsx:35](../src/components/Calendar/components/sidebar/AwaitingResponse.tsx#L35) via `Calendar/index.tsx:114,393-402`** — States · med · `[x]` (sidebar uses the badge's 30-day unfiltered window)
@@ -707,7 +707,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
   - DD/MM/YYYY with slashes.
   - 60 native `type="date"` inputs vs 11 `DateInput`.
 - **Semantic colour drift.**
-  - Reminder is amber vs yellow.
+  - ~~Reminder is amber vs yellow.~~ Fixed: one `EVENT_TYPE_COLORS` map, reminder is amber.
   - "Pending" is grey vs amber.
   - "Unread" is red, blue or amber.
   - Pill radius varies.
@@ -727,7 +727,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 - **`window.confirm(` / bare `confirm(`:** 0.
 - **`alert(`:** 0.
 - **Tailwind classes built by template interpolation:** 0 (the only hit is the explanatory comment in `taskColor.ts`).
-- **Side border colour + `dark:border-*` on the same element:** 0 remaining. `SupervisionWeekView.tsx:35` and `WorkLogs/index.tsx:278` set the colour via inline `borderLeftColor`, which wins. The live variant of this bug class is the ghost-Button override (finding 14).
+- **Side border colour + `dark:border-*` on the same element:** 0 remaining. (The two inline `borderLeftColor` stripes in `SupervisionWeekView` and `WorkLogs` are gone; their status stripes carry a `dark:border-l-*` twin.) The live variant of this bug class is the ghost-Button override (finding 14).
 - **`bg-white` with no `dark:bg-` on the same line:** 3 of 268, all fine.
 
 ### Good patterns worth copying
