@@ -6,6 +6,11 @@
 
 Paths are relative to the repository root. Line numbers are as of the audit date and drift as code changes.
 
+**Reconciled 2026-09-21.** Every detailed finding was re-checked against the code, because fix batches
+often closed one without ticking it. Of the 85 unticked entries: 9 were already fixed, 18 partly fixed,
+58 still open, none obsolete. The systemic counts in section 4 were re-measured at the same time, and
+what that pass newly found is in section 5.
+
 ---
 
 ## Summary
@@ -60,15 +65,15 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 
 ### 4. App-wide systemic problems
 
-1. [~] **Money formatting.** *(Fixed: the shared helpers now cover exact cents, aggregates and compact tiles and are null-safe; every `en-US`, browser-locale, `$`, `€0.0M` and `€`-suffix render is gone. Left: ~255 hand-rolled `toLocaleString('hr-HR')` money renders that show ragged decimals, and 76 DollarSign icons outside Reports/dashboards.)* `formatEuro` / `formatEuroRounded` exist in `utils/formatters.ts` but are barely used (0 uses in Cashflow, Sales or Retail). Instead there are hundreds of hand-rolled formats:
+1. [~] **Money formatting.** *(Fixed: the shared helpers now cover exact cents, aggregates and compact tiles and are null-safe; every `en-US`, browser-locale, `$`, `€0.0M` and `€`-suffix render is gone. Left: ~256 hand-rolled `toLocaleString('hr-HR')` money renders in 68 files, which show ragged decimals, and 74 DollarSign uses in 29 files outside Reports/dashboards — those two directories are now clear.)* `formatEuro` / `formatEuroRounded` exist in `utils/formatters.ts` but are barely used (0 uses in Cashflow, Sales or Retail). Instead there are hundreds of hand-rolled formats:
    - `en-US` ("€1,234,567", which reads wrong to Croatians)
    - browser locale
    - `€X.XM`, so €45.000 shows as "€0.0M"
    - € sometimes before the number, sometimes after
-2. [ ] **Dates.** ~50 `'MMM dd, yyyy'` with no locale, so month names are English in the Croatian UI. 5+ formats overall, and 60 native date inputs vs 11 uses of `DateInput`.
-3. [ ] **Status colours and labels.** The same status is coloured differently per screen: UNPAID is red, grey or yellow; On Hold is red, orange, grey or yellow; "Paid" is teal, orange, green, blue or red. Raw English DB enums show in 20+ places. Needs one shared status → {label, variant} map per domain. *(Started: invoice payment status has one — `getInvoiceStatusVariant` / `getInvoiceStatusLabel` in `Cashflow/services/invoiceHelpers.ts` — used by Approvals, Supervision and Retail invoice/payment modals and Funding credit invoices. Still hand-rolled: Cashflow Invoices, Customers, InvoiceDetailView, OfficeSuppliers, SupplierDetailsModal, Cashflow Calendar, Retail Invoices, Supervision Invoices; and every non-invoice vocabulary.)*
-4. [~] **Silent failures.** *(Fixed: ~60 hook-shaped loaders now expose `error` + `refetch` and render `ErrorState` with a retry instead of an empty state, with figures withheld rather than shown as 0; the services that hid failures behind `return []` or a dropped `error` now throw; all 25 silent mutations report, and no dialog closes in a `finally` any more; success feedback added where the only signal was a spinner flash. Two e2e tests pin the behaviour by aborting the API. Left: the ~23 fetches written inline inside components, and the full-page spinner on refetch.)*
-5. [ ] **Hardcoded strings (~300).**
+2. [ ] **Dates.** *(Re-measured 2026-09-21: 82 `format()` calls over 43 files use `MMM`/`MMMM`/`EEE` with **no** locale — English month and day names in the Croatian UI — and **no file anywhere imports a date-fns locale**. 59 native `type="date"` inputs in 35 files against 19 `DateInput` uses in 11 files. There is no shared date-display helper: `utils/dateOnly.ts` only parses, and two components keep private `formatDate` copies.)* 5+ formats overall.
+3. [ ] **Status colours and labels.** The same status is coloured differently per screen: UNPAID is red, grey or yellow; On Hold is red, orange, grey or yellow; "Paid" is teal, orange, green, blue or red. Raw English DB enums show in ~45 places (measured 2026-09-21). Needs one shared status → {label, variant} map per domain. *(Started: invoice payment status has one — `getInvoiceStatusVariant` / `getInvoiceStatusLabel` in `Cashflow/services/invoiceHelpers.ts` — used by Approvals, Supervision and Retail invoice/payment modals and Funding credit invoices. Still hand-rolled: Cashflow Invoices, Customers, InvoiceDetailView, OfficeSuppliers, SupplierDetailsModal, Cashflow Calendar, Retail Invoices, Supervision Invoices; and every non-invoice vocabulary.)*
+4. [~] **Silent failures.** *(Fixed: ~60 hook-shaped loaders now expose `error` + `refetch` and render `ErrorState` with a retry instead of an empty state, with figures withheld rather than shown as 0; the services that hid failures behind `return []` or a dropped `error` now throw; all 25 silent mutations report, and no dialog closes in a `finally` any more; success feedback added where the only signal was a spinner flash. Two e2e tests pin the behaviour by aborting the API. Left: the loaders written inline inside components — measured 2026-09-21 as ~39 `load`/`fetch` functions in 33 `.tsx` files plus 12 silent `.catch(() => set…([]))` fallbacks, **not** raw `supabase.from` calls, of which there are none in any `.tsx`; and the full-page spinner on refetch, still true on 9 Cashflow pages.)*
+5. [ ] **Hardcoded strings (~290 measured 2026-09-21, of which ~89 are English; the rest are Croatian literals that still belong in the locale files).**
    - Sales has ~150, the most of any module.
    - The Director alerts panel is entirely English.
    - PDF exports ignore the UI language.
@@ -90,7 +95,55 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
    - Non-wrapping header rows in Supervision, which is used on phones on site.
    - 1400px invoice table.
    - Calendar defaults to the month view on phones.
-9. [ ] **Dark-mode contrast.** ~380 `text-*-600` accents with no `dark:` variant.
+9. [ ] **Dark-mode contrast.** 441 lines carry a `-600` accent with no `dark:text-` of their own (re-measured 2026-09-21; ~230 of them sit beside a sibling ternary branch that does have one). Worst: Cashflow 71, dashboards 68, Funding 65, Sales 62, Retail 53.
+
+### 5. Found while reconciling the detailed findings (2026-09-21)
+
+The per-module lists were checked against the code: of 85 unticked entries, 9 were already fixed, 18
+partly fixed and 58 still open. That pass also turned up screens stating things that are simply false,
+which this list had never carried. `[batch]` marks what the current batch fixes.
+
+- [ ] **Retail dashboard `[batch]`** — "Investirano" and "Troškovi" are the same variable, and it sums
+  `budget_realized` over **all** contracts, so money collected from buyers counts as cost and Profit
+  subtracts revenue from itself. "(s PDV)" is false (the trigger stores net), "Naplata" shows invoiced,
+  a late *supplier* invoice appears under receivables, every query's error is discarded, and the `en`
+  locale block holds Croatian.
+- [ ] **Credit pages, Cashflow Banks + Funding Investments `[batch]`** — "Dug" is coloured by a figure
+  that counts drawdowns twice, so a fully repaid credit shows red "€0,00"; a **defaulted** credit gets a
+  blue badge (the code branches on values the CHECK doesn't allow); over-commitment is clamped to €0 with
+  no warning; the same amount is shown twice under one label.
+- [ ] **Director "Zakašnjeli zadaci" `[batch]`** — counts payment milestones, not tasks, and the filter is
+  backwards: fully *paid* milestones past their date count, part-paid ones don't.
+- [ ] **Sales dashboard `[batch]`** — collections are measured against a hardcoded €5.000.000 target that
+  exists nowhere in the data; the payments query's error is the one of eight left unchecked.
+- [ ] **Supervision payment gate `[batch]`** — `canManagePayments` reaches only the summary banner; every
+  card, tile, badge and modal below it shows paid figures, and the banner's own "unpaid" tile lets paid be
+  derived. `/payments` and `/invoices` are in the Supervision menu but RLS returns them no rows, so both
+  pages claim "nothing found".
+- [ ] **Three definitions of overdue `[batch]`** — `new Date('YYYY-MM-DD') < new Date()` parses as UTC, so a
+  contract is overdue from 01:00 **on** its due day; `differenceInDays` truncation prints "Kasni za 0 dana";
+  `useSiteProjectData` has no null guard, so every unpaid contract **without** an end date is overdue
+  (`new Date(null)` is 1970). `utils/dateOnly.ts` has the right helper and no tests.
+- [ ] **Project timeline `[batch]`** — any project past its end date reads green "Completed" whatever its
+  status, and red "Overdue" the day *before* that date; a Completed project still shows days of delay.
+- [ ] **Milestones mix gross and net `[batch]`** — the amount is gross, "paid" is the net `base_amount` of
+  linked invoices whether or not they were paid, so at 25% VAT a fully paid milestone never reads as paid,
+  under a "(osnova)" label on a gross figure. Cashflow's invoice form repeats the mix.
+- [ ] **Cashflow payment stats `[batch]`** — "Ukupan iznos" and "Ovaj mjesec" add income and expense into one
+  figure, all cards ignore the filters, and the amount column is green on expense rows.
+- [ ] **Calendar and picker failures `[batch]`** — the grid ignores both range hooks' `error`; 12 option loads
+  `.catch(() => [])`, and the task form then shows "Bez projekta" while **saving the task with a project**.
+- [ ] **Task tab counts `[batch]`** — they count hidden completed tasks, so a tab can read 5 over an empty list.
+- [ ] **Utilisation colours `[batch]`** — four scales, and in one modal the text and its own bar disagree.
+  `InvestorCard`'s "Iskorišten kredit" shows the facility total, not the amount used.
+- [ ] **BudgetControl `[batch]`** — the EAC bar is hardcoded red whatever VAC says; at CPI 0 a green "under
+  budget" sits beside a red CPI; SPI reads "On schedule ✓" when there is no schedule at all.
+- [ ] **Team calendars draw nothing** *(deferred)* — ticking a teammate only feeds a sidebar hours figure, and
+  that figure is wrong (3 months of blocks in Month view, recurrence never expanded, declined invitations
+  counted). `docs/CALENDAR.md:7,39,182` describes an overlay and RPC behaviour that do not exist. A real
+  overlay needs a migration.
+- [ ] **UUIDs instead of names** *(deferred)* — Documents shows `entity_id.slice(0,8)` for units, customers and
+  companies; the Activity Log shows the raw entity key and an ID fragment for every type.
 
 ### Suggested order
 
@@ -105,19 +158,19 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 
 ### Top findings
 
-1. **[Invoices/index.tsx:169](../src/components/Cashflow/Invoices/index.tsx#L169) + `hooks/useInvoices.ts:75`** — States/UX · high · `[~]`
+1. **[Invoices/index.tsx:169](../src/components/Cashflow/Invoices/index.tsx#L169) + `hooks/useInvoices.ts:75`** — States/UX · high · `[x]` (the spinner shows only on the first load; the filter bar stays mounted and results dim with aria-busy)
    - **Problem:** every filter change and every search (after 500 ms) replaces the whole page, filter bar included, with a spinner. The search box unmounts mid-typing, losing focus and later keystrokes, and the page jumps to the top.
    - **Fix:** keep the filter bar mounted and show loading inside the table.
-2. **`useInvoices.ts:105`, `DebtStatus/hooks/useDebtStatus.ts:34`, `Approvals/hooks/useApprovals.ts:56`, `Loans/hooks/useLoans.ts:42`** — States · high
+2. **`useInvoices.ts:105`, `DebtStatus/hooks/useDebtStatus.ts:34`, `Approvals/hooks/useApprovals.ts:56`, `Loans/hooks/useLoans.ts:42`** — States · high · `[x]` (all four hooks expose `error`; the list area shows ErrorState with a retry)
    - **Problem:** load errors only go to the console, so a failure shows the normal empty state. Debt Status reads "no debt" and Approvals reads "Svi odobreni računi su obrađeni i skriveni", which is false financial information.
    - **Fix:** an error state with a Retry button, separate from the empty state.
 3. **[InvoiceFilters.tsx:57-62](../src/components/Cashflow/Invoices/InvoiceFilters.tsx#L57) + `useInvoices.ts:42-44`** — Terminology/UX · high · `[x]` (categories now follow the direction toggle)
    - **Problem:** the type dropdown always offers "ULAZNI (DOB/URED/INV/BANKA)" and "IZLAZNI (PROD)", whatever the Ulazni/Izlazni toggle says. With Izlazni selected, "ULAZNI (DOB)" actually filters OUTGOING_SUPPLIER, and impossible combinations return an empty table. The company filter says "Svi dobavljači" but lists your own companies.
    - **Fix:** derive the options from the selected direction and rename the company filter to "Sve firme".
-4. **[Invoices/index.tsx:129](../src/components/Cashflow/Invoices/index.tsx#L129)** — UX · high · `[~]` (needs the migration applied)
+4. **[Invoices/index.tsx:129](../src/components/Cashflow/Invoices/index.tsx#L129)** — UX · high · `[x]` in code (server-side sort in `invoiceService.ts:47`, no client sort left) — awaits migration `20260915120000`
    - **Problem:** sorting by Dospijeće or Broj reorders only the 100 rows on the current page.
    - **Fix:** sort on the server.
-5. **[index.css:124-134](../src/index.css#L124) vs `InvoiceTable.tsx:110`, `Calendar/index.tsx:278-284`, `Approvals/index.tsx:233`** — Dark mode/specificity · high
+5. **[index.css:124-134](../src/index.css#L124) vs `InvoiceTable.tsx:110`, `Calendar/index.tsx:278-284`, `Approvals/index.tsx:233`** — Dark mode/specificity · high · `[~]` (the `:where()` card rule is fixed; the opaque sticky actions cell — `ui/Table.tsx:89`, `InvoiceTable.tsx:229` — still cuts the overdue tint on desktop)
    - **Problem:** below 768px, `.responsive-table tbody tr { background }` outranks `bg-red-50` / `dark:bg-red-900/20`, so the overdue tint, the Calendar status tint and the Approvals selection highlight are silently removed. Separately, the sticky actions cell is `bg-white`, which cuts the overdue tint short on desktop.
    - **Fix:** use `:where()` for the card backgrounds, or a data attribute the mobile CSS respects.
 6. **[OfficeSuppliers/index.tsx:156-165](../src/components/Cashflow/OfficeSuppliers/index.tsx#L156) + `services/officeSupplierService.ts:39-41`** — Information · high · `[x]` (gross basis reconciles; net kept as a labelled line)
@@ -140,7 +193,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
      | Paid/remaining summary | yes | no |
 
    - **Fix:** merge them into one form.
-10. **[PaymentTable.tsx:95](../src/components/Cashflow/Payments/PaymentTable.tsx#L95) vs `:75-80`; `Payments/index.tsx:103`** — Colour/Info · med
+10. **[PaymentTable.tsx:95](../src/components/Cashflow/Payments/PaymentTable.tsx#L95) vs `:75-80`; `Payments/index.tsx:103`** — Colour/Info · med · `[~]` (the VAT cards use formatEuro; the amount is still always green and the stats still ignore the filters)
     - **Problem:** amounts are always green, even on red "RASHOD" rows. The 7 stat cards cover all payments while the table and its total follow the filters. The VAT cards format in the browser's locale.
     - **Fix:** colour amounts by direction, compute stats from the filtered set, and use `StatGrid`.
 11. **`AccountingPaymentFormModal.tsx:115-128` + `:294-302` (same in `PaymentFormModal.tsx`)** — UX · med · `[x]` (method limited by source; Kompenzacija shows "—")
@@ -162,7 +215,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 15. **[Cashflow/Calendar/index.tsx:55-63](../src/components/Cashflow/Calendar/index.tsx#L55)** — UX (data loss) · med
     - **Problem:** switching the year in the budget modal silently discards unsaved monthly edits.
     - **Fix:** warn first, or keep edits per year.
-16. **`Cashflow/Calendar/index.tsx:276-309`, `:72-82`** — Colour/Info · med
+16. **`Cashflow/Calendar/index.tsx:276-309`, `:72-82`** — Colour/Info · med · `[~]` (`AccountingPaymentFormModal` uses the shared type labels; the Calendar's own `getTypeLabel` still lacks the BANK types, and four carriers remain)
     - **Problem:** status is shown four ways, so a paid incoming invoice shows a red amount on a green row. BANK types show a raw `INCOMING_BANK`, and the same gap exists in `PaymentDetailView.tsx` and `AccountingPaymentFormModal.tsx`.
     - **Fix:** one status carrier and a shared type-label map.
 17. **[Customers/index.tsx:152-178](../src/components/Cashflow/Customers/index.tsx#L152)** — Information/Colour · med
@@ -171,10 +224,10 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 18. **[BankInvoiceFormModal.tsx:348-363](../src/components/Cashflow/Banks/forms/BankInvoiceFormModal.tsx#L348)** — Library/Mobile · med
     - **Problem:** the buttons sit inside the scrolling body, so you scroll past ~17 fields to submit. Ghost Cancel with a green submit, and a bright `border-t` in dark mode.
     - **Fix:** use `<Modal.Footer>` with secondary/primary buttons.
-19. **Invoice-type vocabulary** — Terminology · med
+19. **Invoice-type vocabulary** — Terminology · med · `[~]` (`getInvoiceTypeLabelKey` exists and is used twice; the hardcoded list in `invoiceHelpers.ts:113-124`, Cashflow Calendar and PaymentDetailView still disagree)
     - **Problem:** the same concept has five names: "ULAZNI (DOB)" / "Ulazni (Dobavljač)" / "Ulazni dobavljač" / "RASHOD" / "Ulazni". "INV" is "Investicije" in one place and "investitor" in another.
     - **Fix:** one translated label source.
-20. **[LandPurchaseFormModal.tsx](../src/components/Cashflow/Invoices/forms/LandPurchaseFormModal.tsx)** — Library/Dark/Mobile · med-low
+20. **[LandPurchaseFormModal.tsx](../src/components/Cashflow/Invoices/forms/LandPurchaseFormModal.tsx)** — Library/Dark/Mobile · med-low · `[~]` (money via formatEuro; the Ulazni/Izlazni toggle, five raw selects and the unexplained disabled submit remain)
     - **Problem:**
       - Hand-rolled segmented toggle with hardcoded "Retail".
       - 5 raw selects in slate, with labels not linked to their inputs.
@@ -277,16 +330,16 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 11. **[General/Projects/utils.ts:163-168](../src/components/General/Projects/utils.ts#L163), `ProjectCard.tsx:186-195`, `ProjectDetailsEnhanced.tsx:164`** — Colour/Info · high
     - **Problem:** once the end date passes, the General card shows green "Completed" even while the status is In Progress. Supervision shows red "N days overdue" for the same project, and the detail tile shows "-45 days" in blue. The budget "Remaining" is green even when negative, and the pages disagree on whether a budget is set.
     - **Fix:** reuse the TIC gate and the overdue wording.
-12. **[InvoicesModal.tsx:124-126,166-168](../src/components/Supervision/SiteManagement/modals/InvoicesModal.tsx#L124)** — Dark mode/specificity · med
+12. **[InvoicesModal.tsx:124-126,166-168](../src/components/Supervision/SiteManagement/modals/InvoicesModal.tsx#L124)** — Dark mode/specificity · med · `[x]` (background set in one branch only, so the overdue tint wins)
     - **Problem:** `.bg-white` is emitted after `.bg-red-50`, so overdue invoice cards have no red background, and `font-medium` beats `font-bold`.
     - **Fix:** move `bg-white` / `font-medium` into the else branch.
-13. **[ProjectsGrid.tsx:100-144](../src/components/Supervision/SiteManagement/ProjectsGrid.tsx#L100)** — Colour/Formatting · med
+13. **[ProjectsGrid.tsx:100-144](../src/components/Supervision/SiteManagement/ProjectsGrid.tsx#L100)** — Colour/Formatting · med · `[~]` (the €0.0M render is gone via formatEuroCompact; paid is still drawn orange here and teal everywhere else)
     - **Problem:** paid is orange in the grid's progress bar, but in `PhaseCard` paid is teal and orange means unpaid. `€{(x/1e6).toFixed(1)}M` renders €45.000 as "€0.0M".
     - **Fix:** teal for paid; `formatEuroRounded`.
 14. **Overdue flagged on the due date itself** — `ContractCard.tsx:41`, `Subcontractors/SubcontractorContractsList.tsx:20-24,116` ("Kasni za 0 dana"), `General/Projects/utils.ts:149,197`, `MilestoneTimeline.tsx:147,153,170` — Formatting/Colour · med
     - **Problem:** the same bug commit 89c985a fixed for invoices.
     - **Fix:** `daysFromToday()` from `utils/dateOnly`.
-15. **[BudgetControl/index.tsx:314-326,356-360,469,507](../src/components/General/BudgetControl/index.tsx#L314)** — i18n/Formatting/Colour · med
+15. **[BudgetControl/index.tsx:314-326,356-360,469,507](../src/components/General/BudgetControl/index.tsx#L314)** — i18n/Formatting/Colour · med · `[~]` (money on the shared helpers; the English CPI/SPI sublabels, the always-red EAC bar and the green Committed ring remain)
     - **Problem:** hardcoded English CPI/SPI sublabels; two currency formats on one screen; "Committed" has a green ring while the chart draws committed in amber; the EAC bar is always red.
     - **Fix:** translate, use one formatter, align colours with the chart.
 16. **[ContractCard.tsx:48-79,132-190](../src/components/Supervision/SiteManagement/ContractCard.tsx#L48)** — Info/UX · med
@@ -301,10 +354,10 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 19. **[ManageCostClassificationsModal.tsx:106-121](../src/components/Supervision/SiteManagement/modals/ManageCostClassificationsModal.tsx#L106)** — i18n/A11y/States · med · `[x]` (ConfirmDialog, labelled sort input, real error handling)
     - **Problem:** delete fires with no confirmation from an untitled icon. The sort-order input is unlabelled and saves on blur with no feedback.
     - **Fix:** ConfirmDialog, a label, save feedback.
-20. **[PaymentHistoryModal.tsx:84-86,159-161,208-211](../src/components/Supervision/SiteManagement/modals/PaymentHistoryModal.tsx#L84)** — Colour/States · med
+20. **[PaymentHistoryModal.tsx:84-86,159-161,208-211](../src/components/Supervision/SiteManagement/modals/PaymentHistoryModal.tsx#L84)** — Colour/States · med · `[~]` (status via the shared invoice helpers; the accounting note still repeats on every row)
     - **Problem:** it checks `'paid'` while the data holds `'PAID'`, so every badge is yellow with raw text. The "managed in accounting" note repeats on every row.
     - **Fix:** shared status map; say it once in the header.
-21. **[SiteManagement/index.tsx:501-510](../src/components/Supervision/SiteManagement/index.tsx#L501) + `MilestoneList.tsx:145`** — UX/Formatting · med
+21. **[SiteManagement/index.tsx:501-510](../src/components/Supervision/SiteManagement/index.tsx#L501) + `MilestoneList.tsx:145`** — UX/Formatting · med · `[~]` (money via formatEuro; still no `Modal.Body`, and it still passes a gross figure under a "(osnova)" label)
     - **Problem:** MilestoneList sits in `Modal size="full"` without `Modal.Body`, so nothing scrolls. The page mixes browser-locale and `hr-HR` amounts. "Ugovor (osnova)" shows the gross amount.
     - **Fix:** wrap in `Modal.Body`, use `formatEuro`, show `base_amount`.
 22. **[SubcontractorFormModal.tsx:153,184-199,250-259,364](../src/components/Supervision/SiteManagement/forms/SubcontractorFormModal.tsx#L153)** — States/i18n/Library · med
@@ -316,7 +369,7 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 24. **[ProjectSummaryBanner.tsx:57](../src/components/Supervision/SiteManagement/ProjectSummaryBanner.tsx#L57) vs `PhaseCard.tsx:120-125`, `TreeGroup.tsx:156-162`, `ContractCard.tsx:97-100`** — Colour/permissions · med
     - **Problem:** paid figures are hidden in the banner for users without payment rights, but shown in the tiles, tree and cards below.
     - **Fix:** pass `canManagePayments` consistently.
-25. **[WorkLogs/index.tsx:86-97](../src/components/Supervision/WorkLogs/index.tsx#L86) + `hooks/useWorkLogs.ts:46`** — States · med · `[x]` for the double submit
+25. **[WorkLogs/index.tsx:86-97](../src/components/Supervision/WorkLogs/index.tsx#L86) + `hooks/useWorkLogs.ts:46`** — States · med · `[x]` (double submit, and the failed load now shows ErrorState instead of "no logs yet")
     - **Problem:** the submit handler doesn't return its promise, so a double tap creates duplicate logs. A load failure shows the "no logs yet" state.
     - **Fix:** return the promise; add an error state.
 
@@ -384,13 +437,13 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 7. **Raw English DB values in the Croatian UI** — `UnitsGrid.tsx:345`, `ApartmentDetailsModal.tsx:65,151`, `Sales/SalesProjects/ProjectsGrid.tsx:31`, `Retail/Projects/ProjectsGrid.tsx:33`, `Retail/Projects/ProjectDetail.tsx:207`, `Sales/Payments/index.tsx:107`, `Retail/Sales/index.tsx:118`, `PaymentHistoryModal.tsx:177` — i18n/Formatting · med-high
    - **Problem:** "Available", "In Progress", `payment_method` codes and "Type: Down payment" appear untranslated.
    - **Fix:** map them through `t()`.
-8. **[Sales/Apartments/index.tsx:57-154,518-531](../src/components/Sales/Apartments/index.tsx#L57)** — States/i18n · med
+8. **[Sales/Apartments/index.tsx:57-154,518-531](../src/components/Sales/Apartments/index.tsx#L57)** — States/i18n · med · `[~]` (failures toast via `toErrorMessage` and successes confirm; the delete dialog is still a literal "Potvrda brisanja" with an English message)
    - **Problem:** create/update/delete failures are console-only. The delete dialog is half Croatian, half English.
    - **Fix:** error toasts and the `confirm.*` keys.
 9. **[Sales/Apartments/index.tsx:219-228,285-296,378-427](../src/components/Sales/Apartments/index.tsx#L219)** — Info/Colour/UX · med
    - **Problem:** unit status shows only as a background tint, with no marker for Available. The "all" chip reads "Status", the title says "Unit" in English, and each card has 5 full-width buttons.
    - **Fix:** a status Badge, "Svi", and collapsed secondary actions.
-10. **Money formatting** — `SingleUnitModal.tsx:105,108`, `BulkPriceUpdateModal.tsx:102,166`, `CustomerCard.tsx:110,119`, `Retail/utils.ts:1-8`, `Retail/Projects/forms/ProjectFormModal.tsx:185` — Formatting · med
+10. **Money formatting** — `SingleUnitModal.tsx:105,108`, `BulkPriceUpdateModal.tsx:102,166`, `CustomerCard.tsx:110,119`, `Retail/utils.ts:1-8`, `Retail/Projects/forms/ProjectFormModal.tsx:185` — Formatting · med · `[~]` (en-US, €45.50 and the € suffix are gone; `CustomerCard` still mixes a compact figure with full totals, and two modals hand-roll)
     - **Problem:** "€12,345.00" (en-US), "€450K" next to "€450.000", "€45.50"; Sales writes "€12.345" while Retail writes "12.345 €".
     - **Fix:** `formatEuro` / `formatEuroRounded` everywhere.
 11. **Dates** — `Sales/Payments/index.tsx:91,95`, `CustomerCard.tsx:75`, `PhaseCard.tsx:268 vs 302`, `ContractFormModal.tsx:202` vs `SalesFormModal.tsx:184` — Formatting · med
@@ -399,7 +452,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 12. **[Retail/Projects/PhaseCard.tsx:106,149](../src/components/Retail/Projects/PhaseCard.tsx#L106)** — Info · med · `[x]` (second tile is Preostali budžet; rollup shared with Supervision)
     - **Problem:** "Predviđeni budžet" appears twice, for allocated and for remaining budget.
     - **Fix:** rename the second to "Preostali budžet".
-13. **[Sales/Payments/index.tsx:104](../src/components/Sales/Payments/index.tsx#L104), `Retail/Sales/index.tsx:112,115,119`** — Dark mode/specificity · med
+13. **[Sales/Payments/index.tsx:104](../src/components/Sales/Payments/index.tsx#L104), `Retail/Sales/index.tsx:112,115,119`** — Dark mode/specificity · med · `[x]` (the default colour moved to `Table.Body`; the coloured cells gained dark pairs)
     - **Problem:** `Table.Td`'s built-in `dark:text-gray-100` overrides `text-green-600` / `text-gray-500`.
     - **Fix:** add `dark:` pairs or a `Td` tone prop.
 14. **[Retail/Projects/PhaseCard.tsx:109-120,347-389](../src/components/Retail/Projects/PhaseCard.tsx#L109)** — A11y/UX · med
@@ -408,10 +461,10 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 15. **Status colours per screen** — `PhaseCard.tsx:214,221`, `Retail/Projects/MilestoneList.tsx:269`, `Retail/Invoices/index.tsx:165-168`, `Retail/Sales/RetailSales.tsx:199-203`, `Sales/SalesProjects/ProjectsGrid.tsx:12`, `Retail/utils.ts:10-22`, `CustomerCard.tsx:154` vs `PaymentHistoryModal.tsx:94` — Colour · med
     - **Problem:** Partial is yellow in one place and blue ("U čekanju") in another; Unpaid is grey or red; Planning is grey or yellow.
     - **Fix:** one shared status → Badge variant map.
-16. **Failed loads read as "no data"** — `Retail/Projects/MilestoneList.tsx:55-58`, `RetailPaymentHistoryModal.tsx:60`, `RetailInvoicesModal.tsx:52`, `ContractFormModal.tsx:47-49`, `Sales/SalesProjects/hooks/useSalesData.ts:173` — States · med
+16. **Failed loads read as "no data"** — `Retail/Projects/MilestoneList.tsx:55-58`, `RetailPaymentHistoryModal.tsx:60`, `RetailInvoicesModal.tsx:52`, `ContractFormModal.tsx:47-49`, `Sales/SalesProjects/hooks/useSalesData.ts:173` — States · med · `[~]` (ErrorState in the three Retail modals and `useSalesData`; `ContractFormModal` is still console-only and the Sales grids have no EmptyState)
     - **Problem:** load failures show "no milestones" / "no payments" / an empty dropdown. Sales ProjectsGrid and BuildingsGrid have no empty state.
     - **Fix:** an error state plus `EmptyState`.
-17. **[Retail/Projects/ProjectDetail.tsx:349-365](../src/components/Retail/Projects/ProjectDetail.tsx#L349), `MilestoneList.tsx:148-153`** — Library/A11y · med
+17. **[Retail/Projects/ProjectDetail.tsx:349-365](../src/components/Retail/Projects/ProjectDetail.tsx#L349), `MilestoneList.tsx:148-153`** — Library/A11y · med · `[~]` (role=dialog, aria-label, focus trap and Escape added; still no portal, backdrop close or scroll lock)
     - **Problem:** the milestones panel is a hand-rolled overlay with no portal, backdrop close or scroll lock, and an unlabelled SVG close button.
     - **Fix:** `<Modal size="full">`.
 18. **[Retail/LandPlots/index.tsx:191-199](../src/components/Retail/LandPlots/index.tsx#L191), `Retail/Invoices/index.tsx:128-141`, `Retail/Projects/ProjectsGrid.tsx:36`** — Colour/Dark/i18n/UX · med
@@ -495,7 +548,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 5. **[Funding/Payments/index.tsx:140-151,68,172](../src/components/Funding/Payments/index.tsx#L140)** — Info/Colour · high · `[x]` (PRIHOD/RASHOD by direction; inflow, outflow and net totalled separately)
    - **Problem:** the same "BANKA" badge on every row. Disbursements, repayments and expenses are all green and summed into one total.
    - **Fix:** show the direction as the type, colour by direction, total each separately.
-6. **[dashboards/services/directorService.ts:445-485](../src/components/dashboards/services/directorService.ts#L445) → `sections/DirectorAlertsSection.tsx:45,51`** — i18n · high
+6. **[dashboards/services/directorService.ts:445-485](../src/components/dashboards/services/directorService.ts#L445) → `sections/DirectorAlertsSection.tsx:45,51`** — i18n · high · `[~]` (money via formatEuro; every title and message is still English)
    - **Problem:** the General dashboard's alert panel is entirely English and formats with no locale.
    - **Fix:** return keys and params, translate in the section.
 7. **Cashflow dashboard money in `en-US`** — `AccountingVATSection.tsx:26-47`, `AccountingCashFlowSection.tsx:38-106`, `AccountingBudgetSection.tsx:34-48`, `AccountingMonthlyTrendsSection.tsx:39-55` — Formatting · high · `[x]` (all 18 sites on the shared helpers)
@@ -531,7 +584,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 17. **[dashboards/RetailDashboard.tsx:51,59,64-71,116](../src/components/dashboards/RetailDashboard.tsx#L51)** — Info · med
     - **Problem:** "Aktivnih" subtitles count every row. Invested and Costs are the same number in two colours. Query errors are ignored, so failures read as 0.
     - **Fix:** fix the subtitles, show the figure once, check errors.
-18. **[Funding/Investors/index.tsx:41](../src/components/Funding/Investors/index.tsx#L41) + `hooks/useBankData.ts:24`** — States · med
+18. **[Funding/Investors/index.tsx:41](../src/components/Funding/Investors/index.tsx#L41) + `hooks/useBankData.ts:24`** — States · med · `[x]` (the spinner now shows only while the list is empty)
     - **Problem:** every save or delete swaps the page for a spinner, so an open detail modal disappears and returns. Same in `Funding/Projects/index.tsx:45`.
     - **Fix:** show the spinner on first load only.
 19. **Risk labels** — `Funding/Projects/index.tsx:79`, `Reports/GeneralReports.tsx:395`, `Investors/utils/creditCalculations.ts:103-105` — i18n · med
@@ -543,7 +596,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 21. **[Funding/Payments/index.tsx:37-56](../src/components/Funding/Payments/index.tsx#L37)** — UX · med
     - **Problem:** the CSV export has English headers, no quoting, no BOM (so diacritics break) and no toast.
     - **Fix:** XLSX via the shared exporter.
-22. **Silent failures** — `Funding/Investments/hooks/useLazySection.ts:14`, `Reports/GeneralReports.tsx:48-50`, `Funding/TIC/index.tsx:84-86` — States · med
+22. **Silent failures** — `Funding/Investments/hooks/useLazySection.ts:14`, `Reports/GeneralReports.tsx:48-50`, `Funding/TIC/index.tsx:84-86` — States · med · `[~]` (`GeneralReports` has ErrorState + refetch; `useLazySection` caches the failure and the TIC export is console-only)
     - **Problem:** a failed fetch is cached as "no invoices"; a failed report has no retry; a failed TIC export does nothing visible.
     - **Fix:** error with retry; toast on export failure.
 23. **[Reports/SalesAnalysis.tsx:157-160](../src/components/Reports/SalesAnalysis.tsx#L157), `Reports/CostAnalysis.tsx:118,191-192,174 vs 197`** — Colour/Info · low-med
@@ -604,7 +657,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
      - The AI panel closes, losing the draft, from rename, edit, the lightbox or the delete dialog.
      - On TaskModal's discard dialog, Escape does nothing.
    - **Fix:** one Escape stack (`src/hooks/useEscapeKey.ts`).
-3. **[Tasks/hooks/useTasks.ts:24-47](../src/components/Tasks/hooks/useTasks.ts#L24), `TaskDetail.tsx:128-136`, `Calendar/index.tsx:114,159-163`, `Chat/NewConversationModal.tsx:72-73`, `Chat/hooks/useChat.ts:43`** — States · high · `[~]` (the calendar toggle now shows an error toast; the rest is open)
+3. **[Tasks/hooks/useTasks.ts:24-47](../src/components/Tasks/hooks/useTasks.ts#L24), `TaskDetail.tsx:128-136`, `Calendar/index.tsx:114,159-163`, `Chat/NewConversationModal.tsx:72-73`, `Chat/hooks/useChat.ts:43`** — States · high · `[~]` (Tasks and Chat report now; the calendar still ignores both range hooks' `error`, and TaskDetail swallows its own loads)
    - **Problem:** no error toasts in Tasks, Calendar or Chat for mutations. NewConversationModal closes on failure, and failed loads show empty states.
    - **Fix:** catch, `toast.error`, and a separate error state.
 4. **[Calendar/MonthView.tsx:221-265](../src/components/Calendar/MonthView.tsx#L221), `components/TaskPill.tsx:61`** — Info/Consistency · med-high · `[x]` (TaskPill in MonthView, tinted; events and tasks share the cell's three rows)
@@ -616,10 +669,10 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 6. **[Calendar/DayEventsModal.tsx:76](../src/components/Calendar/DayEventsModal.tsx#L76), `components/sidebar/NextUp.tsx:66`** — States · med · `[x]`
    - **Problem:** TaskPill is rendered without `onToggle`, so the checkbox does nothing.
    - **Fix:** pass the handler.
-7. **[Calendar/MonthView.tsx:23,244](../src/components/Calendar/MonthView.tsx#L23), `views/AgendaView.tsx:24,102`, `Tasks/taskColor.ts:66-72`** — Colour · med
+7. **[Calendar/MonthView.tsx:23,244](../src/components/Calendar/MonthView.tsx#L23), `views/AgendaView.tsx:24,102`, `Tasks/taskColor.ts:66-72`** — Colour · med · `[x]` (the month view renders the tinted shared TaskPill; overdue is an icon, so the left border is the event type)
    - **Problem:** a red 3px stripe means both "deadline event" and "overdue task". The task palette also offers red, and grey tint looks disabled.
    - **Fix:** mark overdue with an icon or text; reconsider red/grey in the palette.
-8. **[Calendar/MonthView.tsx:39,97,227](../src/components/Calendar/MonthView.tsx#L39)** — Mobile/Layout · med
+8. **[Calendar/MonthView.tsx:39,97,227](../src/components/Calendar/MonthView.tsx#L39)** — Mobile/Layout · med · `[x]` (events and tasks share the cell's three rows, and "+N more" counts what is hidden)
    - **Problem:** 120px rows can't fit 3 events plus 2 tasks, so pills spill into the next week or overlap "+N more".
    - **Fix:** size rows to content, or count task slots into the overflow.
 9. **[Tasks/hooks/useTasks.ts:40](../src/components/Tasks/hooks/useTasks.ts#L40), `TaskRow.tsx:116`, `Common/Layout.tsx:316,332,348`** — Indicators · med · `[x]` (acknowledge per task opened; badges labelled)
@@ -637,13 +690,13 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 13. **[Tasks/TaskDetail.tsx:358](../src/components/Tasks/TaskDetail.tsx)** — States/UX · med · `[x]` (saves on blur/Enter)
     - **Problem:** the due-date input saves on every `onChange`, so typing a year fires four writes.
     - **Fix:** save on blur or confirm.
-14. **[Documents/components/DocumentListTable.tsx:167](../src/components/Documents/components/DocumentListTable.tsx#L167), `Cashflow/Invoices/InvoiceTable.tsx:263`, `Supervision/WorkLogs/index.tsx:306`, `General/Projects/MilestoneTimeline.tsx:122`** — Dark mode/specificity · med
+14. **[Documents/components/DocumentListTable.tsx:167](../src/components/Documents/components/DocumentListTable.tsx#L167), `Cashflow/Invoices/InvoiceTable.tsx:263`, `Supervision/WorkLogs/index.tsx:306`, `General/Projects/MilestoneTimeline.tsx:122`** — Dark mode/specificity · med · `[x]` (ghost-primary/success/warning/danger variants; no className recolouring left)
     - **Problem:** ~10 ghost Buttons pass `text-red-600` via `className`, but Button's `dark:text-gray-200` outranks it.
     - **Fix:** a `ghost-danger` / icon-tone variant.
 15. **[ui/Toast.tsx:9](../src/components/ui/Toast.tsx#L9)** — Contrast · med · `[x]` (now `bg-amber-500 text-gray-900`)
     - **Problem:** warning toasts are white on `bg-yellow-500` (~2:1).
     - **Fix:** `bg-amber-600`, or dark text.
-16. **Hardcoded or broken strings** — `Calendar/views/_shared/TimelineColumn.tsx:251`, `Common/Layout.tsx` (header aria-labels, "Menu"), `Auth/LoginForm.tsx:178,199,267`, `Common/PageFallback.tsx:7`, `Documents/components/CategoryRow.tsx:47`, `CategoryTree.tsx:71`, `Tasks/TaskDetail.tsx:406-407`, `Calendar/components/ParticipantPicker.tsx:89` — i18n · med
+16. **Hardcoded or broken strings** — `Calendar/views/_shared/TimelineColumn.tsx:251`, `Common/Layout.tsx` (header aria-labels, "Menu"), `Auth/LoginForm.tsx:178,199,267`, `Common/PageFallback.tsx:7`, `Documents/components/CategoryRow.tsx:47`, `CategoryTree.tsx:71`, `Tasks/TaskDetail.tsx:406-407`, `Calendar/components/ParticipantPicker.tsx:89` — i18n · med · `[~]` (the header badges and `common.remove` are fixed; TimelineColumn's "+N more", the login form and several shell strings remain)
     - **Problem:** "+N more" in English; mixed-language header; English login placeholders and no language switcher on the login page. `common.remove` and `profiles.title` are missing from the locale files, so their raw keys show.
     - **Fix:** locale keys; add the missing keys.
 17. **[AiChat/lib/labels.ts:53-55](../src/components/AiChat/lib/labels.ts#L53)** — i18n · med
