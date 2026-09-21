@@ -175,7 +175,21 @@
       "pending_invitations_one": "{{count}} pozivnica čeka odgovor",
       "pending_invitations_few": "{{count}} pozivnice čekaju odgovor",
       "pending_invitations_other": "{{count}} pozivnica čeka odgovor"
-    }
+    },
+    "months": [
+      "Siječanj",
+      "Veljača",
+      "Ožujak",
+      "Travanj",
+      "Svibanj",
+      "Lipanj",
+      "Srpanj",
+      "Kolovoz",
+      "Rujan",
+      "Listopad",
+      "Studeni",
+      "Prosinac"
+    ]
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -310,6 +324,11 @@
     "fully_paid": "Potpuno plaćeno",
     "partial_payment": "Djelomično plaćanje",
     "without_contract": "Bez ugovora"
+  },
+  "risk": {
+    "low": "Nizak",
+    "medium": "Srednji",
+    "high": "Visok"
   },
   "payment_method": {
     "virman": "Virman",

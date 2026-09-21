@@ -1,3 +1,8 @@
+import { format } from 'date-fns'
+import { hr } from 'date-fns/locale'
+import { appLanguage } from './locale'
+import { parseLocalDate } from './dateOnly'
+
 export const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -66,3 +71,52 @@ export const formatEuroCompact = (value: Money): string => {
   }
   return formatEuroRounded(value)
 }
+
+// ----------------------------------------------------------------------------
+// Dates
+//
+// 74 call sites formatted dates as `'MMM dd, yyyy'` with no locale, so a Croatian UI read
+// "Jan 05, 2026". These render the app's language instead: `05.01.2026.` in Croatian — the
+// trailing dot is the Croatian convention, which date-fns' own `hr` locale and the AI prompt rules
+// (supabase/functions/_shared/prompts.ts) both use — and `Jan 05, 2026` in English.
+//
+// Every helper takes the language explicitly rather than reaching for i18n, so it stays pure and
+// callable from services. In a component: `const { i18n } = useTranslation()` → `i18n.language`.
+//
+// A Postgres `date` column arrives as 'YYYY-MM-DD', which `new Date()` reads as UTC midnight and
+// renders as the previous day east of UTC. These parse through `parseLocalDate`, so a date-only
+// string is always the day it says. Pass a Date for a timestamp, where the time of day matters.
+// ----------------------------------------------------------------------------
+
+/** What the date helpers accept: a 'YYYY-MM-DD' / ISO string, a Date, or nothing. */
+export type DateInputValue = string | Date | null | undefined
+
+const toDate = (value: DateInputValue): Date | null => {
+  if (!value) return null
+  const date = value instanceof Date ? value : parseLocalDate(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+const render = (value: DateInputValue, language: string | null | undefined, hrPattern: string, enPattern: string): string => {
+  const date = toDate(value)
+  if (!date) return NO_VALUE
+  return appLanguage(language) === 'hr'
+    ? format(date, hrPattern, { locale: hr })
+    : format(date, enPattern)
+}
+
+/** A calendar date: `05.01.2026.` / `Jan 05, 2026`. */
+export const formatDate = (value: DateInputValue, language: string | null | undefined): string =>
+  render(value, language, 'dd.MM.yyyy.', 'MMM dd, yyyy')
+
+/** A date with its time, for timestamps: `05.01.2026. 14:30` / `Jan 05, 2026 14:30`. */
+export const formatDateTime = (value: DateInputValue, language: string | null | undefined): string =>
+  render(value, language, 'dd.MM.yyyy. HH:mm', 'MMM dd, yyyy HH:mm')
+
+/** Month and year, for chart axes and period labels: `siječanj 2026.` / `Jan 2026`. */
+export const formatMonthYear = (value: DateInputValue, language: string | null | undefined): string =>
+  render(value, language, 'LLLL yyyy.', 'MMM yyyy')
+
+/** Day and month only, for compact rows: `05.01.` / `Jan 05`. */
+export const formatDayMonth = (value: DateInputValue, language: string | null | undefined): string =>
+  render(value, language, 'dd.MM.', 'MMM dd')

@@ -126,6 +126,49 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 - Use these everywhere — do not inline number/currency formatting
 - **PDF exception:** `hr-HR` renders the minus as U+2212, which is outside WinAnsi and garbles a whole string in jsPDF built-in fonts. PDF generators swap it for an ASCII hyphen (see `docs/REPORTS.md`) or embed a Unicode font
 
+**Dates (same file).** 74 call sites formatted with `'MMM dd, yyyy'` and no locale, so a Croatian UI
+read "Jan 05, 2026".
+- `formatDate(value, language)` — `05.01.2026.` / `Jan 05, 2026`. The trailing dot is the Croatian
+  convention (date-fns' own `hr` locale and `supabase/functions/_shared/prompts.ts:73` both use it)
+- `formatDateTime(value, language)` — adds `HH:mm`, for timestamps
+- `formatMonthYear(value, language)` — `siječanj 2026.` / `Jan 2026`. Croatian uses the **standalone**
+  month (`LLLL`, "siječanj"); `MMMM` yields the genitive "siječnja", which reads wrong in a label
+- `formatDayMonth(value, language)` — `05.01.` / `Jan 05`
+- All four take the language explicitly (`i18n.language` in a component) rather than reaching for
+  i18n, so they stay pure and callable from services, and all render `—` for a missing or
+  unparseable value
+- A **string** argument is parsed as a *date-only* value through `parseLocalDate` — a `date` column
+  through `new Date()` is UTC midnight and renders as the previous day in Croatia. Pass a `Date`
+  where the time of day matters
+- `'yyyy-MM-dd'` values written to the database, query bounds and file names are machine data and
+  stay as they are
+
+### locale.ts
+- `isCroatian(language)` / `appLanguage(language)` / `intlLocale(language)` — one answer to "which
+  language is the UI in"
+- Fourteen components carried `i18n.language === 'hr' ? 'hr-HR' : 'en-US'`. That test is **false for
+  `'hr-HR'`**, which is what the detector returns for a Croatian browser with nothing in
+  localStorage — so those users read an English calendar. `src/i18n.ts` now sets `supportedLngs` and
+  `load: 'languageOnly'` so the detector returns a bare `'hr'`; these helpers are the second line of
+  defence and the single place to touch if a third language is added
+- `appLanguage` falls back to Croatian for an unknown language, mirroring what `fallbackLng: 'hr'`
+  does to the strings on the same screen
+
+### statusDisplay.ts
+- `PROJECT_STATUS`, `CONTRACT_STATUS`, `RETAIL_CONTRACT_STATUS`, `RETAIL_PHASE_STATUS`,
+  `UNIT_STATUS`, `MILESTONE_STATUS`, `RETAIL_MILESTONE_STATUS`, `RISK_LEVEL` — one label key and one
+  badge colour per database status, read with `statusVariant(map, value)` /
+  `statusLabel(map, value, t)`
+- Same shape as `Cashflow/services/invoiceHelpers.ts` (invoice status) and
+  `Funding/Investors/utils/creditStatus.ts` (credits), which stay where they are
+- The problem it replaces: a project "On Hold" was yellow, grey, red and orange on four different
+  screens, and all eleven sites printed the raw English column value in a Croatian UI
+- **The stored value is English and CHECK-constrained — map at render time only.** `UnitsGrid` and
+  `ApartmentDetailsModal` compare against `'Sold'` / `'Available'` / `'Reserved'` and write them
+  back; those comparisons stay English
+- An unknown value keeps its raw text in a grey badge rather than disappearing
+- The test asserts each map covers exactly its CHECK values and that every key exists in both locales
+
 ### contractRollup.ts
 - `rollupContracts(rows)` / `remainingBudget(budget, rollup)` — the contract totals behind a phase card: contracted value, paid, unpaid, and unpaid-without-contract, then budget headroom
 - Takes a neutral row (`hasContract` / `cost` / `paid` / `owed`), so Supervision and Retail map their own columns onto it instead of keeping two copies of the arithmetic

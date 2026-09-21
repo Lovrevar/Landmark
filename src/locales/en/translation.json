@@ -172,7 +172,21 @@
       "new_tasks_other": "{{count}} new tasks",
       "pending_invitations_one": "{{count}} invitation awaiting response",
       "pending_invitations_other": "{{count}} invitations awaiting response"
-    }
+    },
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ]
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -307,6 +321,11 @@
     "fully_paid": "Fully Paid",
     "partial_payment": "Partial Payment",
     "without_contract": "Without Contract"
+  },
+  "risk": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
   },
   "payment_method": {
     "virman": "Bank Transfer",
