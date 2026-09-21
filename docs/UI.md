@@ -10,10 +10,10 @@ Shared primitive component library. Always check here before building new UI —
 
 ## Components
 
-> **Barrel-file gotcha.** `AvatarStack`, `MarkdownView`, `SearchableSelect`, `ToggleSwitch` and
-> `Toast` are **not** re-exported from `src/components/ui/index.ts` — import them by path
-> (`import SearchableSelect from '../../ui/SearchableSelect'`). `Toast` is never imported
-> directly at all; use `useToast()`. Everything else is available from `'../../ui'`.
+> **Barrel-file gotcha.** `AvatarStack`, `InlineLoadError`, `MarkdownView`, `SearchableSelect`,
+> `ToggleSwitch` and `Toast` are **not** re-exported from `src/components/ui/index.ts` — import
+> them by path (`import SearchableSelect from '../../ui/SearchableSelect'`). `Toast` is never
+> imported directly at all; use `useToast()`. Everything else is available from `'../../ui'`.
 
 ### Alert.tsx
 - Styled alert banner with dismiss button
@@ -72,6 +72,8 @@ Shared primitive component library. Always check here before building new UI —
   4. loaded fine, genuinely no rows → `EmptyState`
 - Figures derived from a failed load (stat cards, totals, counts) must be withheld or shown as `—`, never as 0 or €0
 - A page whose data failed must not offer an export of it (see Debt Status)
+- Rule 2 assumes something list-sized failed. For a single **control** — a picker whose options
+  did not load, a sidebar card — use `InlineLoadError` instead
 
 ### FilterBar.tsx
 - Responsive filter controls row (column on mobile, row on desktop)
@@ -94,6 +96,13 @@ Shared primitive component library. Always check here before building new UI —
 - One control per FormField — two controls would share the id
 - `group` — for a field that is a set of controls or a read-only value (a `SegmentedControl`, a category tree, "budget from TIC"): the label becomes the name of a `role="group"` wrapper instead of pointing at a single input
 - A custom control can join in with `useFormFieldControl()` (exported from `FormField.tsx`), which returns `{ controlId, describedBy, invalid, required }` or null outside a FormField
+
+### InlineLoadError.tsx
+- One line of "this could not be loaded", small enough to sit under a form control or inside a sidebar card. Imported by path (not in the barrel)
+- Props: `message?` (already-translated sentence; defaults to `common.load_error_title`), `onRetry?` (no retry link without it), `className?`
+- **Why it exists:** a select whose options failed to load looks exactly like a select whose value is "none", and an empty sidebar widget looks exactly like "nothing is pending". `ErrorState` is too large for either and replaces a whole list; this replaces nothing
+- **Pair it with a disabled control** wherever the displayed value would otherwise contradict the value being saved. The rule across Calendar, Tasks and Documents: when an option list fails, disable the control, keep the stored value visible (as `common.option_name_unavailable` if the list cannot name it), and never let the placeholder claim "none"
+- Precedent wording for the sentence: `common.projects_load_error`, `common.users_load_error`
 
 ### Input.tsx
 - Styled text input with focus ring

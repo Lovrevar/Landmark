@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { supabase } from '../../../lib/supabase'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { fetchEventsInRange } from '../services/calendarService'
 import { expandEvents, type ExpandedOccurrence } from '../utils/recurrence'
 import type { CalendarEvent } from '../../../types/tasks'
@@ -54,7 +55,11 @@ export function useEventsInRange({
       const data = await fetchEventsInRange(user.id, fromIso, toIso)
       if (id === reqIdRef.current) setRawEvents(data)
     } catch (e) {
-      if (id === reqIdRef.current) setError(e as Error)
+      // Supabase rejects with a plain `{ code, message, details }`, not an `Error`, so the old
+      // `e as Error` handed callers an object whose `.message` was undefined. Normalise here;
+      // an unreadable machine message becomes '' and the caller falls back to its own wording.
+      console.error('Failed to load calendar events', e)
+      if (id === reqIdRef.current) setError(new Error(toErrorMessage(e, '')))
     } finally {
       if (id === reqIdRef.current) setLoading(false)
     }

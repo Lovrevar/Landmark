@@ -29,6 +29,8 @@ import { PENDING_WINDOW_DAYS } from './utils/pendingCount'
 import { useCalendarReminderToasts } from './hooks/useCalendarReminderToasts'
 import type { EventResponse, NewEventInput } from '../../types/tasks'
 import type { ExpandedOccurrence } from './utils/recurrence'
+import Alert from '../ui/Alert'
+import InlineLoadError from '../ui/InlineLoadError'
 import MonthView from './MonthView'
 import DayView from './views/DayView'
 import WeekView from './views/WeekView'
@@ -110,13 +112,18 @@ const CalendarPage: React.FC = () => {
   const [search, setSearch] = useState('')
   const [projects, setProjects] = useState<ProjectOption[]>([])
   const [users, setUsers] = useState<CalendarUser[]>([])
+  const [projectsError, setProjectsError] = useState(false)
+  const [usersError, setUsersError] = useState(false)
   const [busyBlocks, setBusyBlocks] = useState<BusyBlock[]>([])
+  const [busyError, setBusyError] = useState(false)
+  // Bumped by the retry link; the busy-blocks effect keys off it.
+  const [busyReload, setBusyReload] = useState(0)
 
   const { from, to } = useMemo(() => rangeForView(prefs.view, anchor), [prefs.view, anchor])
   const fromIso = useMemo(() => from.toISOString(), [from])
   const toIso = useMemo(() => to.toISOString(), [to])
 
-  const { rawEvents, occurrences, loading, refresh } = useEventsInRange({
+  const { rawEvents, occurrences, loading, error: eventsError, refresh } = useEventsInRange({
     fromIso,
     toIso,
     activeTypes: prefs.activeTypes,
@@ -140,6 +147,7 @@ const CalendarPage: React.FC = () => {
   const {
     rawEvents: sidebarRawEvents,
     occurrences: sidebarOccurrences,
+    error: sidebarError,
     refresh: refreshSidebar,
   } = useEventsInRange(sidebarRange)
 
@@ -157,10 +165,15 @@ const CalendarPage: React.FC = () => {
     [prefs.activeParticipantIds, users],
   )
 
-  const { rawTasks, taskOccurrences, refresh: refreshTasks } = useTasksInRange({
+  // Without the user list the participant filter cannot be translated, and mapping it to an
+  // empty array reads as "no filter" — which left the task overlay unfiltered while the events
+  // beside it stayed filtered. Hide the overlay instead and say why.
+  const taskFilterBlocked = usersError && prefs.activeParticipantIds.length > 0
+
+  const { rawTasks, taskOccurrences, error: tasksError, refresh: refreshTasks } = useTasksInRange({
     fromIso,
     toIso,
-    enabled: prefs.showTasks,
+    enabled: prefs.showTasks && !taskFilterBlocked,
     activeProjectId: prefs.activeProjectId,
     activeParticipantIds: taskParticipantIds,
     search,
@@ -220,6 +233,30 @@ const CalendarPage: React.FC = () => {
     }
   }, [user, refreshTasks, toast, t])
 
+  // Both option lists used to swallow their failure into an empty array: the project filter
+  // then offered nothing, and the participant filter silently changed what the overlay showed.
+  const loadProjects = useCallback(async () => {
+    try {
+      setProjects(await fetchProjectOptions())
+      setProjectsError(false)
+    } catch (e) {
+      console.error('Failed to load calendar project options', e)
+      setProjectsError(true)
+      toast.error(t('common.projects_load_error'))
+    }
+  }, [toast, t])
+
+  const loadUsers = useCallback(async () => {
+    try {
+      setUsers(await fetchCalendarUsers())
+      setUsersError(false)
+    } catch (e) {
+      console.error('Failed to load calendar users', e)
+      setUsersError(true)
+      toast.error(t('common.users_load_error'))
+    }
+  }, [toast, t])
+
   useEffect(() => {
     if (!user) return
     // Recount the header badge now rather than on its next 20-second poll. There is nothing to
@@ -227,24 +264,29 @@ const CalendarPage: React.FC = () => {
     // RSVP clears one. (Visiting used to bulk-stamp calendar_event_participants.acknowledged_at,
     // which nothing displays.)
     dispatchCalendarRead()
-    Promise.all([
-      fetchProjectOptions().then(setProjects).catch(() => setProjects([])),
-      fetchCalendarUsers().then(setUsers).catch(() => setUsers([])),
-    ])
-  }, [user])
+    void loadProjects()
+    void loadUsers()
+  }, [user, loadProjects, loadUsers])
 
-  // Fetch busy blocks for enabled team members within the visible range
+  // Fetch busy blocks for enabled team members within the visible range. A failure used to
+  // remove the summary card, which reads as "nobody is busy"; it now stays with a note.
   useEffect(() => {
     if (prefs.enabledTeams.length === 0) {
       setBusyBlocks([])
+      setBusyError(false)
       return
     }
     let cancelled = false
     fetchBusyBlocks(prefs.enabledTeams, fromIso, toIso)
-      .then(data => { if (!cancelled) setBusyBlocks(data) })
-      .catch(() => { if (!cancelled) setBusyBlocks([]) })
+      .then(data => { if (!cancelled) { setBusyBlocks(data); setBusyError(false) } })
+      .catch(e => {
+        if (cancelled) return
+        console.error('Failed to load team busy blocks', e)
+        setBusyBlocks([])
+        setBusyError(true)
+      })
     return () => { cancelled = true }
-  }, [prefs.enabledTeams, fromIso, toIso])
+  }, [prefs.enabledTeams, fromIso, toIso, busyReload])
 
   const openNewEvent = useCallback((opts?: { date?: Date; startMinutes?: number; endMinutes?: number }) => {
     setNewDefaultDate(opts?.date ? toDateInputValue(opts.date) : undefined)
@@ -349,6 +391,27 @@ const CalendarPage: React.FC = () => {
     return perUser
   }, [busyBlocks])
 
+  // A failed range query leaves the *previous* range's events in state, so the grid draws an
+  // all-but-empty month that looks complete. The toolbar, filter bar and sidebar stay mounted —
+  // an empty range is legitimate on a calendar, so this is an Alert over the grid, not an
+  // ErrorState in its place.
+  const gridNotices = useMemo(() => {
+    const out: string[] = []
+    if (eventsError) out.push(t('calendar.load_error.events'))
+    if (tasksError) out.push(t('calendar.load_error.tasks'))
+    if (taskFilterBlocked && prefs.showTasks) out.push(t('calendar.load_error.task_filter_blocked'))
+    return out
+  }, [eventsError, tasksError, taskFilterBlocked, prefs.showTasks, t])
+
+  // Whatever the server said, when it said something a person can read.
+  const gridErrorDetail = eventsError?.message || tasksError?.message || ''
+
+  const retryGrid = useCallback(() => {
+    void refresh()
+    void refreshTasks()
+    if (usersError) void loadUsers()
+  }, [refresh, refreshTasks, usersError, loadUsers])
+
   const showSkeleton = loading && occurrences.length === 0
 
   return (
@@ -416,10 +479,27 @@ const CalendarPage: React.FC = () => {
         onChangeParticipants={setActiveParticipantIds}
         search={search}
         onChangeSearch={setSearch}
+        projectsLoadFailed={projectsError}
+        usersLoadFailed={usersError}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-3">
+          {gridNotices.length > 0 && (
+            <Alert variant="error" className="mb-3" title={t('common.load_error_title')}>
+              <div className="space-y-1">
+                {gridNotices.map(notice => (
+                  <p key={notice}>{notice}</p>
+                ))}
+                {gridErrorDetail && (
+                  <p className="text-xs opacity-80">{gridErrorDetail}</p>
+                )}
+                <button type="button" onClick={retryGrid} className="underline font-medium">
+                  {t('common.retry')}
+                </button>
+              </div>
+            </Alert>
+          )}
           {showSkeleton ? (
             <GridSkeleton />
           ) : prefs.view === 'day' ? (
@@ -474,6 +554,8 @@ const CalendarPage: React.FC = () => {
             occurrences={sidebarOccurrences}
             onEventClick={setSelected}
             onQuickRespond={handleQuickRespond}
+            loadFailed={!!sidebarError}
+            onRetry={() => { void refreshSidebar() }}
           />
           <NextUp
             occurrences={sidebarOccurrences}
@@ -482,34 +564,46 @@ const CalendarPage: React.FC = () => {
             onTaskClick={handleTaskClick}
             onTaskToggle={handleTaskToggle}
             currentUserId={user?.auth_user_id}
+            loadFailed={!!sidebarError}
+            onRetry={() => { void refreshSidebar() }}
           />
           <TeamCalendars
             users={users.filter(u => u.id !== user?.id)}
             enabledIds={prefs.enabledTeams}
             onToggle={toggleTeam}
             colors={teamColors}
+            loadFailed={usersError}
+            onRetry={() => { void loadUsers() }}
           />
-          {prefs.enabledTeams.length > 0 && busyBlocks.length > 0 && (
+          {prefs.enabledTeams.length > 0 && (busyError || busyBlocks.length > 0) && (
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
               <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
                 {t('calendar.team_calendars.busy_summary')}
               </h3>
-              <div className="space-y-1 text-xs">
-                {Array.from(totalBusyHours.entries()).map(([uid, hours]) => {
-                  const u = users.find(x => x.id === uid)
-                  return (
-                    <div key={uid} className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
-                        <span className={`w-2 h-2 rounded-full ${teamColors[uid]}`} />
-                        {u?.username || uid}
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {t('calendar.team_calendars.hours', { count: Math.round(hours) })}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
+              {busyError ? (
+                <InlineLoadError
+                  message={t('calendar.load_error.busy_blocks')}
+                  onRetry={() => setBusyReload(n => n + 1)}
+                />
+              ) : (
+                <div className="space-y-1 text-xs">
+                  {Array.from(totalBusyHours.entries()).map(([uid, hours]) => {
+                    const u = users.find(x => x.id === uid)
+                    return (
+                      <div key={uid} className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
+                          <span className={`w-2 h-2 rounded-full ${teamColors[uid]}`} />
+                          {/* A raw uuid told the reader nothing; the name simply is not loaded. */}
+                          {u?.username || t('common.option_name_unavailable')}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400">
+                          {t('calendar.team_calendars.hours', { count: Math.round(hours) })}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </aside>
@@ -527,6 +621,7 @@ const CalendarPage: React.FC = () => {
         occurrence={resolvedSelected}
         sourceEvent={selectedSourceEvent}
         projects={projects}
+        projectsLoadFailed={projectsError}
         onClose={() => setSelected(null)}
         onRespond={handleRespond}
         onDelete={handleDelete}

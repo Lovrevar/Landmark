@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Lock, Users } from 'lucide-react'
 import Modal from '../ui/Modal'
@@ -6,7 +6,8 @@ import Button from '../ui/Button'
 import Input from '../ui/Input'
 import Textarea from '../ui/Textarea'
 import ConfirmDialog from '../ui/ConfirmDialog'
-import SearchableSelect from '../ui/SearchableSelect'
+import SearchableSelect, { type SearchableOption } from '../ui/SearchableSelect'
+import InlineLoadError from '../ui/InlineLoadError'
 import ToggleSwitch from '../ui/ToggleSwitch'
 import ParticipantPicker from '../Calendar/components/ParticipantPicker'
 import TaskColorPicker from './components/TaskColorPicker'
@@ -62,15 +63,40 @@ const TaskModal: React.FC<Props> = ({
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [projects, setProjects] = useState<ProjectOption[]>([])
   const [users, setUsers] = useState<TaskUser[]>([])
+  // Both used to fall back to `[]`, which made the project field read "Bez projekta" while
+  // `form.projectId` still held `defaultProjectId` — the task was then created *with* a project
+  // the form said it did not have.
+  const [projectsError, setProjectsError] = useState(false)
+  const [usersError, setUsersError] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showConfirmDiscard, setShowConfirmDiscard] = useState(false)
+
+  const loadProjects = useCallback(async () => {
+    try {
+      setProjects(await fetchProjectOptions())
+      setProjectsError(false)
+    } catch (e) {
+      console.error('Failed to load task project options', e)
+      setProjectsError(true)
+    }
+  }, [])
+
+  const loadUsers = useCallback(async () => {
+    try {
+      setUsers(await fetchTaskUsers())
+      setUsersError(false)
+    } catch (e) {
+      console.error('Failed to load task users', e)
+      setUsersError(true)
+    }
+  }, [])
 
   useEffect(() => {
     if (!show) return
     setForm({ ...EMPTY_FORM, projectId: defaultProjectId, isPrivate: defaultPrivate })
-    fetchProjectOptions().then(setProjects).catch(() => setProjects([]))
-    fetchTaskUsers().then(setUsers).catch(() => setUsers([]))
-  }, [show, defaultProjectId, defaultPrivate])
+    void loadProjects()
+    void loadUsers()
+  }, [show, defaultProjectId, defaultPrivate, loadProjects, loadUsers])
 
   const dirty = useMemo(
     () =>
@@ -85,10 +111,14 @@ const TaskModal: React.FC<Props> = ({
     [form, defaultProjectId, defaultPrivate],
   )
 
-  const projectOptions = useMemo(
-    () => projects.map(p => ({ value: p.id, label: p.name })),
-    [projects],
-  )
+  const projectOptions = useMemo(() => {
+    const options: SearchableOption[] = projects.map(p => ({ value: p.id, label: p.name }))
+    // Keep the value the form will actually save visible, even without its name.
+    if (projectsError && form.projectId && !options.some(o => o.value === form.projectId)) {
+      options.push({ value: form.projectId, label: t('common.option_name_unavailable') })
+    }
+    return options
+  }, [projects, projectsError, form.projectId, t])
 
   const tryClose = () => {
     if (!saving && dirty) {
@@ -160,7 +190,15 @@ const TaskModal: React.FC<Props> = ({
                   onChange={v => setForm(f => ({ ...f, projectId: v }))}
                   placeholder={t('tasks.modal.project_placeholder')}
                   searchPlaceholder={t('tasks.modal.project_search_placeholder')}
+                  disabled={projectsError}
                 />
+                {projectsError && (
+                  <InlineLoadError
+                    className="mt-1"
+                    message={t('common.projects_load_error')}
+                    onRetry={() => { void loadProjects() }}
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -205,7 +243,15 @@ const TaskModal: React.FC<Props> = ({
                   onChange={ids => setForm(f => ({ ...f, assigneeIds: ids }))}
                   excludeId={user?.auth_user_id}
                   placeholder={t('tasks.modal.assign_placeholder')}
+                  disabled={usersError}
                 />
+                {usersError && (
+                  <InlineLoadError
+                    className="mt-1"
+                    message={t('common.users_load_error')}
+                    onRetry={() => { void loadUsers() }}
+                  />
+                )}
               </div>
             )}
 

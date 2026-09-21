@@ -155,9 +155,11 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 
 ### index.tsx (TasksPage)
 - Header + "New task" button (`ui/Button`), then `ui/Tabs`: **All** (default) / Assigned to me / Created by me / Private, each with a live count. The tab always resets to All on entry
+- **Tab counts follow "Show completed", not the search box.** Both come from `tabCount()` in [taskLists.ts](../src/components/Tasks/taskLists.ts), which counts exactly what the list renders for the current toggle, so a tab can never read 5 over "no tasks in this category". The search is deliberately excluded: it is transient, and the tabs are how a category is switched — a search that empties the list is explained by the empty state instead. Group-header counts have always counted the visible set, so the two now agree
+- **The empty state says which kind of empty it is**, from `emptyListReason()`: nothing in the category (`tasks.empty`), everything hidden by the toggle (`tasks.empty_hidden_completed` plus a button that turns "Prikaži gotove" back on), or nothing matching the search (`tasks.empty_search` plus a clear button)
 - Toolbar is intentionally minimal: `ui/SearchInput` + "Show completed" `ui/ToggleSwitch` (defaults ON; completed tasks sort to the bottom of their group instead of vanishing), plus a **"Mark all as read"** button (`tasks.mark_all_read`, `ghost-primary`) shown only while the user has an unread assignment. It sits in the toolbar rather than beside "New task" because the title row has no room for a second button on a phone; the toolbar wraps
 - Clicking a row opens the `TaskDetail` drawer **and** marks that task read (`openTask` → `useTasks().acknowledge`)
-- List is **always grouped by project** (alphabetical, "no project" last). Within a group: open tasks by due date asc (no due date last), then completed tasks by completion desc
+- List is **always grouped by project** (alphabetical, "no project" last). Within a group: open tasks by due date asc (no due date last), then completed tasks by completion desc. A project id the project list cannot name is headed `common.option_name_unavailable` — it used to fall back to "Bez projekta", so a failed `fetchProjectOptions` produced several identical "no project" sections. That fetch no longer swallows its error either: it raises a dismissible `Alert` with `common.projects_load_error` and a retry
 - Group headers are **collapsible** (chevron; collapsed set persisted per-user) and show a task count plus a red **"N overdue"** chip when applicable
 - A **quick-add input** sits at the top of each expanded project group (type a title + Enter → creates an open task in that project; creates a private task on the Private tab; hidden on the Assigned tab where the new task would not appear)
 - `canEdit` (creator or assignee, via `canEditTask` in [permissions.ts](../src/components/Tasks/permissions.ts)) is computed per task and drives the row checkbox / delete affordances
@@ -169,10 +171,19 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - **Uses components:** TaskRow, TaskModal, TaskDetail
 - **Uses UI:** Tabs, Button, SearchInput, ToggleSwitch, ConfirmDialog, EmptyState, ErrorState, Alert
 
+### taskLists.ts
+The pure half of the page, so the tabs and the list cannot drift apart again. Tested in `taskLists.test.ts`.
+- `partitionTasks(tasks, authUserId)` → `{ all, assigned, created, privateTasks }`. A private task appears only on its creator's Private tab, which is why All is not simply `tasks`
+- `isHiddenByShowCompleted(task, showCompleted)` / `matchesSearch(task, search)` — the two list predicates
+- `filterTasks(list, { showCompleted, search })` — exactly what the grouped list renders
+- `tabCount(list, showCompleted)` — what a tab's badge shows; equal by construction to `filterTasks(list, { showCompleted, search: '' }).length`
+- `emptyListReason(list, filters)` → `'none' | 'hidden_completed' | 'no_search_match' | null`
+
 ### TaskRow.tsx
 - Compact row: **checkbox** (Square/CheckSquare; disabled with a "read only" tooltip when the viewer can't edit, and disabled on a checklist task with the `3/6` count in the tooltip instead) toggling open ↔ done, title (strikethrough when done), blue unread dot (`hasUnreadAssignment` — assigned to the viewer and not opened yet), lock icon for private, card tinted in the task's colour (see [Colours](#colours)), red left accent + relative due label when overdue, attachment/comment counts, stacked avatars via [AvatarStack](../src/components/ui/AvatarStack.tsx), creator-only hover delete. No project tag — the group header carries the project
 
 ### TaskModal.tsx
+- Its project and user lists report a failed fetch instead of falling back to `[]`. That fallback was the worst case on the page: the project field showed "Bez projekta" while `form.projectId` still held `defaultProjectId`, so the task was created **with** a project the form said it did not have. Now the select is disabled, shows `common.projects_load_error`, and keeps the value it will save (labelled `common.option_name_unavailable`); a failed user list disables the assignee picker with `common.users_load_error`. Both offer a retry
 - **Create-only** modal (editing happens inline in the detail drawer). Fields: title, project ([SearchableSelect](../src/components/ui/SearchableSelect.tsx)), optional due date (date only), colour ([TaskColorPicker](../src/components/Tasks/components/TaskColorPicker.tsx)), private toggle, assignees ([ParticipantPicker](../src/components/Calendar/components/ParticipantPicker.tsx), hidden for private tasks), plain-text description (`ui/Textarea`)
 - Ctrl+Enter submits; Esc cancels with dirty-state confirm; attachments hint points at the detail drawer
 - A failed create leaves the modal open with everything still typed and toasts `tasks.modal.create_failed`; it used to close only on success but say nothing at all
@@ -187,6 +198,7 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - The checklist sits **above** the description, not in place of it — unlike the mobile app's card, this description carries `description_format`, markdown rendering and prose that is not a list. The header checkbox is disabled while the task is a checklist
 - Comments section (no tabs): [MentionPicker](../src/components/Tasks/components/MentionPicker.tsx) composer with `@` autocomplete; mention tokens rendered via `renderCommentWithMentions`. Composer hidden for read-only viewers (matches RLS). Ctrl/Cmd+Enter sends — handled by MentionPicker alone; there is deliberately no drawer-level key handler, which used to double-post and also fired from the title, description and subtask fields
 - Escape closes the drawer through `useEscapeKey` (see [UI.md](./UI.md)), so Escape on its "Delete task?", "Delete comment?", "Delete attachment?" or "Remove subtask?" dialog closes only that dialog
+- All three of its option loads (attachments, projects, users) report failure instead of rendering as "none": the project select is disabled with `common.projects_load_error` and keeps the task's stored project under `common.option_name_unavailable`, the add-assignee panel shows `common.users_load_error` instead of "no matching users", and the attachment section shows `tasks.attachments.load_error` instead of "no attachments yet"
 - **Read-only mode** when the viewer is neither creator nor assignee: all inputs disabled, no attachment mutations, no comment composer, no delete
 - ⚠️ Prop contract `{ task, onClose, onDelete, onChanged }` is shared with [Calendar/index.tsx](../src/components/Calendar/index.tsx) — keep it stable
 - **Uses hooks:** useTaskComments, useAuth, useToast
@@ -196,6 +208,7 @@ Mutations take a `TaskActor` (`{ id, auth_user_id, role }` — the AuthContext u
 - Drag-drop zone, signed-URL image thumbnails, per-file progress + delete (RLS-enforced via the passed `canDelete(attachment)` predicate), 25 MB + 10-file client caps
 - Delete asks first (`ConfirmDialog` naming the file, `tasks.attachments.delete_confirm_*`); a failed delete shows `tasks.attachments.delete_failed` in the list's inline error line
 - Requires a persisted `taskId` — create flow adds attachments from the detail drawer after save
+- `loadError` / `onRetryLoad`: when the list could not be fetched it shows an [InlineLoadError](../src/components/ui/InlineLoadError.tsx) in place of "no attachments yet" **and blocks uploading**, because the 10-file cap is computed from `attachments.length` — a list we failed to read is an unknown count, not zero
 
 ### components/SubtaskList.tsx, subtasks.ts
 - `SubtaskList` — the checklist in the drawer: tick, inline rename (click the text), reorder (↑ / ↓), remove (with `ConfirmDialog`), and an "add line" input that commits on Enter or blur. Local state is seeded from the prop and updated optimistically, then `onChange()` asks the parent to refetch — the same arc `AttachmentList` uses. A failed write restores the prop state and surfaces the message inline rather than rethrowing, because several handlers fire from `onBlur` where a rejected promise would vanish

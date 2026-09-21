@@ -162,6 +162,9 @@
     "load_error_title": "Učitavanje nije uspjelo",
     "load_error_description": "Podatke nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
     "retry": "Pokušaj ponovno",
+    "option_name_unavailable": "Naziv nije učitan",
+    "projects_load_error": "Popis projekata nije moguće učitati",
+    "users_load_error": "Popis korisnika nije moguće učitati",
     "badge": {
       "unread_messages_one": "{{count}} nepročitana poruka",
       "unread_messages_few": "{{count}} nepročitane poruke",
@@ -4447,6 +4450,12 @@
     "loading": "Učitavanje...",
     "more_events": "+{{count}} više",
     "events_for_day": "{{count}} događaj(a)",
+    "load_error": {
+      "events": "Događaje nije moguće učitati, pa prikazani kalendar nije potpun.",
+      "tasks": "Zadatke nije moguće učitati, pa se ne prikazuju na kalendaru.",
+      "task_filter_blocked": "Filter sudionika nije moguće primijeniti na zadatke jer popis korisnika nije učitan, pa su zadaci skriveni.",
+      "busy_blocks": "Zauzeća tima nije moguće učitati"
+    },
     "view_switcher": {
       "label": "Prikaz kalendara",
       "day": "Dan",
@@ -4514,6 +4523,7 @@
       "participants_label": "Sudionici",
       "participant_placeholder": "Pretraži i dodaj sudionike...",
       "participant_no_results": "Nema odgovarajućih korisnika",
+      "participants_load_error": "Popis korisnika nije moguće učitati. Već spremljeni sudionici ostaju nepromijenjeni.",
       "project_label": "Projekt",
       "project_placeholder": "Poveži s projektom (opcionalno)",
       "busy_label": "Zauzeto",
@@ -4613,6 +4623,9 @@
     "new_task": "Novi zadatak",
     "loading": "Učitavanje...",
     "empty": "Nema zadataka u ovoj kategoriji",
+    "empty_hidden_completed": "Svi zadaci u ovoj kategoriji su gotovi",
+    "empty_hidden_completed_hint": "Uključite „Prikaži gotove” da ih vidite.",
+    "empty_search": "Nijedan zadatak ne odgovara pretrazi",
     "quick_add_placeholder": "Dodaj zadatak i pritisni Enter",
     "mark_all_read": "Označi sve kao pročitano",
     "mark_all_read_failed": "Zadatke nije moguće označiti kao pročitane. Pokušajte ponovno.",
@@ -4679,6 +4692,7 @@
       "uploading": "Prenosi se...",
       "failed": "Prijenos nije uspio",
       "none": "Još nema privitaka",
+      "load_error": "Privitke nije moguće učitati",
       "create_first": "Spremi zadatak za dodavanje privitaka",
       "delete_confirm_title": "Obrisati privitak?",
       "delete_confirm_message": "Datoteka „{{name}}” bit će trajno obrisana.",
@@ -4754,6 +4768,7 @@
       "uploading": "Učitavanje...",
       "cancel": "Odustani",
       "selected_count": "Odabrano datoteka: {{count}}",
+      "options_load_error": "Popis za odabir nije moguće učitati",
       "errors": {
         "file_required": "Odaberite barem jednu datoteku",
         "file_too_large": "Datoteka prelazi {{limit}} MB",

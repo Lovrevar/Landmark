@@ -19,7 +19,8 @@ import {
 } from 'lucide-react'
 import ConfirmDialog from '../ui/ConfirmDialog'
 import ErrorState from '../ui/ErrorState'
-import SearchableSelect from '../ui/SearchableSelect'
+import SearchableSelect, { type SearchableOption } from '../ui/SearchableSelect'
+import InlineLoadError from '../ui/InlineLoadError'
 import ToggleSwitch from '../ui/ToggleSwitch'
 import MarkdownView from '../ui/MarkdownView'
 import AttachmentList from './components/AttachmentList'
@@ -67,6 +68,12 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
 
   const [projects, setProjects] = useState<ProjectOption[]>([])
   const [users, setUsers] = useState<TaskUser[]>([])
+  // All three lists used to swallow their failure into `[]`: the project field then read
+  // "Bez projekta" for a task that has one, the assignee search said there were no matching
+  // users, and the attachment section said the task had none.
+  const [projectsError, setProjectsError] = useState(false)
+  const [usersError, setUsersError] = useState(false)
+  const [attachmentsError, setAttachmentsError] = useState(false)
 
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
@@ -104,8 +111,36 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   const taskIdRef = useRef(task?.id)
 
   const loadAttachments = useCallback(async (taskId: string) => {
-    const atts = await listTaskAttachments(taskId).catch(() => [])
-    setAttachments(atts)
+    try {
+      setAttachments(await listTaskAttachments(taskId))
+      setAttachmentsError(false)
+    } catch (e) {
+      console.error('Failed to load task attachments', e)
+      // Cleared rather than kept: the drawer is re-pointed at other tasks, and showing the
+      // previous task's files would be a different lie. The count is simply unknown.
+      setAttachments([])
+      setAttachmentsError(true)
+    }
+  }, [])
+
+  const loadProjects = useCallback(async () => {
+    try {
+      setProjects(await fetchProjectOptions())
+      setProjectsError(false)
+    } catch (e) {
+      console.error('Failed to load task project options', e)
+      setProjectsError(true)
+    }
+  }, [])
+
+  const loadUsers = useCallback(async () => {
+    try {
+      setUsers(await fetchTaskUsers())
+      setUsersError(false)
+    } catch (e) {
+      console.error('Failed to load task users', e)
+      setUsersError(true)
+    }
   }, [])
 
   useEffect(() => {
@@ -120,10 +155,10 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
       setAssigneeQuery('')
       setPendingCommentDelete(null)
       loadAttachments(task.id)
-      fetchProjectOptions().then(setProjects).catch(() => setProjects([]))
-      fetchTaskUsers().then(setUsers).catch(() => setUsers([]))
+      void loadProjects()
+      void loadUsers()
     }
-  }, [task, loadAttachments])
+  }, [task, loadAttachments, loadProjects, loadUsers])
 
   // Seeded apart from the drafts above: `task` is a new object on every refetch, and the
   // task list refetches on anyone's edit. Keying on the stored value means a half-typed date
@@ -141,10 +176,15 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
   useEscapeKey(!!task, () => requestCloseRef.current())
   useFocusTrap(drawerRef, !!task)
 
-  const projectOptions = useMemo(
-    () => projects.map(p => ({ value: p.id, label: p.name })),
-    [projects],
-  )
+  const projectOptions = useMemo(() => {
+    const options: SearchableOption[] = projects.map(p => ({ value: p.id, label: p.name }))
+    // The task has a project the list cannot name. Without this the select falls back to its
+    // "Bez projekta" placeholder, contradicting the value it is holding.
+    if (projectsError && task?.project_id && !options.some(o => o.value === task.project_id)) {
+      options.push({ value: task.project_id, label: t('common.option_name_unavailable') })
+    }
+    return options
+  }, [projects, projectsError, task?.project_id, t])
 
   if (!task || !user) return null
 
@@ -416,8 +456,15 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                 onChange={saveProject}
                 placeholder={t('tasks.modal.project_placeholder')}
                 searchPlaceholder={t('tasks.modal.project_search_placeholder')}
-                disabled={!canEdit}
+                disabled={!canEdit || projectsError}
               />
+              {projectsError && (
+                <InlineLoadError
+                  className="mt-1"
+                  message={t('common.projects_load_error')}
+                  onRetry={() => { void loadProjects() }}
+                />
+              )}
             </Field>
             <Field icon={<CalendarIcon className="w-4 h-4" />} label={t('tasks.modal.due_date_label')}>
               <input
@@ -525,7 +572,13 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                     />
                   </div>
                   <div className="max-h-48 overflow-y-auto">
-                    {assigneeCandidates.length === 0 ? (
+                    {usersError ? (
+                      <InlineLoadError
+                        className="px-3 py-2"
+                        message={t('common.users_load_error')}
+                        onRetry={() => { void loadUsers() }}
+                      />
+                    ) : assigneeCandidates.length === 0 ? (
                       <div className="px-3 py-2 text-base text-gray-500 dark:text-gray-400">
                         {t('calendar.modal.participant_no_results')}
                       </div>
@@ -635,6 +688,8 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
               }
               onChange={() => loadAttachments(task.id)}
               disabled={!canEdit}
+              loadError={attachmentsError}
+              onRetryLoad={() => { void loadAttachments(task.id) }}
             />
           </div>
 

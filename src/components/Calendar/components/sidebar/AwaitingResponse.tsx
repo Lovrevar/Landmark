@@ -6,6 +6,7 @@ import type { ExpandedOccurrence } from '../../utils/recurrence'
 import { relativeLabel } from '../../utils/relativeLabel'
 import { pendingWindow, selectPendingOccurrences } from '../../utils/pendingCount'
 import { EVENT_TYPE_COLORS } from '../../utils/eventTypeColors'
+import InlineLoadError from '../../../ui/InlineLoadError'
 
 interface Props {
   /**
@@ -15,6 +16,12 @@ interface Props {
   occurrences: ExpandedOccurrence[]
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onQuickRespond: (occurrence: ExpandedOccurrence, response: EventResponse) => Promise<void>
+  /**
+   * The sidebar's own range query failed. "Nothing awaits your response" and "we could not ask"
+   * are the same picture otherwise, and this widget is the one the header badge agrees with.
+   */
+  loadFailed?: boolean
+  onRetry?: () => void
   limit?: number
 }
 
@@ -22,6 +29,8 @@ export default function AwaitingResponse({
   occurrences,
   onEventClick,
   onQuickRespond,
+  loadFailed = false,
+  onRetry,
   limit = 10,
 }: Props) {
   const { t, i18n } = useTranslation()
@@ -55,13 +64,15 @@ export default function AwaitingResponse({
       <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-1.5">
         <Inbox className="w-4 h-4 text-amber-600 dark:text-amber-400" />
         {t('calendar.awaiting.title')}
-        {total > 0 && (
+        {total > 0 && !loadFailed && (
           <span className="ml-auto text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-1.5 py-0.5 rounded">
             {total}
           </span>
         )}
       </h3>
-      {items.length === 0 ? (
+      {loadFailed ? (
+        <InlineLoadError message={t('calendar.load_error.events')} onRetry={onRetry} />
+      ) : items.length === 0 ? (
         <p className="text-xs text-gray-500 dark:text-gray-400">{t('calendar.awaiting.empty')}</p>
       ) : (
         <div className="space-y-1">

@@ -4,7 +4,9 @@
 
 ## Overview
 
-Personal and shared scheduling with four views (Day / Week / Month / Agenda), RSVP responses at both the series and single-occurrence scope, RFC-5545 RRULE recurrence with per-occurrence exceptions, reminder toasts delivered via Supabase realtime, a team busy-hours overlay, a per-user "Show tasks" toggle that merges task due-dates into the calendar, and a global header badge counting invitations that await your response.
+Personal and shared scheduling with four views (Day / Week / Month / Agenda), RSVP responses at both the series and single-occurrence scope, RFC-5545 RRULE recurrence with per-occurrence exceptions, reminder toasts delivered via Supabase realtime, a **team busy-hours summary** in the sidebar, a per-user "Show tasks" toggle that merges task due-dates into the calendar, and a global header badge counting invitations that await your response.
+
+> **There is no busy-block overlay.** No view draws another user's busy blocks; the enabled teams only feed the sidebar's total-hours card. An actual overlay is deferred — it needs the RPC to expand recurrence, which needs a migration.
 
 ---
 
@@ -36,7 +38,8 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 - **Logs:** `calendar_event.create` (medium), `calendar_event.update` (medium), `calendar_event.respond` (low), `calendar_event.delete` (high), `calendar_event.exception_create` (medium/high when cancelling), `calendar_event.exception_delete` (medium). `calendar_event.acknowledge_all` is no longer written (see [Notes](#notes)); its label stays in the locale files so older log rows still render
 
 ### services/busyBlocksService.ts
-- `fetchBusyBlocks(userIds, fromIso, toIso)` — RPC into `get_busy_blocks`. Returns `{ user_id, start_at, end_at }[]` for the team-calendars overlay; the RPC hides private events and de-duplicates overlapping occurrences server-side
+- `fetchBusyBlocks(userIds, fromIso, toIso)` — RPC into `get_busy_blocks`. Returns `{ user_id, start_at, end_at }[]`, used by the sidebar's busy-hours summary only. **What the RPC actually does:** it returns stored `calendar_events` rows for those users and removes *identical* rows. It does **not** expand recurrence (a weekly meeting counts once, for its master row's slot), does **not** merge overlapping blocks, and does **not** exclude private events or declined invitations. The summed hours are therefore a rough lower bound, not a schedule. Fixing this is a migration, deferred to a later batch
+- A failed call no longer hides the summary card (which read as "nobody is busy"); the card stays with `calendar.load_error.busy_blocks` and a retry
 
 ---
 
@@ -53,12 +56,14 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 - Subscribes via Supabase realtime to four channels scoped by user: `calendar_events`, `calendar_event_participants`, `calendar_event_exceptions`, `calendar_occurrence_responses` (filtered to the current user). Any change triggers a refetch
 - Channel names carry a per-instance `useId()` suffix. `supabase.channel(name)` returns the existing channel for a taken name and a channel subscribes only once, so the CalendarPage's two instances (grid + sidebar) would otherwise collide
 - Omitted filters default to a module-level empty array, so an unfiltered caller does not re-expand every recurrence on each render
+- A failed fetch keeps the previous range's `rawEvents` (nothing is cleared), so the caller must read `error` — `expandEvents` windows the stale rows to the *new* range and the grid then draws an almost-empty month that looks complete. The rejection is normalised to a real `Error` via `toErrorMessage`: Supabase rejects with a plain `{ code, message, details }`, and the old `e as Error` produced an "error" with no `.message`. An unreadable machine message becomes `''`, so the caller falls back to its own wording
 - **Returns:** `rawEvents`, `occurrences`, `loading`, `error`, `refresh`
 
 ### hooks/useTasksInRange.ts
 - `useTasksInRange({ fromIso, toIso, enabled, activeProjectId, activeParticipantIds, search })` — fetches tasks with a `due_date` in the window via `tasksService.fetchTasksInRange`, then memoises the expansion via [expandTasks](../src/components/Calendar/utils/expandTasks.ts)
 - Gated by `enabled` — nothing fetches or subscribes when the "Show tasks" toggle is off
 - Subscribes to `tasks` and `task_assignees` realtime channels
+- Same error normalisation and same stale-data caveat as `useEventsInRange`
 - **Returns:** `rawTasks`, `taskOccurrences`, `loading`, `error`, `refresh`
 
 ### hooks/useCalendarReminderToasts.ts
@@ -98,6 +103,9 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 - Hosts all modals: `NewEventModal`, `EventDetailModal`, `DayEventsModal`, and the [TaskDetail](../src/components/Tasks/TaskDetail.tsx) drawer (re-used from the Tasks module) for task pills. Opening that drawer (`openTask`) also marks the task read through `acknowledgeOpenedTask`, exactly as the Tasks page does — see [TASKS.md → Unread](./TASKS.md#unread-new-assignments)
 - Runs **two** `useEventsInRange` instances: the grid's (view range + filter bar) and the sidebar's (today → `PENDING_WINDOW_DAYS` + 1 day, fixed at mount, unfiltered). AwaitingResponse and NextUp read the sidebar's, so they match the header badge whatever month is shown or filter is set. Mutations refresh both
 - The clicked occurrence is kept as a snapshot and re-resolved from the fresh occurrences after every refresh (event id + `originalStartIso`; event id alone for a one-off event, whose start moves when edited), the same way `resolvedSelectedTask` works. The stored event behind it is passed as `sourceEvent`, so the edit form never loads an occurrence's title override as the series title
+- **Failure behaviour.** Both range hooks' `error` is read. A failed load shows an `Alert variant="error"` **above the grid**, inside the `lg:col-span-3` column, so the toolbar, filter bar and sidebar stay mounted and the user keeps their place — an empty range is legitimate on a calendar, so this is never an `ErrorState` in the grid's place. The Alert lists one line per failure (`calendar.load_error.events` / `.tasks` / `.task_filter_blocked`), the server's message underneath when it is readable, and one retry that re-runs the range queries
+- **Option lists say when they failed.** `fetchProjectOptions` and `fetchCalendarUsers` no longer `.catch(() => [])`. Each sets an error flag and toasts (`common.projects_load_error` / `common.users_load_error`). Because both filters are persisted per user, a failed list would otherwise leave the grid filtered while the control read "any project" / "any participant" — an invisible filter that cannot be cleared — so `CalendarFilterBar` keeps the saved value as an option labelled `common.option_name_unavailable`
+- **The participant filter and the tasks overlay.** `taskParticipantIds` translates app user ids to auth ids through the user list. Without it the mapping collapsed to `[]`, which reads as "no filter" — tasks went unfiltered while the events beside them stayed filtered. When the user list failed *and* a participant filter is set, the overlay is switched off (`enabled: false`) and the Alert says why
 - **Uses hooks:** `useAuth`, `useCalendarPreferences`, `useEventsInRange`, `useTasksInRange`, `useCalendarReminderToasts`
 - **Uses components:** MonthView, DayView, WeekView, AgendaView, ViewSwitcher, CalendarFilterBar, GridSkeleton, sidebar/{MiniMonth, NextUp, AwaitingResponse, TeamCalendars}
 
@@ -138,6 +146,7 @@ the geometry lives here once.
 ### Modals
 
 #### NewEventModal.tsx
+- Its two option lists (users, projects) report their failures instead of falling back to `[]`. A failed **user** list disables the participant picker and shows `calendar.modal.participants_load_error` — the chips are derived from that list, so they used to vanish while their ids were still saved and still written back. A failed **project** list disables the project select and shows `common.projects_load_error`; the event's stored project stays selected under the label `common.option_name_unavailable` rather than falling back to the "link to a project (optional)" placeholder
 - Form for creating an event (title, description, location, start/end, type, private toggle, project link, participants picker, recurrence picker, reminder chip list)
 - Reminder presets: `[0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080]` minutes (at time → 1 week before)
 - **Create mode** calls the parent's `onCreate(input)`, which delegates to `createEvent`
@@ -145,6 +154,7 @@ the geometry lives here once.
 - For a **recurring series** the date, times and repeat rule are read-only: the rule is shown as text (`describeRecurrence`) with the note `calendar.modal.series_timing_readonly`. Exceptions and per-occurrence RSVPs are keyed by each occurrence's rule-derived start, so moving the series would orphan them. A one-off event can change its date and time and gain a rule
 
 #### EventDetailModal.tsx
+- `projectsLoadFailed` tells it that an empty `projects` means the fetch failed; the project row then renders `common.option_name_unavailable` instead of disappearing, which read as "not linked to a project"
 - Event details with RSVP buttons (accept / decline). Recurring-event users can scope the response to this single occurrence (via `respondToOccurrence`) or the whole series (via `respondToEvent`)
 - Creator sees **Edit**, and delete: "Delete" on a one-off event; "Delete this occurrence" (a cancelling `createException`) and "Delete series" on a recurring one
 - Edit opens `NewEventModal` in edit mode in place of the detail (the detail is hidden, not closed); saving calls `updateEventWithParticipants`, awaits `onChanged()`, and the detail comes back showing the re-resolved occurrence. A small effect keeps the page's scroll lock on across that swap, since the two Modals' own lock effects would otherwise race
@@ -170,16 +180,16 @@ the geometry lives here once.
 ## Components
 
 - `components/ViewSwitcher.tsx` — SegmentedControl for Day/Week/Month/Agenda
-- `components/CalendarFilterBar.tsx` — event-type chips, project select, participant picker, search input. Types / project / participants also scope the tasks overlay
+- `components/CalendarFilterBar.tsx` — event-type chips, project select, participant picker, search input. Types / project / participants also scope the tasks overlay. `projectsLoadFailed` / `usersLoadFailed` keep a saved-but-unnameable filter visible and clearable (see [index.tsx](#indextsx-calendarpage))
 - `components/TaskPill.tsx` — shared pill used by every view: Month (compact), Week/Day, Agenda, NextUp, DayEventsModal. Tinted in the task's colour label (`COLOR_STYLES[color].card`, neutral grey without one); Square/CheckSquare icon toggles done via `updateTaskCompleted` (disabled when no `onToggle` is passed); a red `AlertTriangle` before the title when overdue (`calendar.task_pill.overdue` as its tooltip and accessible name); strikethrough for done; the colour dot and paperclip / comment indicators only in the full size
 - `components/ParticipantPicker.tsx` — searchable multi-select of users, shared with [TaskModal](../src/components/Tasks/TaskModal.tsx)
 - `components/GridSkeleton.tsx` — 42-cell shimmering skeleton rendered while the first fetch is in flight
 
 ### Sidebar widgets (`components/sidebar/`)
 - `MiniMonth.tsx` — compact month navigator with a busy-day dot indicator; clicking a date drives the parent anchor
-- `NextUp.tsx` — upcoming events (and tasks due in the next 24 h, when the toggle is on) mixed in one list. Events come from the sidebar window, not the grid; tasks still come from the grid's range and filters
-- `AwaitingResponse.tsx` — pending RSVPs in `pendingWindow()` with inline accept / decline buttons that call `respondToOccurrence`. Lists the first 10; the header count is the full total, so it equals the header badge
-- `TeamCalendars.tsx` — toggle per-user "overlay my team's busy blocks onto my calendar". Color dot mirrors [teamColors.ts](../src/components/Calendar/utils/teamColors.ts). Total busy-hours summary is rendered in a separate card below when at least one team is enabled
+- `NextUp.tsx` — upcoming events (and tasks due in the next 24 h, when the toggle is on) mixed in one list. Events come from the sidebar window, not the grid; tasks still come from the grid's range and filters. Same `loadFailed` / `onRetry` treatment as AwaitingResponse
+- `AwaitingResponse.tsx` — pending RSVPs in `pendingWindow()` with inline accept / decline buttons that call `respondToOccurrence`. Lists the first 10; the header count is the full total, so it equals the header badge. Takes `loadFailed` / `onRetry` from the page: when the sidebar's own range query failed it shows an [InlineLoadError](../src/components/ui/InlineLoadError.tsx) and drops its count badge, instead of claiming nothing awaits a response
+- `TeamCalendars.tsx` — per-user toggles choosing whose busy hours are counted. The colour dot mirrors [teamColors.ts](../src/components/Calendar/utils/teamColors.ts) and is the only place those colours are used today. Nothing is drawn onto the grid: the enabled users feed the **total busy-hours card** rendered below this one whenever at least one is enabled. When the user list itself failed to load the widget shows `common.users_load_error` with a retry rather than "no colleagues available", and a name the list cannot supply renders as `common.option_name_unavailable`, not a raw uuid
 
 ---
 
@@ -200,6 +210,7 @@ A per-user "Show tasks" toolbar toggle (next to `ViewSwitcher`) merges task due-
 ---
 
 ## Notes
+- **A failed read never renders as an empty calendar.** Both range hooks expose `error`, the grid shows an Alert above it, the two sidebar widgets show an inline error instead of "nothing pending", and every option list (projects, users, busy blocks) says when it could not be fetched. The rule the whole module follows: a control must never display a value different from the one that would be saved, and "we could not ask" must never look like "there is nothing"
 - The header badge counts **pending responses**, not unread events: only an RSVP (series or occurrence) clears one. `calendar_event_participants.acknowledged_at` is still stamped when a user creates an event or responds, but nothing reads it for display, and opening `/calendar` no longer bulk-stamps it
 - Series-scope vs. occurrence-scope RSVPs are resolved in [recurrence.ts#resolveResponse](../src/components/Calendar/utils/recurrence.ts): an occurrence override wins over the series master
 - The 3-month range fetch on Month view is intentional — it covers the visible month plus the lead-in/lead-out days from neighbouring months that the grid renders. Day/Week/Agenda use tighter windows

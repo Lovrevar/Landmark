@@ -19,6 +19,13 @@ import { useTasksRealtime } from './hooks/useTasksRealtime'
 import { fetchProjectOptions, type ProjectOption } from './services/tasksService'
 import { canEditTask } from './permissions'
 import { hasUnreadAssignment } from './unread'
+import {
+  emptyListReason,
+  filterTasks,
+  partitionTasks,
+  tabCount,
+  type TaskTabKey,
+} from './taskLists'
 import Tabs from '../ui/Tabs'
 import Button from '../ui/Button'
 import SearchInput from '../ui/SearchInput'
@@ -34,7 +41,7 @@ import TaskRow from './TaskRow'
 import TaskModal from './TaskModal'
 import TaskDetail from './TaskDetail'
 
-type TabKey = 'all' | 'assigned' | 'created' | 'private'
+type TabKey = TaskTabKey
 
 const VIRTUALIZE_THRESHOLD = 100
 const ROW_HEIGHT = 78
@@ -122,6 +129,7 @@ const TasksPage: React.FC = () => {
   const [quickAddBusy, setQuickAddBusy] = useState<string | null>(null)
 
   const [projects, setProjects] = useState<ProjectOption[]>([])
+  const [projectsError, setProjectsError] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -145,9 +153,21 @@ const TasksPage: React.FC = () => {
     [user],
   )
 
-  useEffect(() => {
-    fetchProjectOptions().then(setProjects).catch(() => setProjects([]))
+  // A failed fetch used to leave every group falling back to the "Bez projekta" header, so a
+  // page of several different projects read as several identical "no project" sections.
+  const loadProjects = useCallback(async () => {
+    try {
+      setProjects(await fetchProjectOptions())
+      setProjectsError(false)
+    } catch (e) {
+      console.error('Failed to load task project options', e)
+      setProjectsError(true)
+    }
   }, [])
+
+  useEffect(() => {
+    void loadProjects()
+  }, [loadProjects])
 
   const isMine = useCallback((tk: Task) => canEditTask(tk, user?.auth_user_id), [user])
 
@@ -162,23 +182,10 @@ const TasksPage: React.FC = () => {
     [tasks, user],
   )
 
-  const { all, assigned, created, privateTasks } = useMemo(() => {
-    const allList: Task[] = []
-    const assignedList: Task[] = []
-    const createdList: Task[] = []
-    const privateList: Task[] = []
-    if (!user) return { all: allList, assigned: assignedList, created: createdList, privateTasks: privateList }
-    tasks.forEach(tk => {
-      if (tk.is_private) {
-        if (tk.created_by === user.auth_user_id) privateList.push(tk)
-        return
-      }
-      allList.push(tk)
-      if (tk.created_by === user.auth_user_id) createdList.push(tk)
-      if (tk.assignees?.some(a => a.assignee_id === user.auth_user_id)) assignedList.push(tk)
-    })
-    return { all: allList, assigned: assignedList, created: createdList, privateTasks: privateList }
-  }, [tasks, user])
+  const { all, assigned, created, privateTasks } = useMemo(
+    () => partitionTasks(tasks, user?.auth_user_id),
+    [tasks, user],
+  )
 
   const baseList =
     tab === 'all' ? all : tab === 'assigned' ? assigned : tab === 'created' ? created : privateTasks
@@ -190,17 +197,9 @@ const TasksPage: React.FC = () => {
   }, [projects])
 
   const groups = useMemo<Group[]>(() => {
-    const q = search.trim().toLowerCase()
     const now = new Date()
 
-    const visible = baseList.filter(tk => {
-      if (!prefs.showCompleted && tk.completed) return false
-      if (q) {
-        const haystack = `${tk.title} ${tk.description}`.toLowerCase()
-        if (!haystack.includes(q)) return false
-      }
-      return true
-    })
+    const visible = filterTasks(baseList, { showCompleted: prefs.showCompleted, search })
 
     const byProject = new Map<string, Task[]>()
     visible.forEach(tk => {
@@ -235,8 +234,9 @@ const TasksPage: React.FC = () => {
       result.push({
         key,
         projectId,
+        // A project whose name did not load is not the same thing as no project at all.
         label: projectId
-          ? projectNameById.get(projectId) || t('tasks.group.no_project')
+          ? projectNameById.get(projectId) || t('common.option_name_unavailable')
           : t('tasks.group.no_project'),
         items: sorted,
         overdueCount,
@@ -264,6 +264,11 @@ const TasksPage: React.FC = () => {
     })
     return out
   }, [groups, collapsedSet, showQuickAdd])
+
+  const listEmptyReason = useMemo(
+    () => emptyListReason(baseList, { showCompleted: prefs.showCompleted, search }),
+    [baseList, prefs.showCompleted, search],
+  )
 
   const scrollerRef = useRef<HTMLDivElement>(null)
   const virtualize = rows.length > VIRTUALIZE_THRESHOLD
@@ -435,10 +440,13 @@ const TasksPage: React.FC = () => {
         activeTab={tab}
         onChange={setTab}
         tabs={[
-          { id: 'all', label: t('tasks.tabs.all'), icon: <LayoutList className="w-4 h-4" />, count: all.length },
-          { id: 'assigned', label: t('tasks.tabs.assigned'), icon: <Inbox className="w-4 h-4" />, count: assigned.length },
-          { id: 'created', label: t('tasks.tabs.created'), icon: <Send className="w-4 h-4" />, count: created.length },
-          { id: 'private', label: t('tasks.tabs.private'), icon: <Lock className="w-4 h-4" />, count: privateTasks.length },
+          // Counts follow "Show completed" — the list's own rule — so a tab can never read 5
+          // over "no tasks in this category". They ignore the search box on purpose: a search
+          // is transient, and the tabs are how the category is switched.
+          { id: 'all', label: t('tasks.tabs.all'), icon: <LayoutList className="w-4 h-4" />, count: tabCount(all, prefs.showCompleted) },
+          { id: 'assigned', label: t('tasks.tabs.assigned'), icon: <Inbox className="w-4 h-4" />, count: tabCount(assigned, prefs.showCompleted) },
+          { id: 'created', label: t('tasks.tabs.created'), icon: <Send className="w-4 h-4" />, count: tabCount(created, prefs.showCompleted) },
+          { id: 'private', label: t('tasks.tabs.private'), icon: <Lock className="w-4 h-4" />, count: tabCount(privateTasks, prefs.showCompleted) },
         ]}
       />
 
@@ -464,6 +472,24 @@ const TasksPage: React.FC = () => {
         )}
       </div>
 
+      {projectsError && (
+        <Alert
+          variant="error"
+          className="mb-4"
+          title={t('common.load_error_title')}
+          onDismiss={() => setProjectsError(false)}
+        >
+          {t('common.projects_load_error')}{' '}
+          <button
+            type="button"
+            onClick={() => { void loadProjects() }}
+            className="underline font-medium"
+          >
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
       {error && tasks.length > 0 && (
         <Alert variant="error" className="mb-4" title={t('common.load_error_title')} onDismiss={dismissError}>
           {t('common.load_error_description')}{' '}
@@ -478,15 +504,40 @@ const TasksPage: React.FC = () => {
       ) : error && tasks.length === 0 ? (
         <ErrorState onRetry={() => { void refresh() }} />
       ) : rows.length === 0 ? (
-        <EmptyState
-          icon={CheckSquare}
-          title={t('tasks.empty')}
-          action={
-            <Button icon={Plus} variant="secondary" onClick={() => setShowNew(true)}>
-              {t('tasks.new_task')}
-            </Button>
-          }
-        />
+        listEmptyReason === 'hidden_completed' ? (
+          // The category is not empty — everything in it is done and the toggle is off. Saying
+          // "no tasks in this category" beside a tab reading 5 was the contradiction.
+          <EmptyState
+            icon={CheckSquare}
+            title={t('tasks.empty_hidden_completed')}
+            description={t('tasks.empty_hidden_completed_hint')}
+            action={
+              <Button variant="secondary" onClick={() => patchPrefs({ showCompleted: true })}>
+                {t('tasks.toolbar.show_completed')}
+              </Button>
+            }
+          />
+        ) : listEmptyReason === 'no_search_match' ? (
+          <EmptyState
+            icon={CheckSquare}
+            title={t('tasks.empty_search')}
+            action={
+              <Button variant="secondary" onClick={() => setSearch('')}>
+                {t('common.clear')}
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={CheckSquare}
+            title={t('tasks.empty')}
+            action={
+              <Button icon={Plus} variant="secondary" onClick={() => setShowNew(true)}>
+                {t('tasks.new_task')}
+              </Button>
+            }
+          />
+        )
       ) : virtualize ? (
         <div ref={scrollerRef} className="max-h-[70vh] overflow-y-auto">
           <div

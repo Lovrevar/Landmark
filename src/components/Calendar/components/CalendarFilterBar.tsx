@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Search, X } from 'lucide-react'
 import FilterChip from '../../ui/FilterChip'
-import SearchableSelect from '../../ui/SearchableSelect'
+import SearchableSelect, { type SearchableOption } from '../../ui/SearchableSelect'
 import type { TaskUser } from '../../../types/tasks'
 import type { ProjectOption } from '../services/calendarService'
 import { EVENT_TYPES, EVENT_TYPE_COLORS } from '../utils/eventTypeColors'
@@ -17,6 +17,10 @@ interface Props {
   onChangeParticipants: (ids: string[]) => void
   search: string
   onChangeSearch: (s: string) => void
+  /** `projects` is empty because the fetch failed, not because there are none. */
+  projectsLoadFailed?: boolean
+  /** `users` is empty because the fetch failed, not because there are none. */
+  usersLoadFailed?: boolean
 }
 
 export default function CalendarFilterBar({
@@ -30,13 +34,27 @@ export default function CalendarFilterBar({
   onChangeParticipants,
   search,
   onChangeSearch,
+  projectsLoadFailed = false,
+  usersLoadFailed = false,
 }: Props) {
   const { t } = useTranslation()
 
-  const projectOptions = projects.map(p => ({ value: p.id, label: p.name }))
-  const userOptions = users.map(u => ({ value: u.id, label: u.username, sublabel: u.role }))
-
   const selectedParticipantId = activeParticipantIds[0] || null
+
+  // Both filters persist per user, so a failed option list would leave the grid filtered while
+  // the control read "any project" / "any participant" — the filter would be invisible and
+  // impossible to clear. Keep the saved value as a nameless option instead; it still clears.
+  const unnamed = (value: string) => ({ value, label: t('common.option_name_unavailable') })
+
+  const projectOptions: SearchableOption[] = projects.map(p => ({ value: p.id, label: p.name }))
+  if (projectsLoadFailed && activeProjectId && !projectOptions.some(o => o.value === activeProjectId)) {
+    projectOptions.push(unnamed(activeProjectId))
+  }
+
+  const userOptions: SearchableOption[] = users.map(u => ({ value: u.id, label: u.username, sublabel: u.role }))
+  if (usersLoadFailed && selectedParticipantId && !userOptions.some(o => o.value === selectedParticipantId)) {
+    userOptions.push(unnamed(selectedParticipantId))
+  }
 
   const hasActiveFilters =
     activeTypes.length > 0 ||

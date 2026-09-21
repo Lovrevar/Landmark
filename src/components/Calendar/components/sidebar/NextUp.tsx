@@ -6,6 +6,7 @@ import type { TaskOccurrence } from '../../utils/expandTasks'
 import { relativeLabel } from '../../utils/relativeLabel'
 import TaskPill from '../TaskPill'
 import { EVENT_TYPE_COLORS } from '../../utils/eventTypeColors'
+import InlineLoadError from '../../../ui/InlineLoadError'
 
 interface Props {
   occurrences: ExpandedOccurrence[]
@@ -15,6 +16,9 @@ interface Props {
   onTaskToggle: (occurrence: TaskOccurrence) => void
   /** The signed-in user's auth id; decides whether a task's checkbox is live. */
   currentUserId: string | null | undefined
+  /** The events query behind this list failed — say so rather than "nothing is coming up". */
+  loadFailed?: boolean
+  onRetry?: () => void
   limit?: number
 }
 
@@ -29,6 +33,8 @@ export default function NextUp({
   onTaskClick,
   onTaskToggle,
   currentUserId,
+  loadFailed = false,
+  onRetry,
   limit = 6,
 }: Props) {
   const { t, i18n } = useTranslation()
@@ -54,7 +60,9 @@ export default function NextUp({
         <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
         {t('calendar.next_up.title')}
       </h3>
-      {items.length === 0 ? (
+      {loadFailed ? (
+        <InlineLoadError message={t('calendar.load_error.events')} onRetry={onRetry} />
+      ) : items.length === 0 ? (
         <p className="text-xs text-gray-500 dark:text-gray-400">{t('calendar.next_up.empty')}</p>
       ) : (
         <div className="space-y-2">

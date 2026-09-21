@@ -38,6 +38,8 @@ interface Props {
    */
   sourceEvent?: CalendarEvent | null
   projects?: ProjectOption[]
+  /** `projects` is empty because the fetch failed, not because there are none. */
+  projectsLoadFailed?: boolean
   onClose: () => void
   onRespond: (
     participantId: string,
@@ -56,6 +58,7 @@ const EventDetailModal: React.FC<Props> = ({
   occurrence,
   sourceEvent,
   projects,
+  projectsLoadFailed = false,
   onClose,
   onRespond,
   onDelete,
@@ -74,8 +77,12 @@ const EventDetailModal: React.FC<Props> = ({
 
   const projectName = useMemo(() => {
     if (!event?.project_id || !projects) return null
-    return projects.find(p => p.id === event.project_id)?.name ?? null
-  }, [event?.project_id, projects])
+    const name = projects.find(p => p.id === event.project_id)?.name
+    if (name) return name
+    // The event has a project but the list could not be fetched. Dropping the row entirely
+    // reads as "not linked to a project", which is the opposite of what is stored.
+    return projectsLoadFailed ? t('common.option_name_unavailable') : null
+  }, [event?.project_id, projects, projectsLoadFailed, t])
 
   // Closing the detail (or the occurrence disappearing) ends any edit in progress.
   useEffect(() => {

@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Bell, Briefcase, Check, Info, Lock, MapPin, Plus, Repeat, Users, X } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ToggleSwitch from '../ui/ToggleSwitch'
-import SearchableSelect from '../ui/SearchableSelect'
+import SearchableSelect, { type SearchableOption } from '../ui/SearchableSelect'
+import InlineLoadError from '../ui/InlineLoadError'
 import {
   fetchCalendarUsers,
   fetchProjectOptions,
@@ -90,6 +91,10 @@ const NewEventModal: React.FC<Props> = ({
   const [recurrence, setRecurrence] = useState<RecurrenceState>(DEFAULT_RECURRENCE)
   const [users, setUsers] = useState<CalendarUser[]>([])
   const [projects, setProjects] = useState<ProjectOption[]>([])
+  // Both lists used to fall back to `[]`. The participant chips then vanished while their ids
+  // were still saved, and the project field read "no project" for an event that has one.
+  const [usersError, setUsersError] = useState(false)
+  const [projectsError, setProjectsError] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -98,12 +103,30 @@ const NewEventModal: React.FC<Props> = ({
   // so moving a series or changing its rule would orphan them. A one-off event has none.
   const timingLocked = !!event?.recurrence
 
+  const loadUsers = useCallback(async () => {
+    try {
+      setUsers(await fetchCalendarUsers())
+      setUsersError(false)
+    } catch (e) {
+      console.error('Failed to load calendar users', e)
+      setUsersError(true)
+    }
+  }, [])
+
+  const loadProjects = useCallback(async () => {
+    try {
+      setProjects(await fetchProjectOptions())
+      setProjectsError(false)
+    } catch (e) {
+      console.error('Failed to load calendar project options', e)
+      setProjectsError(true)
+    }
+  }, [])
+
   useEffect(() => {
     if (!show) return
-    Promise.all([
-      fetchCalendarUsers().then(setUsers).catch(() => setUsers([])),
-      fetchProjectOptions().then(setProjects).catch(() => setProjects([])),
-    ])
+    void loadUsers()
+    void loadProjects()
     if (event) {
       const start = new Date(event.start_at)
       const end = new Date(event.end_at)
@@ -178,10 +201,16 @@ const NewEventModal: React.FC<Props> = ({
 
   const availableReminderPresets = REMINDER_PRESETS.filter(m => !reminderOffsets.includes(m))
 
-  const projectOptions = useMemo(
-    () => projects.map(p => ({ value: p.id, label: p.name })),
-    [projects],
-  )
+  const projectOptions = useMemo(() => {
+    const options: SearchableOption[] = projects.map(p => ({ value: p.id, label: p.name }))
+    // The list failed but the event has a project: name it as unloaded rather than letting the
+    // select fall back to its "link to a project (optional)" placeholder, which would read as
+    // "no project" for a value the form still holds and would still save.
+    if (projectsError && projectId && !options.some(o => o.value === projectId)) {
+      options.push({ value: projectId, label: t('common.option_name_unavailable') })
+    }
+    return options
+  }, [projects, projectsError, projectId, t])
 
   const updateRecurrence = <K extends keyof RecurrenceState>(key: K, value: RecurrenceState[K]) => {
     setRecurrence(prev => ({ ...prev, [key]: value }))
@@ -542,7 +571,15 @@ const NewEventModal: React.FC<Props> = ({
               onChange={setProjectId}
               placeholder={t('calendar.modal.project_placeholder')}
               searchPlaceholder={t('common.search')}
+              disabled={projectsError}
             />
+            {projectsError && (
+              <InlineLoadError
+                className="mt-1"
+                message={t('common.projects_load_error')}
+                onRetry={() => { void loadProjects() }}
+              />
+            )}
           </div>
           <div className="flex items-end">
             <ToggleSwitch
@@ -577,7 +614,15 @@ const NewEventModal: React.FC<Props> = ({
               onChange={setParticipants}
               excludeId={user?.id ?? null}
               placeholder={t('calendar.modal.participant_placeholder')}
+              disabled={usersError}
             />
+            {usersError && (
+              <InlineLoadError
+                className="mt-1"
+                message={t('calendar.modal.participants_load_error')}
+                onRetry={() => { void loadUsers() }}
+              />
+            )}
           </div>
         )}
 

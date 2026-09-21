@@ -162,6 +162,9 @@
     "load_error_title": "Failed to load",
     "load_error_description": "The data could not be loaded. This is a loading error, not an absence of data.",
     "retry": "Try again",
+    "option_name_unavailable": "Name not loaded",
+    "projects_load_error": "The project list could not be loaded",
+    "users_load_error": "The user list could not be loaded",
     "badge": {
       "unread_messages_one": "{{count}} unread message",
       "unread_messages_other": "{{count}} unread messages",
@@ -4433,6 +4436,12 @@
     "loading": "Loading...",
     "more_events": "+{{count}} more",
     "events_for_day": "{{count}} event(s)",
+    "load_error": {
+      "events": "The events could not be loaded, so the calendar shown is incomplete.",
+      "tasks": "The tasks could not be loaded, so they are not shown on the calendar.",
+      "task_filter_blocked": "The participant filter cannot be applied to tasks without the user list, so tasks are hidden.",
+      "busy_blocks": "The team's busy hours could not be loaded"
+    },
     "view_switcher": {
       "label": "Calendar view",
       "day": "Day",
@@ -4500,6 +4509,7 @@
       "participants_label": "Participants",
       "participant_placeholder": "Search and add participants...",
       "participant_no_results": "No matching users",
+      "participants_load_error": "The user list could not be loaded. The participants already saved are left unchanged.",
       "project_label": "Project",
       "project_placeholder": "Link to a project (optional)",
       "busy_label": "Busy",
@@ -4599,6 +4609,9 @@
     "new_task": "New task",
     "loading": "Loading...",
     "empty": "No tasks in this category",
+    "empty_hidden_completed": "Every task in this category is done",
+    "empty_hidden_completed_hint": "Turn on \"Show completed\" to see them.",
+    "empty_search": "No task matches your search",
     "quick_add_placeholder": "Add a task and press Enter",
     "mark_all_read": "Mark all as read",
     "mark_all_read_failed": "Couldn't mark the tasks as read. Please try again.",
@@ -4664,6 +4677,7 @@
       "uploading": "Uploading...",
       "failed": "Upload failed",
       "none": "No attachments yet",
+      "load_error": "The attachments could not be loaded",
       "create_first": "Save the task to add attachments",
       "delete_confirm_title": "Delete attachment?",
       "delete_confirm_message": "The file “{{name}}” will be permanently deleted.",
@@ -4739,6 +4753,7 @@
       "uploading": "Uploading...",
       "cancel": "Cancel",
       "selected_count": "Selected files: {{count}}",
+      "options_load_error": "The list to choose from could not be loaded",
       "errors": {
         "file_required": "Please select at least one file",
         "file_too_large": "File exceeds {{limit}} MB",

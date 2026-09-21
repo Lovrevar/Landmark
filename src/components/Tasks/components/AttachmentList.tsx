@@ -9,6 +9,7 @@ import {
   uploadTaskAttachment,
 } from '../services/tasksService'
 import ConfirmDialog from '../../ui/ConfirmDialog'
+import InlineLoadError from '../../ui/InlineLoadError'
 import type { TaskActor, TaskAttachment } from '../../../types/tasks'
 
 interface Props {
@@ -18,6 +19,13 @@ interface Props {
   canDelete: (attachment: TaskAttachment) => boolean
   onChange: () => void
   disabled?: boolean
+  /**
+   * The attachment list could not be fetched. `attachments` is then empty because we do not
+   * know, not because there are none — and the upload cap is counted from its length, so
+   * uploading is blocked until a retry succeeds.
+   */
+  loadError?: boolean
+  onRetryLoad?: () => void
 }
 
 function formatSize(bytes: number): string {
@@ -37,6 +45,8 @@ const AttachmentList: React.FC<Props> = ({
   canDelete,
   onChange,
   disabled,
+  loadError = false,
+  onRetryLoad,
 }) => {
   const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -67,7 +77,7 @@ const AttachmentList: React.FC<Props> = ({
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
-      if (!taskId || disabled) return
+      if (!taskId || disabled || loadError) return
       setError(null)
       const list = Array.from(files)
       const room = MAX_ATTACHMENTS_PER_TASK - attachments.length
@@ -94,7 +104,7 @@ const AttachmentList: React.FC<Props> = ({
         }
       }
     },
-    [taskId, disabled, attachments.length, actor, onChange, t],
+    [taskId, disabled, loadError, attachments.length, actor, onChange, t],
   )
 
   const handleDrop = (e: React.DragEvent) => {
@@ -128,6 +138,9 @@ const AttachmentList: React.FC<Props> = ({
     if (data?.signedUrl) window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
   }
 
+  // Unknown count → treat the zone as unavailable rather than letting the cap be computed
+  // from a list we failed to read.
+  const uploadBlocked = disabled || loadError
   const atLimit = attachments.length >= MAX_ATTACHMENTS_PER_TASK
 
   return (
@@ -137,9 +150,9 @@ const AttachmentList: React.FC<Props> = ({
         onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        onClick={() => !disabled && !atLimit && inputRef.current?.click()}
+        onClick={() => !uploadBlocked && !atLimit && inputRef.current?.click()}
         className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-          disabled || atLimit ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-400'
+          uploadBlocked || atLimit ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-400'
         } ${isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'}`}
       >
         <input
@@ -151,7 +164,7 @@ const AttachmentList: React.FC<Props> = ({
             if (e.target.files) handleFiles(e.target.files)
             e.target.value = ''
           }}
-          disabled={disabled || atLimit}
+          disabled={uploadBlocked || atLimit}
         />
         <Upload className="w-5 h-5 mx-auto text-gray-400 mb-1" />
         <div className="text-sm text-gray-600 dark:text-gray-300">
@@ -232,12 +245,14 @@ const AttachmentList: React.FC<Props> = ({
         </div>
       )}
 
-      {attachments.length === 0 && uploading.length === 0 && (
+      {loadError ? (
+        <InlineLoadError message={t('tasks.attachments.load_error')} onRetry={onRetryLoad} />
+      ) : attachments.length === 0 && uploading.length === 0 ? (
         <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
           <Paperclip className="w-3 h-3" />
           {t('tasks.attachments.none')}
         </div>
-      )}
+      ) : null}
 
       <ConfirmDialog
         show={!!pendingDelete}
