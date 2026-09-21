@@ -35,11 +35,11 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
             <span className="font-medium">€{formatCurrency(base_amount_1)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">PDV 25%:</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 25 })}</span>
             <span className="font-medium">€{formatCurrency(calculation.vat1)}</span>
           </div>
           <div className="flex justify-between text-sm font-semibold">
-            <span className="text-gray-600 dark:text-gray-400">{t('invoices.form.subtotal')}</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
             <span>€{formatCurrency(calculation.subtotal1)}</span>
           </div>
         </div>
@@ -52,11 +52,11 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
             <span className="font-medium">€{formatCurrency(base_amount_2)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">PDV 13%:</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 13 })}</span>
             <span className="font-medium">€{formatCurrency(calculation.vat2)}</span>
           </div>
           <div className="flex justify-between text-sm font-semibold">
-            <span className="text-gray-600 dark:text-gray-400">{t('invoices.form.subtotal')}</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
             <span>€{formatCurrency(calculation.subtotal2)}</span>
           </div>
         </div>
@@ -69,11 +69,11 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
             <span className="font-medium">€{formatCurrency(base_amount_4)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">PDV 5%:</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 5 })}</span>
             <span className="font-medium">€{formatCurrency(calculation.vat4)}</span>
           </div>
           <div className="flex justify-between text-sm font-semibold">
-            <span className="text-gray-600 dark:text-gray-400">{t('invoices.form.subtotal')}</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
             <span>€{formatCurrency(calculation.subtotal4)}</span>
           </div>
         </div>
@@ -86,11 +86,11 @@ export const RetailInvoiceCalculationSummary: React.FC<RetailInvoiceCalculationS
             <span className="font-medium">€{formatCurrency(base_amount_3)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">PDV 0%:</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 0 })}</span>
             <span className="font-medium">{formatEuro(0)}</span>
           </div>
           <div className="flex justify-between text-sm font-semibold">
-            <span className="text-gray-600 dark:text-gray-400">{t('invoices.form.subtotal')}</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
             <span>€{formatCurrency(calculation.subtotal3)}</span>
           </div>
         </div>

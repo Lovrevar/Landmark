@@ -1,14 +1,14 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatDate } from '../../../utils/formatters'
 import { Plus, Trash2, Building2, Calendar } from 'lucide-react'
-import { format } from 'date-fns'
 import DateInput from '../../Common/DateInput'
 import { useLoans } from './hooks/useLoans'
 import { Alert, PageHeader, LoadingSpinner, SearchInput, Button, Modal, FormField, Select, Input, Form, ConfirmDialog, ErrorState } from '../../ui'
 import { toErrorMessage } from '../../../lib/errorMessage'
 
 const AccountingLoans: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     loans,
     companies,
@@ -113,7 +113,7 @@ const AccountingLoans: React.FC = () => {
                 filteredLoans.map((loan) => (
                   <tr key={loan.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td data-label={t('loans.table.date')} className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {format(new Date(loan.loan_date), 'dd.MM.yyyy')}
+                      {formatDate(loan.loan_date, i18n.language)}
                     </td>
                     <td data-label={t('loans.table.from')} className="px-4 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">

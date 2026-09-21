@@ -16,7 +16,6 @@ import {
   LayoutTemplate
 } from 'lucide-react'
 import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table, ConfirmDialog } from '../../ui'
-import { format, parseISO } from 'date-fns'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import MilestoneTimeline from './MilestoneTimeline'
 import ProjectFormModal from './forms/ProjectFormModal'
@@ -29,11 +28,13 @@ import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import { usePhaseCollapseState } from './hooks/usePhaseCollapseState'
 import { buildPhaseBuckets, computePhaseStatuses } from './utils'
 import { projectTimeline } from '../../../utils/projectTimeline'
+import { formatDate } from '../../../utils/formatters'
+import { PROJECT_STATUS, UNIT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 import { useAuth } from '../../../contexts/AuthContext'
 
 const ProjectDetailsEnhanced: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   // Editing a project is Director-only at the RLS level; hide the entry point
   // for everyone else instead of letting the save fail with a 403.
   const { user } = useAuth()
@@ -182,12 +183,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <ProjectCategoryBadge category={project.category} size="md" />
-            <Badge variant={
-              project.status === 'Completed' ? 'green'
-                : project.status === 'In Progress' ? 'blue'
-                : project.status === 'On Hold' ? 'yellow' : 'gray'
-            }>
-              {project.status}
+            <Badge variant={statusVariant(PROJECT_STATUS, project.status)}>
+              {statusLabel(PROJECT_STATUS, project.status, t)}
             </Badge>
           </div>
         </div>
@@ -235,7 +232,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                 </p>
               )
             })()}
-            <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">{format(parseISO(project.start_date), 'MMM dd, yyyy')}</p>
+            <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">{formatDate(project.start_date, i18n.language)}</p>
           </div>
 
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
@@ -302,12 +299,12 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.start_date')}</span>
-                    <p className="text-gray-900 dark:text-white font-medium mt-1">{format(parseISO(project.start_date), 'MMMM dd, yyyy')}</p>
+                    <p className="text-gray-900 dark:text-white font-medium mt-1">{formatDate(project.start_date, i18n.language)}</p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.end_date')}</span>
                     <p className="text-gray-900 dark:text-white font-medium mt-1">
-                      {project.end_date ? format(parseISO(project.end_date), 'MMMM dd, yyyy') : t('general_projects.ongoing')}
+                      {project.end_date ? formatDate(project.end_date, i18n.language) : t('general_projects.ongoing')}
                     </p>
                   </div>
                 </div>
@@ -387,8 +384,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       <Table.Td label={t('general_projects.size_m2')}>{apt.size_m2}</Table.Td>
                       <Table.Td label={t('general_projects.price')} className="font-semibold text-gray-900 dark:text-white">€{apt.price.toLocaleString('hr-HR')}</Table.Td>
                       <Table.Td label={t('common.status')}>
-                        <Badge variant={apt.status === 'Sold' ? 'green' : apt.status === 'Reserved' ? 'yellow' : 'blue'} size="sm">
-                          {apt.status}
+                        <Badge variant={statusVariant(UNIT_STATUS, apt.status)} size="sm">
+                          {statusLabel(UNIT_STATUS, apt.status, t)}
                         </Badge>
                       </Table.Td>
                       <Table.Td label={t('general_projects.buyer')}>{apt.buyer_name || '-'}</Table.Td>
@@ -415,11 +412,11 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {investment.bank_credits?.banks?.name || 'Unknown Bank'}
+                            {investment.bank_credits?.banks?.name || t('general_projects.unknown_bank')}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             {investment.bank_credits?.credit_name} • {investment.bank_credits?.credit_type?.replace(/_/g, ' ')}
-                            {investment.bank_credits?.start_date ? ` • ${format(parseISO(investment.bank_credits.start_date), 'MMM dd, yyyy')}` : ''}
+                            {investment.bank_credits?.start_date ? ` • ${formatDate(investment.bank_credits.start_date, i18n.language)}` : ''}
                           </p>
                           {investment.description && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{investment.description}</p>

@@ -20,7 +20,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
     <Modal show={show} onClose={onClose} size="full">
       <Modal.Header
         title={company.name}
-        subtitle={`OIB: ${company.oib}`}
+        subtitle={`${t('common.oib')}: ${company.oib}`}
         onClose={onClose}
       />
 

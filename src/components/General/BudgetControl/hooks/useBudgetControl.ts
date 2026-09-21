@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { calculateProjectEVM } from '../../../../utils/evm'
 import type { EVMMetrics } from '../../../../utils/evm'
 import type { ProjectDisplay } from '../../Projects/types'
@@ -25,6 +26,7 @@ interface UseBudgetControlReturn {
 }
 
 export function useBudgetControl(): UseBudgetControlReturn {
+  const { t } = useTranslation()
   const [projects, setProjects] = useState<ProjectDisplay[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [data, setData] = useState<BudgetControlData | null>(null)
@@ -44,11 +46,11 @@ export function useBudgetControl(): UseBudgetControlReturn {
           setSelectedProjectId(prev => prev || list[0].id)
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load projects')
+        setError(err instanceof Error ? err.message : t('common.projects_load_error'))
       }
     }
     loadProjects()
-  }, [reloadKey])
+  }, [reloadKey, t])
 
   useEffect(() => {
     if (!selectedProjectId) return
@@ -79,7 +81,7 @@ export function useBudgetControl(): UseBudgetControlReturn {
           metrics,
         })
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data')
+        setError(err instanceof Error ? err.message : t('budget_control.errors.load_data_failed'))
         // Dropped rather than left standing: these are one project's EVM figures, and keeping
         // them would attribute them to whichever project the selector now names.
         setData(null)
@@ -89,7 +91,7 @@ export function useBudgetControl(): UseBudgetControlReturn {
     }
 
     loadProjectData()
-  }, [selectedProjectId, reloadKey])
+  }, [selectedProjectId, reloadKey, t])
 
   return { projects, selectedProjectId, setSelectedProjectId, data, loading, error, refetch }
 }

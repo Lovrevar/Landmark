@@ -6,6 +6,18 @@
 
 Shared project and milestone management used as a foundation across multiple domains. Not domain-specific — represents the generic "project" concept that Retail, Supervision, and Funding build on top of.
 
+## Dates and status labels
+
+**Dates go through `formatDate`** (`src/utils/formatters.ts`), which takes the language:
+`const { t, i18n } = useTranslation()` → `formatDate(value, i18n.language)`. Croatian renders
+`05.01.2026.`, English `Jan 05, 2026`. `ProjectDetailsEnhanced`, `MilestoneTimeline` and
+`MilestoneTemplateModal` all formatted with `'MMM dd, yyyy'` / `'MMMM dd, yyyy'` /
+`'d. MMM yyyy.'` — the last one a Croatian shape with an English month name.
+
+**`projects.status` is English and CHECK-constrained.** Render it through `PROJECT_STATUS` +
+`statusVariant` / `statusLabel` (`src/utils/statusDisplay.ts`); the `<option value="…">` in
+`ProjectFormModal` and the `index.tsx` filter stay English because they are the stored values.
+
 ---
 
 ## Sub-modules
@@ -63,8 +75,16 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 #### Utilities
 
 ### utils.ts
-- `getStatusConfig(status)` — returns badge color and label for a project status string
-- `getMilestoneStatus(milestone)` — derives display status (completed, overdue, in_progress) for a milestone, plus icon/colors for the timeline
+- `getStatusConfig(status)` is **gone.** It returned `{ icon, label }` with the label as an English
+  literal ('In Progress'), which rendered untranslated in a Croatian UI, and its only caller
+  (`ProjectCard`) used the label and never the icon. Project status now renders through
+  `PROJECT_STATUS` + `statusVariant` / `statusLabel` (`src/utils/statusDisplay.ts`), the one map
+  every screen in the app reads a project status from — `ProjectCard` and `ProjectDetailsEnhanced`
+  each had their own colour ladder, and both printed the raw `projects.status` column
+- `getMilestoneStatus(milestone)` — derives a milestone's display state (completed / overdue /
+  in_progress) for the timeline: icon, colour classes, `labelKey` (`status.completed` /
+  `status.overdue` / `status.in_progress`) and a `variant` for the badge. It used to return English
+  `label` literals, which `MilestoneTimeline` then string-compared to pick a badge colour
 - `buildPhaseBuckets(milestones)` — groups milestones by their `phase` string into ordered `PhaseBucket[]`; known template phases come first (in template order), then unknown phases alphabetically, then the un-phased bucket (`NO_PHASE_KEY = '__no_phase'`) last
 - `computePhaseStatuses(buckets)` — reduces buckets to `PhaseStatus[]` (`key`, `total`, `completed`, `overdue`) — consumed by `usePhaseCollapseState`
 - **Exports:** `NO_PHASE_KEY`, `PhaseBucket`, `PhaseStatus`
@@ -123,7 +143,7 @@ exactly what kept regressing.
 - Money uses `formatEuro`; the timeline line uses `projectTimeline()` + `PROJECT_TIMELINE_TONE`
 - **Uses services:** (receives ProjectWithStats as prop)
 - **Uses Ui:** Badge, Button
-- **Uses components:** ProjectCategoryBadge, getStatusConfig, `projectTimeline`
+- **Uses components:** ProjectCategoryBadge, `PROJECT_STATUS` + `statusVariant`/`statusLabel`, `projectTimeline`
 
 ### MilestoneTimeline.tsx
 - Visual vertical timeline of project milestones sorted by due date, with status colors and edit/delete/toggle actions
@@ -188,6 +208,7 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 - **Returns (`BudgetControlData`):** `projects`, `selectedProjectId`, `setSelectedProjectId`, `data` (`tic`, `plannedBudget`, `committed`, `paid`, `completionPct`, `metrics`), `loading`, `error`, `refetch`
 - `refetch` re-runs both loads (a reload counter both effects depend on) and preserves the selected project
 - A failed project-data load now **clears `data`**. Leaving the previous project's EVM figures standing attributed one project's numbers to whichever project the selector named
+- Both load failures are translated (`common.projects_load_error`, `budget_control.errors.load_data_failed`); they were English literals set straight into `error` and rendered by `ErrorState`
 - **Calls:** budgetControlService.ts (`fetchProjectsList`, `fetchProjectBudgetData`)
 - **Calls:** `calculateProjectEVM` from `src/utils/evm.ts`
 
@@ -273,6 +294,7 @@ Director-only audit trail UI. Displays all logged mutations across the platform 
 
 ### ActivityLogDetailModal.tsx
 - Three-section detail view: User info, Entity info, Metadata key-value pairs
+- `formatMetadataValue(value, t)` takes the translator: a boolean metadata value rendered the English literals "Yes"/"No" and now uses `common.yes` / `common.no`
 - "View Entity" navigation button when entity has a known route
 - **Uses Ui:** Modal, Badge, Button
 

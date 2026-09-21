@@ -102,7 +102,7 @@ const AccountingCompanies: React.FC = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{company.name}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">OIB: {company.oib}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.oib')}: {company.oib}</p>
                 </div>
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                   <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -166,8 +166,8 @@ const AccountingCompanies: React.FC = () => {
                 <Button variant="primary" size="sm" icon={Eye} className="flex-1" onClick={() => handleViewDetails(company)}>
                   {t('common.details')}
                 </Button>
-                <Button variant="ghost" size="icon-md" icon={Edit} onClick={() => handleOpenAddModal(company)} title="Uredi" />
-                <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => handleDelete(company.id)} title="Obriši" />
+                <Button variant="ghost" size="icon-md" icon={Edit} onClick={() => handleOpenAddModal(company)} title={t('common.edit')} />
+                <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => handleDelete(company.id)} title={t('common.delete')} />
               </div>
             </div>
           ))}

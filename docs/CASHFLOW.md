@@ -22,6 +22,40 @@ hand-rolled `toLocaleString`. Two rules the module used to break:
 A sweep of the remaining plain `toLocaleString('hr-HR')` money renders (correct locale, ragged
 decimals) is still outstanding — see `docs/UI_AUDIT.md`.
 
+## Dates, statuses and vocabularies
+
+**Dates go through `formatDate` / `formatDateTime`** (`src/utils/formatters.ts`), which take the
+language: `const { t, i18n } = useTranslation()` → `formatDate(value, i18n.language)`. Croatian
+renders `05.01.2026.` (with the trailing dot), English `Jan 05, 2026`. The module had standardised
+on `format(new Date(x), 'dd.MM.yyyy')`, which was locale-blind and — for a `date` column — read
+UTC midnight and printed the **previous day** east of UTC. Pass the raw column string for a `date`
+and a `Date` for a timestamp; the helper parses date-only strings locally. No screen in this module
+calls `date-fns` `format` for display any more (the PDF/Excel generators still do — exports batch).
+
+**Enum labels come from a shared map, never from the raw column.**
+
+| Vocabulary | Renderer |
+|---|---|
+| `accounting_invoices.status` | `getInvoiceStatusVariant` / `getInvoiceStatusLabel` (`services/invoiceHelpers.ts`) |
+| `accounting_invoices.invoice_category` | `getInvoiceCategoryLabel` (same file) → `invoice_category.*` |
+| `accounting_invoices.invoice_type` | `getInvoiceTypeLabelKey` → `invoice_type.*` |
+| `accounting_payments.payment_method` | `getPaymentMethodLabel(method, source, t)` (`services/paymentHelpers.ts`) → `payments.method_*`. Kompenzacija has no method and shows `—` |
+| `contracts.status` | `CONTRACT_STATUS` + `statusVariant`/`statusLabel` (`src/utils/statusDisplay.ts`) |
+
+`getPaymentMethodLabel` used to return hardcoded Croatian ("Virman", "Ček"), so the English UI read
+Croatian; it now takes `t`. **These columns are English and CHECK-constrained — map at render time
+only, never translate a value that is compared, filtered or written back.**
+
+**One VAT-line key.** `invoices.vat_rate_line` (`PDV {{rate}}%:` / `VAT {{rate}}%:`) is used by
+`InvoiceVATSummary`, `InvoicePreview`, `RetailInvoiceCalculationSummary` and `InvoiceDetailView`.
+The form and the detail view rendered the same thing in two word orders (`PDV 25%:` vs `25% PDV:`);
+the form's won. `common.subtotal` replaced `invoices.form.subtotal`, which held the English
+"Subtotal:" in the *Croatian* file.
+
+**Month names** come from `common.months`. `cashflow_calendar.months` was a byte-identical copy and
+is gone. `cashflow_calendar.days` stays: it is a Sunday-first array, while `calendar.day_names` is
+a `mon`…`sun` object, so neither covers the other without a mapping.
+
 ## Load failures must not look like data
 
 On a financial screen, an empty list and a failed query render identically unless the page is
@@ -40,6 +74,11 @@ Errors are coerced with `toLoadError` (`Cashflow/services/loadError.ts`) rather 
 `new Error(String(err))`: Supabase rejects with a plain `{ code, message }` object, which
 `String()` turns into `"[object Object]"` — and `toErrorMessage` would then show it. `toLoadError`
 keeps the message and the SQLSTATE, so `toErrorMessage` / `isPermissionError` still work.
+
+A failure with no message of its own gets `'LOAD_FAILED'`, not a sentence. `isReadable` in
+`lib/errorMessage.ts` rejects a bare SCREAMING_CASE token, so the toast falls through to the
+caller's **translated** fallback; the old `'Load failed'` was readable enough to be shown, which
+put an English sentence on a Croatian screen.
 
 **The rendering rule** (`ErrorState` and `Alert` both come from `src/components/ui`; `Alert`'s
 `onClose` prop is dead — use `onDismiss`):

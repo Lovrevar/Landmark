@@ -8,6 +8,7 @@ import { ClassificationCard } from './ClassificationCard'
 import { buildContractTree } from './utils/contractTree'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
 import { formatEuroRounded } from '../../../utils/formatters'
+import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import { TICBudgetBadge } from './TICBudgetBadge'
 import { ProjectSummaryBanner } from './ProjectSummaryBanner'
 import { TreeGroup } from './TreeGroup'
@@ -155,12 +156,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
           <div className="flex items-center space-x-3">
             <ProjectCategoryBadge category={project.category} size="md" />
-            <Badge variant={
-              project.status === 'Completed' ? 'green' :
-              project.status === 'In Progress' ? 'blue' :
-              'gray'
-            } size="md">
-              {project.status}
+            <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="md">
+              {statusLabel(PROJECT_STATUS, project.status, t)}
             </Badge>
             {project.has_phases && (
               <div className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">

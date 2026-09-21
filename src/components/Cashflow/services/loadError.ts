@@ -9,7 +9,11 @@
 export function toLoadError(error: unknown): Error {
   if (error instanceof Error) return error
   const source = error as { message?: string; code?: string } | null | undefined
-  const err = new Error(source?.message || 'Load failed') as Error & { code?: string }
+  // 'LOAD_FAILED' rather than a sentence: `isReadable` in lib/errorMessage rejects a bare
+  // SCREAMING_CASE token, so a failure with no message of its own falls through to the caller's
+  // *translated* fallback instead of showing an English "Load failed" in a Croatian UI. The
+  // console still gets something to grep for.
+  const err = new Error(source?.message || 'LOAD_FAILED') as Error & { code?: string }
   if (source?.code) err.code = source.code
   return err
 }

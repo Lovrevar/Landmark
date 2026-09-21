@@ -2,9 +2,9 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckCircle, Circle, Clock, AlertTriangle, Calendar, Edit2, Trash2, ChevronDown } from 'lucide-react'
 import { Badge, Button, EmptyState } from '../../ui'
-import { format, parseISO } from 'date-fns'
 import type { Milestone } from './types'
 import { daysFromToday } from '../../../utils/dateOnly'
+import { formatDate } from '../../../utils/formatters'
 import { buildPhaseBuckets, getMilestoneStatus, NO_PHASE_KEY } from './utils'
 
 /**
@@ -42,7 +42,7 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
   isPhaseExpanded,
   onTogglePhase
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const sortedMilestones = useMemo(() => sortByDate(milestones), [milestones])
 
@@ -86,19 +86,15 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{milestone.name}</h3>
-                    <Badge variant={
-                      status.label === 'Completed' ? 'green'
-                        : status.label === 'Overdue' ? 'red'
-                        : 'blue'
-                    } size="sm">
-                      {status.label}
+                    <Badge variant={status.variant} size="sm">
+                      {t(status.labelKey)}
                     </Badge>
                   </div>
 
                   {milestone.due_date && (
                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
                       <Calendar className="w-4 h-4 mr-1" />
-                      <span>{t('general_projects.milestone_due')}: {format(parseISO(milestone.due_date), 'MMM dd, yyyy')}</span>
+                      <span>{t('general_projects.milestone_due')}: {formatDate(milestone.due_date, i18n.language)}</span>
                     </div>
                   )}
                 </div>

@@ -12,7 +12,7 @@ import { Invoice } from './types'
 const AccountingCalendar: React.FC = () => {
   const { t } = useTranslation()
   const toast = useToast()
-  const monthNames = t('cashflow_calendar.months', { returnObjects: true }) as string[]
+  const monthNames = t('common.months', { returnObjects: true }) as string[]
   const dayNames = t('cashflow_calendar.days', { returnObjects: true }) as string[]
   const {
     currentDate,

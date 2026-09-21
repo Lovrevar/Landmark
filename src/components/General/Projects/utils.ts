@@ -1,5 +1,6 @@
-import { Clock, TrendingUp, CheckCircle, Pause, AlertTriangle } from 'lucide-react'
+import { Clock, CheckCircle, AlertTriangle } from 'lucide-react'
 import { daysFromToday } from '../../../utils/dateOnly'
+import type { StatusVariant } from '../../../utils/statusDisplay'
 import type { Milestone } from './types'
 import { RESIDENTIAL_HR_TEMPLATE } from './data/milestoneTemplates'
 
@@ -47,24 +48,39 @@ export function computePhaseStatuses(buckets: PhaseBucket[]): PhaseStatus[] {
   }))
 }
 
-export const getStatusConfig = (status: string) => {
-  const configs = {
-    'Planning': { icon: Clock, label: 'Planning' },
-    'In Progress': { icon: TrendingUp, label: 'In Progress' },
-    'Completed': { icon: CheckCircle, label: 'Completed' },
-    'On Hold': { icon: Pause, label: 'On Hold' }
-  }
-  return configs[status as keyof typeof configs] || configs['Planning']
+// `getStatusConfig` lived here and returned `{ icon, label }` with the label as an English
+// literal ('In Progress'), which rendered untranslated in a Croatian UI. Its only caller,
+// ProjectCard, used the label and never the icon, so both are gone: the label and the badge
+// colour now come from `PROJECT_STATUS` in `src/utils/statusDisplay.ts`, the one place every
+// screen reads a project status from.
+
+/**
+ * A milestone's derived state: done, past its due date, or still running.
+ *
+ * Computed, not stored — `general_project_milestones` only has the `completed` boolean. Returns an
+ * i18n key and a badge variant rather than the English literals ('Completed' / 'Overdue' /
+ * 'In Progress') it used to, which both rendered raw and were string-compared by the caller to
+ * pick a colour.
+ */
+export interface MilestoneStatusDisplay {
+  icon: typeof CheckCircle
+  color: string
+  bg: string
+  border: string
+  labelKey: string
+  variant: StatusVariant
+  lineColor: string
 }
 
-export const getMilestoneStatus = (milestone: Milestone) => {
+export const getMilestoneStatus = (milestone: Milestone): MilestoneStatusDisplay => {
   if (milestone.completed) {
     return {
       icon: CheckCircle,
       color: 'text-green-600',
       bg: 'bg-green-100',
       border: 'border-green-300',
-      label: 'Completed',
+      labelKey: 'status.completed',
+      variant: 'green',
       lineColor: 'bg-green-300'
     }
   }
@@ -77,7 +93,8 @@ export const getMilestoneStatus = (milestone: Milestone) => {
       color: 'text-red-600',
       bg: 'bg-red-100',
       border: 'border-red-300',
-      label: 'Overdue',
+      labelKey: 'status.overdue',
+      variant: 'red',
       lineColor: 'bg-red-300'
     }
   }
@@ -87,7 +104,8 @@ export const getMilestoneStatus = (milestone: Milestone) => {
     color: 'text-blue-600',
     bg: 'bg-blue-100',
     border: 'border-blue-300',
-    label: 'In Progress',
+    labelKey: 'status.in_progress',
+    variant: 'blue',
     lineColor: 'bg-blue-300'
   }
 }

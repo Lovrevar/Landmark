@@ -8,6 +8,8 @@ import {
   getInvoiceStatusLabelKey,
   getInvoiceStatusLabel,
   paymentDirection,
+  getInvoiceCategoryLabelKey,
+  getInvoiceCategoryLabel,
   type InvoiceDirection,
 } from './invoiceHelpers'
 
@@ -148,5 +150,34 @@ describe('getInvoiceStatusLabel', () => {
   it('shows an unknown status as-is, and a missing one as the no-value dash', () => {
     expect(getInvoiceStatusLabel('OVERDUE', t)).toBe('OVERDUE')
     expect(getInvoiceStatusLabel(null, t)).toBe('—')
+  })
+})
+
+describe('getInvoiceCategoryLabel', () => {
+  const t = ((key: string) => `t(${key})`) as unknown as TFunction
+
+  // Copied from accounting_invoices_invoice_category_check (baseline_schema.sql:2523), literal for
+  // the same reason as DB_INVOICE_TYPES above.
+  const DB_INVOICE_CATEGORIES = [
+    'SUBCONTRACTOR', 'OFFICE', 'APARTMENT', 'CUSTOMER', 'BANK_CREDIT',
+    'INVESTOR', 'MISCELLANEOUS', 'GENERAL', 'RETAIL',
+  ]
+
+  it('has a key for every category the CHECK constraint allows', () => {
+    for (const category of DB_INVOICE_CATEGORIES) {
+      expect(getInvoiceCategoryLabelKey(category)).toBe(`invoice_category.${category.toLowerCase()}`)
+    }
+  })
+
+  // 'SUPERVISION' was branched on in Supervision/Invoices for a blue badge, but no CHECK has ever
+  // allowed it and no migration ever added it. It must not acquire a label by accident.
+  it('does not know SUPERVISION, which the database has never allowed', () => {
+    expect(getInvoiceCategoryLabelKey('SUPERVISION')).toBeNull()
+  })
+
+  it('shows an unknown category as-is, and a missing one as the no-value dash', () => {
+    expect(getInvoiceCategoryLabel('SUBCONTRACTOR', t)).toBe('t(invoice_category.subcontractor)')
+    expect(getInvoiceCategoryLabel('SUPERVISION', t)).toBe('SUPERVISION')
+    expect(getInvoiceCategoryLabel(null, t)).toBe('—')
   })
 })

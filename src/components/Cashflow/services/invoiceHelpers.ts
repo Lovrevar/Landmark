@@ -44,6 +44,37 @@ export const getInvoiceStatusLabel = (status: string | null | undefined, t: TFun
   return key ? t(key) : (status || NO_VALUE)
 }
 
+/**
+ * `accounting_invoices.invoice_category` — what the invoice is *about*, as opposed to
+ * `invoice_type`'s direction. The nine values are fixed by
+ * accounting_invoices_invoice_category_check (baseline_schema.sql:2523).
+ *
+ * Supervision's invoice table printed the raw column ("BANK_CREDIT") and branched on
+ * `'SUPERVISION'` — a value no CHECK allows and no migration ever added, so that branch could
+ * never run. Stored values stay English; this maps at render time only.
+ */
+export const INVOICE_CATEGORY_LABEL_KEYS: Readonly<Record<string, string>> = {
+  SUBCONTRACTOR: 'invoice_category.subcontractor',
+  OFFICE: 'invoice_category.office',
+  APARTMENT: 'invoice_category.apartment',
+  CUSTOMER: 'invoice_category.customer',
+  BANK_CREDIT: 'invoice_category.bank_credit',
+  INVESTOR: 'invoice_category.investor',
+  MISCELLANEOUS: 'invoice_category.miscellaneous',
+  GENERAL: 'invoice_category.general',
+  RETAIL: 'invoice_category.retail',
+}
+
+/** i18n key for an invoice category, or null for a value the vocabulary does not know. */
+export const getInvoiceCategoryLabelKey = (category: string | null | undefined): string | null =>
+  (category && INVOICE_CATEGORY_LABEL_KEYS[category]) || null
+
+/** Translated category label. An unknown category is shown as-is rather than hidden. */
+export const getInvoiceCategoryLabel = (category: string | null | undefined, t: TFunction): string => {
+  const key = getInvoiceCategoryLabelKey(category)
+  return key ? t(key) : (category || NO_VALUE)
+}
+
 export const getTypeColor = (type: string): string => {
   if (type === 'INCOMING_SUPPLIER' || type === 'INCOMING_OFFICE' || type === 'INCOMING_BANK' || type === 'INCOMING_BANK_EXPENSES') {
     return 'text-red-600'

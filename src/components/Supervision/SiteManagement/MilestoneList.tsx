@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Edit2, Trash2, Calendar, X } from 'lucide-react'
-import { format } from 'date-fns'
 import { SubcontractorMilestone } from '../../../lib/supabase'
 import { MilestoneFormModal } from './modals/MilestoneFormModal'
 import {
@@ -12,7 +11,8 @@ import {
   deleteMilestone,
   getMilestoneStatsForContract
 } from './services/siteService'
-import { formatEuro } from '../../../utils/formatters'
+import { formatEuro, formatDate } from '../../../utils/formatters'
+import { MILESTONE_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import { MilestoneStats, MilestoneFormData } from './types'
 import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
@@ -42,7 +42,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   canManagePayments,
   onClose
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const toast = useToast()
   const [milestones, setMilestones] = useState<SubcontractorMilestone[]>([])
   const [stats, setStats] = useState<MilestoneStats | null>(null)
@@ -299,18 +299,20 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                       )}
                       <td data-label={t('supervision.site_management.milestone_list.col_due_date')} className="py-3 px-4">
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {milestone.due_date ? format(new Date(milestone.due_date), 'MMM dd, yyyy') : '-'}
+                          {milestone.due_date ? formatDate(milestone.due_date, i18n.language) : '-'}
                         </div>
                       </td>
                       {canManagePayments && (
                         <td data-label={t('common.status')} className="py-3 px-4 text-center">
+                          {/* Payment state first — it is computed from the money actually
+                              received and outranks the stored column, whose `completed` only
+                              means "some money landed". Otherwise the shared vocabulary. */}
                           <Badge variant={
                             isFullyPaid ? 'green' :
                             isPartiallyPaid ? 'yellow' :
-                            milestone.status === 'completed' ? 'blue' :
-                            'gray'
+                            statusVariant(MILESTONE_STATUS, milestone.status)
                           } size="sm">
-                            {isFullyPaid ? t('status.paid') : isPartiallyPaid ? t('status.partial') : milestone.status.charAt(0).toUpperCase() + milestone.status.slice(1)}
+                            {isFullyPaid ? t('status.paid') : isPartiallyPaid ? t('status.partial') : statusLabel(MILESTONE_STATUS, milestone.status, t)}
                           </Badge>
                         </td>
                       )}

@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Building2, FileText, DollarSign } from 'lucide-react'
-import { format } from 'date-fns'
 import { Subcontractor, WirePayment } from '../../../../lib/supabase'
 import { fetchContractInvoiceTotals } from '../services/siteService'
 import { Modal, Button, Badge, EmptyState, ErrorState } from '../../../ui'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
+import { getPaymentMethodLabel } from '../../../Cashflow/services/paymentHelpers'
+import { formatDate, formatDateTime } from '../../../../utils/formatters'
 
 interface AccountingPayment {
   id: string
@@ -41,7 +42,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   onEditPayment,
   onDeletePayment
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [totalInvoiceAmount, setTotalInvoiceAmount] = useState<number>(0)
   const [totalPaidAmount, setTotalPaidAmount] = useState<number>(0)
   const [loading, setLoading] = useState(false)
@@ -144,7 +145,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                           <span className="text-lg font-bold text-gray-900 dark:text-white">€{payment.amount.toLocaleString('hr-HR')}</span>
                           {payment.payment_date && (
                             <span className="text-sm text-gray-600 dark:text-gray-400">
-                              {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
+                              {formatDate(payment.payment_date, i18n.language)}
                             </span>
                           )}
                           {!payment.payment_date && (
@@ -170,7 +171,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
 
                         {isAccountingPayment && accountingPayment.payment_method && (
                           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                            {t('supervision.payment_history.method')} <span className="font-medium">{accountingPayment.payment_method}</span>
+                            {t('supervision.payment_history.method')} <span className="font-medium">{getPaymentMethodLabel(accountingPayment.payment_method, null, t)}</span>
                           </div>
                         )}
 
@@ -198,7 +199,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                         )}
 
                         <p className="text-xs text-gray-400 dark:text-gray-500">
-                          {t('supervision.payment_history.created')} {format(new Date(payment.created_at), 'MMM dd, yyyy HH:mm')}
+                          {t('supervision.payment_history.created')} {formatDateTime(new Date(payment.created_at), i18n.language)}
                         </p>
                       </div>
                       {!isAccountingPayment && (

@@ -1,15 +1,14 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Building2, Plus, Edit, Trash2, Mail, Phone, MapPin, FileText, Calendar } from 'lucide-react'
-import { format } from 'date-fns'
 import { useOfficeSuppliers } from './hooks/useOfficeSuppliers'
 import OfficeSupplierFormModal from './forms/OfficeSupplierFormModal'
 import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
-import { formatEuro, formatEuropean } from '../../../utils/formatters'
+import { formatEuro, formatEuropean, formatDate } from '../../../utils/formatters'
 import { toErrorMessage } from '../../../lib/errorMessage'
 
 const OfficeSuppliers: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     suppliers,
     loading,
@@ -158,13 +157,13 @@ const OfficeSuppliers: React.FC = () => {
               <div className="space-y-2 mb-4">
                 {supplier.tax_id && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 dark:text-gray-400">OIB:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('common.oib')}:</span>
                     <span className="font-medium text-gray-900 dark:text-white">{supplier.tax_id}</span>
                   </div>
                 )}
                 {supplier.vat_id && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 dark:text-gray-400">PDV ID:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('common.vat_id')}:</span>
                     <span className="font-medium text-gray-900 dark:text-white">{supplier.vat_id}</span>
                   </div>
                 )}
@@ -270,13 +269,13 @@ const OfficeSuppliers: React.FC = () => {
                         <Table.Td label={t('office_suppliers.invoices_modal.table.issue_date')} className="text-gray-600 dark:text-gray-400">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
-                            {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                            {formatDate(invoice.issue_date, i18n.language)}
                           </div>
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.due_date')} className="text-gray-600 dark:text-gray-400">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
-                            {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                            {formatDate(invoice.due_date, i18n.language)}
                           </div>
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.description')} className="text-gray-600 dark:text-gray-400 max-w-xs truncate">

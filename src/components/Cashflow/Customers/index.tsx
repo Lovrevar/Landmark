@@ -1,16 +1,14 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Users, DollarSign, TrendingUp, TrendingDown, FileText, Eye } from 'lucide-react'
-import { format } from 'date-fns'
 import { useAccountingCustomers } from './hooks/useAccountingCustomers'
 import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, StatCard, EmptyState, ErrorState, Button, Badge, Modal } from '../../ui'
 import { toErrorMessage } from '../../../lib/errorMessage'
-import { parseLocalDate } from '../../../utils/dateOnly'
-import { formatEuro } from '../../../utils/formatters'
+import { formatEuro, formatDate } from '../../../utils/formatters'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 const AccountingCustomers: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     customers,
     loading,
@@ -192,7 +190,7 @@ const AccountingCustomers: React.FC = () => {
                             {t('accounting_customers.modal.invoice_company')} {invoice.company?.name || 'N/A'}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {format(parseLocalDate(invoice.issue_date), 'dd.MM.yyyy')}
+                            {formatDate(invoice.issue_date, i18n.language)}
                           </p>
                         </div>
                         {/* The shared renderer: the local switch here had UNPAID gray, where it is

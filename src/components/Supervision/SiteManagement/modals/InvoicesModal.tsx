@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatDate } from '../../../../utils/formatters'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-react'
-import { format } from 'date-fns'
 import { Subcontractor } from '../../../../lib/supabase'
 import { Modal, Button, Badge, LoadingSpinner, EmptyState } from '../../../ui'
 import { fetchContractInvoices, ContractInvoiceRow } from '../services/siteService'
@@ -28,7 +28,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   onClose,
   subcontractor
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -147,7 +147,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                             ? 'font-bold text-red-600 dark:text-red-400'
                             : 'font-medium text-gray-900 dark:text-white'
                         }`}>
-                          {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                          {formatDate(invoice.due_date, i18n.language)}
                         </p>
                       </div>
                       {isOverdue(invoice.due_date, invoice.status) && (
@@ -177,7 +177,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                     </div>
                     <div>
                       <span className="text-gray-500 dark:text-gray-400">{t('supervision.invoices_modal.issue_date')}</span>
-                      <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formatDate(invoice.issue_date, i18n.language)}</span>
                     </div>
                   </div>
                 </div>

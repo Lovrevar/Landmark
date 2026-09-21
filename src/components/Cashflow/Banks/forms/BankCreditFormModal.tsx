@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
 import DateInput from '../../../Common/DateInput'
 import { BankWithCredits, Company, BankCredit, NewCreditForm, CompanyBankAccount } from '../bankTypes'
 import { calculatePayments, fetchCompanyBankAccounts } from '../services/bankService'
 import { Modal, Button, Select, Input, Textarea, FormField } from '../../../ui'
-import { formatEuroRounded } from '../../../../utils/formatters'
+import { formatEuroRounded, formatDate } from '../../../../utils/formatters'
 
 interface BankCreditFormModalProps {
   showCreditForm: boolean
@@ -28,7 +27,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
   addCredit,
   resetCreditForm
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyBankAccount[]>([])
   const [loadingAccounts, setLoadingAccounts] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -96,7 +95,7 @@ const BankCreditFormModal: React.FC<BankCreditFormModalProps> = ({
               </div>
             </div>
             <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
-              <p className="text-sm text-blue-700 dark:text-blue-300">{t('banks.credit_form.payments_start_label')}<span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
+              <p className="text-sm text-blue-700 dark:text-blue-300">{t('banks.credit_form.payments_start_label')}<span className="font-semibold">{formatDate(calculation.paymentStartDate, i18n.language)}</span></p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{t('banks.credit_form.grace_period_after', { months: newCredit.grace_period })}</p>
             </div>
           </div>

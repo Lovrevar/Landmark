@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { InvoiceWithDetails, InvoiceStats } from '../services/supervisionInvoiceService'
 import {
   fetchSupervisionInvoices,
@@ -10,6 +11,7 @@ import { useToast } from '../../../../contexts/ToastContext'
 
 export function useSupervisionInvoices() {
   const toast = useToast()
+  const { t } = useTranslation()
   const [invoices, setInvoices] = useState<InvoiceWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -83,7 +85,7 @@ export function useSupervisionInvoices() {
       )
     } catch (err) {
       console.error('Error updating invoice approval:', err)
-      toast.error('Failed to update invoice approval status')
+      toast.error(t('supervision.invoices.errors.approval_failed'))
     }
   }
 

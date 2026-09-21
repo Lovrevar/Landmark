@@ -1,3 +1,6 @@
+import type { TFunction } from 'i18next'
+import { NO_VALUE } from '../../../utils/formatters'
+
 export type PaymentMethod = 'WIRE' | 'CASH' | 'CHECK' | 'CARD'
 
 /**
@@ -38,16 +41,41 @@ export const snapPaymentMethod = (
   return (allowed as string[]).includes(method) ? (method as PaymentMethod) : allowed[0]
 }
 
-/** Display label for a payment's method. Kompenzacija has no real method, so it shows "—". */
-export const getPaymentMethodLabel = (method: string, source?: string | null) => {
-  if (source === 'kompenzacija') return '—'
+/**
+ * i18n key for a payment method, or `null` when there is nothing to translate — either the source
+ * is a kompenzacija (no money moves, so the stored 'WIRE' is a placeholder, not a method) or the
+ * value is one the vocabulary does not know and the caller shows raw.
+ *
+ * The labels used to be hardcoded Croatian here, which meant the English UI read "Virman". The
+ * stored values are English and CHECK-constrained (`accounting_payments.payment_method`), so this
+ * maps at render time only — nothing compares or writes back the translated text.
+ */
+export const getPaymentMethodLabelKey = (
+  method: string | null | undefined,
+  source?: string | null
+): string | null => {
+  if (source === 'kompenzacija') return null
   switch (method) {
-    case 'WIRE': return 'Virman'
-    case 'CASH': return 'Gotovina'
-    case 'CHECK': return 'Ček'
-    case 'CARD': return 'Kartica'
-    default: return method
+    case 'WIRE': return 'payments.method_wire'
+    case 'CASH': return 'payments.method_cash'
+    case 'CHECK': return 'payments.method_check'
+    case 'CARD': return 'payments.method_card'
+    default: return null
   }
+}
+
+/**
+ * Display label for a payment's method. Kompenzacija has no real method, so it shows "—"; an
+ * unknown method shows as-is rather than vanishing.
+ */
+export const getPaymentMethodLabel = (
+  method: string | null | undefined,
+  source: string | null | undefined,
+  t: TFunction
+): string => {
+  if (source === 'kompenzacija') return NO_VALUE
+  const key = getPaymentMethodLabelKey(method, source)
+  return key ? t(key) : (method || NO_VALUE)
 }
 
 export const getPaymentMethodColor = (method: string, source?: string | null) => {

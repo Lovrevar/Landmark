@@ -1,9 +1,8 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Eye } from 'lucide-react'
-import { format } from 'date-fns'
 import { Card, Badge } from '../../ui'
-import { formatEuro } from '../../../utils/formatters'
+import { formatEuro, formatDate } from '../../../utils/formatters'
 import { daysFromToday } from '../../../utils/dateOnly'
 import { SubcontractorContract } from './types'
 
@@ -13,7 +12,7 @@ interface Props {
 }
 
 export const SubcontractorContractsList: React.FC<Props> = ({ contracts, onViewDocuments }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   return (
     <div className="space-y-4">
@@ -82,7 +81,7 @@ export const SubcontractorContractsList: React.FC<Props> = ({ contracts, onViewD
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">{t('supervision.contract_fields.deadline')}:</p>
                     <p className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
-                      {format(new Date(contract.deadline), 'MMM dd, yyyy')}
+                      {formatDate(contract.deadline, i18n.language)}
                     </p>
                   </div>
                 )}
@@ -105,7 +104,7 @@ export const SubcontractorContractsList: React.FC<Props> = ({ contracts, onViewD
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">{t('supervision.contract_fields.deadline')}:</p>
                     <p className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
-                      {format(new Date(contract.deadline), 'MMM dd, yyyy')}
+                      {formatDate(contract.deadline, i18n.language)}
                     </p>
                   </div>
                 )}

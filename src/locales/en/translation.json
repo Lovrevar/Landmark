@@ -68,6 +68,8 @@
     "total": "Total",
     "subtotal": "Subtotal",
     "grand_total": "Grand Total",
+    "oib": "OIB",
+    "vat_id": "PDV ID",
     "paid": "Paid",
     "unpaid": "Unpaid",
     "partial": "Partial",
@@ -356,6 +358,17 @@
     "izlazni_prod": "OUT (SALES)",
     "izlazni_banka": "OUT (BANK)"
   },
+  "invoice_category": {
+    "subcontractor": "Subcontractor",
+    "office": "Office",
+    "apartment": "Apartment",
+    "customer": "Customer",
+    "bank_credit": "Bank Credit",
+    "investor": "Investor",
+    "miscellaneous": "Miscellaneous",
+    "general": "General",
+    "retail": "Retail"
+  },
   "work_log_status": {
     "work_finished": "Work Finished",
     "in_progress": "In Progress",
@@ -476,7 +489,6 @@
       "base_vat13": "Base (VAT 13%):",
       "base_vat5": "Base (VAT 5%):",
       "base_vat0": "Base (VAT 0%):",
-      "subtotal": "Subtotal:",
       "grand_total": "TOTAL:",
       "error_type_required": "Please select an invoice type",
       "error_company_required": "Please select a company",
@@ -655,12 +667,9 @@
       "base_vat25": "Base (VAT 25%):",
       "base_vat13": "Base (VAT 13%):",
       "base_vat5": "Base (VAT 5%):",
-      "base_vat0": "Base (VAT 0%):",
-      "vat25": "VAT 25%:",
-      "vat13": "VAT 13%:",
-      "vat5": "VAT 5%:",
-      "vat0": "VAT 0%:"
-    }
+      "base_vat0": "Base (VAT 0%):"
+    },
+    "vat_rate_line": "VAT {{rate}}%:"
   },
   "payments": {
     "toast": {
@@ -1051,6 +1060,13 @@
     }
   },
   "banks": {
+    "errors": {
+      "required_fields": "Please fill in all required fields",
+      "credit_required_fields": "Please fill in required fields (Bank, Credit Name, Amount, Start Date)",
+      "credit_add_failed": "Error adding credit facility.",
+      "credit_update_failed": "Error updating credit facility.",
+      "credit_delete_failed": "Error deleting credit facility."
+    },
     "title": "Banks",
     "subtitle": "Manage bank accounts",
     "add": "Add Bank",
@@ -1263,20 +1279,6 @@
     "title": "Due Date Calendar",
     "subtitle": "Overview of all due dates",
     "budget_save_error": "Error saving budgets",
-    "months": [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December"
-    ],
     "days": [
       "Sun",
       "Mon",
@@ -1727,6 +1729,15 @@
     "milestone_mark_incomplete": "Mark as incomplete",
     "milestone_delete_confirm": "Are you sure you want to delete this milestone?",
     "milestone_update_error": "Error updating milestone.",
+    "milestone_name_required": "Please enter milestone name",
+    "milestone_add_error": "Error adding milestone. Please try again.",
+    "milestone_delete_error": "Error deleting milestone.",
+    "unknown_bank": "Unknown bank",
+    "errors": {
+      "load_failed": "Failed to load project data",
+      "save_failed": "Failed to save project",
+      "delete_failed": "Failed to delete project"
+    },
     "milestone_progress": "Milestone Progress",
     "milestones_empty_title": "No milestones yet",
     "milestones_empty_desc": "Add milestones to track project progress",
@@ -1761,6 +1772,7 @@
       "preview_date_range": "Dates: {{min}} – {{max}}",
       "submit": "Add milestones",
       "no_phase_label": "Other",
+      "add_error": "Error adding milestones from template.",
       "phase_progress": "{{done}}/{{total}} completed",
       "expand_all": "Expand all",
       "collapse_all": "Collapse all",
@@ -2342,7 +2354,16 @@
       "delete_phase": {
         "confirm_message": "Are you sure you want to delete phase \"{{name}}\"?",
         "has_dependents": "Phase \"{{name}}\" has {{contracts}} contracts and {{workLogs}} work logs. Move them to another phase or delete them first.",
-        "check_failed": "Could not check what is linked to this phase. Please try again."
+        "check_failed": "Could not check what is linked to this phase. Please try again.",
+        "delete_failed": "Error deleting phase. Please try again."
+      },
+      "delete_subcontractor": {
+        "delete_failed": "Error deleting subcontractor."
+      },
+      "payments_moved": {
+        "create": "Payment creation has moved to the Accounting module. Go to Accounting → Invoices to create and pay invoices.",
+        "update": "Payment updates have moved to the Accounting module. Go to Accounting → Payments to edit payments.",
+        "delete": "Payment deletion has moved to the Accounting module. Go to Accounting → Payments to delete payments."
       },
       "edit_phase": {
         "title": "Edit Phase",
@@ -2356,7 +2377,8 @@
         "status": "Status",
         "update": "Update Phase",
         "errors": {
-          "name_required": "Phase name is required"
+          "name_required": "Phase name is required",
+          "update_failed": "Error updating phase. Please try again."
         }
       },
       "projects_grid": {
@@ -2793,6 +2815,9 @@
       },
       "tooltip_approved": "Approved",
       "tooltip_approve": "Click to approve",
+      "errors": {
+        "approval_failed": "Failed to update invoice approval status"
+      },
       "pagination": {
         "item_label": "invoices"
       }
@@ -2860,7 +2885,10 @@
         "date": "Date is required",
         "description": "Work description is required",
         "load_phases_failed": "The phases for this project could not be loaded",
-        "load_contracts_failed": "The contracts for this phase could not be loaded"
+        "load_contracts_failed": "The contracts for this phase could not be loaded",
+        "contract_and_description": "Please select a contract and provide work description",
+        "save_failed": "Failed to save work log",
+        "delete_failed": "Failed to delete work log"
       },
       "history": "Work Log History",
       "contract_label": "Contract:",
@@ -4375,6 +4403,9 @@
     }
   },
   "budget_control": {
+    "errors": {
+      "load_data_failed": "Failed to load data"
+    },
     "title": "Budget Control",
     "subtitle": "EVM performance overview across project phases",
     "project": "Project",
@@ -4867,6 +4898,7 @@
     "detail_role": "Role",
     "detail_entity": "Entity Info",
     "detail_entity_type": "Entity type",
+    "detail_entity_id": "ID",
     "detail_project": "Project",
     "detail_metadata": "Details",
     "view_entity": "View Entity",

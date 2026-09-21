@@ -68,6 +68,8 @@
     "total": "Ukupno",
     "subtotal": "Međuzbir",
     "grand_total": "Sveukupno",
+    "oib": "OIB",
+    "vat_id": "PDV ID",
     "paid": "Plaćeno",
     "unpaid": "Neplaćeno",
     "partial": "Djelomično",
@@ -359,6 +361,17 @@
     "izlazni_prod": "IZLAZNI (PROD)",
     "izlazni_banka": "IZLAZNI (BANKA)"
   },
+  "invoice_category": {
+    "subcontractor": "Podugovaratelj",
+    "office": "Office",
+    "apartment": "Stan",
+    "customer": "Kupac",
+    "bank_credit": "Bankovni kredit",
+    "investor": "Investitor",
+    "miscellaneous": "Ostalo",
+    "general": "Općenito",
+    "retail": "Retail"
+  },
   "work_log_status": {
     "work_finished": "Rad završen",
     "in_progress": "U tijeku",
@@ -479,7 +492,6 @@
       "base_vat13": "Osnovica (PDV 13%):",
       "base_vat5": "Osnovica (PDV 5%):",
       "base_vat0": "Osnovica (PDV 0%):",
-      "subtotal": "Subtotal:",
       "grand_total": "UKUPNO:",
       "error_type_required": "Morate odabrati tip računa",
       "error_company_required": "Morate odabrati firmu",
@@ -658,12 +670,9 @@
       "base_vat25": "Osnovica (PDV 25%):",
       "base_vat13": "Osnovica (PDV 13%):",
       "base_vat5": "Osnovica (PDV 5%):",
-      "base_vat0": "Osnovica (PDV 0%):",
-      "vat25": "PDV 25%:",
-      "vat13": "PDV 13%:",
-      "vat5": "PDV 5%:",
-      "vat0": "PDV 0%:"
-    }
+      "base_vat0": "Osnovica (PDV 0%):"
+    },
+    "vat_rate_line": "PDV {{rate}}%:"
   },
   "payments": {
     "toast": {
@@ -1054,6 +1063,13 @@
     }
   },
   "banks": {
+    "errors": {
+      "required_fields": "Popunite sva obavezna polja",
+      "credit_required_fields": "Popunite obavezna polja (Banka, Naziv kredita, Iznos, Datum početka)",
+      "credit_add_failed": "Greška pri dodavanju kreditne linije.",
+      "credit_update_failed": "Greška pri ažuriranju kreditne linije.",
+      "credit_delete_failed": "Greška pri brisanju kreditne linije."
+    },
     "title": "Banke",
     "subtitle": "Upravljanje bankovnim računima",
     "add": "Dodaj banku",
@@ -1268,20 +1284,6 @@
     "title": "Kalendar dospijeća",
     "subtitle": "Pregled svih dospijeća",
     "budget_save_error": "Greška prilikom spremanja budžeta",
-    "months": [
-      "Siječanj",
-      "Veljača",
-      "Ožujak",
-      "Travanj",
-      "Svibanj",
-      "Lipanj",
-      "Srpanj",
-      "Kolovoz",
-      "Rujan",
-      "Listopad",
-      "Studeni",
-      "Prosinac"
-    ],
     "days": [
       "Ned",
       "Pon",
@@ -1295,7 +1297,7 @@
       "total": "Ukupno računa",
       "paid": "Plaćeno",
       "unpaid": "Neplaćeno",
-      "overdue": "Overdue"
+      "overdue": "Dospjelo"
     },
     "summary": {
       "total_invoices": "Ukupno računa:",
@@ -1319,7 +1321,7 @@
     "legend": {
       "paid": "Plaćeno",
       "unpaid": "Neplaćeno",
-      "overdue": "Overdue"
+      "overdue": "Dospjelo"
     },
     "invoice_types": {
       "incoming_supplier": "Ulazni - Dobavljač",
@@ -1732,6 +1734,15 @@
     "milestone_mark_incomplete": "Označi kao nedovršeno",
     "milestone_delete_confirm": "Jeste li sigurni da želite obrisati ovu prekretnicu?",
     "milestone_update_error": "Greška pri ažuriranju prekretnice.",
+    "milestone_name_required": "Unesite naziv prekretnice",
+    "milestone_add_error": "Greška pri dodavanju prekretnice. Pokušajte ponovno.",
+    "milestone_delete_error": "Greška pri brisanju prekretnice.",
+    "unknown_bank": "Nepoznata banka",
+    "errors": {
+      "load_failed": "Podatke o projektu nije moguće učitati",
+      "save_failed": "Spremanje projekta nije uspjelo",
+      "delete_failed": "Brisanje projekta nije uspjelo"
+    },
     "milestone_progress": "Napredak prekretnica",
     "milestones_empty_title": "Nema prekretnica",
     "milestones_empty_desc": "Dodajte prekretnice za praćenje napretka projekta",
@@ -1767,6 +1778,7 @@
       "preview_date_range": "Datumi: {{min}} – {{max}}",
       "submit": "Dodaj prekretnice",
       "no_phase_label": "Ostalo",
+      "add_error": "Greška pri dodavanju prekretnica iz predloška.",
       "phase_progress": "{{done}}/{{total}} završeno",
       "expand_all": "Proširi sve",
       "collapse_all": "Sažmi sve",
@@ -2349,7 +2361,16 @@
       "delete_phase": {
         "confirm_message": "Jeste li sigurni da želite obrisati fazu \"{{name}}\"?",
         "has_dependents": "Faza \"{{name}}\" ima {{contracts}} ugovora i {{workLogs}} dnevnika rada. Prvo ih premjestite na drugu fazu ili obrišite.",
-        "check_failed": "Provjera ovisnosti faze nije uspjela. Pokušajte ponovno."
+        "check_failed": "Provjera ovisnosti faze nije uspjela. Pokušajte ponovno.",
+        "delete_failed": "Greška pri brisanju faze. Pokušajte ponovno."
+      },
+      "delete_subcontractor": {
+        "delete_failed": "Greška pri brisanju podugovaratelja."
+      },
+      "payments_moved": {
+        "create": "Kreiranje plaćanja premješteno je u Accounting modul. Idite na Accounting → Računi za kreiranje i plaćanje računa.",
+        "update": "Uređivanje plaćanja premješteno je u Accounting modul. Idite na Accounting → Plaćanja za uređivanje plaćanja.",
+        "delete": "Brisanje plaćanja premješteno je u Accounting modul. Idite na Accounting → Plaćanja za brisanje plaćanja."
       },
       "edit_phase": {
         "title": "Uredi fazu",
@@ -2363,7 +2384,8 @@
         "status": "Status",
         "update": "Ažuriraj fazu",
         "errors": {
-          "name_required": "Naziv faze je obavezan"
+          "name_required": "Naziv faze je obavezan",
+          "update_failed": "Greška pri ažuriranju faze. Pokušajte ponovno."
         }
       },
       "projects_grid": {
@@ -2800,6 +2822,9 @@
       },
       "tooltip_approved": "Odobreno",
       "tooltip_approve": "Klikni za odobrivanje",
+      "errors": {
+        "approval_failed": "Ažuriranje statusa odobrenja računa nije uspjelo"
+      },
       "pagination": {
         "item_label": "računi"
       }
@@ -2867,7 +2892,10 @@
         "date": "Datum je obavezan",
         "description": "Opis rada je obavezan",
         "load_phases_failed": "Faze ovog projekta nisu učitane",
-        "load_contracts_failed": "Ugovori ove faze nisu učitani"
+        "load_contracts_failed": "Ugovori ove faze nisu učitani",
+        "contract_and_description": "Odaberite ugovor i unesite opis rada",
+        "save_failed": "Spremanje radnog zapisa nije uspjelo",
+        "delete_failed": "Brisanje radnog zapisa nije uspjelo"
       },
       "history": "Povijest radnih zapisa",
       "contract_label": "Ugovor:",
@@ -4389,6 +4417,9 @@
     }
   },
   "budget_control": {
+    "errors": {
+      "load_data_failed": "Podatke nije moguće učitati"
+    },
     "title": "Kontrola proračuna",
     "subtitle": "EVM pregled performansi po fazama projekta",
     "project": "Projekt",
@@ -4882,6 +4913,7 @@
     "detail_role": "Uloga",
     "detail_entity": "Podaci o entitetu",
     "detail_entity_type": "Vrsta entiteta",
+    "detail_entity_id": "ID",
     "detail_project": "Projekt",
     "detail_metadata": "Detalji",
     "view_entity": "Prikaži entitet",

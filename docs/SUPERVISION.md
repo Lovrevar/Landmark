@@ -6,6 +6,36 @@
 
 Construction site supervision: manages active build sites, subcontractor contracts, phase/milestone tracking, work logs, invoices, and payments for on-site work.
 
+## Dates and enum labels
+
+**Dates go through `formatDate` / `formatDateTime`** (`src/utils/formatters.ts`), which take the
+language explicitly: `const { t, i18n } = useTranslation()` → `formatDate(value, i18n.language)`.
+Croatian renders `05.01.2026.`, English `Jan 05, 2026`. Every screen in this module used to call
+`format(new Date(x), 'MMM dd, yyyy')`, which printed English month names in a Croatian UI *and*,
+for a `date` column, read UTC midnight and showed the previous day east of UTC. Pass the raw
+column string for a `date` and a `Date` for a timestamp.
+
+**No screen prints a raw database enum.** Every vocabulary renders through a shared map:
+
+| Column | Renderer |
+|---|---|
+| `projects.status` | `PROJECT_STATUS` + `statusVariant` / `statusLabel` (`src/utils/statusDisplay.ts`) |
+| `subcontractor_milestones.status` | `MILESTONE_STATUS` — note its `completed` means **partly paid**, which is why it maps to `status.partial_payment` |
+| `accounting_invoices.status` | `getInvoiceStatusVariant` / `getInvoiceStatusLabel` (`Cashflow/services/invoiceHelpers.ts`) |
+| `accounting_invoices.invoice_category` | `getInvoiceCategoryLabel` (same file) → `invoice_category.*` |
+| `accounting_payments.payment_method` | `getPaymentMethodLabel(method, source, t)` (`Cashflow/services/paymentHelpers.ts`) |
+| `work_logs.status` | `workLogStatus.ts` (unchanged — it already returned keys) |
+
+The invoice table's category badge used to branch on `invoice_category === 'SUPERVISION'` for a
+blue badge. No CHECK has ever allowed that value and no migration ever added it
+(`accounting_invoices_invoice_category_check`, `baseline_schema.sql:2523`), so the branch was dead
+and is gone — every category badge is grey, with a translated label. `invoiceHelpers.test.ts`
+asserts `SUPERVISION` stays unknown.
+
+**These columns are English and CHECK-constrained — map at render time only.** Never translate a
+value that is compared, filtered or written back; the `<option value="…">` in the forms stay
+English on purpose.
+
 ---
 
 ## Sub-modules
@@ -644,6 +674,7 @@ Daily or weekly on-site work log entries. Supports cascading project → phase �
 - `ContractDocumentViewer` accepts `subcontractorId` (required) and optional `contractId` to filter by contract
 - VAT_RATE_OPTIONS = [0, 5, 13, 25] — defined in SiteManagement/types.ts
 - The original monolithic `siteService.ts` was split into per-entity service files (phase, contract, subcontractor, milestone, funding, wire payment) during the May 2026 audit refactor; `siteService.ts` now re-exports them so `import * as siteService` consumers keep working
-- Payment create/update/delete from SiteManagement now only warn the user — those operations moved to the Accounting module (Invoices/Payments)
+- Payment create/update/delete from SiteManagement now only warn the user — those operations moved to the Accounting module (Invoices/Payments). The three warnings are `supervision.site_management.payments_moved.create/update/delete`; they were English literals in `useSubcontractorManagement`
+- Service-layer display fallbacks use `NO_VALUE` (`—`) rather than an English word: `supervisionPaymentService` returned `'Unknown'` / `'No Project'` and `subcontractorService` returned `'Unknown Project'`, all of which rendered straight into a table cell and a CSV column
 - **Failed loads are not empty states.** Every loader in this module returns `error` and a `refetch`, and the screens render a `ErrorState` (from `src/components/ui`) in the list area — page header and filters stay mounted — when nothing loaded, or keep the stale rows under a dismissible `Alert variant="error"` with a retry when something did. Stat cards computed from a failed read are withheld rather than shown as €0. This covers SiteManagement (project grid, comments, wire payments, invoice totals, the classification/category lookups), Subcontractors, Invoices, Payments and WorkLogs
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item hook pattern; `useProjectPhases` uses a Promise-based `requestConfirm` pattern for mid-flow budget-mismatch confirmations — never use `window.confirm()` or `confirm()`

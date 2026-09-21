@@ -16,10 +16,9 @@ import {
 import { useToast } from '../../../contexts/ToastContext'
 import { toErrorMessage } from '../../../lib/errorMessage'
 import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2 } from 'lucide-react'
-import { format } from 'date-fns'
 import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { useApprovals } from './hooks/useApprovals'
-import { formatEuro } from '../../../utils/formatters'
+import { formatEuro, formatDate } from '../../../utils/formatters'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 const COLUMN_KEYS = ['category', 'invoice_number', 'supplier_name', 'project_name', 'phase_name', 'contract_number', 'issue_date', 'due_date', 'base_amount', 'vat_amount', 'total_amount', 'status']
@@ -40,7 +39,7 @@ const DEFAULT_VISIBLE: Record<string, boolean> = {
 }
 
 const AccountingApprovals: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const toast = useToast()
 
   const COLUMN_LABELS: Record<string, string> = Object.fromEntries(
@@ -164,7 +163,7 @@ const AccountingApprovals: React.FC = () => {
           title={t('approvals.stats.oldest')}
           value={
             stats.oldestInvoice
-              ? format(new Date(stats.oldestInvoice), 'dd.MM.yyyy')
+              ? formatDate(stats.oldestInvoice, i18n.language)
               : 'N/A'
           }
           icon={Calendar}
@@ -281,8 +280,8 @@ const AccountingApprovals: React.FC = () => {
                     {visibleColumns.project_name && <td data-label={t('approvals.column_labels.project_name')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.project_name}</td>}
                     {visibleColumns.phase_name && <td data-label={t('approvals.column_labels.phase_name')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.phase_name}</td>}
                     {visibleColumns.contract_number && <td data-label={t('approvals.column_labels.contract_number')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.contract_number}</td>}
-                    {visibleColumns.issue_date && <td data-label={t('approvals.column_labels.issue_date')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>}
-                    {visibleColumns.due_date && <td data-label={t('approvals.column_labels.due_date')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>}
+                    {visibleColumns.issue_date && <td data-label={t('approvals.column_labels.issue_date')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{formatDate(invoice.issue_date, i18n.language)}</td>}
+                    {visibleColumns.due_date && <td data-label={t('approvals.column_labels.due_date')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{formatDate(invoice.due_date, i18n.language)}</td>}
                     {visibleColumns.base_amount && (
                       <td data-label={t('approvals.column_labels.base_amount')} className="px-4 py-4 text-sm text-gray-900 dark:text-white text-right whitespace-nowrap">
                         €{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

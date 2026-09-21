@@ -128,7 +128,7 @@ export function useWorkLogs() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.contract_id || !formData.work_description) {
-      toast.warning('Please select a contract and provide work description')
+      toast.warning(t('supervision.work_logs.errors.contract_and_description'))
       return
     }
     const selectedContract = contracts.find(c => c.id === formData.contract_id)
@@ -144,7 +144,7 @@ export function useWorkLogs() {
       await loadData()
     } catch (err) {
       console.error('Error saving work log:', err)
-      toast.error('Failed to save work log')
+      toast.error(t('supervision.work_logs.errors.save_failed'))
     }
   }
 
@@ -161,7 +161,7 @@ export function useWorkLogs() {
       await loadData()
     } catch (err) {
       console.error('Error deleting work log:', err)
-      toast.error('Failed to delete work log')
+      toast.error(t('supervision.work_logs.errors.delete_failed'))
     } finally {
       setDeleting(false)
       setPendingDeleteId(null)

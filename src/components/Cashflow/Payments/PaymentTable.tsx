@@ -1,13 +1,11 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { CreditCard, Edit, Trash2 } from 'lucide-react'
-import { format } from 'date-fns'
-import { parseLocalDate } from '../../../utils/dateOnly'
 import { Payment, VisibleColumns } from './types'
 import { getPaymentMethodLabel, getPaymentMethodColor } from '../services/paymentHelpers'
 import { paymentDirection } from '../services/invoiceHelpers'
 import { DIRECTION_AMOUNT_CLASS } from '../services/paymentTotals'
-import { formatEuro } from '../../../utils/formatters'
+import { formatEuro, formatDate } from '../../../utils/formatters'
 import { Table, Button, EmptyState } from '../../ui'
 
 interface PaymentTableProps {
@@ -25,7 +23,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   onEdit,
   onDelete
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   return (
     <Table>
       <Table.Head>
@@ -65,7 +63,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
               <Table.Tr key={payment.id} onClick={() => onView(payment)} className="cursor-pointer">
                 {visibleColumns.payment_date && (
                   <Table.Td label={t('payments.table.payment_date')}>
-                    {format(parseLocalDate(payment.payment_date), 'dd.MM.yyyy')}
+                    {formatDate(payment.payment_date, i18n.language)}
                   </Table.Td>
                 )}
                 {visibleColumns.invoice_number && (
@@ -108,7 +106,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 {visibleColumns.payment_method && (
                   <Table.Td label={t('payments.table.payment_method')}>
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(payment.payment_method, payment.payment_source_type)}`}>
-                      {getPaymentMethodLabel(payment.payment_method, payment.payment_source_type)}
+                      {getPaymentMethodLabel(payment.payment_method, payment.payment_source_type, t)}
                     </span>
                   </Table.Td>
                 )}

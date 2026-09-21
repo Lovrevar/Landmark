@@ -9,15 +9,15 @@ import {
   Wrench
 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Modal, Button, Input, Select, Textarea, Card, EmptyState, ErrorState, Alert, Form, FormField, ConfirmDialog } from '../../ui'
-import { format } from 'date-fns'
 import { useWorkLogs } from './hooks/useWorkLogs'
 import type { WorkLogStatus } from './services/workLogService'
 import { statusConfig, stripeClass } from './workLogStatus'
 import { StatusBadge } from './StatusBadge'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
+import { formatDate, formatDateTime } from '../../../utils/formatters'
 
 const WorkLogs: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     workLogs,
     projects,
@@ -253,14 +253,14 @@ const WorkLogs: React.FC = () => {
                         <div className="text-right mr-2">
                           <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm mb-1">
                             <Calendar className="w-4 h-4 mr-1" />
-                            {format(new Date(log.date), 'MMM dd, yyyy')}
+                            {formatDate(log.date, i18n.language)}
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {t('supervision.work_logs.logged')} {format(new Date(log.created_at), 'MMM dd, HH:mm')}
+                            {t('supervision.work_logs.logged')} {formatDateTime(new Date(log.created_at), i18n.language)}
                           </p>
                         </div>
-                        <Button size="icon-md" variant="ghost-primary" icon={Edit2} onClick={() => openEditForm(log)} title="Edit" />
-                        <Button size="icon-md" variant="ghost-danger" icon={Trash2} onClick={() => handleDelete(log.id)} title="Delete" />
+                        <Button size="icon-md" variant="ghost-primary" icon={Edit2} onClick={() => openEditForm(log)} title={t('common.edit')} />
+                        <Button size="icon-md" variant="ghost-danger" icon={Trash2} onClick={() => handleDelete(log.id)} title={t('common.delete')} />
                       </div>
                     </div>
 

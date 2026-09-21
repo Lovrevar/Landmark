@@ -6,6 +6,7 @@ import { projectTimeline, PROJECT_TIMELINE_TONE } from '../../../utils/projectTi
 import { Button, Badge, EmptyState, ErrorState, Alert } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import { formatEuroCompact } from '../../../utils/formatters'
+import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 
 interface ProjectsGridProps {
   projects: ProjectWithPhases[]
@@ -86,12 +87,8 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{project.name}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{project.location}</p>
                   <div className="flex items-center space-x-2">
-                    <Badge variant={
-                      project.status === 'Completed' ? 'green' :
-                      project.status === 'In Progress' ? 'blue' :
-                      'gray'
-                    } size="sm">
-                      {project.status}
+                    <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="sm">
+                      {statusLabel(PROJECT_STATUS, project.status, t)}
                     </Badge>
                     <ProjectCategoryBadge category={project.category} />
                     {project.has_phases ? (

@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MessageSquare, Send, Calendar, Building2, FileText, DollarSign } from 'lucide-react'
-import { format } from 'date-fns'
 import { CommentWithUser, SubcontractorWithPhase } from '../types'
 import { Modal, FormField, Select, Textarea, Button, Badge, ErrorState } from '../../../ui'
 import { fetchContractDetails, fetchBankById, ContractDetailsRow } from '../services/siteService'
 import { ContractDocumentViewer } from '../ContractDocumentViewer'
-import { formatEuro } from '../../../../utils/formatters'
+import { formatEuro, formatDate, formatDateTime } from '../../../../utils/formatters'
 import { contractVariance } from '../../../../utils/contractVariance'
 
 type ContractData = ContractDetailsRow
@@ -68,7 +67,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   onManageMilestones,
   canManagePayments
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [funderName, setFunderName] = useState<string | null>(null)
   const [, setLoadingFunder] = useState(false)
   const [contractData, setContractData] = useState<ContractData | null>(null)
@@ -191,7 +190,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                   <div>
                     <p className="text-xs text-blue-700 dark:text-blue-300">{t('supervision.subcontractor_details.deadline')}</p>
                     <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                      {format(new Date(contractData.end_date), 'dd.MM.yyyy')}
+                      {formatDate(contractData.end_date, i18n.language)}
                     </p>
                   </div>
                 )}
@@ -352,7 +351,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                         </Badge>
                       </div>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {format(new Date(comment.created_at), 'dd.MM.yyyy HH:mm')}
+                        {formatDateTime(new Date(comment.created_at), i18n.language)}
                       </span>
                     </div>
                     <p className="text-gray-700 dark:text-gray-200 text-sm">{comment.comment}</p>

@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { allowedPaymentMethods, snapPaymentMethod, getPaymentMethodLabel } from './paymentHelpers'
+import type { TFunction } from 'i18next'
+import { allowedPaymentMethods, snapPaymentMethod, getPaymentMethodLabel, getPaymentMethodLabelKey } from './paymentHelpers'
+
+const t = ((key: string) => `t:${key}`) as unknown as TFunction
 
 // Values allowed by accounting_payments_payment_method_check in the baseline migration.
 const DB_PAYMENT_METHODS = ['WIRE', 'CASH', 'CHECK', 'CARD']
@@ -55,11 +58,24 @@ describe('snapPaymentMethod', () => {
 
 describe('getPaymentMethodLabel', () => {
   it('shows a dash for kompenzacija, whatever placeholder is stored', () => {
-    expect(getPaymentMethodLabel('WIRE', 'kompenzacija')).toBe('—')
+    expect(getPaymentMethodLabel('WIRE', 'kompenzacija', t)).toBe('—')
+    expect(getPaymentMethodLabelKey('WIRE', 'kompenzacija')).toBeNull()
   })
 
   it('labels the method for other sources and when no source is given', () => {
-    expect(getPaymentMethodLabel('CASH', 'gotovina')).toBe('Gotovina')
-    expect(getPaymentMethodLabel('WIRE')).toBe('Virman')
+    expect(getPaymentMethodLabel('CASH', 'gotovina', t)).toBe('t:payments.method_cash')
+    expect(getPaymentMethodLabel('WIRE', null, t)).toBe('t:payments.method_wire')
+  })
+
+  // The labels were hardcoded Croatian, so an English UI read "Virman"/"Ček".
+  it('has a key for every method the CHECK constraint allows', () => {
+    for (const method of DB_PAYMENT_METHODS) {
+      expect(getPaymentMethodLabelKey(method, 'bank_account')).toMatch(/^payments\.method_/)
+    }
+  })
+
+  it('shows an unknown method as-is rather than hiding it', () => {
+    expect(getPaymentMethodLabel('SEPA', 'bank_account', t)).toBe('SEPA')
+    expect(getPaymentMethodLabel(null, 'bank_account', t)).toBe('—')
   })
 })

@@ -346,7 +346,7 @@ const SiteManagement: React.FC = () => {
   }
 
   if (loading && projects.length === 0) {
-    return <LoadingSpinner message="Loading site management..." />
+    return <LoadingSpinner message={t('supervision.site_management.loading')} />
   }
 
   const userCanManagePayments = canManagePayments(user)

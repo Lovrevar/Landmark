@@ -230,7 +230,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
       return true
     } catch (error) {
       console.error('Error deleting subcontractor:', error)
-      toast.error('Error deleting subcontractor.')
+      toast.error(t('supervision.site_management.delete_subcontractor.delete_failed'))
       return false
     } finally {
       setDeletingSubcontractor(false)
@@ -241,7 +241,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
   const cancelDeleteSubcontractor = () => setPendingDeleteSubcontractor(null)
 
   const addPaymentToSubcontractor = async () => {
-    toast.warning('Payment creation has moved to Accounting module. Please go to Accounting → Invoices to create and pay invoices.')
+    toast.warning(t('supervision.site_management.payments_moved.create'))
     return false
   }
 
@@ -254,13 +254,13 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const updateWirePayment = async (..._args: unknown[]) => {
-    toast.warning('Payment updates have moved to Accounting module. Please go to Accounting → Payments to edit payments.')
+    toast.warning(t('supervision.site_management.payments_moved.update'))
     return false
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const deleteWirePayment = async (..._args: unknown[]) => {
-    toast.warning('Payment deletion has moved to Accounting module. Please go to Accounting → Payments to delete payments.')
+    toast.warning(t('supervision.site_management.payments_moved.delete'))
     return false
   }
 

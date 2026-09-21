@@ -1,6 +1,7 @@
 import { supabase } from '../../../../lib/supabase'
 import type { Contract } from '../../../../lib/supabase'
 import { format } from 'date-fns'
+import { NO_VALUE } from '../../../../utils/formatters'
 
 export interface PaymentWithDetails {
   id: string
@@ -118,8 +119,8 @@ export async function fetchSupervisionPayments(): Promise<PaymentWithDetails[]> 
       company_bank_account_id: payment.company_bank_account_id,
       cesija_company_id: payment.cesija_company_id,
       is_cesija: payment.is_cesija,
-      subcontractor_name: subcontractor?.name || 'Unknown',
-      project_name: project?.name || 'No Project',
+      subcontractor_name: subcontractor?.name || NO_VALUE,
+      project_name: project?.name || NO_VALUE,
       phase_name: phaseName,
       phase_number: phaseNumber,
       contract: contract ? {

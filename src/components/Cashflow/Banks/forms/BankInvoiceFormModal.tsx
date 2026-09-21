@@ -261,7 +261,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               />
             </FormField>
 
-            <FormField label="IBAN">
+            <FormField label={t('banks.form.iban')}>
               <Input
                 type="text"
                 value={formData.iban}

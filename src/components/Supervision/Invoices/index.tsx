@@ -2,11 +2,12 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Pagination } from '../../ui'
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
-import { format } from 'date-fns'
 import { useSupervisionInvoices } from './hooks/useSupervisionInvoices'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel, getInvoiceCategoryLabel } from '../../Cashflow/services/invoiceHelpers'
+import { formatDate } from '../../../utils/formatters'
 
 const InvoicesManagement: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [errorDismissed, setErrorDismissed] = React.useState(false)
   const {
     loading,
@@ -154,11 +155,13 @@ const InvoicesManagement: React.FC = () => {
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.invoice_number}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <Badge variant={invoice.invoice_category === 'SUPERVISION' ? 'blue' : 'gray'} size="sm">
-                      {invoice.invoice_category}
+                    {/* Every row is grey: the old blue branch tested for 'SUPERVISION', which
+                        accounting_invoices_invoice_category_check has never allowed. */}
+                    <Badge variant="gray" size="sm">
+                      {getInvoiceCategoryLabel(invoice.invoice_category, t)}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{formatDate(invoice.issue_date, i18n.language)}</td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.supplier_name}</td>
                   <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{invoice.project_name}</td>
                   <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{invoice.phase_name}</td>
@@ -172,12 +175,8 @@ const InvoicesManagement: React.FC = () => {
                     €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <Badge variant={
-                      invoice.status === 'PAID' ? 'green'
-                        : invoice.status === 'PARTIALLY_PAID' ? 'yellow'
-                        : 'red'
-                    }>
-                      {invoice.status}
+                    <Badge variant={getInvoiceStatusVariant(invoice.status)}>
+                      {getInvoiceStatusLabel(invoice.status, t)}
                     </Badge>
                   </td>
                 </tr>

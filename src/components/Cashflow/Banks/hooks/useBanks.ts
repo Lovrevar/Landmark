@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BankWithCredits, Project, Company, BankCredit, NewCreditForm } from '../bankTypes'
 import { fetchProjects, fetchCompanies, fetchBanksWithCredits, createCredit, updateCredit, deleteCredit } from '../services/bankService'
 import { useModalOverflow } from '../../../../hooks/useModalOverflow'
@@ -7,6 +8,7 @@ import { toLoadError } from '../../services/loadError'
 
 export const useBanks = () => {
   const toast = useToast()
+  const { t } = useTranslation()
   const [banks, setBanks] = useState<BankWithCredits[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
@@ -68,7 +70,7 @@ export const useBanks = () => {
     }
 
     if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date) {
-      toast.warning('Please fill in required fields (Bank, Credit Name, Amount, Start Date)')
+      toast.warning(t('banks.errors.credit_required_fields'))
       return
     }
 
@@ -78,7 +80,7 @@ export const useBanks = () => {
       await fetchData()
     } catch (error) {
       console.error('Error adding credit:', error)
-      toast.error('Error adding credit facility.')
+      toast.error(t('banks.errors.credit_add_failed'))
     }
   }
 
@@ -86,7 +88,7 @@ export const useBanks = () => {
     if (!editingCredit) return
 
     if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date || !newCredit.maturity_date) {
-      toast.warning('Please fill in all required fields')
+      toast.warning(t('banks.errors.required_fields'))
       return
     }
 
@@ -96,7 +98,7 @@ export const useBanks = () => {
       await fetchData()
     } catch (error) {
       console.error('Error updating credit:', error)
-      toast.error('Error updating credit facility.')
+      toast.error(t('banks.errors.credit_update_failed'))
     }
   }
 
@@ -113,7 +115,7 @@ export const useBanks = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting credit:', error)
-      toast.error('Error deleting credit facility.')
+      toast.error(t('banks.errors.credit_delete_failed'))
     } finally {
       setDeleting(false)
       setPendingDeleteId(null)

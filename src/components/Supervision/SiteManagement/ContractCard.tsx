@@ -1,14 +1,13 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Calendar, DollarSign, FileText, Trash2 } from 'lucide-react'
-import { format } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
-import { daysFromToday, parseLocalDate } from '../../../utils/dateOnly'
+import { daysFromToday } from '../../../utils/dateOnly'
 import { ProjectWithPhases } from './types'
 import { Button, Badge } from '../../ui'
 import { isFullySettled } from './utils/contractTree'
 import { contractVariance } from '../../../utils/contractVariance'
-import { formatEuro } from '../../../utils/formatters'
+import { formatEuro, formatDate } from '../../../utils/formatters'
 
 interface ContractCardProps {
   subcontractor: Subcontractor
@@ -44,7 +43,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   onManageMilestones,
   canManagePayments
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const hasValidContract = subcontractor.has_contract !== false && subcontractor.cost > 0
   // One definition of paid across the app: contracts.budget_realized (see 20260910120000).
@@ -114,7 +113,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
             <span className={`font-medium ${
               (showPaymentState ? isOverdue : isPastDue) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'
             }`}>
-              {format(parseLocalDate(subcontractor.deadline), 'MMM dd, yyyy')}
+              {formatDate(subcontractor.deadline, i18n.language)}
             </span>
           </div>
         )}

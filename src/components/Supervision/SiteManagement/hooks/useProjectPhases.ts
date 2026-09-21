@@ -80,7 +80,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
     }
   ) => {
     if (!updates.phase_name.trim()) {
-      toast.warning('Phase name is required')
+      toast.warning(t('supervision.site_management.edit_phase.errors.name_required'))
       return false
     }
 
@@ -95,7 +95,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       return true
     } catch (error) {
       console.error('Error updating phase:', error)
-      toast.error('Error updating phase. Please try again.')
+      toast.error(t('supervision.site_management.edit_phase.errors.update_failed'))
       return false
     }
   }
@@ -137,7 +137,7 @@ export const useProjectPhases = (fetchProjects: () => Promise<void>) => {
       return true
     } catch (error) {
       console.error('Error deleting phase:', error)
-      toast.error('Error deleting phase. Please try again.')
+      toast.error(t('supervision.site_management.delete_phase.delete_failed'))
       return false
     }
   }

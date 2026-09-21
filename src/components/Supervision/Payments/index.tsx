@@ -2,12 +2,12 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, ErrorState, Alert, Table } from '../../ui'
-import { format } from 'date-fns'
 import { useSupervisionPayments } from './hooks/useSupervisionPayments'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
+import { formatDate } from '../../../utils/formatters'
 
 const PaymentsManagement: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [errorDismissed, setErrorDismissed] = React.useState(false)
   const {
     loading,
@@ -121,7 +121,7 @@ const PaymentsManagement: React.FC = () => {
             {filteredPayments.map((payment) => (
               <Table.Tr key={payment.id}>
                 <Table.Td label={t('supervision.payments.col.date')}>
-                  {format(new Date(payment.payment_date || payment.created_at), 'MMM dd, yyyy')}
+                  {formatDate(payment.payment_date || new Date(payment.created_at), i18n.language)}
                 </Table.Td>
                 <Table.Td label={t('supervision.payments.col.subcontractor')} className="font-medium">{payment.subcontractor_name}</Table.Td>
                 <Table.Td label={t('common.project')}>{payment.project_name}</Table.Td>

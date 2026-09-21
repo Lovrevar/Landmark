@@ -31,7 +31,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ formData, calc }) => {
               <span className="font-medium">€{formatCurrency(formData.base_amount_1)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.vat25')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 25 })}</span>
               <span className="font-medium">€{formatCurrency(calc.vat1)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
@@ -48,7 +48,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ formData, calc }) => {
               <span className="font-medium">€{formatCurrency(formData.base_amount_2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.vat13')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 13 })}</span>
               <span className="font-medium">€{formatCurrency(calc.vat2)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
@@ -65,7 +65,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ formData, calc }) => {
               <span className="font-medium">€{formatCurrency(formData.base_amount_4)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.vat5')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 5 })}</span>
               <span className="font-medium">€{formatCurrency(calc.vat4)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
@@ -82,7 +82,7 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({ formData, calc }) => {
               <span className="font-medium">€{formatCurrency(formData.base_amount_3)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">{t('invoices.preview.vat0')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 0 })}</span>
               <span className="font-medium">{formatEuro(0)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">

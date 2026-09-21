@@ -5,7 +5,7 @@ import { MapPin, Calendar, Eye } from 'lucide-react'
 import { Badge, Button } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import type { ProjectWithStats } from './types'
-import { getStatusConfig } from './utils'
+import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import { projectTimeline, PROJECT_TIMELINE_TONE } from '../../../utils/projectTimeline'
 import { formatEuro } from '../../../utils/formatters'
 
@@ -16,7 +16,6 @@ interface Props {
 const ProjectCard: React.FC<Props> = ({ project }) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const statusConfig = getStatusConfig(project.status)
   // Was `getDaysInfo`, which called any project past its end date green "Completed" whatever
   // its status, and said red "Overdue" the day before the end date.
   const timeline = projectTimeline(project.status, project.end_date)
@@ -39,13 +38,8 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <Badge variant={
-            project.status === 'Completed' ? 'green'
-              : project.status === 'In Progress' ? 'blue'
-              : project.status === 'On Hold' ? 'yellow'
-              : 'gray'
-          } size="sm">
-            {statusConfig.label}
+          <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="sm">
+            {statusLabel(PROJECT_STATUS, project.status, t)}
           </Badge>
           <ProjectCategoryBadge category={project.category} />
         </div>

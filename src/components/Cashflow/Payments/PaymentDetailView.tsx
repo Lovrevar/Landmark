@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
+import { formatDate, formatDateTime } from '../../../utils/formatters'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Payment } from './types'
 import { Modal, Button } from '../../ui'
@@ -15,7 +15,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
   payment,
   onClose
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   if (!payment) return null
 
   const invoice = payment.accounting_invoices
@@ -92,13 +92,13 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.payment_date')}</span>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {format(new Date(payment.payment_date), 'dd.MM.yyyy')}
+                  {formatDate(payment.payment_date, i18n.language)}
                 </p>
               </div>
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.payment_method')}</span>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {getPaymentMethodLabel(payment.payment_method, payment.payment_source_type)}
+                  {getPaymentMethodLabel(payment.payment_method, payment.payment_source_type, t)}
                 </p>
               </div>
               {payment.reference_number && (
@@ -203,7 +203,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
             <div>
               <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.created_at')}</span>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {format(new Date(payment.created_at), 'dd.MM.yyyy HH:mm')}
+                {formatDateTime(new Date(payment.created_at), i18n.language)}
               </p>
             </div>
           </div>
