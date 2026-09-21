@@ -101,42 +101,42 @@ The app-wide sweep found no remaining side-border + `dark:border` conflicts, no 
 
 The per-module lists were checked against the code: of 85 unticked entries, 9 were already fixed, 18
 partly fixed and 58 still open. That pass also turned up screens stating things that are simply false,
-which this list had never carried. `[batch]` marks what the current batch fixes.
+which this list had never carried. `[batch]` marked what the batch fixed; those are now ticked, and the two deferred items remain.
 
-- [ ] **Retail dashboard `[batch]`** — "Investirano" and "Troškovi" are the same variable, and it sums
+- [x] **Retail dashboard `[batch]`** — "Investirano" and "Troškovi" are the same variable, and it sums
   `budget_realized` over **all** contracts, so money collected from buyers counts as cost and Profit
   subtracts revenue from itself. "(s PDV)" is false (the trigger stores net), "Naplata" shows invoiced,
   a late *supplier* invoice appears under receivables, every query's error is discarded, and the `en`
   locale block holds Croatian.
-- [ ] **Credit pages, Cashflow Banks + Funding Investments `[batch]`** — "Dug" is coloured by a figure
+- [x] **Credit pages, Cashflow Banks + Funding Investments `[batch]`** — "Dug" is coloured by a figure
   that counts drawdowns twice, so a fully repaid credit shows red "€0,00"; a **defaulted** credit gets a
   blue badge (the code branches on values the CHECK doesn't allow); over-commitment is clamped to €0 with
   no warning; the same amount is shown twice under one label.
-- [ ] **Director "Zakašnjeli zadaci" `[batch]`** — counts payment milestones, not tasks, and the filter is
+- [x] **Director "Zakašnjeli zadaci" `[batch]`** — counts payment milestones, not tasks, and the filter is
   backwards: fully *paid* milestones past their date count, part-paid ones don't.
-- [ ] **Sales dashboard `[batch]`** — collections are measured against a hardcoded €5.000.000 target that
+- [x] **Sales dashboard `[batch]`** — collections are measured against a hardcoded €5.000.000 target that
   exists nowhere in the data; the payments query's error is the one of eight left unchecked.
-- [ ] **Supervision payment gate `[batch]`** — `canManagePayments` reaches only the summary banner; every
+- [x] **Supervision payment gate `[batch]`** — `canManagePayments` reaches only the summary banner; every
   card, tile, badge and modal below it shows paid figures, and the banner's own "unpaid" tile lets paid be
   derived. `/payments` and `/invoices` are in the Supervision menu but RLS returns them no rows, so both
   pages claim "nothing found".
-- [ ] **Three definitions of overdue `[batch]`** — `new Date('YYYY-MM-DD') < new Date()` parses as UTC, so a
+- [x] **Three definitions of overdue `[batch]`** — `new Date('YYYY-MM-DD') < new Date()` parses as UTC, so a
   contract is overdue from 01:00 **on** its due day; `differenceInDays` truncation prints "Kasni za 0 dana";
   `useSiteProjectData` has no null guard, so every unpaid contract **without** an end date is overdue
   (`new Date(null)` is 1970). `utils/dateOnly.ts` has the right helper and no tests.
-- [ ] **Project timeline `[batch]`** — any project past its end date reads green "Completed" whatever its
+- [x] **Project timeline `[batch]`** — any project past its end date reads green "Completed" whatever its
   status, and red "Overdue" the day *before* that date; a Completed project still shows days of delay.
-- [ ] **Milestones mix gross and net `[batch]`** — the amount is gross, "paid" is the net `base_amount` of
+- [x] **Milestones mix gross and net `[batch]`** — the amount is gross, "paid" is the net `base_amount` of
   linked invoices whether or not they were paid, so at 25% VAT a fully paid milestone never reads as paid,
   under a "(osnova)" label on a gross figure. Cashflow's invoice form repeats the mix.
-- [ ] **Cashflow payment stats `[batch]`** — "Ukupan iznos" and "Ovaj mjesec" add income and expense into one
+- [x] **Cashflow payment stats `[batch]`** — "Ukupan iznos" and "Ovaj mjesec" add income and expense into one
   figure, all cards ignore the filters, and the amount column is green on expense rows.
-- [ ] **Calendar and picker failures `[batch]`** — the grid ignores both range hooks' `error`; 12 option loads
+- [x] **Calendar and picker failures `[batch]`** — the grid ignores both range hooks' `error`; 12 option loads
   `.catch(() => [])`, and the task form then shows "Bez projekta" while **saving the task with a project**.
-- [ ] **Task tab counts `[batch]`** — they count hidden completed tasks, so a tab can read 5 over an empty list.
-- [ ] **Utilisation colours `[batch]`** — four scales, and in one modal the text and its own bar disagree.
+- [x] **Task tab counts `[batch]`** — they count hidden completed tasks, so a tab can read 5 over an empty list.
+- [x] **Utilisation colours `[batch]`** — four scales, and in one modal the text and its own bar disagree.
   `InvestorCard`'s "Iskorišten kredit" shows the facility total, not the amount used.
-- [ ] **BudgetControl `[batch]`** — the EAC bar is hardcoded red whatever VAC says; at CPI 0 a green "under
+- [x] **BudgetControl `[batch]`** — the EAC bar is hardcoded red whatever VAC says; at CPI 0 a green "under
   budget" sits beside a red CPI; SPI reads "On schedule ✓" when there is no schedule at all.
 - [ ] **Team calendars draw nothing** *(deferred)* — ticking a teammate only feeds a sidebar hours figure, and
   that figure is wrong (3 months of blocks in Month view, recurrence never expanded, declined invitations
@@ -193,13 +193,13 @@ which this list had never carried. `[batch]` marks what the current batch fixes.
      | Paid/remaining summary | yes | no |
 
    - **Fix:** merge them into one form.
-10. **[PaymentTable.tsx:95](../src/components/Cashflow/Payments/PaymentTable.tsx#L95) vs `:75-80`; `Payments/index.tsx:103`** — Colour/Info · med · `[~]` (the VAT cards use formatEuro; the amount is still always green and the stats still ignore the filters)
+10. **[PaymentTable.tsx:95](../src/components/Cashflow/Payments/PaymentTable.tsx#L95) vs `:75-80`; `Payments/index.tsx:103`** — Colour/Info · med · `[x]` (amount coloured by direction; the six stat cards follow the filters)
     - **Problem:** amounts are always green, even on red "RASHOD" rows. The 7 stat cards cover all payments while the table and its total follow the filters. The VAT cards format in the browser's locale.
     - **Fix:** colour amounts by direction, compute stats from the filtered set, and use `StatGrid`.
 11. **`AccountingPaymentFormModal.tsx:115-128` + `:294-302` (same in `PaymentFormModal.tsx`)** — UX · med · `[x]` (method limited by source; Kompenzacija shows "—")
     - **Problem:** users pick both "Izvor plaćanja" and "Način plaćanja", and contradictory pairs such as Gotovina + Virman are accepted.
     - **Fix:** derive one from the other, or constrain the options.
-12. **[Banks/index.tsx:312,318,325](../src/components/Cashflow/Banks/index.tsx#L312)** — Formatting/Colour · med
+12. **[Banks/index.tsx:312,318,325](../src/components/Cashflow/Banks/index.tsx#L312)** — Formatting/Colour · med · `[x]` (Dug follows outstanding_balance, status translated, dates dd.MM.yyyy via parseLocalDate)
     - **Problem:**
       - Dates are English ("Sep 15, 2026") and money is "€1.234,5".
       - The "Dug" tile's colour follows `netUsed` but the tile shows `outstanding_balance`.
@@ -218,7 +218,7 @@ which this list had never carried. `[batch]` marks what the current batch fixes.
 16. **`Cashflow/Calendar/index.tsx:276-309`, `:72-82`** — Colour/Info · med · `[~]` (`AccountingPaymentFormModal` uses the shared type labels; the Calendar's own `getTypeLabel` still lacks the BANK types, and four carriers remain)
     - **Problem:** status is shown four ways, so a paid incoming invoice shows a red amount on a green row. BANK types show a raw `INCOMING_BANK`, and the same gap exists in `PaymentDetailView.tsx` and `AccountingPaymentFormModal.tsx`.
     - **Fix:** one status carrier and a shared type-label map.
-17. **[Customers/index.tsx:152-178](../src/components/Cashflow/Customers/index.tsx#L152)** — Information/Colour · med
+17. **[Customers/index.tsx:152-178](../src/components/Cashflow/Customers/index.tsx#L152)** — Information/Colour · med · `[x]` (the constant direction indicators are gone; status through the shared helper)
     - **Problem:** income/expense is shown three times per card. "Preostalo" is red on a green card, and UNPAID is grey here but red elsewhere.
     - **Fix:** one indicator and a standard status colour.
 18. **[BankInvoiceFormModal.tsx:348-363](../src/components/Cashflow/Banks/forms/BankInvoiceFormModal.tsx#L348)** — Library/Mobile · med
@@ -333,13 +333,13 @@ which this list had never carried. `[batch]` marks what the current batch fixes.
 12. **[InvoicesModal.tsx:124-126,166-168](../src/components/Supervision/SiteManagement/modals/InvoicesModal.tsx#L124)** — Dark mode/specificity · med · `[x]` (background set in one branch only, so the overdue tint wins)
     - **Problem:** `.bg-white` is emitted after `.bg-red-50`, so overdue invoice cards have no red background, and `font-medium` beats `font-bold`.
     - **Fix:** move `bg-white` / `font-medium` into the else branch.
-13. **[ProjectsGrid.tsx:100-144](../src/components/Supervision/SiteManagement/ProjectsGrid.tsx#L100)** — Colour/Formatting · med · `[~]` (the €0.0M render is gone via formatEuroCompact; paid is still drawn orange here and teal everywhere else)
+13. **[ProjectsGrid.tsx:100-144](../src/components/Supervision/SiteManagement/ProjectsGrid.tsx#L100)** — Colour/Formatting · med · `[x]` (paid is teal here too)
     - **Problem:** paid is orange in the grid's progress bar, but in `PhaseCard` paid is teal and orange means unpaid. `€{(x/1e6).toFixed(1)}M` renders €45.000 as "€0.0M".
     - **Fix:** teal for paid; `formatEuroRounded`.
 14. **Overdue flagged on the due date itself** — `ContractCard.tsx:41`, `Subcontractors/SubcontractorContractsList.tsx:20-24,116` ("Kasni za 0 dana"), `General/Projects/utils.ts:149,197`, `MilestoneTimeline.tsx:147,153,170` — Formatting/Colour · med
     - **Problem:** the same bug commit 89c985a fixed for invoices.
     - **Fix:** `daysFromToday()` from `utils/dateOnly`.
-15. **[BudgetControl/index.tsx:314-326,356-360,469,507](../src/components/General/BudgetControl/index.tsx#L314)** — i18n/Formatting/Colour · med · `[~]` (money on the shared helpers; the English CPI/SPI sublabels, the always-red EAC bar and the green Committed ring remain)
+15. **[BudgetControl/index.tsx:314-326,356-360,469,507](../src/components/General/BudgetControl/index.tsx#L314)** — i18n/Formatting/Colour · med · `[x]` (forecast bar follows VAC, sublabels translated, and it says "—" where it cannot tell)
     - **Problem:** hardcoded English CPI/SPI sublabels; two currency formats on one screen; "Committed" has a green ring while the chart draws committed in amber; the EAC bar is always red.
     - **Fix:** translate, use one formatter, align colours with the chart.
 16. **[ContractCard.tsx:48-79,132-190](../src/components/Supervision/SiteManagement/ContractCard.tsx#L48)** — Info/UX · med
@@ -357,7 +357,7 @@ which this list had never carried. `[batch]` marks what the current batch fixes.
 20. **[PaymentHistoryModal.tsx:84-86,159-161,208-211](../src/components/Supervision/SiteManagement/modals/PaymentHistoryModal.tsx#L84)** — Colour/States · med · `[~]` (status via the shared invoice helpers; the accounting note still repeats on every row)
     - **Problem:** it checks `'paid'` while the data holds `'PAID'`, so every badge is yellow with raw text. The "managed in accounting" note repeats on every row.
     - **Fix:** shared status map; say it once in the header.
-21. **[SiteManagement/index.tsx:501-510](../src/components/Supervision/SiteManagement/index.tsx#L501) + `MilestoneList.tsx:145`** — UX/Formatting · med · `[~]` (money via formatEuro; still no `Modal.Body`, and it still passes a gross figure under a "(osnova)" label)
+21. **[SiteManagement/index.tsx:501-510](../src/components/Supervision/SiteManagement/index.tsx#L501) + `MilestoneList.tsx:145`** — UX/Formatting · med · `[x]` (Modal.Body, gross against gross, formatEuro)
     - **Problem:** MilestoneList sits in `Modal size="full"` without `Modal.Body`, so nothing scrolls. The page mixes browser-locale and `hr-HR` amounts. "Ugovor (osnova)" shows the gross amount.
     - **Fix:** wrap in `Modal.Body`, use `formatEuro`, show `base_amount`.
 22. **[SubcontractorFormModal.tsx:153,184-199,250-259,364](../src/components/Supervision/SiteManagement/forms/SubcontractorFormModal.tsx#L153)** — States/i18n/Library · med
@@ -366,7 +366,7 @@ which this list had never carried. `[batch]` marks what the current batch fixes.
 23. **[EditSubcontractorModal.tsx:52-86,349-359](../src/components/Supervision/SiteManagement/modals/EditSubcontractorModal.tsx#L52)** — States/UX · med · `[x]` (full reset, stale-response guard, files upload on save)
     - **Problem:** the modal doesn't reset between opens, so the previous contract's values show until the fetch returns, and Save is enabled during loading. Picked files are discarded on Save unless Upload was clicked.
     - **Fix:** reset on open, disable Save while loading, upload on save.
-24. **[ProjectSummaryBanner.tsx:57](../src/components/Supervision/SiteManagement/ProjectSummaryBanner.tsx#L57) vs `PhaseCard.tsx:120-125`, `TreeGroup.tsx:156-162`, `ContractCard.tsx:97-100`** — Colour/permissions · med
+24. **[ProjectSummaryBanner.tsx:57](../src/components/Supervision/SiteManagement/ProjectSummaryBanner.tsx#L57) vs `PhaseCard.tsx:120-125`, `TreeGroup.tsx:156-162`, `ContractCard.tsx:97-100`** — Colour/permissions · med · `[x]` (the gate reaches the whole tree; see SEC-004 for the database side)
     - **Problem:** paid figures are hidden in the banner for users without payment rights, but shown in the tiles, tree and cards below.
     - **Fix:** pass `canManagePayments` consistently.
 25. **[WorkLogs/index.tsx:86-97](../src/components/Supervision/WorkLogs/index.tsx#L86) + `hooks/useWorkLogs.ts:46`** — States · med · `[x]` (double submit, and the failed load now shows ErrorState instead of "no logs yet")
@@ -548,7 +548,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 5. **[Funding/Payments/index.tsx:140-151,68,172](../src/components/Funding/Payments/index.tsx#L140)** — Info/Colour · high · `[x]` (PRIHOD/RASHOD by direction; inflow, outflow and net totalled separately)
    - **Problem:** the same "BANKA" badge on every row. Disbursements, repayments and expenses are all green and summed into one total.
    - **Fix:** show the direction as the type, colour by direction, total each separately.
-6. **[dashboards/services/directorService.ts:445-485](../src/components/dashboards/services/directorService.ts#L445) → `sections/DirectorAlertsSection.tsx:45,51`** — i18n · high · `[~]` (money via formatEuro; every title and message is still English)
+6. **[dashboards/services/directorService.ts:445-485](../src/components/dashboards/services/directorService.ts#L445) → `sections/DirectorAlertsSection.tsx:45,51`** — i18n · high · `[x]` (alerts return keys and params, translated in the section)
    - **Problem:** the General dashboard's alert panel is entirely English and formats with no locale.
    - **Fix:** return keys and params, translate in the section.
 7. **Cashflow dashboard money in `en-US`** — `AccountingVATSection.tsx:26-47`, `AccountingCashFlowSection.tsx:38-106`, `AccountingBudgetSection.tsx:34-48`, `AccountingMonthlyTrendsSection.tsx:39-55` — Formatting · high · `[x]` (all 18 sites on the shared helpers)
@@ -560,28 +560,28 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 9. **[Funding/Investors/services/creditService.ts:66](../src/components/Funding/Investors/services/creditService.ts#L66) + `Funding/Investments/index.tsx:239`** — UX · high · `[x]`
    - **Problem:** a null maturity renders "Jan 01, 1970", and editing sends `''` to a date column, which fails with an English toast.
    - **Fix:** `|| null` on update; render "—".
-10. **[dashboards/SalesDashboard.tsx:90-108](../src/components/dashboards/SalesDashboard.tsx#L90) (`services/salesDashboardService.ts:98`)** — Info · med-high
+10. **[dashboards/SalesDashboard.tsx:90-108](../src/components/dashboards/SalesDashboard.tsx#L90) (`services/salesDashboardService.ts:98`)** — Info · med-high · `[x]` (the invented target is gone; collected-this-month is a plain figure)
     - **Problem:** "Monthly target" is a hardcoded €5M, and the white % label is unreadable on the grey track.
     - **Fix:** a real target or remove the section; put the label beside the bar.
-11. **[InvestorCard.tsx:2,28-45](../src/components/Funding/Investors/components/InvestorCard.tsx#L2), `CreditFacilityCard.tsx:2,117-118`, `Investments/AllocationRow.tsx:134`** — A11y · med
+11. **[InvestorCard.tsx:2,28-45](../src/components/Funding/Investors/components/InvestorCard.tsx#L2), `CreditFacilityCard.tsx:2,117-118`, `Investments/AllocationRow.tsx:134`** — A11y · med · `[x]` (a real pencil, and the label and figure agree)
     - **Problem:** `CreditCard as Edit2` puts a credit-card icon on every Edit button. The icon-only buttons have no labels.
     - **Fix:** import the real pencil icon and add labels.
-12. **Utilisation colour scales** — `InvestorCard.tsx:67-71` vs `InvestmentCreditsTable.tsx:131-133` vs `InvestmentProjectModal.tsx:329-331` vs `:347-350` — Colour · med
+12. **Utilisation colour scales** — `InvestorCard.tsx:67-71` vs `InvestmentCreditsTable.tsx:131-133` vs `InvestmentProjectModal.tsx:329-331` vs `:347-350` — Colour · med · `[x]` (one `utilisationTone`, used by five screens and the PDF)
     - **Problem:** three different thresholds and palettes for utilisation; text and bar disagree for the same value.
     - **Fix:** one `utilizationTone()` helper.
 13. **[dashboards/sections/SupervisionWeekView.tsx:36,48](../src/components/dashboards/sections/SupervisionWeekView.tsx#L36)** — Colour · med · `[x]`
     - **Problem:** the user-picked stripe uses raw CSS keywords (pure #FFFF00). The real status (blocker, quality issue…) is never shown, and every date pill is green.
     - **Fix:** a status badge, a neutral date pill, and the Tailwind palette.
-14. **[CreditFacilityCard.tsx:21,32-47,62](../src/components/Funding/Investors/components/CreditFacilityCard.tsx#L21)** — Info/Colour/i18n · med
+14. **[CreditFacilityCard.tsx:21,32-47,62](../src/components/Funding/Investors/components/CreditFacilityCard.tsx#L21)** — Info/Colour/i18n · med · `[x]` (maturity via daysFromToday, translated type and status)
     - **Problem:** 4–5 badges of raw uppercase enums ("LINE OF_CREDIT" — only the first `_` is replaced), with orange meaning three things. "Maturing soon" also fires on credits that have already matured.
     - **Fix:** translate, merge the badges, fix the day range.
-15. **[InvestmentProjectModal.tsx:56-58,285-286,300,237-245](../src/components/Funding/Projects/modals/InvestmentProjectModal.tsx#L56)** — States · med
+15. **[InvestmentProjectModal.tsx:56-58,285-286,300,237-245](../src/components/Funding/Projects/modals/InvestmentProjectModal.tsx#L56)** — States · med · `[x]` (tab derived from loaded data; days read as overdue or expired)
     - **Problem:** the Funding tab refetches with no loading state, so "no funding sources" flashes. Every source has an identical green badge. "Days remaining" goes negative.
     - **Fix:** a loading state; drop the badge; render "N days overdue".
-16. **[Funding/Investments/index.tsx:121+134,141-156,72-74](../src/components/Funding/Investments/index.tsx#L121)** — Info/Colour · med
+16. **[Funding/Investments/index.tsx:121+134,141-156,72-74](../src/components/Funding/Investments/index.tsx#L121)** — Info/Colour · med · `[x]` (the duplicate tile is gone, Dug follows outstanding_balance, over-commitment shows)
     - **Problem:** the credit amount appears twice. The "Debt" tile's colour follows a different value from the one shown. "Unallocated" can't turn red. "Paid out" is orange here and green below.
     - **Fix:** drop the duplicate, colour from the displayed value, red for over-allocation.
-17. **[dashboards/RetailDashboard.tsx:51,59,64-71,116](../src/components/dashboards/RetailDashboard.tsx#L51)** — Info · med
+17. **[dashboards/RetailDashboard.tsx:51,59,64-71,116](../src/components/dashboards/RetailDashboard.tsx#L51)** — Info · med · `[x]` (the report's definitions; costs no longer include sales collections)
     - **Problem:** "Aktivnih" subtitles count every row. Invested and Costs are the same number in two colours. Query errors are ignored, so failures read as 0.
     - **Fix:** fix the subtitles, show the figure once, check errors.
 18. **[Funding/Investors/index.tsx:41](../src/components/Funding/Investors/index.tsx#L41) + `hooks/useBankData.ts:24`** — States · med · `[x]` (the spinner now shows only while the list is empty)
@@ -596,7 +596,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 21. **[Funding/Payments/index.tsx:37-56](../src/components/Funding/Payments/index.tsx#L37)** — UX · med
     - **Problem:** the CSV export has English headers, no quoting, no BOM (so diacritics break) and no toast.
     - **Fix:** XLSX via the shared exporter.
-22. **Silent failures** — `Funding/Investments/hooks/useLazySection.ts:14`, `Reports/GeneralReports.tsx:48-50`, `Funding/TIC/index.tsx:84-86` — States · med · `[~]` (`GeneralReports` has ErrorState + refetch; `useLazySection` caches the failure and the TIC export is console-only)
+22. **Silent failures** — `Funding/Investments/hooks/useLazySection.ts:14`, `Reports/GeneralReports.tsx:48-50`, `Funding/TIC/index.tsx:84-86` — States · med · `[x]` (all three report now)
     - **Problem:** a failed fetch is cached as "no invoices"; a failed report has no retry; a failed TIC export does nothing visible.
     - **Fix:** error with retry; toast on export failure.
 23. **[Reports/SalesAnalysis.tsx:157-160](../src/components/Reports/SalesAnalysis.tsx#L157), `Reports/CostAnalysis.tsx:118,191-192,174 vs 197`** — Colour/Info · low-med
@@ -657,7 +657,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
      - The AI panel closes, losing the draft, from rename, edit, the lightbox or the delete dialog.
      - On TaskModal's discard dialog, Escape does nothing.
    - **Fix:** one Escape stack (`src/hooks/useEscapeKey.ts`).
-3. **[Tasks/hooks/useTasks.ts:24-47](../src/components/Tasks/hooks/useTasks.ts#L24), `TaskDetail.tsx:128-136`, `Calendar/index.tsx:114,159-163`, `Chat/NewConversationModal.tsx:72-73`, `Chat/hooks/useChat.ts:43`** — States · high · `[~]` (Tasks and Chat report now; the calendar still ignores both range hooks' `error`, and TaskDetail swallows its own loads)
+3. **[Tasks/hooks/useTasks.ts:24-47](../src/components/Tasks/hooks/useTasks.ts#L24), `TaskDetail.tsx:128-136`, `Calendar/index.tsx:114,159-163`, `Chat/NewConversationModal.tsx:72-73`, `Chat/hooks/useChat.ts:43`** — States · high · `[x]` (the calendar reads both hooks' error; the twelve silent option loads report)
    - **Problem:** no error toasts in Tasks, Calendar or Chat for mutations. NewConversationModal closes on failure, and failed loads show empty states.
    - **Fix:** catch, `toast.error`, and a separate error state.
 4. **[Calendar/MonthView.tsx:221-265](../src/components/Calendar/MonthView.tsx#L221), `components/TaskPill.tsx:61`** — Info/Consistency · med-high · `[x]` (TaskPill in MonthView, tinted; events and tasks share the cell's three rows)
@@ -723,7 +723,7 @@ Clean checks: no `window.confirm` / `alert`, no Tailwind classes built at runtim
 24. **[Calendar/NewEventModal.tsx:474-479](../src/components/Calendar/NewEventModal.tsx#L474)** — Rules/Library · low-med
     - **Problem:** "Private" is a bare checkbox under a ToggleSwitch. There is no discard confirmation, and three different selected-chip styles.
     - **Fix:** `ToggleSwitch`, TaskModal's dirty guard, `FilterChip`.
-25. **[Tasks/index.tsx:384-387](../src/components/Tasks/index.tsx)** — States · low-med
+25. **[Tasks/index.tsx:384-387](../src/components/Tasks/index.tsx)** — States · low-med · `[x]` (counts follow the "show completed" toggle; the empty state says which reason)
     - **Problem:** tab counts include completed tasks even when they're hidden.
     - **Fix:** count what's visible.
 26. **[ui/Pagination.tsx:20](../src/components/ui/Pagination.tsx#L20) + `General/ActivityLog/index.tsx:167`** — i18n · low-med
