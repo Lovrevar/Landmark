@@ -1,8 +1,9 @@
 import React from 'react'
-import { CreditCard as Edit2, Trash2, Eye } from 'lucide-react'
+import { Edit2, Trash2, Eye } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../ui'
 import { formatEuroCompact } from '../../../../utils/formatters'
+import { utilisationTone } from '../utils/creditCalculations'
 import type { BankWithCredits } from '../types'
 
 interface InvestorCardProps {
@@ -14,6 +15,7 @@ interface InvestorCardProps {
 
 const InvestorCard: React.FC<InvestorCardProps> = ({ bank, onSelect, onEdit, onDelete }) => {
   const { t } = useTranslation()
+  const tone = utilisationTone(bank.credit_utilization)
   return (
     <div
       className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
@@ -49,11 +51,15 @@ const InvestorCard: React.FC<InvestorCardProps> = ({ bank, onSelect, onEdit, onD
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
         <div className="text-center">
-          <p className="text-xl font-bold text-green-600">{formatEuroCompact(bank.credit_utilized)}</p>
-          <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.investors.card.credit_utilized')}</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">{formatEuroCompact(bank.credit_total)}</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.investors.card.credit_total')}</p>
         </div>
         <div className="text-center">
-          <p className="text-xl font-bold text-red-600">{formatEuroCompact(bank.outstanding_debt)}</p>
+          <p className="text-xl font-bold text-green-600 dark:text-green-400">{formatEuroCompact(bank.credit_used)}</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.investors.card.credit_used')}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-xl font-bold text-red-600 dark:text-red-400">{formatEuroCompact(bank.outstanding_debt)}</p>
           <p className="text-xs text-gray-600 dark:text-gray-400">{t('funding.investors.card.outstanding')}</p>
         </div>
       </div>
@@ -61,15 +67,11 @@ const InvestorCard: React.FC<InvestorCardProps> = ({ bank, onSelect, onEdit, onD
       <div className="mb-4">
         <div className="flex justify-between mb-1">
           <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.investors.card.credit_utilization')}</span>
-          <span className="text-sm font-medium text-gray-900 dark:text-white">{bank.credit_utilization.toFixed(1)}%</span>
+          <span className={`text-sm font-medium ${tone.text}`}>{bank.credit_utilization.toFixed(1)}%</span>
         </div>
         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
           <div
-            className={`h-2 rounded-full transition-all duration-300 ${
-              bank.credit_utilization > 80 ? 'bg-red-600' :
-              bank.credit_utilization > 60 ? 'bg-orange-600' :
-              'bg-green-600'
-            }`}
+            className={`h-2 rounded-full transition-all duration-300 ${tone.bar}`}
             style={{ width: `${Math.min(100, bank.credit_utilization)}%` }}
           ></div>
         </div>

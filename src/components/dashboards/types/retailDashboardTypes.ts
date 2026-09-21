@@ -1,14 +1,15 @@
-export interface DashboardStats {
+import type { RetailTotals } from '../utils/retailTotals'
+
+/**
+ * Retail dashboard KPIs. The money figures come from `computeRetailTotals`, which follows the
+ * Retail report's definitions — see `../utils/retailTotals.ts` for what each one means and on
+ * what basis (cash, net of VAT).
+ */
+export interface DashboardStats extends RetailTotals {
   total_projects: number
+  /** Projects with `status === 'In Progress'`, the report's rule. */
+  active_projects: number
   total_customers: number
-  total_invested: number
-  total_costs: number
-  total_revenue: number
-  /** Customer cash collected on OUTGOING_SALES invoices. */
-  total_collected: number
-  /** Outstanding customer balance still to collect. */
-  total_remaining: number
-  profit: number
 }
 
 export interface OverdueInvoice {

@@ -3261,14 +3261,16 @@
         "update_button": "Ažuriraj banku"
       },
       "card": {
-        "credit_utilized": "Iskorišten kredit",
+        "credit_total": "Ukupno",
+        "credit_used": "Iskorišteno",
         "outstanding": "Preostalo",
         "credit_utilization": "Iskorištenost kredita",
         "active_credits": "Aktivni krediti"
       },
       "detail_modal": {
         "credit_facilities_heading": "Kreditne linije",
-        "credit_utilized_label": "Iskorišten kredit:",
+        "credit_total_label": "Ukupno:",
+        "credit_used_label": "Iskorišteno:",
         "outstanding_label": "Preostalo:",
         "credit_overview_heading": "Pregled kredita",
         "active_credits_label": "Aktivni krediti:",
@@ -3406,6 +3408,8 @@
       "no_financing_sources": "Nema izvora financiranja",
       "more_funders": "+{{count}} više",
       "risk_label": "Rizik",
+      "empty_title": "Nema investicijskih projekata",
+      "empty_description": "Projekti s evidentiranim financiranjem pojavit će se ovdje.",
       "modal": {
         "budget_label": "Budžet:",
         "overview_tab": "Pregled",
@@ -3433,6 +3437,12 @@
         "start_date_label": "Datum početka:",
         "target_end_label": "Ciljani kraj:",
         "days_remaining_label": "Preostali dani:",
+        "days_left_one": "{{count}} dan",
+        "days_left_few": "{{count}} dana",
+        "days_left_other": "{{count}} dana",
+        "days_overdue_one": "Kasni {{count}} dan",
+        "days_overdue_few": "Kasni {{count}} dana",
+        "days_overdue_other": "Kasni {{count}} dana",
         "tbd": "TBD",
         "years": "godina",
         "na": "N/A",
@@ -3452,11 +3462,15 @@
         "funds_depleted": "Sredstva su potpuno iskorištena",
         "high_utilization": "Visoka stopa iskorištenosti ({{rate}}%)",
         "expiring_in_days": "Rok korištenja istječe za {{days}} dana",
+        "expired_days_ago_one": "Rok korištenja istekao prije {{count}} dan",
+        "expired_days_ago_few": "Rok korištenja istekao prije {{count}} dana",
+        "expired_days_ago_other": "Rok korištenja istekao prije {{count}} dana",
         "total_committed_footer": "Ukupno obvezano",
         "total_spent_footer": "Ukupno potrošeno",
         "total_available_footer": "Ukupno dostupno",
         "bank_badge": "BANKA",
-        "expiring_soon_badge": "USKORO ISTJEČE"
+        "expiring_soon_badge": "USKORO ISTJEČE",
+        "expired_badge": "ISTEKLO"
       }
     },
     "payments": {
@@ -3537,6 +3551,7 @@
     "save_button": "Spremi",
     "export_excel_button": "Export Excel",
     "export_pdf_button": "Export PDF",
+    "export_error": "Izvoz nije uspio",
     "loading": "Učitavam TIC podatke...",
     "no_project_title": "Nema odabranog projekta",
     "no_project_description": "Odaberite projekt za pregled TIC strukture troškova",
@@ -3646,7 +3661,7 @@
       "active_contracts": "aktivnih ugovora",
       "completed_contracts": "Završeni ugovori",
       "finished_work": "Završeni radovi",
-      "overdue_tasks": "Zakašnjeli zadaci",
+      "overdue_milestones": "Zakašnjele prekretnice plaćanja",
       "need_attention": "Treba pozornost",
       "critical_deadlines": "Kritični rokovi",
       "within_7_days": "U roku 7 dana",
@@ -3678,6 +3693,38 @@
       "receivables": "Potraživanja",
       "payables": "Obveze",
       "critical_alerts": "Kritična upozorenja ({{count}})",
+      "alerts": {
+        "milestone_fallback": "Prekretnica",
+        "credit_fallback": "Kredit",
+        "overdue_milestone": {
+          "title": "Zakašnjela prekretnica plaćanja",
+          "message_one": "{{name}} kasni {{count}} dan",
+          "message_few": "{{name}} kasni {{count}} dana",
+          "message_other": "{{name}} kasni {{count}} dana"
+        },
+        "urgent_deadline": {
+          "title": "Hitan rok",
+          "message_today": "{{name}} dospijeva danas",
+          "message_one": "{{name}} dospijeva za {{count}} dan",
+          "message_few": "{{name}} dospijeva za {{count}} dana",
+          "message_other": "{{name}} dospijeva za {{count}} dana"
+        },
+        "credit_maturity": {
+          "title": "Dospijeće kredita",
+          "message_today": "{{name}} ({{amount}}) dospijeva danas",
+          "message_one": "{{name}} ({{amount}}) dospijeva za {{count}} dan",
+          "message_few": "{{name}} ({{amount}}) dospijeva za {{count}} dana",
+          "message_other": "{{name}} ({{amount}}) dospijeva za {{count}} dana"
+        },
+        "high_leverage": {
+          "title": "Visoka zaduženost",
+          "message": "Omjer duga i kapitala je {{ratio}}x (preporučeno < 2x)"
+        },
+        "low_sales_rate": {
+          "title": "Niska stopa prodaje",
+          "message": "Prodano je samo {{rate}}% jedinica. Razmotrite reviziju prodajne strategije."
+        }
+      },
       "projects_portfolio": "Portfelj projekata",
       "total_projects": "Ukupno projekata",
       "project_col": "Projekt",
@@ -3742,7 +3789,12 @@
       "per_unit": "Po jedinici",
       "active_leads": "Aktivni potencijalni kupci",
       "of_customers": "Od {{total}} kupaca",
-      "monthly_target": "Napredak prema mjesečnom cilju",
+      "sold_of_total": "{{sold}} od {{total}}",
+      "monthly_collected": "Naplaćeno ovaj mjesec",
+      "monthly_collected_sub": "Uplate po računima za stanove (s PDV-om)",
+      "trend_row_one": "{{count}} prodaja • {{revenue}}",
+      "trend_row_few": "{{count}} prodaje • {{revenue}}",
+      "trend_row_other": "{{count}} prodaja • {{revenue}}",
       "six_month_trend": "Prodajni trend 6 mjeseci",
       "inventory_status": "Status inventara",
       "sold": "Prodano",
@@ -3849,19 +3901,18 @@
       "subtitle": "Pregled poslovanja",
       "loading": "Učitavanje...",
       "projects": "Projekti",
-      "active_projects": "Aktivnih projekata",
+      "active_projects": "{{count}} aktivnih",
       "customers": "Kupci",
-      "active_customers": "Aktivnih kupaca",
+      "total_customers_sub": "Ukupno kupaca",
       "invested": "Investirano",
-      "invested_sub": "Razvoj i gradnja (s PDV)",
+      "invested_sub": "Razvoj i gradnja (bez PDV-a)",
       "revenue": "Prihod",
       "total_sales": "Ukupne prodaje",
       "collection": "Naplata",
-      "paid": "Plaćeno:",
+      "collected": "Naplaćeno:",
       "to_collect": "Za naplatu:",
       "total_invoiced": "Ukupno fakturirano:",
       "profit": "Profit",
-      "income": "Naplata:",
       "costs": "Troškovi:",
       "averages": "Prosječno",
       "cost_per_project": "Trošak/projekt:",

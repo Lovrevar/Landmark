@@ -127,7 +127,9 @@ const DirectorDashboard: React.FC = () => {
             size="lg"
           />
           <StatCard label={t('dashboards.director.completed_contracts')} value={constructionMetrics.completed_contracts} subtitle={t('dashboards.director.finished_work')} color="green" size="lg" />
-          <StatCard label={t('dashboards.director.overdue_tasks')} value={constructionMetrics.overdue_tasks} subtitle={t('dashboards.director.need_attention')} color="red" size="lg" />
+          {/* These are `subcontractor_milestones` — payment milestones on subcontractor
+              contracts, not tasks. */}
+          <StatCard label={t('dashboards.director.overdue_milestones')} value={constructionMetrics.overdue_tasks} subtitle={t('dashboards.director.need_attention')} color="red" size="lg" />
           <StatCard label={t('dashboards.director.critical_deadlines')} value={constructionMetrics.critical_deadlines} subtitle={t('dashboards.director.within_7_days')} color="orange" size="lg" />
         </div>
         <StatGrid columns={3}>

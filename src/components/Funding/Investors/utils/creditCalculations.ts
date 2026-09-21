@@ -106,6 +106,39 @@ export function getCreditRiskLevel(utilization: number): { label: string; classN
   return                       { label: 'Low',    className: 'text-green-600'  }
 }
 
+export interface UtilisationTone {
+  /** Text colour for the percentage itself. */
+  text: string
+  /** Fill colour for the progress bar. */
+  bar: string
+}
+
+/**
+ * The one utilisation colour scale: **≥ 90 red, ≥ 70 orange, else green**.
+ *
+ * Five screens each had their own thresholds (> 80/> 60, ≥ 90/≥ 70 over blue, ≥ 80/≥ 50 …),
+ * and inside `InvestmentProjectModal` the percentage and its bar disagreed with each other —
+ * at 92% the figure was orange while the bar beside it was red. Everything that renders a
+ * credit/funding utilisation now reads its classes from here: `InvestorCard`,
+ * `InvestmentCreditsTable`, `InvestmentProjectModal`, `CompanyDetailsModal`, and
+ * `investmentReportPdf` through `utilisationToneRgb`.
+ *
+ * Not a risk *label* — `getCreditRiskLevel` keeps its own (looser) bands and its English
+ * labels, which belong to the i18n sweep.
+ */
+export function utilisationTone(percent: number): UtilisationTone {
+  if (percent >= 90) return { text: 'text-red-600 dark:text-red-400',    bar: 'bg-red-600 dark:bg-red-500'    }
+  if (percent >= 70) return { text: 'text-orange-600 dark:text-orange-400', bar: 'bg-orange-600 dark:bg-orange-500' }
+  return                     { text: 'text-green-600 dark:text-green-400',  bar: 'bg-green-600 dark:bg-green-500'  }
+}
+
+/** The same scale as RGB, for jsPDF (which cannot read Tailwind classes). */
+export function utilisationToneRgb(percent: number): [number, number, number] {
+  if (percent >= 90) return [239, 68, 68]   // red-500
+  if (percent >= 70) return [249, 115, 22]  // orange-500
+  return [34, 197, 94]                      // green-500
+}
+
 export function getCreditTypeBadgeVariant(creditType: string): 'blue' | 'green' | 'orange' | 'gray' {
   switch (creditType) {
     case 'construction_loan': return 'blue'

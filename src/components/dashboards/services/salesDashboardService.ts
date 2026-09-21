@@ -48,6 +48,9 @@ export async function fetchSalesDashboardData(): Promise<{
   if (salesData.error) throw salesData.error
   if (customersData.error) throw customersData.error
   if (projectsData.error) throw projectsData.error
+  // The one query whose error used to go unchecked: revenue, the monthly figure and every
+  // per-project amount come from it, so a failed read rendered a confident €0.
+  if (paymentsData.error) throw paymentsData.error
 
   const apartments = apartmentsData.data || []
   const sales = salesData.data || []
@@ -94,8 +97,7 @@ export async function fetchSalesDashboardData(): Promise<{
     salesRate,
     totalCustomers,
     activeLeads,
-    monthlyRevenue,
-    monthlyTarget: 5000000
+    monthlyRevenue
   }
 
   // Map apartment_id → project_id once, so per-project revenue is O(payments).
@@ -166,13 +168,20 @@ export async function fetchRecentSales(sales: Array<{ apartment_id?: string; cus
   const apartmentIds = [...new Set(recentSalesSlice.map(s => s.apartment_id).filter(Boolean))]
   const customerIds = [...new Set(recentSalesSlice.map(s => s.customer_id).filter(Boolean))]
 
-  const [{ data: apartmentsData }, { data: customersData }] = await Promise.all([
+  const [apartmentsResult, customersResult] = await Promise.all([
     supabase.from('apartments').select('id, number, project_id').in('id', apartmentIds),
     supabase.from('customers').select('id, name, surname').in('id', customerIds)
   ])
+  // Unchecked, these rendered every recent sale as "Unknown — N/A" rather than saying the
+  // list could not be read.
+  if (apartmentsResult.error) throw apartmentsResult.error
+  if (customersResult.error) throw customersResult.error
+  const { data: apartmentsData } = apartmentsResult
+  const { data: customersData } = customersResult
 
   const projectIds = [...new Set((apartmentsData || []).map(a => a.project_id).filter(Boolean))]
-  const { data: projectsData } = await supabase.from('projects').select('id, name').in('id', projectIds)
+  const { data: projectsData, error: projectsError } = await supabase.from('projects').select('id, name').in('id', projectIds)
+  if (projectsError) throw projectsError
 
   const aptMap = new Map((apartmentsData || []).map(a => [a.id, a]))
   const custMap = new Map((customersData || []).map(c => [c.id, c]))

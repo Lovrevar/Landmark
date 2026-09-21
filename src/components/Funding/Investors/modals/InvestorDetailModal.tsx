@@ -57,8 +57,12 @@ const InvestorDetailModal: React.FC<InvestorDetailModalProps> = ({
                 <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('funding.investors.detail_modal.credit_facilities_heading')}</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-blue-700 dark:text-blue-300">{t('funding.investors.detail_modal.credit_utilized_label')}</span>
-                    <span className="font-medium text-green-700 dark:text-green-400">€{bank.credit_utilized.toLocaleString('hr-HR')}</span>
+                    <span className="text-blue-700 dark:text-blue-300">{t('funding.investors.detail_modal.credit_total_label')}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">€{bank.credit_total.toLocaleString('hr-HR')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700 dark:text-blue-300">{t('funding.investors.detail_modal.credit_used_label')}</span>
+                    <span className="font-medium text-green-700 dark:text-green-400">€{bank.credit_used.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-blue-700 dark:text-blue-300">{t('funding.investors.detail_modal.outstanding_label')}</span>

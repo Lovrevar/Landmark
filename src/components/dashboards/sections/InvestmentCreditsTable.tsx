@@ -6,6 +6,7 @@ import { daysFromToday } from '../../../utils/dateOnly'
 import { Button, Badge } from '../../ui'
 import StatCard from '../../ui/StatCard'
 import { formatEuro } from '../../../utils/formatters'
+import { utilisationTone } from '../../Funding/Investors/utils/creditCalculations'
 import { useTranslation } from 'react-i18next'
 import type { BankCredit } from '../../../types/investment'
 
@@ -123,15 +124,11 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                   <div>
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.utilization')}</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">{utilizationPercent.toFixed(1)}%</span>
+                      <span className={`font-semibold ${utilisationTone(utilizationPercent).text}`}>{utilizationPercent.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                       <div
-                        className={`h-3 rounded-full transition-all ${
-                          utilizationPercent >= 90 ? 'bg-red-500' :
-                          utilizationPercent >= 70 ? 'bg-orange-500' :
-                          'bg-blue-500'
-                        }`}
+                        className={`h-3 rounded-full transition-all ${utilisationTone(utilizationPercent).bar}`}
                         style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
                       />
                     </div>

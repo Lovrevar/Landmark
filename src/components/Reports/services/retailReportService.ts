@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase'
+import { daysFromToday } from '../../../utils/dateOnly'
 import type {
   RetailReportData,
   ProjectReportData,
@@ -288,8 +289,6 @@ function buildSupplierTypeSummary(suppliers: SupplierReportData[]): SupplierType
 }
 
 function buildInvoiceSummary(invoices: AnyRow[]): InvoiceSummary {
-  const today = new Date()
-
   return invoices.reduce((acc, inv) => {
     acc.total += 1
     acc.total_amount += num(inv.total_amount)
@@ -298,7 +297,9 @@ function buildInvoiceSummary(invoices: AnyRow[]): InvoiceSummary {
 
     if (inv.status === 'PAID') {
       acc.paid += 1
-    } else if (inv.due_date && new Date(inv.due_date as string) < today) {
+    } else if (inv.due_date && daysFromToday(inv.due_date as string) < 0) {
+      // Not `new Date(ymd) < new Date()`: that parses the date-only column as UTC midnight,
+      // which made an invoice overdue from 01:00 on its own due day.
       acc.overdue += 1
       acc.overdue_amount += num(inv.remaining_amount)
     } else {

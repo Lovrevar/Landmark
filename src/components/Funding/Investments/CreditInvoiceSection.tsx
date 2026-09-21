@@ -1,7 +1,7 @@
 import React from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Badge, LoadingSpinner } from '../../ui'
+import { Badge, LoadingSpinner, ErrorState } from '../../ui'
 import { format } from 'date-fns'
 import { useLazySection } from './hooks/useLazySection'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
@@ -41,7 +41,7 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
 
   const fetcher = () => fetchCreditInvoices(creditId, invoiceType, showAllocation)
 
-  const { expanded, loading, fetched, items: invoices, toggle } = useLazySection(fetcher)
+  const { expanded, loading, fetched, error, items: invoices, toggle, retry } = useLazySection(fetcher)
 
   const totalPayment = invoices.reduce((sum, inv) => sum + (inv.payment_amount || 0), 0)
   const totalAmount  = invoices.reduce((sum, inv) => sum + inv.total_amount, 0)
@@ -83,6 +83,8 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
             <div className="p-4">
               <LoadingSpinner message={t('funding.credit_invoice_section.loading')} />
             </div>
+          ) : error ? (
+            <ErrorState compact onRetry={retry} />
           ) : invoices.length === 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400 px-4 py-3">
               {emptyMessage}

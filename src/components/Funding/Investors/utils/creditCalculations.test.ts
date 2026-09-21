@@ -6,6 +6,8 @@ import {
   calculateMoneyMultiple,
   parseCreditTypeAndSeniority,
   getCreditRiskLevel,
+  utilisationTone,
+  utilisationToneRgb,
   getCreditTypeBadgeVariant,
   getCreditTypeLabelKey,
   calculatePaymentSchedule,
@@ -202,6 +204,52 @@ describe('getCreditRiskLevel', () => {
     expect(getCreditRiskLevel(90).className).toBe('text-red-600')
     expect(getCreditRiskLevel(70).className).toBe('text-orange-600')
     expect(getCreditRiskLevel(10).className).toBe('text-green-600')
+  })
+})
+
+describe('utilisationTone', () => {
+  it('is red at and above 90', () => {
+    expect(utilisationTone(90).bar).toBe('bg-red-600 dark:bg-red-500')
+    expect(utilisationTone(150).text).toBe('text-red-600 dark:text-red-400')
+  })
+
+  it('is orange from 70 up to but not including 90', () => {
+    expect(utilisationTone(70).bar).toBe('bg-orange-600 dark:bg-orange-500')
+    expect(utilisationTone(89.9).text).toBe('text-orange-600 dark:text-orange-400')
+  })
+
+  it('is green below 70, including 0 and negatives', () => {
+    expect(utilisationTone(69.9).bar).toBe('bg-green-600 dark:bg-green-500')
+    expect(utilisationTone(0).text).toBe('text-green-600 dark:text-green-400')
+    expect(utilisationTone(-5).bar).toBe('bg-green-600 dark:bg-green-500')
+  })
+
+  it('falls back to green for NaN rather than throwing or rendering nothing', () => {
+    expect(utilisationTone(Number.NaN).bar).toBe('bg-green-600 dark:bg-green-500')
+  })
+
+  it('pairs every colour with a dark variant', () => {
+    for (const percent of [0, 70, 90]) {
+      const tone = utilisationTone(percent)
+      expect(tone.text).toContain('dark:')
+      expect(tone.bar).toContain('dark:')
+    }
+  })
+
+  it('text and bar always agree on the tier', () => {
+    for (const percent of [0, 50, 69.99, 70, 85, 89.99, 90, 100]) {
+      const tone = utilisationTone(percent)
+      // 'text-red-600 …' → 'red', 'bg-red-600 …' → 'red'
+      expect(tone.text.split('-')[1]).toBe(tone.bar.split('-')[1])
+    }
+  })
+})
+
+describe('utilisationToneRgb', () => {
+  it('uses the same thresholds as the class-based scale', () => {
+    expect(utilisationToneRgb(90)).toEqual([239, 68, 68])
+    expect(utilisationToneRgb(70)).toEqual([249, 115, 22])
+    expect(utilisationToneRgb(69.9)).toEqual([34, 197, 94])
   })
 })
 

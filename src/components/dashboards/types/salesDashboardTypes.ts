@@ -10,8 +10,8 @@ export interface SalesDashboardStats {
   salesRate: number
   totalCustomers: number
   activeLeads: number
+  /** Cash collected this calendar month on apartment sales invoices (gross, VAT included). */
   monthlyRevenue: number
-  monthlyTarget: number
 }
 
 export interface ProjectStats {

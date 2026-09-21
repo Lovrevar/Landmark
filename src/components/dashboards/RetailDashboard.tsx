@@ -5,20 +5,18 @@ import { useCachedData } from '../../lib/useCachedData'
 import StatCard from '../ui/StatCard'
 import { BarChart3, FolderOpen, Users, Euro, TrendingUp, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
+import { parseLocalDate } from '../../utils/dateOnly'
 import { formatEuro, NO_VALUE } from '../../utils/formatters'
+import { EMPTY_RETAIL_TOTALS } from './utils/retailTotals'
 import type { DashboardStats, OverdueInvoice } from './types/retailDashboardTypes'
 import { fetchRetailDashboardData } from './services/retailDashboardService'
 import DashboardError from './DashboardError'
 
 const defaultStats: DashboardStats = {
+  ...EMPTY_RETAIL_TOTALS,
   total_projects: 0,
-  total_customers: 0,
-  total_invested: 0,
-  total_costs: 0,
-  total_revenue: 0,
-  total_collected: 0,
-  total_remaining: 0,
-  profit: 0
+  active_projects: 0,
+  total_customers: 0
 }
 
 const RetailDashboard: React.FC = () => {
@@ -49,7 +47,7 @@ const RetailDashboard: React.FC = () => {
         <StatCard
           label={t('dashboards.retail.projects')}
           value={stats.total_projects}
-          subtitle={t('dashboards.retail.active_projects')}
+          subtitle={t('dashboards.retail.active_projects', { count: stats.active_projects })}
           icon={FolderOpen}
           color="blue"
           size="lg"
@@ -57,7 +55,7 @@ const RetailDashboard: React.FC = () => {
         <StatCard
           label={t('dashboards.retail.customers')}
           value={stats.total_customers}
-          subtitle={t('dashboards.retail.active_customers')}
+          subtitle={t('dashboards.retail.total_customers_sub')}
           icon={Users}
           color="green"
           size="lg"
@@ -84,20 +82,20 @@ const RetailDashboard: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.retail.collection')}</h3>
-            <Euro className="w-6 h-6 text-green-600" />
+            <Euro className="w-6 h-6 text-green-600 dark:text-green-400" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.paid')}</span>
-              <span className="font-semibold text-green-600">{fmt(stats.total_collected)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.collected')}</span>
+              <span className="font-semibold text-green-600 dark:text-green-400">{fmt(stats.total_collected)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.to_collect')}</span>
-              <span className="font-semibold text-orange-600">{fmt(stats.total_remaining)}</span>
+              <span className="font-semibold text-orange-600 dark:text-orange-400">{fmt(stats.total_remaining)}</span>
             </div>
             <div className="pt-3 border-t dark:border-gray-600 flex justify-between">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('dashboards.retail.total_invoiced')}</span>
-              <span className="font-bold text-gray-900 dark:text-white">{fmt(stats.total_collected + stats.total_remaining)}</span>
+              <span className="font-bold text-gray-900 dark:text-white">{fmt(stats.total_invoiced)}</span>
             </div>
           </div>
         </div>
@@ -105,20 +103,20 @@ const RetailDashboard: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.retail.profit')}</h3>
-            <TrendingUp className={`w-6 h-6 ${stats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+            <TrendingUp className={`w-6 h-6 ${stats.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.income')}</span>
-              <span className="font-semibold text-green-600">{fmt(stats.total_revenue)}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.collected')}</span>
+              <span className="font-semibold text-green-600 dark:text-green-400">{fmt(stats.total_collected)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.costs')}</span>
-              <span className="font-semibold text-red-600">{fmt(stats.total_costs)}</span>
+              <span className="font-semibold text-red-600 dark:text-red-400">{fmt(stats.total_costs)}</span>
             </div>
             <div className="pt-3 border-t dark:border-gray-600 flex justify-between">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('dashboards.retail.profit')}:</span>
-              <span className={`font-bold text-lg ${stats.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`font-bold text-lg ${stats.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {stats.profit >= 0 ? '+' : ''}{fmt(stats.profit)}
               </span>
             </div>
@@ -128,7 +126,7 @@ const RetailDashboard: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.retail.averages')}</h3>
-            <BarChart3 className="w-6 h-6 text-blue-600" />
+            <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -156,7 +154,7 @@ const RetailDashboard: React.FC = () => {
       {overdueInvoices.length > 0 && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
           <div className="flex items-start space-x-3 mb-4">
-            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-red-900 dark:text-red-300 mb-2">
                 {t('dashboards.retail.late_payments', { count: overdueInvoices.length })}
@@ -171,16 +169,16 @@ const RetailDashboard: React.FC = () => {
                           {invoice.invoice_number} • {t('dashboards.retail.contract')} {invoice.contract_number}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {t('dashboards.retail.due')} {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                          {t('dashboards.retail.due')} {format(parseLocalDate(invoice.due_date), 'dd.MM.yyyy')}
                         </p>
-                        <p className="text-xs text-red-600 mt-1">
+                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                           {invoice.days_overdue === 1
                             ? t('dashboards.retail.overdue_days_one', { count: invoice.days_overdue })
                             : t('dashboards.retail.overdue_days_other', { count: invoice.days_overdue })}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-red-600">{fmt(invoice.remaining_amount)}</p>
+                        <p className="font-bold text-red-600 dark:text-red-400">{fmt(invoice.remaining_amount)}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{t('dashboards.retail.to_collect_label')}</p>
                       </div>
                     </div>

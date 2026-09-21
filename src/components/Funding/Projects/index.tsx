@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
   Building2,
   ArrowUpRight,
@@ -8,8 +8,10 @@ import {
   PieChart
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { LoadingSpinner, PageHeader, StatGrid, Badge, Button } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, Badge, Button, EmptyState, ErrorState } from '../../ui'
 import { format } from 'date-fns'
+import { parseLocalDate } from '../../../utils/dateOnly'
+import { useCachedData } from '../../../lib/useCachedData'
 import type { ProjectWithFinancials } from '../../General/Projects/types'
 import { fetchInvestmentProjects } from './services/investmentService'
 import InvestmentProjectModal from './modals/InvestmentProjectModal'
@@ -22,27 +24,14 @@ const getFundingColor = (ratio: number) => {
 
 const InvestmentProjects: React.FC = () => {
   const { t } = useTranslation()
-  const [projects, setProjects] = useState<ProjectWithFinancials[]>([])
   const [selectedProject, setSelectedProject] = useState<ProjectWithFinancials | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Was an inline loader whose catch only reached the console: a failed fetch left
+  // `projects: []` and rendered the page header over an empty div — indistinguishable from a
+  // company with no investment projects, and with no way to retry short of a reload.
+  const { data, loading, error, refetch } = useCachedData('funding:investment-projects', fetchInvestmentProjects)
+  const projects: ProjectWithFinancials[] = data ?? []
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const data = await fetchInvestmentProjects()
-      setProjects(data)
-    } catch (error) {
-      console.error('Error fetching investment projects:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (loading && !data) {
     return <LoadingSpinner message={t('funding.projects.loading')} />
   }
 
@@ -54,6 +43,11 @@ const InvestmentProjects: React.FC = () => {
         className="mb-6"
       />
 
+      {error && !data ? (
+        <ErrorState onRetry={refetch} />
+      ) : projects.length === 0 ? (
+        <EmptyState icon={Building2} title={t('funding.projects.empty_title')} description={t('funding.projects.empty_description')} />
+      ) : (
       <div className="space-y-6">
         {projects.map((project) => (
           <div
@@ -81,8 +75,8 @@ const InvestmentProjects: React.FC = () => {
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mb-1">{project.location}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {format(new Date(project.start_date), 'MMM dd, yyyy')} -&nbsp;
-                  {project.end_date ? format(new Date(project.end_date), 'MMM dd, yyyy') : t('funding.projects.modal.tbd')}
+                  {format(parseLocalDate(project.start_date), 'MMM dd, yyyy')} -&nbsp;
+                  {project.end_date ? format(parseLocalDate(project.end_date), 'MMM dd, yyyy') : t('funding.projects.modal.tbd')}
                 </p>
               </div>
               <div className="text-right">
@@ -177,6 +171,7 @@ const InvestmentProjects: React.FC = () => {
           </div>
         ))}
       </div>
+      )}
 
       {selectedProject && (
         <InvestmentProjectModal

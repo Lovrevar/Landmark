@@ -144,6 +144,8 @@ export interface ProjectWithFinancials extends Project {
 export interface FundingUtilizationItem {
   id: string
   type: string
+  /** Raw `bank_credits.credit_type`, so the row can be labelled debt vs equity. */
+  creditType: string | null
   name: string
   totalAmount: number
   spentAmount: number

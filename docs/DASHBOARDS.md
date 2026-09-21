@@ -26,8 +26,17 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
   - `construction` → ConstructionMetrics
   - `funding` → FundingMetrics
   - `alerts` → Alert[] derived from milestones, credit maturities, and financial/sales metrics (capped at 10)
+- The milestone maths moved to the pure, tested `utils/directorAlerts.ts`. **A milestone is
+  settled only when `status === 'paid'`**: `subcontractor_milestones.status` is
+  `pending | completed | paid` and the DB trigger sets `completed` on a *partial* payment, so the
+  old `status !== 'completed'` filter counted fully paid milestones as overdue and skipped the
+  part-paid ones that still owed money. The same filter drives `overdue_tasks`,
+  `critical_deadlines` and the overdue alert
+- `deriveAlerts` returns `{ type, kind, params, date }` — no prose. It used to build English
+  title/message strings ("Overdue Milestone", "Credit Maturity", "High Leverage", …) that
+  `DirectorAlertsSection` rendered raw; the words and the money formatting now live in the section
 - **Exports type:** `DirectorDashboardData`
-- **Depends on:** supabase client
+- **Depends on:** supabase client, directorAlerts, dateOnly
 
 ### investmentDashboardService.ts
 - `fetchInvestmentDashboardData()` — returns projects, companies, banks, bankCredits, recentActivities, financialSummary in one call
@@ -35,11 +44,27 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### retailDashboardService.ts
 - `fetchRetailDashboardData()` — returns stats (DashboardStats) and overdueInvoices (OverdueInvoice[])
-- **Depends on:** supabase client
+- The money maths lives in the pure `utils/retailTotals.ts`; this service only queries and
+  assembles. Every query's `error` is checked with the `responses.find(r => r.error !== null)`
+  guard copied from `Reports/services/retailReportService.ts:43-44` — it used to destructure
+  `{ data }` alone, so a dropped request rendered a retail portfolio of zeros that
+  `useCachedData` could not tell from a real one
+- `active_projects` counts `status === 'In Progress'` (the Retail report's rule); the tile's
+  subtitle said "Aktivnih projekata" while the figure counted every row
+- The overdue list is **receivables only** (`invoice_type === 'OUTGOING_SALES'`). It did not
+  filter by type, so a late *supplier* invoice appeared under "Kašnjenja u plaćanju … za naplatu"
+  with the supplier's name on it
+- **Depends on:** supabase client, retailTotals, dateOnly
 
 ### salesDashboardService.ts
 - `fetchSalesDashboardData()` — returns stats, projectStats, monthlyTrends, paymentMethodBreakdown, recentSales
 - `fetchRecentSales(sales)` — maps raw sale records into RecentSale[]
+- `SalesDashboardStats.monthlyTarget` is **gone**. It was a hardcoded €5.000.000 with no
+  counterpart anywhere in the database, and the dashboard measured collections against it
+- All nine reads now check their `error`. The payments query was the one that did not, and it is
+  the source of `totalRevenue`, `monthlyRevenue` and every per-project amount — a failed read
+  showed a confident €0. `fetchRecentSales`'s three reads were unchecked too, which rendered
+  every recent sale as "Unknown — N/A"
 - **Depends on:** supabase client
 
 ### supervisionService.ts
@@ -60,12 +85,16 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### directorTypes.ts
 - Exports: `ProjectStats`, `FinancialMetrics`, `SalesMetrics`, `ConstructionMetrics`, `FundingMetrics`, `Alert`
+- `Alert` is now an alias of `DerivedAlert` from `utils/directorAlerts.ts` (`{ type, kind, params?, date? }`)
 
 ### retailDashboardTypes.ts
 - Exports: `DashboardStats`, `OverdueInvoice`
+- `DashboardStats` extends `RetailTotals` (from `utils/retailTotals.ts`) with `total_projects`,
+  `active_projects` and `total_customers`
 
 ### salesDashboardTypes.ts
 - Exports: `SalesDashboardStats`, `ProjectStats`, `MonthlyTrend`, `RecentSale`
+- No `monthlyTarget`: there is no target data in the database
 
 ### supervisionTypes.ts
 - Exports: `WorkLog`, `SubcontractorStatus`, `WeeklyStats`
@@ -82,6 +111,10 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### DirectorDashboard.tsx
 - Renders financial metrics, project table, sales/construction/funding summaries, and alerts
+- The construction section's red tile is **"Zakašnjele prekretnice plaćanja"**
+  (`dashboards.director.overdue_milestones`). It counts `subcontractor_milestones`, which are
+  payment milestones on subcontractor contracts, not tasks; the key was `overdue_tasks`
+  ("Zakašnjeli zadaci") and has been removed
 - **Uses services:** directorService (`fetchDirectorDashboard()` — one call loads all sections)
 - **Uses components:** DirectorFinancialSection, DirectorProjectsTable, DirectorAlertsSection
 - **Uses Ui:** Card
@@ -94,14 +127,28 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 - **Uses Ui:** Card, Button
 
 ### RetailDashboard.tsx
-- Renders retail KPI cards, project overview, payment tracking, and overdue invoice warnings
+- Renders retail KPI cards, collection/profit/averages panels, and overdue receivable warnings
+- Tiles: Projekti (with "N aktivnih"), Kupci ("Ukupno kupaca" — `retail_customers` has no status
+  column, so "Aktivnih kupaca" was unsupportable), **Investirano** = development + construction
+  paid only, and Prihod = contracted sales value
+- "Investirano" and "Troškovi" are deliberately different figures now; they differ by exactly the
+  land cost. They used to be the same variable (`const total_costs = total_invested`)
+- The profit panel reads Naplaćeno − Troškovi = Profit. Its first row showed *invoiced* revenue
+  under the label "Naplata:", which both misstated the figure and repeated the collection panel's
+  heading
 - **Uses services:** retailDashboardService
-- **Uses Ui:** StatGrid, Card
+- **Uses Ui:** StatCard
 
 ### SalesDashboard.tsx
 - Renders sales pipeline metrics, 6-month trend, payment method breakdown, and recent sales list
+- Five KPI tiles: total revenue, **Naplaćeno ovaj mjesec**, sales rate, average sale price, active
+  leads. The monthly figure replaces a "Napredak prema mjesečnom cilju" panel whose target was a
+  hardcoded €5.000.000 and whose percentage label was unclamped. It is `monthlyRevenue`: payments
+  since the start of the calendar month on `OUTGOING_SALES` invoices that carry an
+  `apartment_id` — **apartments only** (garages and storage units are not invoiced) and **gross,
+  VAT included**, which is what the tile's subtitle says
 - **Uses services:** salesDashboardService
-- **Uses Ui:** StatGrid, Card
+- **Uses Ui:** StatCard
 
 ### SupervisionDashboard.tsx
 - Tabbed interface switching between weekly activity view, contractor status, and issues/alerts
@@ -140,6 +187,10 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 
 ### DirectorAlertsSection.tsx
 - Displays up to 6 critical/warning/info alerts
+- Translates each alert from its `kind` + `params` under `dashboards.director.alerts.*` and
+  formats the credit amount with `formatEuro`. A day count of 0 uses the `message_today` variant
+  rather than printing "dospijeva za 0 dana". This closes the "Director alerts panel is entirely
+  English" finding
 - Props: `Alert[]`
 
 ### DirectorFinancialSection.tsx
@@ -157,6 +208,9 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 
 ### InvestmentCreditsTable.tsx
 - Credit cards with utilization progress, dates, and expiry warnings
+- The utilisation percentage and its bar both take their colour from `utilisationTone`
+  (`Funding/Investors/utils/creditCalculations.ts`) — see `docs/FUNDING.md`. The bar used to run
+  red / orange / **blue** on its own thresholds
 - Props: `BankCredit[]`
 
 ### SupervisionWeekView.tsx
@@ -175,6 +229,29 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 
 ## Shared dashboard utilities
 - **`DashboardError.tsx`** — error panel (icon + message + retry). Every dashboard renders it when `useCachedData` reports an `error` and there is no cached data, so a failed fetch never renders as legitimate zeros. Since September 2026 it is a thin wrapper over the shared **`ErrorState`** (`src/components/ui/ErrorState.tsx`), which was promoted out of it so list pages and modals can make the same distinction; the wording moved with it to `common.load_error_title` / `common.load_error_description` / `common.retry`, and the `dashboards.common.*` trio is gone from both locale files. Rendering is unchanged apart from the title, which is now the generic "Failed to load" / "Učitavanje nije uspjelo" rather than "…dashboard". New code can import `ErrorState` directly — this wrapper exists so the six dashboards' call sites stayed put.
+- **`utils/retailTotals.ts`** — `computeRetailTotals({ phases, contracts, landPlots, invoices })`,
+  the Retail dashboard's money maths, on the **Retail report's** definitions so the dashboard and
+  the PDF report agree (`Reports/services/retailReportService.ts:103-111,176-180`):
+  - **Costs** = land + development-phase paid + construction-phase paid
+  - **Collected** = sales-phase paid · **Profit** = collected − costs (cash basis on both sides)
+  - **Invested** = development + construction paid, land excluded — so it is not a second name for
+    Costs, which is what it was (`const total_costs = total_invested`)
+  - Land is `retail_land_plots.total_price`, the source the report uses for its **portfolio**
+    totals. The report's *per-project* figure uses `retail_projects.purchase_price` instead; this
+    dashboard is portfolio-level and uses the portfolio source throughout
+  - Cost and sales contracts are separated by their phase, because `retail_contracts` holds both
+    (the DB CHECK allows exactly one of `supplier_id` / `customer_id`). Summing `budget_realized`
+    over every contract folded buyer money into costs and left Profit subtracting revenue from
+    itself. A contract on an unknown or missing phase is left out of every total rather than
+    guessed at
+  - `budget_realized` is the **net** paid share the
+    `update_retail_contract_budget_realized_from_payments` trigger stores, not a gross figure —
+    the "Razvoj i gradnja (s PDV)" subtitle was simply false and now reads "(bez PDV-a)"
+  - Unit-tested in `retailTotals.test.ts` (8 tests), including the case that motivated it
+- **`utils/directorAlerts.ts`** — `isSettledMilestone`, `countOverdueMilestones`,
+  `countCriticalDeadlines` and `deriveAlerts`, pure and unit-tested (`directorAlerts.test.ts`,
+  13 tests). `daysFromToday` is injected, so the tests fix "today" without fake timers. See
+  `directorService.ts` above for what it fixes
 - **`src/utils/dateOnly.ts`** — helpers for SQL `date` (date-only) columns: `parseLocalDate` (parse as local midnight, not UTC), `monthKey` (`'YYYY-MM'` bucket key), `daysFromToday` (whole-day diff, inclusive of today), `isValidDate`. All dashboard services use these for month bucketing, overdue/maturity windows, and "this week" math to avoid the UTC-vs-local off-by-one.
 - **`useCachedData` now exposes `error`** alongside `data`/`loading`/`fetchedAt`/`refetch`.
 - **`utils/barScale.ts`** — `monthlyBarMax(data)` (the shared denominator for incoming/outgoing month bars, floored at 1 so an empty or all-zero year is safe) and `barPercent(value, max)` (clamped 0–100). Unit-tested in `barScale.test.ts`. `SalesDashboard` hoists its own denominator inline the same way.
@@ -187,7 +264,9 @@ Net figures show their own sign; colour is reinforcement, never the only cue. Ne
 - Classify invoices against the real `invoice_type` enum (9 values) — never invented strings. `INCOMING_INVESTMENT` is treated as **incoming cash**.
 - Debt KPIs exclude `credit_type='equity'` and repaid/defaulted credits; "weighted" interest is amount-weighted.
 - Sales counts cover all three unit tables (`apartments`, `garages`, `repositories`); revenue is apartment-only (only apartments are invoiced) and labelled accordingly.
-- Retail revenue is **net of VAT** (`base_amount`); collection figures are customer (`OUTGOING_SALES`) only.
+- Retail figures follow the Retail report, not the invoice table: revenue is the contracted sales
+  value, collections are sales-phase `budget_realized` (net of VAT, cash basis), and outstanding /
+  invoiced come from the invoices on those sales contracts. Profit is collected − costs.
 - Supervision "completed this week" = distinct subcontractors with `completed_at` in the calendar week; progress bars are a **payment** ratio ("Paid Out"), not work completion.
 
 ## Notes

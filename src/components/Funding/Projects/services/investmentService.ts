@@ -1,6 +1,6 @@
 import { supabase } from '../../../../lib/supabase'
-import { differenceInDays } from 'date-fns'
-import type { ProjectWithFinancials, FundingUtilizationItem } from '../../../General/Projects/types'
+import { daysFromToday } from '../../../../utils/dateOnly'
+import type { ProjectWithFinancials } from '../../../General/Projects/types'
 import { weightedAverageInterestRate } from '../utils/weightedInterestRate'
 
 export async function fetchInvestmentProjects(): Promise<ProjectWithFinancials[]> {
@@ -52,7 +52,9 @@ export async function fetchInvestmentProjects(): Promise<ProjectWithFinancials[]
       .filter((bank, index, self) => index === self.findIndex(b => b.id === bank.id))
 
     const debtRatio = project.budget > 0 ? (total_debt / project.budget) * 100 : 0
-    const timeOverrun = project.end_date ? differenceInDays(new Date(), new Date(project.end_date)) : 0
+    // Days past the end date. `new Date('YYYY-MM-DD')` parses as UTC midnight, so east of
+    // UTC a project read as overrun from 01:00 on its own end date.
+    const timeOverrun = project.end_date ? -daysFromToday(project.end_date) : 0
 
     let risk_level: 'Low' | 'Medium' | 'High' = 'Low'
     if (debtRatio > 70 || timeOverrun > 30 || funding_ratio < 80) risk_level = 'High'
@@ -70,40 +72,4 @@ export async function fetchInvestmentProjects(): Promise<ProjectWithFinancials[]
       risk_level
     }
   })
-}
-
-export async function fetchFundingUtilization(projectId: string): Promise<FundingUtilizationItem[]> {
-  const { data: allocationsData, error } = await supabase
-    .from('credit_allocations')
-    .select(`
-      *,
-      credit:bank_credits(
-        id,
-        credit_name,
-        credit_type,
-        interest_rate,
-        start_date,
-        maturity_date,
-        usage_expiration_date,
-        bank:banks(*)
-      )
-    `)
-    .eq('project_id', projectId)
-  if (error) throw error
-
-  const utilization: FundingUtilizationItem[] = []
-  ;(allocationsData || []).forEach(allocation => {
-    if (!allocation.credit?.bank) return
-    utilization.push({
-      id: allocation.id,
-      type: 'bank',
-      name: `${allocation.credit.bank.name} - ${allocation.credit.credit_name}`,
-      totalAmount: allocation.allocated_amount,
-      spentAmount: allocation.used_amount,
-      availableAmount: allocation.allocated_amount - allocation.used_amount,
-      usageExpirationDate: allocation.credit.usage_expiration_date,
-      investmentDate: allocation.credit.start_date
-    })
-  })
-  return utilization
 }

@@ -57,7 +57,11 @@ Detailed credit management: allocations per project, disbursements, expenses, re
 
 ### useLazySection.ts
 - `useLazySection<T>(fetchFn)` — generic hook for lazy-loading a section's data on first expand
-- **Returns:** expanded, loading, fetched, items, toggle
+- **Returns:** expanded, loading, fetched, **error**, items, toggle, **retry**
+- A failure used to be cached as success: the hook did `.catch(console.error)` and set `fetched`
+  in `finally`, while `toggle` only fetched when `!fetched`. The section then read "(0)" and
+  showed its "nothing here" message for the rest of the component's life. It now records `error`,
+  leaves `fetched` false so a retry can run, and exposes `retry`
 
 #### Views
 
@@ -93,9 +97,11 @@ Detailed credit management: allocations per project, disbursements, expenses, re
   `getInvoiceStatusLabel` in `Cashflow/services/invoiceHelpers.ts`. The module's own
   `Investments/constants.ts` (`INVOICE_STATUS_CONFIG`, with hardcoded Croatian labels) is gone
 - Props: creditId, invoiceType, title, totalLabel, paymentAmountLabel, emptyMessage, accentColor, icon, showAllocation?
+- A failed load renders `ErrorState compact` with a retry in place of `emptyMessage` — "this
+  credit has no drawdowns" and "we could not read them" are opposite answers
 - **Uses hooks:** useLazySection
 - **Calls:** creditService.fetchCreditInvoices
-- **Uses Ui:** Badge, LoadingSpinner
+- **Uses Ui:** Badge, LoadingSpinner, ErrorState
 
 ---
 
@@ -107,7 +113,12 @@ Bank and investor registry. Manages credit facilities and equity investments per
 #### Services
 
 ### bankService.ts
-- `fetchFundingBanksData()` — fetches banks (with credit aggregates: utilized, outstanding, available, utilization) plus companies
+- `fetchFundingBanksData()` — fetches banks (with credit aggregates: total, used, outstanding, available, utilization) plus companies
+  - The Σ`credit.amount` aggregate is `credit_total` — the **facilities approved**, not the amount
+    drawn. It used to be called `credit_utilized` and was rendered under "Iskorišten kredit" on
+    `InvestorCard` and in `InvestorDetailModal`, so every investor looked fully drawn; it is also
+    the denominator of `credit_utilization`, which made the two figures contradict each other.
+    Σ`credit.used_amount` is now exposed as `credit_used` and is what "Iskorišteno" shows
 - `createBank(payload)` — inserts a new bank/investor record
 - `updateBank(bankId, payload)` — updates a bank/investor record
 - `fetchBankCreditIds(bankId)` — returns the ids of the bank's credit facilities (used to size and perform the invoice detach)
@@ -183,8 +194,15 @@ Bank and investor registry. Manages credit facilities and equity investments per
 #### Views
 
 ### InvestorCard.tsx
-- Card for a bank/investor with credit-utilized / outstanding / utilization metrics and select/edit/delete actions
+- Card for a bank/investor with total / used / outstanding metrics, a utilisation bar, and
+  select/edit/delete actions
+- The three figures are `credit_total` (neutral), `credit_used` (green) and `outstanding_debt`
+  (red) — the card used to print `credit_total` alone, labelled "Iskorišten kredit"
+- The utilisation percentage and its bar both take their colour from `utilisationTone`
+- The edit button is a real pencil (`Edit2`); it was `CreditCard as Edit2`, a credit-card glyph
+  aliased to look like an edit icon
 - Props: bank, onSelect, onEdit, onDelete
+- **Uses utils:** creditCalculations (utilisationTone)
 - **Uses Ui:** Button
 
 ### CreditFacilityCard.tsx
@@ -196,7 +214,7 @@ Bank and investor registry. Manages credit facilities and equity investments per
 
 ### utils/creditCalculations.ts
 The module's pure-maths layer, and the most heavily unit-tested file in the codebase
-(35 tests in `creditCalculations.test.ts`). No Supabase, no React — extract new financial
+(42 tests in `creditCalculations.test.ts`). No Supabase, no React — extract new financial
 maths here rather than inlining it in a hook.
 
 - `calculateAnnuityPayment({...})` — standard annuity instalment
@@ -206,6 +224,14 @@ maths here rather than inlining it in a hook.
 - `getPaymentFrequency(type)` — payments per year for `monthly` / `quarterly` / `biyearly` / `yearly`
 - `parseCreditTypeAndSeniority(combined)` — splits the combined form value back into its two fields
 - `getCreditRiskLevel(utilization)` / `getCreditTypeBadgeVariant(creditType)` — display helpers
+- `utilisationTone(percent)` → `{ text, bar }` and `utilisationToneRgb(percent)` — **the one
+  utilisation colour scale**: ≥ 90 red, ≥ 70 orange, else green, with a `dark:` pair on every
+  class. Five screens each had their own thresholds (`InvestorCard` > 80 / > 60,
+  `InvestmentCreditsTable` ≥ 90 / ≥ 70 over blue, `CompanyDetailsModal` ≥ 90 / ≥ 70,
+  `investmentReportPdf` the same in RGB) and inside `InvestmentProjectModal` the percentage and
+  its own bar disagreed — at 92% the figure was orange while the bar beside it was red. All five
+  read from here now. Distinct from `getCreditRiskLevel`, which keeps its own looser bands and
+  its English risk labels
 - `getCreditTypeLabelKey(creditType, seniority?)` — i18n key for a stored `credit_type`, reusing the
   credit form's `banks.credit_form.*` option labels (a `line_of_credit` picks `loc_senior` /
   `loc_junior` by seniority; `equity` → `funding.equity`); `null` for anything else, where callers
@@ -284,10 +310,14 @@ module does not hold.
 #### Services
 
 ### investmentService.ts
-- `fetchInvestmentProjects()` — fetches projects with equity, debt, average interest rate, risk level, and funding source details
-- `fetchFundingUtilization(projectId)` — fetches per-allocation funding utilization (total/spent/available) for a project
+- `fetchInvestmentProjects()` — fetches projects with equity, debt, average interest rate, risk level, and funding source details. `debt_allocations` carries every allocation row with its credit (name, type, dates, bank), which is what the detail modal's Funding tab is now derived from
+- `risk_level`'s time-overrun input is `-daysFromToday(end_date)`; it was
+  `differenceInDays(new Date(), new Date(end_date))`, and `new Date('YYYY-MM-DD')` parses as UTC
+  midnight, so a project counted as overrun from 01:00 on its own end date
+- `fetchFundingUtilization(projectId)` was **removed**: it re-queried `credit_allocations` on
+  every click of the modal's Funding tab for rows the page already had
 - **Calls:** weightedInterestRate.weightedAverageInterestRate
-- **Depends on:** supabase client, date-fns
+- **Depends on:** supabase client, dateOnly
 
 #### Utils
 
@@ -304,16 +334,33 @@ module does not hold.
 - Detail modal for a project showing financing breakdown, funding progress, and funders list
 - The average interest rate appears **once**, on the teal tile; the "Analiza prinosa" panel holds
   only the investment period and risk level
-- **Calls:** investmentService.fetchFundingUtilization
-- **Uses Ui:** Modal, Table
+- The **Funding tab is derived**, not fetched: a `useMemo` over `project.debt_allocations`, which
+  the page already loaded. It used to call `fetchFundingUtilization` on every tab click with no
+  loading state and a `catch` that only reached the console, so the tab read "Nema izvora
+  financiranja za ovaj projekt" until the query resolved and for ever if it failed
+- Each source's badge is its **credit type** through `getCreditTypeLabelKey` /
+  `getCreditTypeBadgeVariant`, which is what distinguishes debt from equity. It was a constant
+  green "BANKA" on every row, because the removed service hardcoded `type: 'bank'`
+- Dates and windows go through `dateOnly`: "Preostali dani" prints `days_left` or `days_overdue`
+  wording instead of a negative number, and "expiring soon" is `0 ≤ days ≤ 30` with a separate
+  red "ISTEKLO" badge and "expired N days ago" line. `<= 30` alone was also true for periods that
+  had already run out, which produced "USKORO ISTJEČE" beside "istječe za -12 dana"
+- Utilisation text and bar both come from `utilisationTone`; they used to disagree at ≥ 90
+- **Uses utils:** creditCalculations (utilisationTone, getCreditTypeLabelKey, getCreditTypeBadgeVariant), dateOnly
+- **Uses Ui:** Modal, Badge, StatGrid, EmptyState
 
 #### Views
 
 ### index.tsx (InvestmentProjects)
 - Project cards with equity/debt/average-interest-rate/funding status, progress bars, and detail modal
-- **Calls:** investmentService.fetchInvestmentProjects
+- Loads through `useCachedData('funding:investment-projects', …)`. It used to be an inline
+  `useEffect` loader whose `catch` only reached the console, leaving `projects: []` and rendering
+  the page header over an empty div. The content area is now three-way: `ErrorState` with a retry
+  on a failed load, `EmptyState` for a genuinely empty portfolio, the cards otherwise — the header
+  stays mounted in every case. Note the hook's 5-minute cache (`invalidateCachedData` to drop it)
+- **Calls:** investmentService.fetchInvestmentProjects (via useCachedData)
 - **Uses components:** InvestmentProjectModal
-- **Uses Ui:** PageHeader, LoadingSpinner, StatGrid, Badge, Button
+- **Uses Ui:** PageHeader, LoadingSpinner, StatGrid, Badge, Button, EmptyState, ErrorState
 
 ---
 
@@ -509,7 +556,12 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 
 ### index.tsx (TICManagement)
 - Project selector, tab switcher, Save / Import Excel / Export Excel / Export PDF toolbar, and the shared investor/signature/date footer
-- **Uses hooks:** useTIC
+- Both exports run through `useAsyncExport` (`src/hooks/useAsyncExport.ts`), which owns the
+  per-button `loading` flag and toasts `tic.export_error` on failure. The Excel export used to
+  swallow its error in a `catch` that only reached the console, and the PDF button called the
+  synchronous `exportToPDF` with no `try/catch` at all — a throw took the click with it and left
+  the button looking idle
+- **Uses hooks:** useTIC, useAsyncExport
 - **Uses services:** ticExport
 - **Uses components:** InvestmentTable, ConstructionTable
 - **Uses modals:** ExcelImportTICModal
@@ -538,5 +590,5 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 - The audit refactor also lowercased the `Modals/`→`modals/` and `Services/`→`services/` directories in Payments, Projects, and TIC
 - Pure calculation/formatting helpers have colocated unit tests: `Investors/utils/creditCalculations.test.ts`, `TIC/utils/ticFormatters.test.ts`, `TIC/services/ticImport.test.ts` and `TIC/services/ticExport.test.ts` (the last verifies an Excel export re-imports byte-for-byte)
 - All service mutations log via `logActivity()` (fire-and-forget)
-- **Failed loads are not empty states.** Investments, Investors and Payments expose `error` + `refetch` and render `ErrorState` (from `src/components/ui`) in the content area with the page header kept mounted; money tiles fed by a failed read are withheld rather than shown as €0. `useTIC` was left as it is: it already reports both load failures through its own on-screen message banner, and `loadClassifications` documents why it tolerates a failure (the classification column falls back to "unmapped", which is visible and recoverable). `Projects/index.tsx`, `AllocationRow.tsx` and `useLazySection` still fetch inline and are part of the deferred in-component set
+- **Failed loads are not empty states.** Investments, Investors and Payments expose `error` + `refetch` and render `ErrorState` (from `src/components/ui`) in the content area with the page header kept mounted; money tiles fed by a failed read are withheld rather than shown as €0. `useTIC` was left as it is: it already reports both load failures through its own on-screen message banner, and `loadClassifications` documents why it tolerates a failure (the classification column falls back to "unmapped", which is visible and recoverable). `Projects/index.tsx` moved onto `useCachedData` (ErrorState + retry, EmptyState for a real empty list) and `useLazySection` gained `error` + `retry`, so `CreditInvoiceSection` shows a compact `ErrorState` instead of caching a failure as "(0)". `AllocationRow.tsx` still fetches inline and is what is left of the deferred in-component set
 - **Deleting a credit facility or an investor detaches invoices first.** `accounting_invoices.bank_credit_id` is the only `ON DELETE RESTRICT` reference to `bank_credits`, so a bare delete fails with Postgres `23503` whenever an invoice is attached (and, for investors, aborts the `bank_credits` cascade). `creditService.detachInvoicesFromCredits()` clears the FK — the invoices are kept, only unlinked — and both delete paths call it before deleting. The confirmation dialog reports the count via `countInvoicesForCredits()`, and the hooks fall back to `isForeignKeyViolation()` from `src/lib/dbErrors.ts` for a readable toast if some other constraint blocks the delete

@@ -15,6 +15,7 @@ import {
   BarChart3
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { parseLocalDate } from '../../utils/dateOnly'
 import { formatEuroCompact } from '../../utils/formatters'
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from './types/salesDashboardTypes'
 import * as salesService from './services/salesDashboardService'
@@ -23,7 +24,7 @@ import DashboardError from './DashboardError'
 const defaultStats: SalesDashboardStats = {
   totalUnits: 0, availableUnits: 0, reservedUnits: 0, soldUnits: 0,
   totalRevenue: 0, avgSalePrice: 0, salesRate: 0, totalCustomers: 0,
-  activeLeads: 0, monthlyRevenue: 0, monthlyTarget: 5000000
+  activeLeads: 0, monthlyRevenue: 0
 }
 
 const SalesDashboard: React.FC = () => {
@@ -53,7 +54,7 @@ const SalesDashboard: React.FC = () => {
         <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.sales.subtitle')}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <StatCard
           label={t('dashboards.sales.total_revenue')}
           value={formatEuroCompact(stats.totalRevenue)}
@@ -62,10 +63,20 @@ const SalesDashboard: React.FC = () => {
           color="green"
           size="lg"
         />
+        {/* There is no sales target anywhere in the database. This used to be measured
+            against a hardcoded €5.000.000, with an unclamped percentage label. */}
+        <StatCard
+          label={t('dashboards.sales.monthly_collected')}
+          value={formatEuroCompact(stats.monthlyRevenue)}
+          subtitle={t('dashboards.sales.monthly_collected_sub')}
+          icon={Calendar}
+          color="teal"
+          size="lg"
+        />
         <StatCard
           label={t('dashboards.sales.sales_rate')}
           value={`${stats.salesRate.toFixed(1)}%`}
-          subtitle={`${stats.soldUnits} of ${stats.totalUnits}`}
+          subtitle={t('dashboards.sales.sold_of_total', { sold: stats.soldUnits, total: stats.totalUnits })}
           icon={TrendingUp}
           color="blue"
           size="lg"
@@ -88,26 +99,6 @@ const SalesDashboard: React.FC = () => {
         />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.sales.monthly_target')}</h2>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {formatEuroCompact(stats.monthlyRevenue)} / {formatEuroCompact(stats.monthlyTarget)}
-          </span>
-        </div>
-        <div className="relative">
-          <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-8">
-            <div
-              className="bg-gradient-to-r from-blue-500 to-green-500 h-8 rounded-full"
-              style={{ width: `${Math.min((stats.monthlyRevenue / stats.monthlyTarget) * 100, 100)}%`, minWidth: (stats.monthlyRevenue / stats.monthlyTarget) * 100 > 0 ? '2rem' : '0' }}
-            ></div>
-          </div>
-          <span className="absolute inset-0 flex items-center justify-center text-sm font-medium text-white dark:text-white" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
-            {((stats.monthlyRevenue / stats.monthlyTarget) * 100).toFixed(1)}%
-          </span>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center mb-6">
@@ -120,7 +111,7 @@ const SalesDashboard: React.FC = () => {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-600 dark:text-gray-400">{trend.month}</span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {trend.sales_count} sales - {formatEuroCompact(trend.revenue)}
+                    {t('dashboards.sales.trend_row', { count: trend.sales_count, revenue: formatEuroCompact(trend.revenue) })}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
@@ -259,7 +250,7 @@ const SalesDashboard: React.FC = () => {
                 </div>
                 <div className="text-right ml-4">
                   <p className="text-sm font-bold text-gray-900 dark:text-white">{formatEuroCompact(sale.sale_price)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{format(new Date(sale.sale_date), 'MMM dd')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{format(parseLocalDate(sale.sale_date), 'dd.MM.')}</p>
                 </div>
               </div>
             ))}

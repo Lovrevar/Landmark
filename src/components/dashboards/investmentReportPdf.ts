@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 import type { Project, BankCredit, FinancialSummary } from '../../types/investment'
 import { formatEuropean } from '../../utils/formatters'
+import { utilisationToneRgb } from '../Funding/Investors/utils/creditCalculations'
 import { yieldToUI } from '../../utils/yieldToUI'
 
 const addHeader = (doc: import('jspdf').jsPDF, yPos: number) => {
@@ -237,7 +238,7 @@ export const generateInvestmentReportPDF = async (
   doc.setFillColor(226, 232, 240)
   doc.roundedRect(20, yPos + 3, 170, 6, 1, 1, 'F')
 
-  const progressColor: [number, number, number] = utilizationRate >= 90 ? [239, 68, 68] : utilizationRate >= 70 ? [249, 115, 22] : [59, 130, 246]
+  const progressColor = utilisationToneRgb(utilizationRate)
   doc.setFillColor(...progressColor)
   doc.roundedRect(20, yPos + 3, (170 * Math.min(utilizationRate, 100)) / 100, 6, 1, 1, 'F')
 

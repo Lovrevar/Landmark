@@ -1,6 +1,7 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { format } from 'date-fns'
+import { daysFromToday } from '../../../../utils/dateOnly'
 import type { RetailLandPlot, RetailCustomer, RetailSale } from '../../../../types/retail'
 
 export interface SaleWithRelations extends RetailSale {
@@ -26,7 +27,9 @@ export async function fetchRetailSalesWithRelations(): Promise<SaleWithRelations
   if (error) throw error
   return ((data || []) as SaleWithRelations[]).map(sale => ({
     ...sale,
-    payment_status: new Date(sale.payment_deadline) < new Date() && sale.payment_status !== 'paid'
+    // `new Date('YYYY-MM-DD')` parses as UTC midnight, so a sale went "overdue" from 01:00
+    // on the day it was actually due. One definition of overdue: `daysFromToday(d) < 0`.
+    payment_status: daysFromToday(sale.payment_deadline) < 0 && sale.payment_status !== 'paid'
       ? 'overdue' as const
       : sale.payment_status
   }))

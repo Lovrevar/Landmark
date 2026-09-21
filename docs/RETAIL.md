@@ -140,6 +140,9 @@ Retail-specific sales tracking (parcel/lot sales to buyers) — distinct from th
 
 ### services/retailSalesService.ts
 - CRUD and fetch operations for retail sales records; `upsertRetailSale` / `deleteRetailSale` log `retail_sale.create` / `retail_sale.delete`; `recordRetailSalePayment` logs `retail_sale.payment` (high)
+- A sale reads as `overdue` when `daysFromToday(payment_deadline) < 0` and it is not paid. It was
+  `new Date(payment_deadline) < new Date()`, which parses the date-only column as UTC midnight and
+  so flipped the sale to overdue from 01:00 on the day it was actually due
 - **Depends on:** supabase client, activityLog
 
 #### Hooks
