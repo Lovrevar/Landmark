@@ -1,7 +1,7 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { format } from 'date-fns'
-import { daysFromToday } from '../../../../utils/dateOnly'
+import { daysFromToday, parseLocalDate } from '../../../../utils/dateOnly'
 import type { RetailLandPlot, RetailCustomer, RetailSale } from '../../../../types/retail'
 
 export interface SaleWithRelations extends RetailSale {
@@ -214,10 +214,13 @@ export function calculateSalesStats(payments: RetailSalesPaymentWithDetails[]): 
 
 export function exportRetailSalesCSV(payments: RetailSalesPaymentWithDetails[]): void {
   const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Contract #', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Description']
+  // The `date` columns are date-only strings; `new Date('2026-01-05')` is UTC midnight, which
+  // east of UTC formats back as the 4th — the exported day was one off. `parseLocalDate` keeps
+  // the day the column says. `new Date()` for the filename is a real timestamp and stays.
   const rows = payments.map(p => [
-    format(new Date(p.payment_date), 'yyyy-MM-dd'),
+    format(parseLocalDate(p.payment_date), 'yyyy-MM-dd'),
     p.invoice_number,
-    p.issue_date ? format(new Date(p.issue_date), 'yyyy-MM-dd') : '',
+    p.issue_date ? format(parseLocalDate(p.issue_date), 'yyyy-MM-dd') : '',
     p.contract_number,
     p.project_name,
     p.customer_name,

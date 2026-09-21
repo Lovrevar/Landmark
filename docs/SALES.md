@@ -354,6 +354,15 @@ Payment tracking for apartment sales contracts.
 
 ## Shared Utilities
 
+### Payments/paymentMethod.ts
+- `PAYMENT_METHOD_LABEL_KEY` + `paymentMethodLabel(method, t)` — label for
+  `accounting_payments.payment_method` (WIRE / CASH / CHECK / CARD), using the same
+  `payments.method_*` keys `Cashflow/components/PaymentMethodField` already uses. Three screens
+  printed the raw stored value in a Croatian UI: `Sales/Payments`, `Retail/Sales` and
+  `Retail/Projects/modals/RetailPaymentHistoryModal` (which imports it from here). The stored
+  value is a CHECK constraint — map at render only. An unknown value keeps its raw text, a
+  missing one renders `—`. Covered by `paymentMethod.test.ts`
+
 ### utils/priceUtils.ts
 - `calculateAdjustedPriceRange(range, adjustmentType, amount)` — applies an `'increase'` / `'decrease'` of `amount` to a `PriceRange` (`{ min, max }`) for the bulk price update preview; decrease clamps each bound to 0. Exports the `PriceRange` interface
 - Unit-tested in `priceUtils.test.ts` (vitest) covering increase/decrease, zero no-op, and negative-clamping cases
@@ -362,6 +371,30 @@ Payment tracking for apartment sales contracts.
 - `groupCustomerPurchasesByProject(purchases)` — groups a customer's units by project with per-project totals (units, total, paid, remaining)
 
 ---
+
+## i18n and status display
+
+- **One namespace per import screen.** Both Excel modals and `ImportOutcomeSummary` share
+  `sales_projects.excel_import.*`. The orphaned `apartments.import_modal.*` and
+  `apartments.import_garages_modal.*` duplicates were folded into it and deleted; likewise
+  `apartments.bulk_price_update.*` into the live `sales_projects.bulk_price.*`. Do not
+  reintroduce a parallel namespace for these screens
+- **Status is mapped at render, never translated in place.** `UnitsGrid`, `ApartmentDetailsModal`
+  and `LinkUnitsModal` label unit status through `UNIT_STATUS` +
+  `statusVariant`/`statusLabel` (`src/utils/statusDisplay.ts`); `SalesProjects/ProjectsGrid` uses
+  `PROJECT_STATUS`. The surrounding comparisons (`status === 'Sold'`, `updateUnitStatus(…,
+  'Reserved')`) stay English — they are written back into a CHECK column
+- **Dates** go through `formatDate` / `formatDateTime` from `src/utils/formatters.ts` with
+  `i18n.language`. `ApartmentDetailsModal`'s private `hr-HR`-only `formatDate` is gone
+- `exportSalesPaymentsCSV` parses its `date` columns with `parseLocalDate`, not `new Date` —
+  the latter reads them as UTC midnight and exported the previous day
+- **Deliberately left in English**, pending a wording decision: the 12- and 4-bullet
+  "Expected File Format" lists in the two import modals (they name literal Croatian spreadsheet
+  columns — `zgrada`, `oznaka stana`, `stan m2 prodajno`, `kapara 10%` — which must stay
+  verbatim); the sample identity placeholders in `SaleFormModal` ("John Smith",
+  "john@example.com", "+1 (555) 123-4567", "123 Main St"); and the `e.g., …` placeholders in
+  `SingleApartmentModal`, `EditApartmentModal`, `SingleUnitModal`, `SingleBuildingModal`,
+  `BulkUnitsModal` and `CustomerFormModal`
 
 ## Notes
 - Customer records here are property buyers (Sales CRM) — distinct from `Cashflow/Customers` (accounting customers)

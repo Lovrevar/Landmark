@@ -11,6 +11,7 @@ import {
   OnLinkApartmentCallback
 } from './types'
 import { formatEuro, formatEuroRounded } from '../../../utils/formatters'
+import { UNIT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDisplay'
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { Button, Badge } from '../../ui'
 import { filterUnitsByStatus, getSelectableUnitIds, getUnitsOfType } from './unitFilters'
@@ -35,10 +36,6 @@ interface UnitsGridProps {
   onSelectAllUnits: () => void
   onDeselectAllUnits: () => void
   onConfigurePrice: () => void
-}
-
-const getUnitStatusBadgeVariant = (status: string): 'green' | 'yellow' | 'blue' => {
-  return status === 'Sold' ? 'green' : status === 'Reserved' ? 'yellow' : 'blue'
 }
 
 export const UnitsGrid: React.FC<UnitsGridProps> = ({
@@ -212,8 +209,8 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     )}
                   </button>
                   <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white">Unit {unit.number}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Floor {unit.floor}</p>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{t('common.unit')} {unit.number}</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {unit.floor}</p>
                   </div>
                 </div>
                 <div className="flex space-x-1">
@@ -221,7 +218,8 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     <button
                       onClick={() => onLinkApartment(unit as unknown as Apartment)}
                       className="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-600"
-                      title="Link garage/repository"
+                      title={t('sales_projects.link_unit')}
+                      aria-label={t('sales_projects.link_unit')}
                     >
                       <LinkIcon className="w-4 h-4" />
                     </button>
@@ -339,8 +337,10 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
               <div className="border-t dark:border-gray-700 pt-3">
                 <div className="flex items-center justify-between">
-                  <Badge variant={getUnitStatusBadgeVariant(unit.status)}>
-                    {unit.status}
+                  {/* Label only: the comparisons below write `unit.status` straight back to the
+                      `status` CHECK column, so the value itself stays English. */}
+                  <Badge variant={statusVariant(UNIT_STATUS, unit.status)}>
+                    {statusLabel(UNIT_STATUS, unit.status, t)}
                   </Badge>
 
                   {unit.status !== 'Sold' && (

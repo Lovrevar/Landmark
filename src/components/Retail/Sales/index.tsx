@@ -2,11 +2,12 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, ErrorState, Alert, Table } from '../../ui'
-import { format } from 'date-fns'
 import { useRetailSales } from './hooks/useRetailSales'
+import { formatDate } from '../../../utils/formatters'
+import { getPaymentMethodLabel } from '../../Cashflow/services/paymentHelpers'
 
 const RetailSalesPaymentsManagement: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     loading,
     error,
@@ -118,11 +119,11 @@ const RetailSalesPaymentsManagement: React.FC = () => {
           <Table.Body>
             {filteredPayments.map((payment) => (
               <Table.Tr key={payment.id}>
-                <Table.Td label={t('retail_sales.payments.table.payment_date')}>{format(new Date(payment.payment_date), 'dd.MM.yyyy')}</Table.Td>
+                <Table.Td label={t('retail_sales.payments.table.payment_date')}>{formatDate(payment.payment_date, i18n.language)}</Table.Td>
                 <Table.Td label={t('retail_sales.payments.table.invoice')}>
                   <div className="font-medium">{payment.invoice_number}</div>
                   <div className="text-xs text-gray-500">
-                    {payment.issue_date ? format(new Date(payment.issue_date), 'dd.MM.yyyy') : '-'}
+                    {payment.issue_date ? formatDate(payment.issue_date, i18n.language) : '-'}
                   </div>
                 </Table.Td>
                 <Table.Td label={t('common.customer')}>{payment.customer_name}</Table.Td>
@@ -134,7 +135,7 @@ const RetailSalesPaymentsManagement: React.FC = () => {
                 <Table.Td label={t('common.payment')} align="right" className="font-semibold text-green-600 dark:text-green-400">
                   €{payment.amount.toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td label={t('retail_sales.payments.table.method')}>{payment.payment_method}</Table.Td>
+                <Table.Td label={t('retail_sales.payments.table.method')}>{getPaymentMethodLabel(payment.payment_method, null, t)}</Table.Td>
                 <Table.Td label={t('common.bank')} className="text-gray-500 dark:text-gray-400">{payment.bank_account_name}</Table.Td>
               </Table.Tr>
             ))}

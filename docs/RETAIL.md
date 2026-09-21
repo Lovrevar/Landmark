@@ -18,7 +18,12 @@ Manages retail real estate operations: development projects with phases and mile
   copies in `Projects/ProjectStatistics`, `Projects/MilestoneList`, `Projects/PhaseCard`
   (exact cents, `formatEuro`), `Projects/forms/MilestoneFormModal` (exact cents) and
   `Projects/modals/EditPhaseModal` — call sites were left untouched
-- `getStatusBadgeVariant(status)` — returns badge variant for a status string
+- `getStatusBadgeVariant(status)` — badge variant for `retail_projects.status`. Now delegates to
+  the shared `PROJECT_STATUS` map ([`src/utils/statusDisplay.ts`](../src/utils/statusDisplay.ts)),
+  so a retail project reads the same as a General or Sales one; it used to carry its own table
+  with "Planning" yellow and "On Hold" grey, the inverse of everywhere else. Pair it with
+  `statusLabel(PROJECT_STATUS, status, t)` for the text — `ProjectsGrid` and `ProjectDetail`
+  printed the raw English column value in a Croatian UI
 
 ---
 
@@ -71,7 +76,10 @@ Core retail module. Tracks development projects through phases (development, con
 ### PhaseCard.tsx
 - Card component for a single project phase showing budget, status, and contracts
 - Per contract, the old "Dobitak/Gubitak" row (paid − contracted with the sign inverted, so an unpaid contract read as a gain of its whole value) is replaced by [`contractVariance`](../src/utils/contractVariance.ts), shared with Supervision: a red "Prekoračenje" row when paid exceeds the contract, a green "Ušteda" row when a settled contract closed below its value, and **no row** while a contract is simply being paid. Settled = paid in full, or status `Completed` — except in the sales phase, where money comes in and a sale closed below its price is lost revenue, not a saving, so only full payment settles it there. A saving replaces the "Preostalo" row (it is the same remainder, no longer owed), and the card's badge/tint treat it as settled
-- Completed and Cancelled contracts carry a muted grey badge next to the name (`retail_projects.contract_form.status_completed` / `status_cancelled`); this screen has no status filter, and they used to look exactly like active ones
+- Completed and Cancelled contracts carry a badge next to the name; this screen has no status
+  filter, and they used to look exactly like active ones. Colour and label now come from the
+  shared `RETAIL_CONTRACT_STATUS` map (Completed green, Cancelled grey) rather than both being
+  hardcoded grey, so the badge matches every other screen that shows a retail contract status
 
 ### MilestoneList.tsx
 - List of milestones for a project with status display
@@ -256,6 +264,22 @@ Land plot inventory tracking.
 - **Uses Ui:** PageHeader, StatGrid, StatCard, SearchInput, Table, Pagination, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, Form, ConfirmDialog, useToast (via hook)
 
 ---
+
+## i18n and status display
+
+- **Dates** go through `formatDate` / `formatDateTime` from `src/utils/formatters.ts` with
+  `i18n.language`: `dd.MM.yyyy.` in Croatian (trailing dot), `MMM dd, yyyy` in English. Every
+  `format(new Date(…), 'dd.MM.yyyy')` in this module was replaced — besides the language, the
+  old form read a date-only column as UTC midnight and rendered the previous day
+- **Status is mapped at render, never translated in place.** `PROJECT_STATUS` for project status
+  (`ProjectsGrid`, `ProjectDetail`), `RETAIL_CONTRACT_STATUS` for contract status (`PhaseCard`).
+  `EditPhaseModal`'s status `<option>` values stay `Pending` / `In Progress` / `Completed` —
+  they are written into a CHECK column; only the option label is translated
+- `payment_method` is labelled through `paymentMethodLabel` from
+  [`Sales/Payments/paymentMethod.ts`](../src/components/Sales/Payments/paymentMethod.ts), the
+  same way invoice status comes from `Cashflow/services/invoiceHelpers`
+- `exportRetailSalesCSV` and `exportRetailInvoicesCSV` parse their `date` columns with
+  `parseLocalDate`, not `new Date` — the latter shifted every exported date back a day
 
 ## Notes
 - Retail invoice types are shared with Cashflow via `Cashflow/Invoices/retailInvoiceTypes.ts` — do not duplicate

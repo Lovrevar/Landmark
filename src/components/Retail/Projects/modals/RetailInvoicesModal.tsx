@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lucide-react'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
 import { daysFromToday } from '../../../../utils/dateOnly'
 import { Button, Modal, Badge, EmptyState, ErrorState, LoadingSpinner } from '../../../ui'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
+import { formatDate } from '../../../../utils/formatters'
 
 interface Invoice {
   id: string
@@ -37,7 +37,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
   onClose,
   contract
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   // "No invoices on this contract" is a different claim from "we could not read them".
@@ -188,7 +188,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                           ? 'font-bold text-red-600 dark:text-red-400'
                           : 'font-medium text-gray-900 dark:text-white'
                       }`}>
-                        {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                        {formatDate(invoice.due_date, i18n.language)}
                       </p>
                     </div>
                     {isOverdue(invoice.due_date, invoice.status) && (
@@ -198,7 +198,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                       </div>
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {t('retail_projects.invoices_modal.issue_date_label')} {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                      {t('retail_projects.invoices_modal.issue_date_label')} {formatDate(invoice.issue_date, i18n.language)}
                     </p>
                   </div>
                 </div>

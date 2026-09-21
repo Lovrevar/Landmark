@@ -1888,6 +1888,25 @@
     "sold": "Sold",
     "total_units": "Total Units",
     "units_selected": "units selected",
+    "link_unit": "Link garage/storage",
+    "errors": {
+      "required_field": "Please fill in required fields",
+      "quantity_range": "Please enter a valid quantity (1–20)"
+    },
+    "toast": {
+      "building_create_error": "The building could not be created. Please try again.",
+      "buildings_create_error": "The buildings could not be created. Please try again.",
+      "building_delete_error": "The building could not be deleted",
+      "unit_create_error": "The unit could not be created. Please try again.",
+      "units_create_error": "The units could not be created. Please try again.",
+      "unit_delete_error": "The unit could not be deleted",
+      "status_update_error": "The status could not be updated",
+      "garage_link_error": "The garage could not be linked",
+      "repository_link_error": "The storage unit could not be linked",
+      "garage_unlink_error": "The garage could not be unlinked",
+      "repository_unlink_error": "The storage unit could not be unlinked",
+      "sale_complete_error": "The sale could not be completed. Please try again."
+    },
     "building_quantity_modal": {
       "title": "Bulk Create Buildings",
       "number_of_buildings": "Number of Buildings to Create",
@@ -1912,7 +1931,15 @@
       "update_units": "Update Units",
       "toast_success": "Updated {{updated}} of {{selected}} selected units (sold units are skipped)",
       "toast_partial": "Updated {{updated}} of {{selected}} units; {{failed}} could not be updated",
-      "toast_failed": "The prices could not be updated"
+      "toast_failed": "The prices could not be updated",
+      "amount_placeholder": "Enter amount (e.g., 500)",
+      "error_amount_required": "Please enter a valid adjustment value greater than 0",
+      "error_negative": "This decrease would result in negative prices for some units. Please enter a smaller value.",
+      "preview_add": "{{amount}}/m² will be added to each unit's current price/m²",
+      "preview_subtract": "{{amount}}/m² will be subtracted from each unit's current price/m²",
+      "negative_warning": "Warning: This decrease would result in negative prices for some units. Please reduce the adjustment amount.",
+      "update_warning_one": "Warning: This will update {{count}} unit. This action cannot be undone.",
+      "update_warning_other": "Warning: This will update {{count}} units. This action cannot be undone."
     },
     "bulk_units_modal": {
       "title": "Bulk Create Units",
@@ -1955,7 +1982,32 @@
       "storages_linked": "Storages Linked",
       "created": "Created",
       "updated": "Updated",
-      "failed": "Failed"
+      "failed": "Failed",
+      "select_file": "Select the \"Tablica stanova\" Excel file (.xlsx or .csv) with apartment data",
+      "select_garages_file": "Select an Excel file with 3 columns: parking oznaka, parking m2, parking cijena",
+      "expected_format": "Expected File Format:",
+      "garages_note": "Garages will be imported to this building. Existing garages with the same number will be updated.",
+      "parse_error": "The Excel file could not be read. Please check the file format.",
+      "summary": "Import Summary",
+      "total_rows": "Total rows:",
+      "valid_rows": "Valid rows:",
+      "invalid_rows": "Invalid rows:",
+      "total_garages": "Total garages:",
+      "new_count": "New:",
+      "update_existing": "Update existing:",
+      "will_update": "Will update",
+      "new_label": "New",
+      "errors_found": "Errors Found",
+      "row": "Row",
+      "no_building": "(no building)",
+      "no_number": "(no number)",
+      "parking": "Parking",
+      "garage_number": "Garage Number",
+      "error_missing_number": "Missing apartment number",
+      "error_missing_size": "Missing size (m²)",
+      "error_missing_price": "Missing price",
+      "error_missing_building": "Missing building",
+      "error_building_not_found": "Building \"{{name}}\" not found"
     },
     "filter": {
       "all": "All",
@@ -2020,8 +2072,11 @@
       "create_error": "Failed to add the apartment",
       "update_error": "Failed to save the apartment",
       "delete_error": "Failed to delete the apartment",
-      "payments_load_error": "Failed to load the payment history"
+      "payments_load_error": "Failed to load the payment history",
+      "link_units_error": "The unit links could not be saved"
     },
+    "confirm_delete_message": "Are you sure you want to delete {{label}}? This action cannot be undone.",
+    "confirm_delete_fallback": "this apartment",
     "item_label": "apartments",
     "add": "Add Apartment",
     "bulk_create": "Bulk Create",
@@ -2057,7 +2112,22 @@
       "select_building": "Select Building",
       "starting_number": "Starting Number",
       "quantity": "Quantity",
-      "create": "Create Apartments"
+      "create": "Create Apartments",
+      "size_m2": "Size (m²)",
+      "bulk_preview_one": "This will create {{count}} apartment, from {{from}} to {{to}}",
+      "bulk_preview_other": "This will create {{count}} apartments, from {{from}} to {{to}}",
+      "errors": {
+        "project": "Project is required",
+        "building": "Building is required",
+        "number": "Apartment number is required",
+        "start_number": "Starting number is required",
+        "quantity": "Quantity is required",
+        "floor": "Floor is required",
+        "size": "Size is required",
+        "saleable_area": "Saleable area is required",
+        "price": "Price is required",
+        "status": "Status is required"
+      }
     },
     "statuses": {
       "available": "Available",
@@ -2070,6 +2140,7 @@
       "buyer_info": "Buyer Information",
       "contract": "Contract",
       "saleable_area": "Saleable Area",
+      "open_area": "Open Area (Površina otvoreno):",
       "open_area_coef": "Open Area w/ Coef.:",
       "payment_type": "Payment type:",
       "presale_date": "Datum potpisa predugovora:",
@@ -2098,7 +2169,8 @@
       "remaining": "Remaining",
       "progress": "Overall Progress",
       "all_payments": "All Payments",
-      "no_payments": "No payments recorded yet"
+      "no_payments": "No payments recorded yet",
+      "type": "Payment type"
     },
     "contracted": {
       "title": "Contracted",
@@ -2106,64 +2178,13 @@
       "payment_type": "Payment Type",
       "select": "— Select —",
       "credit": "Credit",
-      "installments": "Installments"
-    },
-    "bulk_price_update": {
-      "title": "Bulk Price Update",
-      "selected": "Selected:",
-      "units_text": "units",
-      "selection_summary": "Selection Summary",
-      "selected_units": "Selected Units:",
-      "current_price_range": "Current Price Range/m²:",
-      "adjustment_type": "Adjustment Type",
-      "increase": "Increase Price",
-      "decrease": "Decrease Price",
-      "adjustment_amount": "Adjustment Amount (€)",
-      "amount_placeholder": "Enter amount (e.g., 500)",
-      "price_preview": "Price Preview",
-      "will_add": "/m² will be added to",
-      "will_subtract": "/m² will be subtracted from",
-      "each_unit": "each unit's",
-      "current_price": "current price/m²",
-      "new_price_range": "New Price Range/m²:",
-      "current_total": "Current Total Value:",
-      "new_total": "New Total Value:",
-      "total_change": "Total Value Change:",
-      "negative_warning": "Warning: This decrease would result in negative prices for some units. Please reduce the adjustment amount.",
-      "update_warning": "Warning: This will update {{count}} units. This action cannot be undone.",
-      "update": "Update"
-    },
-    "import_modal": {
-      "title": "Import Apartments from Excel",
-      "upload_heading": "Upload Apartment Excel File",
-      "select_file": "Select the \"Tablica stanova\" Excel file (.xlsx or .csv) with apartment data",
-      "expected_format": "Expected File Format:",
-      "parse": "Parse File",
-      "summary": "Import Summary",
-      "total_rows": "Total rows:",
-      "valid_rows": "Valid rows:",
-      "invalid_rows": "Invalid rows:",
-      "errors_found": "Errors Found",
-      "import_complete": "Import Complete!",
-      "successfully_imported": "Successfully Imported",
-      "failed_skipped": "Failed/Skipped",
-      "garages_linked": "Garages Linked",
-      "storages_linked": "Storages Linked",
-      "import": "Import",
-      "importing": "Importing..."
-    },
-    "import_garages_modal": {
-      "title": "Import Garages from Excel",
-      "upload_heading": "Upload Garages Excel File",
-      "total": "Total garages:",
-      "new_count": "New:",
-      "update_existing": "Update existing:",
-      "will_update": "Will update",
-      "new_label": "New",
-      "import_complete": "Import Complete!",
-      "created": "Created",
-      "updated": "Updated",
-      "failed": "Failed"
+      "installments": "Installments",
+      "kapara": "Kapara 10% (EUR)",
+      "rate1": "1. rata AB konstrukcija 30% (EUR)",
+      "rate2": "2. rata postava stolarije 20% (EUR)",
+      "rate3": "3. rata obrtnički radovi 20% (EUR)",
+      "rate4": "4. rata uporabna 20% (EUR)",
+      "credit_amount": "Kredit etažiranje 90% (EUR)"
     }
   },
   "sale_form": {
@@ -2191,6 +2212,13 @@
     "remaining": "Remaining:",
     "monthly": "Monthly Payment:",
     "notes": "Notes",
+    "notes_placeholder": "Additional sale notes...",
+    "errors": {
+      "full_name_required": "Full name is required",
+      "email_required": "Email is required",
+      "customer_required": "Please select a customer",
+      "sale_price_required": "Sale price is required"
+    },
     "complete_sale": "Complete Sale",
     "complete_sale_btn": "Complete Sale",
     "create_new_customer": "Create New Customer",
@@ -2236,7 +2264,9 @@
       "preferred_floor": "Preferred Floor",
       "preferred_location": "Preferred Location",
       "preference_notes": "Preference Notes",
-      "general_notes": "General Notes"
+      "preference_notes_placeholder": "Additional notes about customer preferences",
+      "general_notes": "General Notes",
+      "general_notes_placeholder": "Any additional notes about this customer"
     },
     "card": {
       "purchased_units": "Purchased Units",

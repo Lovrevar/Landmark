@@ -1,10 +1,9 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Building2, Square, CheckSquare } from 'lucide-react'
-import { format } from 'date-fns'
 import { CustomerWithApartments, CustomerCategory } from './types'
 import { Button } from '../../ui'
-import { formatEuroCompact } from '../../../utils/formatters'
+import { formatEuroCompact, formatDate } from '../../../utils/formatters'
 
 interface CustomerCardProps {
   customer: CustomerWithApartments
@@ -30,7 +29,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
   onDelete,
   onUpdateContact
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const fullName = `${customer.name} ${customer.surname}`
   return (
     // Clicking the card opens the customer. It used to toggle selection, which silently added
@@ -104,7 +103,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
         {customer.last_contact_date && (
           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
             <Clock className="w-4 h-4 mr-2" />
-            Last contact: {format(new Date(customer.last_contact_date), 'MMM dd, yyyy')}
+            {t('customers.detail_modal.last_contact')}: {formatDate(customer.last_contact_date, i18n.language)}
           </div>
         )}
       </div>
@@ -125,17 +124,17 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                   <div className="flex justify-between items-start">
                     {unit.type === 'apartment' && (
                       <span className="text-xs font-medium text-green-800 dark:text-green-200">
-                        {unit.project_name} - Unit {unit.number}
+                        {unit.project_name} - {t('common.unit')} {unit.number}
                       </span>
                     )}
                     {unit.type === 'garage' && (
                       <span className="text-xs font-medium text-orange-700 dark:text-orange-400">
-                        Garage {unit.number}
+                        {t('common.garage')} {unit.number}
                       </span>
                     )}
                     {unit.type === 'repository' && (
                       <span className="text-xs font-medium text-gray-700 dark:text-gray-200">
-                        Repository {unit.number}
+                        {t('common.storage')} {unit.number}
                       </span>
                     )}
                     <span className="text-xs font-bold text-green-700">
@@ -147,13 +146,13 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                     <div className="text-xs text-gray-600 dark:text-gray-400 pl-2 space-y-0.5">
                       {unit.garage && (
                         <div className="flex justify-between">
-                          <span className="text-orange-600">+ Garage {unit.garage.number}</span>
+                          <span className="text-orange-600">+ {t('common.garage')} {unit.garage.number}</span>
                           <span>{formatEuroCompact(unit.garage.price)}</span>
                         </div>
                       )}
                       {unit.repository && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">+ Repository {unit.repository.number}</span>
+                          <span className="text-gray-600 dark:text-gray-400">+ {t('common.storage')} {unit.repository.number}</span>
                           <span>{formatEuroCompact(unit.repository.price)}</span>
                         </div>
                       )}

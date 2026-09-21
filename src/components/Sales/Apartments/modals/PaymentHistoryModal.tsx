@@ -1,29 +1,31 @@
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Calendar, DollarSign, Home, Warehouse, Package } from 'lucide-react'
-import { format } from 'date-fns'
+import type { TFunction } from 'i18next'
 import { ApartmentWithDetails, PaymentWithCustomer } from '../types'
 import { Modal, Button, EmptyState } from '../../../ui'
+import { formatDate } from '../../../../utils/formatters'
 
 const getPaymentUnitInfo = (
   payment: PaymentWithCustomer,
   apartment: ApartmentWithDetails,
   linkedGarages: Array<{ id: string; number: string; price: number }>,
-  linkedStorages: Array<{ id: string; number: string; price: number }>
+  linkedStorages: Array<{ id: string; number: string; price: number }>,
+  t: TFunction
 ) => {
   if (payment.garage_id) {
     const garage = linkedGarages.find(g => g.id === payment.garage_id)
     if (garage) {
-      return { icon: Warehouse, label: `Garage ${garage.number}`, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' }
+      return { icon: Warehouse, label: `${t('common.garage')} ${garage.number}`, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' }
     }
   }
   if (payment.storage_id) {
     const storage = linkedStorages.find(s => s.id === payment.storage_id)
     if (storage) {
-      return { icon: Package, label: `Storage ${storage.number}`, color: 'text-gray-600 dark:text-gray-300', bgColor: 'bg-gray-100 dark:bg-gray-700' }
+      return { icon: Package, label: `${t('common.storage')} ${storage.number}`, color: 'text-gray-600 dark:text-gray-300', bgColor: 'bg-gray-100 dark:bg-gray-700' }
     }
   }
-  return { icon: Home, label: `Apartment ${apartment.number}`, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/30' }
+  return { icon: Home, label: `${t('common.apartment')} ${apartment.number}`, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/30' }
 }
 
 interface PaymentHistoryModalProps {
@@ -43,7 +45,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   linkedGarages = [],
   linkedStorages = [],
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const { totalPaid, remainingBalance, garagesTotalPrice, storagesTotalPrice, totalPrice } = useMemo(() => {
     if (!apartment) {
@@ -146,7 +148,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             ) : (
               <div className="space-y-3">
                 {payments.map((payment) => {
-                  const unitInfo = getPaymentUnitInfo(payment, apartment, linkedGarages, linkedStorages)
+                  const unitInfo = getPaymentUnitInfo(payment, apartment, linkedGarages, linkedStorages, t)
                   const UnitIcon = unitInfo.icon
                   return (
                     <div
@@ -166,10 +168,10 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                         </div>
                         <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-1">
                           <Calendar className="w-3 h-3 mr-1" />
-                          {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
+                          {formatDate(payment.payment_date, i18n.language)}
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Customer: {payment.customer_name} {payment.customer_surname}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Type: {payment.payment_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{t('common.customer')}: {payment.customer_name} {payment.customer_surname}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{t('apartments.payment_history_modal.type')}: {t(`payment_type.${payment.payment_type}`, { defaultValue: payment.payment_type })}</p>
                         {payment.notes && (
                           <p className="text-sm text-gray-700 dark:text-gray-200 mt-2 italic">"{payment.notes}"</p>
                         )}

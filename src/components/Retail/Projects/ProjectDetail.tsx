@@ -3,6 +3,7 @@ import { ArrowLeft, MapPin, RefreshCw, Link, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button, Badge, LoadingSpinner, EmptyState, ErrorState, ConfirmDialog } from '../../ui'
 import { formatCurrency, getStatusBadgeVariant } from '../utils'
+import { PROJECT_STATUS, statusLabel } from '../../../utils/statusDisplay'
 import { PhaseCard } from './PhaseCard'
 import { ProjectStatistics } from './ProjectStatistics'
 import { MilestoneList } from './MilestoneList'
@@ -200,7 +201,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
             </div>
           </div>
           <Badge variant={getStatusBadgeVariant(project.status)} size="md">
-            {project.status}
+            {statusLabel(PROJECT_STATUS, project.status, t)}
           </Badge>
         </div>
 

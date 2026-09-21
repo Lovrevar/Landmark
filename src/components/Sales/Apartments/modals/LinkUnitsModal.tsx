@@ -5,6 +5,8 @@ import { ApartmentWithDetails } from '../types'
 import { Modal, Button, LoadingSpinner, ErrorState } from '../../../ui'
 import { useLinkUnits } from '../hooks/useLinkUnits'
 import { useToast } from '../../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../../lib/errorMessage'
+import { UNIT_STATUS, statusLabel } from '../../../../utils/statusDisplay'
 
 interface LinkUnitsModalProps {
   visible: boolean
@@ -62,7 +64,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
       onClose()
     } catch (error) {
       console.error('Error saving unit links:', error)
-      toast.error('Error saving unit links. Please try again.')
+      toast.error(toErrorMessage(error, t('apartments.toast.link_units_error')))
     }
   }
 
@@ -140,7 +142,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {garage.floor} • {garage.size_m2}m²</div>
                         <div className="text-sm font-medium text-orange-600">€{garage.price.toLocaleString('hr-HR')}</div>
-                        {!isAvailable && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{garage.status}</div>}
+                        {!isAvailable && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{statusLabel(UNIT_STATUS, garage.status, t)}</div>}
                       </button>
                     )
                   })}
@@ -180,7 +182,7 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {storage.floor} • {storage.size_m2}m²</div>
                         <div className="text-sm font-medium text-gray-600 dark:text-gray-400">€{storage.price.toLocaleString('hr-HR')}</div>
-                        {!isAvailable && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{storage.status}</div>}
+                        {!isAvailable && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{statusLabel(UNIT_STATUS, storage.status, t)}</div>}
                       </button>
                     )
                   })}

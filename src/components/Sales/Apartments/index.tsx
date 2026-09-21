@@ -284,7 +284,7 @@ const ApartmentManagement: React.FC = () => {
                 }`}
               >
                 <div className="mb-3">
-                  <h4 className="font-semibold text-gray-900 dark:text-white">Unit {apartment.number}</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">{t('common.unit')} {apartment.number}</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {apartment.floor}</p>
                 </div>
 
@@ -493,14 +493,16 @@ const ApartmentManagement: React.FC = () => {
 
       <ConfirmDialog
         show={!!pendingDeleteApartmentId}
-        title="Potvrda brisanja"
+        title={t('common.confirm_delete')}
         message={(() => {
           const apt = apartments.find(a => a.id === pendingDeleteApartmentId)
-          const label = apt ? `Unit ${apt.number} (${apt.project_name} - ${apt.building_name})` : 'this apartment'
-          return `Are you sure you want to delete ${label}? This action cannot be undone.`
+          const label = apt
+            ? `${t('common.unit')} ${apt.number} (${apt.project_name} - ${apt.building_name})`
+            : t('apartments.confirm_delete_fallback')
+          return t('apartments.confirm_delete_message', { label })
         })()}
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={confirmDeleteApartment}
         onCancel={() => setPendingDeleteApartmentId(null)}

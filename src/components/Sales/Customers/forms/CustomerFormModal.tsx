@@ -85,8 +85,8 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   const handleSubmit = async () => {
     setError(null)
     const errors: Record<string, string> = {}
-    if (!formData.name?.trim()) errors.name = 'First name is required.'
-    if (!formData.surname?.trim()) errors.surname = 'Last name is required.'
+    if (!formData.name?.trim()) errors.name = t('customers.errors.first_name_required')
+    if (!formData.surname?.trim()) errors.surname = t('customers.errors.last_name_required')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     try {
@@ -95,9 +95,9 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string }
       if (error?.code === '23505') {
-        setError('A customer with this email already exists.')
+        setError(t('customers.errors.email_exists'))
       } else {
-        setError(error?.message || 'An error occurred while saving the customer.')
+        setError(error?.message || t('customers.errors.save_error'))
       }
     }
   }
@@ -288,7 +288,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                       preferences: { ...formData.preferences, notes: e.target.value }
                     })}
                     rows={3}
-                    placeholder="Additional notes about customer preferences"
+                    placeholder={t('customers.form.preference_notes_placeholder')}
                   />
                 </FormField>
               </div>
@@ -300,7 +300,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={4}
-              placeholder="Any additional notes about this customer"
+              placeholder={t('customers.form.general_notes_placeholder')}
             />
           </FormField>
         </div>

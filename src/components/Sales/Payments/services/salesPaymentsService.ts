@@ -1,6 +1,7 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { format } from 'date-fns'
+import { parseLocalDate } from '../../../../utils/dateOnly'
 
 export interface SalesPaymentWithDetails {
   id: string
@@ -107,10 +108,13 @@ function escapeCsvField(value: string | number | undefined | null): string {
 
 export function exportSalesPaymentsCSV(payments: SalesPaymentWithDetails[]): void {
   const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Apartment', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Description']
+  // The `date` columns are date-only strings; `new Date('2026-01-05')` is UTC midnight, which
+  // east of UTC formats back as the 4th — the exported day was one off. `parseLocalDate` keeps
+  // the day the column says. `new Date()` for the filename is a real timestamp and stays.
   const rows = payments.map(p => [
-    format(new Date(p.payment_date), 'yyyy-MM-dd'),
+    format(parseLocalDate(p.payment_date), 'yyyy-MM-dd'),
     p.invoice_number,
-    p.issue_date ? format(new Date(p.issue_date), 'yyyy-MM-dd') : '',
+    p.issue_date ? format(parseLocalDate(p.issue_date), 'yyyy-MM-dd') : '',
     p.apartment_number,
     p.project_name,
     p.customer_name,

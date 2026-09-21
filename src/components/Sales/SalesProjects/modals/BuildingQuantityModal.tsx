@@ -24,7 +24,7 @@ export const BuildingQuantityModal: React.FC<BuildingQuantityModalProps> = ({
   const handleSubmit = async () => {
     const errors: Record<string, string> = {}
     if (quantity < 1 || quantity > 20) {
-      errors.quantity = 'Please enter a valid quantity (1-20)'
+      errors.quantity = t('sales_projects.errors.quantity_range')
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return

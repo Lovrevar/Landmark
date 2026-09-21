@@ -48,7 +48,7 @@ export const SingleUnitModal: React.FC<SingleUnitModalProps> = ({
   const handleSubmit = () => {
     const errors: Record<string, string> = {}
     if (!formData.number.trim()) {
-      errors.number = 'Please fill in required fields'
+      errors.number = t('sales_projects.errors.required_field')
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return

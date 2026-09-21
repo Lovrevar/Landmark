@@ -2,11 +2,11 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert } from '../../ui'
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
-import { format } from 'date-fns'
 import { useRetailInvoices } from './hooks/useRetailInvoices'
+import { formatDate } from '../../../utils/formatters'
 
 const RetailInvoicesManagement: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     loading,
     error,
@@ -165,8 +165,8 @@ const RetailInvoicesManagement: React.FC = () => {
                       {INVOICE_TYPE_LABELS[invoice.invoice_type] || invoice.invoice_type}
                     </Badge>
                   </td>
-                  <td data-label={t('common.date')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
-                  <td data-label={t('retail_invoices.table.due_date')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>
+                  <td data-label={t('common.date')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{formatDate(invoice.issue_date, i18n.language)}</td>
+                  <td data-label={t('retail_invoices.table.due_date')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{formatDate(invoice.due_date, i18n.language)}</td>
                   <td data-label={t('common.project')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{invoice.project_name}</td>
                   <td data-label={t('retail_invoices.table.supplier_customer')} className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
                     {invoice.supplier_name || invoice.customer_name || '-'}

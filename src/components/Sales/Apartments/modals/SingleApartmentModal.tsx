@@ -55,12 +55,12 @@ export const SingleApartmentModal: React.FC<SingleApartmentModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const errors: Record<string, string> = {}
-    if (!formData.project_id) errors.project_id = 'Project is required'
-    if (!formData.building_id) errors.building_id = 'Building is required'
-    if (!formData.number) errors.number = 'Apartment number is required'
-    if (!formData.floor && formData.floor !== 0) errors.floor = 'Floor is required'
-    if (!formData.size_m2) errors.size_m2 = 'Saleable area is required'
-    if (!formData.price) errors.price = 'Price is required'
+    if (!formData.project_id) errors.project_id = t('apartments.form.errors.project')
+    if (!formData.building_id) errors.building_id = t('apartments.form.errors.building')
+    if (!formData.number) errors.number = t('apartments.form.errors.number')
+    if (!formData.floor && formData.floor !== 0) errors.floor = t('apartments.form.errors.floor')
+    if (!formData.size_m2) errors.size_m2 = t('apartments.form.errors.saleable_area')
+    if (!formData.price) errors.price = t('apartments.form.errors.price')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     onSubmit({ ...formData, ...contractFieldsToPayload(contractFields) })

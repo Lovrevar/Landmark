@@ -110,7 +110,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error deleting building:', error)
-      toast.error('Error deleting building.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.building_delete_error')))
     } finally {
       setDeletingBuilding(false)
     }
@@ -125,7 +125,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating buildings:', error)
-      toast.error('Error creating buildings. Please try again.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.buildings_create_error')))
     }
   }
 
@@ -138,7 +138,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating building:', error)
-      toast.error('Error creating building. Please try again.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.building_create_error')))
     }
   }
 
@@ -159,7 +159,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating unit:', error)
-      toast.error('Error creating unit. Please try again.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.unit_create_error')))
     }
   }
 
@@ -172,7 +172,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error bulk creating units:', error)
-      toast.error('Error creating units. Please try again.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.units_create_error')))
     }
   }
 
@@ -189,7 +189,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error deleting unit:', error)
-      toast.error('Error deleting unit.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.unit_delete_error')))
     } finally {
       setDeletingUnit(false)
     }
@@ -201,7 +201,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error updating status:', error)
-      toast.error('Error updating status.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.status_update_error')))
     }
   }
 
@@ -211,7 +211,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error linking garage:', error)
-      toast.error('Error linking garage.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.garage_link_error')))
     }
   }
 
@@ -221,7 +221,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error linking repository:', error)
-      toast.error('Error linking repository.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.repository_link_error')))
     }
   }
 
@@ -231,7 +231,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error unlinking garage:', error)
-      toast.error('Error unlinking garage.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.garage_unlink_error')))
     }
   }
 
@@ -241,7 +241,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error unlinking repository:', error)
-      toast.error('Error unlinking repository.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.repository_unlink_error')))
     }
   }
 
@@ -321,7 +321,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error completing sale:', error)
-      toast.error('Error completing sale. Please try again.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.sale_complete_error')))
     }
   }
 

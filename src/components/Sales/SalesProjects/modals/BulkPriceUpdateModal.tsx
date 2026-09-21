@@ -67,10 +67,10 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
 
     const errors: Record<string, string> = {}
     if (!adjustmentValue || parseFloat(adjustmentValue) <= 0) {
-      errors.adjustmentValue = 'Please enter a valid adjustment value greater than 0'
+      errors.adjustmentValue = t('sales_projects.bulk_price.error_amount_required')
     }
     if (wouldCreateNegativePrice) {
-      errors.adjustmentValue = 'This decrease would result in negative prices for some units. Please enter a smaller value.'
+      errors.adjustmentValue = t('sales_projects.bulk_price.error_negative')
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
@@ -146,7 +146,7 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
               min="0"
               value={adjustmentValue}
               onChange={(e) => setAdjustmentValue(e.target.value)}
-              placeholder="Enter amount (e.g., 500)"
+              placeholder={t('sales_projects.bulk_price.amount_placeholder')}
             />
           </FormField>
 
@@ -162,7 +162,12 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
               <div className="space-y-3 text-sm">
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                    {adjustmentType === 'increase' ? '+' : '-'}{formatEuro(adjustment)}/m² will be {adjustmentType === 'increase' ? 'added to' : 'subtracted from'} <strong>each unit's</strong> current price/m²
+                    {t(
+                      adjustmentType === 'increase'
+                        ? 'sales_projects.bulk_price.preview_add'
+                        : 'sales_projects.bulk_price.preview_subtract',
+                      { amount: `${adjustmentType === 'increase' ? '+' : '-'}${formatEuro(adjustment)}` }
+                    )}
                   </p>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700 dark:text-gray-200">{t('sales_projects.bulk_price.new_price_range')}:</span>
@@ -198,12 +203,12 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
 
           {wouldCreateNegativePrice && (
             <Alert variant="warning">
-              Warning: This decrease would result in negative prices for some units. Please reduce the adjustment amount.
+              {t('sales_projects.bulk_price.negative_warning')}
             </Alert>
           )}
 
           <Alert variant="warning">
-            Warning: This will update {selectedUnits.length} units. This action cannot be undone.
+            {t('sales_projects.bulk_price.update_warning', { count: selectedUnits.length })}
           </Alert>
         </Form>
       </Modal.Body>

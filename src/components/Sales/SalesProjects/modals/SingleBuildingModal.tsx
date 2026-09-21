@@ -35,7 +35,7 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
   const handleSubmit = () => {
     const errors: Record<string, string> = {}
     if (!formData.name.trim()) {
-      errors.name = 'Please fill in required fields'
+      errors.name = t('sales_projects.errors.required_field')
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return

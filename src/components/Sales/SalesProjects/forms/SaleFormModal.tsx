@@ -72,12 +72,12 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
   const handleSubmit = () => {
     const errors: Record<string, string> = {}
     if (customerMode === 'new') {
-      if (!formData.buyer_name.trim()) errors.buyer_name = 'Full name is required'
-      if (!formData.buyer_email.trim()) errors.buyer_email = 'Email is required'
+      if (!formData.buyer_name.trim()) errors.buyer_name = t('sale_form.errors.full_name_required')
+      if (!formData.buyer_email.trim()) errors.buyer_email = t('sale_form.errors.email_required')
     } else {
-      if (!formData.customer_id) errors.customer_id = 'Please select a customer'
+      if (!formData.customer_id) errors.customer_id = t('sale_form.errors.customer_required')
     }
-    if (!formData.sale_price) errors.sale_price = 'Sale price is required'
+    if (!formData.sale_price) errors.sale_price = t('sale_form.errors.sale_price_required')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     // Returning the promise lets Button spin and disable until the sale is saved
@@ -139,6 +139,10 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
                 </Select>
               </FormField>
             ) : (
+              /* The four placeholders below are sample identity data — an English name, an
+                 example.com address, a +1 phone format and a US street. They need Croatian
+                 equivalents (a domestic name, a +385 format, a local address), which is a
+                 business call, so they are left as they are pending a wording decision. */
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label={t('sale_form.full_name')} required error={fieldErrors.buyer_name}>
                   <Input
@@ -262,7 +266,7 @@ export const SaleFormModal: React.FC<SaleFormModalProps> = ({
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              placeholder="Additional sale notes..."
+              placeholder={t('sale_form.notes_placeholder')}
             />
           </FormField>
       </Modal.Body>

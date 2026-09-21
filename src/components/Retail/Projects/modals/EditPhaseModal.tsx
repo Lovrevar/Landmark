@@ -111,9 +111,11 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as RetailProjectPhase['status'] })}
             >
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
+              {/* The stored value stays English — `retail_project_phases.status` is a CHECK
+                  constraint. Only the label is translated. */}
+              <option value="Pending">{t('status.pending')}</option>
+              <option value="In Progress">{t('status.in_progress')}</option>
+              <option value="Completed">{t('status.completed')}</option>
             </Select>
           </FormField>
 

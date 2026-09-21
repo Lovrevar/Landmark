@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ShoppingCart, Plus, Edit, Trash2, DollarSign } from 'lucide-react'
-import { format } from 'date-fns'
 import { LoadingSpinner, PageHeader, StatGrid, SearchInput, Button, Modal, FormField, Input, Select, Textarea, Badge, EmptyState, ErrorState, Alert, StatCard, Table, Form, ConfirmDialog } from '../../ui'
 import { useRetailSalesManager } from './hooks/useRetailSalesManager'
 import type { SaleWithRelations, RetailSalePayload } from './services/retailSalesService'
 import { useToast } from '../../../contexts/ToastContext'
-import { formatEuro } from '../../../utils/formatters'
+import { formatEuro, formatDate } from '../../../utils/formatters'
 
 const emptyForm = () => ({
   land_plot_id: '',
@@ -21,7 +20,7 @@ const emptyForm = () => ({
 type FormState = ReturnType<typeof emptyForm>
 
 const RetailSales: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const toast = useToast()
   const {
     loading, error, dismissError, refetch, hasData, landPlots, customers, filteredSales, totalStats,
@@ -210,7 +209,7 @@ const RetailSales: React.FC = () => {
                   <div className="text-sm text-green-600">{formatEuro(sale.paid_amount)}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">{t('common.remaining')}: {formatEuro(sale.remaining_amount)}</div>
                 </Table.Td>
-                <Table.Td label={t('retail_sales.table.deadline')}><div className="text-sm text-gray-900 dark:text-white">{format(new Date(sale.payment_deadline), 'dd.MM.yyyy')}</div></Table.Td>
+                <Table.Td label={t('retail_sales.table.deadline')}><div className="text-sm text-gray-900 dark:text-white">{formatDate(sale.payment_deadline, i18n.language)}</div></Table.Td>
                 <Table.Td label={t('common.status')}>
                   <Badge variant={
                     sale.payment_status === 'paid' ? 'green'

@@ -100,16 +100,16 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
         const sizeM2 = parseNumber(row[9])
         const price = parseNumber(row[11])
 
-        if (!apartmentNumber) errors.push('Missing apartment number')
-        if (!sizeM2) errors.push('Missing size (m2)')
-        if (!price) errors.push('Missing price')
+        if (!apartmentNumber) errors.push(t('sales_projects.excel_import.error_missing_number'))
+        if (!sizeM2) errors.push(t('sales_projects.excel_import.error_missing_size'))
+        if (!price) errors.push(t('sales_projects.excel_import.error_missing_price'))
 
         const building_id = buildingsMap.get(buildingLabel.toLowerCase())
         if (!buildingLabel) {
           // Without this a row with an empty building cell was rejected with no reason given.
-          errors.push('Missing building')
+          errors.push(t('sales_projects.excel_import.error_missing_building'))
         } else if (!building_id) {
-          errors.push(`Building '${buildingLabel}' not found`)
+          errors.push(t('sales_projects.excel_import.error_building_not_found', { name: buildingLabel }))
         }
 
         return {
@@ -150,7 +150,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
       setStep(2)
     } catch (error) {
       console.error('Error parsing file:', error)
-      toast.error('Error parsing Excel file. Please check the file format.')
+      toast.error(t('sales_projects.excel_import.parse_error'))
     }
   }
 
@@ -238,7 +238,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                 {t('sales_projects.excel_import.upload_apartment_file')}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Select the "Tablica stanova" Excel file (.xlsx or .csv) with apartment data
+                {t('sales_projects.excel_import.select_file')}
               </p>
               <input
                 type="file"
@@ -254,7 +254,11 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
               )}
             </div>
             <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Expected File Format:</h4>
+              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">{t('sales_projects.excel_import.expected_format')}</h4>
+              {/* The bullets below mix English instructions with the literal Croatian spreadsheet
+                  column headers (zgrada, oznaka stana, stan m2 prodajno…), which must stay
+                  verbatim — they name real cells in the file being uploaded. Left in English
+                  pending a wording decision; see docs/SALES.md. */}
               <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
                 <li>Headers on row 1, data starts at row 2</li>
                 <li>Column 1 (A): zgrada (building name - must match existing building)</li>
@@ -276,18 +280,18 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
         {step === 2 && (
           <div className="space-y-4">
             <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-900 dark:text-white mb-2">Import Summary</h4>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-2">{t('sales_projects.excel_import.summary')}</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Total rows:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('sales_projects.excel_import.total_rows')}</span>
                   <span className="ml-2 font-medium">{parsedRows.length}</span>
                 </div>
                 <div>
-                  <span className="text-green-600">Valid rows:</span>
+                  <span className="text-green-600">{t('sales_projects.excel_import.valid_rows')}</span>
                   <span className="ml-2 font-medium text-green-600">{validRows.length}</span>
                 </div>
                 <div>
-                  <span className="text-red-600">Invalid rows:</span>
+                  <span className="text-red-600">{t('sales_projects.excel_import.invalid_rows')}</span>
                   <span className="ml-2 font-medium text-red-600">{invalidRows.length}</span>
                 </div>
               </div>
@@ -297,14 +301,14 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
                 <h4 className="font-medium text-red-900 dark:text-red-300 mb-2 flex items-center">
                   <AlertCircle className="w-4 h-4 mr-2" />
-                  Errors Found ({invalidRows.length} rows)
+                  {t('sales_projects.excel_import.errors_found')} ({invalidRows.length})
                 </h4>
                 <div className="max-h-48 overflow-y-auto space-y-2">
                   {invalidRows.map((row) => (
                     <div key={row.rowIndex} className="text-sm">
-                      <span className="font-medium text-red-800 dark:text-red-300">Row {row.rowIndex}:</span>
+                      <span className="font-medium text-red-800 dark:text-red-300">{t('sales_projects.excel_import.row')} {row.rowIndex}:</span>
                       <span className="text-red-700 dark:text-red-400 ml-2">
-                        {row.building_label || '(no building)'} - {row.number || '(no number)'} - {row.errors.join(', ')}
+                        {row.building_label || t('sales_projects.excel_import.no_building')} - {row.number || t('sales_projects.excel_import.no_number')} - {row.errors.join(', ')}
                       </span>
                     </div>
                   ))}
@@ -317,15 +321,15 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Row</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Building</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Apt #</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Floor</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('sales_projects.excel_import.row')}</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('common.building')}</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('apartments.table.number')}</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('common.floor')}</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">m²</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Price</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Parking</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Storage</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('apartments.table.price')}</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('sales_projects.excel_import.parking')}</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('common.storage')}</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('common.status')}</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">

@@ -1,6 +1,7 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { format } from 'date-fns'
+import { parseLocalDate } from '../../../../utils/dateOnly'
 
 export interface RetailInvoiceWithDetails {
   id: string
@@ -86,11 +87,14 @@ export async function toggleRetailInvoiceApproval(invoiceId: string, currentAppr
 
 export function exportRetailInvoicesCSV(invoices: RetailInvoiceWithDetails[]): void {
   const headers = ['Broj računa', 'Tip', 'Datum', 'Dospijeće', 'Projekt', 'Dobavljač/Kupac', 'Firma', 'Iznos', 'Status', 'Odobreno']
+  // The `date` columns are date-only strings; `new Date('2026-01-05')` is UTC midnight, which
+  // east of UTC formats back as the 4th — the exported day was one off. `parseLocalDate` keeps
+  // the day the column says. `new Date()` for the filename is a real timestamp and stays.
   const rows = invoices.map(i => [
     i.invoice_number,
     i.invoice_type,
-    format(new Date(i.issue_date), 'yyyy-MM-dd'),
-    format(new Date(i.due_date), 'yyyy-MM-dd'),
+    format(parseLocalDate(i.issue_date), 'yyyy-MM-dd'),
+    format(parseLocalDate(i.due_date), 'yyyy-MM-dd'),
     i.project_name || '',
     i.supplier_name || i.customer_name || '',
     i.company_name || '',

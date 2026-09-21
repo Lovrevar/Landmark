@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign } from 'lucide-react'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { Button, Badge, EmptyState, ErrorState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import type { RetailContractMilestone } from '../../../types/retail'
 import { MilestoneFormModal } from './forms/MilestoneFormModal'
 import { retailProjectService } from './services/retailProjectService'
 import { useToast } from '../../../contexts/ToastContext'
-import { formatEuroRounded } from '../../../utils/formatters'
+import { formatEuroRounded, formatDate } from '../../../utils/formatters'
 
 interface MilestoneStats {
   totalPercentage: number
@@ -35,7 +34,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   contractCost,
   onClose
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const toast = useToast()
   const [milestones, setMilestones] = useState<RetailContractMilestone[]>([])
   const [stats, setStats] = useState<MilestoneStats | null>(null)
@@ -314,7 +313,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                           <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">{t('retail_projects.milestones.due_date')}</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                              {format(new Date(milestone.due_date), 'dd.MM.yyyy')}
+                              {formatDate(milestone.due_date, i18n.language)}
                             </p>
                           </div>
                         )}

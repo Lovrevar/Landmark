@@ -1,11 +1,10 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Mail, Phone, MapPin, Clock, Home, Warehouse, Package } from 'lucide-react'
-import { format } from 'date-fns'
 import { CustomerWithApartments } from '../types'
 import { Modal } from '../../../ui'
 import { groupCustomerPurchasesByProject } from '../../utils/customerUtils'
-import { formatEuroCompact } from '../../../../utils/formatters'
+import { formatEuroCompact, formatDate } from '../../../../utils/formatters'
 
 interface CustomerDetailModalProps {
   show: boolean
@@ -14,7 +13,7 @@ interface CustomerDetailModalProps {
 }
 
 export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, customer, onClose }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   if (!show || !customer) return null
 
@@ -64,7 +63,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{t('customers.detail_modal.last_contact')}</p>
                 <p className="font-medium text-gray-900 dark:text-white">
-                  {format(new Date(customer.last_contact_date), 'MMMM dd, yyyy')}
+                  {formatDate(customer.last_contact_date, i18n.language)}
                 </p>
               </div>
             </div>
@@ -108,13 +107,13 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                           {unit.type === 'repository' && `${t('common.storage')} ${unit.number}`}
                                         </p>
                                         {unit.type === 'apartment' && (
-                                          <p className="text-xs text-gray-600 dark:text-gray-400">Floor {unit.floor} • {unit.size_m2}m²</p>
+                                          <p className="text-xs text-gray-600 dark:text-gray-400">{t('common.floor')} {unit.floor} • {unit.size_m2}m²</p>
                                         )}
                                       </div>
                                     </div>
                                     <div className="text-right">
                                       <p className="font-bold text-green-700">€{totalPackage.toLocaleString('hr-HR')}</p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">{unit.sale_date ? format(new Date(unit.sale_date), 'MMM dd, yyyy') : ''}</p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">{unit.sale_date ? formatDate(unit.sale_date, i18n.language) : ''}</p>
                                     </div>
                                   </div>
 
@@ -124,7 +123,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                         <div className="flex items-center justify-between text-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded px-2 py-1">
                                           <span className="flex items-center">
                                             <Warehouse className="w-3 h-3 mr-1" />
-                                            Garage {unit.garage.number}
+                                            {t('common.garage')} {unit.garage.number}
                                           </span>
                                           <span className="font-semibold">€{unit.garage.price.toLocaleString('hr-HR')}</span>
                                         </div>
@@ -133,7 +132,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                         <div className="flex items-center justify-between text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
                                           <span className="flex items-center">
                                             <Package className="w-3 h-3 mr-1" />
-                                            Repository {unit.repository.number}
+                                            {t('common.storage')} {unit.repository.number}
                                           </span>
                                           <span className="font-semibold">€{unit.repository.price.toLocaleString('hr-HR')}</span>
                                         </div>
@@ -240,7 +239,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
               )}
               {customer.preferences.notes && (
                 <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg mt-3">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Preference Notes</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('customers.form.preference_notes')}</p>
                   <p className="font-medium text-gray-900 dark:text-white">{customer.preferences.notes}</p>
                 </div>
               )}
@@ -250,7 +249,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
           {customer.notes && (
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Notes</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('common.notes')}</h3>
               <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
                 <p className="text-gray-900 dark:text-white whitespace-pre-wrap">{customer.notes}</p>
               </div>

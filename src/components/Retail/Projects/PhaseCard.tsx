@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { Plus, Edit2, Trash2, DollarSign, ChevronDown, ChevronUp } from 'lucide-react'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { Button, Badge, EmptyState } from '../../ui'
 import { rollupContracts, remainingBudget } from '../../../utils/contractRollup'
-import { formatEuro } from '../../../utils/formatters'
+import { formatEuro, formatDate } from '../../../utils/formatters'
+import { RETAIL_CONTRACT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDisplay'
 import { contractVariance } from '../../../utils/contractVariance'
 import type { RetailProjectPhase, RetailContract, RetailProjectWithPhases } from '../../../types/retail'
 
@@ -35,7 +35,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onViewInvoices,
   onManageMilestones
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(false)
 
   // Same four figures as Supervision's phase card, so they share the arithmetic. Retail's "paid"
@@ -253,12 +253,13 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                           </Badge>
                         )}
                         {/* Completed and cancelled contracts stay on the card; without this they
-                            read exactly like active ones. */}
-                        {contract.status === 'Completed' && (
-                          <Badge variant="gray" size="sm">{t('retail_projects.contract_form.status_completed')}</Badge>
-                        )}
-                        {contract.status === 'Cancelled' && (
-                          <Badge variant="gray" size="sm">{t('retail_projects.contract_form.status_cancelled')}</Badge>
+                            read exactly like active ones. Colour and label come from the shared
+                            `retail_contracts.status` map, so the badge matches every other screen
+                            (they were both grey here). */}
+                        {(contract.status === 'Completed' || contract.status === 'Cancelled') && (
+                          <Badge variant={statusVariant(RETAIL_CONTRACT_STATUS, contract.status)} size="sm">
+                            {statusLabel(RETAIL_CONTRACT_STATUS, contract.status, t)}
+                          </Badge>
                         )}
                       </div>
                       {phase.phase_type !== 'sales' && contract.supplier?.supplier_type?.name && (
@@ -278,7 +279,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.contract_date_label')}</span>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {format(new Date(contract.contract_date), 'dd.MM.yyyy')}
+                          {formatDate(contract.contract_date, i18n.language)}
                         </span>
                       </div>
                     )}
@@ -312,7 +313,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.deadline_label')}</span>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {format(new Date(contract.end_date), 'MMM dd, yyyy')}
+                          {formatDate(contract.end_date, i18n.language)}
                         </span>
                       </div>
                     )}
