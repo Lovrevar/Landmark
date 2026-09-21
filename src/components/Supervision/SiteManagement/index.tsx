@@ -383,7 +383,9 @@ const SiteManagement: React.FC = () => {
             setShowSubcontractorForm(true)
           }}
           onOpenPaymentHistory={userCanManagePayments ? openPaymentHistory : undefined}
-          onOpenInvoices={openInvoices}
+          // Invoices carry paid_amount and remaining_amount, so this entry point is gated the
+          // same way the payment history already is — InvoicesModal then has no way in.
+          onOpenInvoices={userCanManagePayments ? openInvoices : undefined}
           onEditSubcontractor={(sub) => {
             setEditingSubcontractor(sub)
             setShowEditModal(true)
@@ -474,6 +476,7 @@ const SiteManagement: React.FC = () => {
           subcontractor={editingSubcontractor}
           onChange={setEditingSubcontractor}
           onSubmit={handleUpdateSubcontractor}
+          canManagePayments={userCanManagePayments}
         />
 
         <PaymentHistoryModal
@@ -523,6 +526,7 @@ const SiteManagement: React.FC = () => {
             setNewComment('')
           }}
           subcontractor={selectedSubcontractor}
+          canManagePayments={userCanManagePayments}
           comments={subcontractorComments}
           commentsError={commentsError}
           onRetryComments={selectedSubcontractor ? () => loadComments(selectedSubcontractor.id) : undefined}
@@ -547,14 +551,20 @@ const SiteManagement: React.FC = () => {
 
         {showMilestoneManagement && milestoneContext && (
           <Modal show={true} onClose={closeMilestoneManagement} size="full" ariaLabel={t('supervision.site_management.milestone_list.title')}>
-            <MilestoneList
-              contractId={milestoneContext.subcontractor.contract_id || milestoneContext.subcontractor.id}
-              subcontractorName={milestoneContext.subcontractor.name}
-              projectName={milestoneContext.project.name}
-              phaseName={milestoneContext.phase.phase_name}
-              contractCost={milestoneContext.subcontractor.cost}
-              onClose={closeMilestoneManagement}
-            />
+            {/* Modal.Body is the only part of Modal that scrolls, so a long milestone table
+                rendered as a direct child simply overflowed the viewport. noPadding because
+                MilestoneList draws its own. */}
+            <Modal.Body noPadding>
+              <MilestoneList
+                contractId={milestoneContext.subcontractor.contract_id || milestoneContext.subcontractor.id}
+                subcontractorName={milestoneContext.subcontractor.name}
+                projectName={milestoneContext.project.name}
+                phaseName={milestoneContext.phase.phase_name}
+                contractCost={milestoneContext.subcontractor.cost}
+                canManagePayments={userCanManagePayments}
+                onClose={closeMilestoneManagement}
+              />
+            </Modal.Body>
           </Modal>
         )}
 
@@ -587,6 +597,7 @@ const SiteManagement: React.FC = () => {
   return (
     <ProjectsGrid
       projects={filteredProjects}
+      canManagePayments={userCanManagePayments}
       onSelectProject={(project) => navigate(`/site-management/${project.id}`)}
       onRefresh={fetchProjects}
       isRefreshing={refreshing}

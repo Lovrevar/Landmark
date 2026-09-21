@@ -122,12 +122,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [currentProfile, cashflowUnlocked])
 
   const getMenuItems = () => {
+    // The Supervision *role* short-circuits the profile menus below: whichever profile is
+    // selected, this is the whole navigation for that user.
+    //
+    // Payments and Invoices are not on it. Since 20260526084700 the Supervision role has no
+    // `accounting_payments` rows at all, so `/payments` rendered "nema pronađenih plaćanja" —
+    // a claim about the projects, not about the reader's rights, and a false one. The
+    // Supervision *profile* (below) keeps both, because a Director or Accounting user can
+    // switch into it and does have the rows.
     if (user?.role === 'Supervision') {
       return [
         { name: t('nav.site_management'), icon: Building2, path: '/site-management' },
         { name: t('nav.work_logs'), icon: ClipboardCheck, path: '/work-logs' },
-        { name: t('nav.payments'), icon: DollarSign, path: '/payments' },
-        { name: t('nav.invoices'), icon: FileText, path: '/invoices' },
         { name: t('nav.documents'), icon: Files, path: '/documents' }
       ]
     }

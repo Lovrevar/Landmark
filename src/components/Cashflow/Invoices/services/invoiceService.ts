@@ -432,9 +432,18 @@ export const fetchMilestones = async (contractId: string) => {
   const contractAmount = parseFloat(contractData.contract_amount || '0')
   const milestoneIds = milestones.map(m => m.id)
 
+  /**
+   * Gross against gross, matching Supervision's milestone list.
+   *
+   * `contract_amount` is the contract's gross value (a trigger keeps it equal to
+   * `total_amount`), so a milestone's amount is gross too. Subtracting the linked invoices' net
+   * `base_amount` from it — which is what this did, and regardless of whether those invoices
+   * were ever paid — left a "Preostalo" inflated by the VAT on everything already settled.
+   * `paid_amount` is gross money received.
+   */
   const { data: invoices, error: invoicesError } = await supabase
     .from('accounting_invoices')
-    .select('milestone_id, base_amount')
+    .select('milestone_id, paid_amount')
     .in('milestone_id', milestoneIds)
     .not('milestone_id', 'is', null)
 
@@ -444,7 +453,7 @@ export const fetchMilestones = async (contractId: string) => {
 
   const paymentsByMilestone = (invoices || []).reduce((acc, inv) => {
     if (inv.milestone_id) {
-      acc[inv.milestone_id] = (acc[inv.milestone_id] || 0) + parseFloat(inv.base_amount || '0')
+      acc[inv.milestone_id] = (acc[inv.milestone_id] || 0) + parseFloat(inv.paid_amount || '0')
     }
     return acc
   }, {} as Record<string, number>)

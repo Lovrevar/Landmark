@@ -16,7 +16,7 @@ import {
   LayoutTemplate
 } from 'lucide-react'
 import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table, ConfirmDialog } from '../../ui'
-import { format, differenceInDays, parseISO } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import MilestoneTimeline from './MilestoneTimeline'
 import ProjectFormModal from './forms/ProjectFormModal'
@@ -28,6 +28,7 @@ import { fetchProjectDataEnhanced } from './services/projectDetailsService'
 import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import { usePhaseCollapseState } from './hooks/usePhaseCollapseState'
 import { buildPhaseBuckets, computePhaseStatuses } from './utils'
+import { projectTimeline } from '../../../utils/projectTimeline'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 import { useAuth } from '../../../contexts/AuthContext'
 
@@ -213,9 +214,27 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <span className="text-sm text-blue-700 dark:text-blue-300">{t('general_projects.timeline')}</span>
               <Calendar className="w-5 h-5 text-blue-400" />
             </div>
-            <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-              {project.end_date ? `${differenceInDays(parseISO(project.end_date), new Date())} ${t('general_projects.days')}` : t('general_projects.ongoing')}
-            </p>
+            {/* A past end date used to render as "-45 dana" in this calm blue tile. Now it says
+                it is overdue, in red — the same rule the project cards use. */}
+            {(() => {
+              const timeline = projectTimeline(project.status, project.end_date)
+              const overdue = timeline.state === 'overdue'
+              return (
+                <p className={`text-2xl font-bold ${
+                  overdue ? 'text-red-600 dark:text-red-400' : 'text-blue-900 dark:text-blue-100'
+                }`}>
+                  {timeline.state === 'completed'
+                    ? t('status.completed')
+                    : timeline.state === 'no_end_date'
+                      ? t('general_projects.ongoing')
+                      : timeline.state === 'due_today'
+                        ? t('common.due_today')
+                        : overdue
+                          ? t('general_projects.days_overdue', { count: Math.abs(timeline.days!) })
+                          : t('general_projects.days_left', { count: timeline.days! })}
+                </p>
+              )
+            })()}
             <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">{format(parseISO(project.start_date), 'MMM dd, yyyy')}</p>
           </div>
 

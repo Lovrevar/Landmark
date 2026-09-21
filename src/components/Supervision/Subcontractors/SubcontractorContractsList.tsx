@@ -1,9 +1,10 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Eye } from 'lucide-react'
-import { format, differenceInDays } from 'date-fns'
+import { format } from 'date-fns'
 import { Card, Badge } from '../../ui'
 import { formatEuro } from '../../../utils/formatters'
+import { daysFromToday } from '../../../utils/dateOnly'
 import { SubcontractorContract } from './types'
 
 interface Props {
@@ -17,12 +18,12 @@ export const SubcontractorContractsList: React.FC<Props> = ({ contracts, onViewD
   return (
     <div className="space-y-4">
       {contracts.map((contract) => {
-        const isOverdue = contract.deadline
-          ? new Date(contract.deadline) < new Date() && contract.progress < 100
-          : false
-        const daysUntilDeadline = contract.deadline
-          ? differenceInDays(new Date(contract.deadline), new Date())
-          : 0
+        // Whole local days, so a contract due today is not late. The old pair —
+        // `new Date('YYYY-MM-DD')` (UTC midnight) for the flag and `differenceInDays` (which
+        // truncates towards zero) for the count — made the due day itself read
+        // "Kasni za 0 dana".
+        const daysUntilDeadline = daysFromToday(contract.deadline)
+        const isOverdue = daysUntilDeadline < 0 && contract.progress < 100
         const hasValidContract = contract.has_contract && contract.cost > 0
 
         return (

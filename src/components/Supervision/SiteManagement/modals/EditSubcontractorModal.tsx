@@ -32,6 +32,8 @@ interface EditSubcontractorModalProps {
    * separate Upload button). Resolves to whether the save succeeded; the parent closes on success.
    */
   onSubmit: (updated: Subcontractor, pendingFiles: File[]) => Promise<boolean>
+  /** False hides the payment summary block; everything in it is money paid or derived from it. */
+  canManagePayments: boolean
 }
 
 type SubcontractorWithIds = Subcontractor & { subcontractor_id?: string; contract_id?: string }
@@ -46,7 +48,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   visible,
   onClose,
   subcontractor,
-  onSubmit
+  onSubmit,
+  canManagePayments
 }) => {
   const { t } = useTranslation()
   const toast = useToast()
@@ -352,12 +355,12 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
             </div>
           )}
 
-          {hasContract && (
+          {hasContract && canManagePayments && (
             <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
               <p className="text-sm text-blue-700 dark:text-blue-300"><strong>{t('supervision.edit_subcontractor.payment_info')}</strong></p>
               <div className="mt-2 space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">{t('supervision.edit_subcontractor.total_paid_base')}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('supervision.edit_subcontractor.total_paid_gross')}</span>
                   <span className="font-medium text-gray-900 dark:text-white">{formatEuro(subcontractor.budget_realized)}</span>
                 </div>
                 <div className="flex justify-between">

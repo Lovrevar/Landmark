@@ -2,9 +2,17 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckCircle, Circle, Clock, AlertTriangle, Calendar, Edit2, Trash2, ChevronDown } from 'lucide-react'
 import { Badge, Button, EmptyState } from '../../ui'
-import { format, parseISO, isPast } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import type { Milestone } from './types'
+import { daysFromToday } from '../../../utils/dateOnly'
 import { buildPhaseBuckets, getMilestoneStatus, NO_PHASE_KEY } from './utils'
+
+/**
+ * The one overdue rule, shared with `getMilestoneStatus`: past its due date in whole local days.
+ * `isPast(parseISO(...))` called a milestone due today overdue from UTC midnight onwards, so the
+ * counts in this summary disagreed with the icon on the row beside them.
+ */
+const isMilestoneOverdue = (m: Milestone) => !m.completed && daysFromToday(m.due_date) < 0
 
 interface MilestoneTimelineProps {
   milestones: Milestone[]
@@ -143,13 +151,13 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
           <div className="flex items-center space-x-2">
             <Clock className="w-5 h-5 text-blue-600" />
             <span className="text-gray-700 dark:text-gray-200">
-              <span className="font-semibold">{milestones.filter(m => !m.completed && (!m.due_date || !isPast(parseISO(m.due_date)))).length}</span> {t('status.in_progress')}
+              <span className="font-semibold">{milestones.filter(m => !m.completed && !isMilestoneOverdue(m)).length}</span> {t('status.in_progress')}
             </span>
           </div>
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-5 h-5 text-red-600" />
             <span className="text-gray-700 dark:text-gray-200">
-              <span className="font-semibold">{milestones.filter(m => !m.completed && m.due_date && isPast(parseISO(m.due_date))).length}</span> {t('status.overdue')}
+              <span className="font-semibold">{milestones.filter(isMilestoneOverdue).length}</span> {t('status.overdue')}
             </span>
           </div>
         </div>
@@ -166,7 +174,7 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
         {groupedBuckets.map(bucket => {
           const total = bucket.items.length
           const done = bucket.items.filter(m => m.completed).length
-          const overdue = bucket.items.filter(m => !m.completed && m.due_date && isPast(parseISO(m.due_date))).length
+          const overdue = bucket.items.filter(isMilestoneOverdue).length
           const pct = total > 0 ? Math.round((done / total) * 100) : 0
           const expanded = isPhaseExpanded ? isPhaseExpanded(bucket.key) : true
           const handleHeaderClick = () => onTogglePhase?.(bucket.key)

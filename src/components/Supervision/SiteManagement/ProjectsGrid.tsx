@@ -1,8 +1,8 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Building2, ArrowRight, RefreshCw } from 'lucide-react'
-import { differenceInDays } from 'date-fns'
 import { ProjectWithPhases, OnSelectProjectCallback } from './types'
+import { projectTimeline, PROJECT_TIMELINE_TONE } from '../../../utils/projectTimeline'
 import { Button, Badge, EmptyState, ErrorState, Alert } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import { formatEuroCompact } from '../../../utils/formatters'
@@ -15,9 +15,15 @@ interface ProjectsGridProps {
   emptyStateVariant?: 'no_projects' | 'no_assignments'
   /** Set when the last load failed. Replaces the grid when nothing loaded, warns above it when something did. */
   error?: Error | null
+  /**
+   * False hides every figure derived from payments: the paid segment of the allocation bar and
+   * its legend, the "paid out" line, and the overdue badge — which counts contracts whose
+   * deadline has passed **and** that are not paid in full.
+   */
+  canManagePayments: boolean
 }
 
-export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onRefresh, isRefreshing = false, emptyStateVariant = 'no_projects', error = null }) => {
+export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject, onRefresh, isRefreshing = false, emptyStateVariant = 'no_projects', error = null, canManagePayments }) => {
   const { t } = useTranslation()
   const [errorDismissed, setErrorDismissed] = React.useState(false)
   // A failed load must never render as "no projects on site" — the two look identical otherwise,
@@ -65,8 +71,9 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
           // until one exists — and the detail screen already says so. Without this gate the card
           // shows a stale typed figure that the very next click contradicts.
           const hasBudget = project.tic_total !== null && project.tic_total > 0
-          const daysRemaining = project.end_date ? differenceInDays(new Date(project.end_date), new Date()) : null
-          const isProjectOverdue = daysRemaining !== null && daysRemaining < 0 && project.status !== 'Completed'
+          // One rule for "where is this against its end date" (src/utils/projectTimeline.ts):
+          // a Completed project is never overdue, and the end date itself is not yet late.
+          const timeline = projectTimeline(project.status, project.end_date)
 
           return (
             <div
@@ -96,7 +103,9 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                         {t('supervision.site_management.projects_grid.no_phases')}
                       </Badge>
                     )}
-                    {project.overdue_subcontractors > 0 && (
+                    {/* "Overdue" here means past deadline AND not paid in full, so the count
+                        is a payment fact. */}
+                    {canManagePayments && project.overdue_subcontractors > 0 && (
                       <Badge variant="red" size="sm">
                         {project.overdue_subcontractors} {t('supervision.site_management.projects_grid.overdue')}
                       </Badge>
@@ -120,19 +129,29 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                       const contractedPct = project.budget > 0 ? Math.min((project.total_contracted / project.budget) * 100, 100) : 0
                       const paidPct = project.budget > 0 ? Math.min((project.total_paid_out / project.budget) * 100, 100) : 0
                       const remainingContractedPct = Math.max(contractedPct - paidPct, 0)
-                      return (
+                      // Without payment rights the bar is one contracted segment: splitting it
+                      // would draw the paid figure the rest of the card is hiding.
+                      return canManagePayments ? (
                         <div className="h-full flex rounded-full overflow-hidden">
-                          <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${paidPct}%` }} />
+                          {/* Teal is paid everywhere else in Supervision; this bar was the one
+                              place that painted it orange, the colour used for unpaid. */}
+                          <div className="h-full bg-teal-500 transition-all duration-300" style={{ width: `${paidPct}%` }} />
                           <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${remainingContractedPct}%` }} />
+                        </div>
+                      ) : (
+                        <div className="h-full flex rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${contractedPct}%` }} />
                         </div>
                       )
                     })()}
                   </div>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                      <span className="inline-block w-2 h-2 rounded-full bg-orange-500"></span>
-                      {t('common.paid')}
-                    </span>
+                    {canManagePayments && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <span className="inline-block w-2 h-2 rounded-full bg-teal-500"></span>
+                        {t('common.paid')}
+                      </span>
+                    )}
                     <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                       <span className="inline-block w-2 h-2 rounded-full bg-blue-500"></span>
                       {t('supervision.site_management.projects_grid.contracted')}
@@ -156,9 +175,11 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {formatEuroCompact(project.total_budget_allocated)} {t('supervision.site_management.projects_grid.allocated')}
                         </p>
-                        <p className="text-xs text-teal-600 font-medium">
-                          {formatEuroCompact(project.total_paid_out)} {t('supervision.site_management.projects_grid.paid_out')}
-                        </p>
+                        {canManagePayments && (
+                          <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">
+                            {formatEuroCompact(project.total_paid_out)} {t('supervision.site_management.projects_grid.paid_out')}
+                          </p>
+                        )}
                       </>
                     )}
                   </div>
@@ -171,15 +192,17 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
                   </div>
                 </div>
 
-                {daysRemaining !== null && (
+                {timeline.state !== 'no_end_date' && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-400">{t('supervision.site_management.projects_grid.timeline')}</span>
-                    <span className={`font-medium ${
-                      isProjectOverdue ? 'text-red-600' : daysRemaining < 30 ? 'text-orange-600' : 'text-green-600'
-                    }`}>
-                      {daysRemaining >= 0
-                        ? t('supervision.site_management.projects_grid.days_left', { count: daysRemaining })
-                        : t('supervision.site_management.projects_grid.days_overdue', { count: Math.abs(daysRemaining) })}
+                    <span className={`font-medium ${PROJECT_TIMELINE_TONE[timeline.state]}`}>
+                      {timeline.state === 'completed'
+                        ? t('status.completed')
+                        : timeline.state === 'due_today'
+                          ? t('common.due_today')
+                          : timeline.state === 'overdue'
+                            ? t('supervision.site_management.projects_grid.days_overdue', { count: Math.abs(timeline.days!) })
+                            : t('supervision.site_management.projects_grid.days_left', { count: timeline.days! })}
                     </span>
                   </div>
                 )}

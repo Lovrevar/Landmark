@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Subcontractor } from '../../../../lib/supabase'
 import { ProjectWithPhases } from '../types'
 import * as siteService from '../services/siteService'
+import { daysFromToday } from '../../../../utils/dateOnly'
 import { ticGrandTotal, phaseTotals } from '../../../Funding/TIC/utils/ticBudget'
 
 export const useSiteProjectData = () => {
@@ -62,8 +63,12 @@ export const useSiteProjectData = () => {
         const completion_percentage = total_subcontractor_cost > 0
           ? Math.round((total_paid_out / total_subcontractor_cost) * 100)
           : 0
+        // `new Date(null)` is 1 January 1970, so a contract with no deadline used to count as
+        // overdue — every unpaid uncontracted row inflated this badge. `daysFromToday` returns
+        // NaN for a missing or unparseable date, and NaN < 0 is false. It also compares whole
+        // local days, so a contract due today is not yet late.
         const overdue_subcontractors = projectSubcontractors.filter(sub => {
-          return new Date(sub.deadline) < new Date() && (sub.budget_realized || 0) < sub.cost
+          return daysFromToday(sub.deadline) < 0 && (sub.budget_realized || 0) < sub.cost
         }).length
         const has_phases = projectPhases.length > 0
         const total_budget_allocated = projectPhases.reduce((sum, phase) => sum + phase.budget_allocated, 0)

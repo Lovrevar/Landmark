@@ -45,6 +45,12 @@ interface SubcontractorDetailsModalProps {
   onCommentTypeChange: (type: 'completed' | 'issue' | 'general') => void
   onAddComment: () => void
   onManageMilestones?: () => void
+  /**
+   * False hides the payment tiles, the paid-derived header badge and the uncontracted row's
+   * "total paid", as everywhere else on this screen. The contract's own base/VAT/total stay:
+   * they are the agreement, not what has been paid against it.
+   */
+  canManagePayments: boolean
 }
 
 export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps> = ({
@@ -59,7 +65,8 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   onCommentChange,
   onCommentTypeChange,
   onAddComment,
-  onManageMilestones
+  onManageMilestones,
+  canManagePayments
 }) => {
   const { t } = useTranslation()
   const [funderName, setFunderName] = useState<string | null>(null)
@@ -142,7 +149,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
               {t('supervision.subcontractor_details.no_contract_badge')}
             </Badge>
           )}
-          {subcontractor.has_contract !== false && contracted > 0 && (
+          {canManagePayments && subcontractor.has_contract !== false && contracted > 0 && (
             <Badge variant={budgetBadge.variant} size="sm">
               {budgetBadge.label}
             </Badge>
@@ -228,8 +235,8 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
             </div>
           )}
 
-          {/* Payment Status */}
-          {subcontractor.has_contract !== false ? (
+          {/* Payment Status — every tile here is money paid or derived from it. */}
+          {!canManagePayments ? null : subcontractor.has_contract !== false ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-2">

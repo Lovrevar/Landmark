@@ -35,6 +35,11 @@ interface ProjectDetailProps {
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
+  /**
+   * Whether this user may see money already paid. Defaults to **false**: every figure derived
+   * from payments below this point is hidden unless the caller says otherwise, so a screen that
+   * forgets to pass it leaks nothing.
+   */
   canManagePayments?: boolean
   expandedPhases: Set<string>
   /** Flat set of full path keys. Encodes the dimension order, so each view keeps its own state. */
@@ -63,7 +68,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onOpenSubDetails,
   onDeleteSubcontractor,
   onManageMilestones,
-  canManagePayments = true,
+  canManagePayments = false,
   expandedPhases,
   expandedNodes,
   onTogglePhase,
@@ -319,6 +324,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   onOpenSubDetails={onOpenSubDetails}
                   onDeleteSubcontractor={onDeleteSubcontractor}
                   onManageMilestones={onManageMilestones}
+                  canManagePayments={canManagePayments}
                 />
               ))}
             </div>
@@ -352,6 +358,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   onOpenSubDetails={onOpenSubDetails}
                   onDeleteSubcontractor={onDeleteSubcontractor}
                   onManageMilestones={onManageMilestones}
+                  canManagePayments={canManagePayments}
                   isExpanded={expandedPhases.has(phase.id)}
                   expandedNodes={expandedNodes}
                   onToggleExpand={() => onTogglePhase(phase.id)}
@@ -378,6 +385,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onOpenSubDetails={onOpenSubDetails}
                 onDeleteSubcontractor={onDeleteSubcontractor}
                 onManageMilestones={onManageMilestones}
+                canManagePayments={canManagePayments}
               />
             ))}
           </div>

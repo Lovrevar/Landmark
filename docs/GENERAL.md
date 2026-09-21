@@ -18,8 +18,8 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 #### Services
 
 ### projectService.ts
-- `fetchProjectsWithStats()` — fetches all projects in a single joined query (contracts + project_milestones) and computes stats: total_spent, completion_percentage, milestones_completed, milestones_total
-- **Depends on:** supabase client
+- `fetchProjectsWithStats()` — fetches all projects in a single joined query (contracts + project_milestones) and computes stats: total_spent, completion_percentage, milestones_completed, milestones_total. In parallel it reads every project's TIC grand total (`fetchTICTotalsByProject()` from `Supervision/SiteManagement/services/siteService.ts`) onto `ProjectWithStats.tic_total`, so the cards can apply the same budget gate as the rest of the app instead of printing a stale `projects.budget`
+- **Depends on:** supabase client, `fetchTICTotalsByProject`, `ticGrandTotal` (`Funding/TIC/utils/ticBudget.ts`)
 
 ### projectFormService.ts
 - `fetchProjectById(projectId)` — fetches a single project row for the edit form (returns `FetchedProject | null`)
@@ -64,12 +64,33 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 
 ### utils.ts
 - `getStatusConfig(status)` — returns badge color and label for a project status string
-- `getDaysInfo(startDate, endDate)` — returns days elapsed and remaining for a project timeline
 - `getMilestoneStatus(milestone)` — derives display status (completed, overdue, in_progress) for a milestone, plus icon/colors for the timeline
 - `buildPhaseBuckets(milestones)` — groups milestones by their `phase` string into ordered `PhaseBucket[]`; known template phases come first (in template order), then unknown phases alphabetically, then the un-phased bucket (`NO_PHASE_KEY = '__no_phase'`) last
 - `computePhaseStatuses(buckets)` — reduces buckets to `PhaseStatus[]` (`key`, `total`, `completed`, `overdue`) — consumed by `usePhaseCollapseState`
 - **Exports:** `NO_PHASE_KEY`, `PhaseBucket`, `PhaseStatus`
-- **Depends on:** date-fns, Lucide icons, `RESIDENTIAL_HR_TEMPLATE` (for phase ordering)
+- **Depends on:** `daysFromToday` (`src/utils/dateOnly.ts`), Lucide icons, `RESIDENTIAL_HR_TEMPLATE` (for phase ordering)
+- `getDaysInfo(startDate, endDate)` is **gone** — replaced by the shared, tested
+  `projectTimeline()` below. It said green "Completed" for *any* project past its end date
+  whatever its `status`, and red "Overdue" the day *before* the end date (`differenceInDays`
+  truncates towards zero), and its strings were hardcoded English
+
+#### One project-timeline rule (`src/utils/projectTimeline.ts`)
+
+`projectTimeline(status, endDate)` returns `{ state, days }` where `state` is one of
+`completed` / `overdue` / `due_today` / `due_soon` (inside `DUE_SOON_DAYS` = 30) / `on_track` /
+`no_end_date`, and `days` is whole calendar days to the end date (negative when past, `null`
+when there is none). `PROJECT_TIMELINE_TONE` maps each state to a text colour **with a dark
+pair**. Tested in `projectTimeline.test.ts` under fake timers, because the due-day boundary is
+exactly what kept regressing.
+
+- **"Completed" comes from `status`, never from a date.** A stalled project past its end date
+  used to read as finished.
+- Dates go through `daysFromToday` (`src/utils/dateOnly.ts`), so the end date itself is not late
+  and a missing one is open-ended rather than overdue.
+- The state is decided once; each screen picks its own wording. Used by
+  `General/Projects/ProjectCard.tsx`, `ProjectDetailsEnhanced.tsx` and
+  `Supervision/SiteManagement/ProjectsGrid.tsx` — which previously showed
+  "N dana kašnjenja" in orange on a project already marked Completed.
 
 #### Data
 
@@ -96,10 +117,13 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 #### Views
 
 ### ProjectCard.tsx
-- Summary card for a single project showing status badge, project-category badge, budget, spent, remaining, progress bar, milestone count, and days info
+- Summary card for a single project showing status badge, project-category badge, budget, spent, remaining, progress bar, milestone count, and its timeline
+- **Budget is gated on the TIC**, like every other screen: `tic_total !== null && tic_total > 0`, otherwise the card reads `general_projects.budget_not_set` and the "remaining" row is dropped altogether. `fetchProjectsWithStats` fetches the totals alongside the list (`fetchTICTotalsByProject()`), and `ProjectWithStats` carries `tic_total`
+- "Remaining" is red when negative. It used to be `text-green-600` unconditionally, so an overspent project reported its overspend in green
+- Money uses `formatEuro`; the timeline line uses `projectTimeline()` + `PROJECT_TIMELINE_TONE`
 - **Uses services:** (receives ProjectWithStats as prop)
 - **Uses Ui:** Badge, Button
-- **Uses components:** ProjectCategoryBadge, getStatusConfig, getDaysInfo
+- **Uses components:** ProjectCategoryBadge, getStatusConfig, `projectTimeline`
 
 ### MilestoneTimeline.tsx
 - Visual vertical timeline of project milestones sorted by due date, with status colors and edit/delete/toggle actions
@@ -175,6 +199,25 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 - Budget Control bar chart (recharts): 4 bars — Planned, Committed, Paid, Forecast EAC
 - EVM Indices scatter chart (recharts): CPI and SPI plotted against a Target (1.0) and a Warning (0.9) reference line
 - EVM Performance Metrics row: CPI, SPI, EAC, VAC, Completion % with progress bar
+
+#### What the EVM screen refuses to claim
+
+Three fallbacks inside `calculateProjectEVM` used to surface as confident figures:
+
+- **No schedule baseline.** `scheduleAvailable` is false when no phase carries both a start and
+  an end date; SPI then falls back to 1 (`evm.ts:135`). Nothing read the flag, so a project with
+  no dates at all reported a green "On schedule ✓". SPI now renders "—" with
+  `budget_control.no_schedule` underneath, and no point is plotted on the indices chart.
+- **CPI = 0** (cost booked with no earned value against it) makes `EAC = plannedBudget`, so
+  `VAC = 0` and the VAC tile went green "Ispod proračuna" beside a red CPI of 0.00. Both the
+  forecast card and the EAC/VAC tiles now show "—" with `budget_control.no_forecast`.
+- **The forecast bar was hardcoded red** while the EAC and VAC tiles were already coloured by the
+  sign of VAC, so a project forecast to come in *under* budget got a red bar next to two green
+  tiles. It now follows VAC (`CHART_COLORS.forecastUnder` / `forecastOver`).
+
+Also: the **Committed** card is amber (`variant="amber"`), matching its own bar in the chart
+below — it was `variant="active"`, a green ring that read as approval of a neutral number. The
+CPI/SPI sub-labels were hardcoded English and now come from `budget_control.cpi_*` / `spi_*`.
 - Index card colors via `getIndexStatus`: green (≥ 1.0), yellow (0.9–1.0), red (< 0.9)
 - Money goes through the shared helpers ([`src/utils/formatters.ts`](../src/utils/formatters.ts)): `compactEuro` (= `formatEuroCompact`) on the EVM tiles and the chart's Y axis, `formatEuroFull` (= `formatEuro`) on the metric cards and the chart tooltip. `compactEuro` was previously a local `formatEuro` that **shadowed the shared name while meaning the opposite** (abbreviated, not exact), abbreviated from €1.000 up (so €1.500 read "€2K") and used a decimal point where the rest of the app uses a comma
 - Empty/edge states: no projects, and "no budget data" when `plannedBudget` is 0

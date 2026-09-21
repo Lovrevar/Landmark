@@ -11,6 +11,14 @@ export interface ProjectStats {
 
 export interface ProjectWithStats extends Project {
   stats: ProjectStats
+  /**
+   * The project's TIC grand total, or `null` when it has no TIC (or an all-zero one).
+   *
+   * The TIC is the only writer of `projects.budget` (migrations 20260909130000 / 20260909140000),
+   * so without one the stored budget is a leftover that every other screen already refuses to
+   * show. Same gate as `ProjectWithPhases.tic_total` in Site Management.
+   */
+  tic_total: number | null
 }
 
 // ── Shared ────────────────────────────────────────────────────────────────

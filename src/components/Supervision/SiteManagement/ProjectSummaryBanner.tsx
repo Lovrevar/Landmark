@@ -46,7 +46,13 @@ export const ProjectSummaryBanner: React.FC<Props> = ({ project, canManagePaymen
         </p>
       </div>
 
-      <div className={`mt-4 grid grid-cols-1 gap-4 ${showNotPhased ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
+      {/* The grid collapses to what is actually shown rather than leaving a hole where the
+          paid tiles were. Literal class names, so Tailwind emits all four. */}
+      <div className={`mt-4 grid grid-cols-1 gap-4 ${
+        canManagePayments
+          ? (showNotPhased ? 'md:grid-cols-5' : 'md:grid-cols-4')
+          : (showNotPhased ? 'md:grid-cols-3' : 'md:grid-cols-2')
+      }`}>
         <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
           <p className="text-sm text-gray-700 dark:text-gray-200">
             {t('supervision.site_management.phase_card.contracted_amount')}
@@ -63,12 +69,16 @@ export const ProjectSummaryBanner: React.FC<Props> = ({ project, canManagePaymen
           </div>
         )}
 
-        <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
-          <p className="text-sm text-orange-700 dark:text-orange-400">
-            {t('supervision.site_management.phase_card.unpaid_contracts')}
-          </p>
-          <p className="text-lg font-bold text-orange-900 dark:text-orange-300">{money(rollup.unpaid)}</p>
-        </div>
+        {/* Unpaid is contracted minus paid, so showing it next to contracted hands the reader
+            the paid figure the tile above is hiding. */}
+        {canManagePayments && (
+          <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+            <p className="text-sm text-orange-700 dark:text-orange-400">
+              {t('supervision.site_management.phase_card.unpaid_contracts')}
+            </p>
+            <p className="text-lg font-bold text-orange-900 dark:text-orange-300">{money(rollup.unpaid)}</p>
+          </div>
+        )}
 
         <div className={`p-3 rounded-lg ${remaining < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
           <p className={`text-sm ${remaining < 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>

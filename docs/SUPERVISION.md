@@ -58,9 +58,71 @@ then `ProjectSummaryBanner`, then the contract tree.
   land there, which is true but unreadable.
 - **A single-phase project renders no phase level at all** — its classification groups sit
   directly under the banner. A phase wrapper around the only phase is pure indentation.
-- There is one definition of "paid" on the screen: invoice-derived, via `rollupContracts`. The
-  old bottom summary block derived it from `contracts.budget_realized` and disagreed with every
-  phase card above it; it was removed rather than reconciled.
+- There is one definition of "paid" on the screen: **`contracts.budget_realized`**, mapped onto
+  the shared `rollupContracts` in `utils/contractTree.ts`. It is a trigger-kept cache of
+  `sum(accounting_payments.amount)`, repaired and sealed by migration `20260910120000`, so no
+  second query is needed and summing the invoices' `paid_amount` would give the same figure. Only
+  `invoice_total_owed` still comes from invoices — payments cannot say what is *still* outstanding.
+  (This bullet used to say "invoice-derived"; it was describing an older implementation.)
+
+#### The payment gate
+
+`canManagePayments(user)` (`src/utils/permissions.ts`) is true for **Director**, **Accounting**
+and **Investment**, false for **Supervision** and **Sales**. Site Management threads it through
+the whole tree and hides *everything derived from payments*, not just the figures:
+
+`index.tsx` → `ProjectDetail` (default **`false`**, so a screen that forgets to pass it leaks
+nothing) → `ProjectSummaryBanner` / `PhaseCard` / `ClassificationCard` / the single-phase
+`TreeGroup` → `TreeGroup` → `ContractCard`; plus `ProjectsGrid`, `SubcontractorDetailsModal`,
+`EditSubcontractorModal` and `MilestoneList`.
+
+Hidden when false:
+
+- the **paid** and **unpaid** tiles everywhere (unpaid is contracted − paid, so it hands the
+  reader the figure the paid tile is hiding), and the `TreeGroup` "Paid" column
+- the phase card's **utilisation bar** and its "over budget by" line — both are paid against plan
+- `ContractCard`'s status badge, card tint, paid / remaining / overrun rows, and the uncontracted
+  row's paid + owed pair. The deadline **keeps** its red warning: with payments visible it means
+  "past due **and** not paid in full", and without them it falls back to "past due" on the date
+  alone. A site manager is the person who most needs that warning, and a date discloses no amount
+- `ProjectsGrid`'s paid bar segment and legend, its "isplaćeno" line, and the red overdue badge
+  (`overdue_subcontractors` counts contracts past deadline **and** unpaid)
+- `MilestoneList`'s Paid column, total-paid tile, paid/pending counts and Status column — every
+  value that column can take is set by the `update_milestone_status_on_payment` trigger from
+  payments
+- the entry points to `PaymentHistoryModal` **and** `InvoicesModal` (`onOpenPaymentHistory` and
+  `onOpenInvoices` are both left `undefined`), which makes those modals unreachable
+
+Still shown: contract amounts, deadlines, names, budgets and the **remaining budget** tile —
+`remainingBudget` is `budget − contracted − unpaidWithoutContract` and never reads `paid`.
+Where hiding a tile would leave a ragged grid the grid collapses (`md:grid-cols-5` → `-3`, etc.)
+rather than leaving a hole.
+
+**The Supervision role's menu carries no Payments or Invoices entry** (`Common/Layout.tsx`).
+Since `20260526084700_tighten_cashflow_rls.sql` that role has no `accounting_payments` rows, so
+`/payments` rendered "nema pronađenih plaćanja" — a false claim about the projects rather than a
+statement about the reader's rights. The Supervision *profile* keeps both, because a Director or
+Accounting user can switch into it and does have the rows.
+
+> This is a **screen-only** restriction, not a data boundary — `contracts` is readable by any
+> authenticated user, so `budget_realized` is one console call away. See
+> [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) SEC-004.
+
+#### One definition of "overdue"
+
+Every date-only comparison on this screen goes through `daysFromToday(value) < 0`
+(`src/utils/dateOnly.ts`, tested in `dateOnly.test.ts`): positive is future, 0 is today, negative
+is past, and **NaN** for a missing or unparseable date — which is not `< 0`, so an undated row is
+never overdue. Two bugs it replaced:
+
+- `new Date('YYYY-MM-DD') < new Date()` parses as **UTC** midnight, so in Croatia a contract due
+  today was overdue from 01:00 (02:00 in summer). `differenceInDays` truncates towards zero, so
+  the banner on the due day read "Kasni za 0 dana".
+- `useSiteProjectData` had no null guard, and `new Date(null)` is 1 January 1970 — so every
+  unpaid contract **without** a deadline counted towards the grid's overdue badge.
+
+Each site keeps its own "done" criterion: `ContractCard` and `useSiteProjectData` add
+`paid < cost`, `SubcontractorContractsList` adds `progress < 100`.
 
 #### Services
 
@@ -131,7 +193,7 @@ so a client write would survive only until the next one.
 - **Depends on:** supabase client, logActivity, Documents `documentService.uploadDocument`, `recalculatePhaseBudget` (phaseService)
 
 ### services/milestoneService.ts
-- `fetchMilestonesByContract(contractId)` — fetches milestones for a contract with paid_amount summed from linked invoices
+- `fetchMilestonesByContract(contractId)` — fetches milestones for a contract with `paid_amount` summed from the linked invoices' **`paid_amount`** (gross money received). See "Milestones are gross" below; it used to sum their net `base_amount`, paid or not
 - `fetchMilestonesBySubcontractor(subcontractorId)` — fetches all milestones across a subcontractor's contracts
 - `getNextMilestoneNumber(contractId)` — returns the next available milestone number
 - `createMilestone(data)` — inserts a new milestone
@@ -254,7 +316,7 @@ phase to a user goes through it.
 ### ProjectSummaryBanner.tsx
 - The whole project in one strip of five tiles, in the same order and colours a phase card uses, so the project reads as one level up from what sits beneath it. Money comes from `rollupContracts`, the same function every node below uses
 - The "not phased" tile appears only when `tic_phase_count > 0`; on an unphased TIC every line would land there
-- The paid tile is gated on `canManagePayments`, matching the permission behaviour of the summary block it replaced
+- The paid tile **and** the unpaid tile are gated on `canManagePayments` (unpaid is contracted − paid, so showing it alone gives paid away), and the grid collapses to two or three columns rather than leaving holes. See "The payment gate" above
 
 ### TICBudgetBadge.tsx
 - Says where a project's budget comes from — "✓ iz TIC-a" — or that it has none yet. There is no drift warning any more: a budget cannot drift from the plan when the plan is the only thing that writes it
@@ -276,9 +338,30 @@ phase to a user goes through it.
 
 ### MilestoneList.tsx
 - Milestone management panel: add/edit/delete milestones, stats summary, and details per milestone
+- Rendered inside `Modal.Body noPadding` from `index.tsx` — `Modal.Body` is the only part of `Modal` that scrolls, so as a direct child a long milestone table simply overflowed the viewport. It draws its own header and close button (the close button carries an `aria-label`), which is why the body takes no padding
+- Money is rendered with `formatEuro`, not a hand-rolled `toLocaleString('hr-HR')`
+- Paid column, total-paid tile, paid/pending counts and the Status column are gated on `canManagePayments` (see "The payment gate")
 - **Uses services:** milestoneService (fetchMilestonesByContract, getNextMilestoneNumber, createMilestone, updateMilestone, deleteMilestone, getMilestoneStatsForContract — via siteService barrel)
 - **Uses components:** MilestoneFormModal
 - **Uses Ui:** Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog, useToast
+
+#### Milestones are gross
+
+A milestone's amount is `percentage × contract.contract_amount`, and a trigger keeps
+`contract_amount` equal to `total_amount` — the contract **with VAT**
+(`baseline_schema.sql:57-61`). So both sides of every milestone comparison are gross:
+
+- **Paid** is the sum of the linked invoices' `paid_amount` (gross money received). It used to be
+  their `base_amount` — net, and counted whether or not the invoice had ever been paid — so at
+  25 % VAT a fully paid milestone read "80 % Djelomično" and `paid >= amount` could never be true.
+  This is also what the `update_milestone_status_on_payment` trigger compares against
+  `total_amount` when it sets the milestone's status, so the UI now agrees with the database.
+- The label is `milestone_list.contract_gross` ("Ugovor (s PDV)"). It used to say
+  "Ugovor (osnova)" — *net* — over a gross figure, with a hardcoded English "(Base)" repeating it
+  in `MilestoneFormModal` and "Ukupno plaćeno (osnova)" in `EditSubcontractorModal`.
+- Cashflow's invoice form computes a milestone's remaining the same way:
+  `Cashflow/Invoices/services/invoiceService.ts` `fetchMilestones()` subtracts gross paid from the
+  gross milestone amount, not net invoiced.
 
 ### ContractDocumentUpload.tsx
 - Drag-and-drop PDF uploader enforcing PDF-only and 25 MB per file limits; validates type, size, and duplicates
@@ -355,7 +438,7 @@ never holds, so every invoice rendered yellow with its raw enum as the label.
 
 ### index.tsx (SiteManagement)
 - Master orchestrator: project/phase/subcontractor CRUD, payment history, comments, milestone context, and all modal state
-- Applies permission checks (canManagePayments, getAccessibleProjectIds)
+- Applies permission checks (`canManagePayments`, `getAccessibleProjectIds`) and threads `canManagePayments` into `ProjectDetail`, `ProjectsGrid`, `SubcontractorDetailsModal`, `EditSubcontractorModal` and `MilestoneList`; `onOpenPaymentHistory` and `onOpenInvoices` are both left `undefined` without it
 - **Uses hooks:** useSiteData
 - **Uses components:** ProjectsGrid, ProjectDetail, all modals
 - **Uses Ui:** Card, Button
