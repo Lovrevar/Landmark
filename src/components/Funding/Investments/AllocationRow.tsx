@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Trash2, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Badge, LoadingSpinner } from '../../ui'
 import { format } from 'date-fns'
+import { formatEuro } from '../../../utils/formatters'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 import { fetchAllocationInvoices, AllocationInvoice } from './services/allocationService'
 
@@ -104,29 +105,29 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
           <div className="text-right">
             <div className="text-sm text-gray-600 dark:text-gray-400">
               {t('funding.allocation_row.allocated_label')}{' '}
-              <span className="font-semibold text-blue-600">
-                €{allocation.allocated_amount.toLocaleString('hr-HR')}
+              <span className="font-semibold text-blue-600 dark:text-blue-400">
+                {formatEuro(allocation.allocated_amount)}
               </span>
             </div>
             {credit.disbursed_to_account ? (
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {t('funding.allocation_row.paid_out_label')}{' '}
-                <span className="font-semibold text-green-600">
-                  €{allocation.allocated_amount.toLocaleString('hr-HR')}
+                {t('funding.allocation_row.used_label')}{' '}
+                <span className="font-semibold text-orange-600 dark:text-orange-400">
+                  {formatEuro(allocation.allocated_amount)}
                 </span>
               </div>
             ) : (
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                {t('funding.allocation_row.used_label')} €{allocation.used_amount.toLocaleString('hr-HR')} |{' '}
+                {t('funding.allocation_row.used_label')} {formatEuro(allocation.used_amount)} |{' '}
                 {t('funding.allocation_row.available_label')}{' '}
                 <span
                   className={
                     allocation.allocated_amount - allocation.used_amount < 0
-                      ? 'text-red-600 font-semibold'
-                      : 'text-green-600 font-semibold'
+                      ? 'text-red-600 dark:text-red-400 font-semibold'
+                      : 'text-green-600 dark:text-green-400 font-semibold'
                   }
                 >
-                  €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
+                  {formatEuro(allocation.allocated_amount - allocation.used_amount)}
                 </span>
               </div>
             )}
@@ -153,14 +154,14 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
                 <p className="text-gray-600 dark:text-gray-400">{t('funding.allocation_row.allocated_label')}</p>
-                <p className="font-semibold text-blue-600">
-                  €{allocation.allocated_amount.toLocaleString('hr-HR')}
+                <p className="font-semibold text-blue-600 dark:text-blue-400">
+                  {formatEuro(allocation.allocated_amount)}
                 </p>
               </div>
               <div>
-                <p className="text-gray-600 dark:text-gray-400">{t('funding.allocation_row.paid_out_label')}</p>
-                <p className="font-semibold text-green-600">
-                  €{allocation.allocated_amount.toLocaleString('hr-HR')}
+                <p className="text-gray-600 dark:text-gray-400">{t('funding.allocation_row.used_label')}</p>
+                <p className="font-semibold text-orange-600 dark:text-orange-400">
+                  {formatEuro(allocation.allocated_amount)}
                 </p>
               </div>
             </div>
@@ -168,14 +169,14 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
               <div>
                 <p className="text-gray-600 dark:text-gray-400">{t('funding.allocation_row.allocated_label')}</p>
-                <p className="font-semibold text-blue-600">
-                  €{allocation.allocated_amount.toLocaleString('hr-HR')}
+                <p className="font-semibold text-blue-600 dark:text-blue-400">
+                  {formatEuro(allocation.allocated_amount)}
                 </p>
               </div>
               <div>
                 <p className="text-gray-600 dark:text-gray-400">{t('funding.allocation_row.used_label')}</p>
-                <p className="font-semibold text-orange-600">
-                  €{allocation.used_amount.toLocaleString('hr-HR')}
+                <p className="font-semibold text-orange-600 dark:text-orange-400">
+                  {formatEuro(allocation.used_amount)}
                 </p>
               </div>
               <div>
@@ -183,11 +184,11 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                 <p
                   className={`font-semibold ${
                     allocation.allocated_amount - allocation.used_amount < 0
-                      ? 'text-red-600'
-                      : 'text-green-600'
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-green-600 dark:text-green-400'
                   }`}
                 >
-                  €{(allocation.allocated_amount - allocation.used_amount).toLocaleString('hr-HR')}
+                  {formatEuro(allocation.allocated_amount - allocation.used_amount)}
                 </p>
               </div>
             </div>
@@ -261,10 +262,10 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                                 {format(new Date(inv.payment_date), 'dd.MM.yyyy')}
                               </td>
                               <td data-label={t('funding.allocation_row.table.payment_amount')} className="px-4 py-2.5 text-right font-semibold text-blue-700 dark:text-blue-300">
-                                €{inv.payment_amount.toLocaleString('hr-HR')}
+                                {formatEuro(inv.payment_amount)}
                               </td>
                               <td data-label={t('funding.allocation_row.table.total_amount')} className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-200">
-                                €{inv.total_amount.toLocaleString('hr-HR')}
+                                {formatEuro(inv.total_amount)}
                               </td>
                               <td data-label={t('funding.allocation_row.table.status')} className="px-4 py-2.5 text-center">
                                 <Badge variant={getInvoiceStatusVariant(inv.status)}>

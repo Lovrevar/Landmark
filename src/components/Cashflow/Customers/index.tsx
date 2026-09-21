@@ -1,9 +1,13 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Users, DollarSign, TrendingUp, TrendingDown, FileText, Eye, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
+import { Users, DollarSign, TrendingUp, TrendingDown, FileText, Eye } from 'lucide-react'
+import { format } from 'date-fns'
 import { useAccountingCustomers } from './hooks/useAccountingCustomers'
 import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, StatCard, EmptyState, ErrorState, Button, Badge, Modal } from '../../ui'
 import { toErrorMessage } from '../../../lib/errorMessage'
+import { parseLocalDate } from '../../../utils/dateOnly'
+import { formatEuro } from '../../../utils/formatters'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 const AccountingCustomers: React.FC = () => {
   const { t } = useTranslation()
@@ -18,7 +22,6 @@ const AccountingCustomers: React.FC = () => {
     setSearchTerm,
     showDetailsModal,
     selectedCustomer,
-    isIncomeInvoice,
     handleOpenDetails,
     handleCloseDetails,
     filteredCustomers,
@@ -175,47 +178,47 @@ const AccountingCustomers: React.FC = () => {
                 <p className="text-gray-500 dark:text-gray-400 text-center py-4">{t('accounting_customers.modal.no_invoices')}</p>
               ) : (
                 <div className="space-y-3">
+                  {/* A customer invoice can only ever be OUTGOING_SALES — the DB's
+                      `check_invoice_entity_type` allows no other type to carry a `customer_id`,
+                      and the query filters on it. The green border, the up arrow and the PRIHOD
+                      badge were therefore constants stating the obvious, and their red/RASHOD
+                      halves were unreachable. Gone; the status badge carries the news instead. */}
                   {selectedCustomer.invoices.map((invoice) => (
-                    <div key={invoice.id} className={`border-2 rounded-lg p-4 ${
-                      isIncomeInvoice(invoice.invoice_type) ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
-                    }`}>
+                    <div key={invoice.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            {isIncomeInvoice(invoice.invoice_type) ? (
-                              <ArrowUpCircle className="w-5 h-5 text-green-600" />
-                            ) : (
-                              <ArrowDownCircle className="w-5 h-5 text-red-600" />
-                            )}
-                            <p className="font-medium text-gray-900 dark:text-white">{invoice.invoice_number}</p>
-                            <Badge variant={isIncomeInvoice(invoice.invoice_type) ? 'green' : 'red'} size="sm">
-                              {isIncomeInvoice(invoice.invoice_type) ? t('accounting_customers.modal.invoice_income') : t('accounting_customers.modal.invoice_expense')}
-                            </Badge>
-                          </div>
+                          <p className="font-medium text-gray-900 dark:text-white">{invoice.invoice_number}</p>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             {t('accounting_customers.modal.invoice_company')} {invoice.company?.name || 'N/A'}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(invoice.issue_date).toLocaleDateString('hr-HR')}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {format(parseLocalDate(invoice.issue_date), 'dd.MM.yyyy')}
+                          </p>
                         </div>
-                        <Badge
-                          variant={invoice.status === 'PAID' ? 'green' : invoice.status === 'PARTIALLY_PAID' ? 'yellow' : 'gray'}
-                          size="sm"
-                        >
-                          {invoice.status === 'PAID' ? t('accounting_customers.modal.status_paid') : invoice.status === 'PARTIALLY_PAID' ? t('accounting_customers.modal.status_partial') : t('accounting_customers.modal.status_unpaid')}
+                        {/* The shared renderer: the local switch here had UNPAID gray, where it is
+                            red on every other screen, and labelled an unknown status "Neplaćeno". */}
+                        <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
+                          {getInvoiceStatusLabel(invoice.status, t)}
                         </Badge>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-300 dark:border-gray-600">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                         <div>
                           <p className="text-xs text-gray-600 dark:text-gray-400">{t('accounting_customers.modal.total')}</p>
-                          <p className="font-semibold text-gray-900 dark:text-white">€{invoice.total_amount.toLocaleString('hr-HR')}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{formatEuro(invoice.total_amount)}</p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-600 dark:text-gray-400">{t('accounting_customers.modal.paid')}</p>
-                          <p className="font-semibold text-green-600">€{invoice.paid_amount.toLocaleString('hr-HR')}</p>
+                          {/* Colour only where there is something to colour: €0 paid is not good
+                              news in green, and €0 left to pay is not a warning in red. */}
+                          <p className={`font-semibold ${invoice.paid_amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}`}>
+                            {formatEuro(invoice.paid_amount)}
+                          </p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-600 dark:text-gray-400">{t('accounting_customers.modal.remaining')}</p>
-                          <p className="font-semibold text-red-600">€{invoice.remaining_amount.toLocaleString('hr-HR')}</p>
+                          <p className={`font-semibold ${invoice.remaining_amount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                            {formatEuro(invoice.remaining_amount)}
+                          </p>
                         </div>
                       </div>
                     </div>

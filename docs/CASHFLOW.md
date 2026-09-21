@@ -192,10 +192,22 @@ Bank account management, credit line tracking, and bank-linked invoice creation.
 
 ### index.tsx (AccountingBanks)
 - Displays bank investments, credit lines, and credit allocations with progress indicators
-- `bank_credits.maturity_date` is nullable (credits created from Funding may omit it): the credit card shows `—` unless `isValidDate()` passes, and `useBanks.handleEditCredit` loads a null maturity into the form as `''`
 - Expandable sections per bank and per credit
+- **The credit card itself is shared with `Funding/Investments`** — badges, usage tiles with their
+  progress bar, and the details/dates grid all come from `Funding/Investments/CreditSummary.tsx`,
+  so the two screens cannot drift again (see `docs/FUNDING.md` → Investments). This page keeps
+  only the bank grouping and the expanders. What the local copy used to get wrong: "Dug" was
+  coloured by a `netUsed` that counted every drawdown twice (payments against OUTGOING_BANK
+  invoices are already inside `used_amount`), so a fully repaid credit showed a red "€0,00";
+  "Iznos investicije" appeared twice, in the header and again as a tile; a *defaulted* credit got
+  a calm blue badge while the `pending` / `closed` branches could never run; "Nealocirano" was
+  clamped to €0, hiding over-commitment
+- `bank_credits.maturity_date` is nullable (credits created from Funding may omit it): the credit
+  card shows `—` unless `isValidDate()` passes, and `useBanks.handleEditCredit` loads a null
+  maturity into the form as `''`. Dates render `dd.MM.yyyy` through `parseLocalDate`
+- **Uses components:** CreditBadges / CreditUsageTiles / CreditDetailsGrid (Funding/Investments), AllocationRow, CreditDisbursements, CreditRepayments, CreditExpenses
 - **Uses hooks:** useBanks, useBankeCredits
-- **Uses Ui:** Card, Table
+- **Uses Ui:** StatGrid, StatCard, Alert, EmptyState, ErrorState, Button
 
 ---
 
@@ -335,7 +347,10 @@ Accounting-side customer records (distinct from Sales CRM customers). Tracks inv
   query no longer empties the table and all four stat cards. `partial` is true when some
   customers loaded and others did not
 - **Calls:** customerService.ts
-- **Returns:** customers, loading, error, partial, refetch, dismissError, searchTerm, showDetailsModal, selectedCustomer, isIncomeInvoice, handleOpenDetails, handleCloseDetails, filteredCustomers, totalStats
+- **Returns:** customers, loading, error, partial, refetch, dismissError, searchTerm, showDetailsModal, selectedCustomer, handleOpenDetails, handleCloseDetails, filteredCustomers, totalStats
+- `isIncomeInvoice` is gone: a customer invoice can only be `OUTGOING_SALES` (the DB's
+  `check_invoice_entity_type` lets no other type carry a `customer_id`, and `fetchCustomerInvoices`
+  filters on `customer_id`), so it returned `true` for every row the modal could ever show
 
 #### Views
 
@@ -343,6 +358,14 @@ Accounting-side customer records (distinct from Sales CRM customers). Tracks inv
 - Customer list with stats, contact info, invoice tracking, and detail modal
 - The stat grid is hidden whenever `error` is set — a total over a partial list would read as the
   whole book — and the table area shows `ErrorState` when nothing loaded at all
+- The modal's invoice cards state the direction **nowhere**: the green/red border, the up/down
+  arrow and the PRIHOD/RASHOD badge were three renderings of a constant (see the hook above), and
+  their expense halves were unreachable. Status comes from the shared `getInvoiceStatusVariant` /
+  `getInvoiceStatusLabel`; the local switch had UNPAID gray where it is red everywhere else, and
+  labelled an unknown status "Neplaćeno". "Plaćeno" is green and "Preostalo" red only above €0
+- Its "Dužno" tile is `property_price − total_paid`, which **goes negative** when a buyer has paid
+  more than the linked units' list price (extras, revaluation). Left as it is: what "debt" means
+  for a customer is a product decision, not a rendering one
 - **Uses hooks:** useAccountingCustomers
 - **Uses Ui:** Card, Table, SearchInput, ErrorState, Alert
 
@@ -677,6 +700,14 @@ Both forms route source and cesija changes through a `changeForm` wrapper that s
 
 ### PaymentTable.tsx
 - Payment list table with column visibility toggle
+- The amount takes the **direction's** colour (`paymentDirection` → `DIRECTION_AMOUNT_CLASS`):
+  income green, expense red, with `dark:` pairs. It used to be green on every row, including the
+  rows whose own type cell said RASHOD in red beside it. The type cell now reads the same
+  direction rather than re-testing the prefix
+- Rows with no joined invoice are skipped (they carry no type, so no direction); `filteredPayments`
+  drops them too, so the stat-card count and the table agree
+- Dates are `dd.MM.yyyy` via `parseLocalDate` — `payment_date` is a `date` column, and
+  `new Date('YYYY-MM-DD')` parses as UTC midnight
 - **Uses Ui:** Table
 
 ### services/paymentPayload.ts
@@ -689,8 +720,17 @@ Both forms route source and cesija changes through a `changeForm` wrapper that s
 - Shared by `useInvoices.handlePaymentSubmit` and `usePayments.handleSubmit`; unit-tested in `paymentValidation.test.ts`
 
 ### PaymentStatsCards.tsx
-- Summary stat cards for payment totals
-- **Uses Ui:** StatGrid
+- Six cards on a `StatGrid`, over **the filtered rows** the table below is showing: count,
+  Ukupno Prihod (in), Ukupno Rashod (out), Neto, PDV Ulaz, PDV Izlaz
+- Replaces "Ukupan iznos" and "Ovaj mjesec", which each added income and expense into one figure —
+  a month of sales receipts stacked on that month's supplier payments. In / Out / Net come from
+  the shared `paymentTotalsByDirection`, the same helper and the same wording as Funding → Payments
+- The count used to run over every loaded payment, including the ones with no joined invoice that
+  the table drops, so it could stand above a shorter list. "Ovaj mjesec" bucketed with
+  `new Date('YYYY-MM-DD').getMonth()`, i.e. in UTC; there is no month card now
+- VAT keeps its own two cards: VAT is a per-invoice share of each payment, not a direction. The
+  share is `payment.amount / invoice.total_amount` of `invoice.vat_amount`
+- **Uses Ui:** StatGrid, StatCard
 
 ### PaymentDetailView.tsx
 - Read-only detail modal for a single payment record
@@ -698,6 +738,11 @@ Both forms route source and cesija changes through a `changeForm` wrapper that s
 
 ### index.tsx (AccountingPayments)
 - Payment list with filters, stats, column toggle, and detail/edit modal
+- **The stat cards follow the filters**: `filteredPayments` goes to `PaymentStatsCards`, the page
+  of it to the table, and the same filtered set to the footer. Filtering to one month used to
+  leave the cards describing the whole book
+- The pagination footer shows the filtered total **split by direction** — in green, out red, net
+  neutral — instead of one green sum of both
 - **Uses hooks:** usePayments
 - **Uses components:** PaymentTable, PaymentStatsCards, PaymentDetailView, AccountingPaymentFormModal
 - **Uses Ui:** Card, FilterBar
@@ -817,15 +862,16 @@ Shared utilities used across multiple Cashflow sub-modules.
     `null` for an unknown status
   - `getInvoiceStatusLabel(status, t)` → the translated label; an unknown status is shown as-is,
     a missing one as `—`
-  - Used by Approvals, Supervision's `InvoicesModal` and `PaymentHistoryModal`, Retail's
-    `RetailInvoicesModal` and `RetailPaymentHistoryModal`, and Funding's `CreditInvoiceSection`
-    and `AllocationRow`. Other invoice screens (the main invoice list via `getStatusColor`,
-    Customers, Suppliers, Office Suppliers, Cashflow Calendar, Retail/Supervision invoice lists)
-    still render status their own way
+  - Used by Approvals, **Customers' invoice cards**, Supervision's `InvoicesModal` and
+    `PaymentHistoryModal`, Retail's `RetailInvoicesModal` and `RetailPaymentHistoryModal`, and
+    Funding's `CreditInvoiceSection` and `AllocationRow`. Other invoice screens (the main invoice
+    list via `getStatusColor`, Suppliers, Office Suppliers, Cashflow Calendar, Retail/Supervision
+    invoice lists) still render status their own way
 - `paymentDirection(invoiceType)` → `'IN' | 'OUT' | null` — which way cash moves when an invoice
   of that type is paid: `OUTGOING_*` (we issued it — a sale, a credit drawdown) is money **in**,
   `INCOMING_*` (we received it — a supplier bill, a repayment, credit fees) is money **out**. Same
-  sign convention as the bank-balance trigger. Used by Funding → Payments. Note that it puts
+  sign convention as the bank-balance trigger. Used by both payment screens (Cashflow → Payments
+  and Funding → Payments) for the amount colour, the stat cards and the footer totals. Note that it puts
   `INCOMING_INVESTMENT` on the OUT side, as the trigger does, whereas the accounting dashboard and
   `getTypeColor` treat it as incoming cash
 - `getTypeColor(type)` — returns CSS class for invoice type badge
@@ -841,6 +887,20 @@ Shared utilities used across multiple Cashflow sub-modules.
 - `isOverdue(dueDate, status)` — returns true if unpaid invoice is past due date. Compares whole local days via `daysFromToday`, so an invoice due today is not yet overdue
 - `columnLabels` — Croatian display names for invoice table columns
 - **Depends on:** `utils/dateOnly` (pure helpers)
+
+### paymentTotals.ts
+- `paymentTotalsByDirection(rows)` → `{ inflow, outflow, net, count }`. Sums by direction, never
+  across it: one summed amount put a €500k drawdown and its €500k repayment at €1.000.000, and a
+  month's sales receipts on top of that month's supplier payments. Sums in whole cents so equal
+  flows net to exactly 0 rather than printing "−€0,00". Rows carry `{ amount, direction }`, the
+  direction from `paymentDirection`
+- `EMPTY_PAYMENT_TOTALS` — the zero struct, for a hook's initial state
+- `DIRECTION_AMOUNT_CLASS` — amount colours, IN green / OUT red with `dark:` pairs, so both
+  payment screens render a direction identically
+- `formatSignedEuro(value)` — a net figure with its `+` (the minus comes from `formatEuro`)
+- Moved here (was `Funding/Payments/paymentTotals.ts`, `bankPaymentTotals`) when the Cashflow
+  payments screen needed the same maths — it was never bank-specific. Unit-tested in
+  `paymentTotals.test.ts` (7 tests)
 
 ### paymentHelpers.ts
 - `allowedPaymentMethods(source, isCesija)` — bank_account → WIRE/CARD/CHECK, credit → WIRE, gotovina → CASH, kompenzacija → none, cesija (any source) → WIRE; unknown source → all four

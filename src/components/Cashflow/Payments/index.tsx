@@ -10,6 +10,9 @@ import PaymentStatsCards from './PaymentStatsCards'
 import PaymentTable from './PaymentTable'
 import { PaymentDetailView } from './PaymentDetailView'
 import { columnLabels } from '../services/paymentHelpers'
+import { paymentDirection } from '../services/invoiceHelpers'
+import { paymentTotalsByDirection, formatSignedEuro } from '../services/paymentTotals'
+import { formatEuro } from '../../../utils/formatters'
 import type { FilterMethod, FilterInvoiceType } from './types'
 
 const AccountingPayments: React.FC = () => {
@@ -72,6 +75,10 @@ const AccountingPayments: React.FC = () => {
   // description of an empty table. Say the load failed instead.
   const loadFailedEmpty = !!error && payments.length === 0
 
+  const filteredTotals = paymentTotalsByDirection(
+    filteredPayments.map(p => ({ amount: p.amount, direction: paymentDirection(p.accounting_invoices?.invoice_type) }))
+  )
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -119,7 +126,9 @@ const AccountingPayments: React.FC = () => {
         </Alert>
       )}
 
-      {!loadFailedEmpty && <PaymentStatsCards payments={payments} />}
+      {/* The filtered rows, not every loaded payment: the cards sit above the table and used to
+          describe a different set from the one below them. */}
+      {!loadFailedEmpty && <PaymentStatsCards payments={filteredPayments} />}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -207,10 +216,18 @@ const AccountingPayments: React.FC = () => {
         onPageChange={setCurrentPage}
         itemLabel={t('payments.pagination.item_label')}
         extra={
-          <span>
-            <span className="text-gray-600 dark:text-gray-400 mr-2">{t('payments.filtered_total')}</span>
-            <span className="font-semibold text-green-600">
-              €{filteredPayments.reduce((sum, p) => sum + p.amount, 0).toLocaleString('hr-HR')}
+          /* Split by direction, never one sum: income and expense added together is a figure
+             nobody can act on, and it was shown in green as though it were all money in. */
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-gray-600 dark:text-gray-400">{t('payments.filtered_total')}</span>
+            <span className="font-semibold text-green-600 dark:text-green-400">
+              {t('payments.table.income')} {formatEuro(filteredTotals.inflow)}
+            </span>
+            <span className="font-semibold text-red-600 dark:text-red-400">
+              {t('payments.table.expense')} {formatEuro(filteredTotals.outflow)}
+            </span>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {t('payments.stats.net')} {formatSignedEuro(filteredTotals.net)}
             </span>
           </span>
         }

@@ -4,21 +4,15 @@ import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { format } from 'date-fns'
 import { usePaymentsData } from './hooks/usePaymentsData'
-import { bankPaymentTotals } from './paymentTotals'
+import { paymentTotalsByDirection, DIRECTION_AMOUNT_CLASS, formatSignedEuro } from '../../Cashflow/services/paymentTotals'
 import type { BankPaymentWithDetails } from './services/bankPaymentsService'
 import type { PaymentDirection } from '../../Cashflow/services/invoiceHelpers'
 import { getCreditTypeLabelKey } from '../Investors/utils/creditCalculations'
 import { formatEuro, NO_VALUE } from '../../../utils/formatters'
 
-// Direction colours: a drawdown is money in (green), a repayment or credit fee money out (red).
+// A drawdown is money in (green), a repayment or credit fee money out (red). The amount classes
+// and the signed-net formatter are shared with the Cashflow payments screen.
 const DIRECTION_BADGE: Record<PaymentDirection, 'green' | 'red'> = { IN: 'green', OUT: 'red' }
-const DIRECTION_AMOUNT_CLASS: Record<PaymentDirection, string> = {
-  IN: 'text-green-600 dark:text-green-400',
-  OUT: 'text-red-600 dark:text-red-400',
-}
-
-/** A net figure carries its own sign; the helper already prints the minus. */
-const formatSignedEuro = (value: number): string => `${value > 0 ? '+' : ''}${formatEuro(value)}`
 
 const FundingPaymentsManagement: React.FC = () => {
   const { t } = useTranslation()
@@ -59,7 +53,7 @@ const FundingPaymentsManagement: React.FC = () => {
     return matchesSearch && matchesDateRange && matchesFilter
   })
 
-  const filteredTotals = bankPaymentTotals(filteredPayments)
+  const filteredTotals = paymentTotalsByDirection(filteredPayments)
 
   const exportToCSV = () => {
     const headers = ['Date', 'Type', 'Recipient', 'Project', 'Category', 'Amount', 'Notes']

@@ -52,10 +52,6 @@ export const useAccountingCustomers = () => {
     }
   }
 
-  const isIncomeInvoice = (invoiceType: string) => {
-    return invoiceType.startsWith('OUTGOING_')
-  }
-
   const handleOpenDetails = (customer: CustomerStats) => {
     setSelectedCustomer(customer)
     lockBodyScroll()
@@ -92,7 +88,6 @@ export const useAccountingCustomers = () => {
     setSearchTerm,
     showDetailsModal,
     selectedCustomer,
-    isIncomeInvoice,
     handleOpenDetails,
     handleCloseDetails,
     filteredCustomers,

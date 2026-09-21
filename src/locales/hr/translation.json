@@ -690,11 +690,8 @@
       "income": "PRIHOD"
     },
     "stats": {
-      "total": "Ukupno plaćanja",
-      "total_amount": "Ukupan iznos",
-      "this_month": "Ovaj mjesec",
-      "month_amount": "Iznos ovog mjeseca",
       "total_count": "Ukupno plaćanja",
+      "net": "Neto",
       "vat_in": "PDV Ulaz",
       "vat_out": "PDV Izlaz",
       "total_expense": "Ukupno Rashod",
@@ -792,7 +789,7 @@
     "show_columns": "Prikaži kolone",
     "search_placeholder": "Pretraži po broju računa, firmi, dobavljaču...",
     "shown_count": "Prikazano: {{filtered}} od {{total}} plaćanja",
-    "filtered_total": "Ukupan iznos filtriranih: ",
+    "filtered_total": "Filtrirano:",
     "method_wire": "Virman",
     "method_cash": "Gotovina",
     "method_check": "Ček",
@@ -1147,7 +1144,7 @@
       "credit": {
         "investment_amount": "Iznos investicije",
         "allocated": "Alocirano",
-        "paid_out": "Isplaćeno",
+        "used": "Iskorišteno",
         "debt": "Dug",
         "unallocated": "Nealocirano",
         "allocation_progress": "Napredak alokacije",
@@ -3221,6 +3218,11 @@
     "title": "Financiranje",
     "subtitle": "Upravljanje financiranjem",
     "equity": "Vlastiti kapital",
+    "credit_status": {
+      "active": "Aktivan",
+      "paid": "Otplaćen",
+      "defaulted": "U kašnjenju"
+    },
     "investment_amount": "Iznos investicije",
     "allocated": "Alocirano",
     "unallocated": "Nealocirano",
@@ -3292,6 +3294,7 @@
         "maturity_date_label": "Datum dospijeća",
         "repayment_progress_label": "Napredak otplate",
         "maturing_soon": "USKORO DOSPIJEVA",
+        "past_maturity": "DOSPJELO",
         "company_label": "Firma:",
         "na": "N/A"
       }
@@ -3304,10 +3307,6 @@
       "no_investments_description": "Dodajte prvu investiciju putem upravljanja investicijama",
       "unnamed_credit": "Neimenovani kredit",
       "unknown_bank": "Nepoznata banka",
-      "investment_usage_label": "Korištenje investicije",
-      "used_percent": "Iskorišteno {{percent}}%",
-      "allocated_percent": "Alocirano {{percent}}%",
-      "over_allocated": "Prekoračeno za €{{amount}}",
       "investment_purpose_btn": "Namjena Investicije",
       "expand_credit_title": "Proširi kredit",
       "collapse_credit_title": "Skupi kredit",
@@ -3334,16 +3333,12 @@
       "confirm_delete_allocation_title": "Potvrda brisanja",
       "confirm_delete_allocation_message": "Jeste li sigurni da želite obrisati ovu namjenu?",
       "allocation_delete_success": "Namjena investicije obrisana",
-      "allocation_delete_failed": "Namjena investicije nije obrisana",
-      "dug_label": "Dug",
-      "iskorišteno_label": "Iskorišteno",
-      "nealocirano_label": "Nealocirano"
+      "allocation_delete_failed": "Namjena investicije nije obrisana"
     },
     "allocation_row": {
       "opex_label": "OPEX (Bez projekta)",
       "refinancing_prefix": "Refinanciranje - ",
       "allocated_label": "Alocirano:",
-      "paid_out_label": "Isplaćeno:",
       "used_label": "Iskorišteno:",
       "available_label": "Dostupno:",
       "company_badge": "FIRMA",

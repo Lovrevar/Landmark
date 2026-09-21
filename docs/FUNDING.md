@@ -68,13 +68,57 @@ Detailed credit management: allocations per project, disbursements, expenses, re
 ### index.tsx (CreditsManagement)
 - Expandable credit cards with allocation modal, disbursement, repayment, and expense sections
 - Destructures `error` / `refetch`: with no credits loaded an `ErrorState` with a retry takes the place of the empty state; with credits on screen a dismissible `Alert variant="error"` sits above them
+- The credit card's badges, tiles and details grid come from `CreditSummary.tsx`, **shared with
+  `Cashflow/Banks`** — the two screens render the same credits and had drifted apart. This one
+  keeps its own chrome: the expander and the "Namjena Investicije" button
+- The allocation modal's "Nealocirano:" runs through the same `calculateCreditUsage` as the tile
+  behind it. It used to leave direct drawdowns out and clamp nothing, so it offered money the
+  tile had already spent
 - Maturity date renders `—` when the credit has none (guarded with `isValidDate()` from `src/utils/dateOnly.ts`), instead of formatting `new Date(null)` as Jan 01, 1970
 - **Uses hooks:** useCreditManagement
-- **Uses components:** AllocationRow, CreditDisbursements, CreditRepayments, CreditExpenses, CreditInvoiceSection
-- **Uses Ui:** Card, Modal, Button
+- **Uses components:** CreditSummary (CreditBadges / CreditUsageTiles / CreditDetailsGrid), AllocationRow, CreditDisbursements, CreditRepayments, CreditExpenses, CreditInvoiceSection
+- **Uses Ui:** Modal, Button, EmptyState, ErrorState, Alert, Form, ConfirmDialog
+
+### CreditSummary.tsx
+The credit card's shared middle, rendered identically by `Funding/Investments` and
+`Cashflow/Banks`. Three exports:
+
+- `CreditBadges({ credit })` — the equity marker (`funding.equity`, was a hardcoded "EQUITY") and
+  the translated status from `Investors/utils/creditStatus.ts`
+- `CreditUsageTiles({ credit, totalAllocated, usedInAllocations, unallocatedDisbursements })` —
+  four tiles (Alocirano, Iskorišteno, Dug, Nealocirano), the two-segment progress bar and the
+  over-commitment warning. The duplicate "Iznos investicije" tile is gone; the header already
+  shows it
+- `CreditDetailsGrid({ credit })` — terms and dates. The type is translated through
+  `getCreditTypeLabelKey`; dates are `dd.MM.yyyy` parsed with `parseLocalDate` (`'MMM dd, yyyy'`
+  printed English month names, and `new Date(ymd)` is UTC, which can show the previous day)
+
+Two rules it fixes and now enforces in one place:
+
+- **"Dug" is coloured by the figure it prints** — `outstanding_balance > 0`, red while debt
+  remains and neutral at zero. Both copies coloured it from a local `netUsed` that added the
+  drawdowns a second time (they are already inside `used_amount`, via
+  `recalculate_bank_credit_fields`), so a fully repaid credit showed a red "€0,00"
+- **One quantity, one name, one colour**: money drawn from the line is "Iskorišteno" in orange on
+  the tile, in the bar, in the bar's legend and in `AllocationRow`. It used to be "Isplaćeno" in
+  orange on the tile and "Iskorišteno" in the legend beside it, for the same number, while
+  `AllocationRow` called it "Isplaćeno" in green
+
+### utils/creditUsage.ts
+- `calculateCreditUsage({ amount, disbursedToAccount, totalAllocated, usedInAllocations, unallocatedDisbursements })`
+  → `{ used, remainingAllocated, unallocated, overCommitted, overCommittedBy, usedPercent, remainingAllocatedPercent, totalUsagePercent }`
+- **"Nealocirano" is signed**: `amount − allocations − direct drawdowns`, no `Math.max(0, …)`. The
+  clamp printed a tidy €0 over an over-committed line and left the red branch below it unreachable
+- **Over-commitment counts drawdowns**, not allocations alone: money paid straight out of the
+  credit used to go over the facility in silence
+- Deliberately does **not** compute "Dug" — that is `outstanding_balance`, maintained by the
+  database. Pure and unit-tested (`creditUsage.test.ts`, 9 tests)
 
 ### AllocationRow.tsx
 - Displays allocation details with nested invoice table, lazy-loaded on expand
+- Spent money is "Iskorišteno:" in orange in both branches — including the `disbursed_to_account`
+  one, which called the same quantity "Isplaćeno:" in green. Available is green, or red when the
+  allocation is overspent. Amounts render through `formatEuro`
 - **Uses hooks:** useLazySection
 - **Uses services:** allocationService
 - **Uses Ui:** Table, Button
@@ -207,10 +251,38 @@ Bank and investor registry. Manages credit facilities and equity investments per
 
 ### CreditFacilityCard.tsx
 - Card for displaying a credit facility with key financial metrics
+- **Maturity** reads through `daysFromToday`: "USKORO DOSPIJEVA" for 0–90 days and only while the
+  credit is `active`; past maturity and still active gets a red "DOSPJELO"
+  (`funding.investors.credit_facility_card.past_maturity`); a repaid credit gets neither. The old
+  `differenceInDays(maturity, now) <= 90` was also true for credits that matured years ago and
+  ignored the status, so a repaid one wore "maturing soon" for life. The date renders `dd.MM.yyyy`
+- One type badge, from `getCreditTypeLabelKey` / `getCreditTypeBadgeVariant`: the hardcoded
+  "EQUITY", the local copy of the variant map, and `credit_type.replace('_', ' ')` — which printed
+  "LINE OF_CREDIT", `String.replace` having replaced only the first underscore — are gone. The
+  separate seniority badge went with them: the type label already carries it (the credit form only
+  offers junior for a line of credit)
+- Status comes from `utils/creditStatus.ts`, not a local map missing `paid` and the raw
+  `status.toUpperCase()` as its label
+- Edit uses a real pencil (`Edit2`); it was `CreditCard as Edit2`, a credit-card glyph aliased to
+  look like one
 
 ### PaymentSchedulePreview.tsx
 - Preview block for a computed payment schedule (principal + interest, frequencies, start date)
 - Props: calculation (PaymentScheduleResult | null), gracePeriodMonths
+
+### utils/creditStatus.ts
+- `getCreditStatusDisplay(status)` → `{ labelKey, variant }` or `null`; `getCreditStatusVariant(status)`;
+  `CREDIT_STATUS_DISPLAY`, the map itself
+- The one renderer for `bank_credits.status`, whose CHECK allows exactly `active | paid | defaulted`
+  (baseline_schema.sql:2814) — **active green, paid gray, defaulted red**. Every screen had its own
+  map built around `'active' | 'pending' | 'closed'`, so a *defaulted* credit fell through to a calm
+  blue badge while the pending/closed branches could never run, and the raw English enum was the
+  label in a Croatian UI. An unrecognised value keeps a neutral badge and is shown as-is rather
+  than hidden
+- Labels: `funding.credit_status.active | paid | defaulted`
+- Kept out of `creditCalculations.ts` on purpose: that file is financial maths, this is display
+  mapping. Pure and unit-tested (`creditStatus.test.ts`, 6 tests)
+- Used by `CreditFacilityCard` and, through `Investments/CreditSummary`, by both credit pages
 
 ### utils/creditCalculations.ts
 The module's pure-maths layer, and the most heavily unit-tested file in the codebase
@@ -281,8 +353,10 @@ Read-only history of accounting payments made against bank credits.
 
 #### Utilities
 
-### paymentTotals.ts
-- `bankPaymentTotals(rows)` → `{ inflow, outflow, net, count }`. Sums by direction, never across it — one summed amount added a €500k drawdown to its €500k repayment and showed €1.000.000. Sums in whole cents so equal flows net to exactly 0. Unit-tested in `paymentTotals.test.ts`
+> `paymentTotals.ts` **moved** to `Cashflow/services/paymentTotals.ts` and `bankPaymentTotals` was
+> renamed `paymentTotalsByDirection`: the Cashflow payments screen needed the same maths, and it
+> was never bank-specific. The direction amount classes and `formatSignedEuro` moved there with
+> it, so both payment screens render a direction identically. See `docs/CASHFLOW.md` → Services.
 
 ### index.tsx (FundingPaymentsManagement)
 - Payment list with search, status/date filters, CSV export, and stats cards

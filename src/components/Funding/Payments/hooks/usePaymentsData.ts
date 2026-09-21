@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { format } from 'date-fns'
 import { monthKey } from '../../../../utils/dateOnly'
 import { fetchBankPayments, type BankPaymentWithDetails } from '../services/bankPaymentsService'
-import { bankPaymentTotals, type PaymentTotals } from '../paymentTotals'
+import { paymentTotalsByDirection, EMPTY_PAYMENT_TOTALS, type PaymentTotals } from '../../../Cashflow/services/paymentTotals'
 
 type CombinedPayment = BankPaymentWithDetails
 
@@ -12,8 +12,6 @@ interface PaymentsStats {
   thisMonth: PaymentTotals
 }
 
-const EMPTY_TOTALS: PaymentTotals = { inflow: 0, outflow: 0, net: 0, count: 0 }
-
 const calculateStats = (paymentsData: CombinedPayment[]): PaymentsStats => {
   // Same calendar month, compared as 'YYYY-MM' strings: a `>= first of the month` test also
   // counted future-dated payments, and `new Date('YYYY-MM-DD')` parses as UTC midnight.
@@ -21,14 +19,14 @@ const calculateStats = (paymentsData: CombinedPayment[]): PaymentsStats => {
   const paymentsThisMonth = paymentsData.filter(p => monthKey(p.payment_date || p.created_at) === currentMonth)
 
   return {
-    all: bankPaymentTotals(paymentsData),
-    thisMonth: bankPaymentTotals(paymentsThisMonth),
+    all: paymentTotalsByDirection(paymentsData),
+    thisMonth: paymentTotalsByDirection(paymentsThisMonth),
   }
 }
 
 export function usePaymentsData() {
   const [payments, setPayments] = useState<CombinedPayment[]>([])
-  const [stats, setStats] = useState<PaymentsStats>({ all: EMPTY_TOTALS, thisMonth: EMPTY_TOTALS })
+  const [stats, setStats] = useState<PaymentsStats>({ all: EMPTY_PAYMENT_TOTALS, thisMonth: EMPTY_PAYMENT_TOTALS })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
