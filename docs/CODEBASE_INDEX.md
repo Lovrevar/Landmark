@@ -18,7 +18,7 @@
 | **UI** | [UI.md](./UI.md) | Primitive component library |
 | **Core** | [CORE.md](./CORE.md) | Contexts, hooks, lib, types, utils |
 | **Activity Log** | [ACTIVITY_LOG.md](./ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
-| **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 14-tool catalog, fork-and-regenerate edits |
+| **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 15-tool catalog, fork-and-regenerate edits |
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
 | **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
 | **Tasks** | [TASKS.md](./TASKS.md) | Shared org-wide task list grouped by project; binary open/done checkbox, subtask checklists (a task with lines has its completion written by a trigger, so its own checkbox is a readout), private tasks, colour labels, attachments, @mention comments. Schema is shared with a standalone mobile task app: task tables use auth user ids + a `profiles` mirror table (`deadline`/`completed` columns). That app's Web Push server half — `push_subscriptions`, the `send-push` edge function, and the `pg_cron` deadline-reminder dispatcher — also lives in this project |
@@ -28,6 +28,7 @@
 
 | Doc | File | Description |
 |---|---|---|
+| **Voice access** | [voice/](./voice/01-chat-assistant-analysis.md) | 🔍 **Analysis + plan only, nothing built.** Voice access to the existing AI chat assistant through Vapi or Retell, in Custom LLM mode on one shared backend. Phase 1 surveys today's assistant (the blocker: it does not stream tokens). Phase 2 plans an in-app call button as v1 and a PIN-gated phone number as v2 (the order is pending a stakeholder decision), a default-deny voice tool allowlist, a Croatian STT/TTS go/no-go gate and a phased rollout |
 | **ERP Integration** | [erp-integration/](./erp-integration/README.md) | ⏸️ **On hold** — merged but switched off (flag off, migrations parked in `supabase/parked-migrations/erp/`). Rewrite of the financial section: 4D Wand becomes the source of truth for invoices, payments and bank balances; Cognilion stops authoring them and imports/classifies instead. Spec, decision log, progress and open questions |
 | **Testing** | [TESTING.md](./TESTING.md) | Vitest unit tests + Playwright e2e setup and conventions |
 | **Security Backlog** | [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) | Tracked security items and RLS hardening status |
