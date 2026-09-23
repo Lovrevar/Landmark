@@ -1131,8 +1131,6 @@
       "payments_start": "Plaćanja počinju:",
       "grace_period_note": "Nakon {{gracePeriod}} mj. počeka",
       "every_frequency": "Svakih {{frequency}}",
-      "title_add_en": "Add New Credit Facility",
-      "title_edit_en": "Edit Credit Facility",
       "bank_label": "Banka",
       "select_bank": "Odaberite banku",
       "credit_name_label": "Naziv kredita",

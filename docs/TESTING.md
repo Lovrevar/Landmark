@@ -249,3 +249,4 @@ Each action group starts with an italic line listing any preconditions. Example:
 8. [Collaboration](./test/08-collaboration.md) — Calendar, Chat, Tasks
 9. [Cross-cutting](./test/09-cross-cutting.md) — permissions matrix, Activity Log verification sweep, i18n sweep, release smoke list
 10. [Appendix: format conventions recap](./test/10-appendix.md)
+11. [Pre-merge check: the UI audit batches](./test/11-pre-merge-ui-audit.md) — release-specific, not a module section. Everything the UI-audit work changed that no person has clicked through yet: the Supervision payment gate, the one "overdue" rule, the corrected money figures on the Retail/Sales/Director dashboards and the credit pages, failed-load behaviour, and the three migrations that must reach prod with the merge
