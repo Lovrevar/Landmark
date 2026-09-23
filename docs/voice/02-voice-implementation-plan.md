@@ -16,7 +16,9 @@ promoted to its own critical-path section, with parallel tool dispatch, a bounde
 and day-one filler speech; the voice tool set became an explicit default-deny allowlist keyed
 by channel; the Croatian STT/TTS prototype became a parallel phase 0 with pass criteria;
 characterisation tests now gate the extraction PR with a before/after parity requirement; the
-estimate was re-cut into v1 and v2.
+estimate was re-cut into v1 and v2. **Second revision (same day):** the `voice_calls` token
+lifecycle is explicit (§4.4); phase 0 has a concrete, measurable test protocol (§10); and the
+dispatch-time role check was split out as its own PR against `development` (§5).
 
 Goal: a user talks, in Croatian, to the same assistant that answers in the app — first from an
 in-app call button, then from a phone number, later over WhatsApp.
@@ -284,20 +286,23 @@ session, exactly as it calls `ai-chat`.
 
 1. `authenticate(req)`, the existing code, then the voice rate-limit check (§7).
 2. Create an `ai_sessions` row with `channel = 'voice'`.
-3. Generate an opaque call token (32 random bytes). Insert a `voice_calls` row holding its
-   SHA-256 hash, the caller's current access token, and
-   `expires_at = min(token expiry, now + 15 min)`.
+3. Generate an opaque call token (32 random bytes, base64url). Insert a `voice_calls` row holding
+   its SHA-256 hash (the token itself is never stored), the caller's current access token,
+   `last_seen_at = now()`, and `expires_at = min(token expiry, now() + 15 min)`.
 4. Register the web call with the platform **server-side**, passing only the opaque token as call
-   metadata — **never the JWT** (§2 explains why).
+   metadata — **never the JWT** (§2 explains why). Store the platform call id it returns in
+   `platform_call_id`: that is what binds the token to the call (see the lifecycle below).
 5. Return the platform's client credential. The browser starts WebRTC with the platform's web SDK.
 
 **`POST /voice-session/refresh`** — supabase-js raises `TOKEN_REFRESHED` while the call is live,
-and the browser posts the new token. The endpoint authenticates with that token and checks that
-the caller owns the session. The browser is present and signed in for the whole of an in-app
+and the browser posts the new token. The endpoint authenticates with that token (never with the
+call token) and checks that the caller owns the session. It replaces `access_token` and sets
+`expires_at = min(new token expiry, created_at + 15 min)` — a refresh can never push a call past
+its hard cap. The browser is present and signed in for the whole of an in-app
 call, which is exactly what makes v1 simpler than PSTN.
 
 **`POST /voice-session/end`**, plus the platform's end-of-call webhook: delete the `voice_calls`
-row. A TTL sweep deletes rows past `expires_at` as a backstop.
+row (lifecycle below).
 
 In `voice-llm`, the opaque token resolves to the stored JWT, and identity is built by the **same
 code** as chat. Split `authenticate(req)` into `authenticateToken(jwt)` plus a thin `Request`
@@ -306,12 +311,13 @@ wrapper, so role and `assignedProjects` are still re-read on every request.
 ```sql
 create table public.voice_calls (
   id               uuid primary key default gen_random_uuid(),
-  session_id       uuid not null references public.ai_sessions(id) on delete cascade,
+  session_id       uuid not null unique references public.ai_sessions(id) on delete cascade,
   user_id          uuid not null references public.users(id) on delete cascade,
-  call_token_hash  text not null unique,
-  access_token     text not null,           -- short-lived; deleted on call end
-  platform_call_id text,
-  expires_at       timestamptz not null,
+  call_token_hash  text not null unique,   -- sha256 of the opaque token; the token is never stored
+  platform_call_id text unique,            -- the one platform call this token is bound to
+  access_token     text not null,          -- the user's JWT; rotated by /refresh
+  expires_at       timestamptz not null,   -- hard cap: min(JWT expiry, created_at + 15 min)
+  last_seen_at     timestamptz not null default now(),
   created_at       timestamptz not null default now()
 );
 alter table public.voice_calls enable row level security;   -- no policies: service role only
@@ -323,8 +329,78 @@ create unique index ai_sessions_external_call_id_idx
   on public.ai_sessions (external_call_id) where external_call_id is not null;
 ```
 
-Encrypting `access_token` at rest (Supabase Vault) is optional hardening: the token lives for
-minutes and the table has no RLS policies.
+#### `voice_calls` lifecycle
+
+A `voice_calls` row is a live bearer credential for our database, held on the user's behalf.
+Four rules keep its exposure to the length of one call.
+
+**1. Short TTL, enforced at lookup.** A row is valid only while `expires_at > now()` (a hard cap
+of 15 minutes from call start) **and** `last_seen_at > now() - interval '3 minutes'` (idle
+expiry). `voice-llm` bumps `last_seen_at` fire-and-forget on every request. Set the platform's
+own silence hang-up below the idle window (2 minutes), so a quiet caller is hung up before their
+token goes stale. Both conditions are part of the lookup query itself, so an expired or idle row
+is treated as absent **even before it is deleted**. The sweep's timing is therefore housekeeping,
+not a security property.
+
+**2. Deleted on call end.** Two end signals, both an idempotent
+`delete from voice_calls where session_id = $1`:
+
+- the browser hangs up → `POST /voice-session/end` (the user's JWT, plus an ownership check);
+- the platform's end-of-call webhook (shared secret or signature verified) → keyed by
+  `platform_call_id`, which also covers a tab that closes mid-call.
+
+The `ai_sessions` row and its messages stay; only the credential goes.
+
+**3. A cleanup job for calls that end without a hangup event** — a crashed tab, a lost network,
+a missed webhook. A `pg_cron` job, guarded and idempotent like the existing
+`deadline-reminders` job in `20260813092000_deadline_reminders.sql`:
+
+```sql
+DO $$
+BEGIN
+  IF to_regproc('cron.schedule') IS NULL THEN
+    RAISE NOTICE 'pg_cron nije dostupan — preskačem čišćenje glasovnih poziva.';
+    RETURN;
+  END IF;
+
+  PERFORM cron.unschedule('voice-calls-sweep')
+  WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'voice-calls-sweep');
+
+  PERFORM cron.schedule(
+    'voice-calls-sweep',
+    '* * * * *',
+    $sweep$DELETE FROM public.voice_calls
+           WHERE expires_at < now()
+              OR last_seen_at < now() - interval '3 minutes'$sweep$
+  );
+END $$;
+```
+
+In the worst case, an unusable token stays at rest for the idle window plus one minute. Track the
+number of swept calls against cleanly ended ones on the cost dashboard: a rising sweep count means
+end-of-call webhooks are being lost.
+
+**4. Bound to one call, and not replayable outside it.**
+
+- **One credential per call.** `session_id` is unique, and every call start mints a fresh token.
+  A token is never reissued or reused across calls, and `/refresh` rotates the JWT, never the
+  call token.
+- **Bound to the platform call.** `voice-llm` accepts a token only when the platform call id in
+  the request metadata equals the row's `platform_call_id`. If the chosen platform assigns its
+  call id only when WebRTC connects, rather than at registration, bind on first use instead: the
+  first `voice-llm` request runs
+  `update voice_calls set platform_call_id = $1 where id = $2 and platform_call_id is null`. It
+  wins only if one row is affected, and every later request must match. Which variant applies
+  depends on the platform (open question 2).
+- **Dead once the call ends**: deleted on hangup, refused at lookup after expiry or idle, and
+  swept.
+- **Usable in one place only**: `voice-llm`, and only together with `x-voice-secret`, which only
+  the platform holds.
+
+The residual risk, stated plainly: during a live call the platform re-sends the same token on
+every turn, by design. A replay would therefore need the shared secret, the token and the
+matching call id, all within a window of at most 15 minutes. "Non-replayable" here means the token
+is useless outside the one call it was issued for.
 
 **Frontend.** A call button in the AI chat panel header, built from the platform web SDK and the
 shared UI library, with connecting / live / muted / ended states. The frontend logs
@@ -398,11 +474,13 @@ Two further locks:
 - **A `readOnly: true` declaration on `ToolDefinition`**, and an assertion — at module load and
   in a unit test — that every name in `TOOL_ALLOWLIST.voice` exists in `TOOLS` and is declared
   read-only. A future write tool cannot reach voice by an allowlist typo.
-- **Enforce at dispatch as well as at advertisement.** `dispatchTool` today looks a name up in
-  the full `TOOLS` array with no role or channel check. The only gate is which tools are
-  advertised to the model. Add the same `selectAvailableTools` check in `dispatchTool`, so that an
-  unadvertised name is refused even if the model emits one. It costs a few lines, and it closes
-  the gap on chat too.
+- **Enforce at dispatch as well as at advertisement.** On `development`, `dispatchTool` looks a
+  name up in the full `TOOLS` array with no role check; the only gate is which tools are
+  advertised. That is a live defence-in-depth gap in chat, so the **role** half ships separately,
+  ahead of this feature, as PR `fix/ai-chat-dispatch-role-check`: dispatch resolves names through
+  `findAvailableTool(ctx, name)`, and tests pin that what dispatch accepts equals what is
+  advertised for every role. The voice branch adds only the **channel** half on top:
+  `findAvailableTool(ctx, name, channel)`, resolving through `selectAvailableTools(ctx, channel)`.
 
 ### v1 voice tool list
 
@@ -523,8 +601,10 @@ up as mystery threads (open question 7).
 
 - **Authentication**: identical in strength to chat — the user's own Supabase session, with role
   re-read every request.
-- **Token exposure**: the JWT stays in our infrastructure (`voice_calls`, service-role only,
-  deleted at call end). The vendor sees only an opaque, hashed-at-rest call token.
+- **Token exposure**: the JWT stays in our infrastructure (`voice_calls`, service-role only).
+  The vendor sees only an opaque call token, which is stored hashed, bound to one platform call,
+  valid for at most 15 minutes (3 idle), deleted at call end and swept if the end is never
+  signalled (§4.4, lifecycle).
 - **Injection via speech**: capped by the allowlist and the dispatch-time check (§5), not by the
   prompt. A caller cannot talk the model into a tool it was never given. The older vector —
   instruction-shaped text in database content, such as a subcontractor name, reaching the model
@@ -628,41 +708,130 @@ implementation days are spent. It needs no backend: a dashboard-level agent on V
 Retell, with the platform's default LLM and a two-line Croatian prompt. It is tested through the
 **web call** path, since v1 is in-app.
 
-**Test script.** Roughly 60 fixed utterances, each read by at least three staff with different
-voices and regional accents, recorded in a quiet office and again with background noise (a site,
-a car):
+The protocol below is fixed **before any recording starts**, and it is identical for every
+vendor. Each threshold is then a count over a known number of observations, not an impression of
+a script.
 
-- **Construction**: građevinska dozvola, uporabna dozvola, izvođač, podizvođač, troškovnik,
-  situacija, okončana situacija, nadzor, aneks ugovora, rokovi, rok izvođenja.
-- **Finance**: proračun, cesija, kompenzacija, PDV, R1 račun, avans, dospijeće, OIB, IBAN.
-- **Cognilion**: TIC, klasifikacija troška, faza projekta.
-- **Real entity names** from production — project names, and subcontractor names with `d.o.o.`,
-  `j.d.o.o.` and `obrt`.
-- **Spoken amounts and dates**: "milijun dvjesto tisuća eura", "tristo pedeset tisuća",
-  "petnaesti ožujka dvije tisuće dvadeset šeste".
-- **Ten full questions** in the form users will ask them ("Koliko smo platili izvođaču X na
+**Term list — 30 domain terms, frozen.** It includes the five the team named as critical
+(**bold**).
+
+| # | Construction | # | Finance | # | Cognilion / other modules |
+|---|---|---|---|---|---|
+| 1 | **građevinska dozvola** | 13 | **proračun** | 25 | **TIC** |
+| 2 | uporabna dozvola | 14 | cesija | 26 | klasifikacija troška |
+| 3 | **izvođač** | 15 | kompenzacija | 27 | faza projekta |
+| 4 | podizvođač | 16 | PDV | 28 | repozitorij |
+| 5 | troškovnik | 17 | R1 račun | 29 | kreditna linija |
+| 6 | situacija | 18 | avans | 30 | investitor |
+| 7 | okončana situacija | 19 | dospijeće | | |
+| 8 | nadzorni inženjer | 20 | jamstvo za dobro izvršenje | | |
+| 9 | aneks ugovora | 21 | bankovna garancija | | |
+| 10 | **rokovi** | 22 | zadužnica | | |
+| 11 | rok izvođenja | 23 | OIB | | |
+| 12 | primopredaja | 24 | IBAN | | |
+
+**Utterances per term: three carrier sentences**, written by a native speaker, checked by a second
+one, then frozen:
+
+- **C1** — the term in the nominative, inside a question;
+- **C2** — the term in an oblique case (whichever is natural: genitive, dative, locative),
+  mid-sentence;
+- **C3** — the term as the **last word** of the utterance, where endpointing clips most often.
+
+Each term also gets a list of accepted surface forms: its inflections, plus acronym variants such
+as *TIC / T-I-C*, *R1 / R jedan / er jedan* and *PDV / pe-de-ve*. The script is committed as
+`docs/voice/phase0-script.md`; it contains no personal data.
+
+**Other items**, which share the carrier rules:
+
+- **20 entity names** — 10 projects and 10 subcontractors, taken from entities that exist in
+  Landmark-Test so recoverability can be checked against the real tool. The set must include at
+  least 5 with a legal-form suffix (`d.o.o.`, `j.d.o.o.`, `obrt`), at least 3 containing a
+  surname, at least 3 containing č / ć / đ / š / ž, and at least 2 of foreign origin. Two carriers
+  each (C1, C2).
+- **15 amounts and 5 dates**, spanning tens of euros to tens of millions, with and without cents
+  ("milijun dvjesto tisuća eura", "tristo pedeset tisuća", "petnaesti ožujka dvije tisuće dvadeset
+  šeste"). One carrier each.
+- **10 full questions** in the form users actually ask them ("Koliko smo platili izvođaču X na
   projektu Y?").
 
-**Pass criteria** (proposed thresholds — the team should adjust them before phase 0 starts, not
-after):
+That is **160 utterances per speaker** (90 + 40 + 20 + 10), a session of roughly 35–45 minutes.
+
+**Speakers: six.** At least two women and two men; at least three regional backgrounds (for
+example Zagreb / Kajkavian, Dalmatia, Slavonia or Istria); ideally intended users — directors,
+accountants, site supervisors — not only the dev team. Speakers give written consent, and the
+recordings are deleted after the decision.
+
+**Recording and replay** — this is what makes the result independent of any one take:
+
+1. Each speaker reads the script **once**, in a quiet room, on a laptop microphone — the device
+   class of the v1 in-app call.
+2. The **noisy condition is synthesised**, not re-recorded: a fixed construction-site noise
+   track is mixed into every utterance at **10 dB SNR**. The comparison stays exact and
+   repeatable.
+3. The **identical audio files are played into each vendor's web call** through a virtual audio
+   input device (BlackHole or VB-Cable), one utterance per turn, in the same order. Every
+   vendor / STT configuration hears exactly the same audio, and transcripts are taken from the
+   platform's call logs.
+
+**Observation counts.** Every threshold below is a count over these:
+
+| Measure | Composition | Observations | 95 % CI at the threshold |
+|---|---|---|---|
+| Domain terms | 30 terms × 3 carriers × 6 speakers × 2 conditions | **1,080** | ±1.8 pp at 90 % |
+| Entity names | 20 names × 2 carriers × 6 speakers × 2 conditions | **480** | ±3.6 pp at 80 % |
+| Amounts / dates | 20 × 6 speakers × 2 conditions | 240 | — |
+| Full questions | 10 × 6 speakers × 2 conditions | 120 utterances | — |
+
+**Scoring rules**, fixed before recording:
+
+- **Term hit**: the transcript contains the target term in one of its accepted forms. Only the
+  target term is scored, not the rest of the carrier sentence, so the metric does not depend on
+  how hard the carrier is. Diacritics are ignored for pass/fail (*izvodac* counts), and the
+  diacritic-exact rate is reported separately. A split term or a homophone substitution is a
+  miss.
+- **Entity exact**: after normalising case, diacritics and punctuation (a legal-form suffix is
+  optional), the recognised span equals the name.
+- **Entity recoverable**: the recognised span, sent as `query` to `search_projects` /
+  `search_subcontractors` on Landmark-Test through the existing debug branch
+  (`AI_CHAT_DEBUG_ENABLED`, dev-only), returns the intended entity. Grounded in the real tool,
+  with no judgement call.
+- **Amount correct**: normalised to digits, the value is equal.
+- **WER**: standard word error rate, after lower-casing, removing punctuation, folding diacritics
+  and normalising numbers to digits.
+- A scoring script does the first pass. A second person independently scores a random 10 %. If
+  the two disagree on more than 2 %, the rules are tightened and everything is rescored.
+
+**Pass criteria** — proposed thresholds, to adjust before phase 0 starts, not after. Each is
+computed on the pooled quiet + noisy result for one vendor / STT configuration. The quiet and
+noisy figures are also reported separately, for deployment guidance.
 
 | Area | Metric | Pass |
 |---|---|---|
-| Domain terms | recognised correctly (any valid inflection) | ≥ 90 % |
-| Entity names | exact | ≥ 80 % |
-| Entity names | *recoverable* — the stem is right, so `search_projects`' substring match would find it | ≥ 95 % |
-| Amounts | numerically correct in the transcript | ≥ 95 % |
-| Full questions | word error rate | ≤ 15 % |
-| TTS | native-speaker panel (≥ 3) naturalness, 1–5 scale | mean ≥ 3.5 |
-| TTS | mispronounced amounts/dates in a 20-sentence numeric script | 0 |
-| Turn-taking | barge-in stops TTS | reliably, within ~0.5 s |
-| Latency floor | end of speech → first audio, platform default LLM | p50 ≤ 1.5 s |
+| Domain terms | term hits / 1,080 | ≥ 90 % |
+| Domain terms | per-term floor (36 observations each) | no term below 70 % |
+| Domain terms | the five critical terms, each | ≥ 85 % |
+| Domain terms | per-speaker floor (180 observations each) | no speaker below 80 % |
+| Entity names | exact / 480 | ≥ 80 % |
+| Entity names | recoverable / 480 | ≥ 95 % |
+| Amounts / dates | correct / 240 | ≥ 95 % |
+| Full questions | WER over 120 utterances | ≤ 15 % |
+| TTS | naturalness, 1–5, three native raters, blind and in randomised order, over 20 numeric + 10 general sentences | mean ≥ 3.5 |
+| TTS | mispronounced amounts or dates in the 20 numeric sentences | 0 |
+| Turn-taking | 20 live barge-in attempts: TTS stops within 0.5 s | ≥ 18 / 20 |
+| Latency floor | end of speech → first audio, platform default LLM, 10 live questions × 2 speakers | p50 ≤ 1.5 s |
 
-**Hard no-go:** on the best vendor + STT + TTS combination, domain terms below 80 % *or*
-recoverable entity names below 85 %. Anything between the no-go line and the pass line is a team
-call, informed by the recordings. TTS candidates to compare at minimum: ElevenLabs multilingual
-and Azure's native `hr-HR` voices. Deliverable: a scoring sheet, the recordings, and a recommended
-vendor / STT / TTS combination.
+The per-term and per-speaker floors exist so that an aggregate of 90 % cannot hide one term that
+always fails, or one accent the recogniser can't handle.
+
+**Hard no-go:** on the best vendor + STT + TTS configuration, domain terms below 80 %, *or*
+recoverable entity names below 85 %, *or* any of the five critical terms below 70 %. Anything
+between the no-go line and the pass line is a team call, informed by the recordings. TTS
+candidates to compare at minimum: ElevenLabs multilingual and Azure's native `hr-HR` voices.
+
+**Deliverables:** the frozen script (committed); a scoring sheet broken down by term, speaker,
+condition and vendor configuration; the recordings, kept in company storage and **not** in the
+repo, since staff voices are personal data; and a recommended vendor / STT / TTS configuration.
 
 If the gate fails, phases 1–3 still stand on their own merit for chat (a test suite, token
 streaming, parallel dispatch, a bounded history read) — worth knowing when deciding what to fund.
@@ -712,24 +881,24 @@ Excludes calendar time waiting on vendor accounts, and legal/DPO review.
 
 | Phase | | Days | Notes |
 |---|---|---|---|
-| 0 — STT/TTS prototype | v1 | 2–3 | Runs in parallel with planning, so it is off the critical path of calendar time |
+| 0 — STT/TTS prototype | v1 | 3–4 | Script and scoring rules ~1, recording coordination ~1, replay and scoring across vendors 1–1.5, TTS panel ~0.5. Runs in parallel with planning, so it is off the critical path of calendar time |
 | 1 — characterisation tests | v1 | 2–3 | Includes making the Anthropic client injectable |
 | 2 — latency critical path | v1 | 5–7 | Streaming 3–4, parallel dispatch ~1, bounded-history SQL function 1–2 |
 | 3 — orchestrator extraction | v1 | 3–5 | **Widest variance**: a 1789-line file |
 | 4 — `voice-llm` + allowlist + prompt + filler | v1 | 5–7 | The old 4–6, plus the allowlist, the dispatch check and the filler sink |
 | 5 — `voice-session`, handoff, call button | v1 | 4–6 | New in this revision — the in-app button was unestimated before |
 | 6 — v1 rollout | v1 | 2–3 | Plus external legal time |
-| **v1 total (in-app only)** | | **23–34** | ≈ 5–7 weeks; **21–31** excluding phase 0 |
+| **v1 total (in-app only)** | | **24–35** | ≈ 5–7 weeks; **21–31** excluding phase 0 |
 | 7 — caller identity + enrolment | v2 | 2–3 | |
 | 8 — minting, PSTN, DTMF PIN | v2 | 3–4 | |
 | 9 — PSTN rollout | v2 | 1–2 | |
 | **v2 total** | | **6–9** | |
-| **v1 + v2 total** | | **29–43** | ≈ 6–9 weeks |
+| **v1 + v2 total** | | **30–44** | ≈ 6–9 weeks |
 
 **Against the first draft (19–28, PSTN-first):** the total rises because three things are now
 counted that weren't before — the promoted latency work (≈ +2–3), the in-app button (+4–6,
-previously deferred to "later" and unestimated), and the allowlist, dispatch check and filler
-(≈ +1). The PSTN-specific work (identity, minting, PIN), about 5–7 days that the draft spread
+previously deferred to "later" and unestimated), the allowlist, dispatch check and filler
+(≈ +1), and phase 0's measurable protocol (+1 over the draft's 2–3). The PSTN-specific work (identity, minting, PIN), about 5–7 days that the draft spread
 across its phases 4–6, has moved to v2. v1 alone is therefore larger than the old PSTN-first
 path, but it carries none of the spoofing risk.
 
