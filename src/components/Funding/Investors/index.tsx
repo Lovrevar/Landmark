@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { PageHeader, LoadingSpinner, Button, ConfirmDialog } from '../../ui'
+import { PageHeader, LoadingSpinner, Button, ConfirmDialog, ErrorState, Alert } from '../../ui'
 import { useBankData }   from './hooks/useBankData'
 import { useBankForm }   from './hooks/useBankForm'
 import { useCreditForm } from './hooks/useCreditForm'
@@ -16,8 +16,9 @@ import type { BankCredit } from '../../../lib/supabase'
 
 const InvestorsManagement: React.FC = () => {
   const { t } = useTranslation()
+  const [errorDismissed, setErrorDismissed] = useState(false)
   const {
-    banks, companies, loading, addBank, updateBank, deleteBank, fetchData,
+    banks, companies, loading, error, addBank, updateBank, deleteBank, fetchData,
     pendingDeleteId: pendingDeleteBankId,
     pendingDeleteInvoiceCount: pendingDeleteBankInvoiceCount,
     confirmDeleteBank,
@@ -38,7 +39,10 @@ const InvestorsManagement: React.FC = () => {
   const creditForm = useCreditForm(fetchData)
   const equityForm = useEquityForm(fetchData)
 
-  if (loading) return <LoadingSpinner message={t('funding.investors.loading')} />
+  if (loading && banks.length === 0) return <LoadingSpinner message={t('funding.investors.loading')} />
+
+  // Nothing loaded and the load failed: an empty grid would say this company has no investors.
+  const failedWithNothing = !!error && banks.length === 0
 
   return (
     <div>
@@ -54,17 +58,32 @@ const InvestorsManagement: React.FC = () => {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {banks.map(bank => (
-          <InvestorCard
-            key={bank.id}
-            bank={bank}
-            onSelect={setSelectedBank}
-            onEdit={bankForm.handleEditBank}
-            onDelete={deleteBank}
-          />
-        ))}
-      </div>
+      {error && !errorDismissed && !failedWithNothing && (
+        <Alert variant="error" className="mb-6" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            <Button size="sm" variant="secondary" onClick={fetchData} loading={loading}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {failedWithNothing ? (
+        <div className="mb-8">
+          <ErrorState onRetry={fetchData} />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {banks.map(bank => (
+            <InvestorCard
+              key={bank.id}
+              bank={bank}
+              onSelect={setSelectedBank}
+              onEdit={bankForm.handleEditBank}
+              onDelete={deleteBank}
+            />
+          ))}
+        </div>
+      )}
 
       <InvestorFormModal
         show={bankForm.showBankForm}

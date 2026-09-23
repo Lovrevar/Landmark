@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ProjectWithPhases, PhaseFormInput } from '../types'
-import { Modal, FormField, Input, Select, Button } from '../../../ui'
+import { Modal, FormField, Input, Select, Button, ConfirmDialog } from '../../../ui'
+import { ProjectPhase } from '../../../../lib/supabase'
+import { findRemovedPhases } from '../utils/phaseSetup'
 
 interface PhaseSetupModalProps {
   visible: boolean
   onClose: () => void
   project: ProjectWithPhases
-  onSubmit: (phases: PhaseFormInput[]) => void
+  /** Resolves to whether the save succeeded; the parent closes the modal on success. */
+  onSubmit: (phases: PhaseFormInput[]) => Promise<boolean> | void
   editMode?: boolean
 }
 
@@ -21,6 +24,9 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
   const { t } = useTranslation()
   const [phaseCount, setPhaseCount] = useState(1)
   const [phases, setPhases] = useState<PhaseFormInput[]>([])
+  // Saved phases the submitted list would delete, awaiting the user's confirmation.
+  const [pendingRemoved, setPendingRemoved] = useState<ProjectPhase[] | null>(null)
+  const [confirmingRemoval, setConfirmingRemoval] = useState(false)
 
   // Initialise the phase list when the modal opens. Intentionally keyed on
   // `visible` only — we do not want to rebuild when initializePhases' inputs
@@ -28,6 +34,8 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
   useEffect(() => {
     if (visible) {
       initializePhases()
+      setPendingRemoved(null)
+      setConfirmingRemoval(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
@@ -90,6 +98,29 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
     }
   }
 
+  const handleSubmit = () => {
+    // Saving deletes every existing phase missing from the list (lowering the count slices
+    // rows off). Ask first, naming them, rather than dropping them silently.
+    if (editMode) {
+      const removed = findRemovedPhases(project.phases ?? [], phases)
+      if (removed.length > 0) {
+        setPendingRemoved(removed)
+        return
+      }
+    }
+    return onSubmit(phases)
+  }
+
+  const confirmRemoval = async () => {
+    setConfirmingRemoval(true)
+    try {
+      await onSubmit(phases)
+    } finally {
+      setConfirmingRemoval(false)
+      setPendingRemoved(null)
+    }
+  }
+
   if (!visible) return null
 
 
@@ -97,7 +128,7 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
     <Modal show={true} onClose={onClose} size="xl">
       <Modal.Header
         title={editMode ? t('supervision.site_management.phase_setup.title_edit') : t('supervision.site_management.phase_setup.title_create')}
-        subtitle={`${t('supervision.site_management.phase_setup.distribute')} €${project.budget.toLocaleString('hr-HR')} ${t('supervision.site_management.phase_setup.budget_across')}`}
+        subtitle={project.name}
         onClose={onClose}
       />
 
@@ -112,12 +143,6 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
             ))}
           </Select>
         </FormField>
-
-        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            {t('supervision.site_management.phase_setup.classification_hint')}
-          </p>
-        </div>
 
         <div className="space-y-4 mt-6">
           {phases.map((phase, index) => (
@@ -178,10 +203,24 @@ export const PhaseSetupModal: React.FC<PhaseSetupModalProps> = ({
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button onClick={() => onSubmit(phases)}>
+        <Button onClick={handleSubmit}>
           {editMode ? t('supervision.site_management.phase_setup.update') : t('supervision.site_management.phase_setup.create')}
         </Button>
       </Modal.Footer>
+
+      <ConfirmDialog
+        show={!!pendingRemoved}
+        title={t('common.confirm_delete')}
+        message={t('supervision.site_management.phase_setup.confirm_remove_message', {
+          names: (pendingRemoved ?? []).map(p => p.phase_name).join(', ')
+        })}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={confirmRemoval}
+        onCancel={() => { if (!confirmingRemoval) setPendingRemoved(null) }}
+        loading={confirmingRemoval}
+      />
     </Modal>
   )
 }

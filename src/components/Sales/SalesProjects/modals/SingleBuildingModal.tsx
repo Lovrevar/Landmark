@@ -7,16 +7,14 @@ interface SingleBuildingModalProps {
   visible: boolean
   project: { name: string }
   onClose: () => void
-  onSubmit: (data: BuildingFormData) => void
-  loading?: boolean
+  onSubmit: (data: BuildingFormData) => Promise<void> | void
 }
 
 export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
   visible,
   project,
   onClose,
-  onSubmit,
-  loading = false
+  onSubmit
 }) => {
   const { t } = useTranslation()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -37,11 +35,11 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
   const handleSubmit = () => {
     const errors: Record<string, string> = {}
     if (!formData.name.trim()) {
-      errors.name = 'Please fill in required fields'
+      errors.name = t('sales_projects.errors.required_field')
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
-    onSubmit(formData)
+    return onSubmit(formData)
   }
 
   return (
@@ -82,7 +80,7 @@ export const SingleBuildingModal: React.FC<SingleBuildingModalProps> = ({
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button loading={loading} onClick={handleSubmit}>
+        <Button onClick={handleSubmit}>
           {t('sales_projects.single_building_modal.add_building')}
         </Button>
       </Modal.Footer>

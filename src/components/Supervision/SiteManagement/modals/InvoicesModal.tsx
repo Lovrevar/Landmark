@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatDate } from '../../../../utils/formatters'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-react'
-import { format } from 'date-fns'
 import { Subcontractor } from '../../../../lib/supabase'
 import { Modal, Button, Badge, LoadingSpinner, EmptyState } from '../../../ui'
 import { fetchContractInvoices, ContractInvoiceRow } from '../services/siteService'
 import { daysFromToday } from '../../../../utils/dateOnly'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
 
 type Invoice = ContractInvoiceRow
 
@@ -27,7 +28,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   onClose,
   subcontractor
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -64,32 +65,6 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
     }
   }, [isOpen])
 
-  const getStatusVariant = (status: string): 'green' | 'yellow' | 'red' | 'gray' => {
-    switch (status) {
-      case 'PAID':
-        return 'green'
-      case 'PARTIALLY_PAID':
-        return 'yellow'
-      case 'UNPAID':
-        return 'red'
-      default:
-        return 'gray'
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'PAID':
-        return t('common.paid')
-      case 'PARTIALLY_PAID':
-        return t('common.partial')
-      case 'UNPAID':
-        return t('common.unpaid')
-      default:
-        return status
-    }
-  }
-
   const isOverdue = (dueDate: string, status: string) => {
     if (status === 'PAID') return false
     return daysFromToday(dueDate) < 0
@@ -121,16 +96,20 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
               {invoices.map((invoice) => (
                 <div
                   key={invoice.id}
-                  className={`bg-white dark:bg-gray-800 border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
-                    isOverdue(invoice.due_date, invoice.status) ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700'
+                  className={`border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
+                    // Background and border in either branch, never both: with `bg-white` always
+                    // present, CSS order decided the winner and overdue cards rendered white.
+                    isOverdue(invoice.due_date, invoice.status)
+                      ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                   }`}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('supervision.invoices_modal.invoice_number')}</label>
-                        <Badge variant={getStatusVariant(invoice.status)} size="sm">
-                          {getStatusLabel(invoice.status)}
+                        <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
+                          {getInvoiceStatusLabel(invoice.status, t)}
                         </Badge>
                       </div>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">{invoice.invoice_number}</p>
@@ -163,10 +142,12 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                       <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2 block">{t('supervision.invoices_modal.due_date')}</label>
                       <div className="flex items-center">
                         <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2" />
-                        <p className={`text-sm font-medium ${
-                          isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-bold' : 'text-gray-900 dark:text-white'
+                        <p className={`text-sm ${
+                          isOverdue(invoice.due_date, invoice.status)
+                            ? 'font-bold text-red-600 dark:text-red-400'
+                            : 'font-medium text-gray-900 dark:text-white'
                         }`}>
-                          {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                          {formatDate(invoice.due_date, i18n.language)}
                         </p>
                       </div>
                       {isOverdue(invoice.due_date, invoice.status) && (
@@ -196,7 +177,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
                     </div>
                     <div>
                       <span className="text-gray-500 dark:text-gray-400">{t('supervision.invoices_modal.issue_date')}</span>
-                      <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-gray-100">{formatDate(invoice.issue_date, i18n.language)}</span>
                     </div>
                   </div>
                 </div>

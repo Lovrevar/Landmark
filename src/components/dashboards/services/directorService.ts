@@ -1,6 +1,11 @@
 import { supabase, type ProjectCategory } from '../../../lib/supabase'
 import { startOfMonth } from 'date-fns'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
+import {
+  countOverdueMilestones,
+  countCriticalDeadlines,
+  deriveAlerts
+} from '../utils/directorAlerts'
 import type {
   ProjectStats,
   FinancialMetrics,
@@ -161,7 +166,7 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const sales = deriveSales(apartments, salesRows)
   const construction = deriveConstruction(contracts, subcontractors, milestones, invoices)
   const funding = deriveFunding(credits, allocations)
-  const alerts = deriveAlerts(milestones, credits, financial, sales)
+  const alerts = buildAlerts(milestones, credits, financial, sales)
 
   return {
     projects: projectStats,
@@ -358,14 +363,11 @@ function deriveConstruction(
     (sum, inv) => sum + Number((inv.total_amount || 0) - (inv.paid_amount || 0)),
     0
   )
-  const overdueTasks = milestones.filter(
-    m => m.due_date && m.status !== 'completed' && daysFromToday(m.due_date) < 0
-  ).length
-  const criticalDeadlines = milestones.filter(m => {
-    if (!m.due_date || m.status === 'completed') return false
-    const daysUntil = daysFromToday(m.due_date)
-    return daysUntil >= 0 && daysUntil <= 7
-  }).length
+  // `subcontractor_milestones.status` is pending | completed | paid, and the DB trigger sets
+  // `completed` on a *partial* payment — so the old `status !== 'completed'` test counted
+  // fully paid milestones as overdue and let part-paid ones through. See `utils/directorAlerts.ts`.
+  const overdueTasks = countOverdueMilestones(milestones, daysFromToday)
+  const criticalDeadlines = countCriticalDeadlines(milestones, daysFromToday)
 
   return {
     total_subcontractors: subcontractors.length,
@@ -428,63 +430,17 @@ function deriveFunding(
   }
 }
 
-function deriveAlerts(
+function buildAlerts(
   milestones: MilestoneRow[],
   credits: CreditRow[],
   financial: FinancialMetrics,
   sales: SalesMetrics
 ): Alert[] {
-  const alerts: Alert[] = []
-
-  for (const milestone of milestones) {
-    if (!milestone.due_date || milestone.status === 'completed') continue
-    const daysUntil = daysFromToday(milestone.due_date)
-    if (daysUntil < 0) {
-      alerts.push({
-        type: 'critical',
-        title: 'Overdue Milestone',
-        message: `${milestone.milestone_name || 'Milestone'} is ${Math.abs(daysUntil)} days overdue`,
-        date: milestone.due_date
-      })
-    } else if (daysUntil <= 3) {
-      alerts.push({
-        type: 'warning',
-        title: 'Urgent Deadline',
-        message: `${milestone.milestone_name || 'Milestone'} due in ${daysUntil} days`,
-        date: milestone.due_date
-      })
-    }
-  }
-
-  for (const credit of credits) {
-    if (!credit.maturity_date || !isLiveDebt(credit)) continue
-    const daysUntil = daysFromToday(credit.maturity_date)
-    if (daysUntil >= 0 && daysUntil <= 30) {
-      const label = credit.credit_name || credit.company?.name || 'Credit'
-      alerts.push({
-        type: 'warning',
-        title: 'Credit Maturity',
-        message: `${label} of €${Number(credit.amount || 0).toLocaleString()} matures in ${daysUntil} days`,
-        date: credit.maturity_date
-      })
-    }
-  }
-
-  if (financial.debt_to_equity_ratio > 2) {
-    alerts.push({
-      type: 'warning',
-      title: 'High Leverage',
-      message: `Debt-to-Equity ratio is ${financial.debt_to_equity_ratio.toFixed(2)}x (recommended < 2x)`
-    })
-  }
-
-  if (sales.sales_rate < 30 && sales.total_units > 0) {
-    alerts.push({
-      type: 'info',
-      title: 'Low Sales Rate',
-      message: `Only ${sales.sales_rate.toFixed(1)}% of units sold. Consider sales strategy review.`
-    })
-  }
-
-  return alerts.slice(0, 10)
+  return deriveAlerts({
+    milestones,
+    liveDebtCredits: credits.filter(isLiveDebt),
+    debtToEquityRatio: financial.debt_to_equity_ratio,
+    salesRate: sales.sales_rate,
+    totalUnits: sales.total_units
+  }, daysFromToday)
 }

@@ -10,10 +10,6 @@ export function getPaymentFrequency(type: string): number {
   }
 }
 
-function freqLabel(type: string): string {
-  return (({ monthly: 'month', quarterly: 'quarter', biyearly: '6 months', yearly: 'year' } as Record<string, string>)[type] ?? type)
-}
-
 function getMaturityYears(startDate: string, maturityDate: string | null): number {
   if (!maturityDate || !startDate) return 10
   const start    = new Date(startDate)
@@ -51,16 +47,28 @@ export function calculateAnnuityPayment(params: {
   }
 }
 
-export function calculateEquityCashflow(equity: Pick<EquityFormData, 'amount' | 'expected_return' | 'grace_period' | 'investment_date' | 'maturity_date' | 'payment_schedule'>): string {
+/**
+ * What the equity form's two preview boxes show: either a number, or a reason there isn't one.
+ *
+ * Both used to return the reason as an English sentence ("Enter amount, dates, and IRR to
+ * calculate"), which a Croatian user read verbatim. These are pure functions with no translator,
+ * so they report the state and `EquityFormModal` supplies the words.
+ */
+export type EquityPreview =
+  | { status: 'ok'; value: string }
+  | { status: 'incomplete' }
+  | { status: 'invalid_range' }
+
+export function calculateEquityCashflow(equity: Pick<EquityFormData, 'amount' | 'expected_return' | 'grace_period' | 'investment_date' | 'maturity_date' | 'payment_schedule'>): EquityPreview {
   const { amount, expected_return, grace_period, investment_date, maturity_date, payment_schedule } = equity
   if (!amount || !investment_date || !maturity_date || !expected_return) {
-    return 'Enter amount, dates, and IRR to calculate'
+    return { status: 'incomplete' }
   }
   const principal        = amount
   const annualRate       = expected_return / 100
   const gracePeriodYears = grace_period / 12
   const totalYears       = getMaturityYears(investment_date, maturity_date)
-  if (totalYears <= 0) return 'Invalid date range'
+  if (totalYears <= 0) return { status: 'invalid_range' }
   const repaymentYears = Math.max(0.1, totalYears - gracePeriodYears)
 
   let payment: number
@@ -76,20 +84,21 @@ export function calculateEquityCashflow(equity: Pick<EquityFormData, 'amount' | 
     const n = repaymentYears * 12
     payment = (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
   }
-  return payment.toLocaleString(undefined, { maximumFractionDigits: 0 })
+  // hr-HR, not the viewer's browser locale: an en-US machine rendered "10,436" for €10.436.
+  return { status: 'ok', value: payment.toLocaleString('hr-HR', { maximumFractionDigits: 0 }) }
 }
 
-export function calculateMoneyMultiple(equity: Pick<EquityFormData, 'amount' | 'expected_return' | 'investment_date' | 'maturity_date'>): string {
+export function calculateMoneyMultiple(equity: Pick<EquityFormData, 'amount' | 'expected_return' | 'investment_date' | 'maturity_date'>): EquityPreview {
   const { amount, expected_return, investment_date, maturity_date } = equity
   if (!amount || !investment_date || !maturity_date || !expected_return) {
-    return 'Enter amount, dates, and IRR to calculate'
+    return { status: 'incomplete' }
   }
   const years = getMaturityYears(investment_date, maturity_date)
-  if (years <= 0) return 'Invalid date range'
+  if (years <= 0) return { status: 'invalid_range' }
   const annualRate    = expected_return / 100
   const totalReturn   = amount * Math.pow(1 + annualRate, years)
   const moneyMultiple = totalReturn / amount
-  return `${moneyMultiple.toFixed(2)}x (${(moneyMultiple * 100).toFixed(0)}%)`
+  return { status: 'ok', value: `${moneyMultiple.toFixed(2)}x (${(moneyMultiple * 100).toFixed(0)}%)` }
 }
 
 export function parseCreditTypeAndSeniority(combined: string): { creditType: string; seniority: string } {
@@ -99,10 +108,51 @@ export function parseCreditTypeAndSeniority(combined: string): { creditType: str
   return { creditType, seniority }
 }
 
-export function getCreditRiskLevel(utilization: number): { label: string; className: string } {
-  if (utilization > 80) return { label: 'High',   className: 'text-red-600'    }
-  if (utilization > 60) return { label: 'Medium', className: 'text-orange-600' }
-  return                       { label: 'Low',    className: 'text-green-600'  }
+/**
+ * An investor's credit risk from its utilisation: **> 80 High, > 60 Medium, else Low**.
+ *
+ * The bands are deliberately looser than `utilisationTone`'s ≥ 90 / ≥ 70 — this reads a whole
+ * investor relationship, that one reads a single facility's bar. Only the wording changed with
+ * the i18n sweep: `level` is the same value `RISK_LEVEL` in `src/utils/statusDisplay.ts` maps,
+ * so the investor modal now says "Visok" where every other screen does.
+ */
+export function getCreditRiskLevel(utilization: number): { level: 'Low' | 'Medium' | 'High'; className: string } {
+  if (utilization > 80) return { level: 'High',   className: 'text-red-600'    }
+  if (utilization > 60) return { level: 'Medium', className: 'text-orange-600' }
+  return                       { level: 'Low',    className: 'text-green-600'  }
+}
+
+export interface UtilisationTone {
+  /** Text colour for the percentage itself. */
+  text: string
+  /** Fill colour for the progress bar. */
+  bar: string
+}
+
+/**
+ * The one utilisation colour scale: **≥ 90 red, ≥ 70 orange, else green**.
+ *
+ * Five screens each had their own thresholds (> 80/> 60, ≥ 90/≥ 70 over blue, ≥ 80/≥ 50 …),
+ * and inside `InvestmentProjectModal` the percentage and its bar disagreed with each other —
+ * at 92% the figure was orange while the bar beside it was red. Everything that renders a
+ * credit/funding utilisation now reads its classes from here: `InvestorCard`,
+ * `InvestmentCreditsTable`, `InvestmentProjectModal`, `CompanyDetailsModal`, and
+ * `investmentReportPdf` through `utilisationToneRgb`.
+ *
+ * Not a risk *label* — `getCreditRiskLevel` keeps its own (looser) bands and its English
+ * labels, which belong to the i18n sweep.
+ */
+export function utilisationTone(percent: number): UtilisationTone {
+  if (percent >= 90) return { text: 'text-red-600 dark:text-red-400',    bar: 'bg-red-600 dark:bg-red-500'    }
+  if (percent >= 70) return { text: 'text-orange-600 dark:text-orange-400', bar: 'bg-orange-600 dark:bg-orange-500' }
+  return                     { text: 'text-green-600 dark:text-green-400',  bar: 'bg-green-600 dark:bg-green-500'  }
+}
+
+/** The same scale as RGB, for jsPDF (which cannot read Tailwind classes). */
+export function utilisationToneRgb(percent: number): [number, number, number] {
+  if (percent >= 90) return [239, 68, 68]   // red-500
+  if (percent >= 70) return [249, 115, 22]  // orange-500
+  return [34, 197, 94]                      // green-500
 }
 
 export function getCreditTypeBadgeVariant(creditType: string): 'blue' | 'green' | 'orange' | 'gray' {
@@ -111,6 +161,24 @@ export function getCreditTypeBadgeVariant(creditType: string): 'blue' | 'green' 
     case 'term_loan':         return 'green'
     case 'bridge_loan':       return 'orange'
     default:                  return 'gray'
+  }
+}
+
+/**
+ * i18n key for a stored `bank_credits.credit_type` (term_loan | line_of_credit | construction_loan
+ * | bridge_loan | equity), reusing the credit form's option labels. A line of credit's label
+ * carries its seniority, as it does in the form. Null for anything else — callers fall back to
+ * the raw value with every underscore replaced (`replace('_', ' ')` only replaced the first, so
+ * `line_of_credit` rendered as "LINE OF_CREDIT").
+ */
+export function getCreditTypeLabelKey(creditType: string | null | undefined, seniority?: string | null): string | null {
+  switch (creditType) {
+    case 'term_loan':         return 'banks.credit_form.term_loan'
+    case 'construction_loan': return 'banks.credit_form.construction_loan'
+    case 'bridge_loan':       return 'banks.credit_form.bridge_loan'
+    case 'line_of_credit':    return seniority === 'junior' ? 'banks.credit_form.loc_junior' : 'banks.credit_form.loc_senior'
+    case 'equity':            return 'funding.equity'
+    default:                  return null
   }
 }
 
@@ -130,6 +198,12 @@ export interface PaymentScheduleResult {
   totalPrincipalPayments: number
   totalInterestPayments: number
   paymentStartDate: Date
+  /**
+   * The stored repayment type (`monthly` / `quarterly` / `biyearly` / `yearly`), not a label.
+   * It used to be the English noun ("month", "6 months"), which `banks.credit_form.every_frequency`
+   * interpolated into "Svakih month" — Croatian needs a whole phrase per frequency, so
+   * `PaymentSchedulePreview` picks one.
+   */
   principalFrequency: string
   interestFrequency: string
 }
@@ -163,7 +237,7 @@ export function calculatePaymentSchedule(params: PaymentScheduleParams): Payment
     totalPrincipalPayments,
     totalInterestPayments,
     paymentStartDate,
-    principalFrequency: freqLabel(params.principal_repayment_type),
-    interestFrequency:  freqLabel(params.interest_repayment_type),
+    principalFrequency: params.principal_repayment_type,
+    interestFrequency:  params.interest_repayment_type,
   }
 }

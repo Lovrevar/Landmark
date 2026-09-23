@@ -13,12 +13,15 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
   })
   const [projects, setProjects] = useState<ProjectOption[]>([])
   const [loading, setLoading] = useState(true)
+  // A failed fetch left `customers` empty, which the grid rendered as "no customers".
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchCustomers = useCallback(async (forceRefresh = false) => {
     if (!forceRefresh) {
       const cached = cache.getCustomers(activeCategory)
       if (cached) {
         setCustomers(cached)
+        setError(null)
         setLoading(false)
         return
       }
@@ -26,17 +29,19 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
 
     try {
       setLoading(true)
+      setError(null)
       const data = await customerService.fetchCustomers(activeCategory)
       cache.setCustomers(activeCategory, data)
       setCustomers(data)
-    } catch (error) {
-      console.error('Error fetching customers:', error)
+    } catch (err) {
+      console.error('Error fetching customers:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
   }, [activeCategory])
 
-  const fetchCounts = async (forceRefresh = false) => {
+  const fetchCounts = useCallback(async (forceRefresh = false) => {
     if (!forceRefresh) {
       const cached = cache.getCounts()
       if (cached) {
@@ -49,10 +54,13 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
       const countsData = await customerService.fetchCustomerCounts()
       cache.setCounts(countsData)
       setCounts(countsData)
-    } catch (error) {
-      console.error('Error fetching customer counts:', error)
+    } catch (err) {
+      // Counts drive the category tabs; zeros there are as misleading as an empty list, so
+      // the failure joins the page's error rather than staying in the console.
+      console.error('Error fetching customer counts:', err)
+      setError(prev => prev ?? (err instanceof Error ? err : new Error(String(err))))
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchCustomers()
@@ -60,7 +68,7 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
 
   useEffect(() => {
     fetchCounts()
-  }, [])
+  }, [fetchCounts])
 
   // Project list backs both the form's "interested in" select and the page filter.
   // Small and slow-changing, so it is fetched once per mount rather than cached.
@@ -104,11 +112,21 @@ export const useCustomerData = (activeCategory: CustomerCategory | null) => {
     }
   }
 
+  const refetch = useCallback(async () => {
+    cache.invalidate()
+    await Promise.all([fetchCustomers(true), fetchCounts(true)])
+  }, [fetchCustomers, fetchCounts])
+
+  const dismissError = useCallback(() => setError(null), [])
+
   return {
     customers,
     counts,
     projects,
     loading,
+    error,
+    refetch,
+    dismissError,
     saveCustomer,
     deleteCustomer,
     updateLastContact

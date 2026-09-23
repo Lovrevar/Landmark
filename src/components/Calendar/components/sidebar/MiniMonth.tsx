@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { intlLocale } from '../../../../utils/locale'
 
 interface Props {
   anchor: Date
@@ -12,7 +13,7 @@ const dayNameKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
 export default function MiniMonth({ anchor, busyDays, onDateClick }: Props) {
   const { t, i18n } = useTranslation()
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const dateLocale = intlLocale(i18n.language)
 
   const [localAnchor, setLocalAnchor] = useState<Date>(anchor)
 

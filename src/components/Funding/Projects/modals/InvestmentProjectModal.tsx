@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   DollarSign,
   Users,
@@ -9,9 +9,16 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Modal, Badge, StatGrid, EmptyState } from '../../../ui'
-import { format, differenceInDays } from 'date-fns'
+import { differenceInDays } from 'date-fns'
+import { daysFromToday } from '../../../../utils/dateOnly'
+import { formatDate } from '../../../../utils/formatters'
+import { RISK_LEVEL, statusLabelKey } from '../../../../utils/statusDisplay'
+import {
+  utilisationTone,
+  getCreditTypeLabelKey,
+  getCreditTypeBadgeVariant
+} from '../../Investors/utils/creditCalculations'
 import type { ProjectWithFinancials, FundingUtilizationItem } from '../../../General/Projects/types'
-import { fetchFundingUtilization } from '../services/investmentService'
 
 interface Props {
   project: ProjectWithFinancials
@@ -19,18 +26,38 @@ interface Props {
 }
 
 const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  // The colour bands here are the modal's own; only the word comes from the shared map.
+  const riskLabelKey = statusLabelKey(RISK_LEVEL, project.risk_level)
   const [activeTab, setActiveTab] = useState<'overview' | 'funding'>('overview')
-  const [fundingUtilization, setFundingUtilization] = useState<FundingUtilizationItem[]>([])
 
-  const loadFundingUtilization = async () => {
-    try {
-      const data = await fetchFundingUtilization(project.id)
-      setFundingUtilization(data)
-    } catch (error) {
-      console.error('Error fetching funding utilization:', error)
+  // Derived, not fetched. `fetchFundingUtilization` re-ran the same `credit_allocations`
+  // query on *every* click of the Funding tab, with no loading state and a silent catch — so
+  // the tab read "Nema izvora financiranja za ovaj projekt" until it resolved, and for ever
+  // if it failed. The page already loads these rows with the project
+  // (`services/investmentService.ts:65`) and they carry every field this tab shows.
+  const fundingUtilization = useMemo<FundingUtilizationItem[]>(() => {
+    const items: FundingUtilizationItem[] = []
+    for (const allocation of project.debt_allocations) {
+      const credit = allocation.credit
+      if (!credit?.bank) continue
+      items.push({
+        id: allocation.id,
+        type: credit.credit_type === 'equity' ? 'equity' : 'bank',
+        creditType: credit.credit_type ?? null,
+        name: `${credit.bank.name} - ${credit.credit_name}`,
+        totalAmount: allocation.allocated_amount,
+        spentAmount: allocation.used_amount,
+        availableAmount: allocation.allocated_amount - allocation.used_amount,
+        usageExpirationDate: credit.usage_expiration_date,
+        investmentDate: credit.start_date
+      })
     }
-  }
+    return items
+  }, [project.debt_allocations])
+
+  const daysToEnd = project.end_date ? daysFromToday(project.end_date) : null
+  const isPastEndDate = daysToEnd !== null && daysToEnd < 0
 
   return (
     <Modal show={true} onClose={onClose} size="xl">
@@ -53,10 +80,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
             {t('funding.projects.modal.overview_tab')}
           </button>
           <button
-            onClick={async () => {
-              setActiveTab('funding')
-              await loadFundingUtilization()
-            }}
+            onClick={() => setActiveTab('funding')}
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
               activeTab === 'funding'
                 ? 'border-blue-600 text-blue-600'
@@ -106,7 +130,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                   <span className="text-sm text-teal-700 dark:text-teal-400">{t('funding.projects.modal.avg_interest_rate_label')}</span>
                   <Target className="w-4 h-4 text-teal-600" />
                 </div>
-                <p className="text-xl font-bold text-teal-900 dark:text-teal-300">{project.expected_roi.toFixed(1)}%</p>
+                <p className="text-xl font-bold text-teal-900 dark:text-teal-300">{project.avg_interest_rate.toFixed(1)}%</p>
                 <p className="text-xs text-teal-600 dark:text-teal-400">{t('funding.projects.weighted_average')}</p>
               </div>
             </StatGrid>
@@ -153,7 +177,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                         )}
                         {allocation.credit?.maturity_date && (
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                            {t('funding.projects.modal.credit_matures_label')} {format(new Date(allocation.credit.maturity_date), 'MMM dd, yyyy')}
+                            {t('funding.projects.modal.credit_matures_label')} {formatDate(allocation.credit.maturity_date, i18n.language)}
                           </p>
                         )}
                       </div>
@@ -194,10 +218,8 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
                 <h5 className="font-medium text-gray-900 dark:text-white mb-3">{t('funding.projects.modal.return_analysis_heading')}</h5>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.expected_roi_label')}</span>
-                    <span className="font-medium text-green-600">{project.expected_roi.toFixed(1)}%</span>
-                  </div>
+                  {/* The average interest rate lives on the teal tile above — it is a cost of
+                      debt, not a return, so it does not belong in this panel a second time. */}
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.investment_period_label')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
@@ -212,7 +234,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                       project.risk_level === 'High' ? 'text-red-600' :
                       project.risk_level === 'Medium' ? 'text-orange-600' : 'text-green-600'
                     }`}>
-                      {project.risk_level}
+                      {riskLabelKey ? t(riskLabelKey) : project.risk_level}
                     </span>
                   </div>
                 </div>
@@ -224,24 +246,25 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.start_date_label')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {format(new Date(project.start_date), 'MMM dd, yyyy')}
+                      {formatDate(project.start_date, i18n.language)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.target_end_label')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {project.end_date ? format(new Date(project.end_date), 'MMM dd, yyyy') : t('funding.projects.modal.tbd')}
+                      {project.end_date ? formatDate(project.end_date, i18n.language) : t('funding.projects.modal.tbd')}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.days_remaining_label')}</span>
                     <span className={`font-medium ${
-                      project.end_date && differenceInDays(new Date(project.end_date), new Date()) < 0
-                        ? 'text-red-600' : 'text-gray-900 dark:text-white'
+                      isPastEndDate ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'
                     }`}>
-                      {project.end_date
-                        ? differenceInDays(new Date(project.end_date), new Date())
-                        : t('funding.projects.modal.na')}
+                      {daysToEnd === null
+                        ? t('funding.projects.modal.na')
+                        : isPastEndDate
+                        ? t('funding.projects.modal.days_overdue', { count: -daysToEnd })
+                        : t('funding.projects.modal.days_left', { count: daysToEnd })}
                     </span>
                   </div>
                 </div>
@@ -267,7 +290,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                       {t('funding.projects.modal.underfunded', { ratio: project.funding_ratio.toFixed(1) })}
                     </div>
                   )}
-                  {project.end_date && differenceInDays(new Date(project.end_date), new Date()) < 0 && (
+                  {isPastEndDate && (
                     <div className="flex items-center text-orange-800 dark:text-orange-300">
                       <span className="w-2 h-2 bg-orange-600 rounded-full mr-2"></span>
                       {t('funding.projects.modal.timeline_overrun')}
@@ -288,7 +311,14 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
               <div className="space-y-4">
                 {fundingUtilization.map((source) => {
                   const utilizationRate = source.totalAmount > 0 ? (source.spentAmount / source.totalAmount) * 100 : 0
-                  const isExpiringSoon = source.usageExpirationDate && differenceInDays(new Date(source.usageExpirationDate), new Date()) <= 30
+                  const tone = utilisationTone(utilizationRate)
+                  // `<= 30` alone was also true for periods that had already run out, so an
+                  // expired facility was badged "USKORO ISTJEČE" and told the reader it
+                  // "istječe za -12 dana".
+                  const expiryDays = source.usageExpirationDate ? daysFromToday(source.usageExpirationDate) : null
+                  const isExpired = expiryDays !== null && expiryDays < 0
+                  const isExpiringSoon = expiryDays !== null && expiryDays >= 0 && expiryDays <= 30
+                  const typeKey = getCreditTypeLabelKey(source.creditType)
 
                   return (
                     <div key={`${source.type}-${source.id}`} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
@@ -297,14 +327,20 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                           <div className="flex items-center space-x-3 mb-2">
                             <Banknote className="w-5 h-5 text-green-600" />
                             <h5 className="text-lg font-semibold text-gray-900 dark:text-white">{source.name}</h5>
-                            <Badge variant="green" size="sm">{t('funding.projects.modal.bank_badge')}</Badge>
+                            <Badge variant={getCreditTypeBadgeVariant(source.creditType ?? '')} size="sm">
+                              {typeKey ? t(typeKey) : (source.creditType ?? '').replace(/_/g, ' ')}
+                            </Badge>
+                            {isExpired && <Badge variant="red" size="sm">{t('funding.projects.modal.expired_badge')}</Badge>}
                             {isExpiringSoon && <Badge variant="orange" size="sm">{t('funding.projects.modal.expiring_soon_badge')}</Badge>}
                           </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {t('funding.projects.modal.received_label')} {format(new Date(source.investmentDate), 'MMM dd, yyyy')}
+                            {t('funding.projects.modal.received_label')} {formatDate(source.investmentDate, i18n.language)}
                             {source.usageExpirationDate && (
-                              <> • {t('funding.projects.modal.expires_label')} <span className={isExpiringSoon ? 'text-orange-600 font-medium' : ''}>
-                                {format(new Date(source.usageExpirationDate), 'MMM dd, yyyy')}
+                              <> • {t('funding.projects.modal.expires_label')} <span className={
+                                isExpired ? 'text-red-600 dark:text-red-400 font-medium'
+                                  : isExpiringSoon ? 'text-orange-600 dark:text-orange-400 font-medium' : ''
+                              }>
+                                {formatDate(source.usageExpirationDate, i18n.language)}
                               </span></>
                             )}
                           </p>
@@ -326,10 +362,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
                           <p className="text-xs text-gray-700 dark:text-gray-200 mb-1">{t('funding.projects.modal.utilization_label')}</p>
-                          <p className={`text-lg font-bold ${
-                            utilizationRate >= 80 ? 'text-orange-600' :
-                            utilizationRate >= 50 ? 'text-blue-600' : 'text-green-600'
-                          }`}>
+                          <p className={`text-lg font-bold ${tone.text}`}>
                             {utilizationRate.toFixed(1)}%
                           </p>
                         </div>
@@ -344,17 +377,13 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                         </div>
                         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                           <div
-                            className={`h-3 rounded-full transition-all duration-300 ${
-                              utilizationRate >= 90 ? 'bg-red-600' :
-                              utilizationRate >= 80 ? 'bg-orange-600' :
-                              utilizationRate >= 50 ? 'bg-blue-600' : 'bg-green-600'
-                            }`}
+                            className={`h-3 rounded-full transition-all duration-300 ${tone.bar}`}
                             style={{ width: `${Math.min(100, utilizationRate)}%` }}
                           ></div>
                         </div>
                       </div>
 
-                      {(utilizationRate >= 80 || isExpiringSoon || source.availableAmount <= 0) && (
+                      {(utilizationRate >= 80 || isExpiringSoon || isExpired || source.availableAmount <= 0) && (
                         <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg">
                           <div className="flex items-center mb-2">
                             <AlertTriangle className="w-4 h-4 text-orange-600 mr-2" />
@@ -367,9 +396,14 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                             {utilizationRate >= 80 && source.availableAmount > 0 && (
                               <p className="text-sm text-orange-800 dark:text-orange-300">• {t('funding.projects.modal.high_utilization', { rate: utilizationRate.toFixed(0) })}</p>
                             )}
+                            {isExpired && (
+                              <p className="text-sm text-orange-800 dark:text-orange-300">
+                                • {t('funding.projects.modal.expired_days_ago', { count: -expiryDays! })}
+                              </p>
+                            )}
                             {isExpiringSoon && (
                               <p className="text-sm text-orange-800 dark:text-orange-300">
-                                • {t('funding.projects.modal.expiring_in_days', { days: differenceInDays(new Date(source.usageExpirationDate!), new Date()) })}
+                                • {t('funding.projects.modal.expiring_in_days', { days: expiryDays })}
                               </p>
                             )}
                           </div>

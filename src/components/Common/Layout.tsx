@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { useAuth, Profile } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLeaveGuard } from '../../contexts/UnsavedChangesContext'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { useIsDesktop } from '../../hooks/useMediaQuery'
 import { useModalOverflow } from '../../hooks/useModalOverflow'
@@ -80,6 +82,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { unreadCount: taskUnread } = useTasksNotifications()
   const { unreadCount: eventUnread } = useCalendarNotifications()
 
+  // The three header badges look identical but count three different things, so each button's
+  // name says what its number is. The calendar's is not "unread": it is invitations still waiting
+  // for an RSVP within the next 30 days, and only answering them clears it.
+  const withBadge = (name: string, count: number, badgeKey: string) =>
+    count > 0 ? `${name} — ${t(badgeKey, { count })}` : name
+  const chatLabel = withBadge(t('chat.title'), unreadCount, 'common.badge.unread_messages')
+  const tasksLabel = withBadge(t('tasks.title'), taskUnread, 'common.badge.new_tasks')
+  const calendarLabel = withBadge(t('calendar.title'), eventUnread, 'common.badge.pending_invitations')
+
   // Below lg the sidebar is a full-width drawer; the collapsed (w-16) state only applies to desktop.
   const sidebarExpanded = !isDesktop || sidebarOpen
 
@@ -111,12 +122,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [currentProfile, cashflowUnlocked])
 
   const getMenuItems = () => {
+    // The Supervision *role* short-circuits the profile menus below: whichever profile is
+    // selected, this is the whole navigation for that user.
+    //
+    // Payments and Invoices are not on it. Since 20260526084700 the Supervision role has no
+    // `accounting_payments` rows at all, so `/payments` rendered "nema pronađenih plaćanja" —
+    // a claim about the projects, not about the reader's rights, and a false one. The
+    // Supervision *profile* (below) keeps both, because a Director or Accounting user can
+    // switch into it and does have the rows.
     if (user?.role === 'Supervision') {
       return [
         { name: t('nav.site_management'), icon: Building2, path: '/site-management' },
         { name: t('nav.work_logs'), icon: ClipboardCheck, path: '/work-logs' },
-        { name: t('nav.payments'), icon: DollarSign, path: '/payments' },
-        { name: t('nav.invoices'), icon: FileText, path: '/invoices' },
         { name: t('nav.documents'), icon: Files, path: '/documents' }
       ]
     }
@@ -242,17 +259,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setPendingProfile(null)
   }, [currentProfile, cashflowUnlocked, navigate, setCurrentProfile])
 
-  useEffect(() => {
-    if (!showPasswordModal) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) {
-        e.preventDefault()
-        handlePasswordCancel()
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [showPasswordModal, handlePasswordCancel])
+  const passwordDialogRef = useRef<HTMLDivElement>(null)
+  useEscapeKey(showPasswordModal, handlePasswordCancel)
+  useFocusTrap(passwordDialogRef, showPasswordModal)
 
   const profiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
 
@@ -265,7 +274,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <button
                 onClick={() => setMobileNavOpen(true)}
                 className="lg:hidden touch-target flex items-center justify-center -ml-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-                aria-label="Open navigation menu"
+                aria-label={t('common.open_menu')}
               >
                 <MenuIcon className="w-6 h-6" />
               </button>
@@ -309,7 +318,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     ? 'text-blue-600 dark:text-blue-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
-                title="Chat"
+                title={chatLabel}
+                aria-label={chatLabel}
               >
                 <MessageCircle className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -325,7 +335,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     ? 'text-blue-600 dark:text-blue-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
-                title="Zadaci"
+                title={tasksLabel}
+                aria-label={tasksLabel}
               >
                 <CheckSquare className="w-5 h-5" />
                 {taskUnread > 0 && (
@@ -341,7 +352,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     ? 'text-blue-600 dark:text-blue-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
-                title="Kalendar"
+                title={calendarLabel}
+                aria-label={calendarLabel}
               >
                 <Calendar className="w-5 h-5" />
                 {eventUnread > 0 && (
@@ -355,7 +367,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
               <button
                 onClick={toggleTheme}
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label={isDark ? t('common.light_mode') : t('common.dark_mode')}
                 className="hidden lg:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors duration-200"
               >
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -394,19 +406,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10"
-            title={sidebarOpen ? 'Zatvori sidebar' : 'Otvori sidebar'}
+            title={sidebarOpen ? t('common.collapse_sidebar') : t('common.expand_sidebar')}
+            aria-label={sidebarOpen ? t('common.collapse_sidebar') : t('common.expand_sidebar')}
           >
             {sidebarOpen ? <ChevronLeft className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
           </button>
 
           <div className="flex flex-col min-h-full">
             <div className={`flex items-center justify-between px-4 pt-5 pb-3 ${sidebarExpanded ? 'block' : 'hidden'}`}>
-              <span className="font-semibold text-gray-800 dark:text-gray-200 text-base tracking-tight">Menu</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-200 text-base tracking-tight">{t('common.menu')}</span>
               {/* Mobile-only close button */}
               <button
                 onClick={() => setMobileNavOpen(false)}
                 className="lg:hidden touch-target flex items-center justify-center text-gray-500 dark:text-gray-400"
-                aria-label="Close navigation menu"
+                aria-label={t('common.close_menu')}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -469,7 +482,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {user?.role !== 'Supervision' && (
               <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 p-2">
                 <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                  {t('profiles.title', 'Profile')}
+                  {t('profiles.title')}
                 </p>
                 <ul className="space-y-1">
                   {profiles.map((profile) => (
@@ -497,11 +510,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Mobile-only account section (language, theme, logout live in the header on desktop) */}
             <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 p-2 safe-bottom">
               <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                {t('common.account', 'Account')}
+                {t('common.account')}
               </p>
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('common.language', 'Language')}
+                  {t('common.language')}
                 </span>
                 <LanguageSwitcher />
               </div>
@@ -511,7 +524,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               >
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 <span>
-                  {isDark ? t('common.light_mode', 'Light mode') : t('common.dark_mode', 'Dark mode')}
+                  {isDark ? t('common.light_mode') : t('common.dark_mode')}
                 </span>
               </button>
               <button
@@ -536,13 +549,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6">
+          <div
+            ref={passwordDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cashflow-unlock-title"
+            tabIndex={-1}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 outline-none"
+          >
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <Lock className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Cashflow</h2>
+                <h2 id="cashflow-unlock-title" className="text-xl font-bold text-gray-900 dark:text-white">Cashflow</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {cashflowConfigured
                     ? t('profiles.unlock_title')

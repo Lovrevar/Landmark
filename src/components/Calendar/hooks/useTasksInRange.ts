@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { supabase } from '../../../lib/supabase'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { fetchTasksInRange } from '../../Tasks/services/tasksService'
 import { expandTasks, type TaskOccurrence } from '../utils/expandTasks'
 import type { Task } from '../../../types/tasks'
@@ -48,7 +49,9 @@ export function useTasksInRange({
       const data = await fetchTasksInRange(user.auth_user_id, fromIso, toIso)
       if (id === reqIdRef.current) setRawTasks(data)
     } catch (e) {
-      if (id === reqIdRef.current) setError(e as Error)
+      // Same normalisation as useEventsInRange: a Supabase rejection is not an `Error`.
+      console.error('Failed to load tasks in range', e)
+      if (id === reqIdRef.current) setError(new Error(toErrorMessage(e, '')))
     } finally {
       if (id === reqIdRef.current) setLoading(false)
     }

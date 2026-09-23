@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ProjectCategory } from '../../../../lib/supabase'
 import {
   fetchProjectById,
@@ -6,6 +7,7 @@ import {
   createProject,
   deleteProject,
 } from '../services/projectFormService'
+import { toErrorMessage, isPermissionError } from '../../../../lib/errorMessage'
 
 interface ProjectForm {
   name: string
@@ -31,18 +33,17 @@ const defaultForm: ProjectForm = {
   description: ''
 }
 
-// Postgres raises 42501 when an RLS policy rejects the write. Only Directors may
-// insert/update/delete projects, so surface that instead of a generic failure.
-// Returns a translation key; ProjectFormModal runs it through t(), which passes
-// unknown strings straight through.
-function toErrorMessage(err: unknown, fallback: string): string {
-  const code = (err as { code?: string } | null)?.code
-  if (code === '42501') return 'general_projects.error_permission_denied'
-  return err instanceof Error ? err.message : fallback
-}
-
-function isPermissionError(err: unknown): boolean {
-  return (err as { code?: string } | null)?.code === '42501'
+/**
+ * Postgres raises 42501 when an RLS policy rejects the write. Only Directors may
+ * insert/update/delete projects, so surface that instead of a generic failure.
+ *
+ * Returns a translation key for that one case; ProjectFormModal runs the result through t(),
+ * which passes unknown strings straight through. Everything else goes to the shared
+ * `toErrorMessage`, which also refuses raw Postgres text in favour of the fallback.
+ */
+function toFormError(err: unknown, fallback: string): string {
+  if (isPermissionError(err)) return 'general_projects.error_permission_denied'
+  return toErrorMessage(err, fallback)
 }
 
 export function useProjectForm(
@@ -50,6 +51,7 @@ export function useProjectForm(
   onSaved: () => void,
   onDeleted: () => void
 ) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<ProjectForm>(defaultForm)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -73,9 +75,9 @@ export function useProjectForm(
       }
     } catch (err) {
       console.error('Error fetching project:', err)
-      setError('Failed to load project data')
+      setError(toErrorMessage(err, t('general_projects.errors.load_failed')))
     }
-  }, [projectId])
+  }, [projectId, t])
 
   useEffect(() => {
     if (projectId) {
@@ -88,11 +90,11 @@ export function useProjectForm(
     setError('')
 
     if (!form.name.trim()) {
-      setError('Project name is required')
+      setError(t('general_projects.form_error_name'))
       return
     }
     if (!form.location.trim()) {
-      setError('Location is required')
+      setError(t('general_projects.form_error_location'))
       return
     }
     // No budget validation: the TIC writes it, not this form. Requiring one here would block
@@ -123,7 +125,7 @@ export function useProjectForm(
     } catch (err: unknown) {
       // A permission denial is an expected outcome, not a defect - don't log it.
       if (!isPermissionError(err)) console.error('Error saving project:', err)
-      setError(toErrorMessage(err, 'Failed to save project'))
+      setError(toFormError(err, t('general_projects.errors.save_failed')))
     } finally {
       setLoading(false)
     }
@@ -142,7 +144,7 @@ export function useProjectForm(
       onDeleted()
     } catch (err: unknown) {
       if (!isPermissionError(err)) console.error('Error deleting project:', err)
-      setError(toErrorMessage(err, 'Failed to delete project'))
+      setError(toFormError(err, t('general_projects.errors.delete_failed')))
     } finally {
       setDeleting(false)
       setShowDeleteConfirm(false)

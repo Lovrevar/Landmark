@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '../../../Common/CurrencyInput'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface InvoiceVATSummaryProps {
   formData: {
@@ -29,11 +30,11 @@ export const InvoiceVATSummary: React.FC<InvoiceVATSummaryProps> = ({ formData }
               <span className="font-medium">€{formatCurrency(formData.base_amount_1)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">PDV 25%:</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 25 })}</span>
               <span className="font-medium">€{formatCurrency(formData.base_amount_1 * 0.25)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
-              <span className="text-gray-600 dark:text-gray-400">{t('invoices.form.subtotal')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
               <span>€{formatCurrency(formData.base_amount_1 * 1.25)}</span>
             </div>
           </div>
@@ -46,11 +47,11 @@ export const InvoiceVATSummary: React.FC<InvoiceVATSummaryProps> = ({ formData }
               <span className="font-medium">€{formatCurrency(formData.base_amount_2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">PDV 13%:</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 13 })}</span>
               <span className="font-medium">€{formatCurrency(formData.base_amount_2 * 0.13)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
-              <span className="text-gray-600 dark:text-gray-400">{t('invoices.form.subtotal')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
               <span>€{formatCurrency(formData.base_amount_2 * 1.13)}</span>
             </div>
           </div>
@@ -63,11 +64,11 @@ export const InvoiceVATSummary: React.FC<InvoiceVATSummaryProps> = ({ formData }
               <span className="font-medium">€{formatCurrency(formData.base_amount_4)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">PDV 5%:</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 5 })}</span>
               <span className="font-medium">€{formatCurrency(formData.base_amount_4 * 0.05)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
-              <span className="text-gray-600 dark:text-gray-400">{t('invoices.form.subtotal')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
               <span>€{formatCurrency(formData.base_amount_4 * 1.05)}</span>
             </div>
           </div>
@@ -80,11 +81,11 @@ export const InvoiceVATSummary: React.FC<InvoiceVATSummaryProps> = ({ formData }
               <span className="font-medium">€{formatCurrency(formData.base_amount_3)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">PDV 0%:</span>
-              <span className="font-medium">€0.00</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('invoices.vat_rate_line', { rate: 0 })}</span>
+              <span className="font-medium">{formatEuro(0)}</span>
             </div>
             <div className="flex justify-between text-sm font-semibold">
-              <span className="text-gray-600 dark:text-gray-400">{t('invoices.form.subtotal')}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t('common.subtotal')}:</span>
               <span>€{formatCurrency(formData.base_amount_3)}</span>
             </div>
           </div>

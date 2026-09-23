@@ -6,7 +6,6 @@ export interface WorkLog {
   work_description: string
   notes: string
   status: string
-  color: string
   blocker_details?: string
   created_at: string
   contracts?: {
@@ -18,7 +17,8 @@ export interface WorkLog {
 export interface SubcontractorStatus {
   id: string
   name: string
-  project_name: string | undefined
+  /** Null for a contract whose phase has no project; the views label it themselves. */
+  project_name: string | null | undefined
   deadline: string | undefined
   progress: number
   cost: number | undefined

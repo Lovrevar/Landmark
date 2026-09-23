@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
@@ -15,8 +15,7 @@ import {
   Target,
   LayoutTemplate
 } from 'lucide-react'
-import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table } from '../../ui'
-import { format, differenceInDays, parseISO } from 'date-fns'
+import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table, ConfirmDialog } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import MilestoneTimeline from './MilestoneTimeline'
 import ProjectFormModal from './forms/ProjectFormModal'
@@ -28,11 +27,14 @@ import { fetchProjectDataEnhanced } from './services/projectDetailsService'
 import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import { usePhaseCollapseState } from './hooks/usePhaseCollapseState'
 import { buildPhaseBuckets, computePhaseStatuses } from './utils'
+import { projectTimeline } from '../../../utils/projectTimeline'
+import { formatDate } from '../../../utils/formatters'
+import { PROJECT_STATUS, UNIT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 import { useAuth } from '../../../contexts/AuthContext'
 
 const ProjectDetailsEnhanced: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   // Editing a project is Director-only at the RLS level; hide the entry point
   // for everyone else instead of letting the save fail with a 403.
   const { user } = useAuth()
@@ -53,6 +55,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', completed: false })
+  const milestoneNameRef = useRef<HTMLInputElement>(null)
 
   const loadData = useCallback(async () => {
     if (!id) return
@@ -73,7 +76,19 @@ const ProjectDetailsEnhanced: React.FC = () => {
     }
   }, [id])
 
-  const { handleAddMilestone, handleToggleMilestone, handleDeleteMilestone, handleBulkAddMilestones } = useMilestoneManagement(id, loadData)
+  const {
+    editingMilestone,
+    setEditingMilestone,
+    handleAddMilestone,
+    handleUpdateMilestone,
+    handleToggleMilestone,
+    handleDeleteMilestone,
+    pendingDeleteMilestoneId,
+    confirmDeleteMilestone,
+    cancelDeleteMilestone,
+    deletingMilestone,
+    handleBulkAddMilestones
+  } = useMilestoneManagement(id, loadData)
 
   const phaseStatuses = useMemo(() => computePhaseStatuses(buildPhaseBuckets(milestones)), [milestones])
   const phaseCollapse = usePhaseCollapseState(id, phaseStatuses)
@@ -82,13 +97,53 @@ const ProjectDetailsEnhanced: React.FC = () => {
     if (id) loadData()
   }, [id, loadData])
 
-  const handleSubmitMilestone = async () => {
-    await handleAddMilestone({ name: newMilestone.name, due_date: newMilestone.due_date || null, completed: false })
-    setNewMilestone({ name: '', due_date: '', completed: false })
+  // The inline form sits above the (possibly long) timeline, so bring it into view on Edit.
+  useEffect(() => {
+    if (!editingMilestone) return
+    const input = milestoneNameRef.current
+    input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    input?.focus({ preventScroll: true })
+  }, [editingMilestone])
+
+  const resetMilestoneForm = () => {
     setShowMilestoneForm(false)
+    setEditingMilestone(null)
+    setNewMilestone({ name: '', due_date: '', completed: false })
   }
 
-  if (loading) return <LoadingSpinner message={t('general_projects.loading')} />
+  const handleEditMilestone = (milestone: Milestone) => {
+    setNewMilestone({ name: milestone.name, due_date: milestone.due_date ?? '', completed: milestone.completed })
+    setEditingMilestone(milestone)
+    setShowMilestoneForm(true)
+  }
+
+  const handleSubmitMilestone = async () => {
+    if (editingMilestone) {
+      // Read completion from the live list, not the form snapshot: the milestone may have been
+      // toggled after Edit was clicked, and saving must not silently revert that.
+      const completed = milestones.find(m => m.id === editingMilestone.id)?.completed ?? newMilestone.completed
+      const saved = await handleUpdateMilestone(editingMilestone.id, {
+        name: newMilestone.name,
+        due_date: newMilestone.due_date || null,
+        completed
+      })
+      if (saved) resetMilestoneForm()
+      return
+    }
+    await handleAddMilestone({ name: newMilestone.name, due_date: newMilestone.due_date || null, completed: false })
+    resetMilestoneForm()
+  }
+
+  const handleConfirmDeleteMilestone = async () => {
+    const deletedId = pendingDeleteMilestoneId
+    await confirmDeleteMilestone()
+    if (deletedId && editingMilestone?.id === deletedId) resetMilestoneForm()
+  }
+
+  // First load only: every milestone mutation calls loadData, and swapping the page for a spinner
+  // then would unmount the inline form and the delete dialog mid-action. A different project id
+  // still spins, so another project's data is never shown under this URL.
+  if (loading && project?.id !== id) return <LoadingSpinner message={t('general_projects.loading')} />
   if (!project) return <EmptyState icon={Building2} title={t('general_projects.not_found')} />
 
   // contracts.budget_realized is the app's single "paid" figure — a trigger-kept cache of
@@ -128,12 +183,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <ProjectCategoryBadge category={project.category} size="md" />
-            <Badge variant={
-              project.status === 'Completed' ? 'green'
-                : project.status === 'In Progress' ? 'blue'
-                : project.status === 'On Hold' ? 'yellow' : 'gray'
-            }>
-              {project.status}
+            <Badge variant={statusVariant(PROJECT_STATUS, project.status)}>
+              {statusLabel(PROJECT_STATUS, project.status, t)}
             </Badge>
           </div>
         </div>
@@ -160,10 +211,28 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <span className="text-sm text-blue-700 dark:text-blue-300">{t('general_projects.timeline')}</span>
               <Calendar className="w-5 h-5 text-blue-400" />
             </div>
-            <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-              {project.end_date ? `${differenceInDays(parseISO(project.end_date), new Date())} ${t('general_projects.days')}` : t('general_projects.ongoing')}
-            </p>
-            <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">{format(parseISO(project.start_date), 'MMM dd, yyyy')}</p>
+            {/* A past end date used to render as "-45 dana" in this calm blue tile. Now it says
+                it is overdue, in red — the same rule the project cards use. */}
+            {(() => {
+              const timeline = projectTimeline(project.status, project.end_date)
+              const overdue = timeline.state === 'overdue'
+              return (
+                <p className={`text-2xl font-bold ${
+                  overdue ? 'text-red-600 dark:text-red-400' : 'text-blue-900 dark:text-blue-100'
+                }`}>
+                  {timeline.state === 'completed'
+                    ? t('status.completed')
+                    : timeline.state === 'no_end_date'
+                      ? t('general_projects.ongoing')
+                      : timeline.state === 'due_today'
+                        ? t('common.due_today')
+                        : overdue
+                          ? t('general_projects.days_overdue', { count: Math.abs(timeline.days!) })
+                          : t('general_projects.days_left', { count: timeline.days! })}
+                </p>
+              )
+            })()}
+            <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">{formatDate(project.start_date, i18n.language)}</p>
           </div>
 
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
@@ -230,12 +299,12 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.start_date')}</span>
-                    <p className="text-gray-900 dark:text-white font-medium mt-1">{format(parseISO(project.start_date), 'MMMM dd, yyyy')}</p>
+                    <p className="text-gray-900 dark:text-white font-medium mt-1">{formatDate(project.start_date, i18n.language)}</p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('common.end_date')}</span>
                     <p className="text-gray-900 dark:text-white font-medium mt-1">
-                      {project.end_date ? format(parseISO(project.end_date), 'MMMM dd, yyyy') : t('general_projects.ongoing')}
+                      {project.end_date ? formatDate(project.end_date, i18n.language) : t('general_projects.ongoing')}
                     </p>
                   </div>
                 </div>
@@ -315,8 +384,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       <Table.Td label={t('general_projects.size_m2')}>{apt.size_m2}</Table.Td>
                       <Table.Td label={t('general_projects.price')} className="font-semibold text-gray-900 dark:text-white">€{apt.price.toLocaleString('hr-HR')}</Table.Td>
                       <Table.Td label={t('common.status')}>
-                        <Badge variant={apt.status === 'Sold' ? 'green' : apt.status === 'Reserved' ? 'yellow' : 'blue'} size="sm">
-                          {apt.status}
+                        <Badge variant={statusVariant(UNIT_STATUS, apt.status)} size="sm">
+                          {statusLabel(UNIT_STATUS, apt.status, t)}
                         </Badge>
                       </Table.Td>
                       <Table.Td label={t('general_projects.buyer')}>{apt.buyer_name || '-'}</Table.Td>
@@ -343,11 +412,11 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {investment.bank_credits?.banks?.name || 'Unknown Bank'}
+                            {investment.bank_credits?.banks?.name || t('general_projects.unknown_bank')}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             {investment.bank_credits?.credit_name} • {investment.bank_credits?.credit_type?.replace(/_/g, ' ')}
-                            {investment.bank_credits?.start_date ? ` • ${format(parseISO(investment.bank_credits.start_date), 'MMM dd, yyyy')}` : ''}
+                            {investment.bank_credits?.start_date ? ` • ${formatDate(investment.bank_credits.start_date, i18n.language)}` : ''}
                           </p>
                           {investment.description && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{investment.description}</p>
@@ -384,16 +453,33 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
                     {t('general_projects.use_template')}
                   </Button>
-                  <Button icon={Plus} onClick={() => setShowMilestoneForm(!showMilestoneForm)}>{t('general_projects.add_milestone')}</Button>
+                  <Button
+                    icon={Plus}
+                    onClick={() => {
+                      // While editing, Add switches the open form back to add mode instead of closing it.
+                      if (editingMilestone) {
+                        setEditingMilestone(null)
+                        setNewMilestone({ name: '', due_date: '', completed: false })
+                        setShowMilestoneForm(true)
+                      } else {
+                        setShowMilestoneForm(!showMilestoneForm)
+                      }
+                    }}
+                  >
+                    {t('general_projects.add_milestone')}
+                  </Button>
                 </div>
               </div>
 
               {showMilestoneForm && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-4">{t('general_projects.new_milestone')}</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-4">
+                    {editingMilestone ? t('general_projects.milestone_edit') : t('general_projects.new_milestone')}
+                  </h4>
                   <div className="space-y-4">
                     <FormField label={t('general_projects.milestone_name')}>
                       <Input
+                        ref={milestoneNameRef}
                         type="text"
                         value={newMilestone.name}
                         onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
@@ -408,11 +494,13 @@ const ProjectDetailsEnhanced: React.FC = () => {
                       />
                     </FormField>
                     <div className="flex space-x-3">
-                      <Button onClick={handleSubmitMilestone}>{t('general_projects.add_milestone')}</Button>
-                      <Button variant="secondary" onClick={() => {
-                        setShowMilestoneForm(false)
-                        setNewMilestone({ name: '', due_date: '', completed: false })
-                      }}>
+                      <Button
+                        onClick={handleSubmitMilestone}
+                        disabled={!!editingMilestone && !newMilestone.name.trim()}
+                      >
+                        {editingMilestone ? t('common.save') : t('general_projects.add_milestone')}
+                      </Button>
+                      <Button variant="secondary" onClick={resetMilestoneForm}>
                         {t('common.cancel')}
                       </Button>
                     </div>
@@ -440,6 +528,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                 <MilestoneTimeline
                   milestones={milestones}
                   onToggleComplete={handleToggleMilestone}
+                  onEdit={handleEditMilestone}
                   onDelete={handleDeleteMilestone}
                   editable={true}
                   groupByPhase
@@ -473,6 +562,18 @@ const ProjectDetailsEnhanced: React.FC = () => {
         projectId={id ?? ''}
         projectStartDate={project?.start_date ?? null}
         onSubmit={handleBulkAddMilestones}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDeleteMilestoneId}
+        title={t('common.confirm_delete')}
+        message={t('general_projects.milestone_delete_confirm')}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={handleConfirmDeleteMilestone}
+        onCancel={cancelDeleteMilestone}
+        loading={deletingMilestone}
       />
     </div>
   )

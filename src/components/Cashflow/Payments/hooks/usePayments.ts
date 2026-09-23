@@ -23,6 +23,9 @@ import {
   deletePayment
 } from '../services/paymentService'
 import { fetchCreditAllocations } from '../../Invoices/services/invoiceService'
+import { toLoadError } from '../../services/loadError'
+import { toErrorMessage } from '../../../../lib/errorMessage'
+import { validatePaymentForm } from '../services/paymentValidation'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import { useToast } from '../../../../contexts/ToastContext'
 import { useTranslation } from 'react-i18next'
@@ -55,6 +58,7 @@ export const usePayments = () => {
   const [companyCredits, setCompanyCredits] = useState<CompanyCredit[]>([])
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [filterMethod, setFilterMethod] = useState<FilterMethod>('ALL')
@@ -85,17 +89,20 @@ export const usePayments = () => {
     }
   })
 
+  // Five independent fetches. `allSettled` rather than `all` so one failure (say the credit
+  // list, which only the form needs) does not blank the payments table as well — whatever
+  // resolved is shown, and the failure is surfaced through `error`.
   const fetchData = async () => {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
-
       const [
         paymentsResult,
         invoicesResult,
         companiesResult,
         bankAccountsResult,
         creditsResult
-      ] = await Promise.all([
+      ] = await Promise.allSettled([
         fetchPayments(),
         fetchInvoices(),
         fetchCompanies(),
@@ -103,20 +110,37 @@ export const usePayments = () => {
         fetchCredits()
       ])
 
-      setInvoices(invoicesResult)
-      setCompanies(companiesResult)
-      setCompanyBankAccounts(bankAccountsResult)
-      setCompanyCredits(creditsResult)
+      const firstRejection = [
+        paymentsResult,
+        invoicesResult,
+        companiesResult,
+        bankAccountsResult,
+        creditsResult
+      ].find((r): r is PromiseRejectedResult => r.status === 'rejected')
 
-      const companiesMap = new Map(companiesResult.map(c => [c.id, c.name]))
-      const paymentsWithCesija = paymentsResult.map((payment: Record<string, unknown>) => ({
-        ...payment,
-        cesija_company_name: payment.cesija_company_id ? companiesMap.get(payment.cesija_company_id as string) : null
-      }))
-      setPayments(paymentsWithCesija as unknown as Payment[])
+      if (invoicesResult.status === 'fulfilled') setInvoices(invoicesResult.value)
+      if (companiesResult.status === 'fulfilled') setCompanies(companiesResult.value)
+      if (bankAccountsResult.status === 'fulfilled') setCompanyBankAccounts(bankAccountsResult.value)
+      if (creditsResult.status === 'fulfilled') setCompanyCredits(creditsResult.value)
 
+      if (paymentsResult.status === 'fulfilled') {
+        const companiesMap = new Map(
+          (companiesResult.status === 'fulfilled' ? companiesResult.value : []).map(c => [c.id, c.name])
+        )
+        const paymentsWithCesija = paymentsResult.value.map((payment: Record<string, unknown>) => ({
+          ...payment,
+          cesija_company_name: payment.cesija_company_id ? companiesMap.get(payment.cesija_company_id as string) : null
+        }))
+        setPayments(paymentsWithCesija as unknown as Payment[])
+      }
+
+      if (firstRejection) {
+        console.error('Error fetching data:', firstRejection.reason)
+        setError(toLoadError(firstRejection.reason))
+      }
     } catch (error) {
       console.error('Error fetching data:', error)
+      setError(toLoadError(error))
     } finally {
       setLoading(false)
     }
@@ -162,8 +186,10 @@ export const usePayments = () => {
     try {
       setCreditAllocations(await fetchCreditAllocations(creditId))
     } catch (error) {
+      // An empty allocation dropdown otherwise says this credit has nothing allocated.
       console.error('Error fetching credit allocations:', error)
       setCreditAllocations([])
+      toast.error(t('payments.toast.allocations_load_error'))
     }
   }
 
@@ -204,7 +230,10 @@ export const usePayments = () => {
             setInvoices(prev => [invoice, ...prev])
           }
         } catch (error) {
+          // Without its invoice in the list the modal opens with an empty invoice field, as
+          // if the payment were unattached.
           console.error('Error fetching invoice for edit:', error)
+          toast.error(t('payments.toast.invoice_load_error'))
         }
       }
     } else {
@@ -232,47 +261,18 @@ export const usePayments = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const source = formData.payment_source_type
-    const isCesija = formData.is_cesija
-
-    if (!Number.isFinite(formData.amount) || formData.amount <= 0) {
-      toast.error(t('payments.form.error_amount_required'))
-      return
-    }
     const payingInvoice = invoices.find(inv => inv.id === formData.invoice_id)
-    if (payingInvoice && formData.amount > payingInvoice.remaining_amount) {
-      toast.error(t('payments.form.error_amount_exceeds_remaining'))
-      return
-    }
-    if (!isCesija && source === 'bank_account' && !formData.company_bank_account_id) {
-      toast.error(t('payments.form.error_bank_account_required'))
-      return
-    }
-    if (!isCesija && source === 'credit' && !formData.credit_id) {
-      toast.error(t('payments.form.error_credit_required'))
-      return
-    }
-    if (!isCesija && source === 'credit' && !formData.credit_allocation_id) {
-      toast.error(t('payments.form.error_credit_allocation_required'))
-      return
-    }
-    if (isCesija && !formData.cesija_company_id) {
-      toast.error(t('payments.form.error_cesija_company_required'))
-      return
-    }
-    if (isCesija && source === 'bank_account' && !formData.cesija_bank_account_id) {
-      toast.error(t('payments.form.error_bank_account_required'))
-      return
-    }
-    if (isCesija && source === 'credit' && !formData.cesija_credit_id) {
-      toast.error(t('payments.form.error_credit_required'))
-      return
-    }
-    if (isCesija && source === 'credit' && !formData.cesija_credit_allocation_id) {
-      toast.error(t('payments.form.error_credit_allocation_required'))
+    const validationError = validatePaymentForm(formData, {
+      remainingAmount: payingInvoice?.remaining_amount,
+      // remaining_amount already has the edited payment subtracted; add it back.
+      originalAmount: editingPayment?.amount
+    })
+    if (validationError) {
+      toast.error(t(validationError))
       return
     }
 
+    const wasEditing = !!editingPayment
     try {
       if (editingPayment) {
         await updatePayment(editingPayment.id, formData)
@@ -282,9 +282,11 @@ export const usePayments = () => {
 
       await fetchData()
       handleCloseModal()
+      // Until now the only sign a payment had been recorded was the page flashing a spinner.
+      toast.success(wasEditing ? t('payments.toast.update_success') : t('payments.toast.create_success'))
     } catch (error) {
       console.error('Error saving payment:', error)
-      toast.error('Greška prilikom spremanja plaćanja')
+      toast.error(toErrorMessage(error, t('payments.form.error_save')))
     }
   }
 
@@ -299,9 +301,10 @@ export const usePayments = () => {
     try {
       await deletePayment(pendingDeleteId)
       await fetchData()
+      toast.success(t('payments.toast.delete_success'))
     } catch (error) {
       console.error('Error deleting payment:', error)
-      toast.error('Greška prilikom brisanja plaćanja')
+      toast.error(toErrorMessage(error, t('payments.toast.delete_error')))
     } finally {
       setDeleting(false)
       setPendingDeleteId(null)
@@ -365,6 +368,9 @@ export const usePayments = () => {
     creditAllocations,
     handleCreditChange,
     loading,
+    error,
+    refetch: fetchData,
+    dismissError: () => setError(null),
     searchTerm,
     setSearchTerm,
     filterMethod,

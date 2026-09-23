@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Modal, FormField, Input, Select, Textarea, Button } from '../../../ui'
 import type { EquityFormData, BankWithCredits, Company } from '../types'
 import { calculateEquityCashflow, calculateMoneyMultiple } from '../utils/creditCalculations'
+import type { EquityPreview } from '../utils/creditCalculations'
 
 interface EquityFormModalProps {
   show: boolean
@@ -24,8 +25,11 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
   onSubmit,
 }) => {
   const { t } = useTranslation()
-  const cashflowValue = calculateEquityCashflow(formData)
-  const moneyMultiple = calculateMoneyMultiple(formData)
+  // The calculators report 'ok' / 'incomplete' / 'invalid_range'; the words live here.
+  const previewText = (preview: EquityPreview) =>
+    preview.status === 'ok' ? preview.value : t(`funding.equity_form.preview_${preview.status}`)
+  const cashflowValue = previewText(calculateEquityCashflow(formData))
+  const moneyMultiple = previewText(calculateMoneyMultiple(formData))
 
   return (
     <Modal show={show} onClose={onClose} size="lg">
@@ -158,7 +162,7 @@ const EquityFormModal: React.FC<EquityFormModalProps> = ({
               />
             </FormField>
           )}
-          <FormField label={t('funding.equity_form.money_multiple_label')} helperText={t('funding.equity_form.money_multiple_helper')}>
+          <FormField group label={t('funding.equity_form.money_multiple_label')} helperText={t('funding.equity_form.money_multiple_helper')}>
             <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-200">
               {moneyMultiple}
             </div>

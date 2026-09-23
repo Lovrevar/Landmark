@@ -26,6 +26,9 @@ interface PhaseCardProps {
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
+  /** False hides every figure derived from payments: the paid and unpaid tiles and the
+   *  utilisation bar, which measures paid against the plan. */
+  canManagePayments: boolean
   isExpanded: boolean
   expandedNodes: Set<string>
   onToggleExpand: () => void
@@ -51,6 +54,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onEditClassificationBudgets,
   onEditClassificationBudget,
   onManageMilestones,
+  canManagePayments,
   isExpanded,
   expandedNodes,
   onToggleExpand,
@@ -64,6 +68,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   const remaining = remainingBudget(phase.budget_allocated, rollup)
   const unallocated = unallocatedBudget(phase, project.classification_budgets || [])
 
+  // Utilisation is paid-against-plan, so it goes with the paid tiles rather than standing on
+  // its own: a bar at 80% says what the hidden figure is.
   const budgetUtilization = phase.budget_allocated > 0
     ? (rollup.paid / phase.budget_allocated) * 100
     : 0
@@ -110,25 +116,31 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
+        {/* The grid collapses rather than leaving holes where the paid tiles were. */}
+        <div className={`mt-4 grid grid-cols-1 gap-4 ${canManagePayments ? 'md:grid-cols-5' : 'md:grid-cols-3'}`}>
           <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
             <p className="text-sm text-gray-700 dark:text-gray-200">
               {t('supervision.site_management.phase_card.contracted_amount')}
             </p>
             <p className="text-lg font-bold text-gray-900 dark:text-white">{money(rollup.contracted)}</p>
           </div>
-          <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
-            <p className="text-sm text-teal-700 dark:text-teal-400">
-              {t('supervision.site_management.phase_card.paid_out')}
-            </p>
-            <p className="text-lg font-bold text-teal-900 dark:text-teal-300">{money(rollup.paid)}</p>
-          </div>
-          <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
-            <p className="text-sm text-orange-700 dark:text-orange-400">
-              {t('supervision.site_management.phase_card.unpaid_contracts')}
-            </p>
-            <p className="text-lg font-bold text-orange-900 dark:text-orange-300">{money(rollup.unpaid)}</p>
-          </div>
+          {canManagePayments && (
+            <>
+              <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
+                <p className="text-sm text-teal-700 dark:text-teal-400">
+                  {t('supervision.site_management.phase_card.paid_out')}
+                </p>
+                <p className="text-lg font-bold text-teal-900 dark:text-teal-300">{money(rollup.paid)}</p>
+              </div>
+              {/* Unpaid is contracted minus paid, so it gives paid away. */}
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                <p className="text-sm text-orange-700 dark:text-orange-400">
+                  {t('supervision.site_management.phase_card.unpaid_contracts')}
+                </p>
+                <p className="text-lg font-bold text-orange-900 dark:text-orange-300">{money(rollup.unpaid)}</p>
+              </div>
+            </>
+          )}
           <div className={`p-3 rounded-lg ${remaining < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
             <p className={`text-sm ${remaining < 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
               {t('supervision.site_management.phase_card.remaining_budget')}
@@ -149,27 +161,29 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           </div>
         </div>
 
-        <div className="mt-4">
-          <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {t('supervision.site_management.phase_card.budget_utilization')}
-            </span>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">{budgetUtilization.toFixed(1)}%</span>
+        {canManagePayments && (
+          <div className="mt-4">
+            <div className="flex justify-between mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {t('supervision.site_management.phase_card.budget_utilization')}
+              </span>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">{budgetUtilization.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+              <div
+                className={`h-3 rounded-full transition-all duration-300 ${
+                  budgetUtilization > 100 ? 'bg-red-600' : budgetUtilization > 80 ? 'bg-orange-600' : 'bg-teal-600'
+                }`}
+                style={{ width: `${Math.min(100, budgetUtilization)}%` }}
+              ></div>
+            </div>
+            {budgetUtilization > 100 && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                {t('supervision.site_management.phase_card.over_budget_by')} {money(rollup.paid - phase.budget_allocated)}
+              </p>
+            )}
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
-            <div
-              className={`h-3 rounded-full transition-all duration-300 ${
-                budgetUtilization > 100 ? 'bg-red-600' : budgetUtilization > 80 ? 'bg-orange-600' : 'bg-teal-600'
-              }`}
-              style={{ width: `${Math.min(100, budgetUtilization)}%` }}
-            ></div>
-          </div>
-          {budgetUtilization > 100 && (
-            <p className="text-xs text-red-600 mt-1">
-              {t('supervision.site_management.phase_card.over_budget_by')} {money(rollup.paid - phase.budget_allocated)}
-            </p>
-          )}
-        </div>
+        )}
       </div>
 
       {isExpanded && (
@@ -194,6 +208,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   onEditClassificationBudget={onEditClassificationBudget}
                   onAddSubcontractor={onAddSubcontractor}
                   onManageMilestones={onManageMilestones}
+                  canManagePayments={canManagePayments}
                   {...cardHandlers}
                 />
               ))}

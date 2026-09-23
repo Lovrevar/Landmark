@@ -21,6 +21,8 @@ interface ClassificationCardProps {
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
+  /** False hides the paid and unpaid tiles; unpaid is contracted minus paid, so it leaks paid. */
+  canManagePayments: boolean
 }
 
 const money = formatEuroRounded
@@ -39,11 +41,21 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
   onToggleNode,
   onEditClassificationBudget,
   onAddSubcontractor,
+  canManagePayments,
   ...cardHandlers
 }) => {
   const { t } = useTranslation()
   const isExpanded = expandedNodes.has(node.key)
   const remaining = node.budget !== null ? remainingBudget(node.budget, node.rollup) : null
+
+  // The grid collapses to whatever is actually shown rather than leaving holes. Literal class
+  // names, because Tailwind only emits what it can read in the source.
+  const tileCount = 1 + (canManagePayments ? 2 : 0) + (remaining !== null ? 1 : 0)
+  const tileColumns =
+    tileCount >= 4 ? 'md:grid-cols-4' :
+    tileCount === 3 ? 'md:grid-cols-3' :
+    tileCount === 2 ? 'md:grid-cols-2' :
+    'md:grid-cols-1'
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -75,25 +87,29 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
           )}
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`mt-4 grid grid-cols-1 gap-4 ${tileColumns}`}>
           <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
             <p className="text-sm text-gray-700 dark:text-gray-200">
               {t('supervision.site_management.phase_card.contracted_amount')}
             </p>
             <p className="text-lg font-bold text-gray-900 dark:text-white">{money(node.rollup.contracted)}</p>
           </div>
-          <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
-            <p className="text-sm text-teal-700 dark:text-teal-400">
-              {t('supervision.site_management.phase_card.paid_out')}
-            </p>
-            <p className="text-lg font-bold text-teal-900 dark:text-teal-300">{money(node.rollup.paid)}</p>
-          </div>
-          <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
-            <p className="text-sm text-orange-700 dark:text-orange-400">
-              {t('supervision.site_management.phase_card.unpaid_contracts')}
-            </p>
-            <p className="text-lg font-bold text-orange-900 dark:text-orange-300">{money(node.rollup.unpaid)}</p>
-          </div>
+          {canManagePayments && (
+            <>
+              <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
+                <p className="text-sm text-teal-700 dark:text-teal-400">
+                  {t('supervision.site_management.phase_card.paid_out')}
+                </p>
+                <p className="text-lg font-bold text-teal-900 dark:text-teal-300">{money(node.rollup.paid)}</p>
+              </div>
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                <p className="text-sm text-orange-700 dark:text-orange-400">
+                  {t('supervision.site_management.phase_card.unpaid_contracts')}
+                </p>
+                <p className="text-lg font-bold text-orange-900 dark:text-orange-300">{money(node.rollup.unpaid)}</p>
+              </div>
+            </>
+          )}
           {remaining !== null && (
             <div className={`p-3 rounded-lg ${remaining < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
               <p className={`text-sm ${remaining < 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
@@ -120,6 +136,7 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
               onToggleNode={onToggleNode}
               onEditClassificationBudget={onEditClassificationBudget}
               onAddSubcontractor={onAddSubcontractor}
+              canManagePayments={canManagePayments}
               {...cardHandlers}
             />
           ))}

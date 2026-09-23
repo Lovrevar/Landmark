@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react'
 import { Subcontractor } from '../../../../lib/supabase'
 import { ProjectWithPhases } from '../types'
 import * as siteService from '../services/siteService'
+import { daysFromToday } from '../../../../utils/dateOnly'
 import { ticGrandTotal, phaseTotals } from '../../../Funding/TIC/utils/ticBudget'
 
 export const useSiteProjectData = () => {
   const [projects, setProjects] = useState<ProjectWithPhases[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
   const [existingSubcontractors, setExistingSubcontractors] = useState<Subcontractor[]>([])
   const hasLoadedRef = useRef(false)
 
@@ -17,6 +19,7 @@ export const useSiteProjectData = () => {
     } else {
       setLoading(true)
     }
+    setError(null)
     try {
       const [projectsData, phasesData, subcontractorsWithPhaseData, allSubcontractorsData, classificationBudgets, ticLineItems] = await Promise.all([
         siteService.fetchAllProjects(),
@@ -60,8 +63,12 @@ export const useSiteProjectData = () => {
         const completion_percentage = total_subcontractor_cost > 0
           ? Math.round((total_paid_out / total_subcontractor_cost) * 100)
           : 0
+        // `new Date(null)` is 1 January 1970, so a contract with no deadline used to count as
+        // overdue — every unpaid uncontracted row inflated this badge. `daysFromToday` returns
+        // NaN for a missing or unparseable date, and NaN < 0 is false. It also compares whole
+        // local days, so a contract due today is not yet late.
         const overdue_subcontractors = projectSubcontractors.filter(sub => {
-          return new Date(sub.deadline) < new Date() && (sub.budget_realized || 0) < sub.cost
+          return daysFromToday(sub.deadline) < 0 && (sub.budget_realized || 0) < sub.cost
         }).length
         const has_phases = projectPhases.length > 0
         const total_budget_allocated = projectPhases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
@@ -91,8 +98,11 @@ export const useSiteProjectData = () => {
 
       setProjects(projectsWithPhases)
       hasLoadedRef.current = true
-    } catch (error) {
-      console.error('Error fetching projects:', error)
+    } catch (err) {
+      console.error('Error fetching projects:', err)
+      // Whatever was already on screen is kept: a failed refresh must not turn a project list
+      // into "no projects". The caller renders the error instead of, or above, the grid.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -103,5 +113,5 @@ export const useSiteProjectData = () => {
     fetchProjects()
   }, [])
 
-  return { projects, loading, refreshing, existingSubcontractors, fetchProjects }
+  return { projects, loading, refreshing, error, existingSubcontractors, fetchProjects, refetch: fetchProjects }
 }

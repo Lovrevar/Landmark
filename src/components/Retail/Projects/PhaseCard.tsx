@@ -1,8 +1,11 @@
 import React, { useState } from 'react'
 import { Plus, Edit2, Trash2, DollarSign, ChevronDown, ChevronUp } from 'lucide-react'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { Button, Badge, EmptyState } from '../../ui'
+import { rollupContracts, remainingBudget } from '../../../utils/contractRollup'
+import { formatEuro, formatDate } from '../../../utils/formatters'
+import { RETAIL_CONTRACT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDisplay'
+import { contractVariance } from '../../../utils/contractVariance'
 import type { RetailProjectPhase, RetailContract, RetailProjectWithPhases } from '../../../types/retail'
 
 interface PhaseCardProps {
@@ -32,35 +35,27 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   onViewInvoices,
   onManageMilestones
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(false)
 
-  const contractsWithContract = phaseContracts.filter(c => c.has_contract && c.contract_amount > 0)
-  const contractsWithoutContract = phaseContracts.filter(c => !c.has_contract || c.contract_amount === 0)
+  // Same four figures as Supervision's phase card, so they share the arithmetic. Retail's "paid"
+  // column is `invoice_total_paid` and its "still owed" is `invoiced_remaining`; mapping them here
+  // is all this card has to say about the maths.
+  const rollup = rollupContracts(phaseContracts.map(c => ({
+    hasContract: c.has_contract,
+    cost: c.contract_amount,
+    paid: c.invoice_total_paid || 0,
+    owed: c.invoiced_remaining || 0
+  })))
 
-  const totalContractCost = contractsWithContract.reduce((sum, c) => sum + c.contract_amount, 0)
-  const totalPaidWithContract = contractsWithContract.reduce((sum, c) => sum + (c.invoice_total_paid || 0), 0)
-  const totalPaidWithoutContract = contractsWithoutContract.reduce((sum, c) => sum + (c.invoice_total_paid || 0), 0)
-  const totalPaidOut = totalPaidWithContract + totalPaidWithoutContract
+  const totalContractCost = rollup.contracted
+  const totalPaidOut = rollup.paid
+  const totalUnpaid = rollup.unpaid
 
-  const totalUnpaidWithContract = contractsWithContract.reduce((sum, c) => {
-    const paid = c.invoice_total_paid || 0
-    return sum + Math.max(0, c.contract_amount - paid)
-  }, 0)
-  const totalUnpaidWithoutContract = contractsWithoutContract.reduce((sum, c) => sum + (c.invoiced_remaining || 0), 0)
-  const totalUnpaid = totalUnpaidWithContract + totalUnpaidWithoutContract
-
-  const availableBudget = phase.budget_allocated - totalContractCost - totalUnpaidWithoutContract
+  const availableBudget = remainingBudget(phase.budget_allocated, rollup)
   const budgetUtilization = phase.budget_allocated > 0 ? (totalPaidOut / phase.budget_allocated) * 100 : 0
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount)
-  }
+  const formatCurrency = formatEuro
 
   const getPhaseIcon = (type: string) => {
     switch (type) {
@@ -146,7 +141,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
           {phase.phase_type !== 'sales' && (
             <div className={`p-3 rounded-lg ${availableBudget < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
               <p className={`text-sm ${availableBudget < 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
-                {t('retail_projects.forecasted_budget')}
+                {t('retail_projects.remaining_budget')}
               </p>
               <p className={`text-lg font-bold ${availableBudget < 0 ? 'text-red-900 dark:text-red-400' : 'text-green-900 dark:text-green-400'}`}>
                 {formatCurrency(availableBudget)}
@@ -199,25 +194,35 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {phaseContracts.map((contract) => {
-              const hasValidContract = contract.has_contract && contract.contract_amount > 0
+              const hasValidContract = !!contract.has_contract && contract.contract_amount > 0
               const actualPaid = contract.invoice_total_paid || 0
               const contractAmount = contract.contract_amount || 0
               const remainingToPay = hasValidContract ? Math.max(0, contractAmount - actualPaid) : 0
-              const gainLoss = hasValidContract ? actualPaid - contractAmount : 0
               const isPaid = hasValidContract && actualPaid >= contractAmount
               const isPartial = actualPaid > 0 && actualPaid < contractAmount
+              // Retail contracts carry a status, so one marked Completed counts as settled even when
+              // paid below its value — that is the only way a saving becomes known. Not in the sales
+              // phase: there the money comes in, and a sale closed below its price is lost revenue,
+              // not a saving.
+              const closedEarly = contract.status === 'Completed' && phase.phase_type !== 'sales'
+              const variance = hasValidContract
+                ? contractVariance({ contracted: contractAmount, paid: actualPaid, settled: closedEarly || isPaid })
+                : { kind: 'none' as const }
+              const isOverrun = variance.kind === 'overrun'
+              // Nothing more is owed: paid in full, or closed for less.
+              const isSettled = isPaid || variance.kind === 'saving'
 
               const getContractBadgeVariant = (): 'red' | 'green' | 'blue' | 'gray' | 'yellow' => {
                 if (!hasValidContract) return 'yellow'
-                if (gainLoss > 0) return 'red'
-                if (isPaid && gainLoss === 0) return 'green'
+                if (isOverrun) return 'red'
+                if (isSettled) return 'green'
                 if (isPartial) return 'blue'
                 return 'gray'
               }
 
               const getContractStatusLabel = () => {
-                if (gainLoss > 0) return t('retail_projects.overpaid')
-                if (isPaid && gainLoss === 0) return t('retail_projects.milestones.status_paid')
+                if (isOverrun) return t('retail_projects.overpaid')
+                if (isSettled) return t('retail_projects.milestones.status_paid')
                 if (isPartial) return t('retail_projects.milestones.status_pending')
                 return t('retail_projects.milestones.status_unpaid')
               }
@@ -227,8 +232,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                   key={contract.id}
                   className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
                     !hasValidContract ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20' :
-                    gainLoss > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' :
-                    isPaid && gainLoss === 0 ? 'border-green-200 bg-green-50 dark:bg-green-900/20' :
+                    isOverrun ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' :
+                    isSettled ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' :
                     isPartial ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30' :
                     'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                   }`}
@@ -245,6 +250,15 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                         {!hasValidContract && (
                           <Badge variant="yellow" size="sm">
                             {t('retail_projects.no_contract_badge')}
+                          </Badge>
+                        )}
+                        {/* Completed and cancelled contracts stay on the card; without this they
+                            read exactly like active ones. Colour and label come from the shared
+                            `retail_contracts.status` map, so the badge matches every other screen
+                            (they were both grey here). */}
+                        {(contract.status === 'Completed' || contract.status === 'Cancelled') && (
+                          <Badge variant={statusVariant(RETAIL_CONTRACT_STATUS, contract.status)} size="sm">
+                            {statusLabel(RETAIL_CONTRACT_STATUS, contract.status, t)}
                           </Badge>
                         )}
                       </div>
@@ -265,7 +279,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.contract_date_label')}</span>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {format(new Date(contract.contract_date), 'dd.MM.yyyy')}
+                          {formatDate(contract.contract_date, i18n.language)}
                         </span>
                       </div>
                     )}
@@ -299,7 +313,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.deadline_label')}</span>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {format(new Date(contract.end_date), 'MMM dd, yyyy')}
+                          {formatDate(contract.end_date, i18n.language)}
                         </span>
                       </div>
                     )}
@@ -313,22 +327,27 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
                           <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.paid_label')}</span>
                           <span className="font-medium text-teal-600">{formatCurrency(actualPaid)}</span>
                         </div>
-                        {remainingToPay > 0 && (
+                        {/* A saving is that same remainder, no longer owed — showing both would count it twice. */}
+                        {remainingToPay > 0 && variance.kind !== 'saving' && (
                           <div className="flex items-center justify-between">
                             <span className="text-gray-600 dark:text-gray-400">{t('retail_projects.remaining_label')}</span>
-                            <span className="font-medium text-orange-600">{formatCurrency(remainingToPay)}</span>
+                            <span className="font-medium text-orange-600 dark:text-orange-400">{formatCurrency(remainingToPay)}</span>
                           </div>
                         )}
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
-                          <span className="text-gray-600 dark:text-gray-400 font-medium">{t('retail_projects.gain_loss_label')}</span>
-                          <span className={`font-bold ${
-                            gainLoss > 0 ? 'text-red-600' :
-                            gainLoss < 0 ? 'text-green-600' :
-                            'text-gray-900 dark:text-white'
-                          }`}>
-                            {gainLoss > 0 ? '-' : gainLoss < 0 ? '+' : ''}{formatCurrency(Math.abs(gainLoss))}
-                          </span>
-                        </div>
+                        {variance.kind !== 'none' && (
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+                            <span className="text-gray-600 dark:text-gray-400 font-medium">
+                              {/* On a sales phase the money comes from the buyer, so paying past the price is an
+                                  overpayment, not a cost overrun — the same word the badge uses. */}
+                              {variance.kind === 'overrun'
+                                ? (phase.phase_type === 'sales' ? t('retail_projects.overpaid') : t('common.contract_overrun'))
+                                : t('common.contract_saving')}:
+                            </span>
+                            <span className={`font-bold ${variance.kind === 'overrun' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                              {formatCurrency(variance.amount)}
+                            </span>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>

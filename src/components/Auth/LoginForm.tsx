@@ -175,7 +175,7 @@ const LoginForm: React.FC = () => {
                     value={email}
                     onChange={(e) => handleEmailChange(e.target.value)}
                     className={emailFieldClass}
-                    placeholder="Enter your email"
+                    placeholder={t('auth.email_placeholder')}
                     aria-invalid={!!fieldErrors.email}
                   />
                 </div>
@@ -196,7 +196,7 @@ const LoginForm: React.FC = () => {
                     value={password}
                     onChange={(e) => handlePasswordChange(e.target.value)}
                     className={passwordFieldClass}
-                    placeholder="Enter your password"
+                    placeholder={t('auth.password_placeholder')}
                     aria-invalid={!!fieldErrors.password}
                   />
                 </div>
@@ -264,7 +264,7 @@ const LoginForm: React.FC = () => {
                     value={email}
                     onChange={(e) => handleEmailChange(e.target.value)}
                     className={emailFieldClass}
-                    placeholder="Enter your email"
+                    placeholder={t('auth.email_placeholder')}
                     aria-invalid={!!fieldErrors.email}
                   />
                 </div>

@@ -1,5 +1,5 @@
 import React from 'react'
-import { DollarSign, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import { Euro, AlertCircle, CheckCircle, Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Table, EmptyState } from '../ui'
 import type { CustomerReportData, InvoiceSummary } from './retailReportTypes'
@@ -23,7 +23,7 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
-          icon={<DollarSign className="w-5 h-5 text-blue-600" />}
+          icon={<Euro className="w-5 h-5 text-blue-600" />}
           label={t('reports.sales_analysis.contracted')}
           value={formatCurrency(totalAmount)}
           sub={t('reports.sales_analysis.contracts_count', { count: totalContracts })}
@@ -91,7 +91,7 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
                     <Table.Td label={t('reports.sales_analysis.contracted')} className="py-3 text-right text-gray-700 dark:text-gray-200">
                       {formatCurrency(customer.total_amount)}
                     </Table.Td>
-                    <Table.Td label={t('common.paid')} className="py-3 text-right text-green-600 font-medium">
+                    <Table.Td label={t('common.paid')} className="py-3 text-right text-green-600 dark:text-green-400 font-medium">
                       {formatCurrency(customer.total_paid)}
                     </Table.Td>
                     <Table.Td label={t('common.unpaid')} className="py-3 text-right">

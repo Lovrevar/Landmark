@@ -8,8 +8,7 @@ interface BulkUnitsModalProps {
   unitType: UnitType
   selectedBuilding: { name: string }
   onClose: () => void
-  onSubmit: (data: BulkCreateData) => void
-  loading?: boolean
+  onSubmit: (data: BulkCreateData) => Promise<void> | void
 }
 
 export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
@@ -17,8 +16,7 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
   unitType,
   selectedBuilding,
   onClose,
-  onSubmit,
-  loading = false
+  onSubmit
 }) => {
   const { t } = useTranslation()
   const [formData, setFormData] = useState<BulkCreateData>({
@@ -186,7 +184,7 @@ export const BulkUnitsModal: React.FC<BulkUnitsModalProps> = ({
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button loading={loading} onClick={() => onSubmit(formData)}>
+        <Button onClick={() => onSubmit(formData)}>
           {t('sales_projects.bulk_units_modal.create_units', { count: preview.totalUnits })}
         </Button>
       </Modal.Footer>

@@ -10,8 +10,8 @@ export interface SalesDashboardStats {
   salesRate: number
   totalCustomers: number
   activeLeads: number
+  /** Cash collected this calendar month on apartment sales invoices (gross, VAT included). */
   monthlyRevenue: number
-  monthlyTarget: number
 }
 
 export interface ProjectStats {
@@ -26,6 +26,11 @@ export interface ProjectStats {
 }
 
 export interface MonthlyTrend {
+  /**
+   * The month's first day as `'YYYY-MM-DD'`. It used to be a rendered `'MMM yy'` label, which
+   * put an English month on a Croatian dashboard; the service has no translator, so it hands
+   * over a key and `SalesDashboard` formats it with `formatMonthYear`.
+   */
   month: string
   sales_count: number
   revenue: number

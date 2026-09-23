@@ -46,6 +46,12 @@ export interface BankCredit {
   usage_expiration_date: string | null
   status: string
   credit_type: string
+  /**
+   * `'junior' | 'senior'`, and the reason a line of credit has two labels rather than one
+   * (`getCreditTypeLabelKey`). The dashboard service selects `*`, so the column has always been
+   * present in this data — it was simply missing from the type.
+   */
+  credit_seniority?: string | null
   company?: Company
   project?: Project
   credit_allocations?: CreditAllocation[]
@@ -64,11 +70,21 @@ export interface FinancialSummary {
   total_repaid_credit: number
 }
 
+/**
+ * One line in the investment dashboard's activity feed.
+ *
+ * `title` and `description` used to be English sentences built in
+ * `investmentDashboardService` ("Credit facility approved", "… matures in 12 days") and
+ * rendered verbatim into a Croatian dashboard. The service has no translator, so it now hands
+ * over `type` plus the values that go into the sentence and `InvestmentDashboard` looks up
+ * `dashboards.investment.activity.<type>.*`. Same shape as `DerivedAlert` on the Director
+ * dashboard.
+ */
 export interface RecentActivity {
   id: string
   type: 'credit' | 'maturity' | 'usage_expiring'
-  title: string
-  description: string
+  /** Interpolation values for the activity's title and description. */
+  params: Record<string, string | number>
   date: string
   amount?: number
 }

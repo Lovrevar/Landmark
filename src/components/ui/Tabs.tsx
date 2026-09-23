@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface Tab<T extends string> {
   id: T
@@ -20,9 +21,10 @@ export default function Tabs<T extends string>({
   onChange,
   className = '',
 }: TabsProps<T>) {
+  const { t } = useTranslation()
   return (
     <div className={`border-b border-gray-200 dark:border-gray-700 ${className}`}>
-      <nav className="flex gap-1 overflow-x-auto scrollbar-none -mb-px" aria-label="Tabs">
+      <nav className="flex gap-1 overflow-x-auto scrollbar-none -mb-px" aria-label={t('common.tabs')}>
         {tabs.map(tab => (
           <button
             key={tab.id}

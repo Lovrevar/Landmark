@@ -1,14 +1,18 @@
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert } from '../../ui'
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
-import { format } from 'date-fns'
 import { useRetailInvoices } from './hooks/useRetailInvoices'
+import { formatDate } from '../../../utils/formatters'
 
 const RetailInvoicesManagement: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     loading,
+    error,
+    dismissError,
+    refetch,
+    hasData,
     stats,
     filteredInvoices,
     searchTerm,
@@ -20,7 +24,8 @@ const RetailInvoicesManagement: React.FC = () => {
     dateRange,
     setDateRange,
     handleApprove,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   } = useRetailInvoices()
 
   const INVOICE_TYPE_LABELS = useMemo<Record<string, string>>(() => ({
@@ -36,7 +41,9 @@ const RetailInvoicesManagement: React.FC = () => {
     UNPAID: t('common.unpaid'),
   }
 
-  if (loading) return <LoadingSpinner message={t('retail_invoices.loading')} />
+  if (loading && !hasData) return <LoadingSpinner message={t('retail_invoices.loading')} />
+
+  const loadFailed = !!error && !hasData
 
   return (
     <div className="p-6">
@@ -45,12 +52,23 @@ const RetailInvoicesManagement: React.FC = () => {
         description={t('retail_invoices.description')}
       />
 
+      {error && !loadFailed && (
+        <Alert variant="error" className="mb-6" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {!loadFailed && (
       <StatGrid columns={4} className="mb-8">
         <StatCard label={t('common.total_invoices')} value={stats.totalInvoices} icon={FileText} color="blue" />
         <StatCard label={t('common.total_amount')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={FileText} color="green" />
         <StatCard label={t('common.this_month')} value={stats.invoicesThisMonth} subtitle={t('retail_invoices.invoices_subtitle')} icon={Calendar} />
         <StatCard label={t('common.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -75,8 +93,8 @@ const RetailInvoicesManagement: React.FC = () => {
             <option value="not_approved">{t('retail_invoices.filter.not_approved')}</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={handleExportCSV} fullWidth>
-            {t('common.export_csv')}
+          <Button variant="success" icon={Download} onClick={handleExportExcel} loading={exporting} fullWidth>
+            {t('common.export_excel')}
           </Button>
         </div>
 
@@ -98,7 +116,9 @@ const RetailInvoicesManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredInvoices.length === 0 ? (
+      {loadFailed ? (
+        <ErrorState onRetry={() => { void refetch() }} />
+      ) : filteredInvoices.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title={t('retail_invoices.no_invoices')}
@@ -146,8 +166,8 @@ const RetailInvoicesManagement: React.FC = () => {
                       {INVOICE_TYPE_LABELS[invoice.invoice_type] || invoice.invoice_type}
                     </Badge>
                   </td>
-                  <td data-label={t('common.date')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
-                  <td data-label={t('retail_invoices.table.due_date')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>
+                  <td data-label={t('common.date')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{formatDate(invoice.issue_date, i18n.language)}</td>
+                  <td data-label={t('retail_invoices.table.due_date')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{formatDate(invoice.due_date, i18n.language)}</td>
                   <td data-label={t('common.project')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{invoice.project_name}</td>
                   <td data-label={t('retail_invoices.table.supplier_customer')} className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
                     {invoice.supplier_name || invoice.customer_name || '-'}

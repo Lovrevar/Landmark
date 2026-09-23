@@ -6,7 +6,8 @@ import type { ToastItem } from '../../contexts/ToastContext'
 const variantStyles: Record<string, string> = {
   info:    'bg-blue-600 text-white',
   success: 'bg-green-600 text-white',
-  warning: 'bg-yellow-500 text-white',
+  // Dark text: white on yellow-500 was about 2:1, unreadable for a message meant to be noticed.
+  warning: 'bg-amber-500 text-gray-900',
   error:   'bg-red-600 text-white',
 }
 

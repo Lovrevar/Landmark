@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { Apartment, Garage, Repository, Customer } from '../../../../lib/supabase'
 import { ProjectWithBuildings, BuildingWithUnits } from '../types'
 import * as salesService from '../services/salesService'
@@ -11,9 +11,13 @@ export const useSalesData = () => {
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
+  // Seven queries feed one aggregation. A failure in any of them used to leave every
+  // total at 0, which reads as "nothing sold" rather than "we could not load this".
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
+    setError(null)
     try {
       const projectsData = await salesService.fetchProjects()
       const buildingsData = await salesService.fetchBuildings()
@@ -170,8 +174,9 @@ export const useSalesData = () => {
       setGarages(enhancedGarages)
       setRepositories(enhancedRepositories)
       setCustomers(customersData)
-    } catch (error) {
-      console.error('Error fetching data:', error)
+    } catch (err) {
+      console.error('Error fetching data:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -181,6 +186,8 @@ export const useSalesData = () => {
     fetchData()
   }, [])
 
+  const dismissError = useCallback(() => setError(null), [])
+
   return {
     projects,
     buildings,
@@ -189,6 +196,8 @@ export const useSalesData = () => {
     repositories,
     customers,
     loading,
+    error,
+    dismissError,
     refetch: fetchData
   }
 }

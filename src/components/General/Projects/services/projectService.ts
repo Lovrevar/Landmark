@@ -1,15 +1,22 @@
 import { supabase } from '../../../../lib/supabase'
 import type { ProjectWithStats } from '../types'
+import { fetchTICTotalsByProject } from '../../../Supervision/SiteManagement/services/siteService'
+import { ticGrandTotal } from '../../../Funding/TIC/utils/ticBudget'
 
 export async function fetchProjectsWithStats(): Promise<ProjectWithStats[]> {
-  const { data, error } = await supabase
-    .from('projects')
-    .select(`
-      *,
-      contracts(budget_realized),
-      project_milestones(id, completed)
-    `)
-    .order('created_at', { ascending: false })
+  // The TIC totals come alongside, one query for the whole list: `projects.budget` means
+  // nothing without a TIC, and the card must say so rather than print a stale typed figure.
+  const [{ data, error }, ticLineItems] = await Promise.all([
+    supabase
+      .from('projects')
+      .select(`
+        *,
+        contracts(budget_realized),
+        project_milestones(id, completed)
+      `)
+      .order('created_at', { ascending: false }),
+    fetchTICTotalsByProject(),
+  ])
 
   if (error) throw error
 
@@ -25,8 +32,10 @@ export async function fetchProjectsWithStats(): Promise<ProjectWithStats[]> {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { contracts: _c, project_milestones: _m, ...projectFields } = project as typeof project & { contracts: unknown; project_milestones: unknown }
+    const tic = ticLineItems.get(project.id as string) ?? null
     return {
       ...projectFields,
+      tic_total: tic ? ticGrandTotal(tic) : null,
       stats: { total_spent, completion_percentage, milestones_completed, milestones_total }
     }
   })

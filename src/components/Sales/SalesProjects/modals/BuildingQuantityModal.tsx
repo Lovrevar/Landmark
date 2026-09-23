@@ -6,16 +6,14 @@ interface BuildingQuantityModalProps {
   visible: boolean
   project: { name: string }
   onClose: () => void
-  onSubmit: (quantity: number) => void
-  loading?: boolean
+  onSubmit: (quantity: number) => Promise<void> | void
 }
 
 export const BuildingQuantityModal: React.FC<BuildingQuantityModalProps> = ({
   visible,
   project,
   onClose,
-  onSubmit,
-  loading = false
+  onSubmit
 }) => {
   const { t } = useTranslation()
   const [quantity, setQuantity] = useState(1)
@@ -23,14 +21,14 @@ export const BuildingQuantityModal: React.FC<BuildingQuantityModalProps> = ({
 
   if (!visible) return null
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const errors: Record<string, string> = {}
     if (quantity < 1 || quantity > 20) {
-      errors.quantity = 'Please enter a valid quantity (1-20)'
+      errors.quantity = t('sales_projects.errors.quantity_range')
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
-    onSubmit(quantity)
+    await onSubmit(quantity)
     setQuantity(1)
   }
 
@@ -59,7 +57,7 @@ export const BuildingQuantityModal: React.FC<BuildingQuantityModalProps> = ({
         }}>
           {t('common.cancel')}
         </Button>
-        <Button loading={loading} onClick={handleSubmit}>
+        <Button onClick={handleSubmit}>
           {t('sales_projects.building_quantity_modal.create_buildings', { count: quantity })}
         </Button>
       </Modal.Footer>

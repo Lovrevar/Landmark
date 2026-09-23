@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { calculateProjectEVM } from '../../../../utils/evm'
 import type { EVMMetrics } from '../../../../utils/evm'
 import type { ProjectDisplay } from '../../Projects/types'
@@ -20,29 +21,36 @@ interface UseBudgetControlReturn {
   data: BudgetControlData | null
   loading: boolean
   error: string | null
+  /** Re-runs both loads. Every EVM figure on this screen comes from them. */
+  refetch: () => void
 }
 
 export function useBudgetControl(): UseBudgetControlReturn {
+  const { t } = useTranslation()
   const [projects, setProjects] = useState<ProjectDisplay[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [data, setData] = useState<BudgetControlData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  const refetch = useCallback(() => setReloadKey(k => k + 1), [])
 
   useEffect(() => {
     async function loadProjects() {
       try {
+        setError(null)
         const list = await fetchProjectsList()
         setProjects(list)
         if (list.length > 0) {
-          setSelectedProjectId(list[0].id)
+          setSelectedProjectId(prev => prev || list[0].id)
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load projects')
+        setError(err instanceof Error ? err.message : t('common.projects_load_error'))
       }
     }
     loadProjects()
-  }, [])
+  }, [reloadKey, t])
 
   useEffect(() => {
     if (!selectedProjectId) return
@@ -73,14 +81,17 @@ export function useBudgetControl(): UseBudgetControlReturn {
           metrics,
         })
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data')
+        setError(err instanceof Error ? err.message : t('budget_control.errors.load_data_failed'))
+        // Dropped rather than left standing: these are one project's EVM figures, and keeping
+        // them would attribute them to whichever project the selector now names.
+        setData(null)
       } finally {
         setLoading(false)
       }
     }
 
     loadProjectData()
-  }, [selectedProjectId])
+  }, [selectedProjectId, reloadKey, t])
 
-  return { projects, selectedProjectId, setSelectedProjectId, data, loading, error }
+  return { projects, selectedProjectId, setSelectedProjectId, data, loading, error, refetch }
 }

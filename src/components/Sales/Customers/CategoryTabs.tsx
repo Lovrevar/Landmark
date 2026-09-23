@@ -8,6 +8,8 @@ type ActiveCategory = CustomerCategory | null
 interface CategoryTabsProps {
   activeCategory: ActiveCategory
   counts: CustomerCounts
+  /** The counts query failed, so the badges show a dash rather than a fabricated 0. */
+  countsUnknown?: boolean
   onCategoryChange: (category: ActiveCategory) => void
 }
 
@@ -17,7 +19,7 @@ const categories = [
   { id: 'buyer' as CustomerCategory, labelKey: 'customers.tabs.buyers', icon: CheckCircle, activeClass: 'bg-green-600 text-white shadow-md', hoverClass: 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/20 border border-gray-200 dark:border-gray-700', badgeActive: 'bg-white bg-opacity-30 text-white', badgeInactive: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' }
 ]
 
-export const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeCategory, counts, onCategoryChange }) => {
+export const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeCategory, counts, countsUnknown = false, onCategoryChange }) => {
   const { t } = useTranslation()
   const handleClick = (id: CustomerCategory) => {
     onCategoryChange(activeCategory === id ? null : id)
@@ -43,7 +45,7 @@ export const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeCategory, coun
             <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${
               isActive ? category.badgeActive : category.badgeInactive
             }`}>
-              {count}
+              {countsUnknown ? '—' : count}
             </span>
           </button>
         )

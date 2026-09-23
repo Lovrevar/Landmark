@@ -5,7 +5,9 @@ import { MapPin, Calendar, Eye } from 'lucide-react'
 import { Badge, Button } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import type { ProjectWithStats } from './types'
-import { getStatusConfig, getDaysInfo } from './utils'
+import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
+import { projectTimeline, PROJECT_TIMELINE_TONE } from '../../../utils/projectTimeline'
+import { formatEuro } from '../../../utils/formatters'
 
 interface Props {
   project: ProjectWithStats
@@ -14,8 +16,13 @@ interface Props {
 const ProjectCard: React.FC<Props> = ({ project }) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const statusConfig = getStatusConfig(project.status)
-  const daysInfo = getDaysInfo(project.start_date, project.end_date)
+  // Was `getDaysInfo`, which called any project past its end date green "Completed" whatever
+  // its status, and said red "Overdue" the day before the end date.
+  const timeline = projectTimeline(project.status, project.end_date)
+  // The TIC is the only writer of planned budget, so without one there is no budget to show —
+  // and "remaining" against a phantom budget is worse than saying nothing.
+  const hasBudget = project.tic_total !== null && project.tic_total > 0
+  const remaining = project.budget - project.stats.total_spent
 
   return (
     <div
@@ -31,13 +38,8 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <Badge variant={
-            project.status === 'Completed' ? 'green'
-              : project.status === 'In Progress' ? 'blue'
-              : project.status === 'On Hold' ? 'yellow'
-              : 'gray'
-          } size="sm">
-            {statusConfig.label}
+          <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="sm">
+            {statusLabel(PROJECT_STATUS, project.status, t)}
           </Badge>
           <ProjectCategoryBadge category={project.category} />
         </div>
@@ -46,18 +48,30 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
       <div className="space-y-3 mb-4">
         <div className="flex justify-between items-center text-sm">
           <span className="text-gray-600 dark:text-gray-400">{t('common.budget')}</span>
-          <span className="font-semibold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</span>
+          {hasBudget ? (
+            <span className="font-semibold text-gray-900 dark:text-white">{formatEuro(project.budget)}</span>
+          ) : (
+            <span className="font-semibold text-orange-600 dark:text-orange-400">
+              {t('general_projects.budget_not_set')}
+            </span>
+          )}
         </div>
         <div className="flex justify-between items-center text-sm">
           <span className="text-gray-600 dark:text-gray-400">{t('general_projects.card_spent')}</span>
-          <span className="font-semibold text-blue-600">€{project.stats.total_spent.toLocaleString('hr-HR')}</span>
+          <span className="font-semibold text-blue-600 dark:text-blue-400">{formatEuro(project.stats.total_spent)}</span>
         </div>
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-600 dark:text-gray-400">{t('common.remaining')}</span>
-          <span className="font-semibold text-green-600">
-            €{(project.budget - project.stats.total_spent).toLocaleString('hr-HR')}
-          </span>
-        </div>
+        {/* Only meaningful against a real budget — and red when it has been exceeded, which the
+            constant green said was fine. */}
+        {hasBudget && (
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600 dark:text-gray-400">{t('common.remaining')}</span>
+            <span className={`font-semibold ${
+              remaining < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+            }`}>
+              {formatEuro(remaining)}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="mb-4">
@@ -76,7 +90,17 @@ const ProjectCard: React.FC<Props> = ({ project }) => {
       <div className="flex justify-between items-center text-sm border-t border-gray-200 dark:border-gray-700 pt-4">
         <div className="flex items-center text-gray-600 dark:text-gray-400">
           <Calendar className="w-4 h-4 mr-1" />
-          <span className={daysInfo.color}>{daysInfo.text}</span>
+          <span className={PROJECT_TIMELINE_TONE[timeline.state]}>
+            {timeline.state === 'completed'
+              ? t('status.completed')
+              : timeline.state === 'no_end_date'
+                ? t('general_projects.ongoing')
+                : timeline.state === 'due_today'
+                  ? t('common.due_today')
+                  : timeline.state === 'overdue'
+                    ? t('general_projects.days_overdue', { count: Math.abs(timeline.days!) })
+                    : t('general_projects.days_left', { count: timeline.days! })}
+          </span>
         </div>
         <div className="text-gray-600 dark:text-gray-400">
           <span className="font-semibold">{project.stats.milestones_completed}</span>

@@ -1,7 +1,7 @@
 import React from 'react'
 import { TrendingUp, CheckCircle2, XCircle } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
 import { useTranslation } from 'react-i18next'
+import { formatDayMonth } from '../../../utils/formatters'
 import type { SubcontractorStatus } from '../types/supervisionTypes'
 
 interface Props {
@@ -28,7 +28,7 @@ const getProgressTextColor = (sub: SubcontractorStatus): string => {
 }
 
 const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -52,7 +52,7 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => {
                       {sub.progress === 100 && <CheckCircle2 className="w-5 h-5 text-green-600" />}
                       {sub.is_overdue && <XCircle className="w-5 h-5 text-red-600" />}
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{sub.project_name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{sub.project_name || t('common.no_project')}</p>
                   </div>
                   <div className="text-right">
                     <div className={`text-2xl font-bold ${getProgressTextColor(sub)}`}>
@@ -77,17 +77,17 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => {
                       sub.days_until_deadline <= 7 ? 'text-orange-600' :
                       'text-gray-900 dark:text-white'
                     }`}>
-                      {sub.deadline ? format(parseISO(sub.deadline), 'MMM dd') : t('dashboards.supervision.na')}
-                      {sub.is_overdue && <span className="ml-1">({Math.abs(sub.days_until_deadline)}d over)</span>}
+                      {sub.deadline ? formatDayMonth(sub.deadline, i18n.language) : t('dashboards.supervision.na')}
+                      {sub.is_overdue && <span className="ml-1">({t('dashboards.supervision.days_over_short', { count: Math.abs(sub.days_until_deadline) })})</span>}
                       {!sub.is_overdue && sub.deadline && sub.days_until_deadline <= 7 && (
-                        <span className="ml-1">({sub.days_until_deadline}d left)</span>
+                        <span className="ml-1">({t('dashboards.supervision.days_left_short', { count: sub.days_until_deadline })})</span>
                       )}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboards.supervision.last_activity')}</p>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {sub.last_activity ? format(parseISO(sub.last_activity), 'MMM dd') : t('dashboards.supervision.no_logs')}
+                      {sub.last_activity ? formatDayMonth(sub.last_activity, i18n.language) : t('dashboards.supervision.no_logs')}
                     </p>
                   </div>
                   <div>

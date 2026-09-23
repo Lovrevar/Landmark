@@ -137,3 +137,29 @@ export async function importApartmentRow(row: ApartmentRowData, projectId: strin
 
   return { garageCreated, storageCreated }
 }
+
+export interface ApartmentImportSummary {
+  succeeded: number
+  failed: number
+  garagesLinked: number
+  storagesLinked: number
+}
+
+/**
+ * One audit entry for a whole import run. `importApartmentRow` logs each row it writes, but a
+ * run whose rows all fail writes nothing, so without this the log holds no trace of it.
+ */
+export function logApartmentImportSummary(projectId: string, summary: ApartmentImportSummary): void {
+  logActivity({
+    action: 'apartment.import_excel_summary',
+    entity: 'apartment',
+    projectId,
+    metadata: {
+      severity: 'high',
+      count: summary.succeeded,
+      failed: summary.failed,
+      garages_linked: summary.garagesLinked,
+      storages_linked: summary.storagesLinked
+    }
+  })
+}

@@ -3,41 +3,25 @@ import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
-import type { ComprehensiveReport, ProjectData } from '../types'
+import type { ComprehensiveReport, ProjectData, ReportRisk } from '../types'
+
+/**
+ * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
+ * read in this file falls back to `[]`. Unchecked, that turns one dropped request into an
+ * executive report of zeros — "€0 revenue, 0 units sold" reads as a business fact rather than as
+ * a missing answer, and it is exported to PDF that way. So a single failed query fails the whole
+ * report, which `useCachedData` hands the page as an error to render instead of the numbers.
+ */
+function throwIfAnyFailed(responses: readonly { error: { message: string } | null }[]): void {
+  const failed = responses.find(response => response.error !== null)
+  if (failed?.error) throw new Error(failed.error.message)
+}
 
 export async function fetchGeneralReportData(
   selectedProject: string,
   dateRange: { start: string; end: string }
 ): Promise<ComprehensiveReport> {
-  const [
-    { data: projects },
-    { data: apartments },
-    { data: sales },
-    { data: customers },
-    { data: contracts },
-    { data: subcontractors },
-    { data: projectPhases },
-    { data: workLogs },
-    { data: accountingInvoices },
-    { data: accountingPayments },
-    { data: banks },
-    { data: companyBankAccounts },
-    { data: ticCostStructures },
-    { data: officeSuppliers },
-    { data: bankCredits },
-    { data: companyLoans },
-    { data: creditAllocations },
-    { data: buildings },
-    { data: garages },
-    { data: repositories },
-    { data: subcontractorMilestones },
-    { data: retailProjects },
-    { data: retailContracts },
-    { data: retailPhases },
-    { data: retailLandPlots },
-    { data: retailCustomers },
-    { data: retailSuppliers },
-  ] = await Promise.all([
+  const responses = await Promise.all([
     supabase.from('projects').select('*'),
     supabase.from('apartments').select('*'),
     supabase.from('sales').select('sale_price, apartment_id'),
@@ -66,6 +50,38 @@ export async function fetchGeneralReportData(
     supabase.from('retail_customers').select('*'),
     supabase.from('retail_suppliers').select('*'),
   ])
+
+  throwIfAnyFailed(responses)
+
+  const [
+    { data: projects },
+    { data: apartments },
+    { data: sales },
+    { data: customers },
+    { data: contracts },
+    { data: subcontractors },
+    { data: projectPhases },
+    { data: workLogs },
+    { data: accountingInvoices },
+    { data: accountingPayments },
+    { data: banks },
+    { data: companyBankAccounts },
+    { data: ticCostStructures },
+    { data: officeSuppliers },
+    { data: bankCredits },
+    { data: companyLoans },
+    { data: creditAllocations },
+    { data: buildings },
+    { data: garages },
+    { data: repositories },
+    { data: subcontractorMilestones },
+    { data: retailProjects },
+    { data: retailContracts },
+    { data: retailPhases },
+    { data: retailLandPlots },
+    { data: retailCustomers },
+    { data: retailSuppliers },
+  ] = responses
 
   const projectsArray = projects || []
   const apartmentsArray = apartments || []
@@ -127,7 +143,7 @@ export async function fetchGeneralReportData(
   const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
   const storageIds = apartmentsArray.map(apt => apt.repository_id).filter(Boolean)
 
-  const [{ data: garagesData }, { data: storagesData }] = await Promise.all([
+  const unitExtraResponses = await Promise.all([
     supabase
       .from('garages')
       .select('id, price')
@@ -137,6 +153,11 @@ export async function fetchGeneralReportData(
       .select('id, price')
       .in('id', storageIds.length > 0 ? storageIds : ['']),
   ])
+
+  // These two prices feed per-project revenue, so losing them understates it silently.
+  throwIfAnyFailed(unitExtraResponses)
+
+  const [{ data: garagesData }, { data: storagesData }] = unitExtraResponses
 
   const garageMap = new Map((garagesData || []).map(g => [g.id, g.price]))
   const storageMap = new Map((storagesData || []).map(s => [s.id, s.price]))
@@ -221,7 +242,8 @@ export async function fetchGeneralReportData(
       .reduce((sum, p) => sum + p.amount, 0)
 
     return {
-      month: format(month, 'MMM yyyy'),
+      // A machine key, not a label. Both readers format it in the language they are rendering in.
+      month_key: format(startOfMonth(month), 'yyyy-MM-dd'),
       inflow: monthInflow,
       outflow: monthOutflow,
       net: monthInflow - monthOutflow
@@ -296,14 +318,13 @@ export async function fetchGeneralReportData(
     })
   )
 
-  const risks: Array<{ type: string; count: number; description: string }> = []
+  // A risk carries its key and its count; the renderer turns that into a sentence in the language
+  // it is rendering in — `GeneralReports.tsx` on screen, `reports.general.risks.*` in the PDF.
+  // A service has no translator and must not decide anyone's language.
+  const risks: ReportRisk[] = []
   const slowSalesProjects = projectDetails.filter(p => p.sales_rate < 40 && p.total_units > 0)
   if (slowSalesProjects.length > 0) {
-    risks.push({
-      type: 'SLOW SALES',
-      count: slowSalesProjects.length,
-      description: `${slowSalesProjects.length} project(s) with sales rate below 40%`
-    })
+    risks.push({ kind: 'slow_sales', count: slowSalesProjects.length })
   }
 
   const topProjects = [...projectDetails]
@@ -311,11 +332,12 @@ export async function fetchGeneralReportData(
     .slice(0, 3)
     .map(p => ({ name: p.name, revenue: p.revenue, sales_rate: p.sales_rate }))
 
-  const recommendations: string[] = []
-  if (salesRate < 50) recommendations.push('Intensify marketing efforts to accelerate sales velocity')
-  if (availableUnits > soldUnits) recommendations.push('Significant inventory available - consider pricing strategies')
-  recommendations.push('Continue monitoring project budgets and timeline adherence')
-  recommendations.push('Maintain strong relationships with financing partners')
+  // Keys, for the same reason as the risks above. Both readers translate them at the render site.
+  const recommendationKeys: string[] = []
+  if (salesRate < 50) recommendationKeys.push('reports.general.recs.marketing')
+  if (availableUnits > soldUnits) recommendationKeys.push('reports.general.recs.inventory')
+  recommendationKeys.push('reports.general.recs.budgets')
+  recommendationKeys.push('reports.general.recs.partners')
 
   const totalInvoices = accountingInvoicesArray.length
   const totalInvoiceValue = accountingInvoicesArray.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
@@ -543,7 +565,7 @@ export async function fetchGeneralReportData(
     risks: risks,
     insights: {
       top_projects: topProjects,
-      recommendations: recommendations
+      recommendation_keys: recommendationKeys
     }
   }
 }

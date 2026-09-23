@@ -63,7 +63,7 @@ export async function updateCredit(
       amount: newCredit.amount,
       interest_rate: newCredit.interest_rate,
       start_date: newCredit.start_date,
-      maturity_date: newCredit.maturity_date,
+      maturity_date: newCredit.maturity_date || null,
       outstanding_balance: newCredit.outstanding_balance,
       monthly_payment: computed.monthly_payment,
       purpose: newCredit.purpose,

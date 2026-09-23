@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lucide-react'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
 import { daysFromToday } from '../../../../utils/dateOnly'
-import { Button, Modal, Badge, EmptyState, LoadingSpinner } from '../../../ui'
+import { Button, Modal, Badge, EmptyState, ErrorState, LoadingSpinner } from '../../../ui'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
+import { formatDate } from '../../../../utils/formatters'
 
 interface Invoice {
   id: string
@@ -36,20 +37,24 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
   onClose,
   contract
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  // "No invoices on this contract" is a different claim from "we could not read them".
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchInvoices = useCallback(async () => {
     const contractId = contract?.id
     if (!contractId) return
 
     setLoading(true)
+    setError(null)
     try {
       const formattedInvoices = await retailProjectService.fetchRetailContractInvoices(contractId)
       setInvoices(formattedInvoices)
-    } catch (error) {
-      console.error('Error fetching invoices:', error)
+    } catch (err) {
+      console.error('Error fetching invoices:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -71,32 +76,6 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
-
-  const getStatusBadgeVariant = (status: string): 'green' | 'yellow' | 'red' | 'gray' => {
-    switch (status) {
-      case 'PAID':
-        return 'green'
-      case 'PARTIALLY_PAID':
-        return 'yellow'
-      case 'UNPAID':
-        return 'red'
-      default:
-        return 'gray'
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'PAID':
-        return t('retail_projects.payment_history_modal.status_paid')
-      case 'PARTIALLY_PAID':
-        return t('retail_projects.payment_history_modal.status_partial')
-      case 'UNPAID':
-        return t('retail_projects.payment_history_modal.status_unpaid')
-      default:
-        return status
-    }
-  }
 
   const getTypeLabel = (type: string) => {
     switch (type) {
@@ -128,6 +107,8 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
       <Modal.Body>
         {loading ? (
           <LoadingSpinner />
+        ) : error ? (
+          <ErrorState compact onRetry={() => { void fetchInvoices() }} />
         ) : invoices.length === 0 ? (
           <EmptyState
             icon={FileText}
@@ -138,16 +119,20 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
             {invoices.map((invoice) => (
               <div
                 key={invoice.id}
-                className={`bg-white dark:bg-gray-800 border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
-                  isOverdue(invoice.due_date, invoice.status) ? 'border-red-300 bg-red-50 dark:bg-red-900/20' : 'border-gray-200 dark:border-gray-700'
+                className={`border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
+                  // Background and border in either branch, never both: with `bg-white` always
+                  // present, CSS order decided the winner and overdue cards rendered white.
+                  isOverdue(invoice.due_date, invoice.status)
+                    ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                 }`}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('retail_projects.invoices_modal.invoice_number_label')}</label>
-                      <Badge variant={getStatusBadgeVariant(invoice.status)} size="sm">
-                        {getStatusLabel(invoice.status)}
+                      <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
+                        {getInvoiceStatusLabel(invoice.status, t)}
                       </Badge>
                     </div>
                     <p className="text-lg font-bold text-gray-900 dark:text-white">{invoice.invoice_number}</p>
@@ -198,10 +183,12 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2 block">{t('retail_projects.invoices_modal.due_date_label')}</label>
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-2" />
-                      <p className={`text-sm font-medium ${
-                        isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-bold' : 'text-gray-900 dark:text-white'
+                      <p className={`text-sm ${
+                        isOverdue(invoice.due_date, invoice.status)
+                          ? 'font-bold text-red-600 dark:text-red-400'
+                          : 'font-medium text-gray-900 dark:text-white'
                       }`}>
-                        {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                        {formatDate(invoice.due_date, i18n.language)}
                       </p>
                     </div>
                     {isOverdue(invoice.due_date, invoice.status) && (
@@ -211,7 +198,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
                       </div>
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {t('retail_projects.invoices_modal.issue_date_label')} {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                      {t('retail_projects.invoices_modal.issue_date_label')} {formatDate(invoice.issue_date, i18n.language)}
                     </p>
                   </div>
                 </div>

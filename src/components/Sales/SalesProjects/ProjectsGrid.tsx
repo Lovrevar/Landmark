@@ -2,14 +2,11 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { ProjectWithBuildings, OnSelectProjectCallback } from './types'
 import { Badge } from '../../ui'
+import { PROJECT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDisplay'
 
 interface ProjectsGridProps {
   projects: ProjectWithBuildings[]
   onSelectProject: OnSelectProjectCallback
-}
-
-const getStatusBadgeVariant = (status: string): 'green' | 'blue' | 'gray' => {
-  return status === 'Completed' ? 'green' : status === 'In Progress' ? 'blue' : 'gray'
 }
 
 export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject }) => {
@@ -27,8 +24,8 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{project.name}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">{project.location}</p>
             </div>
-            <Badge variant={getStatusBadgeVariant(project.status)}>
-              {project.status}
+            <Badge variant={statusVariant(PROJECT_STATUS, project.status)}>
+              {statusLabel(PROJECT_STATUS, project.status, t)}
             </Badge>
           </div>
 

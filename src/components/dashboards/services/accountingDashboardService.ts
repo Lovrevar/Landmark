@@ -191,11 +191,13 @@ export async function fetchMonthlyTrends(): Promise<MonthlyData[]> {
 
   // Pre-seed every month from Jan to the current month with zeros, keyed by a
   // sortable 'YYYY-MM' so the chart shows gaps as zeros and stays chronological.
+  // `label` is the month's first day, not a rendered name: only the section renders it, and
+  // only it knows the UI language.
   const now = new Date()
   const monthlyMap = new Map<string, { incoming: number; outgoing: number; label: string }>()
   for (let m = 0; m <= now.getMonth(); m++) {
     const d = new Date(now.getFullYear(), m, 1)
-    monthlyMap.set(format(d, 'yyyy-MM'), { incoming: 0, outgoing: 0, label: format(d, 'MMM yyyy') })
+    monthlyMap.set(format(d, 'yyyy-MM'), { incoming: 0, outgoing: 0, label: format(d, 'yyyy-MM-dd') })
   }
 
   for (const payment of payments || []) {

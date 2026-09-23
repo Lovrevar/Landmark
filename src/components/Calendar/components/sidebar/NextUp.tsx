@@ -1,17 +1,25 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Clock, MapPin, Repeat, Users } from 'lucide-react'
-import type { EventType } from '../../../../types/tasks'
 import type { ExpandedOccurrence } from '../../utils/recurrence'
 import type { TaskOccurrence } from '../../utils/expandTasks'
 import { relativeLabel } from '../../utils/relativeLabel'
 import TaskPill from '../TaskPill'
+import { EVENT_TYPE_COLORS } from '../../utils/eventTypeColors'
+import InlineLoadError from '../../../ui/InlineLoadError'
+import { intlLocale } from '../../../../utils/locale'
 
 interface Props {
   occurrences: ExpandedOccurrence[]
   taskOccurrences?: TaskOccurrence[]
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onTaskClick?: (occurrence: TaskOccurrence) => void
+  onTaskToggle: (occurrence: TaskOccurrence) => void
+  /** The signed-in user's auth id; decides whether a task's checkbox is live. */
+  currentUserId: string | null | undefined
+  /** The events query behind this list failed — say so rather than "nothing is coming up". */
+  loadFailed?: boolean
+  onRetry?: () => void
   limit?: number
 }
 
@@ -19,22 +27,19 @@ type Item =
   | { kind: 'event'; occ: ExpandedOccurrence; sortAt: number }
   | { kind: 'task'; occ: TaskOccurrence; sortAt: number }
 
-const typeDot: Record<EventType, string> = {
-  meeting: 'bg-blue-500',
-  personal: 'bg-gray-400',
-  deadline: 'bg-red-500',
-  reminder: 'bg-amber-500',
-}
-
 export default function NextUp({
   occurrences,
   taskOccurrences = [],
   onEventClick,
   onTaskClick,
+  onTaskToggle,
+  currentUserId,
+  loadFailed = false,
+  onRetry,
   limit = 6,
 }: Props) {
   const { t, i18n } = useTranslation()
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const dateLocale = intlLocale(i18n.language)
 
   const items = useMemo<Item[]>(() => {
     const now = Date.now()
@@ -56,7 +61,9 @@ export default function NextUp({
         <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
         {t('calendar.next_up.title')}
       </h3>
-      {items.length === 0 ? (
+      {loadFailed ? (
+        <InlineLoadError message={t('calendar.load_error.events')} onRetry={onRetry} />
+      ) : items.length === 0 ? (
         <p className="text-xs text-gray-500 dark:text-gray-400">{t('calendar.next_up.empty')}</p>
       ) : (
         <div className="space-y-2">
@@ -67,6 +74,8 @@ export default function NextUp({
                   key={item.occ.occurrenceKey}
                   occurrence={item.occ}
                   onClick={onTaskClick}
+                  onToggle={onTaskToggle}
+                  currentUserId={currentUserId}
                   showTime
                   locale={dateLocale}
                 />
@@ -83,7 +92,7 @@ export default function NextUp({
                 className={`w-full text-left p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group ${o.isDeclined ? 'opacity-60' : ''}`}
               >
                 <div className="flex items-start gap-2">
-                  <span className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${typeDot[ev.event_type]}`} />
+                  <span className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${EVENT_TYPE_COLORS[ev.event_type].dot}`} />
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate ${o.isDeclined ? 'line-through' : ''}`}>
                       {ev.title}

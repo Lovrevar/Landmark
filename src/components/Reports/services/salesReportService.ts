@@ -129,7 +129,8 @@ export async function generateProjectReport(
     }, 0)
 
     return {
-      month: format(month, 'MMM yyyy'),
+      // A machine key, not a label — both readers format it themselves. See `SalesData` in ../types.
+      month_key: format(monthStart, 'yyyy-MM-dd'),
       sales: monthSales.length,
       revenue: monthRevenue,
       units_sold: monthSales.length

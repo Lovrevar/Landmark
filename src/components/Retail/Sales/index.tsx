@@ -1,14 +1,19 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, Table } from '../../ui'
-import { format } from 'date-fns'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { useRetailSales } from './hooks/useRetailSales'
+import { formatDate } from '../../../utils/formatters'
+import { getPaymentMethodLabel } from '../../Cashflow/services/paymentHelpers'
 
 const RetailSalesPaymentsManagement: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     loading,
+    error,
+    dismissError,
+    refetch,
+    hasData,
     stats,
     filteredPayments,
     searchTerm,
@@ -17,23 +22,37 @@ const RetailSalesPaymentsManagement: React.FC = () => {
     setFilterStatus,
     dateRange,
     setDateRange,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   } = useRetailSales()
 
-  if (loading) {
+  if (loading && !hasData) {
     return <LoadingSpinner message={t('common.loading')} />
   }
+
+  const loadFailed = !!error && !hasData
 
   return (
     <div className="max-w-7xl mx-auto">
       <PageHeader title={t('retail_sales.payments.title')} description={t('retail_sales.payments.description')} />
 
+      {error && !loadFailed && (
+        <Alert variant="error" className="mb-6" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {!loadFailed && (
       <StatGrid columns={4}>
         <StatCard label={t('common.total_payments')} value={stats.totalPayments} icon={FileText} color="blue" />
         <StatCard label={t('common.total_amount')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
         <StatCard label={t('common.this_month')} value={stats.paymentsThisMonth} subtitle={t('retail_sales.payments.payments_subtitle')} icon={Calendar} color="blue" />
         <StatCard label={t('common.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -52,8 +71,8 @@ const RetailSalesPaymentsManagement: React.FC = () => {
             <option value="large">{t('common.filter_large')}</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={handleExportCSV} fullWidth>
-            {t('common.export_csv')}
+          <Button variant="success" icon={Download} onClick={handleExportExcel} loading={exporting} fullWidth>
+            {t('common.export_excel')}
           </Button>
         </div>
 
@@ -75,7 +94,9 @@ const RetailSalesPaymentsManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredPayments.length === 0 ? (
+      {loadFailed ? (
+        <ErrorState onRetry={() => { void refetch() }} />
+      ) : filteredPayments.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title={t('common.no_found')}
@@ -99,24 +120,24 @@ const RetailSalesPaymentsManagement: React.FC = () => {
           <Table.Body>
             {filteredPayments.map((payment) => (
               <Table.Tr key={payment.id}>
-                <Table.Td label={t('retail_sales.payments.table.payment_date')}>{format(new Date(payment.payment_date), 'dd.MM.yyyy')}</Table.Td>
+                <Table.Td label={t('retail_sales.payments.table.payment_date')}>{formatDate(payment.payment_date, i18n.language)}</Table.Td>
                 <Table.Td label={t('retail_sales.payments.table.invoice')}>
                   <div className="font-medium">{payment.invoice_number}</div>
                   <div className="text-xs text-gray-500">
-                    {payment.issue_date ? format(new Date(payment.issue_date), 'dd.MM.yyyy') : '-'}
+                    {payment.issue_date ? formatDate(payment.issue_date, i18n.language) : '-'}
                   </div>
                 </Table.Td>
                 <Table.Td label={t('common.customer')}>{payment.customer_name}</Table.Td>
                 <Table.Td label={t('common.contract')}>{payment.contract_number}</Table.Td>
                 <Table.Td label={t('common.project')}>{payment.project_name}</Table.Td>
-                <Table.Td label={t('retail_sales.payments.table.invoice_total')} align="right" className="text-gray-500">
+                <Table.Td label={t('retail_sales.payments.table.invoice_total')} align="right" className="text-gray-500 dark:text-gray-400">
                   €{payment.invoice_total_amount.toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td label={t('common.payment')} align="right" className="font-semibold text-green-600">
+                <Table.Td label={t('common.payment')} align="right" className="font-semibold text-green-600 dark:text-green-400">
                   €{payment.amount.toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td label={t('retail_sales.payments.table.method')}>{payment.payment_method}</Table.Td>
-                <Table.Td label={t('common.bank')} className="text-gray-500">{payment.bank_account_name}</Table.Td>
+                <Table.Td label={t('retail_sales.payments.table.method')}>{getPaymentMethodLabel(payment.payment_method, null, t)}</Table.Td>
+                <Table.Td label={t('common.bank')} className="text-gray-500 dark:text-gray-400">{payment.bank_account_name}</Table.Td>
               </Table.Tr>
             ))}
           </Table.Body>

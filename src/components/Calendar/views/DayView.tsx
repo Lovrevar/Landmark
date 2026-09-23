@@ -6,6 +6,7 @@ import TaskPill from '../components/TaskPill'
 import TimelineColumn from './_shared/TimelineColumn'
 import { DAY_HOURS, DAY_START_HOUR, HOUR_HEIGHT, formatHourLabel, startOfDay } from './_shared/timeSlots'
 import type { SlotSelection } from './_shared/useClickToCreate'
+import { intlLocale } from '../../../utils/locale'
 
 interface Props {
   date: Date
@@ -13,7 +14,9 @@ interface Props {
   taskOccurrences?: TaskOccurrence[]
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onTaskClick?: (occurrence: TaskOccurrence) => void
-  onTaskToggle?: (occurrence: TaskOccurrence) => void
+  onTaskToggle: (occurrence: TaskOccurrence) => void
+  /** The signed-in user's auth id; decides whether a task's checkbox is live. */
+  currentUserId: string | null | undefined
   onSlotSelect: (selection: SlotSelection) => void
 }
 
@@ -26,10 +29,11 @@ export default function DayView({
   onEventClick,
   onTaskClick,
   onTaskToggle,
+  currentUserId,
   onSlotSelect,
 }: Props) {
   const { t, i18n } = useTranslation()
-  const locale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const locale = intlLocale(i18n.language)
   const dayStart = startOfDay(date)
   const isToday = dayStart.toDateString() === new Date().toDateString()
   const dayTasks = useMemo(() => {
@@ -62,6 +66,7 @@ export default function DayView({
                 occurrence={o}
                 onClick={onTaskClick}
                 onToggle={onTaskToggle}
+                currentUserId={currentUserId}
                 compact
                 showTime
                 locale={locale}

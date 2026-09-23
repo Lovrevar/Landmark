@@ -2,9 +2,17 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckCircle, Circle, Clock, AlertTriangle, Calendar, Edit2, Trash2, ChevronDown } from 'lucide-react'
 import { Badge, Button, EmptyState } from '../../ui'
-import { format, parseISO, isPast } from 'date-fns'
 import type { Milestone } from './types'
+import { daysFromToday } from '../../../utils/dateOnly'
+import { formatDate } from '../../../utils/formatters'
 import { buildPhaseBuckets, getMilestoneStatus, NO_PHASE_KEY } from './utils'
+
+/**
+ * The one overdue rule, shared with `getMilestoneStatus`: past its due date in whole local days.
+ * `isPast(parseISO(...))` called a milestone due today overdue from UTC midnight onwards, so the
+ * counts in this summary disagreed with the icon on the row beside them.
+ */
+const isMilestoneOverdue = (m: Milestone) => !m.completed && daysFromToday(m.due_date) < 0
 
 interface MilestoneTimelineProps {
   milestones: Milestone[]
@@ -34,7 +42,7 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
   isPhaseExpanded,
   onTogglePhase
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const sortedMilestones = useMemo(() => sortByDate(milestones), [milestones])
 
@@ -78,48 +86,43 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{milestone.name}</h3>
-                    <Badge variant={
-                      status.label === 'Completed' ? 'green'
-                        : status.label === 'Overdue' ? 'red'
-                        : 'blue'
-                    } size="sm">
-                      {status.label}
+                    <Badge variant={status.variant} size="sm">
+                      {t(status.labelKey)}
                     </Badge>
                   </div>
 
                   {milestone.due_date && (
                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
                       <Calendar className="w-4 h-4 mr-1" />
-                      <span>{t('general_projects.milestone_due')}: {format(parseISO(milestone.due_date), 'MMM dd, yyyy')}</span>
+                      <span>{t('general_projects.milestone_due')}: {formatDate(milestone.due_date, i18n.language)}</span>
                     </div>
                   )}
                 </div>
 
                 {editable && (
-                  <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  // Always visible on touch widths (no hover there); md+ reveals on hover or keyboard focus.
+                  // focus-within needs the md: prefix too, or md:opacity-0's media rule would win.
+                  <div className="flex items-center space-x-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-200">
                     <Button
                       size="icon-sm"
-                      variant="ghost"
+                      variant={milestone.completed ? 'ghost-warning' : 'ghost-success'}
                       icon={milestone.completed ? Circle : CheckCircle}
                       onClick={() => onToggleComplete?.(milestone.id, milestone.completed)}
                       title={milestone.completed ? t('general_projects.milestone_mark_incomplete') : t('general_projects.milestone_mark_complete')}
-                      className={milestone.completed ? 'text-yellow-600 hover:bg-yellow-200' : 'text-green-600 hover:bg-green-200'}
                     />
                     <Button
                       size="icon-sm"
-                      variant="ghost"
+                      variant="ghost-primary"
                       icon={Edit2}
                       onClick={() => onEdit?.(milestone)}
                       title={t('general_projects.milestone_edit')}
-                      className="text-blue-600 hover:bg-blue-200"
                     />
                     <Button
                       size="icon-sm"
-                      variant="ghost"
+                      variant="ghost-danger"
                       icon={Trash2}
                       onClick={() => onDelete?.(milestone.id)}
                       title={t('general_projects.milestone_delete')}
-                      className="text-red-600 hover:bg-red-200"
                     />
                   </div>
                 )}
@@ -144,13 +147,13 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
           <div className="flex items-center space-x-2">
             <Clock className="w-5 h-5 text-blue-600" />
             <span className="text-gray-700 dark:text-gray-200">
-              <span className="font-semibold">{milestones.filter(m => !m.completed && (!m.due_date || !isPast(parseISO(m.due_date)))).length}</span> {t('status.in_progress')}
+              <span className="font-semibold">{milestones.filter(m => !m.completed && !isMilestoneOverdue(m)).length}</span> {t('status.in_progress')}
             </span>
           </div>
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-5 h-5 text-red-600" />
             <span className="text-gray-700 dark:text-gray-200">
-              <span className="font-semibold">{milestones.filter(m => !m.completed && m.due_date && isPast(parseISO(m.due_date))).length}</span> {t('status.overdue')}
+              <span className="font-semibold">{milestones.filter(isMilestoneOverdue).length}</span> {t('status.overdue')}
             </span>
           </div>
         </div>
@@ -167,7 +170,7 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
         {groupedBuckets.map(bucket => {
           const total = bucket.items.length
           const done = bucket.items.filter(m => m.completed).length
-          const overdue = bucket.items.filter(m => !m.completed && m.due_date && isPast(parseISO(m.due_date))).length
+          const overdue = bucket.items.filter(isMilestoneOverdue).length
           const pct = total > 0 ? Math.round((done / total) * 100) : 0
           const expanded = isPhaseExpanded ? isPhaseExpanded(bucket.key) : true
           const handleHeaderClick = () => onTogglePhase?.(bucket.key)

@@ -4,6 +4,9 @@ import { Briefcase, FileText } from 'lucide-react'
 import { SupplierSummary } from '../types'
 import { Modal, Badge, Button, StatCard, StatGrid } from '../../../ui'
 import { formatPhaseLabel } from '../../../../utils/phaseLabel'
+import { CONTRACT_STATUS, statusVariant, statusLabel } from '../../../../utils/statusDisplay'
+import { formatDate } from '../../../../utils/formatters'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../services/invoiceHelpers'
 
 interface SupplierDetailsModalProps {
   showModal: boolean
@@ -16,11 +19,11 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
   supplier,
   onClose
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   if (!supplier) return null
 
   return (
-    <Modal show={showModal} onClose={onClose} size="xl">
+    <Modal show={showModal} onClose={onClose} size="xl" ariaLabel={supplier.name}>
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center flex-shrink-0 rounded-t-lg">
         <div>
           <div className="flex items-center gap-2">
@@ -37,7 +40,7 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
           onClick={onClose}
           className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
         >
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{t('common.close')}</span>
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -88,8 +91,10 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                       )}
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{contract.job_description}</p>
                     </div>
-                    <Badge variant={contract.status === 'active' ? 'green' : 'gray'} size="sm">
-                      {contract.status}
+                    {/* One grey for draft, completed and terminated alike, with the raw lowercase
+                        column as the label — the shared vocabulary tells them apart. */}
+                    <Badge variant={statusVariant(CONTRACT_STATUS, contract.status)} size="sm">
+                      {statusLabel(CONTRACT_STATUS, contract.status, t)}
                     </Badge>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
@@ -138,18 +143,10 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 dark:text-white">{invoice.invoice_number}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(invoice.issue_date).toLocaleDateString('hr-HR')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(invoice.issue_date, i18n.language)}</p>
                     </div>
-                    <Badge
-                      variant={
-                        invoice.status === 'PAID' ? 'green' :
-                        invoice.status === 'PARTIALLY_PAID' ? 'yellow' :
-                        'red'
-                      }
-                      size="sm"
-                    >
-                      {invoice.status === 'PAID' ? t('common.paid') :
-                       invoice.status === 'PARTIALLY_PAID' ? t('common.partial') : t('common.unpaid')}
+                    <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
+                      {getInvoiceStatusLabel(invoice.status, t)}
                     </Badge>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">

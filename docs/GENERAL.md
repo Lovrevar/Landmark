@@ -6,6 +6,18 @@
 
 Shared project and milestone management used as a foundation across multiple domains. Not domain-specific — represents the generic "project" concept that Retail, Supervision, and Funding build on top of.
 
+## Dates and status labels
+
+**Dates go through `formatDate`** (`src/utils/formatters.ts`), which takes the language:
+`const { t, i18n } = useTranslation()` → `formatDate(value, i18n.language)`. Croatian renders
+`05.01.2026.`, English `Jan 05, 2026`. `ProjectDetailsEnhanced`, `MilestoneTimeline` and
+`MilestoneTemplateModal` all formatted with `'MMM dd, yyyy'` / `'MMMM dd, yyyy'` /
+`'d. MMM yyyy.'` — the last one a Croatian shape with an English month name.
+
+**`projects.status` is English and CHECK-constrained.** Render it through `PROJECT_STATUS` +
+`statusVariant` / `statusLabel` (`src/utils/statusDisplay.ts`); the `<option value="…">` in
+`ProjectFormModal` and the `index.tsx` filter stay English because they are the stored values.
+
 ---
 
 ## Sub-modules
@@ -18,8 +30,8 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 #### Services
 
 ### projectService.ts
-- `fetchProjectsWithStats()` — fetches all projects in a single joined query (contracts + project_milestones) and computes stats: total_spent, completion_percentage, milestones_completed, milestones_total
-- **Depends on:** supabase client
+- `fetchProjectsWithStats()` — fetches all projects in a single joined query (contracts + project_milestones) and computes stats: total_spent, completion_percentage, milestones_completed, milestones_total. In parallel it reads every project's TIC grand total (`fetchTICTotalsByProject()` from `Supervision/SiteManagement/services/siteService.ts`) onto `ProjectWithStats.tic_total`, so the cards can apply the same budget gate as the rest of the app instead of printing a stale `projects.budget`
+- **Depends on:** supabase client, `fetchTICTotalsByProject`, `ticGrandTotal` (`Funding/TIC/utils/ticBudget.ts`)
 
 ### projectFormService.ts
 - `fetchProjectById(projectId)` — fetches a single project row for the edit form (returns `FetchedProject | null`)
@@ -45,11 +57,12 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 
 ### useProjectForm.ts
 - `useProjectForm(projectId, onSaved, onDeleted)` — manages form state, validation, and save/delete for project create/edit; delete runs through a `ConfirmDialog` (showDeleteConfirm/confirmDelete/cancelDelete)
+- Error text comes from the shared [`src/lib/errorMessage.ts`](../src/lib/errorMessage.ts) (`toErrorMessage` / `isPermissionError`); the local copies of those two helpers were promoted there. A thin local `toFormError` keeps the one project-specific case: a 42501 returns the key `general_projects.error_permission_denied`, which `ProjectFormModal` runs through `t()`. The shared helper also refuses raw Postgres text ("new row violates row-level security policy…") in favour of the caller's fallback
 - **Calls:** projectFormService.ts (`fetchProjectById`, `createProject`, `updateProject`, `deleteProject`)
 - **Returns:** form, setForm, loading, error, setError, handleSubmit, handleDelete, confirmDelete, cancelDelete, showDeleteConfirm, deleting
 
 ### useMilestoneManagement.ts
-- `useMilestoneManagement(projectId, onMutated)` — wraps milestone service calls with toast-based error handling and pending-delete (ConfirmDialog) state
+- `useMilestoneManagement(projectId, onMutated)` — wraps milestone service calls with toast-based error handling and pending-delete (ConfirmDialog) state. `editingMilestone` is typed as the local `Milestone`; `handleUpdateMilestone` resolves `true` on success so the caller only leaves edit mode when the save landed; a failed toggle shows `general_projects.milestone_update_error`
 - **Calls:** milestoneService.ts (add/update/delete/toggle + `bulkAddMilestones`)
 - **Uses:** ToastContext (`useToast`)
 - **Returns:** editingMilestone, setEditingMilestone, handleAddMilestone, handleUpdateMilestone, handleDeleteMilestone, confirmDeleteMilestone, cancelDeleteMilestone, pendingDeleteMilestoneId, deletingMilestone, handleToggleMilestone, handleBulkAddMilestones
@@ -62,13 +75,42 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 #### Utilities
 
 ### utils.ts
-- `getStatusConfig(status)` — returns badge color and label for a project status string
-- `getDaysInfo(startDate, endDate)` — returns days elapsed and remaining for a project timeline
-- `getMilestoneStatus(milestone)` — derives display status (completed, overdue, in_progress) for a milestone, plus icon/colors for the timeline
+- `getStatusConfig(status)` is **gone.** It returned `{ icon, label }` with the label as an English
+  literal ('In Progress'), which rendered untranslated in a Croatian UI, and its only caller
+  (`ProjectCard`) used the label and never the icon. Project status now renders through
+  `PROJECT_STATUS` + `statusVariant` / `statusLabel` (`src/utils/statusDisplay.ts`), the one map
+  every screen in the app reads a project status from — `ProjectCard` and `ProjectDetailsEnhanced`
+  each had their own colour ladder, and both printed the raw `projects.status` column
+- `getMilestoneStatus(milestone)` — derives a milestone's display state (completed / overdue /
+  in_progress) for the timeline: icon, colour classes, `labelKey` (`status.completed` /
+  `status.overdue` / `status.in_progress`) and a `variant` for the badge. It used to return English
+  `label` literals, which `MilestoneTimeline` then string-compared to pick a badge colour
 - `buildPhaseBuckets(milestones)` — groups milestones by their `phase` string into ordered `PhaseBucket[]`; known template phases come first (in template order), then unknown phases alphabetically, then the un-phased bucket (`NO_PHASE_KEY = '__no_phase'`) last
 - `computePhaseStatuses(buckets)` — reduces buckets to `PhaseStatus[]` (`key`, `total`, `completed`, `overdue`) — consumed by `usePhaseCollapseState`
 - **Exports:** `NO_PHASE_KEY`, `PhaseBucket`, `PhaseStatus`
-- **Depends on:** date-fns, Lucide icons, `RESIDENTIAL_HR_TEMPLATE` (for phase ordering)
+- **Depends on:** `daysFromToday` (`src/utils/dateOnly.ts`), Lucide icons, `RESIDENTIAL_HR_TEMPLATE` (for phase ordering)
+- `getDaysInfo(startDate, endDate)` is **gone** — replaced by the shared, tested
+  `projectTimeline()` below. It said green "Completed" for *any* project past its end date
+  whatever its `status`, and red "Overdue" the day *before* the end date (`differenceInDays`
+  truncates towards zero), and its strings were hardcoded English
+
+#### One project-timeline rule (`src/utils/projectTimeline.ts`)
+
+`projectTimeline(status, endDate)` returns `{ state, days }` where `state` is one of
+`completed` / `overdue` / `due_today` / `due_soon` (inside `DUE_SOON_DAYS` = 30) / `on_track` /
+`no_end_date`, and `days` is whole calendar days to the end date (negative when past, `null`
+when there is none). `PROJECT_TIMELINE_TONE` maps each state to a text colour **with a dark
+pair**. Tested in `projectTimeline.test.ts` under fake timers, because the due-day boundary is
+exactly what kept regressing.
+
+- **"Completed" comes from `status`, never from a date.** A stalled project past its end date
+  used to read as finished.
+- Dates go through `daysFromToday` (`src/utils/dateOnly.ts`), so the end date itself is not late
+  and a missing one is open-ended rather than overdue.
+- The state is decided once; each screen picks its own wording. Used by
+  `General/Projects/ProjectCard.tsx`, `ProjectDetailsEnhanced.tsx` and
+  `Supervision/SiteManagement/ProjectsGrid.tsx` — which previously showed
+  "N dana kašnjenja" in orange on a project already marked Completed.
 
 #### Data
 
@@ -95,15 +137,19 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 #### Views
 
 ### ProjectCard.tsx
-- Summary card for a single project showing status badge, project-category badge, budget, spent, remaining, progress bar, milestone count, and days info
+- Summary card for a single project showing status badge, project-category badge, budget, spent, remaining, progress bar, milestone count, and its timeline
+- **Budget is gated on the TIC**, like every other screen: `tic_total !== null && tic_total > 0`, otherwise the card reads `general_projects.budget_not_set` and the "remaining" row is dropped altogether. `fetchProjectsWithStats` fetches the totals alongside the list (`fetchTICTotalsByProject()`), and `ProjectWithStats` carries `tic_total`
+- "Remaining" is red when negative. It used to be `text-green-600` unconditionally, so an overspent project reported its overspend in green
+- Money uses `formatEuro`; the timeline line uses `projectTimeline()` + `PROJECT_TIMELINE_TONE`
 - **Uses services:** (receives ProjectWithStats as prop)
 - **Uses Ui:** Badge, Button
-- **Uses components:** ProjectCategoryBadge, getStatusConfig, getDaysInfo
+- **Uses components:** ProjectCategoryBadge, `PROJECT_STATUS` + `statusVariant`/`statusLabel`, `projectTimeline`
 
 ### MilestoneTimeline.tsx
 - Visual vertical timeline of project milestones sorted by due date, with status colors and edit/delete/toggle actions
 - Optional `groupByPhase` mode renders collapsible per-phase sections (via `buildPhaseBuckets`) with phase progress bars and overdue badges; the parent drives expansion through the `isPhaseExpanded`/`onTogglePhase` props (wired to `usePhaseCollapseState`)
 - Shows summary stats (completed, in-progress, overdue, % progress)
+- Row actions (toggle/edit/delete) are always visible below `md`; from `md` up they appear on hover or keyboard focus (`md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100`, the `TaskRow` convention)
 - **Calls:** `buildPhaseBuckets`, `getMilestoneStatus`, `NO_PHASE_KEY` (utils.ts)
 - **Uses hooks:** (receives milestones as props, actions as callbacks)
 - **Uses Ui:** Badge, Button, EmptyState
@@ -112,12 +158,14 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - The project detail page (lazy-loaded in `App.tsx`; the older `ProjectDetails.tsx` it replaced was deleted on 2026-09-14). Tabs: Overview, Phases (PhasesContractsTab), Apartments, Subcontractors (SubcontractorsTab), Financing, Milestones
 - Header shows the project-category badge next to the status badge, and the Overview tab's project-info grid carries a "Vrsta projekta" tile alongside location/investor/dates
 - Header stat cards (budget/spent, timeline, completion %, contract count); Milestones tab combines an inline add form, the "Use template" action (MilestoneTemplateModal), an expand/collapse-all toggle, and a phase-grouped MilestoneTimeline
+- Milestone edit reuses the inline form: the timeline's Edit action fills it, switches the heading/submit to "Uredi prekretnicu"/Save, and scrolls to and focuses the name field. Cancel (or the header's Add button) returns it to add mode. Saving keeps the milestone's `phase` and reads `completed` from the live list, so a toggle made while the form was open is not reverted. Delete goes through a `ConfirmDialog` (`general_projects.milestone_delete_confirm`)
+- The full-page spinner shows only until this project has loaded (`loading && project?.id !== id`): milestone mutations reload the data, and a spinner then would unmount the form and the delete dialog
 - Computes `phaseStatuses` from milestones (`computePhaseStatuses(buildPhaseBuckets(...))`) and drives both the milestone grouping and `PhasesContractsTab` collapse via `usePhaseCollapseState`
 - **Uses hooks:** useMilestoneManagement, usePhaseCollapseState
 - **Uses services:** projectDetailsService (fetchProjectDataEnhanced)
 - **Uses components:** ProjectCategoryBadge, MilestoneTimeline, ProjectFormModal, MilestoneTemplateModal, PhasesContractsTab, SubcontractorsTab
 - **Calls:** `buildPhaseBuckets`, `computePhaseStatuses` (utils.ts)
-- **Uses Ui:** LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table
+- **Uses Ui:** LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table, ConfirmDialog
 
 #### Tabs
 
@@ -157,7 +205,10 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 
 ### hooks/useBudgetControl.ts
 - `useBudgetControl()` — loads the projects list on mount and auto-selects the first; on selection fetches budget data and computes `plannedBudget` (sum of phase `budget_allocated`), `committed` (sum of `contract_amount`), `paid` (sum of `budget_realized`), `completionPct` (paid / committed), `tic` (project budget), and the EVM `metrics`
-- **Returns (`BudgetControlData`):** `projects`, `selectedProjectId`, `setSelectedProjectId`, `data` (`tic`, `plannedBudget`, `committed`, `paid`, `completionPct`, `metrics`), `loading`, `error`
+- **Returns (`BudgetControlData`):** `projects`, `selectedProjectId`, `setSelectedProjectId`, `data` (`tic`, `plannedBudget`, `committed`, `paid`, `completionPct`, `metrics`), `loading`, `error`, `refetch`
+- `refetch` re-runs both loads (a reload counter both effects depend on) and preserves the selected project
+- A failed project-data load now **clears `data`**. Leaving the previous project's EVM figures standing attributed one project's numbers to whichever project the selector named
+- Both load failures are translated (`common.projects_load_error`, `budget_control.errors.load_data_failed`); they were English literals set straight into `error` and rendered by `ErrorState`
 - **Calls:** budgetControlService.ts (`fetchProjectsList`, `fetchProjectBudgetData`)
 - **Calls:** `calculateProjectEVM` from `src/utils/evm.ts`
 
@@ -169,8 +220,29 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 - Budget Control bar chart (recharts): 4 bars — Planned, Committed, Paid, Forecast EAC
 - EVM Indices scatter chart (recharts): CPI and SPI plotted against a Target (1.0) and a Warning (0.9) reference line
 - EVM Performance Metrics row: CPI, SPI, EAC, VAC, Completion % with progress bar
+
+#### What the EVM screen refuses to claim
+
+Three fallbacks inside `calculateProjectEVM` used to surface as confident figures:
+
+- **No schedule baseline.** `scheduleAvailable` is false when no phase carries both a start and
+  an end date; SPI then falls back to 1 (`evm.ts:135`). Nothing read the flag, so a project with
+  no dates at all reported a green "On schedule ✓". SPI now renders "—" with
+  `budget_control.no_schedule` underneath, and no point is plotted on the indices chart.
+- **CPI = 0** (cost booked with no earned value against it) makes `EAC = plannedBudget`, so
+  `VAC = 0` and the VAC tile went green "Ispod proračuna" beside a red CPI of 0.00. Both the
+  forecast card and the EAC/VAC tiles now show "—" with `budget_control.no_forecast`.
+- **The forecast bar was hardcoded red** while the EAC and VAC tiles were already coloured by the
+  sign of VAC, so a project forecast to come in *under* budget got a red bar next to two green
+  tiles. It now follows VAC (`CHART_COLORS.forecastUnder` / `forecastOver`).
+
+Also: the **Committed** card is amber (`variant="amber"`), matching its own bar in the chart
+below — it was `variant="active"`, a green ring that read as approval of a neutral number. The
+CPI/SPI sub-labels were hardcoded English and now come from `budget_control.cpi_*` / `spi_*`.
 - Index card colors via `getIndexStatus`: green (≥ 1.0), yellow (0.9–1.0), red (< 0.9)
+- Money goes through the shared helpers ([`src/utils/formatters.ts`](../src/utils/formatters.ts)): `compactEuro` (= `formatEuroCompact`) on the EVM tiles and the chart's Y axis, `formatEuroFull` (= `formatEuro`) on the metric cards and the chart tooltip. `compactEuro` was previously a local `formatEuro` that **shadowed the shared name while meaning the opposite** (abbreviated, not exact), abbreviated from €1.000 up (so €1.500 read "€2K") and used a decimal point where the rest of the app uses a comma
 - Empty/edge states: no projects, and "no budget data" when `plannedBudget` is 0
+- With an error and no figures loaded, an `ErrorState` (with the service's message as its description) and a retry replace the page body; with figures on screen the error stays as the inline red banner above them
 - **Uses hooks:** useBudgetControl
 - **Uses lib:** recharts (BarChart, ScatterChart, ReferenceLine)
 - **Uses Ui:** LoadingSpinner
@@ -203,7 +275,8 @@ Director-only audit trail UI. Displays all logged mutations across the platform 
 ### hooks/useActivityLog.ts
 - `useActivityLog()` — manages filter state, debounced search (500ms), server-side pagination, reference data for dropdowns, and detail modal state
 - **Calls:** activityLogQueryService.ts
-- **Returns:** logs, loading, totalCount, pagination, all filter state + setters, selectedLog, resetFilters, refetch
+- **Returns:** logs, loading, error, totalCount, pagination, all filter state + setters, selectedLog, resetFilters, refetch
+- A failed fetch **no longer clears `logs` / `totalCount`**. This is the audit trail: an empty table reads as "nobody did anything in this period", which a failed query has no business asserting. The rows from the last successful read stay and the page renders the failure over them
 
 #### Views
 
@@ -211,8 +284,9 @@ Director-only audit trail UI. Displays all logged mutations across the platform 
 - Director-only guard via `canViewActivityLog(user)` — redirects to `/` for non-Directors
 - Filter bar: search, user, category, severity, project, date range, reset
 - Results table with pagination
+- Three-way results area: spinner while loading, `ErrorState` with a retry when the query failed and nothing is loaded, `EmptyState` only for a genuinely empty result. With stale rows on screen an `Alert variant="error"` above the table says `activity_log.stale_after_error` ("these entries are from the last successful read, not from the current filters") and offers the retry
 - **Uses hooks:** useActivityLog
-- **Uses Ui:** PageHeader, SearchInput, Select, Pagination, LoadingSpinner, EmptyState, Button
+- **Uses Ui:** PageHeader, SearchInput, Select, Pagination, LoadingSpinner, EmptyState, ErrorState, Alert, Button
 
 ### ActivityLogTable.tsx
 - Table columns: Timestamp (hr-HR), User (name + role badge), Action (i18n), Entity (type + truncated ID), Project, Severity (colored badge), Details (eye icon)
@@ -220,6 +294,7 @@ Director-only audit trail UI. Displays all logged mutations across the platform 
 
 ### ActivityLogDetailModal.tsx
 - Three-section detail view: User info, Entity info, Metadata key-value pairs
+- `formatMetadataValue(value, t)` takes the translator: a boolean metadata value rendered the English literals "Yes"/"No" and now uses `common.yes` / `common.no`
 - "View Entity" navigation button when entity has a known route
 - **Uses Ui:** Modal, Badge, Button
 
@@ -235,3 +310,4 @@ Director-only audit trail UI. Displays all logged mutations across the platform 
 - This is the canonical project model — `Retail/Projects` and `Supervision/SiteManagement` are domain-specific extensions of this pattern
 - When adding project-level features that apply across domains, consider whether they belong here first
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`
+- **Failed loads are not empty states.** ActivityLog and BudgetControl expose `error` + `refetch` and render `ErrorState` (from `src/components/ui`) in the content area, keeping the header and filters mounted. `Projects/index.tsx` still fetches inline in the component and is **not** yet converted — it is part of the deferred set of in-component fetches from the same audit item

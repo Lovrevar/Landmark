@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  Alert,
   LoadingSpinner,
   PageHeader,
   StatGrid,
@@ -9,13 +10,16 @@ import {
   Button,
   Badge,
   EmptyState,
+  ErrorState,
   ConfirmDialog
 } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { CheckCircle, EyeOff, FileText, Calendar, AlertCircle, Building2 } from 'lucide-react'
-import { format } from 'date-fns'
 import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { useApprovals } from './hooks/useApprovals'
+import { formatEuro, formatDate } from '../../../utils/formatters'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 const COLUMN_KEYS = ['category', 'invoice_number', 'supplier_name', 'project_name', 'phase_name', 'contract_number', 'issue_date', 'due_date', 'base_amount', 'vat_amount', 'total_amount', 'status']
 
@@ -35,7 +39,7 @@ const DEFAULT_VISIBLE: Record<string, boolean> = {
 }
 
 const AccountingApprovals: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const toast = useToast()
 
   const COLUMN_LABELS: Record<string, string> = Object.fromEntries(
@@ -47,6 +51,9 @@ const AccountingApprovals: React.FC = () => {
     filteredInvoices,
     stats,
     loading,
+    error,
+    refetch,
+    dismissError,
     searchTerm,
     setSearchTerm,
     selectedIds,
@@ -113,6 +120,10 @@ const AccountingApprovals: React.FC = () => {
     return <LoadingSpinner size="lg" message={t('common.loading')} />
   }
 
+  // A failed load leaves `invoices` empty, which would otherwise read as "everything is
+  // approved and processed" — and the stat cards would agree, in euros. Say it failed instead.
+  const loadFailedEmpty = !!error && invoices.length === 0
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -120,6 +131,18 @@ const AccountingApprovals: React.FC = () => {
         description={t('approvals.subtitle')}
       />
 
+      {error && invoices.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {!loadFailedEmpty && (
       <StatGrid columns={3}>
         <StatCard
           title={t('approvals.stats.pending')}
@@ -140,13 +163,14 @@ const AccountingApprovals: React.FC = () => {
           title={t('approvals.stats.oldest')}
           value={
             stats.oldestInvoice
-              ? format(new Date(stats.oldestInvoice), 'dd.MM.yyyy')
+              ? formatDate(stats.oldestInvoice, i18n.language)
               : 'N/A'
           }
           icon={Calendar}
           trend={stats.oldestInvoice ? 'down' : 'neutral'}
         />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -161,7 +185,7 @@ const AccountingApprovals: React.FC = () => {
               <>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {t('approvals.selected_info')} <span className="font-semibold text-gray-900 dark:text-white">{selectedCount}</span>
-                  {' '}({selectedTotal.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)
+                  {' '}({formatEuro(selectedTotal)})
                 </span>
                 <Button
                   size="sm"
@@ -190,7 +214,11 @@ const AccountingApprovals: React.FC = () => {
           </div>
         </div>
 
-        {filteredInvoices.length === 0 ? (
+        {loadFailedEmpty ? (
+          <div className="p-8">
+            <ErrorState onRetry={() => void refetch()} />
+          </div>
+        ) : filteredInvoices.length === 0 ? (
           <div className="p-8">
             <EmptyState
               icon={CheckCircle}
@@ -252,8 +280,8 @@ const AccountingApprovals: React.FC = () => {
                     {visibleColumns.project_name && <td data-label={t('approvals.column_labels.project_name')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.project_name}</td>}
                     {visibleColumns.phase_name && <td data-label={t('approvals.column_labels.phase_name')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.phase_name}</td>}
                     {visibleColumns.contract_number && <td data-label={t('approvals.column_labels.contract_number')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{invoice.contract_number}</td>}
-                    {visibleColumns.issue_date && <td data-label={t('approvals.column_labels.issue_date')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>}
-                    {visibleColumns.due_date && <td data-label={t('approvals.column_labels.due_date')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{format(new Date(invoice.due_date), 'dd.MM.yyyy')}</td>}
+                    {visibleColumns.issue_date && <td data-label={t('approvals.column_labels.issue_date')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{formatDate(invoice.issue_date, i18n.language)}</td>}
+                    {visibleColumns.due_date && <td data-label={t('approvals.column_labels.due_date')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">{formatDate(invoice.due_date, i18n.language)}</td>}
                     {visibleColumns.base_amount && (
                       <td data-label={t('approvals.column_labels.base_amount')} className="px-4 py-4 text-sm text-gray-900 dark:text-white text-right whitespace-nowrap">
                         €{invoice.base_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -271,12 +299,12 @@ const AccountingApprovals: React.FC = () => {
                     )}
                     {visibleColumns.status && (
                       <td data-label={t('approvals.column_labels.status')} className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={invoice.status === 'PAID' ? 'success' : invoice.status === 'UNPAID' ? 'warning' : 'default'}>
-                            {invoice.status}
-                          </Badge>
-                          <Badge variant="success">{t('approvals.approved_badge')}</Badge>
-                        </div>
+                        {/* Payment status only: every row here is approved by construction
+                            (approvalsService filters approved = true), so an "Approved" badge
+                            would be the same on every row. */}
+                        <Badge variant={getInvoiceStatusVariant(invoice.status)}>
+                          {getInvoiceStatusLabel(invoice.status, t)}
+                        </Badge>
                       </td>
                     )}
                     <td className="px-4 py-4 text-sm text-gray-900 dark:text-white whitespace-nowrap">

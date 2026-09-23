@@ -194,7 +194,7 @@ function SupplierRow({ supplier, formatCurrency }: {
       </Table.Td>
       <Table.Td label={t('common.contracts')} className="py-3 text-right text-gray-700 dark:text-gray-200">{supplier.total_contracts}</Table.Td>
       <Table.Td label={t('reports.costs.contracted')} className="py-3 text-right text-gray-700 dark:text-gray-200">{formatCurrency(supplier.total_amount)}</Table.Td>
-      <Table.Td label={t('common.paid')} className="py-3 text-right text-green-600 font-medium">{formatCurrency(supplier.total_paid)}</Table.Td>
+      <Table.Td label={t('common.paid')} className="py-3 text-right text-green-600 dark:text-green-400 font-medium">{formatCurrency(supplier.total_paid)}</Table.Td>
       <Table.Td label={t('common.remaining')} className="py-3 text-right">
         <span className={`text-sm font-medium ${remaining > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
           {formatCurrency(remaining)}

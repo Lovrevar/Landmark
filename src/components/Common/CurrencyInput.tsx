@@ -25,7 +25,8 @@ export default function CurrencyInput({
   placeholder = '0,00',
   className,
   disabled = false,
-  min
+  min,
+  required,
 }: CurrencyInputProps) {
   const [displayValue, setDisplayValue] = useState('')
   const [isFocused, setIsFocused] = useState(false)
@@ -86,6 +87,7 @@ export default function CurrencyInput({
       placeholder={placeholder}
       className={className}
       disabled={disabled}
+      required={required}
     />
   )
 }

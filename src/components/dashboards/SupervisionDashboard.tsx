@@ -14,7 +14,8 @@ import {
   Activity,
   AlertCircle
 } from 'lucide-react'
-import { format, startOfWeek, endOfWeek } from 'date-fns'
+import { startOfWeek, endOfWeek } from 'date-fns'
+import { formatDate, formatDayMonth } from '../../utils/formatters'
 import type { WorkLog, SubcontractorStatus, WeeklyStats } from './types/supervisionTypes'
 import * as supervisionService from './services/supervisionService'
 import DashboardError from './DashboardError'
@@ -32,7 +33,7 @@ const defaultStats: WeeklyStats = {
 }
 
 const SupervisionDashboard: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data, loading, error, refetch } = useCachedData('dashboard:supervision', supervisionService.fetchSupervisionDashboard)
   const [selectedView, setSelectedView] = useState<'week' | 'status' | 'issues'>('week')
 
@@ -80,8 +81,8 @@ const SupervisionDashboard: React.FC = () => {
         <div className="sm:text-right">
           <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.supervision.this_week')}</p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">
-            {format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM dd')} -{' '}
-            {format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'MMM dd, yyyy')}
+            {formatDayMonth(startOfWeek(new Date(), { weekStartsOn: 1 }), i18n.language)} -{' '}
+            {formatDate(endOfWeek(new Date(), { weekStartsOn: 1 }), i18n.language)}
           </p>
         </div>
       </div>

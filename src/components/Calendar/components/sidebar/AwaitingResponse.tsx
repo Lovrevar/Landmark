@@ -1,40 +1,51 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Inbox, Check, X } from 'lucide-react'
-import type { EventResponse, EventType } from '../../../../types/tasks'
+import type { EventResponse } from '../../../../types/tasks'
 import type { ExpandedOccurrence } from '../../utils/recurrence'
 import { relativeLabel } from '../../utils/relativeLabel'
+import { pendingWindow, selectPendingOccurrences } from '../../utils/pendingCount'
+import { EVENT_TYPE_COLORS } from '../../utils/eventTypeColors'
+import InlineLoadError from '../../../ui/InlineLoadError'
+import { intlLocale } from '../../../../utils/locale'
 
 interface Props {
+  /**
+   * Occurrences covering at least the next PENDING_WINDOW_DAYS, unfiltered — the same set the
+   * header badge counts. Not the grid's range: that moves with navigation and the filter bar.
+   */
   occurrences: ExpandedOccurrence[]
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onQuickRespond: (occurrence: ExpandedOccurrence, response: EventResponse) => Promise<void>
+  /**
+   * The sidebar's own range query failed. "Nothing awaits your response" and "we could not ask"
+   * are the same picture otherwise, and this widget is the one the header badge agrees with.
+   */
+  loadFailed?: boolean
+  onRetry?: () => void
   limit?: number
-}
-
-const typeDot: Record<EventType, string> = {
-  meeting: 'bg-blue-500',
-  personal: 'bg-gray-400',
-  deadline: 'bg-red-500',
-  reminder: 'bg-amber-500',
 }
 
 export default function AwaitingResponse({
   occurrences,
   onEventClick,
   onQuickRespond,
+  loadFailed = false,
+  onRetry,
   limit = 10,
 }: Props) {
   const { t, i18n } = useTranslation()
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const dateLocale = intlLocale(i18n.language)
   const [busyKey, setBusyKey] = useState<string | null>(null)
 
-  const { items, overflow } = useMemo(() => {
-    const now = Date.now()
-    const pending = occurrences
-      .filter(o => o.myResponse === 'pending' && o.start.getTime() >= now)
-      .sort((a, b) => a.start.getTime() - b.start.getTime())
-    return { items: pending.slice(0, limit), overflow: Math.max(0, pending.length - limit) }
+  const { items, total, overflow } = useMemo(() => {
+    const { from, to } = pendingWindow()
+    const pending = selectPendingOccurrences(occurrences, from, to)
+    return {
+      items: pending.slice(0, limit),
+      total: pending.length,
+      overflow: Math.max(0, pending.length - limit),
+    }
   }, [occurrences, limit])
 
   const now = new Date()
@@ -54,13 +65,15 @@ export default function AwaitingResponse({
       <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-1.5">
         <Inbox className="w-4 h-4 text-amber-600 dark:text-amber-400" />
         {t('calendar.awaiting.title')}
-        {items.length > 0 && (
+        {total > 0 && !loadFailed && (
           <span className="ml-auto text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-1.5 py-0.5 rounded">
-            {items.length}
+            {total}
           </span>
         )}
       </h3>
-      {items.length === 0 ? (
+      {loadFailed ? (
+        <InlineLoadError message={t('calendar.load_error.events')} onRetry={onRetry} />
+      ) : items.length === 0 ? (
         <p className="text-xs text-gray-500 dark:text-gray-400">{t('calendar.awaiting.empty')}</p>
       ) : (
         <div className="space-y-1">
@@ -78,7 +91,7 @@ export default function AwaitingResponse({
                   className="flex-1 min-w-0 text-left"
                 >
                   <div className="flex items-start gap-2">
-                    <span className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${typeDot[ev.event_type]}`} />
+                    <span className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${EVENT_TYPE_COLORS[ev.event_type].dot}`} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {ev.title}

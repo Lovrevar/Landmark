@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { retailProjectService } from '../services/retailProjectService'
 import { Button, Modal, FormField, Input, Textarea } from '../../../ui'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface MilestoneFormData {
   contract_id: string
@@ -103,14 +104,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
     return (contractCost * formData.percentage) / 100
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount)
-  }
+  const formatCurrency = formatEuro
 
   return (
     <Modal show={visible} onClose={onClose} size="lg">
@@ -159,7 +153,7 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
               </p>
             </FormField>
 
-            <FormField label={t('retail_projects.milestones.form.calculated_amount')}>
+            <FormField group label={t('retail_projects.milestones.form.calculated_amount')}>
               <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white font-semibold">
                 {formatCurrency(calculateAmount())}
               </div>

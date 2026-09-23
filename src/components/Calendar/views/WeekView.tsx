@@ -13,6 +13,7 @@ import {
   startOfWeek,
 } from './_shared/timeSlots'
 import type { SlotSelection } from './_shared/useClickToCreate'
+import { intlLocale } from '../../../utils/locale'
 
 interface Props {
   anchor: Date
@@ -20,7 +21,9 @@ interface Props {
   taskOccurrences?: TaskOccurrence[]
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onTaskClick?: (occurrence: TaskOccurrence) => void
-  onTaskToggle?: (occurrence: TaskOccurrence) => void
+  onTaskToggle: (occurrence: TaskOccurrence) => void
+  /** The signed-in user's auth id; decides whether a task's checkbox is live. */
+  currentUserId: string | null | undefined
   onSlotSelect: (selection: SlotSelection) => void
 }
 
@@ -33,10 +36,11 @@ export default function WeekView({
   onEventClick,
   onTaskClick,
   onTaskToggle,
+  currentUserId,
   onSlotSelect,
 }: Props) {
   const { t, i18n } = useTranslation()
-  const locale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const locale = intlLocale(i18n.language)
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor])
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart])
   const todayStr = new Date().toDateString()
@@ -96,6 +100,7 @@ export default function WeekView({
                     occurrence={o}
                     onClick={onTaskClick}
                     onToggle={onTaskToggle}
+                    currentUserId={currentUserId}
                     compact
                     showTime
                     locale={locale}

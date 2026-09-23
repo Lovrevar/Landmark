@@ -1,6 +1,9 @@
+import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
-import { format } from 'date-fns'
+import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
+import { exportT } from '../../../../utils/exportLanguage'
+import { getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
 
 export interface InvoiceWithDetails {
   id: string
@@ -118,23 +121,58 @@ export async function toggleInvoiceApproval(invoiceId: string, currentApproved: 
   logActivity({ action: 'invoice.approve', entity: 'invoice', entityId: invoiceId, metadata: { severity: 'high', approved: !currentApproved } })
 }
 
-export function exportInvoicesCSV(invoices: InvoiceWithDetails[]): void {
-  const headers = ['Invoice #', 'Date', 'Supplier', 'Project', 'Phase', 'Company', 'Amount', 'Status']
-  const rows = invoices.map(i => [
-    i.invoice_number,
-    format(new Date(i.issue_date), 'yyyy-MM-dd'),
-    i.supplier_name,
-    i.project_name,
-    i.phase_name,
-    i.company_name,
-    i.total_amount.toString(),
-    i.status,
-  ])
-  const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `invoices-${format(new Date(), 'yyyy-MM-dd')}.csv`
-  a.click()
+const SHEET_NAME = 'Računi'
+const COLUMN_WIDTHS = [18, 12, 28, 24, 20, 24, 16, 16]
+const MONEY_COLUMNS = [6]
+
+/**
+ * The subcontractor invoice register as a spreadsheet.
+ *
+ * The CSV it replaces wrote `i.status` raw ("PARTIALLY_PAID"), quoted nothing, and put
+ * `issue_date` through `new Date()`, which east of UTC exported the previous day.
+ */
+export function buildSupervisionInvoicesSheet(invoices: InvoiceWithDetails[], t: TFunction): SheetRows {
+  const header = [
+    t('supervision.invoices.col.invoice_num'),
+    t('supervision.invoices.col.date'),
+    t('supervision.invoices.col.supplier'),
+    t('supervision.invoices.col.project'),
+    t('supervision.invoices.col.phase'),
+    t('supervision.invoices.col.company'),
+    t('supervision.invoices.col.amount'),
+    t('supervision.invoices.col.status'),
+  ]
+
+  return [
+    header,
+    ...invoices.map(i => [
+      textCell(i.invoice_number),
+      toDateCell(i.issue_date),
+      textCell(i.supplier_name),
+      textCell(i.project_name),
+      textCell(i.phase_name),
+      textCell(i.company_name),
+      Number(i.total_amount),
+      getInvoiceStatusLabel(i.status, t),
+    ]),
+  ]
+}
+
+export async function exportSupervisionInvoicesExcel(invoices: InvoiceWithDetails[]): Promise<void> {
+  const t = exportT()
+  await downloadWorkbook(
+    [{
+      name: SHEET_NAME,
+      rows: buildSupervisionInvoicesSheet(invoices, t),
+      columnWidths: COLUMN_WIDTHS,
+      moneyColumns: MONEY_COLUMNS,
+    }],
+    'racuni-nadzor'
+  )
+
+  logActivity({
+    action: 'export.supervision_invoices_excel',
+    entity: 'report',
+    metadata: { severity: 'low', format: 'excel', row_count: invoices.length },
+  })
 }

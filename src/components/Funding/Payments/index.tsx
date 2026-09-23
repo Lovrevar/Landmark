@@ -1,16 +1,35 @@
 import React, { useState, useEffect } from 'react'
-import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle, Building2 } from 'lucide-react'
+import { Calendar, Download, Filter, TrendingUp, TrendingDown, Scale, AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Table } from '../../ui'
-import { format } from 'date-fns'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { usePaymentsData } from './hooks/usePaymentsData'
+import { paymentTotalsByDirection, DIRECTION_AMOUNT_CLASS, formatSignedEuro } from '../../Cashflow/services/paymentTotals'
+import type { BankPaymentWithDetails } from './services/bankPaymentsService'
+import { exportFundingPaymentsExcel } from './services/fundingPaymentsExport'
+import type { PaymentDirection } from '../../Cashflow/services/invoiceHelpers'
+import { getCreditTypeLabelKey } from '../Investors/utils/creditCalculations'
+import { useAsyncExport } from '../../../hooks/useAsyncExport'
+import { formatEuro, formatDate, NO_VALUE } from '../../../utils/formatters'
+
+// A drawdown is money in (green), a repayment or credit fee money out (red). The amount classes
+// and the signed-net formatter are shared with the Cashflow payments screen.
+const DIRECTION_BADGE: Record<PaymentDirection, 'green' | 'red'> = { IN: 'green', OUT: 'red' }
 
 const FundingPaymentsManagement: React.FC = () => {
-  const { t } = useTranslation()
-  const { payments, stats, loading, refetch } = usePaymentsData()
+  const { t, i18n } = useTranslation()
+  const { payments, stats, loading, error, refetch } = usePaymentsData()
+  const [errorDismissed, setErrorDismissed] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
+
+  const directionLabel = (direction: PaymentDirection | null): string =>
+    direction === 'IN' ? t('payments.table.income') : direction === 'OUT' ? t('payments.table.expense') : NO_VALUE
+
+  const creditTypeLabel = (payment: BankPaymentWithDetails): string => {
+    const key = getCreditTypeLabelKey(payment.credit_type, payment.credit_seniority)
+    return key ? t(key) : (payment.credit_type ?? '').replace(/_/g, ' ')
+  }
 
   useEffect(() => {
     refetch()
@@ -29,46 +48,46 @@ const FundingPaymentsManagement: React.FC = () => {
     const matchesFilter =
       filterStatus === 'all' ||
       (filterStatus === 'recent' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      // Magnitude, whichever way the money went (amounts are always positive).
       (filterStatus === 'large' && Number(payment.amount) > 50000)
 
     return matchesSearch && matchesDateRange && matchesFilter
   })
 
-  const exportToCSV = () => {
-    const headers = ['Date', 'Type', 'Recipient', 'Project', 'Category', 'Amount', 'Notes']
-    const rows = filteredPayments.map(p => [
-      p.payment_date ? format(new Date(p.payment_date), 'yyyy-MM-dd') : format(new Date(p.created_at), 'yyyy-MM-dd'),
-      'Bank',
-      p.bank_name,
-      p.project_name,
-      p.credit_type,
-      p.amount.toString(),
-      p.notes || ''
-    ])
+  const filteredTotals = paymentTotalsByDirection(filteredPayments)
 
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `funding-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
-    a.click()
-  }
+  // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
+  const { exporting, run: runExportExcel } = useAsyncExport(exportFundingPaymentsExcel, 'common.export_error')
 
-  if (loading) {
+  if (loading && payments.length === 0) {
     return <LoadingSpinner message={t('funding.payments.loading')} />
   }
+
+  // Nothing loaded and the load failed: the four stat cards would report €0 disbursed.
+  const failedWithNothing = !!error && payments.length === 0
 
   return (
     <div className="max-w-7xl mx-auto">
       <PageHeader title={t('funding.payments.title')} description={t('funding.payments.description')} />
 
+      {error && !errorDismissed && !failedWithNothing && (
+        <Alert variant="error" className="mb-6" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            <Button size="sm" variant="secondary" onClick={refetch} loading={loading}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {/* Withheld rather than zeroed when the read failed; the filter bar below stays mounted. */}
+      {!failedWithNothing && (
       <StatGrid columns={4}>
-        <StatCard label={t('funding.payments.stats.total_payments_label')} value={stats.totalPayments} subtitle={t('funding.payments.stats.bank_payments_subtitle', { count: stats.bankPayments })} icon={FileText} color="blue" />
-        <StatCard label={t('funding.payments.stats.total_amount_label')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
-        <StatCard label={t('funding.payments.stats.this_month_label')} value={stats.paymentsThisMonth} subtitle={t('funding.payments.stats.payments_subtitle')} icon={Calendar} color="blue" />
-        <StatCard label={t('funding.payments.stats.month_amount_label')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
+        <StatCard label={t('funding.payments.stats.inflow_label')} value={formatEuro(stats.all.inflow)} icon={TrendingUp} color="green" />
+        <StatCard label={t('funding.payments.stats.outflow_label')} value={formatEuro(stats.all.outflow)} icon={TrendingDown} color="red" />
+        <StatCard label={t('funding.payments.stats.net_label')} value={formatSignedEuro(stats.all.net)} icon={Scale} color="blue" />
+        <StatCard label={t('funding.payments.stats.this_month_label')} value={formatSignedEuro(stats.thisMonth.net)} subtitle={t('funding.payments.stats.net_label')} icon={Calendar} color="blue" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -87,8 +106,14 @@ const FundingPaymentsManagement: React.FC = () => {
             <option value="large">{t('funding.payments.filter_large')}</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={exportToCSV} fullWidth>
-            {t('funding.payments.export_csv_button')}
+          <Button
+            variant="success"
+            icon={Download}
+            onClick={() => void runExportExcel(filteredPayments)}
+            loading={exporting}
+            fullWidth
+          >
+            {t('common.export_excel')}
           </Button>
         </div>
 
@@ -110,7 +135,9 @@ const FundingPaymentsManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredPayments.length === 0 ? (
+      {failedWithNothing ? (
+        <ErrorState onRetry={refetch} />
+      ) : filteredPayments.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title={t('funding.payments.no_payments_title')}
@@ -134,21 +161,27 @@ const FundingPaymentsManagement: React.FC = () => {
               <Table.Tr key={payment.id}>
                 <Table.Td label={t('funding.payments.table.date_col')}>
                   {payment.payment_date
-                    ? format(new Date(payment.payment_date), 'MMM dd, yyyy')
-                    : format(new Date(payment.created_at), 'MMM dd, yyyy')}
+                    ? formatDate(payment.payment_date, i18n.language)
+                    : formatDate(new Date(payment.created_at), i18n.language)}
                 </Table.Td>
                 <Table.Td label={t('funding.payments.table.type_col')}>
-                  <Badge variant="blue">
-                    <span className="inline-flex items-center"><Building2 className="w-3 h-3 mr-1" />{t('funding.payments.table.bank_badge')}</span>
-                  </Badge>
+                  {payment.direction ? (
+                    <Badge variant={DIRECTION_BADGE[payment.direction]}>{directionLabel(payment.direction)}</Badge>
+                  ) : (
+                    NO_VALUE
+                  )}
                 </Table.Td>
-                <Table.Td label={t('funding.payments.table.recipient_col')} className="font-medium">{payment.bank_name}</Table.Td>
-                <Table.Td label={t('funding.payments.table.project_col')}>{payment.project_name}</Table.Td>
+                <Table.Td label={t('funding.payments.table.recipient_col')} className="font-medium">{payment.bank_name || t('funding.investments.unknown_bank')}</Table.Td>
+                <Table.Td label={t('funding.payments.table.project_col')}>{payment.project_name || t('common.no_project')}</Table.Td>
                 <Table.Td label={t('funding.payments.table.category_col')} className="text-gray-500 dark:text-gray-400">
-                  {payment.credit_type?.replace('_', ' ').toUpperCase()}
+                  {creditTypeLabel(payment)}
                 </Table.Td>
-                <Table.Td label={t('funding.payments.table.amount_col')} align="right" className="font-semibold text-green-600">
-                  €{Number(payment.amount).toLocaleString('hr-HR')}
+                <Table.Td
+                  label={t('funding.payments.table.amount_col')}
+                  align="right"
+                  className={`font-semibold ${payment.direction ? DIRECTION_AMOUNT_CLASS[payment.direction] : 'text-gray-900 dark:text-white'}`}
+                >
+                  {formatEuro(Number(payment.amount))}
                 </Table.Td>
                 <Table.Td label={t('funding.payments.table.notes_col')} className="text-gray-500 dark:text-gray-400 max-w-xs truncate">
                   {payment.notes || '-'}
@@ -161,15 +194,18 @@ const FundingPaymentsManagement: React.FC = () => {
 
       {filteredPayments.length > 0 && (
         <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center">
-              <Filter className="w-5 h-5 text-blue-600 mr-2" />
+              <Filter className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
               <span className="text-sm font-medium text-blue-900 dark:text-blue-100">{t('funding.payments.filtered_results_label')}</span>
             </div>
             <div className="text-sm text-blue-900 dark:text-blue-100">
+              {/* Split by direction, never one sum: adding a drawdown to its repayment doubled it. */}
               {t('funding.payments.filtered_summary', {
-                count: filteredPayments.length,
-                total: `€${filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0).toLocaleString('hr-HR')}`
+                count: filteredTotals.count,
+                inflow: formatEuro(filteredTotals.inflow),
+                outflow: formatEuro(filteredTotals.outflow),
+                net: formatSignedEuro(filteredTotals.net),
               })}
             </div>
           </div>

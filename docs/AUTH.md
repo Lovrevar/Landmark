@@ -13,6 +13,12 @@ Handles user authentication via Supabase Auth. Single entry point offering two s
 - "Sign in with Microsoft" button that calls `loginWithMicrosoft()` (full-page redirect)
 - Shows inline error on failed authentication, and the context's `authError`
   banner for failures that happen after the OAuth redirect returns
+- Field placeholders come from `auth.email_placeholder` / `auth.password_placeholder`; they were the
+  literals "Enter your email" / "Enter your password", the first English a Croatian user met. The
+  e2e login specs address the fields by `#email` / `#password`, not by placeholder
+- **The error strings the form shows are keys, not text.** `AuthContext.login()` returns machine
+  codes (`sso_not_provisioned`, `no_user_record`, …) which this form turns into
+  `` t(`auth.error_${code}`) `` — the codes are wire protocol and must never be translated
 - **Uses hooks:** useAuth
 - **Uses Ui:** (plain JSX with Tailwind, Lucide icons; inline `MicrosoftLogo` SVG)
 

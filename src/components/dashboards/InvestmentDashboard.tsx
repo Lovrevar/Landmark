@@ -11,8 +11,8 @@ import {
   CreditCard,
   FileDown
 } from 'lucide-react'
-import { format } from 'date-fns'
-import { daysFromToday, isValidDate } from '../../utils/dateOnly'
+import { daysFromToday } from '../../utils/dateOnly'
+import { formatEuroCompact, formatDate, formatDayMonth } from '../../utils/formatters'
 import { generateInvestmentReportPDF } from './investmentReportPdf'
 import type { Company, Bank, BankCredit, FinancialSummary, RecentActivity } from '../../types/investment'
 import * as investmentService from './services/investmentDashboardService'
@@ -27,7 +27,7 @@ const defaultFinancialSummary: FinancialSummary = {
 }
 
 const InvestmentDashboard: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data, loading, error, refetch } = useCachedData('dashboard:investment', investmentService.fetchInvestmentDashboardData)
 
   const projects = data?.projects ?? []
@@ -48,6 +48,26 @@ const InvestmentDashboard: React.FC = () => {
 
   if (error && !data) {
     return <DashboardError onRetry={refetch} />
+  }
+
+  // The service hands over `{ type, params }`; the sentence is assembled here. An unnamed
+  // credit or company falls back to a word rather than leaving a hole mid-sentence, and the
+  // project clause is a whole second key rather than an interpolated fragment, so Croatian
+  // can put it where it belongs.
+  const activityText = (activity: RecentActivity): string => {
+    if (activity.type === 'credit') {
+      const params = {
+        ...activity.params,
+        company: activity.params.company || t('dashboards.investment.unknown_company')
+      }
+      return activity.params.project
+        ? t('dashboards.investment.activity.credit.description_with_project', params)
+        : t('dashboards.investment.activity.credit.description', params)
+    }
+    return t(`dashboards.investment.activity.${activity.type}.description`, {
+      ...activity.params,
+      name: activity.params.name || t('funding.investments.unnamed_credit')
+    })
   }
 
   // Single predicate for "usage period expiring within 90 days" — reused by the
@@ -83,15 +103,15 @@ const InvestmentDashboard: React.FC = () => {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.total_investment_lines')}</span>
-              <span className="font-medium dark:text-gray-200">€{(financialSummary.total_credit_lines / 1000000).toFixed(1)}M</span>
+              <span className="font-medium dark:text-gray-200">{formatEuroCompact(financialSummary.total_credit_lines)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.used_amount')}</span>
-              <span className="font-medium text-blue-600">€{(financialSummary.total_used_credit / 1000000).toFixed(1)}M</span>
+              <span className="font-medium text-blue-600">{formatEuroCompact(financialSummary.total_used_credit)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.repaid_amount')}</span>
-              <span className="font-medium text-green-600">€{(financialSummary.total_repaid_credit / 1000000).toFixed(1)}M</span>
+              <span className="font-medium text-green-600">{formatEuroCompact(financialSummary.total_repaid_credit)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">{t('dashboards.investment.avg_interest_rate')}</span>
@@ -188,11 +208,11 @@ const InvestmentDashboard: React.FC = () => {
                       <Icon className={`w-4 h-4 ${iconColor}`} />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-white">{activity.title}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{activity.description}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{t(`dashboards.investment.activity.${activity.type}.title`)}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{activityText(activity)}</p>
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {isValidDate(activity.date) ? format(new Date(activity.date), isExpiry ? 'MMM dd, yyyy' : 'MMM dd') : '—'}
+                      {isExpiry ? formatDate(activity.date, i18n.language) : formatDayMonth(activity.date, i18n.language)}
                     </span>
                   </div>
                 )

@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../../../contexts/AuthContext'
 import { useToast } from '../../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../../lib/errorMessage'
 import type { WorkLog, WorkLogProject, WorkLogPhase, WorkLogContract, WorkLogFormData } from '../services/workLogService'
 import {
   fetchProjects,
@@ -22,29 +24,34 @@ const emptyForm = (): WorkLogFormData => ({
   work_description: '',
   blocker_details: '',
   notes: '',
-  color: 'blue',
 })
 
 export function useWorkLogs() {
   const toast = useToast()
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([])
   const [projects, setProjects] = useState<WorkLogProject[]>([])
   const [phases, setPhases] = useState<WorkLogPhase[]>([])
   const [contracts, setContracts] = useState<WorkLogContract[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingLog, setEditingLog] = useState<WorkLog | null>(null)
   const [formData, setFormData] = useState<WorkLogFormData>(emptyForm())
 
   const loadData = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const [projectData, logData] = await Promise.all([fetchProjects(), fetchWorkLogs()])
       setProjects(projectData)
       setWorkLogs(logData)
     } catch (err) {
       console.error('Error fetching work logs data:', err)
+      // An empty diary and an unreachable one mean opposite things to a supervisor checking
+      // whether anything was recorded on site.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -52,17 +59,33 @@ export function useWorkLogs() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  useEffect(() => {
-    if (formData.project_id) {
-      fetchPhasesByProject(formData.project_id).then(setPhases).catch(console.error)
+  // The two cascading lookups below feed dropdowns in the form. A failure empties one, which the
+  // form already reads as "no phases/contracts here", so it is named rather than only logged.
+  const loadPhases = useCallback(async (projectId: string) => {
+    try {
+      setPhases(await fetchPhasesByProject(projectId))
+    } catch (err) {
+      console.error('Error fetching phases:', err)
+      toast.error(toErrorMessage(err, t('supervision.work_logs.errors.load_phases_failed')))
     }
-  }, [formData.project_id])
+  }, [toast, t])
+
+  const loadContracts = useCallback(async (phaseId: string) => {
+    try {
+      setContracts(await fetchContractsByPhase(phaseId))
+    } catch (err) {
+      console.error('Error fetching contracts:', err)
+      toast.error(toErrorMessage(err, t('supervision.work_logs.errors.load_contracts_failed')))
+    }
+  }, [toast, t])
 
   useEffect(() => {
-    if (formData.phase_id) {
-      fetchContractsByPhase(formData.phase_id).then(setContracts).catch(console.error)
-    }
-  }, [formData.phase_id])
+    if (formData.project_id) loadPhases(formData.project_id)
+  }, [formData.project_id, loadPhases])
+
+  useEffect(() => {
+    if (formData.phase_id) loadContracts(formData.phase_id)
+  }, [formData.phase_id, loadContracts])
 
   const openNewForm = () => {
     setEditingLog(null)
@@ -81,10 +104,9 @@ export function useWorkLogs() {
       work_description: log.work_description,
       blocker_details: log.blocker_details || '',
       notes: log.notes || '',
-      color: log.color,
     })
-    if (log.project_id) fetchPhasesByProject(log.project_id).then(setPhases).catch(console.error)
-    if (log.phase_id) fetchContractsByPhase(log.phase_id).then(setContracts).catch(console.error)
+    if (log.project_id) loadPhases(log.project_id)
+    if (log.phase_id) loadContracts(log.phase_id)
     setShowForm(true)
   }
 
@@ -106,7 +128,7 @@ export function useWorkLogs() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.contract_id || !formData.work_description) {
-      toast.warning('Please select a contract and provide work description')
+      toast.warning(t('supervision.work_logs.errors.contract_and_description'))
       return
     }
     const selectedContract = contracts.find(c => c.id === formData.contract_id)
@@ -122,7 +144,7 @@ export function useWorkLogs() {
       await loadData()
     } catch (err) {
       console.error('Error saving work log:', err)
-      toast.error('Failed to save work log')
+      toast.error(t('supervision.work_logs.errors.save_failed'))
     }
   }
 
@@ -139,7 +161,7 @@ export function useWorkLogs() {
       await loadData()
     } catch (err) {
       console.error('Error deleting work log:', err)
-      toast.error('Failed to delete work log')
+      toast.error(t('supervision.work_logs.errors.delete_failed'))
     } finally {
       setDeleting(false)
       setPendingDeleteId(null)
@@ -154,6 +176,8 @@ export function useWorkLogs() {
     phases,
     contracts,
     loading,
+    error,
+    refetch: loadData,
     showForm,
     editingLog,
     formData,

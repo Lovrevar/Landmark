@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next'
 import DateInput from '../../../Common/DateInput'
 import CurrencyInput, { formatCurrency } from '../../../Common/CurrencyInput'
 import { CesijaPaymentFields } from '../../components/CesijaPaymentFields'
-import { Modal, Button, Input, Select, Textarea, FormField, Alert, Form } from '../../../ui'
+import { PaymentMethodField } from '../../components/PaymentMethodField'
+import { snapPaymentMethod } from '../../services/paymentHelpers'
+import { PaymentInvoiceSummary, PartialPaymentAlert } from './PaymentInvoiceSummary'
+import { Modal, Button, Input, Select, Textarea, FormField, Form } from '../../../ui'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../../Invoices/types'
 
 interface PaymentModalFormData {
@@ -54,6 +57,13 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
   const { t } = useTranslation()
   if (!show || !payingInvoice) return null
 
+  // Every change to the source or cesija goes through here, so the method can never be left on
+  // one the new source does not allow (e.g. Gotovina recorded as a wire).
+  const changeForm = (data: PaymentModalFormData) => onFormChange({
+    ...data,
+    payment_method: snapPaymentMethod(data.payment_method, data.payment_source_type, data.is_cesija)
+  })
+
   return (
     <Modal show={show} onClose={onClose} size="sm">
       <Modal.Header
@@ -63,20 +73,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
 
       <Form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">{t('payments.form.total_amount_label')}</span>
-              <span className="font-medium text-gray-900 dark:text-white">€{formatCurrency(payingInvoice.total_amount)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">{t('payments.form.paid_amount_label')}</span>
-              <span className="font-medium text-green-600">€{formatCurrency(payingInvoice.paid_amount)}</span>
-            </div>
-            <div className="flex justify-between text-base border-t border-gray-300 dark:border-gray-600 pt-2">
-              <span className="font-semibold text-gray-900 dark:text-white">{t('payments.form.remaining_amount_label')}</span>
-              <span className="font-bold text-red-600">€{formatCurrency(payingInvoice.remaining_amount)}</span>
-            </div>
-          </div>
+          <PaymentInvoiceSummary invoice={payingInvoice} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {!paymentFormData.is_cesija && (
@@ -84,7 +81,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                 <FormField label={payingInvoice.invoice_type.startsWith('OUTGOING') ? t('payments.form.source_incoming_label') : t('payments.form.source_outgoing_label')} required className="md:col-span-2">
                   <Select
                     value={paymentFormData.payment_source_type}
-                    onChange={(e) => onFormChange({
+                    onChange={(e) => changeForm({
                       ...paymentFormData,
                       payment_source_type: e.target.value as 'bank_account' | 'credit' | 'kompenzacija' | 'gotovina',
                       company_bank_account_id: '',
@@ -194,12 +191,20 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                 <input
                   type="checkbox"
                   checked={paymentFormData.is_cesija}
-                  onChange={(e) => onFormChange({
+                  onChange={(e) => changeForm({
                     ...paymentFormData,
                     is_cesija: e.target.checked,
+                    // Cesija only funds from a bank account or a credit. Without this reset a
+                    // Kompenzacija/Gotovina source survived the tick and the payment saved with no
+                    // account at all. Same reset as AccountingPaymentFormModal.
+                    payment_source_type: e.target.checked ? 'bank_account' : paymentFormData.payment_source_type,
                     company_bank_account_id: e.target.checked ? '' : paymentFormData.company_bank_account_id,
+                    credit_id: '',
+                    credit_allocation_id: '',
                     cesija_company_id: '',
-                    cesija_bank_account_id: ''
+                    cesija_bank_account_id: '',
+                    cesija_credit_id: '',
+                    cesija_credit_allocation_id: ''
                   })}
                   className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
                 />
@@ -218,7 +223,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               companyBankAccounts={companyBankAccounts}
               companyCredits={companyCredits}
               creditAllocations={creditAllocations}
-              onFormChange={(data) => onFormChange({ ...paymentFormData, ...data } as PaymentModalFormData)}
+              onFormChange={(data) => changeForm({ ...paymentFormData, ...data } as PaymentModalFormData)}
               onCreditChange={onCreditChange}
             />
 
@@ -239,17 +244,12 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label={t('payments.form.method_label')} required>
-              <Select
-                value={paymentFormData.payment_method}
-                onChange={(e) => onFormChange({ ...paymentFormData, payment_method: e.target.value })}
-              >
-                <option value="WIRE">{t('payments.method_wire')}</option>
-                <option value="CASH">{t('payments.method_cash')}</option>
-                <option value="CHECK">{t('payments.method_check')}</option>
-                <option value="CARD">{t('payments.method_card')}</option>
-              </Select>
-            </FormField>
+            <PaymentMethodField
+              value={paymentFormData.payment_method}
+              source={paymentFormData.payment_source_type}
+              isCesija={paymentFormData.is_cesija}
+              onChange={(method) => onFormChange({ ...paymentFormData, payment_method: method })}
+            />
 
             <FormField label={t('payments.form.reference_label')}>
               <Input
@@ -270,20 +270,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
             />
           </FormField>
 
-          {paymentFormData.amount > 0 && paymentFormData.amount <= payingInvoice.remaining_amount && (
-            <Alert variant="info">
-              <p className="font-medium">
-                {paymentFormData.amount === payingInvoice.remaining_amount
-                  ? t('payments.form.will_be_paid_full')
-                  : t('payments.form.will_be_partial_remaining', { amount: formatCurrency(payingInvoice.remaining_amount - paymentFormData.amount) })}
-              </p>
-              {paymentFormData.amount < payingInvoice.remaining_amount && (
-                <p className="text-xs mt-1 opacity-90">
-                  {t('payments.form.will_be_partial_status')}
-                </p>
-              )}
-            </Alert>
-          )}
+          <PartialPaymentAlert amount={paymentFormData.amount} payableAmount={payingInvoice.remaining_amount} />
         </Modal.Body>
 
         <Modal.Footer>

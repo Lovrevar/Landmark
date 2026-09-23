@@ -4,14 +4,16 @@ import {
   fetchRetailInvoices,
   calculateRetailInvoiceStats,
   toggleRetailInvoiceApproval,
-  exportRetailInvoicesCSV,
+  exportRetailInvoicesExcel,
 } from '../services/retailInvoiceService'
+import { useAsyncExport } from '../../../../hooks/useAsyncExport'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export function useRetailInvoices() {
   const toast = useToast()
   const [invoices, setInvoices] = useState<RetailInvoiceWithDetails[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterApproved, setFilterApproved] = useState<'all' | 'approved' | 'not_approved'>('all')
   const [filterType, setFilterType] = useState<'all' | 'incoming' | 'outgoing'>('all')
@@ -22,12 +24,14 @@ export function useRetailInvoices() {
 
   const loadInvoices = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await fetchRetailInvoices()
       setInvoices(data)
       setStats(calculateRetailInvoiceStats(data))
     } catch (err) {
       console.error('Error fetching retail invoices:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
       toast.error('Greška pri učitavanju računa')
     } finally {
       setLoading(false)
@@ -35,6 +39,8 @@ export function useRetailInvoices() {
   }, [toast])
 
   useEffect(() => { loadInvoices() }, [loadInvoices])
+
+  const dismissError = useCallback(() => setError(null), [])
 
   const filteredInvoices = useMemo(() => invoices.filter(invoice => {
     const entityName = invoice.supplier_name || invoice.customer_name || ''
@@ -72,10 +78,16 @@ export function useRetailInvoices() {
     }
   }
 
-  const handleExportCSV = () => exportRetailInvoicesCSV(filteredInvoices)
+  // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
+  const { exporting, run: runExportExcel } = useAsyncExport(exportRetailInvoicesExcel, 'common.export_error')
+  const handleExportExcel = () => void runExportExcel(filteredInvoices)
 
   return {
     loading,
+    error,
+    dismissError,
+    refetch: loadInvoices,
+    hasData: invoices.length > 0,
     stats,
     filteredInvoices,
     searchTerm,
@@ -87,6 +99,7 @@ export function useRetailInvoices() {
     dateRange,
     setDateRange,
     handleApprove,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   }
 }

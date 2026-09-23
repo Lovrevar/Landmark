@@ -82,7 +82,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     }
 
     if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date) {
-      toast.warning('Please fill in required fields (Bank, Credit Name, Amount, Start Date)')
+      toast.warning(t('funding.investors.error_credit_fields_required'))
       return
     }
 
@@ -107,7 +107,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       await onSaved()
     } catch (error) {
       console.error('Error adding credit:', error)
-      toast.error('Error adding credit facility.')
+      toast.error(t('funding.investors.error_add_credit'))
     }
   }
 
@@ -115,7 +115,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
     if (!editingCredit) return
 
     if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date) {
-      toast.warning('Please fill in all required fields')
+      toast.warning(t('funding.investors.error_credit_fields_required'))
       return
     }
 
@@ -140,7 +140,7 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       await onSaved()
     } catch (error) {
       console.error('Error updating credit:', error)
-      toast.error('Error updating credit facility.')
+      toast.error(t('funding.investors.error_update_credit'))
     }
   }
 

@@ -11,6 +11,14 @@ export interface ProjectStats {
 
 export interface ProjectWithStats extends Project {
   stats: ProjectStats
+  /**
+   * The project's TIC grand total, or `null` when it has no TIC (or an all-zero one).
+   *
+   * The TIC is the only writer of `projects.budget` (migrations 20260909130000 / 20260909140000),
+   * so without one the stored budget is a leftover that every other screen already refuses to
+   * show. Same gate as `ProjectWithPhases.tic_total` in Site Management.
+   */
+  tic_total: number | null
 }
 
 // ── Shared ────────────────────────────────────────────────────────────────
@@ -124,13 +132,20 @@ export interface ProjectWithFinancials extends Project {
   banks: Bank[]
   funding_ratio: number
   debt_to_equity: number
-  expected_roi: number
+  /**
+   * Average interest rate (%) across the project's DEBT allocations, weighted by allocated
+   * amount. Was `expected_roi` and shown as a return — it never was one; see
+   * `Funding/Projects/utils/weightedInterestRate.ts`.
+   */
+  avg_interest_rate: number
   risk_level: 'Low' | 'Medium' | 'High'
 }
 
 export interface FundingUtilizationItem {
   id: string
   type: string
+  /** Raw `bank_credits.credit_type`, so the row can be labelled debt vs equity. */
+  creditType: string | null
   name: string
   totalAmount: number
   spentAmount: number

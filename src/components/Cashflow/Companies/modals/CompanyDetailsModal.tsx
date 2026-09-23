@@ -4,6 +4,7 @@ import { DollarSign, TrendingUp } from 'lucide-react'
 import { CompanyStats } from '../types'
 import { Modal, Button, Badge, StatCard, StatGrid } from '../../../ui'
 import { daysFromToday } from '../../../../utils/dateOnly'
+import { utilisationTone } from '../../../Funding/Investors/utils/creditCalculations'
 
 interface CompanyDetailsModalProps {
   show: boolean
@@ -19,7 +20,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
     <Modal show={show} onClose={onClose} size="full">
       <Modal.Header
         title={company.name}
-        subtitle={`OIB: ${company.oib}`}
+        subtitle={`${t('common.oib')}: ${company.oib}`}
         onClose={onClose}
       />
 
@@ -139,11 +140,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                       <>
                         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                           <div
-                            className={`h-2 rounded-full transition-all ${
-                              utilizationPercent >= 90 ? 'bg-red-500' :
-                              utilizationPercent >= 70 ? 'bg-orange-500' :
-                              'bg-green-500'
-                            }`}
+                            className={`h-2 rounded-full transition-all ${utilisationTone(utilizationPercent).bar}`}
                             style={{ width: `${Math.min(utilizationPercent, 100)}%` }}
                           />
                         </div>

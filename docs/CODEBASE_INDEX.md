@@ -33,6 +33,7 @@
 | **Security Backlog** | [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) | Tracked security items and RLS hardening status |
 | **Presentation Modules** | [PRESENTATION_MODULES.md](./PRESENTATION_MODULES.md) | Croatian-language module overview + talking points for pitching the platform; ERP sync presented as a built-in product capability |
 | **Presentation Deck** | [PRESENTATION_DECK.md](./PRESENTATION_DECK.md) | Slide-by-slide startup-event deck copy with speaker notes (non-technical users, modularity/integrations, multi-company analytics) |
+| **UI Audit** | [UI_AUDIT.md](./UI_AUDIT.md) | September 2026 app-wide UI/UX review (~130 findings per module: broken behaviour, colour/dark-mode overrides, misleading displays, systemic inconsistencies) with fix status. Section 1 (broken) is fixed; the rest is the open backlog |
 | **Dashboard Audit** | [DASHBOARD_AUDIT.md](./DASHBOARD_AUDIT.md) | Historical record of the June 2026 dashboard data-integrity audit. All findings were fixed; kept for the rationale and the three deferred Low items |
 | **Manual Smoke Testsheet** | [MANUAL_TESTSHEET.md](./MANUAL_TESTSHEET.md) | ~15-minute tick-box pass over the core money loop: invoice → dashboard → payment → account |
 | **Manual test sheets** | [test/](./test/) | Per-module manual test scripts (`01-foundations` … `10-appendix`), the e2e strategy write-up, and seed SQL |

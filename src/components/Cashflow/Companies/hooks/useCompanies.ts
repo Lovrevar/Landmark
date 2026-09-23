@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CompanyStats, CompanyFormData } from '../types'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import {
@@ -10,11 +11,14 @@ import {
   fetchCompanyDetails
 } from '../services/companyService'
 import { useToast } from '../../../../contexts/ToastContext'
+import { toLoadError } from '../../services/loadError'
 
 export const useCompanies = () => {
   const toast = useToast()
+  const { t } = useTranslation()
   const [companies, setCompanies] = useState<CompanyStats[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -33,12 +37,14 @@ export const useCompanies = () => {
   }, [])
 
   const fetchData = async () => {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
       const companiesWithStats = await fetchCompaniesWithStats()
       setCompanies(companiesWithStats)
     } catch (error) {
       console.error('Error fetching companies:', error)
+      setError(toLoadError(error))
     } finally {
       setLoading(false)
     }
@@ -48,7 +54,17 @@ export const useCompanies = () => {
     if (company) {
       setEditingCompany(company.id)
 
-      const bankAccountsForEdit = await fetchBankAccountsForCompany(company.id)
+      // An empty list here would present as "this company has no bank accounts" and saving
+      // the form would then wipe the real ones, so a failure has to stop the modal opening.
+      let bankAccountsForEdit
+      try {
+        bankAccountsForEdit = await fetchBankAccountsForCompany(company.id)
+      } catch (error) {
+        console.error('Error loading company bank accounts:', error)
+        toast.error(t('companies.toast.accounts_load_error'))
+        setEditingCompany(null)
+        return
+      }
 
       setFormData({
         name: company.name,
@@ -183,6 +199,9 @@ export const useCompanies = () => {
   return {
     companies,
     loading,
+    error,
+    refetch: fetchData,
+    dismissError: () => setError(null),
     searchTerm,
     setSearchTerm,
     showAddModal,

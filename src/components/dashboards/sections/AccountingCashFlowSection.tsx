@@ -1,7 +1,8 @@
 import React from 'react'
-import { TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { TrendingUp, TrendingDown, Euro, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { StatGrid } from '../../ui'
 import { useTranslation } from 'react-i18next'
+import { formatEuroRounded } from '../../../utils/formatters'
 import type { CashFlowStats } from '../types/accountingDashboardTypes'
 
 interface Props {
@@ -35,7 +36,7 @@ const AccountingCashFlowSection: React.FC<Props> = ({ cashFlowStats }) => {
             <div className="ml-3">
               <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.accounting.total_incoming', { year })}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                €{cashFlowStats.totalIncoming.toLocaleString('en-US')}
+                {formatEuroRounded(cashFlowStats.totalIncoming)}
               </p>
             </div>
           </div>
@@ -44,7 +45,7 @@ const AccountingCashFlowSection: React.FC<Props> = ({ cashFlowStats }) => {
           <span className="text-gray-600 dark:text-gray-400">{t('dashboards.accounting.this_month_label')}</span>
           <div className="flex items-center">
             <span className="font-semibold text-gray-900 dark:text-white mr-2">
-              €{cashFlowStats.currentMonthIncoming.toLocaleString('en-US')}
+              {formatEuroRounded(cashFlowStats.currentMonthIncoming)}
             </span>
             {incomingChange !== 0 && (
               <span className={`flex items-center ${incomingChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -65,7 +66,7 @@ const AccountingCashFlowSection: React.FC<Props> = ({ cashFlowStats }) => {
             <div className="ml-3">
               <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.accounting.total_outgoing', { year })}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                €{cashFlowStats.totalOutgoing.toLocaleString('en-US')}
+                {formatEuroRounded(cashFlowStats.totalOutgoing)}
               </p>
             </div>
           </div>
@@ -74,7 +75,7 @@ const AccountingCashFlowSection: React.FC<Props> = ({ cashFlowStats }) => {
           <span className="text-gray-600 dark:text-gray-400">{t('dashboards.accounting.this_month_label')}</span>
           <div className="flex items-center">
             <span className="font-semibold text-gray-900 dark:text-white mr-2">
-              €{cashFlowStats.currentMonthOutgoing.toLocaleString('en-US')}
+              {formatEuroRounded(cashFlowStats.currentMonthOutgoing)}
             </span>
             {outgoingChange !== 0 && (
               <span className={`flex items-center ${outgoingChange > 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -90,12 +91,12 @@ const AccountingCashFlowSection: React.FC<Props> = ({ cashFlowStats }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
             <div className={`p-2 rounded-lg ${cashFlowStats.netCashFlow >= 0 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-orange-100 dark:bg-orange-900/20'}`}>
-              <DollarSign className={`w-6 h-6 ${cashFlowStats.netCashFlow >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
+              <Euro className={`w-6 h-6 ${cashFlowStats.netCashFlow >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
             </div>
             <div className="ml-3">
               <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.accounting.net_cash_flow', { year })}</p>
               <p className={`text-2xl font-bold ${cashFlowStats.netCashFlow >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-                €{Math.abs(cashFlowStats.netCashFlow).toLocaleString('en-US')}
+                {formatEuroRounded(cashFlowStats.netCashFlow)}
               </p>
             </div>
           </div>
@@ -103,7 +104,7 @@ const AccountingCashFlowSection: React.FC<Props> = ({ cashFlowStats }) => {
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-600 dark:text-gray-400">{t('dashboards.accounting.this_month_label')}</span>
           <span className={`font-semibold ${currentMonthNet >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-            €{Math.abs(currentMonthNet).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatEuroRounded(currentMonthNet)}
           </span>
         </div>
       </div>

@@ -17,6 +17,12 @@
     "language": "Jezik",
     "light_mode": "Svijetla tema",
     "dark_mode": "Tamna tema",
+    "menu": "Izbornik",
+    "open_menu": "Otvori izbornik",
+    "close_menu": "Zatvori izbornik",
+    "collapse_sidebar": "Sažmi bočnu traku",
+    "expand_sidebar": "Proširi bočnu traku",
+    "tabs": "Kartice",
     "save": "Spremi",
     "cancel": "Odustani",
     "delete": "Obriši",
@@ -29,6 +35,7 @@
     "save_changes": "Spremi promjene",
     "details": "Detalji",
     "refresh": "Osvježi",
+    "remove": "Ukloni",
     "required": "Obavezno",
     "no_results": "Nema rezultata pretrage",
     "loading": "Učitavanje...",
@@ -54,9 +61,9 @@
     "success": "Uspjeh",
     "warning": "Upozorenje",
     "info": "Informacija",
-    "export_csv": "Export CSV",
     "export_excel": "Export Excel",
     "export_pdf": "Export PDF",
+    "export_error": "Izvoz nije uspio",
     "import": "Uvoz",
     "filter": "Filtriraj",
     "clear": "Očisti",
@@ -67,6 +74,8 @@
     "total": "Ukupno",
     "subtotal": "Međuzbir",
     "grand_total": "Sveukupno",
+    "oib": "OIB",
+    "vat_id": "PDV ID",
     "paid": "Plaćeno",
     "unpaid": "Neplaćeno",
     "partial": "Djelomično",
@@ -76,6 +85,7 @@
     "inactive": "Neaktivno",
     "yes_confirm": "Da, potvrdi",
     "no_data": "Nema podataka",
+    "no_project": "Bez projekta",
     "adding": "Dodavanje...",
     "saving": "Spremanje...",
     "deleting": "Brisanje...",
@@ -100,6 +110,8 @@
     "banks": "Banke",
     "contract": "Ugovor",
     "contracts": "Ugovori",
+    "contract_overrun": "Prekoračenje",
+    "contract_saving": "Ušteda",
     "document": "Dokument",
     "documents": "Dokumenti",
     "phase": "Faza",
@@ -124,6 +136,7 @@
     "subcontractor": "Podugovaratelj",
     "subcontractors": "Podugovaratelji",
     "total_paid": "Ukupno plaćeno",
+    "due_today": "Rok je danas",
     "remaining": "Preostalo",
     "start_date": "Datum početka",
     "end_date": "Datum završetka",
@@ -154,7 +167,43 @@
     "unsaved_changes_badge": "Nespremljene promjene",
     "save_and_leave": "Spremi i izađi",
     "unsaved_changes_save_failed": "Spremanje nije uspjelo. Pokušajte ponovno, izađite bez spremanja ili ostanite na stranici.",
-    "hide": "Sakrij"
+    "hide": "Sakrij",
+    "load_error_title": "Učitavanje nije uspjelo",
+    "load_error_description": "Podatke nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
+    "retry": "Pokušaj ponovno",
+    "option_name_unavailable": "Naziv nije učitan",
+    "projects_load_error": "Popis projekata nije moguće učitati",
+    "users_load_error": "Popis korisnika nije moguće učitati",
+    "generated": "Generirano:",
+    "pdf": {
+      "confidential": "POVJERLJIVO",
+      "page_of": "Stranica {{page}} od {{total}}"
+    },
+    "badge": {
+      "unread_messages_one": "{{count}} nepročitana poruka",
+      "unread_messages_few": "{{count}} nepročitane poruke",
+      "unread_messages_other": "{{count}} nepročitanih poruka",
+      "new_tasks_one": "{{count}} novi zadatak",
+      "new_tasks_few": "{{count}} nova zadatka",
+      "new_tasks_other": "{{count}} novih zadataka",
+      "pending_invitations_one": "{{count}} pozivnica čeka odgovor",
+      "pending_invitations_few": "{{count}} pozivnice čekaju odgovor",
+      "pending_invitations_other": "{{count}} pozivnica čeka odgovor"
+    },
+    "months": [
+      "Siječanj",
+      "Veljača",
+      "Ožujak",
+      "Travanj",
+      "Svibanj",
+      "Lipanj",
+      "Srpanj",
+      "Kolovoz",
+      "Rujan",
+      "Listopad",
+      "Studeni",
+      "Prosinac"
+    ]
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -182,6 +231,8 @@
     "logout": "Odjava",
     "email_required": "Email je obavezan",
     "email_invalid": "Unesite valjanu email adresu",
+    "email_placeholder": "Unesite email",
+    "password_placeholder": "Unesite lozinku",
     "password_required": "Lozinka je obavezna",
     "error_invalid_credentials": "Netočan email ili lozinka",
     "error_email_not_confirmed": "Potvrdite svoj email prije prijave",
@@ -250,6 +301,7 @@
     "erp_import": "Uvoz iz ERP-a"
   },
   "profiles": {
+    "title": "Profil",
     "general": "General",
     "supervision": "Supervision",
     "sales": "Sales",
@@ -290,6 +342,11 @@
     "partial_payment": "Djelomično plaćanje",
     "without_contract": "Bez ugovora"
   },
+  "risk": {
+    "low": "Nizak",
+    "medium": "Srednji",
+    "high": "Visok"
+  },
   "payment_method": {
     "virman": "Virman",
     "gotovina": "Gotovina",
@@ -319,6 +376,17 @@
     "izlazni_prod": "IZLAZNI (PROD)",
     "izlazni_banka": "IZLAZNI (BANKA)"
   },
+  "invoice_category": {
+    "subcontractor": "Podugovaratelj",
+    "office": "Office",
+    "apartment": "Stan",
+    "customer": "Kupac",
+    "bank_credit": "Bankovni kredit",
+    "investor": "Investitor",
+    "miscellaneous": "Ostalo",
+    "general": "Općenito",
+    "retail": "Retail"
+  },
   "work_log_status": {
     "work_finished": "Rad završen",
     "in_progress": "U tijeku",
@@ -336,7 +404,8 @@
     "previous": "Prethodno",
     "next": "Sljedeće",
     "page_info": "Stranica {{current}} od {{total}}",
-    "showing": "Prikazano {{from}}-{{to}} od {{total}}"
+    "showing": "Prikazano {{from}}-{{to}} od {{total}}",
+    "item_label": "stavki"
   },
   "invoices": {
     "title": "Računi",
@@ -349,6 +418,9 @@
       "all_types": "Svi tipovi",
       "all_projects": "Svi projekti",
       "all_suppliers": "Svi dobavljači",
+      "all_companies": "Sve firme",
+      "incoming": "Ulazni",
+      "outgoing": "Izlazni",
       "all_statuses": "Svi statusi",
       "all_banks": "Sve banke",
       "date_from": "Od datuma",
@@ -436,7 +508,6 @@
       "base_vat13": "Osnovica (PDV 13%):",
       "base_vat5": "Osnovica (PDV 5%):",
       "base_vat0": "Osnovica (PDV 0%):",
-      "subtotal": "Subtotal:",
       "grand_total": "UKUPNO:",
       "error_type_required": "Morate odabrati tip računa",
       "error_company_required": "Morate odabrati firmu",
@@ -552,7 +623,11 @@
       "base_25": "Osnovica PDV 25% (€)",
       "base_13": "Osnovica PDV 13% (€)",
       "base_5": "Osnovica PDV 5% (€)",
-      "base_0": "Osnovica PDV 0% (€)"
+      "base_0": "Osnovica PDV 0% (€)",
+      "error_load": "Podatke obrasca nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
+      "error_load_entities": "Popis dobavljača i kupaca nije moguće učitati.",
+      "error_load_contracts": "Ugovore nije moguće učitati.",
+      "error_load_milestones": "Milestones nije moguće učitati."
     },
     "land_purchase": {
       "title": "Kupoprodaja Zemljišta",
@@ -598,21 +673,33 @@
       "error_company": "Firma je obavezna",
       "error_supplier": "Dobavljač je obavezan",
       "error_contract": "Ugovor je obavezan",
-      "error_invoice_name": "Ime računa je obavezno"
+      "error_invoice_name": "Ime računa je obavezno",
+      "error_load": "Popise u obrascu nije moguće učitati, pa mogu biti nepotpuni."
+    },
+    "toast": {
+      "delete_error": "Greška pri brisanju računa",
+      "refresh_error": "Popis računa nije moguće osvježiti. Prikazani iznosi su iz zadnjeg uspješnog učitavanja.",
+      "milestones_load_error": "Milestones ugovora nije moguće učitati"
     },
     "preview": {
       "title": "Pregled računa:",
       "base_vat25": "Osnovica (PDV 25%):",
       "base_vat13": "Osnovica (PDV 13%):",
       "base_vat5": "Osnovica (PDV 5%):",
-      "base_vat0": "Osnovica (PDV 0%):",
-      "vat25": "PDV 25%:",
-      "vat13": "PDV 13%:",
-      "vat5": "PDV 5%:",
-      "vat0": "PDV 0%:"
-    }
+      "base_vat0": "Osnovica (PDV 0%):"
+    },
+    "vat_rate_line": "PDV {{rate}}%:"
   },
   "payments": {
+    "toast": {
+      "create_success": "Plaćanje zabilježeno",
+      "update_success": "Plaćanje ažurirano",
+      "delete_success": "Plaćanje obrisano",
+      "delete_error": "Greška pri brisanju plaćanja",
+      "load_error_partial": "Dio ove stranice nije učitan, pa ukupni iznosi mogu biti nepotpuni.",
+      "allocations_load_error": "Namjene kredita nije moguće učitati",
+      "invoice_load_error": "Račun na koji se plaćanje odnosi nije moguće učitati"
+    },
     "title": "Plaćanja",
     "subtitle": "Upravljanje plaćanjima",
     "add": "Dodaj plaćanje",
@@ -650,11 +737,8 @@
       "income": "PRIHOD"
     },
     "stats": {
-      "total": "Ukupno plaćanja",
-      "total_amount": "Ukupan iznos",
-      "this_month": "Ovaj mjesec",
-      "month_amount": "Iznos ovog mjeseca",
       "total_count": "Ukupno plaćanja",
+      "net": "Neto",
       "vat_in": "PDV Ulaz",
       "vat_out": "PDV Izlaz",
       "total_expense": "Ukupno Rashod",
@@ -732,7 +816,9 @@
       "error_bank_account_required": "Morate odabrati bankovni račun",
       "error_credit_required": "Morate odabrati kredit",
       "error_credit_allocation_required": "Morate odabrati projekt za alokaciju kredita",
-      "error_cesija_company_required": "Morate odabrati firmu koja plaća (cesija)"
+      "error_cesija_company_required": "Morate odabrati firmu koja plaća (cesija)",
+      "error_method_mismatch": "Odabrani način plaćanja nije dopušten za ovaj izvor plaćanja",
+      "error_save": "Greška prilikom spremanja plaćanja"
     },
     "no_payments": "Nema plaćanja",
     "filtered_results": "Filtrirani rezultati",
@@ -750,7 +836,7 @@
     "show_columns": "Prikaži kolone",
     "search_placeholder": "Pretraži po broju računa, firmi, dobavljaču...",
     "shown_count": "Prikazano: {{filtered}} od {{total}} plaćanja",
-    "filtered_total": "Ukupan iznos filtriranih: ",
+    "filtered_total": "Filtrirano:",
     "method_wire": "Virman",
     "method_cash": "Gotovina",
     "method_check": "Ček",
@@ -794,6 +880,10 @@
     }
   },
   "suppliers": {
+    "toast": {
+      "projects_load_error": "Popis projekata nije moguće učitati",
+      "phases_load_error": "Popis faza nije moguće učitati"
+    },
     "source_label": "Vrsta",
     "source_site": "Site",
     "source_retail": "Retail",
@@ -906,6 +996,9 @@
     }
   },
   "companies": {
+    "toast": {
+      "accounts_load_error": "Bankovne račune firme nije moguće učitati pa obrazac nije otvoren"
+    },
     "title": "Moje firme",
     "subtitle": "Financijski pregled svih firmi pod Landmarkom",
     "add": "Dodaj novu firmu",
@@ -986,6 +1079,13 @@
     }
   },
   "banks": {
+    "errors": {
+      "required_fields": "Popunite sva obavezna polja",
+      "credit_required_fields": "Popunite obavezna polja (Banka, Naziv kredita, Iznos, Datum početka)",
+      "credit_add_failed": "Greška pri dodavanju kreditne linije.",
+      "credit_update_failed": "Greška pri ažuriranju kreditne linije.",
+      "credit_delete_failed": "Greška pri brisanju kreditne linije."
+    },
     "title": "Banke",
     "subtitle": "Upravljanje bankovnim računima",
     "add": "Dodaj banku",
@@ -1036,8 +1136,6 @@
       "payments_start": "Plaćanja počinju:",
       "grace_period_note": "Nakon {{gracePeriod}} mj. počeka",
       "every_frequency": "Svakih {{frequency}}",
-      "title_add_en": "Add New Credit Facility",
-      "title_edit_en": "Edit Credit Facility",
       "bank_label": "Banka",
       "select_bank": "Odaberite banku",
       "credit_name_label": "Naziv kredita",
@@ -1069,6 +1167,12 @@
       "add_button": "Dodaj kredit",
       "payments_start_label": "Plaćanja počinju: ",
       "grace_period_after": "Nakon {{months}} mj. počeka",
+      "frequency_every": {
+        "monthly": "Svaki mjesec",
+        "quarterly": "Svako tromjesečje",
+        "biyearly": "Svakih 6 mjeseci",
+        "yearly": "Svake godine"
+      },
       "every_freq": "Svakih {{frequency}}",
       "total_payments_label": "{{count}} plaćanja ukupno",
       "bank_required": "Banka je obavezna",
@@ -1098,7 +1202,7 @@
       "credit": {
         "investment_amount": "Iznos investicije",
         "allocated": "Alocirano",
-        "paid_out": "Isplaćeno",
+        "used": "Iskorišteno",
         "debt": "Dug",
         "unallocated": "Nealocirano",
         "allocation_progress": "Napredak alokacije",
@@ -1119,6 +1223,8 @@
       }
     },
     "invoice_form": {
+      "error_load_banks": "Popis investitora nije moguće učitati",
+      "error_load_form": "Neke popise u obrascu nije moguće učitati, pa mogu biti nepotpuni.",
       "title": "Novi Račun Banka",
       "type_label": "Tip",
       "type_outflow": "Odljev",
@@ -1198,20 +1304,6 @@
     "title": "Kalendar dospijeća",
     "subtitle": "Pregled svih dospijeća",
     "budget_save_error": "Greška prilikom spremanja budžeta",
-    "months": [
-      "Siječanj",
-      "Veljača",
-      "Ožujak",
-      "Travanj",
-      "Svibanj",
-      "Lipanj",
-      "Srpanj",
-      "Kolovoz",
-      "Rujan",
-      "Listopad",
-      "Studeni",
-      "Prosinac"
-    ],
     "days": [
       "Ned",
       "Pon",
@@ -1225,7 +1317,7 @@
       "total": "Ukupno računa",
       "paid": "Plaćeno",
       "unpaid": "Neplaćeno",
-      "overdue": "Overdue"
+      "overdue": "Dospjelo"
     },
     "summary": {
       "total_invoices": "Ukupno računa:",
@@ -1249,7 +1341,7 @@
     "legend": {
       "paid": "Plaćeno",
       "unpaid": "Neplaćeno",
-      "overdue": "Overdue"
+      "overdue": "Dospjelo"
     },
     "invoice_types": {
       "incoming_supplier": "Ulazni - Dobavljač",
@@ -1384,7 +1476,6 @@
     "table_actions": "Akcije",
     "category_retail": "Retail",
     "category_subcontractor": "Podizvodjač",
-    "approved_badge": "Odobreno",
     "hide_button": "Sakrij",
     "empty": {
       "title": "Nema računa za prikaz",
@@ -1416,8 +1507,8 @@
     "stats": {
       "total": "Ukupno dobavljača",
       "total_invoices": "Ukupno računa",
-      "total_paid": "Ukupno plaćeno (bez PDV)",
-      "remaining": "Preostalo (bez PDV)"
+      "total_paid": "Ukupno plaćeno",
+      "remaining": "Preostalo"
     },
     "search_placeholder": "Pretraži dobavljače...",
     "empty": {
@@ -1428,7 +1519,8 @@
     },
     "card": {
       "invoices": "Računi:",
-      "total_no_vat": "Ukupno (bez PDV):",
+      "total": "Ukupno (s PDV):",
+      "base": "Osnovica:",
       "paid": "Plaćeno:",
       "remaining": "Preostalo:",
       "edit": "Uredi",
@@ -1485,6 +1577,7 @@
   "accounting_customers": {
     "title": "Kupci",
     "description": "Pregled svih kupaca i njihovih računa",
+    "load_error_partial": "Iznose nekih kupaca nije moguće učitati, pa su popis i ukupni iznosi nepotpuni.",
     "stats": {
       "total_invoices": "Ukupno računa",
       "property_value": "Vrijednost nekretnina",
@@ -1641,6 +1734,8 @@
     "view_all": "Prikaži sve",
     "ongoing": "Tekuće",
     "days": "dana",
+    "days_left": "{{count}} dana preostalo",
+    "days_overdue": "{{count}} dana kašnjenja",
     "timeline": "Vremenski okvir",
     "team": "Tim",
     "location": "Lokacija",
@@ -1657,6 +1752,17 @@
     "milestone_delete": "Obriši prekretnicu",
     "milestone_mark_complete": "Označi kao završeno",
     "milestone_mark_incomplete": "Označi kao nedovršeno",
+    "milestone_delete_confirm": "Jeste li sigurni da želite obrisati ovu prekretnicu?",
+    "milestone_update_error": "Greška pri ažuriranju prekretnice.",
+    "milestone_name_required": "Unesite naziv prekretnice",
+    "milestone_add_error": "Greška pri dodavanju prekretnice. Pokušajte ponovno.",
+    "milestone_delete_error": "Greška pri brisanju prekretnice.",
+    "unknown_bank": "Nepoznata banka",
+    "errors": {
+      "load_failed": "Podatke o projektu nije moguće učitati",
+      "save_failed": "Spremanje projekta nije uspjelo",
+      "delete_failed": "Brisanje projekta nije uspjelo"
+    },
     "milestone_progress": "Napredak prekretnica",
     "milestones_empty_title": "Nema prekretnica",
     "milestones_empty_desc": "Dodajte prekretnice za praćenje napretka projekta",
@@ -1692,6 +1798,7 @@
       "preview_date_range": "Datumi: {{min}} – {{max}}",
       "submit": "Dodaj prekretnice",
       "no_phase_label": "Ostalo",
+      "add_error": "Greška pri dodavanju prekretnica iz predloška.",
       "phase_progress": "{{done}}/{{total}} završeno",
       "expand_all": "Proširi sve",
       "collapse_all": "Sažmi sve",
@@ -1808,6 +1915,25 @@
     "sold": "Prodano",
     "total_units": "Ukupno jedinica",
     "units_selected": "jedinica odabrano",
+    "link_unit": "Poveži garažu/repozitorij",
+    "errors": {
+      "required_field": "Popunite obavezna polja",
+      "quantity_range": "Unesite valjanu količinu (1–20)"
+    },
+    "toast": {
+      "building_create_error": "Kreiranje zgrade nije uspjelo. Pokušajte ponovno.",
+      "buildings_create_error": "Kreiranje zgrada nije uspjelo. Pokušajte ponovno.",
+      "building_delete_error": "Brisanje zgrade nije uspjelo",
+      "unit_create_error": "Kreiranje jedinice nije uspjelo. Pokušajte ponovno.",
+      "units_create_error": "Kreiranje jedinica nije uspjelo. Pokušajte ponovno.",
+      "unit_delete_error": "Brisanje jedinice nije uspjelo",
+      "status_update_error": "Ažuriranje statusa nije uspjelo",
+      "garage_link_error": "Povezivanje garaže nije uspjelo",
+      "repository_link_error": "Povezivanje repozitorija nije uspjelo",
+      "garage_unlink_error": "Odspajanje garaže nije uspjelo",
+      "repository_unlink_error": "Odspajanje repozitorija nije uspjelo",
+      "sale_complete_error": "Dovršavanje prodaje nije uspjelo. Pokušajte ponovno."
+    },
     "building_quantity_modal": {
       "title": "Masovno kreiranje zgrada",
       "number_of_buildings": "Broj zgrada za kreiranje",
@@ -1829,7 +1955,19 @@
       "current_total_value": "Trenutna ukupna vrijednost:",
       "new_total_value": "Nova ukupna vrijednost:",
       "total_value_change": "Promjena ukupne vrijednosti:",
-      "update_units": "Ažuriraj jedinice"
+      "update_units": "Ažuriraj jedinice",
+      "toast_success": "Ažurirano {{updated}} od {{selected}} odabranih jedinica (prodane se preskaču)",
+      "toast_partial": "Ažurirano {{updated}} od {{selected}} jedinica; {{failed}} nije ažurirano",
+      "toast_failed": "Cijene nije moguće ažurirati",
+      "amount_placeholder": "Unesite iznos (npr. 500)",
+      "error_amount_required": "Unesite valjani iznos veći od 0",
+      "error_negative": "Ovo smanjenje bi rezultiralo negativnim cijenama za neke jedinice. Unesite manji iznos.",
+      "preview_add": "{{amount}}/m² bit će dodano na trenutnu cijenu/m² svake jedinice",
+      "preview_subtract": "{{amount}}/m² bit će oduzeto od trenutne cijene/m² svake jedinice",
+      "negative_warning": "Upozorenje: Ovo smanjenje bi rezultiralo negativnim cijenama za neke jedinice. Smanjite iznos prilagodbe.",
+      "update_warning_one": "Upozorenje: Ovo će ažurirati {{count}} jedinicu. Ova akcija se ne može poništiti.",
+      "update_warning_few": "Upozorenje: Ovo će ažurirati {{count}} jedinice. Ova akcija se ne može poništiti.",
+      "update_warning_other": "Upozorenje: Ovo će ažurirati {{count}} jedinica. Ova akcija se ne može poništiti."
     },
     "bulk_units_modal": {
       "title": "Masovno kreiranje jedinica",
@@ -1855,17 +1993,49 @@
       "upload_apartment_file": "Učitaj Excel datoteku stanova",
       "upload_garages_file": "Učitaj Excel datoteku garaža",
       "parse_file": "Analiziraj datoteku",
-      "import_apartments": "Uvezi stanove",
-      "import_garages": "Uvezi garaže",
+      "import_apartments": "Uvezi stanove ({{count}})",
+      "import_garages": "Uvezi garaže ({{count}})",
       "importing": "Uvoz u tijeku...",
       "import_complete": "Uvoz završen!",
+      "completed_with_errors": "Uvoz završen s greškama",
+      "nothing_imported": "Ništa nije uvezeno",
+      "import_failed": "Uvoz nije dovršen. Pokušajte ponovno.",
+      "errors_heading": "Greške",
+      "more_errors": "…i još {{count}}",
+      "row_error": "Redak {{row}}: {{message}}",
+      "garage_error": "Garaža {{number}}: {{message}}",
       "successfully_imported": "Uspješno uvezeno",
       "failed_skipped": "Neuspješno/Preskočeno",
       "garages_linked": "Garaže povezane",
       "storages_linked": "Repozitoriji povezani",
       "created": "Kreirano",
       "updated": "Ažurirano",
-      "failed": "Neuspješno"
+      "failed": "Neuspješno",
+      "select_file": "Odaberi \"Tablica stanova\" Excel datoteku (.xlsx ili .csv) sa podacima o stanovima",
+      "select_garages_file": "Odaberi Excel datoteku s 3 stupca: parking oznaka, parking m2, parking cijena",
+      "expected_format": "Očekivani format datoteke:",
+      "garages_note": "Garaže će biti uvezene u ovu zgradu. Postojeće garaže s istim brojem bit će ažurirane.",
+      "parse_error": "Excel datoteku nije moguće pročitati. Provjerite format datoteke.",
+      "summary": "Sažetak uvoza",
+      "total_rows": "Ukupno redova:",
+      "valid_rows": "Valjani redovi:",
+      "invalid_rows": "Nevaljani redovi:",
+      "total_garages": "Ukupno garaža:",
+      "new_count": "Novo:",
+      "update_existing": "Ažuriraj postojeće:",
+      "will_update": "Ažurirat će",
+      "new_label": "Novo",
+      "errors_found": "Pronađene greške",
+      "row": "Redak",
+      "no_building": "(bez zgrade)",
+      "no_number": "(bez broja)",
+      "parking": "Parking",
+      "garage_number": "Broj garaže",
+      "error_missing_number": "Nedostaje broj stana",
+      "error_missing_size": "Nedostaje površina (m²)",
+      "error_missing_price": "Nedostaje cijena",
+      "error_missing_building": "Nedostaje zgrada",
+      "error_building_not_found": "Zgrada \"{{name}}\" nije pronađena"
     },
     "filter": {
       "all": "Svi",
@@ -1907,7 +2077,7 @@
       "sale_price": "Cijena prodaje",
       "price": "Cijena",
       "down_payment": "Kapara",
-      "monthly": "Månedna rata",
+      "monthly": "Mjesečna rata",
       "payment_progress": "Napredak plaćanja",
       "available": "Dostupno",
       "reserve": "Rezerviraj",
@@ -1922,6 +2092,19 @@
   "apartments": {
     "title": "Stanovi",
     "subtitle": "Upravljanje stanovima",
+    "toast": {
+      "create_success": "Stan dodan",
+      "bulk_create_success": "Stanovi dodani",
+      "update_success": "Stan spremljen",
+      "delete_success": "Stan obrisan",
+      "create_error": "Dodavanje stana nije uspjelo",
+      "update_error": "Spremanje stana nije uspjelo",
+      "delete_error": "Brisanje stana nije uspjelo",
+      "payments_load_error": "Učitavanje povijesti plaćanja nije uspjelo",
+      "link_units_error": "Spremanje povezanih jedinica nije uspjelo"
+    },
+    "confirm_delete_message": "Jeste li sigurni da želite obrisati {{label}}? Ova akcija se ne može poništiti.",
+    "confirm_delete_fallback": "ovaj stan",
     "item_label": "stanova",
     "add": "Dodaj stan",
     "bulk_create": "Masovno dodavanje",
@@ -1957,7 +2140,23 @@
       "select_building": "Odaberi zgradu",
       "starting_number": "Početni broj",
       "quantity": "Količina",
-      "create": "Kreiraj stanove"
+      "create": "Kreiraj stanove",
+      "size_m2": "Površina (m²)",
+      "bulk_preview_one": "Kreirat će se {{count}} stan, od {{from}} do {{to}}",
+      "bulk_preview_few": "Kreirat će se {{count}} stana, od {{from}} do {{to}}",
+      "bulk_preview_other": "Kreirat će se {{count}} stanova, od {{from}} do {{to}}",
+      "errors": {
+        "project": "Projekt je obavezan",
+        "building": "Zgrada je obavezna",
+        "number": "Broj stana je obavezan",
+        "start_number": "Početni broj je obavezan",
+        "quantity": "Količina je obavezna",
+        "floor": "Kat je obavezan",
+        "size": "Površina je obavezna",
+        "saleable_area": "Prodajna površina je obavezna",
+        "price": "Cijena je obavezna",
+        "status": "Status je obavezan"
+      }
     },
     "statuses": {
       "available": "Dostupno",
@@ -1970,6 +2169,7 @@
       "buyer_info": "Informacije o kupcu",
       "contract": "Ugovor",
       "saleable_area": "Prodajna površina",
+      "open_area": "Otvorena površina (Površina otvoreno):",
       "open_area_coef": "Otvorena površina s koef.:",
       "payment_type": "Vrsta plaćanja:",
       "presale_date": "Datum potpisa predugovora:",
@@ -1998,7 +2198,8 @@
       "remaining": "Preostalo",
       "progress": "Ukupni napredak",
       "all_payments": "Sva plaćanja",
-      "no_payments": "Još nema plaćanja"
+      "no_payments": "Još nema plaćanja",
+      "type": "Vrsta plaćanja"
     },
     "contracted": {
       "title": "Ugovoreno",
@@ -2006,64 +2207,13 @@
       "payment_type": "Vrsta plaćanja",
       "select": "— Odaberi —",
       "credit": "Kredit",
-      "installments": "Rate"
-    },
-    "bulk_price_update": {
-      "title": "Masovno ažuriranje cijena",
-      "selected": "Odabrano:",
-      "units_text": "jedinica",
-      "selection_summary": "Sažetak odabira",
-      "selected_units": "Odabrane jedinice:",
-      "current_price_range": "Trenutni raspon cijena/m²:",
-      "adjustment_type": "Vrsta prilagodbe",
-      "increase": "Povećaj cijenu",
-      "decrease": "Smanji cijenu",
-      "adjustment_amount": "Iznos prilagodbe (€)",
-      "amount_placeholder": "Unesite iznos (npr. 500)",
-      "price_preview": "Pregled cijena",
-      "will_add": "/m² će biti dodano na",
-      "will_subtract": "/m² će biti oduzeto od",
-      "each_unit": "svake jedinice",
-      "current_price": "trenutna cijena/m²",
-      "new_price_range": "Novi raspon cijena/m²:",
-      "current_total": "Trenutna ukupna vrijednost:",
-      "new_total": "Nova ukupna vrijednost:",
-      "total_change": "Promjena ukupne vrijednosti:",
-      "negative_warning": "Upozorenje: Ovo smanjenje bi rezultiralo negativnim cijenama za neke jedinice. Smanjite iznos prilagodbe.",
-      "update_warning": "Upozorenje: Ovo će ažurirati {{count}} jedinica. Ova akcija se ne može poništiti.",
-      "update": "Ažuriraj"
-    },
-    "import_modal": {
-      "title": "Uvezi stanove iz Excela",
-      "upload_heading": "Učitaj Excel datoteku stanova",
-      "select_file": "Odaberi \"Tablica stanova\" Excel datoteku (.xlsx ili .csv) sa podacima o stanovima",
-      "expected_format": "Očekivani format datoteke:",
-      "parse": "Analiziraj datoteku",
-      "summary": "Sažetak uvoza",
-      "total_rows": "Ukupno redova:",
-      "valid_rows": "Valjani redovi:",
-      "invalid_rows": "Nevaljani redovi:",
-      "errors_found": "Pronađene greške",
-      "import_complete": "Uvoz završen!",
-      "successfully_imported": "Uspješno uvezeno",
-      "failed_skipped": "Neuspješno/Preskočeno",
-      "garages_linked": "Garaže povezane",
-      "storages_linked": "Repozitoriji povezani",
-      "import": "Uvezi",
-      "importing": "Uvoz u tijeku..."
-    },
-    "import_garages_modal": {
-      "title": "Uvezi garaže iz Excela",
-      "upload_heading": "Učitaj Excel datoteku garaža",
-      "total": "Ukupno garaža:",
-      "new_count": "Novo:",
-      "update_existing": "Ažuriraj postojeće:",
-      "will_update": "Ažurirat će",
-      "new_label": "Novo",
-      "import_complete": "Uvoz završen!",
-      "created": "Kreirano",
-      "updated": "Ažurirano",
-      "failed": "Neuspješno"
+      "installments": "Rate",
+      "kapara": "Kapara 10% (EUR)",
+      "rate1": "1. rata AB konstrukcija 30% (EUR)",
+      "rate2": "2. rata postava stolarije 20% (EUR)",
+      "rate3": "3. rata obrtnički radovi 20% (EUR)",
+      "rate4": "4. rata uporabna 20% (EUR)",
+      "credit_amount": "Kredit etažiranje 90% (EUR)"
     }
   },
   "sale_form": {
@@ -2084,13 +2234,20 @@
     "bank_loan": "Bankarski zajam",
     "installments": "Rate",
     "down_payment": "Kapara (€)",
-    "monthly_payment": "Månedna rata (€)",
+    "monthly_payment": "Mjesečna rata (€)",
     "sale_date": "Datum prodaje",
     "contract_signed": "Ugovor potpisan",
     "sale_summary": "Sažetak prodaje",
     "remaining": "Preostalo:",
-    "monthly": "Månedna rata:",
+    "monthly": "Mjesečna rata:",
     "notes": "Napomene",
+    "notes_placeholder": "Dodatne napomene o prodaji...",
+    "errors": {
+      "full_name_required": "Puno ime je obavezno",
+      "email_required": "Email je obavezan",
+      "customer_required": "Odaberite kupca",
+      "sale_price_required": "Cijena prodaje je obavezna"
+    },
     "complete_sale": "Završi prodaju",
     "complete_sale_btn": "Završi prodaju",
     "create_new_customer": "Kreiraj novog kupca",
@@ -2103,6 +2260,12 @@
     "edit": "Uredi kupca",
     "update": "Ažuriraj kupca",
     "search": "Pretraži kupce...",
+    "select_all_count": "Odaberi sve ({{count}})",
+    "selected_count": "Odabrano: {{count}}",
+    "selected_of_total": "Odabrano {{selected}} od {{total}}",
+    "email_selected": "Pošalji email odabranima ({{count}})",
+    "email_all": "Pošalji email svima ({{count}})",
+    "no_emails": "Odabrani kupci nemaju email adresu.",
     "tabs": {
       "leads": "Potencijalni",
       "interested": "Zainteresirani",
@@ -2130,7 +2293,9 @@
       "preferred_floor": "Preferirani kat",
       "preferred_location": "Preferirana lokacija",
       "preference_notes": "Napomene o preferencijama",
-      "general_notes": "Opće napomene"
+      "preference_notes_placeholder": "Dodatne napomene o željama kupca",
+      "general_notes": "Opće napomene",
+      "general_notes_placeholder": "Dodatne napomene o ovom kupcu"
     },
     "card": {
       "purchased_units": "Kupljene jedinice",
@@ -2142,6 +2307,9 @@
       "notes": "Napomene:",
       "backed_out_reason": "Razlog odustajanja",
       "update_contact": "Ažuriraj datum kontakta",
+      "select_customer": "Odaberi kupca {{name}}",
+      "view_details": "Prikaži detalje",
+      "open_details": "Prikaži detalje kupca {{name}}",
       "total_paid": "Ukupno plaćeno:",
       "remaining": "Preostalo:",
       "total_value": "Ukupna vrijednost:"
@@ -2188,7 +2356,8 @@
       "bank": "Banka",
       "filtered_results": "Filtrirani rezultati",
       "payments_totaling": "plaćanja u iznosu od",
-      "project": "Projekt"
+      "project": "Projekt",
+      "load_failed": "Plaćanja nije moguće učitati"
     },
     "errors": {
       "email_exists": "Kupac s ovim emailom već postoji.",
@@ -2196,7 +2365,9 @@
       "first_name_required": "Ime je obavezno.",
       "last_name_required": "Prezime je obavezno.",
       "email_required": "Email je obavezan.",
-      "phone_required": "Telefon je obavezan."
+      "phone_required": "Telefon je obavezan.",
+      "delete_failed": "Kupca nije moguće obrisati.",
+      "update_contact_failed": "Datum kontakta nije moguće ažurirati."
     }
   },
   "supervision": {
@@ -2204,14 +2375,17 @@
     "subtitle": "Upravljanje gradilištem",
     "site_management": {
       "title": "Upravljanje gradilištem",
+      "recalculate_budgets_failed": "Budžeti faza nisu ponovno izračunati. Prikazani iznosi možda nisu ažurni.",
+      "comments": {
+        "add_success": "Komentar dodan",
+        "add_failed": "Komentar nije spremljen"
+      },
       "phases": "Faze",
       "setup_phases": "Postavi faze",
       "edit_phases": "Uredi faze",
       "phase_setup": {
         "title_create": "Postavi faze projekta",
         "title_edit": "Uredi faze projekta",
-        "distribute": "Rasporedi",
-        "budget_across": "budžet po fazama gradnje",
         "num_phases": "Broj faza",
         "phase_name": "Naziv faze",
         "budget_allocated": "Alocirani budžet (€)",
@@ -2228,7 +2402,27 @@
         "create": "Kreiraj faze",
         "update": "Ažuriraj faze",
         "default_phase_name": "Faza {{n}}",
-        "classification_hint": "Ovdje postavljate budžet faze. Raspodjelu po klasifikacijama troška uredite na kartici faze."
+        "confirm_remove_message": "Spremanjem će se obrisati ove faze: {{names}}. Faze koje još imaju ugovore ili dnevnike rada ne mogu se obrisati.",
+        "errors": {
+          "has_dependents": "Ove faze još imaju ugovore ili dnevnike rada i ne mogu se obrisati: {{detail}}. Prvo ih premjestite ili obrišite.",
+          "dependent_item": "{{name}} ({{contracts}} ugovora, {{workLogs}} dnevnika rada)",
+          "create_failed": "Greška pri kreiranju faza projekta.",
+          "update_failed": "Greška pri ažuriranju faza projekta."
+        }
+      },
+      "delete_phase": {
+        "confirm_message": "Jeste li sigurni da želite obrisati fazu \"{{name}}\"?",
+        "has_dependents": "Faza \"{{name}}\" ima {{contracts}} ugovora i {{workLogs}} dnevnika rada. Prvo ih premjestite na drugu fazu ili obrišite.",
+        "check_failed": "Provjera ovisnosti faze nije uspjela. Pokušajte ponovno.",
+        "delete_failed": "Greška pri brisanju faze. Pokušajte ponovno."
+      },
+      "delete_subcontractor": {
+        "delete_failed": "Greška pri brisanju podugovaratelja."
+      },
+      "payments_moved": {
+        "create": "Kreiranje plaćanja premješteno je u Accounting modul. Idite na Accounting → Računi za kreiranje i plaćanje računa.",
+        "update": "Uređivanje plaćanja premješteno je u Accounting modul. Idite na Accounting → Plaćanja za uređivanje plaćanja.",
+        "delete": "Brisanje plaćanja premješteno je u Accounting modul. Idite na Accounting → Plaćanja za brisanje plaćanja."
       },
       "edit_phase": {
         "title": "Uredi fazu",
@@ -2242,7 +2436,8 @@
         "status": "Status",
         "update": "Ažuriraj fazu",
         "errors": {
-          "name_required": "Naziv faze je obavezan"
+          "name_required": "Naziv faze je obavezan",
+          "update_failed": "Greška pri ažuriranju faze. Pokušajte ponovno."
         }
       },
       "projects_grid": {
@@ -2326,7 +2521,7 @@
       },
       "milestone_list": {
         "title": "Prekretnice plaćanja",
-        "contract_base": "Ugovor (osnova)",
+        "contract_gross": "Ugovor (s PDV)",
         "add": "Dodaj prekretnicu",
         "total_allocated": "Ukupno alocirano",
         "milestones": "Prekretnice",
@@ -2532,7 +2727,8 @@
       "method": "Metoda:",
       "ref": "Ref:",
       "created": "Kreirano",
-      "managed_in_accounting": "Upravljanje u Accounting modulu"
+      "managed_in_accounting": "Upravljanje u Accounting modulu",
+      "load_failed": "Povijest plaćanja nije učitana"
     },
     "invoices_modal": {
       "title": "Fakture -",
@@ -2561,9 +2757,8 @@
       "vat": "PDV",
       "total": "Ukupno",
       "contract_docs": "Dokumenti ugovora",
-      "contracted_base": "Ugovoreno (osnova)",
-      "paid_base": "Plaćeno (osnova)",
-      "gain_loss": "Dobit/Gubitak",
+      "contracted_base": "Ugovoreno",
+      "paid_base": "Plaćeno",
       "no_contract_heading": "Bez formalnog ugovora",
       "total_paid": "Plaćeno ukupno",
       "accounting_note": "Troškovi se prate kroz račune u Accounting modulu",
@@ -2607,21 +2802,23 @@
       "total": "Ukupno",
       "deadline": "Rok",
       "payment_info": "Informacije o plaćanju (samo za čitanje)",
-      "total_paid_base": "Ukupno plaćeno (osnova):",
+      "total_paid_gross": "Ukupno plaćeno (s PDV):",
       "remaining": "Preostalo:",
       "progress": "Napredak:",
-      "progress_note": "Napredak se automatski izračunava na temelju plaćanja (osnovne iznose)",
+      "progress_note": "Napredak se automatski izračunava na temelju plaćanja (iznosi s PDV)",
       "contract_docs": "Dokumenti ugovora",
       "existing_docs": "Postojeći dokumenti",
       "add_docs": "Dodaj nove dokumente",
       "upload": "Učitaj",
       "doc_singular": "dokument",
       "doc_plural": "dokumenata",
-      "mark_completed": "Označi kao završeno",
+      "document_upload_failed": "Promjene su spremljene, ali dokumenti ugovora nisu uspješno učitani. Pokušajte ih ponovno priložiti.",
       "errors": {
         "phase_required": "Faza je obavezna",
         "name_required": "Naziv je obavezan",
-        "job_required": "Opis posla je obavezan"
+        "job_required": "Opis posla je obavezan",
+        "load_failed": "Podaci ugovora nisu učitani. Zatvorite obrazac i pokušajte ponovno.",
+        "update_failed": "Greška pri ažuriranju podugovaratelja."
       },
       "cost_classification": "Klasifikacija troška",
       "cost_classification_help": "U koju stavku troškovnika ovaj ugovor spada.",
@@ -2677,6 +2874,9 @@
       },
       "tooltip_approved": "Odobreno",
       "tooltip_approve": "Klikni za odobrivanje",
+      "errors": {
+        "approval_failed": "Ažuriranje statusa odobrenja računa nije uspjelo"
+      },
       "pagination": {
         "item_label": "računi"
       }
@@ -2720,7 +2920,6 @@
         "blocker_details": "Detalji blokade",
         "issue_details": "Detalji problema",
         "additional_notes": "Dodatne napomene",
-        "color_label": "Boja (za nadzornu ploču)",
         "desc_placeholder": "Opišite obavljeni ili promatrani rad...",
         "blocker_placeholder": "Opišite što blokira rad...",
         "issue_placeholder": "Opišite problem kvalitete...",
@@ -2743,7 +2942,12 @@
         "phase": "Faza je obavezna",
         "contract": "Ugovor je obavezan",
         "date": "Datum je obavezan",
-        "description": "Opis rada je obavezan"
+        "description": "Opis rada je obavezan",
+        "load_phases_failed": "Faze ovog projekta nisu učitane",
+        "load_contracts_failed": "Ugovori ove faze nisu učitani",
+        "contract_and_description": "Odaberite ugovor i unesite opis rada",
+        "save_failed": "Spremanje radnog zapisa nije uspjelo",
+        "delete_failed": "Brisanje radnog zapisa nije uspjelo"
       },
       "history": "Povijest radnih zapisa",
       "contract_label": "Ugovor:",
@@ -2782,6 +2986,7 @@
       "active_label": "Aktivna",
       "system_badge": "Sistemska",
       "system_hint": "Sistemske klasifikacije se ne mogu preimenovati ni obrisati.",
+      "delete_confirm_message": "Obrisati klasifikaciju troška \"{{name}}\"? Ova radnja se ne može poništiti.",
       "save": "Spremi",
       "errors": {
         "name_required": "Naziv je obavezan",
@@ -2865,6 +3070,7 @@
     "total_revenue": "Ukupni prihodi",
     "confirm_delete_phase": "Jeste li sigurni da želite obrisati ovu fazu?",
     "forecasted_budget": "Predviđeni budžet",
+    "remaining_budget": "Preostali budžet",
     "sales_revenue_label": "Prihod od prodaje",
     "contracted_amount": "Ugovoreni iznos",
     "paid_out": "Isplaćeno",
@@ -2892,7 +3098,6 @@
     "contract_value_label": "Ugovor:",
     "paid_label": "Plaćeno:",
     "remaining_label": "Preostalo:",
-    "gain_loss_label": "Dobitak/Gubitak:",
     "total_paid_label": "Plaćeno ukupno:",
     "total_debts_label": "Ukupno dugovi:",
     "add_supplier_btn": "Dodaj dobavljača",
@@ -3072,10 +3277,7 @@
       "reference_label": "Referenca:",
       "created_label": "Kreirano",
       "no_date": "Datum nije postavljen",
-      "managed_in_accounting": "Upravljano u Računovodstvu",
-      "status_paid": "Plaćeno",
-      "status_partial": "Djelomično",
-      "status_unpaid": "Neplaćeno"
+      "managed_in_accounting": "Upravljano u Računovodstvu"
     },
     "invoices_modal": {
       "title": "Računi - {{contract}}",
@@ -3118,6 +3320,11 @@
     "title": "Financiranje",
     "subtitle": "Upravljanje financiranjem",
     "equity": "Vlastiti kapital",
+    "credit_status": {
+      "active": "Aktivan",
+      "paid": "Otplaćen",
+      "defaulted": "U kašnjenju"
+    },
     "investment_amount": "Iznos investicije",
     "allocated": "Alocirano",
     "unallocated": "Nealocirano",
@@ -3143,6 +3350,12 @@
       "error_delete_credit_linked": "Nije moguće obrisati ovu kreditnu liniju — drugi zapisi još uvijek je koriste.",
       "error_delete_bank": "Greška prilikom brisanja investitora.",
       "error_delete_bank_linked": "Nije moguće obrisati ovog investitora — drugi zapisi još uvijek ga koriste.",
+      "error_bank_name_required": "Unesite naziv banke",
+      "error_add_bank": "Greška pri dodavanju banke. Pokušajte ponovno.",
+      "error_update_bank": "Greška pri ažuriranju banke.",
+      "error_credit_fields_required": "Popunite obavezna polja (banka, naziv kredita, iznos, datum početka)",
+      "error_add_credit": "Greška pri dodavanju kreditne linije.",
+      "error_update_credit": "Greška pri ažuriranju kreditne linije.",
       "investor_form": {
         "title_add": "Dodaj novu banku",
         "title_edit": "Uredi banku",
@@ -3158,14 +3371,16 @@
         "update_button": "Ažuriraj banku"
       },
       "card": {
-        "credit_utilized": "Iskorišten kredit",
+        "credit_total": "Ukupno",
+        "credit_used": "Iskorišteno",
         "outstanding": "Preostalo",
         "credit_utilization": "Iskorištenost kredita",
         "active_credits": "Aktivni krediti"
       },
       "detail_modal": {
         "credit_facilities_heading": "Kreditne linije",
-        "credit_utilized_label": "Iskorišten kredit:",
+        "credit_total_label": "Ukupno:",
+        "credit_used_label": "Iskorišteno:",
         "outstanding_label": "Preostalo:",
         "credit_overview_heading": "Pregled kredita",
         "active_credits_label": "Aktivni krediti:",
@@ -3187,6 +3402,7 @@
         "maturity_date_label": "Datum dospijeća",
         "repayment_progress_label": "Napredak otplate",
         "maturing_soon": "USKORO DOSPIJEVA",
+        "past_maturity": "DOSPJELO",
         "company_label": "Firma:",
         "na": "N/A"
       }
@@ -3199,10 +3415,6 @@
       "no_investments_description": "Dodajte prvu investiciju putem upravljanja investicijama",
       "unnamed_credit": "Neimenovani kredit",
       "unknown_bank": "Nepoznata banka",
-      "investment_usage_label": "Korištenje investicije",
-      "used_percent": "Iskorišteno {{percent}}%",
-      "allocated_percent": "Alocirano {{percent}}%",
-      "over_allocated": "Prekoračeno za €{{amount}}",
       "investment_purpose_btn": "Namjena Investicije",
       "expand_credit_title": "Proširi kredit",
       "collapse_credit_title": "Skupi kredit",
@@ -3228,15 +3440,13 @@
       },
       "confirm_delete_allocation_title": "Potvrda brisanja",
       "confirm_delete_allocation_message": "Jeste li sigurni da želite obrisati ovu namjenu?",
-      "dug_label": "Dug",
-      "iskorišteno_label": "Iskorišteno",
-      "nealocirano_label": "Nealocirano"
+      "allocation_delete_success": "Namjena investicije obrisana",
+      "allocation_delete_failed": "Namjena investicije nije obrisana"
     },
     "allocation_row": {
       "opex_label": "OPEX (Bez projekta)",
       "refinancing_prefix": "Refinanciranje - ",
       "allocated_label": "Alocirano:",
-      "paid_out_label": "Isplaćeno:",
       "used_label": "Iskorišteno:",
       "available_label": "Dostupno:",
       "company_badge": "FIRMA",
@@ -3291,7 +3501,6 @@
       "view_details_button": "Pregled detalja",
       "equity_investment_label": "Dionički kapital",
       "debt_financing_label": "Dužničko financiranje",
-      "expected_roi_label": "Očekivani ROI",
       "weighted_average": "Ponderirani prosjek",
       "funding_status_label": "Status financiranja",
       "of_budget": "od budžeta",
@@ -3302,6 +3511,8 @@
       "no_financing_sources": "Nema izvora financiranja",
       "more_funders": "+{{count}} više",
       "risk_label": "Rizik",
+      "empty_title": "Nema investicijskih projekata",
+      "empty_description": "Projekti s evidentiranim financiranjem pojavit će se ovdje.",
       "modal": {
         "budget_label": "Budžet:",
         "overview_tab": "Pregled",
@@ -3323,13 +3534,18 @@
         "equity_ratio_label": "Omjer kapitala:",
         "debt_ratio_label": "Omjer duga:",
         "return_analysis_heading": "Analiza prinosa",
-        "expected_roi_label": "Očekivani ROI:",
         "investment_period_label": "Investicijsko razdoblje:",
         "risk_level_label": "Razina rizika:",
         "timeline_heading": "Vremenski okvir",
         "start_date_label": "Datum početka:",
         "target_end_label": "Ciljani kraj:",
         "days_remaining_label": "Preostali dani:",
+        "days_left_one": "{{count}} dan",
+        "days_left_few": "{{count}} dana",
+        "days_left_other": "{{count}} dana",
+        "days_overdue_one": "Kasni {{count}} dan",
+        "days_overdue_few": "Kasni {{count}} dana",
+        "days_overdue_other": "Kasni {{count}} dana",
         "tbd": "TBD",
         "years": "godina",
         "na": "N/A",
@@ -3349,11 +3565,15 @@
         "funds_depleted": "Sredstva su potpuno iskorištena",
         "high_utilization": "Visoka stopa iskorištenosti ({{rate}}%)",
         "expiring_in_days": "Rok korištenja istječe za {{days}} dana",
+        "expired_days_ago_one": "Rok korištenja istekao prije {{count}} dan",
+        "expired_days_ago_few": "Rok korištenja istekao prije {{count}} dana",
+        "expired_days_ago_other": "Rok korištenja istekao prije {{count}} dana",
         "total_committed_footer": "Ukupno obvezano",
         "total_spent_footer": "Ukupno potrošeno",
         "total_available_footer": "Ukupno dostupno",
         "bank_badge": "BANKA",
-        "expiring_soon_badge": "USKORO ISTJEČE"
+        "expiring_soon_badge": "USKORO ISTJEČE",
+        "expired_badge": "ISTEKLO"
       }
     },
     "payments": {
@@ -3364,7 +3584,6 @@
       "filter_all": "Sva plaćanja",
       "filter_recent": "Nedavno (7 dana)",
       "filter_large": "Velika (> €50k)",
-      "export_csv_button": "Export CSV",
       "start_date_label": "Datum početka",
       "end_date_label": "Datum kraja",
       "no_payments_title": "Nema pronađenih plaćanja",
@@ -3376,19 +3595,16 @@
         "project_col": "Projekt",
         "category_col": "Kategorija",
         "amount_col": "Iznos",
-        "notes_col": "Napomene",
-        "bank_badge": "Banka"
+        "notes_col": "Napomene"
       },
       "stats": {
-        "total_payments_label": "Ukupno plaćanja",
-        "bank_payments_subtitle": "{{count}} bankovnih kreditnih plaćanja",
-        "total_amount_label": "Ukupan iznos",
-        "this_month_label": "Ovaj mjesec",
-        "payments_subtitle": "plaćanja",
-        "month_amount_label": "Iznos ovog mjeseca"
+        "inflow_label": "Ukupno isplate",
+        "outflow_label": "Ukupno otplate i troškovi",
+        "net_label": "Neto",
+        "this_month_label": "Ovaj mjesec"
       },
       "filtered_results_label": "Filtrirani rezultati",
-      "filtered_summary": "{{count}} plaćanja ukupno {{total}}"
+      "filtered_summary": "{{count}} plaćanja · isplate {{inflow}} · otplate i troškovi {{outflow}} · neto {{net}}"
     },
     "equity_form": {
       "title": "Dodaj novu investiciju",
@@ -3424,7 +3640,13 @@
       "notes_label": "Napomene",
       "notes_placeholder": "Dodatne napomene o ovoj investiciji...",
       "cancel_button": "Odustani",
-      "submit_button": "Dodaj investiciju"
+      "submit_button": "Dodaj investiciju",
+      "error_fields_required": "Popunite obavezna polja (banka, iznos, datum investicije)",
+      "error_custom_schedule": "Prilagođeni raspored plaćanja još nije podržan. Odaberite mjesečno ili godišnje.",
+      "add_success": "Investicija je dodana",
+      "add_error": "Greška pri dodavanju investicije.",
+      "preview_incomplete": "Unesite iznos, datume i IRR za izračun",
+      "preview_invalid_range": "Neispravan raspon datuma"
     }
   },
   "tic": {
@@ -3437,6 +3659,7 @@
     "save_button": "Spremi",
     "export_excel_button": "Export Excel",
     "export_pdf_button": "Export PDF",
+    "export_error": "Izvoz nije uspio",
     "loading": "Učitavam TIC podatke...",
     "no_project_title": "Nema odabranog projekta",
     "no_project_description": "Odaberite projekt za pregled TIC strukture troškova",
@@ -3525,11 +3748,6 @@
     }
   },
   "dashboards": {
-    "common": {
-      "load_error_title": "Učitavanje nadzorne ploče nije uspjelo",
-      "load_error_description": "Podatke nije moguće učitati. Riječ je o pogrešci pri učitavanju, a ne o nedostatku podataka.",
-      "retry": "Pokušaj ponovno"
-    },
     "director": {
       "title": "Nadzorna ploča direktora",
       "welcome": "Dobrodošli",
@@ -3551,7 +3769,7 @@
       "active_contracts": "aktivnih ugovora",
       "completed_contracts": "Završeni ugovori",
       "finished_work": "Završeni radovi",
-      "overdue_tasks": "Zakašnjeli zadaci",
+      "overdue_milestones": "Zakašnjele prekretnice plaćanja",
       "need_attention": "Treba pozornost",
       "critical_deadlines": "Kritični rokovi",
       "within_7_days": "U roku 7 dana",
@@ -3583,6 +3801,38 @@
       "receivables": "Potraživanja",
       "payables": "Obveze",
       "critical_alerts": "Kritična upozorenja ({{count}})",
+      "alerts": {
+        "milestone_fallback": "Prekretnica",
+        "credit_fallback": "Kredit",
+        "overdue_milestone": {
+          "title": "Zakašnjela prekretnica plaćanja",
+          "message_one": "{{name}} kasni {{count}} dan",
+          "message_few": "{{name}} kasni {{count}} dana",
+          "message_other": "{{name}} kasni {{count}} dana"
+        },
+        "urgent_deadline": {
+          "title": "Hitan rok",
+          "message_today": "{{name}} dospijeva danas",
+          "message_one": "{{name}} dospijeva za {{count}} dan",
+          "message_few": "{{name}} dospijeva za {{count}} dana",
+          "message_other": "{{name}} dospijeva za {{count}} dana"
+        },
+        "credit_maturity": {
+          "title": "Dospijeće kredita",
+          "message_today": "{{name}} ({{amount}}) dospijeva danas",
+          "message_one": "{{name}} ({{amount}}) dospijeva za {{count}} dan",
+          "message_few": "{{name}} ({{amount}}) dospijeva za {{count}} dana",
+          "message_other": "{{name}} ({{amount}}) dospijeva za {{count}} dana"
+        },
+        "high_leverage": {
+          "title": "Visoka zaduženost",
+          "message": "Omjer duga i kapitala je {{ratio}}x (preporučeno < 2x)"
+        },
+        "low_sales_rate": {
+          "title": "Niska stopa prodaje",
+          "message": "Prodano je samo {{rate}}% jedinica. Razmotrite reviziju prodajne strategije."
+        }
+      },
       "projects_portfolio": "Portfelj projekata",
       "total_projects": "Ukupno projekata",
       "project_col": "Projekt",
@@ -3594,7 +3844,8 @@
       "completion_col": "Završenost",
       "no_projects": "Nema dostupnih projekata",
       "credit_utilization": "Iskorištenost kredita",
-      "total_credit_facilities": "Ukupni krediti"
+      "total_credit_facilities": "Ukupni krediti",
+      "revenue_amount": "{{amount}} prihoda"
     },
     "accounting": {
       "title": "Računovodstvena nadzorna ploča",
@@ -3647,7 +3898,12 @@
       "per_unit": "Po jedinici",
       "active_leads": "Aktivni potencijalni kupci",
       "of_customers": "Od {{total}} kupaca",
-      "monthly_target": "Napredak prema mjesečnom cilju",
+      "sold_of_total": "{{sold}} od {{total}}",
+      "monthly_collected": "Naplaćeno ovaj mjesec",
+      "monthly_collected_sub": "Uplate po računima za stanove (s PDV-om)",
+      "trend_row_one": "{{count}} prodaja • {{revenue}}",
+      "trend_row_few": "{{count}} prodaje • {{revenue}}",
+      "trend_row_other": "{{count}} prodaja • {{revenue}}",
       "six_month_trend": "Prodajni trend 6 mjeseci",
       "inventory_status": "Status inventara",
       "sold": "Prodano",
@@ -3693,6 +3949,12 @@
       "weekly_logs": "Tjedni dnevnici",
       "no_logs": "Nema dnevnika",
       "na": "N/P",
+      "days_over_short_one": "{{count}} dan kašnjenja",
+      "days_over_short_few": "{{count}} dana kašnjenja",
+      "days_over_short_other": "{{count}} dana kašnjenja",
+      "days_left_short_one": "još {{count}} dan",
+      "days_left_short_few": "još {{count}} dana",
+      "days_left_short_other": "još {{count}} dana",
       "overdue_tasks": "Zakašnjeli zadaci ({{count}})",
       "days_overdue": "{{days}} dana zakašnjenja",
       "complete": "završeno",
@@ -3713,6 +3975,15 @@
       "loading": "Učitavanje investicijske nadzorne ploče...",
       "export_pdf": "Izvoz u PDF",
       "pdf_error": "Greška pri generiranju PDF izvještaja",
+      "pdf_title": "IZVJEŠTAJ O INVESTICIJAMA",
+      "pdf_distribution_by_project": "RASPODJELA INVESTICIJA PO PROJEKTIMA",
+      "pdf_allocations_by_project": "ALOKACIJE INVESTICIJA PO PROJEKTIMA",
+      "pdf_credit_details": "DETALJI AKTIVNIH INVESTICIJA",
+      "pdf_portfolio_projects": "PROJEKTI U PORTFELJU",
+      "pdf_allocations": "Alokacije:",
+      "pdf_total_projects": "Ukupno projekata:",
+      "pdf_more_projects": "... i još {{count}} projekata",
+      "high_utilization": "{{count}} investicija s visokom iskorištenošću (>80%)",
       "portfolio_value": "Vrijednost portfelja",
       "outstanding_debt": "Neplaćeni dug",
       "available_investments": "Dostupne investicije",
@@ -3747,26 +4018,46 @@
       "usage_expiring": "Istječe korištenje",
       "investment_amount": "Iznos investicije",
       "recent_activity": "Nedavna aktivnost",
-      "no_recent_activity": "Nema nedavnih aktivnosti"
+      "no_recent_activity": "Nema nedavnih aktivnosti",
+      "unknown_company": "Nepoznata tvrtka",
+      "days_short": "{{count}} d",
+      "activity": {
+        "credit": {
+          "title": "Odobrena kreditna linija",
+          "description": "{{company}} – {{amount}} {{creditType}}",
+          "description_with_project": "{{company}} – {{amount}} {{creditType}} za {{project}}"
+        },
+        "maturity": {
+          "title": "Nadolazeće dospijeće kredita",
+          "description_one": "{{name}} dospijeva za {{count}} dan",
+          "description_few": "{{name}} dospijeva za {{count}} dana",
+          "description_other": "{{name}} dospijeva za {{count}} dana"
+        },
+        "usage_expiring": {
+          "title": "Istječe rok korištenja kredita",
+          "description_one": "Rok korištenja za {{name}} istječe za {{count}} dan",
+          "description_few": "Rok korištenja za {{name}} istječe za {{count}} dana",
+          "description_other": "Rok korištenja za {{name}} istječe za {{count}} dana"
+        }
+      }
     },
     "retail": {
       "title": "Retail nadzorna ploča",
       "subtitle": "Pregled poslovanja",
       "loading": "Učitavanje...",
       "projects": "Projekti",
-      "active_projects": "Aktivnih projekata",
+      "active_projects": "{{count}} aktivnih",
       "customers": "Kupci",
-      "active_customers": "Aktivnih kupaca",
+      "total_customers_sub": "Ukupno kupaca",
       "invested": "Investirano",
-      "invested_sub": "Razvoj i gradnja (s PDV)",
+      "invested_sub": "Razvoj i gradnja (bez PDV-a)",
       "revenue": "Prihod",
       "total_sales": "Ukupne prodaje",
       "collection": "Naplata",
-      "paid": "Plaćeno:",
+      "collected": "Naplaćeno:",
       "to_collect": "Za naplatu:",
       "total_invoiced": "Ukupno fakturirano:",
       "profit": "Profit",
-      "income": "Naplata:",
       "costs": "Troškovi:",
       "averages": "Prosječno",
       "cost_per_project": "Trošak/projekt:",
@@ -3902,7 +4193,64 @@
       "risk_assessment": "PROCJENA RIZIKA",
       "insights": "UVIDI I PREPORUKE ZA RUKOVODSTVO",
       "top_projects": "NAJBOLJI PROJEKTI:",
-      "recommendations": "STRATEŠKE PREPORUKE:"
+      "recommendations": "STRATEŠKE PREPORUKE:",
+      "summary_portfolio": "Portfelj: {{total}} projekata ({{active}} aktivnih, {{completed}} završenih)",
+      "summary_financial": "Financije: {{revenue}} prihoda, {{expenses}} troškova, {{profit}} profita ({{margin}}% marže)",
+      "summary_capital": "Struktura kapitala: {{equity}} vlastitog kapitala, {{debt}} duga, omjer D/K {{ratio}}",
+      "summary_sales": "Prodaja: prodano {{sold}}/{{total}} jedinica ({{rate}}%), {{transactions}} transakcija",
+      "summary_construction": "Gradnja: {{contracts}} ugovora, {{subcontractors}} podugovaratelja, {{logs}} evidentiranih dnevnika radova",
+      "units_value": "{{sold}}/{{total}} prodano ({{rate}}%)",
+      "phases_value": "{{done}}/{{total}} završeno",
+      "funding_value": "{{equity}} kapitala, {{debt}} duga",
+      "top_project_line": "{{name}}: {{revenue}} prihoda, stopa prodaje {{rate}}%",
+      "risks": {
+        "slow_sales": {
+          "type": "SPORA PRODAJA",
+          "description_one": "{{count}} projekt sa stopom prodaje ispod 40%",
+          "description_few": "{{count}} projekta sa stopom prodaje ispod 40%",
+          "description_other": "{{count}} projekata sa stopom prodaje ispod 40%"
+        }
+      },
+      "recs": {
+        "marketing": "Pojačati marketinške aktivnosti radi ubrzanja prodaje",
+        "inventory": "Velik broj dostupnih jedinica – razmotriti cjenovnu strategiju",
+        "budgets": "Nastaviti praćenje projektnih budžeta i poštivanja rokova",
+        "partners": "Održavati dobre odnose s financijskim partnerima"
+      },
+      "pdf": {
+        "period": "Razdoblje izvještaja: {{period}}",
+        "cover_projects_one": "{{count}} projekt",
+        "cover_projects_few": "{{count}} projekta",
+        "cover_projects_other": "{{count}} projekata",
+        "cover_revenue": "{{value}} prihoda",
+        "cover_roi": "{{value}}% ROI",
+        "footer": "Povjerljivo – izvještaj za rukovodstvo",
+        "portfolio_analytics": "ANALITIKA PORTFELJA",
+        "equity": "Kapital",
+        "debt": "Dug",
+        "chart_capital_structure": "Struktura kapitala",
+        "chart_units_status": "Status jedinica",
+        "chart_net_cash_flow": "Mjesečni neto novčani tok (€K)",
+        "chart_top_projects": "Najbolji projekti po prihodu (€M)",
+        "chart_profit_margin": "Profitna marža (%)",
+        "sales_overview": "Pregled prodaje",
+        "sales_progress": "Napredak prodaje",
+        "construction_progress": "Napredak gradnje",
+        "financial_structure": "Financijska struktura",
+        "construction_overview": "Pregled gradnje i nadzora",
+        "invoice_payment_summary": "Sažetak računa i plaćanja",
+        "paid_value": "Plaćena vrijednost:",
+        "pending_value": "Vrijednost na čekanju:",
+        "overdue_value": "Dospjela vrijednost:",
+        "invoice_status_distribution": "Raspodjela statusa računa",
+        "tic_cost_management": "TIC – UPRAVLJANJE TROŠKOVIMA",
+        "planned_investment": "Planirana investicija:",
+        "projects_with_plan": "Projekti s planom:",
+        "projects_without_plan": "Projekti bez plana:",
+        "cash_flow_trend": "TREND NOVČANOG TOKA",
+        "project_portfolio": "PORTFELJ PROJEKATA",
+        "project_performance": "Pregled uspješnosti projekata"
+      }
     },
     "sales": {
       "title": "Prodajni izvještaji",
@@ -3919,6 +4267,12 @@
       "end_date": "Datum završetka",
       "generating": "Generiranje izvještaja...",
       "pdf_error": "Greška pri generiranju PDF izvještaja. Pokušajte ponovno.",
+      "report_period": "Razdoblje izvještaja:",
+      "apartment_details": "Detalji stanova",
+      "customer_overview": "Pregled kupaca",
+      "customer_details": "Detalji kupaca",
+      "no_email": "Bez e-pošte",
+      "no_phone": "Bez telefona",
       "project_overview": "Pregled prodaje projekta",
       "location": "Lokacija:",
       "start_date_label": "Datum početka:",
@@ -3965,19 +4319,52 @@
       "customer_highlights": "Istaknuti kupci",
       "sales_opportunities": "Prodajne prilike",
       "focus_converting": "Fokusirajte se na konverziju zainteresiranih kupaca",
-      "targeted_campaigns": "Razvijte ciljane kampanje za segmente potencijalnih kupaca"
+      "targeted_campaigns": "Razvijte ciljane kampanje za segmente potencijalnih kupaca",
+      "highlight_performance": "Prodajni učinak: {{rating}} ({{rate}}%)",
+      "highlight_revenue": "Ostvareno {{amount}} ukupnog prihoda",
+      "highlight_avg_price": "Prosječna cijena jedinice {{amount}}",
+      "highlight_total_customers_one": "{{count}} kupac u bazi",
+      "highlight_total_customers_few": "{{count}} kupca u bazi",
+      "highlight_total_customers_other": "{{count}} kupaca u bazi",
+      "highlight_conversions_one": "{{count}} uspješna konverzija u kupca",
+      "highlight_conversions_few": "{{count}} uspješne konverzije u kupce",
+      "highlight_conversions_other": "{{count}} uspješnih konverzija u kupce",
+      "highlight_conversion_rate": "{{rate}}% stopa konverzije",
+      "highlight_avg_purchase": "{{amount}} prosječna vrijednost kupnje",
+      "opportunity_interested_one": "{{count}} zainteresirani kupac za daljnji rad",
+      "opportunity_interested_few": "{{count}} zainteresirana kupca za daljnji rad",
+      "opportunity_interested_other": "{{count}} zainteresiranih kupaca za daljnji rad",
+      "opportunity_leads_one": "{{count}} novi potencijalni kupac za kontakt",
+      "opportunity_leads_few": "{{count}} nova potencijalna kupca za kontakt",
+      "opportunity_leads_other": "{{count}} novih potencijalnih kupaca za kontakt"
     },
     "retail": {
       "title": "Retail izvještaji",
       "loading": "Učitavanje izvještaja...",
-      "error": "Greška pri učitavanju podataka.",
-      "retry": "Pokušaj ponovo",
       "refresh": "Osvježi",
       "export_pdf": "PDF izvještaj",
       "tab_overview": "Pregled",
       "tab_projects": "Projekti",
       "tab_sales": "Prodaja",
       "tab_costs": "Troškovi",
+      "pdf": {
+        "title": "Retail izvještaj",
+        "footer": "Retail izvještaj – Povjerljivo",
+        "portfolio_overview": "Portfelj – pregled",
+        "total_projects": "Ukupno projekata",
+        "land_area_one": "{{count}} parcela, {{area}} m²",
+        "land_area_few": "{{count}} parcele, {{area}} m²",
+        "land_area_other": "{{count}} parcela, {{area}} m²",
+        "financial_overview": "Financijski pregled",
+        "land_investment": "Investicija u zemljišta",
+        "development_cost": "Troškovi razvoja",
+        "construction_cost": "Troškovi gradnje",
+        "total_costs": "UKUPNI TROŠKOVI",
+        "contracted_revenue": "Ugovoreni prihod",
+        "profit_total": "PROFIT",
+        "projects_overview": "Projekti – pregled",
+        "top_suppliers": "Top dobavljači"
+      },
       "description": "{{projects}} projekata · {{customers}} kupaca · {{suppliers}} dobavljača"
     },
     "portfolio": {
@@ -3995,7 +4382,7 @@
       "contracted": "Ugovoreno",
       "collected": "Naplaćeno",
       "outstanding": "Za naplatu",
-      "avg_price_m2": "Prosječna cijena/m2",
+      "avg_price_m2": "Prosječna cijena/m²",
       "profitability": "Profitabilnost",
       "profit": "Profit",
       "overdue_invoices_title": "{{count}} računa u kašnjenju",
@@ -4228,6 +4615,9 @@
     }
   },
   "budget_control": {
+    "errors": {
+      "load_data_failed": "Podatke nije moguće učitati"
+    },
     "title": "Kontrola proračuna",
     "subtitle": "EVM pregled performansi po fazama projekta",
     "project": "Projekt",
@@ -4242,6 +4632,14 @@
     "of_committed": "od ugovorenog",
     "under_budget": "Ispod proračuna",
     "over_budget": "Iznad proračuna",
+    "cpi_good": "Ispod proračuna ✓",
+    "cpi_warning": "Malo iznad proračuna",
+    "cpi_bad": "Iznad proračuna ✗",
+    "spi_good": "U skladu s planom ✓",
+    "spi_warning": "Malo u zaostatku",
+    "spi_bad": "U zaostatku ✗",
+    "no_schedule": "Nema faza s datumima početka i završetka",
+    "no_forecast": "Nema prognoze: CPI je 0 (trošak bez ostvarene vrijednosti)",
     "budget_chart_title": "Kontrola proračuna",
     "evm_indices_title": "EVM indeksi performansi",
     "evm_metrics_title": "EVM metrike performansi",
@@ -4279,6 +4677,7 @@
     "members": "Članovi ({{count}})",
     "file_too_large": "Datoteka prelazi limit od 25 MB",
     "send_failed": "Slanje nije uspjelo. Pokušajte ponovno.",
+    "create_failed": "Razgovor nije moguće kreirati. Pokušajte ponovno.",
     "time_now": "sada",
     "today": "Danas",
     "yesterday": "Jučer",
@@ -4299,6 +4698,12 @@
     "loading": "Učitavanje...",
     "more_events": "+{{count}} više",
     "events_for_day": "{{count}} događaj(a)",
+    "load_error": {
+      "events": "Događaje nije moguće učitati, pa prikazani kalendar nije potpun.",
+      "tasks": "Zadatke nije moguće učitati, pa se ne prikazuju na kalendaru.",
+      "task_filter_blocked": "Filter sudionika nije moguće primijeniti na zadatke jer popis korisnika nije učitan, pa su zadaci skriveni.",
+      "busy_blocks": "Zauzeća tima nije moguće učitati"
+    },
     "view_switcher": {
       "label": "Prikaz kalendara",
       "day": "Dan",
@@ -4352,6 +4757,8 @@
     },
     "modal": {
       "new_title": "Novi događaj",
+      "edit_title": "Uredi događaj",
+      "series_timing_readonly": "Za promjenu vremena ponavljajućeg događaja obrišite ga i kreirajte novi.",
       "title_label": "Naslov",
       "description_label": "Opis",
       "location_label": "Lokacija",
@@ -4364,6 +4771,7 @@
       "participants_label": "Sudionici",
       "participant_placeholder": "Pretraži i dodaj sudionike...",
       "participant_no_results": "Nema odgovarajućih korisnika",
+      "participants_load_error": "Popis korisnika nije moguće učitati. Već spremljeni sudionici ostaju nepromijenjeni.",
       "project_label": "Projekt",
       "project_placeholder": "Poveži s projektom (opcionalno)",
       "busy_label": "Zauzeto",
@@ -4409,7 +4817,8 @@
       },
       "create_button": "Kreiraj događaj",
       "saving": "Spremanje...",
-      "error_generic": "Događaj nije moguće kreirati. Pokušajte ponovno."
+      "error_generic": "Događaj nije moguće kreirati. Pokušajte ponovno.",
+      "error_save": "Događaj nije moguće spremiti. Pokušajte ponovno."
     },
     "detail": {
       "private_badge": "Privatno",
@@ -4431,7 +4840,9 @@
       "delete_single": "Obriši ovu pojavu",
       "delete_series": "Obriši cijeli niz",
       "delete_single_title": "Obrisati ovu pojavu?",
-      "delete_single_message": "Uklonit će se samo ova pojava. Ostale pojave u nizu ostaju."
+      "delete_single_message": "Uklonit će se samo ova pojava. Ostale pojave u nizu ostaju.",
+      "delete_failed": "Događaj nije moguće obrisati. Pokušajte ponovno.",
+      "respond_failed": "Odgovor nije moguće spremiti. Pokušajte ponovno."
     },
     "response": {
       "accepted": "Prihvaćeno",
@@ -4460,7 +4871,12 @@
     "new_task": "Novi zadatak",
     "loading": "Učitavanje...",
     "empty": "Nema zadataka u ovoj kategoriji",
+    "empty_hidden_completed": "Svi zadaci u ovoj kategoriji su gotovi",
+    "empty_hidden_completed_hint": "Uključite „Prikaži gotove” da ih vidite.",
+    "empty_search": "Nijedan zadatak ne odgovara pretrazi",
     "quick_add_placeholder": "Dodaj zadatak i pritisni Enter",
+    "mark_all_read": "Označi sve kao pročitano",
+    "mark_all_read_failed": "Zadatke nije moguće označiti kao pročitane. Pokušajte ponovno.",
     "tabs": {
       "all": "Svi zadaci",
       "assigned": "Dodijeljeni meni",
@@ -4482,7 +4898,9 @@
       "delete": "Obriši",
       "read_only": "Samo za čitanje",
       "mark_done": "Označi kao gotovo",
-      "mark_open": "Označi kao nije gotovo"
+      "mark_open": "Označi kao nije gotovo",
+      "toggle_failed": "Zadatak nije moguće ažurirati. Pokušajte ponovno.",
+      "delete_failed": "Zadatak nije moguće obrisati. Pokušajte ponovno."
     },
     "colors": {
       "none": "Bez boje",
@@ -4508,6 +4926,7 @@
       "assign_label": "Dodijeli korisnicima",
       "assign_placeholder": "Pretraži korisnike",
       "create_button": "Kreiraj zadatak",
+      "create_failed": "Zadatak nije moguće kreirati. Pokušajte ponovno.",
       "discard_title": "Odbaciti promjene?",
       "discard_message": "Imate nespremljene promjene. Zatvoriti bez spremanja?",
       "discard_confirm": "Odbaci"
@@ -4521,7 +4940,11 @@
       "uploading": "Prenosi se...",
       "failed": "Prijenos nije uspio",
       "none": "Još nema privitaka",
-      "create_first": "Spremi zadatak za dodavanje privitaka"
+      "load_error": "Privitke nije moguće učitati",
+      "create_first": "Spremi zadatak za dodavanje privitaka",
+      "delete_confirm_title": "Obrisati privitak?",
+      "delete_confirm_message": "Datoteka „{{name}}” bit će trajno obrisana.",
+      "delete_failed": "Privitak nije moguće obrisati. Pokušajte ponovno."
     },
     "subtasks": {
       "label": "Podzadaci",
@@ -4552,6 +4975,11 @@
       "comment_placeholder": "Napiši komentar — koristi @ za spominjanje, Ctrl+Enter za slanje",
       "send_comment": "Pošalji",
       "delete_comment": "Obriši",
+      "delete_comment_confirm_title": "Obrisati komentar?",
+      "delete_comment_confirm_message": "Komentar će biti trajno obrisan.",
+      "delete_comment_failed": "Komentar nije moguće obrisati. Pokušajte ponovno.",
+      "comment_failed": "Komentar nije moguće objaviti. Pokušajte ponovno.",
+      "save_failed": "Promjenu nije moguće spremiti. Pokušajte ponovno.",
       "delete_task_confirm_title": "Obrisati zadatak?",
       "delete_task_confirm_message": "Ova radnja se ne može poništiti."
     }
@@ -4588,6 +5016,7 @@
       "uploading": "Učitavanje...",
       "cancel": "Odustani",
       "selected_count": "Odabrano datoteka: {{count}}",
+      "options_load_error": "Popis za odabir nije moguće učitati",
       "errors": {
         "file_required": "Odaberite barem jednu datoteku",
         "file_too_large": "Datoteka prelazi {{limit}} MB",
@@ -4670,6 +5099,7 @@
     "reset_filters": "Resetiraj filtere",
     "empty_title": "Nema zapisnika aktivnosti",
     "empty_description": "Nijedna radnja ne odgovara trenutnim filterima. Pokušajte prilagoditi kriterije pretrage.",
+    "stale_after_error": "Ovi zapisi su iz posljednjeg uspješnog učitavanja, a ne iz trenutnih filtera.",
     "col_timestamp": "Vrijeme",
     "col_user": "Korisnik",
     "col_action": "Akcija",
@@ -4681,6 +5111,7 @@
     "detail_role": "Uloga",
     "detail_entity": "Podaci o entitetu",
     "detail_entity_type": "Vrsta entiteta",
+    "detail_entity_id": "ID",
     "detail_project": "Projekt",
     "detail_metadata": "Detalji",
     "view_entity": "Prikaži entitet",
@@ -4757,6 +5188,7 @@
       "apartment.link_garage": "Garaža povezana sa stanom",
       "apartment.link_repository": "Repozitorij povezan sa stanom",
       "apartment.import_excel": "Stanovi uvezeni iz Excela",
+      "apartment.import_excel_summary": "Uvoz stanova iz Excela završen",
       "garage.import_excel": "Garaže uvezene iz Excela",
       "customer.create": "Kupac kreiran",
       "customer.update": "Kupac ažuriran",
@@ -4832,11 +5264,22 @@
       "land_plot.update": "Zemljišna čestica ažurirana",
       "land_plot.delete": "Zemljišna čestica obrisana",
       "export.payments_csv": "Plaćanja izvezena kao CSV",
+      "export.sales_payments_excel": "Plaćanja prodaje izvezena kao Excel",
+      "export.funding_payments_excel": "Plaćanja financiranja izvezena kao Excel",
+      "export.supervision_payments_excel": "Plaćanja nadzora izvezena kao Excel",
+      "export.supervision_invoices_excel": "Računi nadzora izvezeni kao Excel",
+      "export.retail_sales_payments_excel": "Retail plaćanja izvezena kao Excel",
+      "export.retail_invoices_excel": "Retail računi izvezeni kao Excel",
       "export.debt_excel": "Stanje duga izvezeno kao Excel",
       "export.debt_pdf": "Stanje duga izvezeno kao PDF",
       "export.tic_excel": "TIC izvezen kao Excel",
       "export.tic_pdf": "TIC izvezen kao PDF",
       "export.report_pdf": "Izvještaj izvezen kao PDF",
+      "export.general_pdf": "Opći izvještaj izvezen kao PDF",
+      "export.retail_pdf": "Retail izvještaj izvezen kao PDF",
+      "export.sales_pdf": "Prodajni izvještaj izvezen kao PDF",
+      "export.customer_pdf": "Izvještaj o kupcima izvezen kao PDF",
+      "export.investment_pdf": "Investicijski izvještaj izvezen kao PDF",
       "conversation.create": "Razgovor kreiran",
       "conversation.delete": "Razgovor obrisan",
       "calendar_event.create": "Događaj kalendara kreiran",
@@ -4861,6 +5304,7 @@
       "task.subtask_rename": "preimenovao je podzadatak",
       "task.subtask_reorder": "presložio je podzadatke",
       "task.subtask_delete": "uklonio je podzadatak",
+      "task.acknowledge": "označio je zadatak pregledanim",
       "task.acknowledge_all": "označio je zadatke pregledanima",
       "invoice.bulk_create": "Računi masovno kreirani",
       "payment_notification.dismiss": "Obavijest o plaćanju odbačena",
@@ -4914,6 +5358,13 @@
   "sifrarnici": {
     "title": "Šifrarnici",
     "description": "Povezuje šifre iz 4D Wanda s entitetima u Cognilionu kako bi se uvezeni računi sami klasificirali.",
+    "toast": {
+      "save_success": "Povezivanje spremljeno",
+      "save_error": "Povezivanje nije spremljeno",
+      "clear_success": "Povezivanje uklonjeno",
+      "clear_error": "Povezivanje nije uklonjeno",
+      "targets_error": "Popis entiteta nije moguće učitati"
+    },
     "search_placeholder": "Pretraži po šifri ili nazivu…",
     "only_unmapped": "Samo nepovezani",
     "tab_accounts": "Konta",

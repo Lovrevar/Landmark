@@ -1,6 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingSpinner, PageHeader, ConfirmDialog } from '../../ui'
+import { Alert, Button, LoadingSpinner, PageHeader, ConfirmDialog, ErrorState } from '../../ui'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { RetailInvoiceFormModal } from './forms/RetailInvoiceFormModal'
 import BankInvoiceFormModal from '../Banks/forms/BankInvoiceFormModal'
 import { LandPurchaseFormModal } from './forms/LandPurchaseFormModal'
@@ -48,6 +49,10 @@ const AccountingInvoices: React.FC = () => {
     customerApartments,
     invoiceCategories,
     loading,
+    error,
+    refetch,
+    dismissError,
+    hasLoaded,
     currentPage,
     totalCount,
     filteredTotalCount,
@@ -126,26 +131,6 @@ const AccountingInvoices: React.FC = () => {
     }
   }
 
-  const filteredInvoices = [...invoices].sort((a, b) => {
-    if (!sortField) return 0
-
-    if (sortField === 'due_date') {
-      const dateA = new Date(a.due_date).getTime()
-      const dateB = new Date(b.due_date).getTime()
-      return sortDirection === 'asc' ? dateA - dateB : dateB - dateA
-    }
-
-    if (sortField === 'invoice_number') {
-      const numA = a.invoice_number || ''
-      const numB = b.invoice_number || ''
-      return sortDirection === 'asc'
-        ? numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' })
-        : numB.localeCompare(numA, undefined, { numeric: true, sensitivity: 'base' })
-    }
-
-    return 0
-  })
-
   const handleNewOfficeInvoice = () => {
     setIsOfficeInvoice(true)
     setFormData({
@@ -166,9 +151,15 @@ const AccountingInvoices: React.FC = () => {
     setShowInvoiceModal(true)
   }
 
-  if (loading) {
+  // Full-page spinner only for the first load. A refetch (filter, search, sort, page, save)
+  // keeps the page mounted so the search box keeps focus, and just dims the results.
+  if (loading && !hasLoaded) {
     return <LoadingSpinner message={t('common.loading')} />
   }
+
+  // With no rows loaded the stats read "0 invoices / €0 unpaid", which on the invoice register
+  // is a statement about the company's liabilities. Replace both with the failure.
+  const loadFailedEmpty = !!error && invoices.length === 0
 
   return (
     <div className="space-y-6 max-w-full">
@@ -195,12 +186,25 @@ const AccountingInvoices: React.FC = () => {
         }
       />
 
-      <InvoiceStats
-        filteredTotalCount={filteredTotalCount}
-        filteredUnpaidAmount={filteredUnpaidAmount}
-        totalUnpaidAmount={totalUnpaidAmount}
-        filterDirection={filterDirection}
-      />
+      {error && invoices.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('invoices.toast.refresh_error'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {!loadFailedEmpty && (
+        <InvoiceStats
+          filteredTotalCount={filteredTotalCount}
+          filteredUnpaidAmount={filteredUnpaidAmount}
+          totalUnpaidAmount={totalUnpaidAmount}
+          filterDirection={filterDirection}
+        />
+      )}
 
       <InvoiceFilters
         searchTerm={searchTerm}
@@ -216,6 +220,7 @@ const AccountingInvoices: React.FC = () => {
         onCompanyChange={setFilterCompany}
         onClearFilters={() => {
           setSearchTerm('')
+          setFilterDirection('INCOMING')
           setFilterCategory('ALL')
           setFilterStatus('ALL')
           setFilterCompany('ALL')
@@ -224,30 +229,41 @@ const AccountingInvoices: React.FC = () => {
         }}
       />
 
-      <InvoiceTable
-        invoices={filteredInvoices}
-        visibleColumns={visibleColumns}
-        sortField={sortField}
-        sortDirection={sortDirection}
-        filterDirection={filterDirection}
-        onSort={handleSort}
-        onView={handleViewInvoice}
-        onEdit={handleOpenModal}
-        onDelete={handleDelete}
-        onPayment={handleOpenPaymentModal}
-        getTypeColor={getTypeColor}
-        getTypeLabel={getTypeLabel}
-        getStatusColor={getStatusColor}
-        getSupplierCustomerName={getSupplierCustomerName}
-        isOverdue={isOverdue}
-      />
+      {loadFailedEmpty ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <ErrorState onRetry={() => void refetch()} />
+        </div>
+      ) : (
+      <div
+        aria-busy={loading}
+        className={`space-y-6 transition-opacity ${loading ? 'opacity-60 pointer-events-none' : ''}`}
+      >
+        <InvoiceTable
+          invoices={invoices}
+          visibleColumns={visibleColumns}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          filterDirection={filterDirection}
+          onSort={handleSort}
+          onView={handleViewInvoice}
+          onEdit={handleOpenModal}
+          onDelete={handleDelete}
+          onPayment={handleOpenPaymentModal}
+          getTypeColor={getTypeColor}
+          getTypeLabel={getTypeLabel}
+          getStatusColor={getStatusColor}
+          getSupplierCustomerName={getSupplierCustomerName}
+          isOverdue={isOverdue}
+        />
 
-      <InvoicePagination
-        currentPage={currentPage}
-        pageSize={pageSize}
-        totalCount={totalCount}
-        onPageChange={setCurrentPage}
-      />
+        <InvoicePagination
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={setCurrentPage}
+        />
+      </div>
+      )}
 
       <InvoiceFormModal
         show={showInvoiceModal}

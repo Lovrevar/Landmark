@@ -17,6 +17,12 @@
     "language": "Language",
     "light_mode": "Light theme",
     "dark_mode": "Dark theme",
+    "menu": "Menu",
+    "open_menu": "Open navigation menu",
+    "close_menu": "Close navigation menu",
+    "collapse_sidebar": "Collapse sidebar",
+    "expand_sidebar": "Expand sidebar",
+    "tabs": "Tabs",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -29,6 +35,7 @@
     "save_changes": "Save Changes",
     "details": "Details",
     "refresh": "Refresh",
+    "remove": "Remove",
     "required": "Required",
     "no_results": "No results found",
     "loading": "Loading...",
@@ -54,9 +61,9 @@
     "success": "Success",
     "warning": "Warning",
     "info": "Info",
-    "export_csv": "Export CSV",
     "export_excel": "Export Excel",
     "export_pdf": "Export PDF",
+    "export_error": "Export failed",
     "import": "Import",
     "filter": "Filter",
     "clear": "Clear",
@@ -67,6 +74,8 @@
     "total": "Total",
     "subtotal": "Subtotal",
     "grand_total": "Grand Total",
+    "oib": "OIB",
+    "vat_id": "PDV ID",
     "paid": "Paid",
     "unpaid": "Unpaid",
     "partial": "Partial",
@@ -76,6 +85,7 @@
     "inactive": "Inactive",
     "yes_confirm": "Yes, confirm",
     "no_data": "No data",
+    "no_project": "No project",
     "adding": "Adding...",
     "saving": "Saving...",
     "deleting": "Deleting...",
@@ -100,6 +110,8 @@
     "banks": "Banks",
     "contract": "Contract",
     "contracts": "Contracts",
+    "contract_overrun": "Overrun",
+    "contract_saving": "Saving",
     "document": "Document",
     "documents": "Documents",
     "phase": "Phase",
@@ -124,6 +136,7 @@
     "subcontractor": "Subcontractor",
     "subcontractors": "Subcontractors",
     "total_paid": "Total Paid",
+    "due_today": "Due today",
     "remaining": "Remaining",
     "start_date": "Start Date",
     "end_date": "End Date",
@@ -154,7 +167,40 @@
     "unsaved_changes_badge": "Unsaved changes",
     "save_and_leave": "Save and leave",
     "unsaved_changes_save_failed": "Saving failed. You can try again, leave without saving, or stay on this page.",
-    "hide": "Hide"
+    "hide": "Hide",
+    "load_error_title": "Failed to load",
+    "load_error_description": "The data could not be loaded. This is a loading error, not an absence of data.",
+    "retry": "Try again",
+    "option_name_unavailable": "Name not loaded",
+    "projects_load_error": "The project list could not be loaded",
+    "users_load_error": "The user list could not be loaded",
+    "generated": "Generated:",
+    "pdf": {
+      "confidential": "CONFIDENTIAL",
+      "page_of": "Page {{page}} of {{total}}"
+    },
+    "badge": {
+      "unread_messages_one": "{{count}} unread message",
+      "unread_messages_other": "{{count}} unread messages",
+      "new_tasks_one": "{{count}} new task",
+      "new_tasks_other": "{{count}} new tasks",
+      "pending_invitations_one": "{{count}} invitation awaiting response",
+      "pending_invitations_other": "{{count}} invitations awaiting response"
+    },
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ]
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -182,6 +228,8 @@
     "logout": "Logout",
     "email_required": "Email is required",
     "email_invalid": "Please enter a valid email address",
+    "email_placeholder": "Enter your email",
+    "password_placeholder": "Enter your password",
     "password_required": "Password is required",
     "error_invalid_credentials": "Incorrect email or password",
     "error_email_not_confirmed": "Please confirm your email before signing in",
@@ -250,6 +298,7 @@
     "erp_import": "ERP import"
   },
   "profiles": {
+    "title": "Profile",
     "general": "General",
     "supervision": "Supervision",
     "sales": "Sales",
@@ -290,6 +339,11 @@
     "partial_payment": "Partial Payment",
     "without_contract": "Without Contract"
   },
+  "risk": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
   "payment_method": {
     "virman": "Bank Transfer",
     "gotovina": "Cash",
@@ -319,6 +373,17 @@
     "izlazni_prod": "OUT (SALES)",
     "izlazni_banka": "OUT (BANK)"
   },
+  "invoice_category": {
+    "subcontractor": "Subcontractor",
+    "office": "Office",
+    "apartment": "Apartment",
+    "customer": "Customer",
+    "bank_credit": "Bank Credit",
+    "investor": "Investor",
+    "miscellaneous": "Miscellaneous",
+    "general": "General",
+    "retail": "Retail"
+  },
   "work_log_status": {
     "work_finished": "Work Finished",
     "in_progress": "In Progress",
@@ -336,7 +401,8 @@
     "previous": "Previous",
     "next": "Next",
     "page_info": "Page {{current}} of {{total}}",
-    "showing": "Showing {{from}}-{{to}} of {{total}}"
+    "showing": "Showing {{from}}-{{to}} of {{total}}",
+    "item_label": "items"
   },
   "invoices": {
     "title": "Invoices",
@@ -349,6 +415,9 @@
       "all_types": "All types",
       "all_projects": "All projects",
       "all_suppliers": "All suppliers",
+      "all_companies": "All companies",
+      "incoming": "Incoming",
+      "outgoing": "Outgoing",
       "all_statuses": "All statuses",
       "all_banks": "All banks",
       "date_from": "From date",
@@ -436,7 +505,6 @@
       "base_vat13": "Base (VAT 13%):",
       "base_vat5": "Base (VAT 5%):",
       "base_vat0": "Base (VAT 0%):",
-      "subtotal": "Subtotal:",
       "grand_total": "TOTAL:",
       "error_type_required": "Please select an invoice type",
       "error_company_required": "Please select a company",
@@ -552,7 +620,11 @@
       "base_25": "Base VAT 25% (€)",
       "base_13": "Base VAT 13% (€)",
       "base_5": "Base VAT 5% (€)",
-      "base_0": "Base VAT 0% (€)"
+      "base_0": "Base VAT 0% (€)",
+      "error_load": "The form's data could not be loaded. This is a loading error, not an absence of data.",
+      "error_load_entities": "The supplier and customer lists could not be loaded.",
+      "error_load_contracts": "The contracts could not be loaded.",
+      "error_load_milestones": "The milestones could not be loaded."
     },
     "land_purchase": {
       "title": "Land Purchase",
@@ -598,21 +670,33 @@
       "error_company": "Company is required",
       "error_supplier": "Supplier is required",
       "error_contract": "Contract is required",
-      "error_invoice_name": "Invoice name is required"
+      "error_invoice_name": "Invoice name is required",
+      "error_load": "The form's lists could not be loaded, so they may be incomplete."
+    },
+    "toast": {
+      "delete_error": "Failed to delete the invoice",
+      "refresh_error": "The invoice list could not be refreshed. The figures shown are from the last successful load.",
+      "milestones_load_error": "The contract's milestones could not be loaded"
     },
     "preview": {
       "title": "Invoice Preview:",
       "base_vat25": "Base (VAT 25%):",
       "base_vat13": "Base (VAT 13%):",
       "base_vat5": "Base (VAT 5%):",
-      "base_vat0": "Base (VAT 0%):",
-      "vat25": "VAT 25%:",
-      "vat13": "VAT 13%:",
-      "vat5": "VAT 5%:",
-      "vat0": "VAT 0%:"
-    }
+      "base_vat0": "Base (VAT 0%):"
+    },
+    "vat_rate_line": "VAT {{rate}}%:"
   },
   "payments": {
+    "toast": {
+      "create_success": "Payment recorded",
+      "update_success": "Payment updated",
+      "delete_success": "Payment deleted",
+      "delete_error": "Failed to delete the payment",
+      "load_error_partial": "Part of this page could not be loaded, so the totals may be incomplete.",
+      "allocations_load_error": "The credit's allocations could not be loaded",
+      "invoice_load_error": "The invoice this payment belongs to could not be loaded"
+    },
     "title": "Payments",
     "subtitle": "Manage payments",
     "add": "Add Payment",
@@ -650,11 +734,8 @@
       "income": "INCOME"
     },
     "stats": {
-      "total": "Total Payments",
-      "total_amount": "Total Amount",
-      "this_month": "This Month",
-      "month_amount": "Month Amount",
       "total_count": "Total Payments",
+      "net": "Net",
       "vat_in": "VAT In",
       "vat_out": "VAT Out",
       "total_expense": "Total Expense",
@@ -732,7 +813,9 @@
       "error_bank_account_required": "You must select a bank account",
       "error_credit_required": "You must select a credit",
       "error_credit_allocation_required": "You must select a project for the credit allocation",
-      "error_cesija_company_required": "You must select the paying company (cesija)"
+      "error_cesija_company_required": "You must select the paying company (cesija)",
+      "error_method_mismatch": "This payment method is not allowed for the selected payment source",
+      "error_save": "Error saving payment"
     },
     "no_payments": "No payments",
     "filtered_results": "Filtered Results",
@@ -750,7 +833,7 @@
     "show_columns": "Show Columns",
     "search_placeholder": "Search by invoice number, company, supplier...",
     "shown_count": "Showing: {{filtered}} of {{total}} payments",
-    "filtered_total": "Total filtered amount: ",
+    "filtered_total": "Filtered:",
     "method_wire": "Wire Transfer",
     "method_cash": "Cash",
     "method_check": "Check",
@@ -794,6 +877,10 @@
     }
   },
   "suppliers": {
+    "toast": {
+      "projects_load_error": "The project list could not be loaded",
+      "phases_load_error": "The phase list could not be loaded"
+    },
     "source_label": "Source",
     "source_site": "Site",
     "source_retail": "Retail",
@@ -906,6 +993,9 @@
     }
   },
   "companies": {
+    "toast": {
+      "accounts_load_error": "The company's bank accounts could not be loaded, so the form was not opened"
+    },
     "title": "My Companies",
     "subtitle": "Financial overview of all companies under Landmark",
     "add": "Add New Company",
@@ -986,6 +1076,13 @@
     }
   },
   "banks": {
+    "errors": {
+      "required_fields": "Please fill in all required fields",
+      "credit_required_fields": "Please fill in required fields (Bank, Credit Name, Amount, Start Date)",
+      "credit_add_failed": "Error adding credit facility.",
+      "credit_update_failed": "Error updating credit facility.",
+      "credit_delete_failed": "Error deleting credit facility."
+    },
     "title": "Banks",
     "subtitle": "Manage bank accounts",
     "add": "Add Bank",
@@ -1067,6 +1164,12 @@
       "add_button": "Add Credit",
       "payments_start_label": "Payments start: ",
       "grace_period_after": "After {{months}} month grace period",
+      "frequency_every": {
+        "monthly": "Every month",
+        "quarterly": "Every quarter",
+        "biyearly": "Every 6 months",
+        "yearly": "Every year"
+      },
       "every_freq": "Every {{frequency}}",
       "total_payments_label": "{{count}} total payments",
       "bank_required": "Bank is required",
@@ -1096,7 +1199,7 @@
       "credit": {
         "investment_amount": "Investment Amount",
         "allocated": "Allocated",
-        "paid_out": "Paid Out",
+        "used": "Used",
         "debt": "Debt",
         "unallocated": "Unallocated",
         "allocation_progress": "Allocation Progress",
@@ -1117,6 +1220,8 @@
       }
     },
     "invoice_form": {
+      "error_load_banks": "The investor list could not be loaded",
+      "error_load_form": "Some of the form's lists could not be loaded, so they may be incomplete.",
       "title": "New Bank Invoice",
       "type_label": "Type",
       "type_outflow": "Outflow",
@@ -1196,20 +1301,6 @@
     "title": "Due Date Calendar",
     "subtitle": "Overview of all due dates",
     "budget_save_error": "Error saving budgets",
-    "months": [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December"
-    ],
     "days": [
       "Sun",
       "Mon",
@@ -1382,7 +1473,6 @@
     "table_actions": "Actions",
     "category_retail": "Retail",
     "category_subcontractor": "Subcontractor",
-    "approved_badge": "Approved",
     "hide_button": "Hide",
     "empty": {
       "title": "No invoices to display",
@@ -1414,8 +1504,8 @@
     "stats": {
       "total": "Total Suppliers",
       "total_invoices": "Total Invoices",
-      "total_paid": "Total Paid (excl. VAT)",
-      "remaining": "Remaining (excl. VAT)"
+      "total_paid": "Total Paid",
+      "remaining": "Remaining"
     },
     "search_placeholder": "Search suppliers...",
     "empty": {
@@ -1426,7 +1516,8 @@
     },
     "card": {
       "invoices": "Invoices:",
-      "total_no_vat": "Total (excl. VAT):",
+      "total": "Total (incl. VAT):",
+      "base": "Base:",
       "paid": "Paid:",
       "remaining": "Remaining:",
       "edit": "Edit",
@@ -1483,6 +1574,7 @@
   "accounting_customers": {
     "title": "Customers",
     "description": "Overview of all customers and their invoices",
+    "load_error_partial": "Some customers' figures could not be loaded, so the list and the totals are incomplete.",
     "stats": {
       "total_invoices": "Total Invoices",
       "property_value": "Property Value",
@@ -1639,6 +1731,8 @@
     "view_all": "View all",
     "ongoing": "Ongoing",
     "days": "days",
+    "days_left": "{{count}} days left",
+    "days_overdue": "{{count}} days overdue",
     "timeline": "Timeline",
     "team": "Team",
     "location": "Location",
@@ -1655,6 +1749,17 @@
     "milestone_delete": "Delete milestone",
     "milestone_mark_complete": "Mark as complete",
     "milestone_mark_incomplete": "Mark as incomplete",
+    "milestone_delete_confirm": "Are you sure you want to delete this milestone?",
+    "milestone_update_error": "Error updating milestone.",
+    "milestone_name_required": "Please enter milestone name",
+    "milestone_add_error": "Error adding milestone. Please try again.",
+    "milestone_delete_error": "Error deleting milestone.",
+    "unknown_bank": "Unknown bank",
+    "errors": {
+      "load_failed": "Failed to load project data",
+      "save_failed": "Failed to save project",
+      "delete_failed": "Failed to delete project"
+    },
     "milestone_progress": "Milestone Progress",
     "milestones_empty_title": "No milestones yet",
     "milestones_empty_desc": "Add milestones to track project progress",
@@ -1689,6 +1794,7 @@
       "preview_date_range": "Dates: {{min}} – {{max}}",
       "submit": "Add milestones",
       "no_phase_label": "Other",
+      "add_error": "Error adding milestones from template.",
       "phase_progress": "{{done}}/{{total}} completed",
       "expand_all": "Expand all",
       "collapse_all": "Collapse all",
@@ -1804,6 +1910,25 @@
     "sold": "Sold",
     "total_units": "Total Units",
     "units_selected": "units selected",
+    "link_unit": "Link garage/storage",
+    "errors": {
+      "required_field": "Please fill in required fields",
+      "quantity_range": "Please enter a valid quantity (1–20)"
+    },
+    "toast": {
+      "building_create_error": "The building could not be created. Please try again.",
+      "buildings_create_error": "The buildings could not be created. Please try again.",
+      "building_delete_error": "The building could not be deleted",
+      "unit_create_error": "The unit could not be created. Please try again.",
+      "units_create_error": "The units could not be created. Please try again.",
+      "unit_delete_error": "The unit could not be deleted",
+      "status_update_error": "The status could not be updated",
+      "garage_link_error": "The garage could not be linked",
+      "repository_link_error": "The storage unit could not be linked",
+      "garage_unlink_error": "The garage could not be unlinked",
+      "repository_unlink_error": "The storage unit could not be unlinked",
+      "sale_complete_error": "The sale could not be completed. Please try again."
+    },
     "building_quantity_modal": {
       "title": "Bulk Create Buildings",
       "number_of_buildings": "Number of Buildings to Create",
@@ -1825,7 +1950,18 @@
       "current_total_value": "Current Total Value:",
       "new_total_value": "New Total Value:",
       "total_value_change": "Total Value Change:",
-      "update_units": "Update Units"
+      "update_units": "Update Units",
+      "toast_success": "Updated {{updated}} of {{selected}} selected units (sold units are skipped)",
+      "toast_partial": "Updated {{updated}} of {{selected}} units; {{failed}} could not be updated",
+      "toast_failed": "The prices could not be updated",
+      "amount_placeholder": "Enter amount (e.g., 500)",
+      "error_amount_required": "Please enter a valid adjustment value greater than 0",
+      "error_negative": "This decrease would result in negative prices for some units. Please enter a smaller value.",
+      "preview_add": "{{amount}}/m² will be added to each unit's current price/m²",
+      "preview_subtract": "{{amount}}/m² will be subtracted from each unit's current price/m²",
+      "negative_warning": "Warning: This decrease would result in negative prices for some units. Please reduce the adjustment amount.",
+      "update_warning_one": "Warning: This will update {{count}} unit. This action cannot be undone.",
+      "update_warning_other": "Warning: This will update {{count}} units. This action cannot be undone."
     },
     "bulk_units_modal": {
       "title": "Bulk Create Units",
@@ -1851,17 +1987,49 @@
       "upload_apartment_file": "Upload Apartment Excel File",
       "upload_garages_file": "Upload Garages Excel File",
       "parse_file": "Parse File",
-      "import_apartments": "Import Apartments",
-      "import_garages": "Import Garages",
+      "import_apartments": "Import Apartments ({{count}})",
+      "import_garages": "Import Garages ({{count}})",
       "importing": "Importing...",
       "import_complete": "Import Complete!",
+      "completed_with_errors": "Import completed with errors",
+      "nothing_imported": "Nothing was imported",
+      "import_failed": "The import could not be completed. Please try again.",
+      "errors_heading": "Errors",
+      "more_errors": "…and {{count}} more",
+      "row_error": "Row {{row}}: {{message}}",
+      "garage_error": "Garage {{number}}: {{message}}",
       "successfully_imported": "Successfully Imported",
       "failed_skipped": "Failed/Skipped",
       "garages_linked": "Garages Linked",
       "storages_linked": "Storages Linked",
       "created": "Created",
       "updated": "Updated",
-      "failed": "Failed"
+      "failed": "Failed",
+      "select_file": "Select the \"Tablica stanova\" Excel file (.xlsx or .csv) with apartment data",
+      "select_garages_file": "Select an Excel file with 3 columns: parking oznaka, parking m2, parking cijena",
+      "expected_format": "Expected File Format:",
+      "garages_note": "Garages will be imported to this building. Existing garages with the same number will be updated.",
+      "parse_error": "The Excel file could not be read. Please check the file format.",
+      "summary": "Import Summary",
+      "total_rows": "Total rows:",
+      "valid_rows": "Valid rows:",
+      "invalid_rows": "Invalid rows:",
+      "total_garages": "Total garages:",
+      "new_count": "New:",
+      "update_existing": "Update existing:",
+      "will_update": "Will update",
+      "new_label": "New",
+      "errors_found": "Errors Found",
+      "row": "Row",
+      "no_building": "(no building)",
+      "no_number": "(no number)",
+      "parking": "Parking",
+      "garage_number": "Garage Number",
+      "error_missing_number": "Missing apartment number",
+      "error_missing_size": "Missing size (m²)",
+      "error_missing_price": "Missing price",
+      "error_missing_building": "Missing building",
+      "error_building_not_found": "Building \"{{name}}\" not found"
     },
     "filter": {
       "all": "All",
@@ -1918,6 +2086,19 @@
   "apartments": {
     "title": "Apartments",
     "subtitle": "Manage apartments",
+    "toast": {
+      "create_success": "Apartment added",
+      "bulk_create_success": "Apartments added",
+      "update_success": "Apartment saved",
+      "delete_success": "Apartment deleted",
+      "create_error": "Failed to add the apartment",
+      "update_error": "Failed to save the apartment",
+      "delete_error": "Failed to delete the apartment",
+      "payments_load_error": "Failed to load the payment history",
+      "link_units_error": "The unit links could not be saved"
+    },
+    "confirm_delete_message": "Are you sure you want to delete {{label}}? This action cannot be undone.",
+    "confirm_delete_fallback": "this apartment",
     "item_label": "apartments",
     "add": "Add Apartment",
     "bulk_create": "Bulk Create",
@@ -1953,7 +2134,22 @@
       "select_building": "Select Building",
       "starting_number": "Starting Number",
       "quantity": "Quantity",
-      "create": "Create Apartments"
+      "create": "Create Apartments",
+      "size_m2": "Size (m²)",
+      "bulk_preview_one": "This will create {{count}} apartment, from {{from}} to {{to}}",
+      "bulk_preview_other": "This will create {{count}} apartments, from {{from}} to {{to}}",
+      "errors": {
+        "project": "Project is required",
+        "building": "Building is required",
+        "number": "Apartment number is required",
+        "start_number": "Starting number is required",
+        "quantity": "Quantity is required",
+        "floor": "Floor is required",
+        "size": "Size is required",
+        "saleable_area": "Saleable area is required",
+        "price": "Price is required",
+        "status": "Status is required"
+      }
     },
     "statuses": {
       "available": "Available",
@@ -1966,6 +2162,7 @@
       "buyer_info": "Buyer Information",
       "contract": "Contract",
       "saleable_area": "Saleable Area",
+      "open_area": "Open Area (Površina otvoreno):",
       "open_area_coef": "Open Area w/ Coef.:",
       "payment_type": "Payment type:",
       "presale_date": "Datum potpisa predugovora:",
@@ -1994,7 +2191,8 @@
       "remaining": "Remaining",
       "progress": "Overall Progress",
       "all_payments": "All Payments",
-      "no_payments": "No payments recorded yet"
+      "no_payments": "No payments recorded yet",
+      "type": "Payment type"
     },
     "contracted": {
       "title": "Contracted",
@@ -2002,64 +2200,13 @@
       "payment_type": "Payment Type",
       "select": "— Select —",
       "credit": "Credit",
-      "installments": "Installments"
-    },
-    "bulk_price_update": {
-      "title": "Bulk Price Update",
-      "selected": "Selected:",
-      "units_text": "units",
-      "selection_summary": "Selection Summary",
-      "selected_units": "Selected Units:",
-      "current_price_range": "Current Price Range/m²:",
-      "adjustment_type": "Adjustment Type",
-      "increase": "Increase Price",
-      "decrease": "Decrease Price",
-      "adjustment_amount": "Adjustment Amount (€)",
-      "amount_placeholder": "Enter amount (e.g., 500)",
-      "price_preview": "Price Preview",
-      "will_add": "/m² will be added to",
-      "will_subtract": "/m² will be subtracted from",
-      "each_unit": "each unit's",
-      "current_price": "current price/m²",
-      "new_price_range": "New Price Range/m²:",
-      "current_total": "Current Total Value:",
-      "new_total": "New Total Value:",
-      "total_change": "Total Value Change:",
-      "negative_warning": "Warning: This decrease would result in negative prices for some units. Please reduce the adjustment amount.",
-      "update_warning": "Warning: This will update {{count}} units. This action cannot be undone.",
-      "update": "Update"
-    },
-    "import_modal": {
-      "title": "Import Apartments from Excel",
-      "upload_heading": "Upload Apartment Excel File",
-      "select_file": "Select the \"Tablica stanova\" Excel file (.xlsx or .csv) with apartment data",
-      "expected_format": "Expected File Format:",
-      "parse": "Parse File",
-      "summary": "Import Summary",
-      "total_rows": "Total rows:",
-      "valid_rows": "Valid rows:",
-      "invalid_rows": "Invalid rows:",
-      "errors_found": "Errors Found",
-      "import_complete": "Import Complete!",
-      "successfully_imported": "Successfully Imported",
-      "failed_skipped": "Failed/Skipped",
-      "garages_linked": "Garages Linked",
-      "storages_linked": "Storages Linked",
-      "import": "Import",
-      "importing": "Importing..."
-    },
-    "import_garages_modal": {
-      "title": "Import Garages from Excel",
-      "upload_heading": "Upload Garages Excel File",
-      "total": "Total garages:",
-      "new_count": "New:",
-      "update_existing": "Update existing:",
-      "will_update": "Will update",
-      "new_label": "New",
-      "import_complete": "Import Complete!",
-      "created": "Created",
-      "updated": "Updated",
-      "failed": "Failed"
+      "installments": "Installments",
+      "kapara": "Kapara 10% (EUR)",
+      "rate1": "1. rata AB konstrukcija 30% (EUR)",
+      "rate2": "2. rata postava stolarije 20% (EUR)",
+      "rate3": "3. rata obrtnički radovi 20% (EUR)",
+      "rate4": "4. rata uporabna 20% (EUR)",
+      "credit_amount": "Kredit etažiranje 90% (EUR)"
     }
   },
   "sale_form": {
@@ -2087,6 +2234,13 @@
     "remaining": "Remaining:",
     "monthly": "Monthly Payment:",
     "notes": "Notes",
+    "notes_placeholder": "Additional sale notes...",
+    "errors": {
+      "full_name_required": "Full name is required",
+      "email_required": "Email is required",
+      "customer_required": "Please select a customer",
+      "sale_price_required": "Sale price is required"
+    },
     "complete_sale": "Complete Sale",
     "complete_sale_btn": "Complete Sale",
     "create_new_customer": "Create New Customer",
@@ -2099,6 +2253,12 @@
     "edit": "Edit Customer",
     "update": "Update Customer",
     "search": "Search customers...",
+    "select_all_count": "Select all ({{count}})",
+    "selected_count": "{{count}} selected",
+    "selected_of_total": "{{selected}} of {{total}} selected",
+    "email_selected": "Email Selected ({{count}})",
+    "email_all": "Email All ({{count}})",
+    "no_emails": "No email addresses found for the selected customers.",
     "tabs": {
       "leads": "Leads",
       "interested": "Interested",
@@ -2126,7 +2286,9 @@
       "preferred_floor": "Preferred Floor",
       "preferred_location": "Preferred Location",
       "preference_notes": "Preference Notes",
-      "general_notes": "General Notes"
+      "preference_notes_placeholder": "Additional notes about customer preferences",
+      "general_notes": "General Notes",
+      "general_notes_placeholder": "Any additional notes about this customer"
     },
     "card": {
       "purchased_units": "Purchased Units",
@@ -2138,6 +2300,9 @@
       "notes": "Notes:",
       "backed_out_reason": "Backed Out Reason",
       "update_contact": "Update Contact Date",
+      "select_customer": "Select {{name}}",
+      "view_details": "View details",
+      "open_details": "View details for {{name}}",
       "total_paid": "Total Paid:",
       "remaining": "Remaining:",
       "total_value": "Total Value:"
@@ -2184,7 +2349,8 @@
       "bank": "Bank",
       "filtered_results": "Filtered Results",
       "payments_totaling": "payments totaling",
-      "project": "Project"
+      "project": "Project",
+      "load_failed": "The payments could not be loaded"
     },
     "errors": {
       "email_exists": "A customer with this email already exists.",
@@ -2192,7 +2358,9 @@
       "first_name_required": "First name is required.",
       "last_name_required": "Last name is required.",
       "email_required": "Email is required.",
-      "phone_required": "Phone is required."
+      "phone_required": "Phone is required.",
+      "delete_failed": "The customer could not be deleted.",
+      "update_contact_failed": "The contact date could not be updated."
     }
   },
   "supervision": {
@@ -2200,14 +2368,17 @@
     "subtitle": "Construction site management",
     "site_management": {
       "title": "Site Management",
+      "recalculate_budgets_failed": "The phase budgets could not be recalculated. The figures shown may be out of date.",
+      "comments": {
+        "add_success": "Comment added",
+        "add_failed": "The comment could not be saved"
+      },
       "phases": "Phases",
       "setup_phases": "Setup Phases",
       "edit_phases": "Edit Phases",
       "phase_setup": {
         "title_create": "Setup Project Phases",
         "title_edit": "Edit Project Phases",
-        "distribute": "Distribute",
-        "budget_across": "budget across construction phases",
         "num_phases": "Number of Phases",
         "phase_name": "Phase Name",
         "budget_allocated": "Budget Allocated (€)",
@@ -2224,7 +2395,27 @@
         "create": "Create Phases",
         "update": "Update Phases",
         "default_phase_name": "Phase {{n}}",
-        "classification_hint": "This sets the phase budget. Distribute it across cost classifications on the phase card."
+        "confirm_remove_message": "Saving will delete these phases: {{names}}. Phases that still have contracts or work logs cannot be deleted.",
+        "errors": {
+          "has_dependents": "These phases still have contracts or work logs and cannot be deleted: {{detail}}. Move or delete those first.",
+          "dependent_item": "{{name}} ({{contracts}} contracts, {{workLogs}} work logs)",
+          "create_failed": "Error creating project phases.",
+          "update_failed": "Error updating project phases."
+        }
+      },
+      "delete_phase": {
+        "confirm_message": "Are you sure you want to delete phase \"{{name}}\"?",
+        "has_dependents": "Phase \"{{name}}\" has {{contracts}} contracts and {{workLogs}} work logs. Move them to another phase or delete them first.",
+        "check_failed": "Could not check what is linked to this phase. Please try again.",
+        "delete_failed": "Error deleting phase. Please try again."
+      },
+      "delete_subcontractor": {
+        "delete_failed": "Error deleting subcontractor."
+      },
+      "payments_moved": {
+        "create": "Payment creation has moved to the Accounting module. Go to Accounting → Invoices to create and pay invoices.",
+        "update": "Payment updates have moved to the Accounting module. Go to Accounting → Payments to edit payments.",
+        "delete": "Payment deletion has moved to the Accounting module. Go to Accounting → Payments to delete payments."
       },
       "edit_phase": {
         "title": "Edit Phase",
@@ -2238,7 +2429,8 @@
         "status": "Status",
         "update": "Update Phase",
         "errors": {
-          "name_required": "Phase name is required"
+          "name_required": "Phase name is required",
+          "update_failed": "Error updating phase. Please try again."
         }
       },
       "projects_grid": {
@@ -2322,7 +2514,7 @@
       },
       "milestone_list": {
         "title": "Payment Milestones",
-        "contract_base": "Contract (Base)",
+        "contract_gross": "Contract (incl. VAT)",
         "add": "Add Milestone",
         "total_allocated": "Total Allocated",
         "milestones": "Milestones",
@@ -2528,7 +2720,8 @@
       "method": "Method:",
       "ref": "Ref:",
       "created": "Created",
-      "managed_in_accounting": "Managed in Accounting"
+      "managed_in_accounting": "Managed in Accounting",
+      "load_failed": "The payment history could not be loaded"
     },
     "invoices_modal": {
       "title": "Invoices -",
@@ -2557,9 +2750,8 @@
       "vat": "VAT",
       "total": "Total",
       "contract_docs": "Contract Documents",
-      "contracted_base": "Contracted (base)",
-      "paid_base": "Paid (base)",
-      "gain_loss": "Gain/Loss",
+      "contracted_base": "Contracted",
+      "paid_base": "Paid",
       "no_contract_heading": "No Formal Contract",
       "total_paid": "Total Paid",
       "accounting_note": "Costs are tracked through invoices in the Accounting module",
@@ -2603,21 +2795,23 @@
       "total": "Total",
       "deadline": "Deadline",
       "payment_info": "Payment Info (Read-only)",
-      "total_paid_base": "Total Paid (Base):",
+      "total_paid_gross": "Total Paid (incl. VAT):",
       "remaining": "Remaining:",
       "progress": "Progress:",
-      "progress_note": "Progress is automatically calculated based on payments (base amounts)",
+      "progress_note": "Progress is automatically calculated based on payments (amounts incl. VAT)",
       "contract_docs": "Contract Documents",
       "existing_docs": "Existing Documents",
       "add_docs": "Add New Documents",
       "upload": "Upload",
       "doc_singular": "document",
       "doc_plural": "documents",
-      "mark_completed": "Mark as Completed",
+      "document_upload_failed": "Changes were saved, but the contract documents failed to upload. Please try attaching them again.",
       "errors": {
         "phase_required": "Phase is required",
         "name_required": "Name is required",
-        "job_required": "Job description is required"
+        "job_required": "Job description is required",
+        "load_failed": "Could not load the contract details. Close the form and try again.",
+        "update_failed": "Error updating subcontractor."
       },
       "cost_classification": "Cost classification",
       "cost_classification_help": "Which cost line this contract belongs to.",
@@ -2673,6 +2867,9 @@
       },
       "tooltip_approved": "Approved",
       "tooltip_approve": "Click to approve",
+      "errors": {
+        "approval_failed": "Failed to update invoice approval status"
+      },
       "pagination": {
         "item_label": "invoices"
       }
@@ -2716,7 +2913,6 @@
         "blocker_details": "Blocker Details",
         "issue_details": "Issue Details",
         "additional_notes": "Additional Notes",
-        "color_label": "Color (for dashboard)",
         "desc_placeholder": "Describe the work performed or observed...",
         "blocker_placeholder": "Describe what is blocking the work...",
         "issue_placeholder": "Describe the quality issue...",
@@ -2739,7 +2935,12 @@
         "phase": "Phase is required",
         "contract": "Contract is required",
         "date": "Date is required",
-        "description": "Work description is required"
+        "description": "Work description is required",
+        "load_phases_failed": "The phases for this project could not be loaded",
+        "load_contracts_failed": "The contracts for this phase could not be loaded",
+        "contract_and_description": "Please select a contract and provide work description",
+        "save_failed": "Failed to save work log",
+        "delete_failed": "Failed to delete work log"
       },
       "history": "Work Log History",
       "contract_label": "Contract:",
@@ -2778,6 +2979,7 @@
       "active_label": "Active",
       "system_badge": "System",
       "system_hint": "System classifications cannot be renamed or deleted.",
+      "delete_confirm_message": "Delete the cost classification \"{{name}}\"? This cannot be undone.",
       "save": "Save",
       "errors": {
         "name_required": "Name is required",
@@ -2861,6 +3063,7 @@
     "total_revenue": "Total Revenue",
     "confirm_delete_phase": "Are you sure you want to delete this phase?",
     "forecasted_budget": "Forecasted Budget",
+    "remaining_budget": "Remaining budget",
     "sales_revenue_label": "Sales Revenue",
     "contracted_amount": "Contracted Amount",
     "paid_out": "Paid Out",
@@ -2888,7 +3091,6 @@
     "contract_value_label": "Contract:",
     "paid_label": "Paid:",
     "remaining_label": "Remaining:",
-    "gain_loss_label": "Gain/Loss:",
     "total_paid_label": "Total paid:",
     "total_debts_label": "Total debts:",
     "add_supplier_btn": "Add Supplier",
@@ -3068,10 +3270,7 @@
       "reference_label": "Reference:",
       "created_label": "Created",
       "no_date": "Date not set",
-      "managed_in_accounting": "Managed in Accounting",
-      "status_paid": "Paid",
-      "status_partial": "Partial",
-      "status_unpaid": "Unpaid"
+      "managed_in_accounting": "Managed in Accounting"
     },
     "invoices_modal": {
       "title": "Invoices - {{contract}}",
@@ -3114,6 +3313,11 @@
     "title": "Funding",
     "subtitle": "Manage funding",
     "equity": "EQUITY",
+    "credit_status": {
+      "active": "Active",
+      "paid": "Repaid",
+      "defaulted": "Defaulted"
+    },
     "investment_amount": "Investment Amount",
     "allocated": "Allocated",
     "unallocated": "Unallocated",
@@ -3139,6 +3343,12 @@
       "error_delete_credit_linked": "Cannot delete this credit facility — other records still reference it.",
       "error_delete_bank": "Error deleting investor.",
       "error_delete_bank_linked": "Cannot delete this investor — other records still reference it.",
+      "error_bank_name_required": "Please enter the bank name",
+      "error_add_bank": "Error adding bank. Please try again.",
+      "error_update_bank": "Error updating bank.",
+      "error_credit_fields_required": "Please fill in the required fields (Bank, Credit Name, Amount, Start Date)",
+      "error_add_credit": "Error adding credit facility.",
+      "error_update_credit": "Error updating credit facility.",
       "investor_form": {
         "title_add": "Add New Bank",
         "title_edit": "Edit Bank",
@@ -3154,14 +3364,16 @@
         "update_button": "Update Bank"
       },
       "card": {
-        "credit_utilized": "Credit Utilized",
+        "credit_total": "Total",
+        "credit_used": "Used",
         "outstanding": "Outstanding",
         "credit_utilization": "Credit Utilization",
         "active_credits": "Active Credits"
       },
       "detail_modal": {
         "credit_facilities_heading": "Credit Facilities",
-        "credit_utilized_label": "Credit Utilized:",
+        "credit_total_label": "Total:",
+        "credit_used_label": "Used:",
         "outstanding_label": "Outstanding:",
         "credit_overview_heading": "Credit Overview",
         "active_credits_label": "Active Credits:",
@@ -3183,6 +3395,7 @@
         "maturity_date_label": "Maturity Date",
         "repayment_progress_label": "Repayment Progress",
         "maturing_soon": "MATURING SOON",
+        "past_maturity": "PAST DUE",
         "company_label": "Company:",
         "na": "N/A"
       }
@@ -3195,10 +3408,6 @@
       "no_investments_description": "Add the first investment via investor management",
       "unnamed_credit": "Unnamed Credit",
       "unknown_bank": "Unknown Bank",
-      "investment_usage_label": "Investment Usage",
-      "used_percent": "Used {{percent}}%",
-      "allocated_percent": "Allocated {{percent}}%",
-      "over_allocated": "Over-allocated by €{{amount}}",
       "investment_purpose_btn": "Investment Purpose",
       "expand_credit_title": "Expand credit",
       "collapse_credit_title": "Collapse credit",
@@ -3224,15 +3433,13 @@
       },
       "confirm_delete_allocation_title": "Confirm Deletion",
       "confirm_delete_allocation_message": "Are you sure you want to delete this purpose?",
-      "dug_label": "Debt",
-      "iskorišteno_label": "Used",
-      "nealocirano_label": "Unallocated"
+      "allocation_delete_success": "Investment purpose deleted",
+      "allocation_delete_failed": "The investment purpose could not be deleted"
     },
     "allocation_row": {
       "opex_label": "OPEX (No project)",
       "refinancing_prefix": "Refinancing - ",
       "allocated_label": "Allocated:",
-      "paid_out_label": "Paid Out:",
       "used_label": "Used:",
       "available_label": "Available:",
       "company_badge": "COMPANY",
@@ -3287,7 +3494,6 @@
       "view_details_button": "View Details",
       "equity_investment_label": "Equity Investment",
       "debt_financing_label": "Debt Financing",
-      "expected_roi_label": "Expected ROI",
       "weighted_average": "Weighted average",
       "funding_status_label": "Funding Status",
       "of_budget": "of budget",
@@ -3298,6 +3504,8 @@
       "no_financing_sources": "No financing sources",
       "more_funders": "+{{count}} more",
       "risk_label": "Risk",
+      "empty_title": "No investment projects",
+      "empty_description": "Projects with recorded funding will appear here.",
       "modal": {
         "budget_label": "Budget:",
         "overview_tab": "Overview",
@@ -3319,13 +3527,16 @@
         "equity_ratio_label": "Equity Ratio:",
         "debt_ratio_label": "Debt Ratio:",
         "return_analysis_heading": "Return Analysis",
-        "expected_roi_label": "Expected ROI:",
         "investment_period_label": "Investment Period:",
         "risk_level_label": "Risk Level:",
         "timeline_heading": "Timeline",
         "start_date_label": "Start Date:",
         "target_end_label": "Target End:",
         "days_remaining_label": "Days Remaining:",
+        "days_left_one": "{{count}} day",
+        "days_left_other": "{{count}} days",
+        "days_overdue_one": "{{count}} day overdue",
+        "days_overdue_other": "{{count}} days overdue",
         "tbd": "TBD",
         "years": "years",
         "na": "N/A",
@@ -3345,11 +3556,14 @@
         "funds_depleted": "Funds fully depleted",
         "high_utilization": "High utilization rate ({{rate}}%)",
         "expiring_in_days": "Usage period expires in {{days}} days",
+        "expired_days_ago_one": "Usage period expired {{count}} day ago",
+        "expired_days_ago_other": "Usage period expired {{count}} days ago",
         "total_committed_footer": "Total Committed",
         "total_spent_footer": "Total Spent",
         "total_available_footer": "Total Available",
         "bank_badge": "BANK",
-        "expiring_soon_badge": "EXPIRING SOON"
+        "expiring_soon_badge": "EXPIRING SOON",
+        "expired_badge": "EXPIRED"
       }
     },
     "payments": {
@@ -3360,7 +3574,6 @@
       "filter_all": "All Payments",
       "filter_recent": "Recent (7 days)",
       "filter_large": "Large (> €50k)",
-      "export_csv_button": "Export CSV",
       "start_date_label": "Start Date",
       "end_date_label": "End Date",
       "no_payments_title": "No payments found",
@@ -3372,19 +3585,16 @@
         "project_col": "Project",
         "category_col": "Category",
         "amount_col": "Amount",
-        "notes_col": "Notes",
-        "bank_badge": "Bank"
+        "notes_col": "Notes"
       },
       "stats": {
-        "total_payments_label": "Total Payments",
-        "bank_payments_subtitle": "{{count}} bank credit payments",
-        "total_amount_label": "Total Amount",
-        "this_month_label": "This Month",
-        "payments_subtitle": "payments",
-        "month_amount_label": "Month Amount"
+        "inflow_label": "Total disbursements",
+        "outflow_label": "Total repayments and fees",
+        "net_label": "Net",
+        "this_month_label": "This Month"
       },
       "filtered_results_label": "Filtered Results",
-      "filtered_summary": "{{count}} payments totaling {{total}}"
+      "filtered_summary": "{{count}} payments · disbursements {{inflow}} · repayments and fees {{outflow}} · net {{net}}"
     },
     "equity_form": {
       "title": "Add New Investment",
@@ -3420,7 +3630,13 @@
       "notes_label": "Notes",
       "notes_placeholder": "Additional notes about this investment...",
       "cancel_button": "Cancel",
-      "submit_button": "Add Investment"
+      "submit_button": "Add Investment",
+      "error_fields_required": "Please fill in the required fields (Bank, Amount, Investment Date)",
+      "error_custom_schedule": "Custom payment schedules are not supported yet. Choose Monthly or Yearly.",
+      "add_success": "Equity investment added",
+      "add_error": "Error adding equity investment.",
+      "preview_incomplete": "Enter amount, dates, and IRR to calculate",
+      "preview_invalid_range": "Invalid date range"
     }
   },
   "tic": {
@@ -3433,6 +3649,7 @@
     "save_button": "Save",
     "export_excel_button": "Export Excel",
     "export_pdf_button": "Export PDF",
+    "export_error": "Export failed",
     "loading": "Loading TIC data...",
     "no_project_title": "No project selected",
     "no_project_description": "Select a project to view the TIC cost structure",
@@ -3521,11 +3738,6 @@
     }
   },
   "dashboards": {
-    "common": {
-      "load_error_title": "Failed to load dashboard",
-      "load_error_description": "The data could not be loaded. This is a loading error, not an absence of data.",
-      "retry": "Try again"
-    },
     "director": {
       "title": "Director Dashboard",
       "welcome": "Welcome",
@@ -3547,7 +3759,7 @@
       "active_contracts": "active contracts",
       "completed_contracts": "Completed Contracts",
       "finished_work": "Finished work",
-      "overdue_tasks": "Overdue Tasks",
+      "overdue_milestones": "Overdue Payment Milestones",
       "need_attention": "Need attention",
       "critical_deadlines": "Critical Deadlines",
       "within_7_days": "Within 7 days",
@@ -3579,6 +3791,35 @@
       "receivables": "Receivables",
       "payables": "Payables",
       "critical_alerts": "Critical Alerts ({{count}})",
+      "alerts": {
+        "milestone_fallback": "Milestone",
+        "credit_fallback": "Credit",
+        "overdue_milestone": {
+          "title": "Overdue Payment Milestone",
+          "message_one": "{{name}} is {{count}} day overdue",
+          "message_other": "{{name}} is {{count}} days overdue"
+        },
+        "urgent_deadline": {
+          "title": "Urgent Deadline",
+          "message_today": "{{name}} is due today",
+          "message_one": "{{name}} is due in {{count}} day",
+          "message_other": "{{name}} is due in {{count}} days"
+        },
+        "credit_maturity": {
+          "title": "Credit Maturity",
+          "message_today": "{{name}} ({{amount}}) matures today",
+          "message_one": "{{name}} ({{amount}}) matures in {{count}} day",
+          "message_other": "{{name}} ({{amount}}) matures in {{count}} days"
+        },
+        "high_leverage": {
+          "title": "High Leverage",
+          "message": "Debt-to-equity ratio is {{ratio}}x (recommended < 2x)"
+        },
+        "low_sales_rate": {
+          "title": "Low Sales Rate",
+          "message": "Only {{rate}}% of units sold. Consider a sales strategy review."
+        }
+      },
       "projects_portfolio": "Projects Portfolio",
       "total_projects": "Total Projects",
       "project_col": "Project",
@@ -3590,7 +3831,8 @@
       "completion_col": "Completion",
       "no_projects": "No projects available",
       "credit_utilization": "Credit Utilization",
-      "total_credit_facilities": "Total Credit"
+      "total_credit_facilities": "Total Credit",
+      "revenue_amount": "{{amount}} revenue"
     },
     "accounting": {
       "title": "Accounting Dashboard",
@@ -3643,7 +3885,11 @@
       "per_unit": "Per unit",
       "active_leads": "Active Leads",
       "of_customers": "Of {{total}} customers",
-      "monthly_target": "Monthly Target Progress",
+      "sold_of_total": "{{sold}} of {{total}}",
+      "monthly_collected": "Collected this month",
+      "monthly_collected_sub": "Payments on apartment invoices (VAT included)",
+      "trend_row_one": "{{count}} sale • {{revenue}}",
+      "trend_row_other": "{{count}} sales • {{revenue}}",
       "six_month_trend": "6-Month Sales Trend",
       "inventory_status": "Inventory Status",
       "sold": "Sold",
@@ -3689,6 +3935,10 @@
       "weekly_logs": "Weekly Logs",
       "no_logs": "No logs",
       "na": "N/A",
+      "days_over_short_one": "{{count}}d over",
+      "days_over_short_other": "{{count}}d over",
+      "days_left_short_one": "{{count}}d left",
+      "days_left_short_other": "{{count}}d left",
       "overdue_tasks": "Overdue Tasks ({{count}})",
       "days_overdue": "{{days}} days overdue",
       "complete": "complete",
@@ -3709,6 +3959,15 @@
       "loading": "Loading investment dashboard...",
       "export_pdf": "Export to PDF",
       "pdf_error": "Failed to generate PDF report",
+      "pdf_title": "INVESTMENT REPORT",
+      "pdf_distribution_by_project": "INVESTMENT DISTRIBUTION BY PROJECT",
+      "pdf_allocations_by_project": "INVESTMENT ALLOCATIONS BY PROJECT",
+      "pdf_credit_details": "ACTIVE INVESTMENTS DETAILS",
+      "pdf_portfolio_projects": "PORTFOLIO PROJECTS",
+      "pdf_allocations": "Allocations:",
+      "pdf_total_projects": "Total Projects:",
+      "pdf_more_projects": "... and {{count}} more projects",
+      "high_utilization": "{{count}} investment(s) with high utilization (>80%)",
       "portfolio_value": "Portfolio Value",
       "outstanding_debt": "Outstanding Debt",
       "available_investments": "Available Investments",
@@ -3743,38 +4002,56 @@
       "usage_expiring": "Usage Expiring",
       "investment_amount": "Investment Amount",
       "recent_activity": "Recent Activity",
-      "no_recent_activity": "No recent activity"
+      "no_recent_activity": "No recent activity",
+      "unknown_company": "Unknown company",
+      "days_short": "{{count}}d",
+      "activity": {
+        "credit": {
+          "title": "Credit facility approved",
+          "description": "{{company}} - {{amount}} {{creditType}}",
+          "description_with_project": "{{company}} - {{amount}} {{creditType}} for {{project}}"
+        },
+        "maturity": {
+          "title": "Upcoming loan maturity",
+          "description_one": "{{name}} matures in {{count}} day",
+          "description_other": "{{name}} matures in {{count}} days"
+        },
+        "usage_expiring": {
+          "title": "Credit usage period expiring",
+          "description_one": "{{name}} usage expires in {{count}} day",
+          "description_other": "{{name}} usage expires in {{count}} days"
+        }
+      }
     },
     "retail": {
       "title": "Retail Dashboard",
-      "subtitle": "Pregled poslovanja",
-      "loading": "Učitavanje...",
-      "projects": "Projekti",
-      "active_projects": "Aktivnih projekata",
-      "customers": "Kupci",
-      "active_customers": "Aktivnih kupaca",
-      "invested": "Investirano",
-      "invested_sub": "Razvoj i gradnja (s PDV)",
-      "revenue": "Prihod",
-      "total_sales": "Ukupne prodaje",
-      "collection": "Naplata",
-      "paid": "Plaćeno:",
-      "to_collect": "Za naplatu:",
-      "total_invoiced": "Ukupno fakturirano:",
+      "subtitle": "Business overview",
+      "loading": "Loading retail dashboard...",
+      "projects": "Projects",
+      "active_projects": "{{count}} active",
+      "customers": "Customers",
+      "total_customers_sub": "Total customers",
+      "invested": "Invested",
+      "invested_sub": "Development and construction (excl. VAT)",
+      "revenue": "Revenue",
+      "total_sales": "Total sales",
+      "collection": "Collection",
+      "collected": "Collected:",
+      "to_collect": "To collect:",
+      "total_invoiced": "Total invoiced:",
       "profit": "Profit",
-      "income": "Naplata:",
-      "costs": "Troškovi:",
-      "averages": "Prosječno",
-      "cost_per_project": "Trošak/projekt:",
-      "revenue_per_project": "Prihod/projekt:",
-      "per_customer": "Po kupcu:",
-      "late_payments": "Kašnjenja u plaćanju ({{count}})",
-      "contract": "Ugovor",
-      "due": "Rok:",
-      "overdue_days_one": "Kasni {{count}} dan",
-      "overdue_days_other": "Kasni {{count}} dana",
-      "to_collect_label": "za naplatu",
-      "more_delays": "+ još {{count}} kašnjenja"
+      "costs": "Costs:",
+      "averages": "Averages",
+      "cost_per_project": "Cost/project:",
+      "revenue_per_project": "Revenue/project:",
+      "per_customer": "Per customer:",
+      "late_payments": "Late payments ({{count}})",
+      "contract": "Contract",
+      "due": "Due:",
+      "overdue_days_one": "{{count}} day overdue",
+      "overdue_days_other": "{{count}} days overdue",
+      "to_collect_label": "to collect",
+      "more_delays": "+{{count}} more overdue"
     }
   },
   "reports": {
@@ -3898,7 +4175,62 @@
       "risk_assessment": "RISK ASSESSMENT",
       "insights": "EXECUTIVE INSIGHTS & RECOMMENDATIONS",
       "top_projects": "TOP PERFORMING PROJECTS:",
-      "recommendations": "STRATEGIC RECOMMENDATIONS:"
+      "recommendations": "STRATEGIC RECOMMENDATIONS:",
+      "summary_portfolio": "Portfolio: {{total}} projects ({{active}} active, {{completed}} completed)",
+      "summary_financial": "Financial: {{revenue}} revenue, {{expenses}} expenses, {{profit}} profit ({{margin}}% margin)",
+      "summary_capital": "Capital Structure: {{equity}} equity, {{debt}} debt, {{ratio}} D/E ratio",
+      "summary_sales": "Sales: {{sold}}/{{total}} units sold ({{rate}}%), {{transactions}} transactions",
+      "summary_construction": "Construction: {{contracts}} contracts, {{subcontractors}} subcontractors, {{logs}} work logs recorded",
+      "units_value": "{{sold}}/{{total}} sold ({{rate}}%)",
+      "phases_value": "{{done}}/{{total}} done",
+      "funding_value": "{{equity}} equity, {{debt}} debt",
+      "top_project_line": "{{name}}: {{revenue}} revenue, {{rate}}% sales rate",
+      "risks": {
+        "slow_sales": {
+          "type": "SLOW SALES",
+          "description_one": "{{count}} project with a sales rate below 40%",
+          "description_other": "{{count}} projects with a sales rate below 40%"
+        }
+      },
+      "recs": {
+        "marketing": "Intensify marketing efforts to accelerate sales velocity",
+        "inventory": "Significant inventory available - consider pricing strategies",
+        "budgets": "Continue monitoring project budgets and timeline adherence",
+        "partners": "Maintain strong relationships with financing partners"
+      },
+      "pdf": {
+        "period": "Report Period: {{period}}",
+        "cover_projects_one": "{{count}} project",
+        "cover_projects_other": "{{count}} projects",
+        "cover_revenue": "{{value}} revenue",
+        "cover_roi": "{{value}}% ROI",
+        "footer": "Confidential Executive Report",
+        "portfolio_analytics": "PORTFOLIO ANALYTICS",
+        "equity": "Equity",
+        "debt": "Debt",
+        "chart_capital_structure": "Capital Structure",
+        "chart_units_status": "Units Status",
+        "chart_net_cash_flow": "Monthly Net Cash Flow (€K)",
+        "chart_top_projects": "Top Projects by Revenue (€M)",
+        "chart_profit_margin": "Profit Margin (%)",
+        "sales_overview": "Sales Overview",
+        "sales_progress": "Sales Progress",
+        "construction_progress": "Construction Progress",
+        "financial_structure": "Financial Structure",
+        "construction_overview": "Construction & Supervision Overview",
+        "invoice_payment_summary": "Invoice & Payment Summary",
+        "paid_value": "Paid Value:",
+        "pending_value": "Pending Value:",
+        "overdue_value": "Overdue Value:",
+        "invoice_status_distribution": "Invoice Status Distribution",
+        "tic_cost_management": "TIC COST MANAGEMENT",
+        "planned_investment": "Planned Investment:",
+        "projects_with_plan": "Projects with a Plan:",
+        "projects_without_plan": "Projects without a Plan:",
+        "cash_flow_trend": "CASH FLOW TREND",
+        "project_portfolio": "PROJECT PORTFOLIO",
+        "project_performance": "Project Performance Overview"
+      }
     },
     "sales": {
       "title": "Sales Reports",
@@ -3915,6 +4247,12 @@
       "end_date": "End Date",
       "generating": "Generating report...",
       "pdf_error": "Error generating PDF report. Please try again.",
+      "report_period": "Report Period:",
+      "apartment_details": "Apartment Details",
+      "customer_overview": "Customer Overview",
+      "customer_details": "Customer Details",
+      "no_email": "No email",
+      "no_phone": "No phone",
       "project_overview": "Project Sales Overview",
       "location": "Location:",
       "start_date_label": "Start Date:",
@@ -3961,19 +4299,47 @@
       "customer_highlights": "Customer Highlights",
       "sales_opportunities": "Sales Opportunities",
       "focus_converting": "Focus on converting interested customers to buyers",
-      "targeted_campaigns": "Develop targeted campaigns for lead segments"
+      "targeted_campaigns": "Develop targeted campaigns for lead segments",
+      "highlight_performance": "{{rating}} sales performance at {{rate}}%",
+      "highlight_revenue": "Generated {{amount}} in total revenue",
+      "highlight_avg_price": "Average unit price of {{amount}}",
+      "highlight_total_customers_one": "{{count}} customer in the database",
+      "highlight_total_customers_other": "{{count}} customers in the database",
+      "highlight_conversions_one": "{{count}} successful conversion to buyer",
+      "highlight_conversions_other": "{{count}} successful conversions to buyers",
+      "highlight_conversion_rate": "{{rate}}% conversion rate",
+      "highlight_avg_purchase": "{{amount}} average purchase value",
+      "opportunity_interested_one": "{{count}} interested customer to nurture",
+      "opportunity_interested_other": "{{count}} interested customers to nurture",
+      "opportunity_leads_one": "{{count}} new lead to follow up",
+      "opportunity_leads_other": "{{count}} new leads to follow up"
     },
     "retail": {
       "title": "Retail Reports",
       "loading": "Loading reports...",
-      "error": "Error loading data.",
-      "retry": "Try again",
       "refresh": "Refresh",
       "export_pdf": "PDF Report",
       "tab_overview": "Overview",
       "tab_projects": "Projects",
       "tab_sales": "Sales",
       "tab_costs": "Costs",
+      "pdf": {
+        "title": "Retail Report",
+        "footer": "Retail Report – Confidential",
+        "portfolio_overview": "Portfolio – Overview",
+        "total_projects": "Total Projects",
+        "land_area_one": "{{count}} plot, {{area}} m²",
+        "land_area_other": "{{count}} plots, {{area}} m²",
+        "financial_overview": "Financial Overview",
+        "land_investment": "Land Investment",
+        "development_cost": "Development Costs",
+        "construction_cost": "Construction Costs",
+        "total_costs": "TOTAL COSTS",
+        "contracted_revenue": "Contracted Revenue",
+        "profit_total": "PROFIT",
+        "projects_overview": "Projects – Overview",
+        "top_suppliers": "Top Suppliers"
+      },
       "description": "{{projects}} projects · {{customers}} customers · {{suppliers}} suppliers"
     },
     "portfolio": {
@@ -3991,7 +4357,7 @@
       "contracted": "Contracted",
       "collected": "Collected",
       "outstanding": "Outstanding",
-      "avg_price_m2": "Average price/m2",
+      "avg_price_m2": "Average price/m²",
       "profitability": "Profitability",
       "profit": "Profit",
       "overdue_invoices_title": "{{count}} invoice(s) overdue",
@@ -4224,6 +4590,9 @@
     }
   },
   "budget_control": {
+    "errors": {
+      "load_data_failed": "Failed to load data"
+    },
     "title": "Budget Control",
     "subtitle": "EVM performance overview across project phases",
     "project": "Project",
@@ -4238,6 +4607,14 @@
     "of_committed": "of committed",
     "under_budget": "Under Budget",
     "over_budget": "Over Budget",
+    "cpi_good": "Under budget ✓",
+    "cpi_warning": "Slightly over budget",
+    "cpi_bad": "Over budget ✗",
+    "spi_good": "On schedule ✓",
+    "spi_warning": "Slightly behind",
+    "spi_bad": "Behind schedule ✗",
+    "no_schedule": "No phase has both a start and an end date",
+    "no_forecast": "No forecast: CPI is 0 (cost with no earned value)",
     "budget_chart_title": "Budget Control",
     "evm_indices_title": "EVM Performance Indices",
     "evm_metrics_title": "EVM Performance Metrics",
@@ -4275,6 +4652,7 @@
     "members": "Members ({{count}})",
     "file_too_large": "File exceeds 25 MB limit",
     "send_failed": "Send failed. Try again.",
+    "create_failed": "The conversation could not be created. Try again.",
     "time_now": "now",
     "today": "Today",
     "yesterday": "Yesterday",
@@ -4295,6 +4673,12 @@
     "loading": "Loading...",
     "more_events": "+{{count}} more",
     "events_for_day": "{{count}} event(s)",
+    "load_error": {
+      "events": "The events could not be loaded, so the calendar shown is incomplete.",
+      "tasks": "The tasks could not be loaded, so they are not shown on the calendar.",
+      "task_filter_blocked": "The participant filter cannot be applied to tasks without the user list, so tasks are hidden.",
+      "busy_blocks": "The team's busy hours could not be loaded"
+    },
     "view_switcher": {
       "label": "Calendar view",
       "day": "Day",
@@ -4348,6 +4732,8 @@
     },
     "modal": {
       "new_title": "New event",
+      "edit_title": "Edit event",
+      "series_timing_readonly": "To change the timing of a repeating event, delete it and create a new one.",
       "title_label": "Title",
       "description_label": "Description",
       "location_label": "Location",
@@ -4360,6 +4746,7 @@
       "participants_label": "Participants",
       "participant_placeholder": "Search and add participants...",
       "participant_no_results": "No matching users",
+      "participants_load_error": "The user list could not be loaded. The participants already saved are left unchanged.",
       "project_label": "Project",
       "project_placeholder": "Link to a project (optional)",
       "busy_label": "Busy",
@@ -4405,7 +4792,8 @@
       },
       "create_button": "Create event",
       "saving": "Saving...",
-      "error_generic": "Couldn't create the event. Please try again."
+      "error_generic": "Couldn't create the event. Please try again.",
+      "error_save": "Couldn't save the event. Please try again."
     },
     "detail": {
       "private_badge": "Private",
@@ -4427,7 +4815,9 @@
       "delete_single": "Delete this occurrence",
       "delete_series": "Delete series",
       "delete_single_title": "Delete this occurrence?",
-      "delete_single_message": "Only this occurrence will be removed. Other occurrences remain."
+      "delete_single_message": "Only this occurrence will be removed. Other occurrences remain.",
+      "delete_failed": "Couldn't delete the event. Please try again.",
+      "respond_failed": "Couldn't save your response. Please try again."
     },
     "response": {
       "accepted": "Accepted",
@@ -4456,7 +4846,12 @@
     "new_task": "New task",
     "loading": "Loading...",
     "empty": "No tasks in this category",
+    "empty_hidden_completed": "Every task in this category is done",
+    "empty_hidden_completed_hint": "Turn on \"Show completed\" to see them.",
+    "empty_search": "No task matches your search",
     "quick_add_placeholder": "Add a task and press Enter",
+    "mark_all_read": "Mark all as read",
+    "mark_all_read_failed": "Couldn't mark the tasks as read. Please try again.",
     "tabs": {
       "all": "All tasks",
       "assigned": "Assigned to me",
@@ -4477,7 +4872,9 @@
       "delete": "Delete",
       "read_only": "Read only",
       "mark_done": "Mark as done",
-      "mark_open": "Mark as not done"
+      "mark_open": "Mark as not done",
+      "toggle_failed": "Couldn't update the task. Please try again.",
+      "delete_failed": "Couldn't delete the task. Please try again."
     },
     "colors": {
       "none": "No colour",
@@ -4503,6 +4900,7 @@
       "assign_label": "Assign to users",
       "assign_placeholder": "Search users",
       "create_button": "Create task",
+      "create_failed": "Couldn't create the task. Please try again.",
       "discard_title": "Discard changes?",
       "discard_message": "You have unsaved changes. Close without saving?",
       "discard_confirm": "Discard"
@@ -4516,7 +4914,11 @@
       "uploading": "Uploading...",
       "failed": "Upload failed",
       "none": "No attachments yet",
-      "create_first": "Save the task to add attachments"
+      "load_error": "The attachments could not be loaded",
+      "create_first": "Save the task to add attachments",
+      "delete_confirm_title": "Delete attachment?",
+      "delete_confirm_message": "The file “{{name}}” will be permanently deleted.",
+      "delete_failed": "Couldn't delete the attachment. Please try again."
     },
     "subtasks": {
       "label": "Subtasks",
@@ -4547,6 +4949,11 @@
       "comment_placeholder": "Write a comment — use @ to mention, Ctrl+Enter to send",
       "send_comment": "Send",
       "delete_comment": "Delete",
+      "delete_comment_confirm_title": "Delete comment?",
+      "delete_comment_confirm_message": "The comment will be permanently deleted.",
+      "delete_comment_failed": "Couldn't delete the comment. Please try again.",
+      "comment_failed": "Couldn't post the comment. Please try again.",
+      "save_failed": "Couldn't save the change. Please try again.",
       "delete_task_confirm_title": "Delete task?",
       "delete_task_confirm_message": "This action cannot be undone."
     }
@@ -4583,6 +4990,7 @@
       "uploading": "Uploading...",
       "cancel": "Cancel",
       "selected_count": "Selected files: {{count}}",
+      "options_load_error": "The list to choose from could not be loaded",
       "errors": {
         "file_required": "Please select at least one file",
         "file_too_large": "File exceeds {{limit}} MB",
@@ -4665,6 +5073,7 @@
     "reset_filters": "Reset filters",
     "empty_title": "No activity logs found",
     "empty_description": "No actions match the current filters. Try adjusting your search criteria.",
+    "stale_after_error": "These entries are from the last successful read, not from the current filters.",
     "col_timestamp": "Timestamp",
     "col_user": "User",
     "col_action": "Action",
@@ -4676,6 +5085,7 @@
     "detail_role": "Role",
     "detail_entity": "Entity Info",
     "detail_entity_type": "Entity type",
+    "detail_entity_id": "ID",
     "detail_project": "Project",
     "detail_metadata": "Details",
     "view_entity": "View Entity",
@@ -4752,6 +5162,7 @@
       "apartment.link_garage": "Garage linked to apartment",
       "apartment.link_repository": "Storage linked to apartment",
       "apartment.import_excel": "Apartments imported from Excel",
+      "apartment.import_excel_summary": "Apartment Excel import finished",
       "garage.import_excel": "Garages imported from Excel",
       "customer.create": "Customer created",
       "customer.update": "Customer updated",
@@ -4827,11 +5238,22 @@
       "land_plot.update": "Land plot updated",
       "land_plot.delete": "Land plot deleted",
       "export.payments_csv": "Payments exported as CSV",
+      "export.sales_payments_excel": "Sales payments exported as Excel",
+      "export.funding_payments_excel": "Funding payments exported as Excel",
+      "export.supervision_payments_excel": "Supervision payments exported as Excel",
+      "export.supervision_invoices_excel": "Supervision invoices exported as Excel",
+      "export.retail_sales_payments_excel": "Retail payments exported as Excel",
+      "export.retail_invoices_excel": "Retail invoices exported as Excel",
       "export.debt_excel": "Debt exported as Excel",
       "export.debt_pdf": "Debt exported as PDF",
       "export.tic_excel": "TIC exported as Excel",
       "export.tic_pdf": "TIC exported as PDF",
       "export.report_pdf": "Report exported as PDF",
+      "export.general_pdf": "General report exported as PDF",
+      "export.retail_pdf": "Retail report exported as PDF",
+      "export.sales_pdf": "Sales report exported as PDF",
+      "export.customer_pdf": "Customer report exported as PDF",
+      "export.investment_pdf": "Investment report exported as PDF",
       "conversation.create": "Conversation created",
       "conversation.delete": "Conversation deleted",
       "calendar_event.create": "Calendar event created",
@@ -4856,6 +5278,7 @@
       "task.subtask_rename": "renamed a subtask",
       "task.subtask_reorder": "reordered subtasks",
       "task.subtask_delete": "removed a subtask",
+      "task.acknowledge": "acknowledged the task",
       "task.acknowledge_all": "acknowledged tasks",
       "invoice.bulk_create": "Invoices bulk created",
       "payment_notification.dismiss": "Payment notification dismissed",
@@ -4909,6 +5332,13 @@
   "sifrarnici": {
     "title": "Šifrarnici",
     "description": "Maps 4D Wand codes onto Cognilion entities so imported invoices classify themselves.",
+    "toast": {
+      "save_success": "Mapping saved",
+      "save_error": "The mapping was not saved",
+      "clear_success": "Mapping cleared",
+      "clear_error": "The mapping was not cleared",
+      "targets_error": "The entity list could not be loaded"
+    },
     "search_placeholder": "Search by code or name…",
     "only_unmapped": "Only unmapped",
     "tab_accounts": "Konta",

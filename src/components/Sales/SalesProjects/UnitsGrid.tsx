@@ -10,8 +10,11 @@ import {
   OnSellUnitCallback,
   OnLinkApartmentCallback
 } from './types'
+import { formatEuro, formatEuroRounded } from '../../../utils/formatters'
+import { UNIT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDisplay'
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { Button, Badge } from '../../ui'
+import { filterUnitsByStatus, getSelectableUnitIds, getUnitsOfType } from './unitFilters'
 
 interface UnitsGridProps {
   building: BuildingWithUnits
@@ -33,10 +36,6 @@ interface UnitsGridProps {
   onSelectAllUnits: () => void
   onDeselectAllUnits: () => void
   onConfigurePrice: () => void
-}
-
-const getUnitStatusBadgeVariant = (status: string): 'green' | 'yellow' | 'blue' => {
-  return status === 'Sold' ? 'green' : status === 'Reserved' ? 'yellow' : 'blue'
 }
 
 export const UnitsGrid: React.FC<UnitsGridProps> = ({
@@ -71,21 +70,15 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
     return t('sales_projects.units.repositories')
   }
 
-  const filteredUnits = useMemo(() => {
-    let units: { id: string; status: string; [key: string]: unknown }[] = []
-    if (activeUnitType === 'apartment') units = building.apartments
-    else if (activeUnitType === 'garage') units = building.garages
-    else if (activeUnitType === 'repository') units = building.repositories
-
-    if (filterStatus === 'all') return units
-    return units.filter(unit => {
-      if (filterStatus === 'available') return unit.status === 'Available'
-      if (filterStatus === 'reserved') return unit.status === 'Reserved'
-      if (filterStatus === 'sold') return unit.status === 'Sold'
-      return true
-    })
+  const { filteredUnits, selectableUnitIds } = useMemo(() => {
+    const units: { id: string; status: string; [key: string]: unknown }[] = getUnitsOfType(building, activeUnitType)
+    return {
+      filteredUnits: filterUnitsByStatus(units, filterStatus),
+      // Sold units are never bulk-repriced, so "Select all" skips them
+      selectableUnitIds: getSelectableUnitIds(units, filterStatus)
+    }
   }, [activeUnitType, filterStatus, building])
-  const allFilteredSelected = filteredUnits.length > 0 && filteredUnits.every(u => selectedUnitIds.includes(u.id))
+  const allFilteredSelected = selectableUnitIds.length > 0 && selectableUnitIds.every(id => selectedUnitIds.includes(id))
 
   return (
     <div>
@@ -167,7 +160,8 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
         <div className="flex items-center space-x-2">
           <button
             onClick={allFilteredSelected ? onDeselectAllUnits : onSelectAllUnits}
-            className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-700 transition-colors duration-200"
+            disabled={selectableUnitIds.length === 0}
+            className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {allFilteredSelected ? <Square className="w-4 h-4 mr-2" /> : <CheckSquare className="w-4 h-4 mr-2" />}
             {allFilteredSelected ? t('sales_projects.deselect_all') : t('sales_projects.select_all')}
@@ -205,7 +199,8 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => onToggleUnitSelection(unit.id)}
-                    className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors duration-200"
+                    disabled={unit.status === 'Sold' && !isSelected}
+                    className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                   >
                     {isSelected ? (
                       <CheckSquare className="w-5 h-5 text-blue-600" />
@@ -214,8 +209,8 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     )}
                   </button>
                   <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white">Unit {unit.number}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Floor {unit.floor}</p>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{t('common.unit')} {unit.number}</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {unit.floor}</p>
                   </div>
                 </div>
                 <div className="flex space-x-1">
@@ -223,7 +218,8 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     <button
                       onClick={() => onLinkApartment(unit as unknown as Apartment)}
                       className="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-600"
-                      title="Link garage/repository"
+                      title={t('sales_projects.link_unit')}
+                      aria-label={t('sales_projects.link_unit')}
                     >
                       <LinkIcon className="w-4 h-4" />
                     </button>
@@ -271,23 +267,23 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.sale_price')}:</span>
-                      <span className="text-sm font-bold text-green-600">€{unit.sale_info.sale_price.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-green-600">{formatEuro(unit.sale_info.sale_price)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.down_payment')}:</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">€{unit.sale_info.down_payment.toLocaleString('hr-HR')}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{formatEuro(unit.sale_info.down_payment)}</span>
                     </div>
                     {unit.sale_info.monthly_payment > 0 && (
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.monthly')}:</span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">€{unit.sale_info.monthly_payment.toLocaleString()}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{formatEuro(unit.sale_info.monthly_payment)}</span>
                       </div>
                     )}
                     <div className="mt-2">
                       <div className="flex justify-between mb-1">
                         <span className="text-xs text-gray-500 dark:text-gray-400">{t('sales_projects.unit_detail.payment_progress')}</span>
                         <span className="text-xs font-medium text-gray-900 dark:text-white">
-                          €{unit.sale_info.total_paid.toLocaleString()} / €{totalPackagePrice.toLocaleString('hr-HR')}
+                          {formatEuroRounded(unit.sale_info.total_paid)} / {formatEuroRounded(totalPackagePrice)}
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
@@ -341,19 +337,21 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
               <div className="border-t dark:border-gray-700 pt-3">
                 <div className="flex items-center justify-between">
-                  <Badge variant={getUnitStatusBadgeVariant(unit.status)}>
-                    {unit.status}
+                  {/* Label only: the comparisons below write `unit.status` straight back to the
+                      `status` CHECK column, so the value itself stays English. */}
+                  <Badge variant={statusVariant(UNIT_STATUS, unit.status)}>
+                    {statusLabel(UNIT_STATUS, unit.status, t)}
                   </Badge>
 
                   {unit.status !== 'Sold' && (
                     <div className="flex space-x-1">
                       {unit.status === 'Available' && (
-                        <Button size="sm" variant="ghost" className="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/40" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Reserved')}>
+                        <Button size="sm" variant="warning" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Reserved')}>
                           {t('sales_projects.unit_detail.reserve')}
                         </Button>
                       )}
                       {unit.status === 'Reserved' && (
-                        <Button size="sm" variant="ghost" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Available')}>
+                        <Button size="sm" variant="info" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Available')}>
                           {t('sales_projects.unit_detail.available')}
                         </Button>
                       )}

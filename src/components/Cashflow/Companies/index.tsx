@@ -4,13 +4,17 @@ import { Building2, Plus, DollarSign, TrendingUp, TrendingDown, Eye, Edit, Trash
 import { useCompanies } from './hooks/useCompanies'
 import CompanyFormModal from './forms/CompanyFormModal'
 import CompanyDetailsModal from './modals/CompanyDetailsModal'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ConfirmDialog } from '../../ui'
+import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, ConfirmDialog } from '../../ui'
+import { toErrorMessage } from '../../../lib/errorMessage'
 
 const AccountingCompanies: React.FC = () => {
   const { t } = useTranslation()
   const {
     companies,
     loading,
+    error,
+    refetch,
+    dismissError,
     searchTerm,
     setSearchTerm,
     showAddModal,
@@ -53,12 +57,23 @@ const AccountingCompanies: React.FC = () => {
         }
       />
 
+      {error && companies.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {!(error && companies.length === 0) && (
       <StatGrid columns={4}>
         <StatCard label={t('companies.stats.total_count')} value={companies.length} icon={Building2} />
         <StatCard label={t('companies.stats.total_balance')} value={`€${totalBalance.toLocaleString('hr-HR')}`} icon={DollarSign} color={totalBalance >= 0 ? 'green' : 'red'} />
         <StatCard label={t('companies.stats.total_revenue')} value={`€${totalRevenue.toLocaleString('hr-HR')}`} icon={TrendingUp} color="blue" />
         <StatCard label={t('companies.stats.profit_loss')} value={`€${totalProfit.toLocaleString('hr-HR')}`} icon={totalProfit >= 0 ? TrendingUp : TrendingDown} color={totalProfit >= 0 ? 'green' : 'red'} />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <SearchInput
@@ -69,7 +84,9 @@ const AccountingCompanies: React.FC = () => {
         />
       </div>
 
-      {filteredCompanies.length === 0 ? (
+      {error && companies.length === 0 ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : filteredCompanies.length === 0 ? (
         <EmptyState
           icon={Building2}
           title={searchTerm ? t('common.no_results') : t('companies.no_companies')}
@@ -85,7 +102,7 @@ const AccountingCompanies: React.FC = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{company.name}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">OIB: {company.oib}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.oib')}: {company.oib}</p>
                 </div>
                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                   <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -149,8 +166,8 @@ const AccountingCompanies: React.FC = () => {
                 <Button variant="primary" size="sm" icon={Eye} className="flex-1" onClick={() => handleViewDetails(company)}>
                   {t('common.details')}
                 </Button>
-                <Button variant="ghost" size="icon-md" icon={Edit} onClick={() => handleOpenAddModal(company)} title="Uredi" />
-                <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => handleDelete(company.id)} title="Obriši" />
+                <Button variant="ghost" size="icon-md" icon={Edit} onClick={() => handleOpenAddModal(company)} title={t('common.edit')} />
+                <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => handleDelete(company.id)} title={t('common.delete')} />
               </div>
             </div>
           ))}

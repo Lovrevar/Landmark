@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatDate, formatDateTime } from '../../../utils/formatters'
 import { Check, X } from 'lucide-react'
-import { format } from 'date-fns'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Invoice } from './types'
 import { Modal, Button } from '../../ui'
@@ -25,7 +25,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
   getSupplierCustomerName,
   isOverdue
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   if (!invoice) return null
 
   return (
@@ -79,13 +79,13 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('invoices.detail.issue_date')}</span>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                  {formatDate(invoice.issue_date, i18n.language)}
                 </p>
               </div>
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('invoices.detail.due_date')}</span>
                 <p className={`text-sm font-medium ${isOverdue(invoice.due_date, invoice.status) ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
-                  {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                  {formatDate(invoice.due_date, i18n.language)}
                   {isOverdue(invoice.due_date, invoice.status) && (
                     <span className="ml-2 text-xs">{t('invoices.detail.overdue')}</span>
                   )}
@@ -94,7 +94,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('invoices.detail.created_at')}</span>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {format(new Date(invoice.created_at), 'dd.MM.yyyy HH:mm')}
+                  {formatDateTime(new Date(invoice.created_at), i18n.language)}
                 </p>
               </div>
             </div>
@@ -190,7 +190,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded space-y-2">
                   {invoice.base_amount_1 > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-700 dark:text-gray-200">25% PDV:</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-200">{t('invoices.vat_rate_line', { rate: 25 })}</span>
                       <div className="text-right">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_1)}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">PDV: &euro;{formatCurrency(invoice.vat_amount_1 || invoice.base_amount_1 * 0.25)}</p>
@@ -199,7 +199,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                   )}
                   {invoice.base_amount_2 > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-700 dark:text-gray-200">13% PDV:</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-200">{t('invoices.vat_rate_line', { rate: 13 })}</span>
                       <div className="text-right">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_2)}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">PDV: &euro;{formatCurrency(invoice.vat_amount_2 || invoice.base_amount_2 * 0.13)}</p>
@@ -208,7 +208,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                   )}
                   {invoice.base_amount_4 > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-700 dark:text-gray-200">5% PDV:</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-200">{t('invoices.vat_rate_line', { rate: 5 })}</span>
                       <div className="text-right">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_4)}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">PDV: &euro;{formatCurrency(invoice.vat_amount_4 || invoice.base_amount_4 * 0.05)}</p>
@@ -217,7 +217,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
                   )}
                   {invoice.base_amount_3 > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-700 dark:text-gray-200">0% PDV:</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-200">{t('invoices.vat_rate_line', { rate: 0 })}</span>
                       <div className="text-right">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{t('invoices.detail.base_label')} &euro;{formatCurrency(invoice.base_amount_3)}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">PDV: &euro;0.00</p>
