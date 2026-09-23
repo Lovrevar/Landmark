@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCachedData } from '../../lib/useCachedData'
+import { useAsyncExport } from '../../hooks/useAsyncExport'
 import type { Project } from '../../lib/supabase'
 import {
   TrendingUp,
@@ -19,12 +20,10 @@ import {
 } from './services/salesReportService'
 import { generateSalesReportPDF } from './pdf/salesReportPdf'
 import type { ProjectSalesReport, CustomerReport } from './types'
-import { useToast } from '../../contexts/ToastContext'
 import { formatEuro, formatEuroCompact, formatDate, formatMonthYear } from '../../utils/formatters'
 import { PROJECT_STATUS, statusLabel, statusVariant } from '../../utils/statusDisplay'
 
 const SalesReports: React.FC = () => {
-  const toast = useToast()
   const { t, i18n } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('')
@@ -83,15 +82,17 @@ const SalesReports: React.FC = () => {
     }
   }
 
-  const handleGeneratePDF = async () => {
+  // One export path for the whole app: `useAsyncExport` owns the try/catch, the console line and
+  // the toast, so a font that failed to load surfaces as a message instead of a silent no-op.
+  const { exporting, run: runExportPDF } = useAsyncExport(
+    () => generateSalesReportPDF(reportType, projectReport, customerReport, dateRange),
+    'reports.sales.pdf_error'
+  )
+
+  const handleGeneratePDF = () => {
     if (reportType === 'project' && !projectReport) return
     if (reportType === 'customer' && !customerReport) return
-    try {
-      await generateSalesReportPDF(reportType, projectReport, customerReport, dateRange)
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      toast.error(t('reports.sales.pdf_error'))
-    }
+    runExportPDF()
   }
 
   if (loading) {
@@ -105,7 +106,7 @@ const SalesReports: React.FC = () => {
         description={t('reports.sales.description')}
         actions={
           (projectReport || customerReport) ? (
-            <Button icon={Download} onClick={handleGeneratePDF}>
+            <Button icon={Download} onClick={handleGeneratePDF} disabled={exporting}>
               {t('reports.sales.export_report')}
             </Button>
           ) : undefined

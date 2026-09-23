@@ -4,7 +4,7 @@ import hr from '../locales/hr/translation.json'
 import en from '../locales/en/translation.json'
 import {
   PROJECT_STATUS, CONTRACT_STATUS, RETAIL_CONTRACT_STATUS, RETAIL_PHASE_STATUS,
-  UNIT_STATUS, MILESTONE_STATUS, RETAIL_MILESTONE_STATUS, RISK_LEVEL,
+  UNIT_STATUS, CUSTOMER_STATUS, MILESTONE_STATUS, RETAIL_MILESTONE_STATUS, RISK_LEVEL,
   statusVariant, statusLabelKey, statusLabel, type StatusMap,
 } from './statusDisplay'
 
@@ -25,6 +25,7 @@ const VOCABULARIES: [string, StatusMap, string[]][] = [
   ['retail_contracts.status', RETAIL_CONTRACT_STATUS, ['Active', 'Completed', 'Cancelled']],
   ['retail_project_phases.status', RETAIL_PHASE_STATUS, ['Pending', 'In Progress', 'Completed']],
   ['apartments.status', UNIT_STATUS, ['Available', 'Reserved', 'Sold']],
+  ['customers.status', CUSTOMER_STATUS, ['buyer', 'interested', 'lead']],
   ['subcontractor_milestones.status', MILESTONE_STATUS, ['pending', 'completed', 'paid']],
   ['retail_contract_milestones.status', RETAIL_MILESTONE_STATUS, ['pending', 'paid', 'cancelled']],
   ['risk level (computed)', RISK_LEVEL, ['Low', 'Medium', 'High']],
@@ -66,6 +67,12 @@ describe('statusLabel', () => {
   it('translates through the key rather than the raw value', () => {
     expect(statusLabel(PROJECT_STATUS, 'In Progress', t)).toBe('t:status.in_progress')
     expect(statusLabel(RISK_LEVEL, 'High', t)).toBe('t:risk.high')
+  })
+
+  it('names a customer status instead of shouting the database value', () => {
+    // The sales report PDF printed `customer.status.toUpperCase()`, so a Croatian document
+    // carried "LEAD" — and upper-casing is locale-sensitive besides.
+    expect(statusLabel(CUSTOMER_STATUS, 'lead', t)).toBe('t:customer_status.lead')
   })
 
   it('reads a partly paid milestone as partial, not as completed work', () => {

@@ -77,7 +77,11 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### investmentReportPdf.ts
 - `generateInvestmentReportPDF(financialSummary, bankCredits, projects)` — generates a multi-page jsPDF investment report with donut chart, bar chart, credit details, and project summaries
-- **Depends on:** jsPDF, src/types/investment.ts
+- **Croatian, whatever the UI language**, via `exportT()` + `EXPORT_LANGUAGE` (`src/utils/exportLanguage.ts`); it takes no `t` argument, so the caller cannot make it English by accident. Dates go through `formatDate` / `formatDateTime`, money through `pdfMoney` (`Reports/pdf/pdfText.ts`), and the face is the embedded Noto Sans (`loadUnicodeFont`, which **throws** rather than emitting a document in a font that cannot spell it)
+- Three bugs it shipped until September 2026, all of them invisible until the data hit them: a `⚠` (U+26A0) opened the maturity warning, which WinAnsi cannot encode, so the report's most prominent line rendered as noise every time it fired — it is now a worded `common.warning` prefix; `Available: €…` had no U+2212 guard, so an over-utilised credit (an expected state — the bar below it clamps at 100%) garbled its line; and the "and N more projects" line asked for `italic`, a face `pdfFont` does not register, which jsPDF answers by silently falling back to WinAnsi Times-Italic. **Only `'normal'` and `'bold'` exist** — asking for anything else does not throw, it reintroduces the whole bug
+- Credit types render through `getCreditTypeLabelKey` and project status through `PROJECT_STATUS`, rather than `credit_type.replace(/_/g, ' ')` (which printed `LINE OF_CREDIT`) and the raw English column value
+- Logs `export.investment_pdf` at `severity: 'low'` after the save
+- **Depends on:** jsPDF, src/types/investment.ts, `utils/pdfFont`, `utils/exportLanguage`, `Reports/pdf/pdfText`
 
 ---
 

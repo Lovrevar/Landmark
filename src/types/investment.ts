@@ -46,6 +46,12 @@ export interface BankCredit {
   usage_expiration_date: string | null
   status: string
   credit_type: string
+  /**
+   * `'junior' | 'senior'`, and the reason a line of credit has two labels rather than one
+   * (`getCreditTypeLabelKey`). The dashboard service selects `*`, so the column has always been
+   * present in this data — it was simply missing from the type.
+   */
+  credit_seniority?: string | null
   company?: Company
   project?: Project
   credit_allocations?: CreditAllocation[]

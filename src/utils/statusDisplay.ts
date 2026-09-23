@@ -68,6 +68,19 @@ export const UNIT_STATUS: StatusMap = {
   'Sold': { labelKey: 'status.sold', variant: 'green' },
 }
 
+/**
+ * `customers.status` (baseline_schema.sql:3283).
+ *
+ * The colours are the ones `Sales/Customers/CategoryTabs.tsx` already gives the three tabs
+ * (amber lead → blue interested → green buyer), so a customer reads the same in the CRM and in
+ * the sales report PDF — which used to print the raw value in capitals ("LEAD").
+ */
+export const CUSTOMER_STATUS: StatusMap = {
+  lead: { labelKey: 'customer_status.lead', variant: 'yellow' },
+  interested: { labelKey: 'customer_status.interested', variant: 'blue' },
+  buyer: { labelKey: 'customer_status.buyer', variant: 'green' },
+}
+
 /** `subcontractor_milestones.status` (baseline_schema.sql:4007) — `completed` means partly paid. */
 export const MILESTONE_STATUS: StatusMap = {
   pending: { labelKey: 'status.pending', variant: 'gray' },
