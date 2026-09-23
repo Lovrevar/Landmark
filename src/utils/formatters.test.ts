@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   formatFileSize, formatEuropean, formatEuro, formatEuroRounded, formatEuroCompact,
-  formatDate, formatDateTime, formatMonthYear, formatDayMonth,
+  formatDate, formatDateTime, formatMonthYear, formatDayMonth, formatMonthShort,
 } from './formatters'
 
 describe('formatFileSize', () => {
@@ -183,6 +183,14 @@ describe('formatMonthYear', () => {
   })
 })
 
+describe('formatMonthShort', () => {
+  it('abbreviates the month for a chart axis', () => {
+    expect(formatMonthShort('2026-01-05', 'hr')).toBe('sij')
+    expect(formatMonthShort('2026-09-05', 'hr')).toBe('ruj')
+    expect(formatMonthShort('2026-01-05', 'en')).toBe('Jan')
+  })
+})
+
 describe('formatDayMonth', () => {
   it('drops the year for compact rows', () => {
     expect(formatDayMonth('2026-01-05', 'hr')).toBe('05.01.')
@@ -196,6 +204,7 @@ describe('date helpers, missing values', () => {
     ['formatDateTime', formatDateTime],
     ['formatMonthYear', formatMonthYear],
     ['formatDayMonth', formatDayMonth],
+    ['formatMonthShort', formatMonthShort],
   ])('%s renders a dash rather than throwing', (_name, fn) => {
     expect(fn(null, 'hr')).toBe('—')
     expect(fn(undefined, 'en')).toBe('—')

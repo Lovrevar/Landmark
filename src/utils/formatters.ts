@@ -120,3 +120,13 @@ export const formatMonthYear = (value: DateInputValue, language: string | null |
 /** Day and month only, for compact rows: `05.01.` / `Jan 05`. */
 export const formatDayMonth = (value: DateInputValue, language: string | null | undefined): string =>
   render(value, language, 'dd.MM.', 'MMM dd')
+
+/**
+ * The month alone, abbreviated: `sij` / `Jan`. For a chart axis, where even `01.2026.` is too wide.
+ *
+ * `LLL` is the standalone form, chosen to match `formatMonthYear`'s `LLLL`. In Croatian the two
+ * abbreviations happen to coincide (`LLL` and `MMM` both give `sij`); the distinction only shows in
+ * the full name, where `LLLL` is `siječanj` and `MMMM` the genitive `siječnja`.
+ */
+export const formatMonthShort = (value: DateInputValue, language: string | null | undefined): string =>
+  render(value, language, 'LLL', 'MMM')

@@ -1,54 +1,25 @@
 import { format } from 'date-fns'
 import { yieldToUI } from '../../../utils/yieldToUI'
 import { formatEuroRounded } from '../../../utils/formatters'
+import { loadUnicodeFont, PDF_FONT_FAMILY } from '../../../utils/pdfFont'
 import type { RetailReportData } from '../retailReportTypes'
 
 // Was a local `Intl` formatter with `style: 'currency'`, which puts the symbol last ("1.235 €");
 // the shared helper puts it first ("€1.235") to match the screen. Same rounding: whole euros.
-// The euro sign and the hr-HR minus sign both come from the Noto Sans face loaded below.
+// The euro sign and the hr-HR minus sign both come from the embedded Noto Sans face.
 const fmt = formatEuroRounded
 
-async function loadUnicodeFont(pdf: import('jspdf').jsPDF): Promise<void> {
-  const toBase64 = (buffer: ArrayBuffer): string => {
-    const bytes = new Uint8Array(buffer)
-    let binary = ''
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i])
-    }
-    return btoa(binary)
-  }
-
-  // Direct TTF links from Google Fonts CDN (Noto Sans supports Latin Extended including Croatian)
-  const [regularRes, boldRes] = await Promise.all([
-    fetch('https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A99d.ttf'),
-    fetch('https://fonts.gstatic.com/s/notosans/v42/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyAaBN9d.ttf')
-  ])
-
-  if (!regularRes.ok || !boldRes.ok) throw new Error('Font fetch failed')
-
-  const [regularBuffer, boldBuffer] = await Promise.all([
-    regularRes.arrayBuffer(),
-    boldRes.arrayBuffer()
-  ])
-
-  pdf.addFileToVFS('NotoSans-Regular.ttf', toBase64(regularBuffer))
-  pdf.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal')
-
-  pdf.addFileToVFS('NotoSans-Bold.ttf', toBase64(boldBuffer))
-  pdf.addFont('NotoSans-Bold.ttf', 'NotoSans', 'bold')
-}
 
 export async function generateRetailReportPdf(data: RetailReportData) {
   const { jsPDF } = await import('jspdf')
   const pdf = new jsPDF('p', 'mm', 'a4')
 
-  let fontFamily = 'helvetica'
-  try {
-    await loadUnicodeFont(pdf)
-    fontFamily = 'NotoSans'
-  } catch {
-    // fall back to helvetica if font load fails
-  }
+  // No fallback: Helvetica cannot encode č/ć/đ, and jsPDF answers one unmapped character by
+  // re-encoding the whole string into garbage — this report is entirely Croatian, so a fallback
+  // produced a document of noise. A failure here means the font asset did not ship; let it reach
+  // useAsyncExport, which tells the user.
+  await loadUnicodeFont(pdf)
+  const fontFamily = PDF_FONT_FAMILY
 
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
