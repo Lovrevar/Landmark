@@ -28,7 +28,7 @@
 
 | Doc | File | Description |
 |---|---|---|
-| **Voice access** | [voice/](./voice/01-chat-assistant-analysis.md) | 🔍 **Analysis + plan only, nothing built.** Voice access to the existing AI chat assistant through Vapi or Retell, in Custom LLM mode on one shared backend. Phase 1 surveys today's assistant (the blocker: it does not stream tokens). Phase 2 plans an in-app call button as v1 and a PIN-gated phone number as v2 (the order is pending a stakeholder decision), a default-deny voice tool allowlist, a Croatian STT/TTS go/no-go gate and a phased rollout |
+| **Voice access** | [voice/](./voice/01-chat-assistant-analysis.md) | 🔍 **Analysis + plan only, nothing built.** Voice access to the existing AI chat assistant through Vapi or Retell, in Custom LLM mode on one shared backend. Phase 1 surveys today's assistant (the blocker: it does not stream tokens). Phase 2 commits to an in-app call button as v1 and defers a PIN-gated phone number to v2 (decided 2026-09-23), a default-deny voice tool allowlist, a Croatian STT/TTS go/no-go gate and a phased rollout |
 | **ERP Integration** | [erp-integration/](./erp-integration/README.md) | ⏸️ **On hold** — merged but switched off (flag off, migrations parked in `supabase/parked-migrations/erp/`). Rewrite of the financial section: 4D Wand becomes the source of truth for invoices, payments and bank balances; Cognilion stops authoring them and imports/classifies instead. Spec, decision log, progress and open questions |
 | **Testing** | [TESTING.md](./TESTING.md) | Vitest unit tests + Playwright e2e setup and conventions |
 | **Security Backlog** | [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) | Tracked security items and RLS hardening status |

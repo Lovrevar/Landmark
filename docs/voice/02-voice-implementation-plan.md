@@ -1,11 +1,9 @@
 # Voice access — Phase 2: implementation plan
 
-> **⚠️ Pending stakeholder decision — channel order.** This plan assumes the **in-app call
-> button is v1** and the **phone number (PSTN) is v2**. It was drafted the other way round. The
-> reorder moves caller-ID schema, token minting, spoofing defences and the DTMF PIN flow out of
-> v1 (see [§2](#2-channels-v1-in-app-v2-pstn)). The PSTN work is still fully specified, as v2, in
-> [§9](#9-v2-pstn-caller-identification). If stakeholders keep PSTN first, §9 moves into v1 and the
-> [§11 estimate](#11-estimate-and-open-questions) changes accordingly.
+> **✅ Decided 2026-09-23 (stakeholder decision): v1 = in-app WebRTC call button; v2 = PSTN phone
+> number, once v1 is live.** v1 is the committed path. Caller-ID schema, token minting, spoofing
+> defences and the DTMF PIN flow belong to v2 (see [§2](#2-channels-v1-in-app-v2-pstn)). They
+> remain fully specified in [§9](#9-v2-pstn-caller-identification), **deferred until v1 ships**.
 
 Written 2026-09-23, amended the same day after team review. Builds directly on
 [`01-chat-assistant-analysis.md`](./01-chat-assistant-analysis.md); every recommendation here
@@ -74,9 +72,9 @@ accept the forked prompt as a known cost.
 | New schema | `ai_sessions` channel columns, `voice_calls` | + `voice_caller_identities`, `ai_sessions.caller_phone` |
 | Spoofing / PIN / enrolment | Not applicable | Required |
 
-Why this order: v1 inherits chat's authentication wholesale, so the hardest security problems in
-the project (spoofable identity, token minting, a second factor) are deferred until the shared
-backend is proven. v1 is also where `search_help` and navigation questions make the most sense,
+Why this order (decided 2026-09-23): v1 inherits chat's authentication wholesale, so the hardest
+security problems in the project (spoofable identity, token minting, a second factor) wait until
+the shared backend is proven in production. v1 is also where `search_help` and navigation questions make the most sense,
 because the caller is looking at the app while talking.
 
 **One premise needs care.** "The in-app call runs on the existing JWT" is true in substance, but
@@ -638,7 +636,8 @@ sees anything, lockout after failed PINs, and alerting on repeated failures.
 
 ## 9. v2: PSTN caller identification
 
-Fully specified here so v2 can start without re-planning. Nothing in this section is built in v1.
+> **Deferred until v1 ships.** Fully specified here so v2 can start without re-planning. Nothing in
+> this section is built in v1, and nothing in v1 depends on it.
 
 ### Schema
 
@@ -904,8 +903,7 @@ path, but it carries none of the spoofing risk.
 
 ### Open questions for the team
 
-0. **Channel order** — confirm in-app = v1, PSTN = v2 (the banner at the top). *Blocks final
-   phasing.*
+0. ~~**Channel order**~~ — **resolved 2026-09-23**: in-app = v1, PSTN = v2 once v1 is live.
 1. **JWT signing scheme** — the legacy HS256 secret or asymmetric keys? It decides §9's minting
    approach. *Blocks phase 8 only.*
 2. **Vapi or Retell** — which has the better Croatian result in phase 0, EU data residency and an
