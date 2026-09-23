@@ -330,7 +330,8 @@ Payment tracking for apartment sales contracts.
 ### services/salesPaymentsService.ts
 - `fetchSalesPayments()` — fetches all payments with linked apartment, customer, and sale details
 - `calculateSalesPaymentStats(payments)` — computes totals and this-month stats
-- `exportSalesPaymentsCSV(payments)` — exports payment data as a CSV file
+- `exportSalesPaymentsExcel(payments)` — async; writes a real `.xlsx` (one `Plaćanja` sheet) through `src/lib/xlsxExport.ts`
+- `buildSalesPaymentsSheet(payments, t)` — pure AOA builder, exported for `salesPaymentsService.test.ts`
 - **Depends on:** supabase client
 
 #### Hooks
@@ -339,11 +340,12 @@ Payment tracking for apartment sales contracts.
 - `useSalesPayments()` — fetches and filters payments by search term, status (all/recent/large), and date range
 - **Calls:** salesPaymentsService.ts
 - **Returns:** loading, error, dismissError, hasData, refetch, stats, filteredPayments, searchTerm, setSearchTerm, filterStatus, setFilterStatus, dateRange, setDateRange
+- The export itself is wired in `index.tsx` through `useAsyncExport`, which owns the button's loading flag and toasts `common.export_error` on failure
 
 #### Views
 
 ### index.tsx (SalesPayments)
-- Payment dashboard with stat cards (total, this month), filterable table, and CSV export
+- Payment dashboard with stat cards (total, this month), filterable table, and Excel export
 - When the load failed with nothing to show, the stat cards are hidden entirely (€0 totals
   would be a claim about the business) and the table area carries `ErrorState`; the header and
   the filter card stay mounted
@@ -386,8 +388,10 @@ Payment tracking for apartment sales contracts.
   'Reserved')`) stay English — they are written back into a CHECK column
 - **Dates** go through `formatDate` / `formatDateTime` from `src/utils/formatters.ts` with
   `i18n.language`. `ApartmentDetailsModal`'s private `hr-HR`-only `formatDate` is gone
-- `exportSalesPaymentsCSV` parses its `date` columns with `parseLocalDate`, not `new Date` —
-  the latter reads them as UTC midnight and exported the previous day
+- The export is an `.xlsx`, not a CSV: amounts are written as **numbers** (a dot decimal is text
+  to Croatian Excel), dates as **real date cells** formatted `dd.mm.yyyy.`, `payment_method` is
+  translated rather than written raw, and the headers are the screen's own Croatian keys. Dates go
+  through `toDateCell`, so a date-only column keeps the day it says rather than the UTC one before it
 - **Deliberately left in English**, pending a wording decision: the 12- and 4-bullet
   "Expected File Format" lists in the two import modals (they name literal Croatian spreadsheet
   columns — `zgrada`, `oznaka stana`, `stan m2 prodajno`, `kapara 10%` — which must stay

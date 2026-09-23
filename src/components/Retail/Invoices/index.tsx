@@ -24,7 +24,8 @@ const RetailInvoicesManagement: React.FC = () => {
     dateRange,
     setDateRange,
     handleApprove,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   } = useRetailInvoices()
 
   const INVOICE_TYPE_LABELS = useMemo<Record<string, string>>(() => ({
@@ -92,8 +93,8 @@ const RetailInvoicesManagement: React.FC = () => {
             <option value="not_approved">{t('retail_invoices.filter.not_approved')}</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={handleExportCSV} fullWidth>
-            {t('common.export_csv')}
+          <Button variant="success" icon={Download} onClick={handleExportExcel} loading={exporting} fullWidth>
+            {t('common.export_excel')}
           </Button>
         </div>
 

@@ -363,6 +363,11 @@ Read-only history of accounting payments made against bank credits.
 
 #### Views
 
+### services/fundingPaymentsExport.ts
+- `exportFundingPaymentsExcel(payments)` — async; writes a real `.xlsx` (one `Plaćanja` sheet) through `src/lib/xlsxExport.ts` and logs `export.funding_payments_excel`
+- `buildFundingPaymentsSheet(payments, t)` — pure AOA builder, exported for `fundingPaymentsExport.test.ts`. Amounts are **numbers** (a dot decimal is text to Croatian Excel), dates are **real date cells** formatted `dd.mm.yyyy.` through `toDateCell` (the CSV put `payment_date` through `new Date()`, which east of UTC exported the previous day), and the headers are the screen's own `funding.payments.table.*` keys
+- **Depends on:** xlsxExport, exportT, creditCalculations, logActivity
+
 #### Utilities
 
 > `paymentTotals.ts` **moved** to `Cashflow/services/paymentTotals.ts` and `bankPaymentTotals` was
@@ -371,12 +376,13 @@ Read-only history of accounting payments made against bank credits.
 > it, so both payment screens render a direction identically. See `docs/CASHFLOW.md` → Services.
 
 ### index.tsx (FundingPaymentsManagement)
-- Payment list with search, status/date filters, CSV export, and stats cards
+- Payment list with search, status/date filters, Excel export, and stats cards
 - Stat cards: total disbursements (in), total repayments and fees (out), net, and this month's net. There is no single "total amount" and no payment-count card
-- The type column is the direction (PRIHOD green / RASHOD red, the Cashflow payment screen's `payments.table.income` / `expense` wording), and the amount takes the same colour. The CSV's Type column carries the same label. The credit type column is translated through `getCreditTypeLabelKey`
+- The type column is the direction (PRIHOD green / RASHOD red, the Cashflow payment screen's `payments.table.income` / `expense` wording), and the amount takes the same colour. The spreadsheet's Type column carries the same label. The credit type column is translated through `getCreditTypeLabelKey`, in the screen and in the export alike
 - The filtered-results footer shows the count, in, out and net of the filtered rows. The "Large (> €50k)" filter is by magnitude, whichever way the money went
 - Three-way list area: `EmptyState` only for a genuinely empty result, `ErrorState` with a retry when the read failed and nothing loaded, and a dismissible `Alert` over stale rows. The filter bar stays mounted in every case
-- **Uses hooks:** usePaymentsData
+- The export runs through `useAsyncExport` (button loading flag + `common.export_error` toast) and calls `services/fundingPaymentsExport.ts`. It used to be built inline here as a CSV with English headers, no quoting and `credit_type` written raw
+- **Uses hooks:** usePaymentsData, useAsyncExport
 - **Uses Ui:** PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Table
 
 ---
@@ -685,7 +691,7 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
   and `funding.equity_form.*`. `useEquityForm` gained `useTranslation` for this.
 - **`bankPaymentsService` returns `null`, not an English placeholder.** `bank_name` and
   `project_name` were `'Unknown Bank'` / `'No Project'`; the table labels the gap with
-  `funding.investments.unknown_bank` and `common.no_project`, and the CSV writes an empty cell.
+  `funding.investments.unknown_bank` and `common.no_project`, and the spreadsheet writes an empty cell.
 - **Two things are deliberately still English and should not be "fixed" here:**
   `equityService.createEquityInvestment` writes `credit_name: "Equity Investment <MMM yyyy>"` — a
   **stored** column, not a display string, so translating it would make the data depend on whoever
@@ -704,7 +710,7 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 - Architecture follows UI Component → Custom Hook → Service Layer → Supabase. The May 2026 audit refactor extracted Supabase query logic out of hooks into dedicated `services/*.ts` files; hooks own state and call the services
 - There are two distinct `creditService.ts` files: `Investments/services/creditService.ts` (credit list, allocations, credit invoices) and `Investors/services/creditService.ts` (facility CRUD + company bank accounts)
 - The audit refactor also lowercased the `Modals/`→`modals/` and `Services/`→`services/` directories in Payments, Projects, and TIC
-- Pure calculation/formatting helpers have colocated unit tests: `Investors/utils/creditCalculations.test.ts`, `TIC/utils/ticFormatters.test.ts`, `TIC/services/ticImport.test.ts` and `TIC/services/ticExport.test.ts` (the last verifies an Excel export re-imports byte-for-byte)
+- Pure calculation/formatting helpers have colocated unit tests: `Investors/utils/creditCalculations.test.ts`, `TIC/utils/ticFormatters.test.ts`, `TIC/services/ticImport.test.ts`, `TIC/services/ticExport.test.ts` (the last verifies an Excel export re-imports byte-for-byte) and `Payments/services/fundingPaymentsExport.test.ts`
 - All service mutations log via `logActivity()` (fire-and-forget)
 - **Failed loads are not empty states.** Investments, Investors and Payments expose `error` + `refetch` and render `ErrorState` (from `src/components/ui`) in the content area with the page header kept mounted; money tiles fed by a failed read are withheld rather than shown as €0. `useTIC` was left as it is: it already reports both load failures through its own on-screen message banner, and `loadClassifications` documents why it tolerates a failure (the classification column falls back to "unmapped", which is visible and recoverable). `Projects/index.tsx` moved onto `useCachedData` (ErrorState + retry, EmptyState for a real empty list) and `useLazySection` gained `error` + `retry`, so `CreditInvoiceSection` shows a compact `ErrorState` instead of caching a failure as "(0)". `AllocationRow.tsx` still fetches inline and is what is left of the deferred in-component set
 - **Deleting a credit facility or an investor detaches invoices first.** `accounting_invoices.bank_credit_id` is the only `ON DELETE RESTRICT` reference to `bank_credits`, so a bare delete fails with Postgres `23503` whenever an invoice is attached (and, for investors, aborts the `bank_credits` cascade). `creditService.detachInvoicesFromCredits()` clears the FK — the invoices are kept, only unlinked — and both delete paths call it before deleting. The confirmation dialog reports the count via `countInvoicesForCredits()`, and the hooks fall back to `isForeignKeyViolation()` from `src/lib/dbErrors.ts` for a readable toast if some other constraint blocks the delete

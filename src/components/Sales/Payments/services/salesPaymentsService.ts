@@ -1,7 +1,9 @@
+import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
-import { format } from 'date-fns'
-import { parseLocalDate } from '../../../../utils/dateOnly'
+import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
+import { exportT } from '../../../../utils/exportLanguage'
+import { getPaymentMethodLabel } from '../../../Cashflow/services/paymentHelpers'
 
 export interface SalesPaymentWithDetails {
   id: string
@@ -98,39 +100,66 @@ export function calculateSalesPaymentStats(payments: SalesPaymentWithDetails[]):
   }
 }
 
-// Quote every CSV field (so embedded commas/quotes/newlines don't shift or
-// break rows) and neutralise leading characters spreadsheets treat as formulas.
-function escapeCsvField(value: string | number | undefined | null): string {
-  const str = String(value ?? '')
-  const guarded = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str
-  return `"${guarded.replace(/"/g, '""')}"`
+const SHEET_NAME = 'Plaćanja'
+const COLUMN_WIDTHS = [14, 18, 14, 12, 24, 26, 16, 16, 14, 20, 40]
+const MONEY_COLUMNS = [6, 7]
+
+/**
+ * The apartment-sales payment register as a spreadsheet.
+ *
+ * This was the only one of the six CSVs that quoted its fields, and even it wrote every amount as
+ * a dot decimal that Croatian Excel reads as text. Money is a number here and a date is a date;
+ * the headers are the screen's own, in Croatian.
+ */
+export function buildSalesPaymentsSheet(payments: SalesPaymentWithDetails[], t: TFunction): SheetRows {
+  const header = [
+    t('customers.sales_payments.payment_date'),
+    t('customers.sales_payments.invoice'),
+    t('invoices.filters.invoice_date'),
+    t('customers.sales_payments.apartment'),
+    t('customers.sales_payments.project'),
+    t('customers.sales_payments.customer'),
+    t('customers.sales_payments.invoice_total'),
+    t('customers.sales_payments.payment'),
+    t('customers.sales_payments.method'),
+    t('customers.sales_payments.bank'),
+    t('common.description'),
+  ]
+
+  return [
+    header,
+    ...payments.map(p => [
+      toDateCell(p.payment_date),
+      textCell(p.invoice_number),
+      toDateCell(p.issue_date),
+      textCell(p.apartment_number),
+      textCell(p.project_name),
+      textCell(p.customer_name),
+      Number(p.invoice_total_amount),
+      Number(p.amount),
+      // These payments have no source column, so no kompenzacija placeholder to suppress.
+      getPaymentMethodLabel(p.payment_method, null, t),
+      textCell(p.bank_account_name),
+      textCell(p.description),
+    ]),
+  ]
 }
 
-export function exportSalesPaymentsCSV(payments: SalesPaymentWithDetails[]): void {
-  const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Apartment', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Description']
-  // The `date` columns are date-only strings; `new Date('2026-01-05')` is UTC midnight, which
-  // east of UTC formats back as the 4th — the exported day was one off. `parseLocalDate` keeps
-  // the day the column says. `new Date()` for the filename is a real timestamp and stays.
-  const rows = payments.map(p => [
-    format(parseLocalDate(p.payment_date), 'yyyy-MM-dd'),
-    p.invoice_number,
-    p.issue_date ? format(parseLocalDate(p.issue_date), 'yyyy-MM-dd') : '',
-    p.apartment_number,
-    p.project_name,
-    p.customer_name,
-    p.invoice_total_amount.toString(),
-    p.amount.toString(),
-    p.payment_method,
-    p.bank_account_name,
-    p.description || ''
-  ])
-  const csv = [headers, ...rows].map(row => row.map(escapeCsvField).join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `sales-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
-  a.click()
+export async function exportSalesPaymentsExcel(payments: SalesPaymentWithDetails[]): Promise<void> {
+  const t = exportT()
+  await downloadWorkbook(
+    [{
+      name: SHEET_NAME,
+      rows: buildSalesPaymentsSheet(payments, t),
+      columnWidths: COLUMN_WIDTHS,
+      moneyColumns: MONEY_COLUMNS,
+    }],
+    'placanja-prodaja'
+  )
 
-  logActivity({ action: 'export.payments_csv', entity: 'report', metadata: { severity: 'low', format: 'csv', row_count: payments.length } })
+  logActivity({
+    action: 'export.sales_payments_excel',
+    entity: 'report',
+    metadata: { severity: 'low', format: 'excel', row_count: payments.length },
+  })
 }

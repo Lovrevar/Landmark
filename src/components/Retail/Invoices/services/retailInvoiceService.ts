@@ -1,7 +1,9 @@
+import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
-import { format } from 'date-fns'
-import { parseLocalDate } from '../../../../utils/dateOnly'
+import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
+import { exportT } from '../../../../utils/exportLanguage'
+import { getInvoiceStatusLabel, getInvoiceTypeLabelKey } from '../../../Cashflow/services/invoiceHelpers'
 
 export interface RetailInvoiceWithDetails {
   id: string
@@ -85,28 +87,68 @@ export async function toggleRetailInvoiceApproval(invoiceId: string, currentAppr
   logActivity({ action: 'invoice.approve', entity: 'invoice', entityId: invoiceId, metadata: { severity: 'high', approved: !currentApproved } })
 }
 
-export function exportRetailInvoicesCSV(invoices: RetailInvoiceWithDetails[]): void {
-  const headers = ['Broj računa', 'Tip', 'Datum', 'Dospijeće', 'Projekt', 'Dobavljač/Kupac', 'Firma', 'Iznos', 'Status', 'Odobreno']
-  // The `date` columns are date-only strings; `new Date('2026-01-05')` is UTC midnight, which
-  // east of UTC formats back as the 4th — the exported day was one off. `parseLocalDate` keeps
-  // the day the column says. `new Date()` for the filename is a real timestamp and stays.
-  const rows = invoices.map(i => [
-    i.invoice_number,
-    i.invoice_type,
-    format(parseLocalDate(i.issue_date), 'yyyy-MM-dd'),
-    format(parseLocalDate(i.due_date), 'yyyy-MM-dd'),
-    i.project_name || '',
-    i.supplier_name || i.customer_name || '',
-    i.company_name || '',
-    i.total_amount.toString(),
-    i.status,
-    i.approved ? 'Da' : 'Ne',
-  ])
-  const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `retail-invoices-${format(new Date(), 'yyyy-MM-dd')}.csv`
-  a.click()
+const SHEET_NAME = 'Računi'
+const COLUMN_WIDTHS = [18, 18, 12, 12, 24, 28, 24, 16, 16, 12]
+const MONEY_COLUMNS = [7]
+
+/**
+ * The retail invoice register as a spreadsheet.
+ *
+ * This is the CSV whose headers were *already* Croatian and which nobody could read: no BOM, so
+ * Excel decoded `Broj računa` as `Broj raÄuna`. It also quoted nothing and wrote `invoice_type`
+ * and `status` raw. A real `.xlsx` carries its own encoding, so the headers simply arrive.
+ */
+export function buildRetailInvoicesSheet(invoices: RetailInvoiceWithDetails[], t: TFunction): SheetRows {
+  const header = [
+    t('retail_invoices.table.invoice_number'),
+    t('retail_invoices.table.type'),
+    t('common.date'),
+    t('retail_invoices.table.due_date'),
+    t('common.project'),
+    t('retail_invoices.table.supplier_customer'),
+    t('common.company'),
+    t('common.amount'),
+    t('common.status'),
+    t('invoices.table.approved'),
+  ]
+
+  const typeLabel = (type: string): string => {
+    const key = getInvoiceTypeLabelKey(type)
+    return key ? t(key) : textCell(type)
+  }
+
+  return [
+    header,
+    ...invoices.map(i => [
+      textCell(i.invoice_number),
+      typeLabel(i.invoice_type),
+      toDateCell(i.issue_date),
+      toDateCell(i.due_date),
+      textCell(i.project_name),
+      textCell(i.supplier_name) || textCell(i.customer_name),
+      textCell(i.company_name),
+      Number(i.total_amount),
+      getInvoiceStatusLabel(i.status, t),
+      i.approved ? t('common.yes') : t('common.no'),
+    ]),
+  ]
+}
+
+export async function exportRetailInvoicesExcel(invoices: RetailInvoiceWithDetails[]): Promise<void> {
+  const t = exportT()
+  await downloadWorkbook(
+    [{
+      name: SHEET_NAME,
+      rows: buildRetailInvoicesSheet(invoices, t),
+      columnWidths: COLUMN_WIDTHS,
+      moneyColumns: MONEY_COLUMNS,
+    }],
+    'racuni-retail'
+  )
+
+  logActivity({
+    action: 'export.retail_invoices_excel',
+    entity: 'report',
+    metadata: { severity: 'low', format: 'excel', row_count: invoices.length },
+  })
 }

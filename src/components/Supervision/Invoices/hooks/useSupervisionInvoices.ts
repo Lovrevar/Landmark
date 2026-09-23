@@ -5,8 +5,9 @@ import {
   fetchSupervisionInvoices,
   calculateInvoiceStats,
   toggleInvoiceApproval,
-  exportInvoicesCSV,
+  exportSupervisionInvoicesExcel,
 } from '../services/supervisionInvoiceService'
+import { useAsyncExport } from '../../../../hooks/useAsyncExport'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export function useSupervisionInvoices() {
@@ -89,7 +90,9 @@ export function useSupervisionInvoices() {
     }
   }
 
-  const handleExportCSV = () => exportInvoicesCSV(filteredInvoices)
+  // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
+  const { exporting, run: runExportExcel } = useAsyncExport(exportSupervisionInvoicesExcel, 'common.export_error')
+  const handleExportExcel = () => void runExportExcel(filteredInvoices)
 
   return {
     loading,
@@ -113,6 +116,7 @@ export function useSupervisionInvoices() {
     dateRange,
     setDateRange,
     handleApprove,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   }
 }

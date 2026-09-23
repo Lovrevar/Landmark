@@ -5,6 +5,7 @@ import { useDebtStatus } from './hooks/useDebtStatus'
 import { formatEuropeanNumber } from './services/debtService'
 import { exportToExcel, exportToPDF } from './services/debtExport'
 import { PageHeader, StatGrid, StatCard, LoadingSpinner, Button, Badge, EmptyState, ErrorState, Alert, Select } from '../../ui'
+import { useAsyncExport } from '../../../hooks/useAsyncExport'
 import { toErrorMessage } from '../../../lib/errorMessage'
 
 const DebtStatus: React.FC = () => {
@@ -48,16 +49,23 @@ const DebtStatus: React.FC = () => {
     return project ? project.name : null
   }
 
+  // Both run through `useAsyncExport`, which owns the per-button loading flag and toasts on
+  // failure. The Excel half used to be called bare (a throw died inside the click handler) and the
+  // PDF half was `async` called without `await` or `.catch`, so a failure was an unhandled
+  // rejection the user never saw — and the PDF now throws for real if the embedded font is missing.
+  const { exporting: exportingExcel, run: runExportExcel } = useAsyncExport(exportToExcel, 'common.export_error')
+  const { exporting: exportingPdf, run: runExportPdf } = useAsyncExport(exportToPDF, 'common.export_error')
+
   // Guarded as well as disabled: an export built from a failed load is a document that says
   // "no debt" with a company letterhead on it.
   const handleExportExcel = () => {
     if (!canExport) return
-    exportToExcel(sortedData, totalUnpaid, totalPaid, getSelectedProjectName())
+    void runExportExcel(sortedData, totalUnpaid, totalPaid, getSelectedProjectName())
   }
 
   const handleExportPDF = () => {
     if (!canExport) return
-    exportToPDF(sortedData, totalUnpaid, totalPaid, totalSuppliers, suppliersWithDebt, getSelectedProjectName())
+    void runExportPdf(sortedData, totalUnpaid, totalPaid, totalSuppliers, suppliersWithDebt, getSelectedProjectName())
   }
 
   if (loading) {
@@ -71,10 +79,10 @@ const DebtStatus: React.FC = () => {
         description={t('debt_status.description')}
         actions={
           <>
-            <Button variant="success" icon={FileSpreadsheet} onClick={handleExportExcel} disabled={!canExport}>
+            <Button variant="success" icon={FileSpreadsheet} onClick={handleExportExcel} loading={exportingExcel} disabled={!canExport}>
               {t('common.export_excel')}
             </Button>
-            <Button variant="danger" icon={FileDown} onClick={handleExportPDF} disabled={!canExport}>
+            <Button variant="danger" icon={FileDown} onClick={handleExportPDF} loading={exportingPdf} disabled={!canExport}>
               {t('common.export_pdf')}
             </Button>
           </>

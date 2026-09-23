@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { RetailSalesPaymentWithDetails, SalesStats } from '../services/retailSalesService'
-import { fetchRetailSalesPayments, calculateSalesStats, exportRetailSalesCSV } from '../services/retailSalesService'
+import { fetchRetailSalesPayments, calculateSalesStats, exportRetailSalesPaymentsExcel } from '../services/retailSalesService'
+import { useAsyncExport } from '../../../../hooks/useAsyncExport'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export function useRetailSales() {
@@ -55,7 +56,9 @@ export function useRetailSales() {
     return matchesSearch && matchesDateRange && matchesFilter
   }), [payments, searchTerm, filterStatus, dateRange])
 
-  const handleExportCSV = () => exportRetailSalesCSV(filteredPayments)
+  // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
+  const { exporting, run: runExportExcel } = useAsyncExport(exportRetailSalesPaymentsExcel, 'common.export_error')
+  const handleExportExcel = () => void runExportExcel(filteredPayments)
 
   return {
     loading,
@@ -71,6 +74,7 @@ export function useRetailSales() {
     setFilterStatus,
     dateRange,
     setDateRange,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   }
 }

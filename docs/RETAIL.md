@@ -278,8 +278,13 @@ Land plot inventory tracking.
 - `payment_method` is labelled through `paymentMethodLabel` from
   [`Sales/Payments/paymentMethod.ts`](../src/components/Sales/Payments/paymentMethod.ts), the
   same way invoice status comes from `Cashflow/services/invoiceHelpers`
-- `exportRetailSalesCSV` and `exportRetailInvoicesCSV` parse their `date` columns with
-  `parseLocalDate`, not `new Date` — the latter shifted every exported date back a day
+- `exportRetailSalesPaymentsExcel` and `exportRetailInvoicesExcel` write real `.xlsx` files
+  through `src/lib/xlsxExport.ts`, not CSVs. Amounts are **numbers** (a dot decimal is text to
+  Croatian Excel), dates are **real date cells** formatted `dd.mm.yyyy.` via `toDateCell`, and
+  `payment_method`, `invoice_type` and `status` are translated rather than written raw. The retail
+  invoice CSV was the one whose headers were already Croatian and arrived as mojibake, because a
+  CSV blob carried no BOM — an `.xlsx` carries its own encoding.
+  `buildRetailSalesPaymentsSheet` / `buildRetailInvoicesSheet` are pure AOA builders with tests
 
 ## Notes
 - Retail invoice types are shared with Cashflow via `Cashflow/Invoices/retailInvoiceTypes.ts` — do not duplicate

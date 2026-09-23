@@ -1,6 +1,9 @@
+import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
 import type { Contract } from '../../../../lib/supabase'
-import { format } from 'date-fns'
+import { logActivity } from '../../../../lib/activityLog'
+import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
+import { exportT } from '../../../../utils/exportLanguage'
 import { NO_VALUE } from '../../../../utils/formatters'
 
 export interface PaymentWithDetails {
@@ -147,22 +150,57 @@ export function calculatePaymentStats(payments: PaymentWithDetails[]): PaymentSt
   }
 }
 
-export function exportPaymentsCSV(payments: PaymentWithDetails[]): void {
-  const headers = ['Date', 'Subcontractor', 'Project', 'Phase', 'Paid By', 'Amount', 'Notes']
-  const rows = payments.map(p => [
-    format(new Date(p.payment_date || p.created_at), 'yyyy-MM-dd'),
-    p.subcontractor_name,
-    p.project_name,
-    p.phase_name || '',
-    p.paid_by_company_name || '-',
-    p.amount.toString(),
-    p.notes || '',
-  ])
-  const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
-  a.click()
+const SHEET_NAME = 'Plaćanja'
+const COLUMN_WIDTHS = [12, 28, 24, 20, 26, 16, 40]
+const MONEY_COLUMNS = [5]
+
+/**
+ * The subcontractor payment register as a spreadsheet.
+ *
+ * The CSV it replaces quoted nothing, so a subcontractor named `PANNONIA, d.o.o.` shifted every
+ * column after it, and put the `payment_date` through `new Date()`, which east of UTC exported
+ * the previous day. Both go away with a real `.xlsx` and `toDateCell`.
+ */
+export function buildSupervisionPaymentsSheet(payments: PaymentWithDetails[], t: TFunction): SheetRows {
+  const header = [
+    t('supervision.payments.col.date'),
+    t('supervision.payments.col.subcontractor'),
+    t('common.project'),
+    t('supervision.payments.col.phase'),
+    t('supervision.payments.col.paid_by'),
+    t('supervision.payments.col.amount'),
+    t('common.notes'),
+  ]
+
+  return [
+    header,
+    ...payments.map(p => [
+      toDateCell(p.payment_date || p.created_at),
+      textCell(p.subcontractor_name),
+      textCell(p.project_name),
+      textCell(p.phase_name),
+      textCell(p.paid_by_company_name),
+      Number(p.amount),
+      textCell(p.notes),
+    ]),
+  ]
+}
+
+export async function exportSupervisionPaymentsExcel(payments: PaymentWithDetails[]): Promise<void> {
+  const t = exportT()
+  await downloadWorkbook(
+    [{
+      name: SHEET_NAME,
+      rows: buildSupervisionPaymentsSheet(payments, t),
+      columnWidths: COLUMN_WIDTHS,
+      moneyColumns: MONEY_COLUMNS,
+    }],
+    'placanja-nadzor'
+  )
+
+  logActivity({
+    action: 'export.supervision_payments_excel',
+    entity: 'report',
+    metadata: { severity: 'low', format: 'excel', row_count: payments.length },
+  })
 }

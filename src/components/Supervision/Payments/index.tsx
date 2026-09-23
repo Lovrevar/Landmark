@@ -22,7 +22,8 @@ const PaymentsManagement: React.FC = () => {
     setFilterStatus,
     dateRange,
     setDateRange,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   } = useSupervisionPayments()
 
   if (loading && !hasData) {
@@ -73,8 +74,8 @@ const PaymentsManagement: React.FC = () => {
             <option value="large">{t('common.filter_large')}</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={handleExportCSV} fullWidth>
-            {t('common.export_csv')}
+          <Button variant="success" icon={Download} onClick={handleExportExcel} loading={exporting} fullWidth>
+            {t('common.export_excel')}
           </Button>
         </div>
 

@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { useSalesPayments } from './hooks/useSalesPayments'
-import { exportSalesPaymentsCSV } from './services/salesPaymentsService'
+import { exportSalesPaymentsExcel } from './services/salesPaymentsService'
+import { useAsyncExport } from '../../../hooks/useAsyncExport'
 import { formatDate } from '../../../utils/formatters'
 import { getPaymentMethodLabel } from '../../Cashflow/services/paymentHelpers'
 
@@ -16,6 +17,9 @@ const SalesPaymentsManagement: React.FC = () => {
   } = useSalesPayments()
 
   const { t, i18n } = useTranslation()
+  // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
+  const { exporting, run: runExportExcel } = useAsyncExport(exportSalesPaymentsExcel, 'common.export_error')
+
   if (loading && !hasData) return <LoadingSpinner message={t('common.loading')} />
 
   // Nothing loaded: the stat cards would read €0, which is a claim about the business
@@ -52,8 +56,14 @@ const SalesPaymentsManagement: React.FC = () => {
             <option value="large">{t('customers.sales_payments.large')}</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={() => exportSalesPaymentsCSV(filteredPayments)} fullWidth>
-            {t('common.export_csv')}
+          <Button
+            variant="success"
+            icon={Download}
+            onClick={() => void runExportExcel(filteredPayments)}
+            loading={exporting}
+            fullWidth
+          >
+            {t('common.export_excel')}
           </Button>
         </div>
 

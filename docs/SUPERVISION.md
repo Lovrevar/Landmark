@@ -566,7 +566,7 @@ Standalone subcontractor registry with aggregated contract and payment summaries
 ### Invoices
 **Path:** `Supervision/Invoices/`
 
-Invoices raised by subcontractors for work completed on site. Supports approval toggling and CSV export.
+Invoices raised by subcontractors for work completed on site. Supports approval toggling and Excel export.
 
 #### Services
 
@@ -574,20 +574,21 @@ Invoices raised by subcontractors for work completed on site. Supports approval 
 - `fetchSupervisionInvoices()` — fetches accounting invoices with subcontractor, project, and contract relations; phase name now comes from the nested `contract.phase` join (no separate phases query)
 - `calculateInvoiceStats(invoices)` — aggregates monthly and total invoice statistics
 - `toggleInvoiceApproval(invoiceId, currentApproved)` — flips the approval flag on an invoice; logs `invoice.approve`
-- `exportInvoicesCSV(invoices)` — generates a CSV blob and triggers download
-- **Depends on:** supabase client, date-fns, logActivity
+- `exportSupervisionInvoicesExcel(invoices)` — async; writes a real `.xlsx` (one `Računi` sheet) through `src/lib/xlsxExport.ts` and logs `export.supervision_invoices_excel`
+- `buildSupervisionInvoicesSheet(invoices, t)` — pure AOA builder, exported for `supervisionInvoiceService.test.ts`
+- **Depends on:** supabase client, logActivity, xlsxExport, exportT, invoiceHelpers
 
 #### Hooks
 
 ### hooks/useSupervisionInvoices.ts
-- `useSupervisionInvoices()` — manages invoice list with filters (status, approval, date range) and CSV export; returns `error`, `hasData` and `refetch`. A failed load no longer toasts and empties the register — the stat cards are withheld and the table area carries an `ErrorState`
+- `useSupervisionInvoices()` — manages invoice list with filters (status, approval, date range) and Excel export (through `useAsyncExport`, which owns the `exporting` flag and toasts `common.export_error`); returns `error`, `hasData` and `refetch`. A failed load no longer toasts and empties the register — the stat cards are withheld and the table area carries an `ErrorState`
 - **Calls:** supervisionInvoiceService.ts
-- **Returns:** loading, stats, filteredInvoices, searchTerm, setSearchTerm, filterStatus, setFilterStatus, filterApproved, setFilterApproved, dateRange, setDateRange, handleApprove, handleExportCSV
+- **Returns:** loading, stats, filteredInvoices, searchTerm, setSearchTerm, filterStatus, setFilterStatus, filterApproved, setFilterApproved, dateRange, setDateRange, handleApprove, exporting, handleExportExcel
 
 #### Views
 
 ### index.tsx (SupervisionInvoices)
-- Invoice table with stat cards, filter controls, approval toggles, and CSV export
+- Invoice table with stat cards, filter controls, approval toggles, and Excel export
 - **Uses hooks:** useSupervisionInvoices
 - **Uses Ui:** StatGrid, StatCard, Table, Button, FilterBar, PageHeader
 
@@ -603,20 +604,21 @@ Payments made to subcontractors against their invoices, including cesija and ban
 ### services/supervisionPaymentService.ts
 - `fetchSupervisionPayments()` — fetches accounting payments joined with invoices (filtered to INCOMING_SUPPLIER), subcontractors, projects, contracts, cesija company, and paid-by bank/investor
 - `calculatePaymentStats(payments)` — aggregates total and monthly payment statistics
-- `exportPaymentsCSV(payments)` — generates a CSV blob and triggers download
-- **Depends on:** supabase client
+- `exportSupervisionPaymentsExcel(payments)` — async; writes a real `.xlsx` (one `Plaćanja` sheet) through `src/lib/xlsxExport.ts` and logs `export.supervision_payments_excel`
+- `buildSupervisionPaymentsSheet(payments, t)` — pure AOA builder, exported for `supervisionPaymentService.test.ts`
+- **Depends on:** supabase client, logActivity, xlsxExport, exportT
 
 #### Hooks
 
 ### hooks/useSupervisionPayments.ts
-- `useSupervisionPayments()` — manages payment list with filters (search, status, date range) and CSV export; returns `error`, `hasData` and `refetch`, and the screen withholds the stat cards rather than reporting €0 paid on a failed read
+- `useSupervisionPayments()` — manages payment list with filters (search, status, date range) and Excel export (through `useAsyncExport`, which owns the `exporting` flag and toasts `common.export_error`); returns `error`, `hasData` and `refetch`, and the screen withholds the stat cards rather than reporting €0 paid on a failed read
 - **Calls:** supervisionPaymentService.ts
-- **Returns:** loading, error, hasData, refetch, stats, filteredPayments, searchTerm, setSearchTerm, filterStatus, setFilterStatus, dateRange, setDateRange, handleExportCSV
+- **Returns:** loading, error, hasData, refetch, stats, filteredPayments, searchTerm, setSearchTerm, filterStatus, setFilterStatus, dateRange, setDateRange, exporting, handleExportExcel
 
 #### Views
 
 ### index.tsx (SupervisionPayments)
-- Payment table with stat cards, filter controls, and CSV export; shows paid-by company column
+- Payment table with stat cards, filter controls, and Excel export; shows paid-by company column
 - **Uses hooks:** useSupervisionPayments
 - **Uses Ui:** StatGrid, StatCard, Table, Button, FilterBar, PageHeader
 
@@ -675,6 +677,7 @@ Daily or weekly on-site work log entries. Supports cascading project → phase �
 - VAT_RATE_OPTIONS = [0, 5, 13, 25] — defined in SiteManagement/types.ts
 - The original monolithic `siteService.ts` was split into per-entity service files (phase, contract, subcontractor, milestone, funding, wire payment) during the May 2026 audit refactor; `siteService.ts` now re-exports them so `import * as siteService` consumers keep working
 - Payment create/update/delete from SiteManagement now only warn the user — those operations moved to the Accounting module (Invoices/Payments). The three warnings are `supervision.site_management.payments_moved.create/update/delete`; they were English literals in `useSubcontractorManagement`
-- Service-layer display fallbacks use `NO_VALUE` (`—`) rather than an English word: `supervisionPaymentService` returned `'Unknown'` / `'No Project'` and `subcontractorService` returned `'Unknown Project'`, all of which rendered straight into a table cell and a CSV column
+- Service-layer display fallbacks use `NO_VALUE` (`—`) rather than an English word: `supervisionPaymentService` returned `'Unknown'` / `'No Project'` and `subcontractorService` returned `'Unknown Project'`, all of which rendered straight into a table cell. The spreadsheet exports strip those placeholders again with `textCell` — `—` is how a table says "nothing here" to a reader, but in a column it is a value that breaks filtering
+- **Both exports are `.xlsx`, not CSV.** Amounts are written as **numbers** (a dot decimal is text to Croatian Excel), dates as **real date cells** formatted `dd.mm.yyyy.` through `toDateCell`, and `status` is translated rather than written raw. The CSVs they replace quoted nothing, so a subcontractor named `PANNONIA, d.o.o.` shifted every column after it, and put their date columns through `new Date()`, which east of UTC exported the previous day
 - **Failed loads are not empty states.** Every loader in this module returns `error` and a `refetch`, and the screens render a `ErrorState` (from `src/components/ui`) in the list area — page header and filters stay mounted — when nothing loaded, or keep the stale rows under a dismissible `Alert variant="error"` with a retry when something did. Stat cards computed from a failed read are withheld rather than shown as €0. This covers SiteManagement (project grid, comments, wire payments, invoice totals, the classification/category lookups), Subcontractors, Invoices, Payments and WorkLogs
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item hook pattern; `useProjectPhases` uses a Promise-based `requestConfirm` pattern for mid-flow budget-mismatch confirmations — never use `window.confirm()` or `confirm()`

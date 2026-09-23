@@ -30,7 +30,8 @@ const InvoicesManagement: React.FC = () => {
     dateRange,
     setDateRange,
     handleApprove,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   } = useSupervisionInvoices()
 
   if (loading && !hasData) {
@@ -91,8 +92,8 @@ const InvoicesManagement: React.FC = () => {
             <option value="not_approved">{t('supervision.invoices.filter.not_approved')}</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={handleExportCSV} fullWidth>
-            {t('common.export_csv')}
+          <Button variant="success" icon={Download} onClick={handleExportExcel} loading={exporting} fullWidth>
+            {t('common.export_excel')}
           </Button>
         </div>
 

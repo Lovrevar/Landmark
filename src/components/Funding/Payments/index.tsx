@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { Calendar, Download, Filter, TrendingUp, TrendingDown, Scale, AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Table } from '../../ui'
-import { format } from 'date-fns'
 import { usePaymentsData } from './hooks/usePaymentsData'
 import { paymentTotalsByDirection, DIRECTION_AMOUNT_CLASS, formatSignedEuro } from '../../Cashflow/services/paymentTotals'
 import type { BankPaymentWithDetails } from './services/bankPaymentsService'
+import { exportFundingPaymentsExcel } from './services/fundingPaymentsExport'
 import type { PaymentDirection } from '../../Cashflow/services/invoiceHelpers'
 import { getCreditTypeLabelKey } from '../Investors/utils/creditCalculations'
+import { useAsyncExport } from '../../../hooks/useAsyncExport'
 import { formatEuro, formatDate, NO_VALUE } from '../../../utils/formatters'
 
 // A drawdown is money in (green), a repayment or credit fee money out (red). The amount classes
@@ -55,26 +56,8 @@ const FundingPaymentsManagement: React.FC = () => {
 
   const filteredTotals = paymentTotalsByDirection(filteredPayments)
 
-  const exportToCSV = () => {
-    const headers = ['Date', 'Type', 'Recipient', 'Project', 'Category', 'Amount', 'Notes']
-    const rows = filteredPayments.map(p => [
-      p.payment_date ? format(new Date(p.payment_date), 'yyyy-MM-dd') : format(new Date(p.created_at), 'yyyy-MM-dd'),
-      directionLabel(p.direction),
-      p.bank_name ?? '',
-      p.project_name ?? '',
-      p.credit_type,
-      p.amount.toString(),
-      p.notes || ''
-    ])
-
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `funding-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
-    a.click()
-  }
+  // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
+  const { exporting, run: runExportExcel } = useAsyncExport(exportFundingPaymentsExcel, 'common.export_error')
 
   if (loading && payments.length === 0) {
     return <LoadingSpinner message={t('funding.payments.loading')} />
@@ -123,8 +106,14 @@ const FundingPaymentsManagement: React.FC = () => {
             <option value="large">{t('funding.payments.filter_large')}</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={exportToCSV} fullWidth>
-            {t('funding.payments.export_csv_button')}
+          <Button
+            variant="success"
+            icon={Download}
+            onClick={() => void runExportExcel(filteredPayments)}
+            loading={exporting}
+            fullWidth
+          >
+            {t('common.export_excel')}
           </Button>
         </div>
 

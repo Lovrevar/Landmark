@@ -3,8 +3,9 @@ import type { PaymentWithDetails, PaymentStats } from '../services/supervisionPa
 import {
   fetchSupervisionPayments,
   calculatePaymentStats,
-  exportPaymentsCSV,
+  exportSupervisionPaymentsExcel,
 } from '../services/supervisionPaymentService'
+import { useAsyncExport } from '../../../../hooks/useAsyncExport'
 
 export function useSupervisionPayments() {
   const [payments, setPayments] = useState<PaymentWithDetails[]>([])
@@ -55,7 +56,9 @@ export function useSupervisionPayments() {
     return matchesSearch && matchesDateRange && matchesFilter
   }), [payments, searchTerm, filterStatus, dateRange])
 
-  const handleExportCSV = () => exportPaymentsCSV(filteredPayments)
+  // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
+  const { exporting, run: runExportExcel } = useAsyncExport(exportSupervisionPaymentsExcel, 'common.export_error')
+  const handleExportExcel = () => void runExportExcel(filteredPayments)
 
   return {
     loading,
@@ -71,6 +74,7 @@ export function useSupervisionPayments() {
     setFilterStatus,
     dateRange,
     setDateRange,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   }
 }

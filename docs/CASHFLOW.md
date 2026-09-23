@@ -101,6 +101,11 @@ list reads as the whole book.
 **Exports are gated on a clean load.** `useDebtStatus` returns `canExport`
 (`!debtError && debtData.length > 0`); the Excel and PDF buttons are disabled when it is false and
 both handlers return early. An exported "no debt" spreadsheet outlives the screen it came from.
+Both then run through `useAsyncExport`, which owns the per-button loading flag and toasts
+`common.export_error`: the Excel half used to be called bare, so a throw died inside the click
+handler, and the PDF half was `async` called without `await` or `.catch`, so a failure was an
+unhandled rejection nobody saw — and the PDF now genuinely throws when the embedded font is
+missing, rather than emitting a document it cannot spell.
 
 Services in this module **throw**; they never return `[]` on failure. `calendarService`
 (`fetchInvoices`, `fetchBudgets`) and `customerService` (`fetchCustomerInvoices`,
@@ -424,9 +429,23 @@ Aggregated supplier debt overview. Shows total unpaid and paid amounts per suppl
 - **Depends on:** supabase client, utils/formatters.ts
 
 ### debtExport.ts
-- `exportToExcel(data, totalUnpaid, totalPaid, projectName)` — exports debt table to .xlsx
-- `exportToPDF(data, totalUnpaid, totalPaid, totalSuppliers, suppliersWithDebt, projectName)` — exports debt report to PDF
-- **Depends on:** xlsx, jsPDF
+- `exportToExcel(data, totalUnpaid, totalPaid, projectName)` — async; writes a real `.xlsx` (one `Stanje duga` sheet) through `src/lib/xlsxExport.ts` and logs `export.debt_excel`
+- `exportToPDF(data, totalUnpaid, totalPaid, totalSuppliers, suppliersWithDebt, projectName)` — async; A4 portrait table, Noto Sans embedded, logs `export.debt_pdf`
+- `buildDebtSheet(data, totalUnpaid, totalPaid, t)` — pure AOA builder, exported for `debtExport.test.ts`
+- Both log the **project filter** alongside the row count: one project's debt register and the whole portfolio's are different documents leaving the building
+- **Depends on:** xlsxExport, jsPDF, pdfFont, pdfText, exportT, downloadFile, logActivity
+
+> **Both halves were broken, and differently.** The "Excel" was an HTML `<table>` served as
+> `application/vnd.ms-excel` and saved as `.xls`, so Excel warned on every open, and
+> `supplier_name` was interpolated into that HTML **unescaped** — an `&`, a `<` or a stray `</td>`
+> in a company name corrupted or restructured the sheet. It is now a real `.xlsx` with money as
+> numbers. The PDF transliterated its own headings to ASCII (`Racuni`, `Neisplaceno`) because
+> jsPDF's built-in WinAnsi fonts cannot spell `č`, and printed `EUR` where the spreadsheet printed
+> `€`; it now embeds Noto Sans via `loadUnicodeFont` and routes money through `pdfText.ts`, whose
+> `winAnsi` guard matters here because `remaining_amount` accumulates into `total_unpaid`
+> (`debtService.ts`) and an over-paid invoice makes it **negative** — hr-HR writes that minus as
+> U+2212, and one unmapped character re-encodes the whole line as noise. Filenames go through
+> `exportFileName`, which folds Croatian letters to ASCII instead of deleting them.
 
 #### Hooks
 
@@ -446,7 +465,7 @@ Aggregated supplier debt overview. Shows total unpaid and paid amounts per suppl
 - Export buttons are `disabled={!canExport}` **and** both handlers return early on `!canExport`;
   the stat cards are not rendered when the load failed with nothing loaded, and the table area
   carries `ErrorState` instead of the "no debt" empty state
-- **Uses hooks:** useDebtStatus
+- **Uses hooks:** useDebtStatus, useAsyncExport
 - **Uses services:** debtExport
 - **Uses Ui:** Table, Button, Select, ErrorState, Alert
 
