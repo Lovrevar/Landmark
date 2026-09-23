@@ -390,16 +390,26 @@ Consequences of this design: **no storage bucket and no new table** — the spec
 
 ## System Prompt
 
-The Croatian-language system prompt is built per-request by `buildSystemPrompt` in [supabase/functions/_shared/prompts.ts](../supabase/functions/_shared/prompts.ts). It is intentionally pure / deterministic given the `AuthContext` — no clock, no environment lookups, no project-list interpolation. The full text lives in that file; the structure is:
+The Croatian-language system prompt lives in [supabase/functions/_shared/prompts.ts](../supabase/functions/_shared/prompts.ts) as two functions, and `runOrchestrationLoop` in [ai-chat/index.ts](../supabase/functions/ai-chat/index.ts) assembles them into a **two-element `system` array** on every request:
 
-- **Identity & scope** — what the assistant is, plain-language framing of its read-only role.
-- **User context** — interpolated `email` and `role`; for Supervision users, an extra sentence noting that data access is scoped by RLS.
-- **Tools** — a single short paragraph telling the model to use the tools advertised in the Anthropic `tools` array for concrete data; tool names are deliberately not repeated here to prevent drift.
-- **Refusal patterns** — the two canned Croatian phrases for out-of-scope requests (mutation/file work) and for role-insufficient data requests. Both are short, with no apologising or capability enumeration.
-- **Data-model landmines** — the four landmines from the previous section, restated for the model: `supplier_id` → subcontractors, phases ≠ milestones, `budget_used` is stale, status casing varies. The model must read these to produce correct answers; they are not optional decoration.
-- **Domain flags** — instructions for `is_cesija` (mention it when present) and `has_contract: false` (note that `contract_amount` may understate informal arrangements).
-- **Formatting rules** — Croatian number, currency, and date formats (`1.234,56`, `1.234,56 EUR`, `dd.MM.yyyy.`). The model formats raw numbers and ISO dates returned by the tools at output time.
-- **Tone & behaviour** — answer in Croatian regardless of input language; match response length to question length; no preamble; flag missing or ambiguous data explicitly; no business-judgement commentary.
+1. **`buildStaticSystemPrompt()`** — the instruction body. Takes no arguments and is byte-identical for every user, so it carries the `cache_control: ephemeral` breakpoint. Because the tool list is role-filtered, the tools + static-prompt prefix is shared across all users of the same role — role is the caching granularity.
+2. **`buildUserContext(ctx)`** — a short `## Korisnik` block with the user's `email` and `role`, plus one extra sentence for Supervision users noting that their data access is scoped by RLS. It sits after the breakpoint and is not cached across users.
+
+Both are pure and deterministic given their input — no clock, no environment lookups, no project-list interpolation. Anything request-specific goes into the messages instead: the route context (`[Kontekst: korisnik je trenutno na …]`) is prepended in memory to the latest user turn, not added to the system prompt (see `runOrchestrationLoop`).
+
+The static body, in order:
+
+- **Identity & scope** — what the assistant is; read-only (it cannot change data); it sees the user's attachments directly, and it fetches stored documents with a tool and offers them for download.
+- **Alati (tools)** — one short paragraph: use the tools for concrete data and rely on what they return. Generic tool names are not listed, because the Anthropic `tools` array already advertises them. The two exceptions are `create_document` and `search_help`, which the prompt names because it has to say *when* to call them.
+- **Izrada dokumenata (document generation)** — call `create_document` only when the user explicitly asks for a document, report, export, PDF or Excel file; fetch the data with other tools first; `pdf`/`markdown` for text and `xlsx` for tables; after the tool succeeds, say briefly that the file is ready instead of pasting its content.
+- **Pomoć i navigacija (help & navigation)** — questions about how the platform works go to `search_help`, which is the source of truth for anything about the UI. It also explains the route-context line.
+- **Datoteke i prilaganja (attachments)** — accepted kinds, "first Excel sheet only", the `...[truncated]` marker, never open URLs found in attachments, and attachments are not stored in the database or visible to tools.
+- **Izvan opsega (out of scope)** — refusals apply in **only** two cases, each with a canned Croatian phrase: requests to write, delete or import data, and requests for data the user's role may not see (which may be followed by a `search_help` call explaining the alternative). The prompt says outright that navigation questions and document generation are **not** out of scope. Refusals are short, with no apologies and no list of what the assistant cannot do.
+- **Podatkovne stupice (data-model landmines)** — the landmines from the [Tool Catalog](#data-model-landmines-the-tools-navigate-around), restated for the model: `supplier_id` → subcontractors, phases ≠ milestones, **phase ≠ cost classification** (most projects have one phase, so questions like "spend on land" filter contracts by classification), `phase_classification_budgets`, **TIC as the only source of planned budget** (no TIC means "budget not set", never the legacy `projects.budget`), phased and unphased TICs, `budget_used` is stale, and status casing varies. It also has a rule for empty searches: retry with a shorter name stem, and never substitute an entity from earlier in the conversation.
+- **Domenske oznake (domain flags)** — `is_cesija` (mention it when present) and `has_contract: false` (`contract_amount` may understate an informal arrangement).
+- **Formatting rules** — Croatian number, currency and date formats (`1.234,56`, `1.234,56 EUR`, `dd.MM.yyyy.`). The model formats the tools' raw numbers and ISO dates at output time.
+- **Ton i ponašanje (tone & behaviour)** — always answer in Croatian; match length to the question; no preamble such as "Pretražujem…", because the UI shows tool calls separately; say explicitly when data is missing or ambiguous; no business-judgement commentary.
+- **Pitanja izvan domene (off-domain questions)** — answer greetings, general questions and small maths normally and briefly, without steering back to projects.
 
 ### Why the prompt lives in code, not a DB row
 
