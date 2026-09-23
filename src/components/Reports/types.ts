@@ -159,12 +159,11 @@ export interface ComprehensiveReport {
   }>
   cash_flow: Array<{
     /**
-     * @deprecated English `'MMM yyyy'` label, read only by `pdf/generalReportPdf.ts` (which
-     * also slices it to three characters for a chart axis). The screen formats `month_key` in
-     * the UI language; this field goes when the export batch translates the PDF.
+     * The month's first day as `'YYYY-MM-DD'`. Both the screen and the PDF format it themselves —
+     * `formatMonthYear` for a table row, `formatMonthShort` for a chart axis. It replaced an
+     * English `'MMM yyyy'` label the service used to build, which is why a Croatian executive
+     * report used to carry English month names into a document sent to a bank.
      */
-    month: string
-    /** The month's first day as `'YYYY-MM-DD'`, for `formatMonthYear`. */
     month_key: string
     inflow: number
     outflow: number
@@ -179,11 +178,6 @@ export interface ComprehensiveReport {
      * no translator and must not decide the user's language.
      */
     recommendation_keys: string[]
-    /**
-     * @deprecated English copy, read only by `pdf/generalReportPdf.ts`. Goes with the export
-     * batch, which will render `recommendation_keys` instead.
-     */
-    recommendations: string[]
   }
 }
 
@@ -200,21 +194,12 @@ export type RiskKind = 'slow_sales'
 export interface ReportRisk {
   kind: RiskKind
   count: number
-  /** @deprecated English heading, read only by `pdf/generalReportPdf.ts`. */
-  type: string
-  /** @deprecated English sentence, read only by `pdf/generalReportPdf.ts`. */
-  description: string
 }
 
 // ── Sales Report ─────────────────────────────────────────────────────────────
 
 export interface SalesData {
-  /**
-   * @deprecated English `'MMM yyyy'` label, read only by `pdf/salesReportPdf.ts`. The screen
-   * formats `month_key`; this field goes with the export batch.
-   */
-  month: string
-  /** The month's first day as `'YYYY-MM-DD'`, for `formatMonthYear`. */
+  /** The month's first day as `'YYYY-MM-DD'`, for `formatMonthYear`. Both readers format it. */
   month_key: string
   sales: number
   revenue: number

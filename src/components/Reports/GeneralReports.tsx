@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import {
   Download,
   RefreshCw,
@@ -16,28 +16,25 @@ import { LoadingSpinner, Button, Badge, EmptyState, ErrorState, Table } from '..
 import ProjectCategoryBadge from '../Common/ProjectCategoryBadge'
 import { generateGeneralReportPDF } from './pdf/generalReportPdf'
 import { useGeneralReportData } from './hooks/useGeneralReportData'
-import { useToast } from '../../contexts/ToastContext'
+import { useAsyncExport } from '../../hooks/useAsyncExport'
 import { useTranslation } from 'react-i18next'
 import { formatEuroCompact, formatEuroRounded, formatDateTime, formatMonthYear } from '../../utils/formatters'
 import { PROJECT_STATUS, RISK_LEVEL, statusLabel, statusVariant } from '../../utils/statusDisplay'
+import { exportT, EXPORT_LANGUAGE } from '../../utils/exportLanguage'
 
 const GeneralReports: React.FC = () => {
-  const toast = useToast()
   const { t, i18n } = useTranslation()
   const { report, loading, error, fetchedAt, refetch } = useGeneralReportData()
-  const [generatingPDF, setGeneratingPDF] = useState(false)
 
-  const handleGeneratePDF = async () => {
-    if (!report) return
-    setGeneratingPDF(true)
-    try {
-      await generateGeneralReportPDF(report)
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      toast.error(t('reports.general.pdf_error'))
-    } finally {
-      setGeneratingPDF(false)
-    }
+  // The hand-rolled try/catch/toast this replaced was the same eleven lines as every other export
+  // site. The export itself is Croatian whatever the UI language — it goes to a bank, not to
+  // whoever clicked the button — so it gets `exportT()` rather than the page's own `t`.
+  const { exporting: generatingPDF, run: runExportPdf } = useAsyncExport(
+    generateGeneralReportPDF,
+    'reports.general.pdf_error'
+  )
+  const handleGeneratePDF = () => {
+    if (report) runExportPdf(report, exportT(), EXPORT_LANGUAGE)
   }
 
   // Hoisted out of the report body so it stays mounted when the load fails: the user keeps the

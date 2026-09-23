@@ -23,12 +23,13 @@ the local `Intl` formatters with `style: 'currency'` (which emitted `1.235 €`)
 
 Two things to know before adding a figure here:
 
-- **`hr-HR` writes its minus as U+2212, which is not in WinAnsi.** jsPDF's built-in fonts are
-  WinAnsi-encoded, and a single U+2212 makes jsPDF re-encode the *whole* string as two-byte
-  characters that then render as mojibake — a negative net cash flow would come out as garbage.
-  `generalReportPdf.ts` and `salesReportPdf.ts` therefore wrap the helpers in a local `winAnsi()`
-  that swaps U+2212 for an ASCII hyphen. `retailReportPdf.ts` needs no such wrapper: it embeds
-  Noto Sans, which has the character. The euro sign itself is fine in WinAnsi (0x80).
+- **In a PDF, go through `pdf/pdfText.ts`** — `pdfMoney` (exact cents), `pdfMoneyRounded` (whole
+  euros) and `pdfMoneyCompact` (`€1,2M`). They are the three helpers above wrapped in `winAnsi()`,
+  which swaps `hr-HR`'s U+2212 minus for an ASCII hyphen. Every generator now embeds Noto Sans,
+  which *has* U+2212, so this is belt and braces rather than the only line of defence — but it is
+  two lines, an ASCII hyphen reads correctly in Croatian, and the day someone adds a generator and
+  forgets the font, a number is still a number. It used to be three copies of `winAnsi` and two
+  generators that needed it and did not have it.
 - **Square metres are not money.** `m²` figures keep their own `toLocaleString('hr-HR')`.
 
 ---
@@ -36,8 +37,14 @@ Two things to know before adding a figure here:
 ## Types
 
 ### types.ts
-- Exports: `ProjectData`, `ComprehensiveReport`, `SalesData`, `ProjectSalesReport`, `CustomerReport`, `MonthlyData`, `WorkLog`, `ProjectSupervisionReport`
+- Exports: `ProjectData`, `ComprehensiveReport`, `SalesData`, `ProjectSalesReport`, `CustomerReport`, `ReportRisk`, `RiskKind`, `MonthlyData`, `WorkLog`
 - Used by general, sales, and supervision report views and services
+- **No English half any more.** Five fields existed only because the PDF generators read English
+  prose the services built: `cash_flow[].month` and `SalesData.month` (`'MMM yyyy'` labels, one of
+  them sliced to three characters for a chart axis), `ReportRisk.type` / `.description`, and
+  `insights.recommendations`. They were deleted with the September 2026 export batch. What is left
+  is machine-readable and formatted at the render site: `month_key` (`'YYYY-MM-DD'`), a risk as
+  `{ kind, count }`, and `recommendation_keys` as i18n key paths
 
 ### retailReportTypes.ts
 - Exports: `ProjectReportData`, `PhaseReportData`, `CustomerReportData`, `SupplierReportData`, `SupplierTypeSummary`, `InvoiceSummary`, `RetailReportData`
@@ -92,6 +99,13 @@ Two things to know before adding a figure here:
 ## PDF Generators
 
 ### pdf/pdfCharts.ts
+- Every draw function takes a `fontFamily` option. It used to hard-code `setFont('helvetica', …)`
+  at **nine** sites and take no font at all, so a generator could embed Noto Sans, set it on the
+  document, and still have every chart title, axis label, pie legend and progress-bar caption
+  silently revert to the WinAnsi built-in — i.e. exactly the strings that carry Croatian. Callers
+  pass `PDF_FONT_FAMILY`. Passing nothing keeps whatever face the document is already on
+  (`pdf.getFont()`) rather than forcing one, so a generator inherits the embedded font the day it
+  loads one instead of needing both edits at once
 - `drawBarChart(pdf, ...)` — draws a vertical bar chart onto a jsPDF document
 - `drawPieChart(pdf, ...)` — draws a pie/donut chart
 - `drawLineChart(pdf, ...)` — draws a line chart
@@ -105,18 +119,34 @@ Two things to know before adding a figure here:
 - **Depends on:** jsPDF, `src/utils/formatters.ts`
 
 ### pdf/generalReportPdf.ts
-- `generateGeneralReportPDF(report)` — generates a 10+ page executive PDF covering: cover page, KPIs, portfolio analytics, sales performance, funding & finance, construction status, accounting overview, TIC costs, bank accounts, contract distribution, cash flow trend, project portfolio, risk assessment, insights & recommendations
-- In the project portfolio cards the project's category is appended to the location line (`Zagreb  ·  Stambeno`), keeping the fixed 50mm card height
-- **Depends on:** jsPDF, pdfCharts.ts
+- `generateGeneralReportPDF(report, t, language)` — generates a 10+ page executive PDF covering: cover page, KPIs, portfolio analytics, sales performance, funding & finance, construction status, accounting overview, TIC costs, bank accounts, contract distribution, cash flow trend, project portfolio, risk assessment, insights & recommendations
+- **Croatian, from the same keys the screen renders.** Roughly two thirds of its labels are
+  `reports.general.*` keys that `GeneralReports.tsx` already used, so the document and the page
+  cannot drift apart; only the PDF's own chrome (cover, footer, chart titles) lives under
+  `reports.general.pdf.*`. Two shapes of key meet here — the screen's grid labels mostly end in a
+  colon, its card labels mostly do not, and a progress-bar caption appends its own separator — so
+  the file has `withColon()` and `bare()` rather than producing `Ukupno jedinica::`
+- **The value columns are measured, not hard-coded.** They used to sit at fixed offsets
+  (`margin + 35 / 45 / 50 / 55 / 125 / 145`) tuned to English; Croatian runs longer and seven of
+  the fourteen columns overran their value outright — "Ukupna vrijednost investicija:" by 14mm,
+  "Ukupno uredskih dobavljača:" by 13mm. `labelValueRows()` measures the widest label in each
+  column and places the values past it, keeping the intended column when the labels are short and
+  widening instead of colliding when they are not. The cover title and the KPI captions shrink to
+  fit the same way
+- In the project portfolio cards the project's category is appended to the location line (`Zagreb  ·  Stambeno`), keeping the fixed 50mm card height, and the risk badge maps `risk_level` through `RISK_LEVEL` rather than printing the stored `'High'`
+- Logs `export.general_pdf` after `pdf.save()`; the file is `izvjestaj-portfelj-YYYY-MM-DD.pdf`
+- **Depends on:** jsPDF, pdfCharts.ts, pdfText.ts, pdfFont.ts, formatters.ts, statusDisplay.ts
 
 ### pdf/salesReportPdf.ts
 - `generateSalesReportPDF(reportType, projectReport, customerReport, dateRange)` — generates a project sales PDF (overview, units, revenue, monthly trend, apartment details) or customer report PDF (distribution, insights)
 - **Depends on:** jsPDF, pdfCharts.ts
 
 ### pdf/retailReportPdf.ts
-- `generateRetailReportPdf(data)` — generates a retail portfolio PDF with project table, customer breakdown, and supplier-by-type analysis; loads Noto Sans (Google Fonts) for Croatian character support
+- `generateRetailReportPdf(data, t?)` — generates a retail portfolio PDF with project table, customer breakdown, and supplier-by-type analysis. `t` defaults to `exportT()`, so the caller needs no change
+- Its Croatian used to be **hard-coded**, which meant none of it could be reused, none of it was covered by the locale parity guard, and it had drifted: `Zemljiste` and `m2` were transliterations left over from before the font was embedded, in the one generator that always had the glyphs to spell them. The strings are now keys — mostly the retail screens' own (`reports.portfolio.*`, `reports.costs.*`, `reports.project_performance.*`, `common.*`), with `reports.retail.pdf.*` for what is only in the document. `Plac.` / `Nepl.` became the full "Plaćeno" / "Neplaćeno": the rows are right-aligned and had 60mm to spare
 - Its local `fmt` is `formatEuroRounded`, so amounts read `€1.235`, not `1.235 €`
-- **Depends on:** jsPDF, pdfCharts.ts
+- Logs `export.retail_pdf`; the file is `izvjestaj-retail-YYYY-MM-DD.pdf`
+- **Depends on:** jsPDF, pdfFont.ts, formatters.ts, exportLanguage.ts
 
 ---
 
@@ -142,6 +172,10 @@ Two things to know before adding a figure here:
 - The blue gradient header is hoisted above the loading/error branches so it survives a failed
   load; the "generated at" line and the PDF export button render only with a report behind them,
   since exporting a report nobody could load would produce a PDF of zeros
+- The export goes through `useAsyncExport(generateGeneralReportPDF, 'reports.general.pdf_error')`,
+  not the eleven hand-rolled lines of try/catch/toast it used to be, and hands the generator
+  `exportT()` + `EXPORT_LANGUAGE` rather than the page's own `t` — the document is Croatian
+  whatever the reader of the screen has selected
 
 ### SalesReports.tsx
 - Project sales report (unit status, revenue, monthly trend, apartment list) or customer report (distribution, insights), with project selector, date range picker, and PDF export
@@ -187,35 +221,45 @@ Two things to know before adding a figure here:
 
 ## Language, dates and service-built prose
 
-### The exports decision (for the deferred exports batch)
+### The exports decision — landed September 2026
 
-Recorded here so the next batch starts from a decision rather than re-litigating it:
-
-- **Every export is Croatian, with the embedded font.** `src/utils/pdfFont.ts` exists and works —
-  `retailReportPdf.ts` already loads Noto Sans through it. The other generators adopt it and the
-  transliteration goes; a PDF that drops Croatian diacritics is not an acceptable export.
+- **Every export is Croatian, whatever the UI language**, via `exportT()`
+  (`src/utils/exportLanguage.ts`, a thin `i18n.getFixedT('hr')`). These files go to a bank, an
+  investor or the accountant, and the recipient's language has nothing to do with whichever
+  language the person clicking Export happens to be reading the app in. Generators take
+  `(…, t, language)`; the caller passes `exportT()` and `EXPORT_LANGUAGE`.
+- **Exports read the same locale files as the screens.** About two thirds of the labels a report
+  needs were already translated for the equivalent screen, so a generator reuses those keys rather
+  than carrying a second set of strings (which is how `retailReportPdf` ended up with `Zemljiste`
+  while the screen said `Zemljište`). `pdf/pdfExportKeys.test.ts` scans all four generators and
+  fails if any key they name is missing from either bundle — an unresolved key does not throw in
+  i18next, it prints the key path into a document that has already left the building.
+- **The font is local and there is no fallback.** `src/utils/pdfFont.ts` imports the two Noto Sans
+  faces from `src/assets/fonts/` as Vite assets and **throws** if they cannot be loaded. A failure
+  means a broken deploy; the honest response is to fail the export through `useAsyncExport`'s
+  toast rather than hand someone a corrupted document with a company letterhead on it. Only
+  `normal` and `bold` are registered — asking jsPDF for `italic` silently gets Times-Italic.
+- **Croatian filenames, ASCII only**, through `exportFileName()`: `izvjestaj-portfelj-2026-09-23.pdf`.
+- **Every export is logged** at `severity: 'low'` with its row count, inside the generator, after
+  the file is written — see `docs/ACTIVITY_LOG.md` → Reports.
 - **The TIC export stays Croatian and its sheet layout must not change.** `ticImport.ts` reads its
   own output back, so a column moved for cosmetic reasons breaks the round trip.
-- Until that batch lands, the generators are English and `Reports/pdf/**` +
-  `dashboards/investmentReportPdf.ts` are out of scope for i18n work.
 
 ### The screens
 
-The screens are Croatian-first; the PDF generators are not yet. That split is why two report
-types carry the same value twice.
+Screens and exports are both Croatian-first now; they differ only in that an export is Croatian
+*unconditionally* while a screen follows the user.
 
 - **Dates go through `src/utils/formatters.ts`.** `formatDate` / `formatDateTime` /
-  `formatMonthYear` take `i18n.language` explicitly, so the executive report's "Generirano:" line
-  and the sales report's start date read `05.01.2026.` in Croatian and `Jan 05, 2026` in English.
-  No view calls date-fns `format` any more.
-- **Two fields are deliberately duplicated, and both halves are documented in `types.ts`:**
-  `ComprehensiveReport['cash_flow'][].month_key` and `SalesData.month_key` are machine keys (the
-  month's first day, `'YYYY-MM-DD'`) that the **screens** format; the old `month` fields keep
-  their English `'MMM yyyy'` label because `pdf/generalReportPdf.ts` still reads them — and slices
-  one to three characters for a chart axis, so changing it in place would have broken the export.
-  `insights.recommendation_keys` sits beside `insights.recommendations` for the same reason.
-  **The exports batch replaces the English halves and deletes them**; they are marked
-  `@deprecated`.
+  `formatMonthYear` / `formatMonthShort` take the language explicitly, so the executive report's
+  "Generirano:" line reads `05.01.2026.` in Croatian and `Jan 05, 2026` in English. No view and no
+  generator calls date-fns `format` any more, and `i18nGuards.test.ts` enforces it — its allowlist
+  no longer excuses `Reports/pdf/**` or the two report services.
+- **The services hand over machine values, not prose.** A month is `month_key`
+  (`'YYYY-MM-DD'`) — `formatMonthYear` for a table row, `formatMonthShort` (`sij`) for the
+  six-bar chart axis the old English label was sliced to three characters for. A risk is
+  `{ kind, count }`. A recommendation is an i18n key path. A service has no translator and must
+  not decide anyone's language; the five English fields that existed only for the PDFs are gone.
 - **`generalReportService` no longer writes English prose.** A risk is `{ kind, count }`
   (`ReportRisk`) and `GeneralReports` renders `reports.general.risks.<kind>.*`; the four strategic
   recommendations are keys under `reports.general.recs.*`. This is the shape
@@ -237,7 +281,11 @@ types carry the same value twice.
 
 ## Notes
 - `dashboards/investmentReportPdf.ts` is a related PDF generator that lives in the Dashboards folder — not here
-- `retailReportPdf.ts` uses Noto Sans (dynamically loaded from Google Fonts) to ensure Croatian characters render correctly in PDF — do not replace with helvetica for this file
+- **All four generators** embed Noto Sans through `src/utils/pdfFont.ts` (a local asset, not a
+  Google Fonts fetch) and draw everything in `PDF_FONT_FAMILY`. Do not reintroduce `helvetica`
+  anywhere: WinAnsi has no `č`, `ć` or `đ`, and one unmapped character makes jsPDF re-encode the
+  whole string as UCS-2BE, which renders as noise — `Račun` came out as `R a u n`. That is not a
+  dropped accent, it is an unreadable line
 - During the May 2026 audit the report services were refactored to batch their queries in a single `Promise.all` instead of sequential awaits — same tables, same output shape
 - The long-running PDF generators (`salesReportPdf`, `retailReportPdf`) call `yieldToUI()` (`src/utils/yieldToUI.ts`) inside their row loops so a large export does not freeze the UI; this does not change report content
 - All report views are internationalised (react-i18next, keys under `reports.*`) and dark-mode aware, and long tables expose per-cell `label` props for the mobile card layout — presentational only, the report data and sections are unchanged

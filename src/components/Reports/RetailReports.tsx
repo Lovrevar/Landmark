@@ -37,7 +37,7 @@ const RetailReports: React.FC = () => {
     { id: 'costs', label: t('reports.retail.tab_costs'), icon: <Euro className="w-4 h-4" /> }
   ], [t])
 
-  const { exporting, run: runExportPdf } = useAsyncExport(generateRetailReportPdf)
+  const { exporting, run: runExportPdf } = useAsyncExport(generateRetailReportPdf, 'common.export_error')
   const handleExportPdf = () => { if (data) runExportPdf(data) }
 
   // The four tab panels below take this as a prop. It used to be a local `Intl` formatter with

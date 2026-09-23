@@ -1,8 +1,24 @@
 import { jsPDF } from 'jspdf'
 import { formatEuroCompact } from '../../../utils/formatters'
+import { winAnsi } from './pdfText'
 
 /** Whether a chart's data points are money (the default) or bare counts and percentages. */
 export type ValueFormat = 'currency' | 'plain'
+
+/**
+ * The face a chart draws its own text in — title, axis labels, legend, value captions.
+ *
+ * Every one of the nine `setFont` calls below used to hard-code `'helvetica'`, and none of the
+ * draw functions took a font. So a generator could embed Noto Sans, set it on the document, and
+ * still have every chart label silently revert to the WinAnsi built-in — which is exactly where
+ * the Croatian labels live. Callers pass `PDF_FONT_FAMILY`.
+ *
+ * When a caller passes nothing, the chart keeps whatever face the document is already set to
+ * (`pdf.getFont()`), rather than forcing one: a generator that has not been converted yet is left
+ * as it was, and inherits the embedded font automatically the day it loads one.
+ */
+const resolveFamily = (pdf: jsPDF, fontFamily?: string): string =>
+  fontFamily ?? pdf.getFont().fontName
 
 export const drawBarChart = (
   pdf: jsPDF,
@@ -17,14 +33,16 @@ export const drawBarChart = (
     showValues?: boolean
     maxValue?: number
     valueFormat?: ValueFormat
+    fontFamily?: string
   } = {}
 ) => {
   const { title, color = '#2563eb', showValues = true, maxValue, valueFormat = 'currency' } = options
+  const family = resolveFamily(pdf, options.fontFamily)
   const barColor = hexToRgb(color)
 
   if (title) {
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(family, 'bold')
     pdf.text(title, x, y - 3)
   }
 
@@ -73,13 +91,14 @@ export const drawPieChart = (
   centerY: number,
   radius: number,
   data: Array<{ label: string; value: number; color: string }>,
-  options: { title?: string; showLegend?: boolean; valueFormat?: ValueFormat } = {}
+  options: { title?: string; showLegend?: boolean; valueFormat?: ValueFormat; fontFamily?: string } = {}
 ) => {
   const { title, showLegend = true, valueFormat = 'currency' } = options
+  const family = resolveFamily(pdf, options.fontFamily)
 
   if (title) {
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(family, 'bold')
     const titleWidth = pdf.getTextWidth(title)
     pdf.text(title, centerX - titleWidth / 2, centerY - radius - 5)
   }
@@ -123,7 +142,7 @@ export const drawPieChart = (
 
       pdf.setTextColor(255, 255, 255)
       pdf.setFontSize(8)
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(family, 'bold')
       const percentText = `${percentage}%`
       const textWidth = pdf.getTextWidth(percentText)
       pdf.text(percentText, labelX - textWidth / 2, labelY)
@@ -143,7 +162,7 @@ export const drawPieChart = (
 
       pdf.setTextColor(0, 0, 0)
       pdf.setFontSize(7)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(family, 'normal')
       pdf.text(`${item.label}: ${formatValue(item.value, valueFormat)}`, centerX - radius + 5, legendY + 2.5)
       legendY += 5
     })
@@ -164,14 +183,16 @@ export const drawLineChart = (
     color?: string
     showPoints?: boolean
     fillArea?: boolean
+    fontFamily?: string
   } = {}
 ) => {
   const { title, color = '#2563eb', showPoints = true, fillArea = false } = options
+  const family = resolveFamily(pdf, options.fontFamily)
   const lineColor = hexToRgb(color)
 
   if (title) {
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(family, 'bold')
     pdf.text(title, x, y - 3)
   }
 
@@ -235,13 +256,14 @@ export const drawHorizontalBarChart = (
   width: number,
   height: number,
   data: Array<{ label: string; value: number; color?: string }>,
-  options: { title?: string; showValues?: boolean; valueFormat?: ValueFormat } = {}
+  options: { title?: string; showValues?: boolean; valueFormat?: ValueFormat; fontFamily?: string } = {}
 ) => {
   const { title, showValues = true, valueFormat = 'currency' } = options
+  const family = resolveFamily(pdf, options.fontFamily)
 
   if (title) {
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(family, 'bold')
     pdf.text(title, x, y - 3)
   }
 
@@ -267,12 +289,12 @@ export const drawHorizontalBarChart = (
 
     pdf.setFontSize(8)
     pdf.setTextColor(0, 0, 0)
-    pdf.setFont('helvetica', 'normal')
+    pdf.setFont(family, 'normal')
     const labelWidth = pdf.getTextWidth(item.label)
     pdf.text(item.label, x - 2 - labelWidth, barY + barHeight / 2 + 1)
 
     if (showValues) {
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(family, 'bold')
       pdf.text(formatValue(item.value, valueFormat), x + barWidth + 2, barY + barHeight / 2 + 1)
     }
   })
@@ -292,6 +314,7 @@ export const drawProgressBar = (
     color?: string
     backgroundColor?: string
     showPercentage?: boolean
+    fontFamily?: string
   } = {}
 ) => {
   const {
@@ -300,6 +323,7 @@ export const drawProgressBar = (
     backgroundColor = '#e5e7eb',
     showPercentage = true
   } = options
+  const family = resolveFamily(pdf, options.fontFamily)
 
   const bgColor = hexToRgb(backgroundColor)
   const fgColor = hexToRgb(color)
@@ -318,7 +342,7 @@ export const drawProgressBar = (
   if (label || showPercentage) {
     pdf.setFontSize(8)
     pdf.setTextColor(0, 0, 0)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(family, 'bold')
     const text = label ? `${label}: ${percentage.toFixed(1)}%` : `${percentage.toFixed(1)}%`
     const textWidth = pdf.getTextWidth(text)
     pdf.text(text, x + width / 2 - textWidth / 2, y + height / 2 + 1)
@@ -335,13 +359,6 @@ export const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
     b: parseInt(hex.substring(4, 6), 16)
   }
 }
-
-/**
- * jsPDF's built-in fonts are WinAnsi-encoded, which has no U+2212. `hr-HR` uses U+2212 as its
- * minus sign, and a single one of them makes jsPDF re-encode the whole string as two-byte
- * characters that the WinAnsi font then renders as mojibake. The euro sign is fine (WinAnsi 0x80).
- */
-const winAnsi = (text: string): string => text.replace(/\u2212/g, '-')
 
 /**
  * How a data point's value is written next to its bar or legend swatch.

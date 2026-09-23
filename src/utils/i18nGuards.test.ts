@@ -28,17 +28,13 @@ function sourceFiles(dir: string): string[] {
 const MONTH_NAME_ALLOWED = [
   // The date helpers themselves — 'MMM dd, yyyy' is the *English* branch.
   'utils/formatters.ts',
-  // Export generators are a batch of their own (see docs/REPORTS.md: they become Croatian with an
-  // embedded font). Until then their labels are English, and a date among them should match.
-  'components/Reports/pdf/',
-  'components/dashboards/investmentReportPdf.ts',
-  // `month` is kept beside `month_key` only because the PDF builds a chart axis from
-  // `month.substring(0, 3)`. Both fields are @deprecated and go with the export batch.
-  'components/Reports/services/generalReportService.ts',
-  'components/Reports/services/salesReportService.ts',
   // Writes `credit_name` into bank_credits — stored data, not a label. Changing it would make a
   // row's text depend on who created it, which is a product decision, not a translation.
   'components/Funding/Investors/services/equityService.ts',
+  // Gone with the export batch (September 2026): the four PDF generators are Croatian and format
+  // their dates through `formatters.ts`, and the two report services no longer build an English
+  // `'MMM yyyy'` label beside `month_key` for a generator to slice into a chart axis. The guard
+  // now enforces that state rather than excusing it.
 ]
 
 describe('no English month names in the UI', () => {

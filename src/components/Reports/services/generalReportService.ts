@@ -242,9 +242,7 @@ export async function fetchGeneralReportData(
       .reduce((sum, p) => sum + p.amount, 0)
 
     return {
-      // `month` is the English label the PDF still reads; the screen formats `month_key` in
-      // whichever language the user is in. See the note on `ComprehensiveReport['cash_flow']`.
-      month: format(month, 'MMM yyyy'),
+      // A machine key, not a label. Both readers format it in the language they are rendering in.
       month_key: format(startOfMonth(month), 'yyyy-MM-dd'),
       inflow: monthInflow,
       outflow: monthOutflow,
@@ -320,18 +318,13 @@ export async function fetchGeneralReportData(
     })
   )
 
-  // A risk carries its key and its count; `GeneralReports.tsx` turns that into a sentence in the
-  // user's language. `type` / `description` are the English copy the PDF generator still reads —
-  // see `ReportRisk` in ../types.
+  // A risk carries its key and its count; the renderer turns that into a sentence in the language
+  // it is rendering in — `GeneralReports.tsx` on screen, `reports.general.risks.*` in the PDF.
+  // A service has no translator and must not decide anyone's language.
   const risks: ReportRisk[] = []
   const slowSalesProjects = projectDetails.filter(p => p.sales_rate < 40 && p.total_units > 0)
   if (slowSalesProjects.length > 0) {
-    risks.push({
-      kind: 'slow_sales',
-      count: slowSalesProjects.length,
-      type: 'SLOW SALES',
-      description: `${slowSalesProjects.length} project(s) with sales rate below 40%`
-    })
+    risks.push({ kind: 'slow_sales', count: slowSalesProjects.length })
   }
 
   const topProjects = [...projectDetails]
@@ -339,22 +332,12 @@ export async function fetchGeneralReportData(
     .slice(0, 3)
     .map(p => ({ name: p.name, revenue: p.revenue, sales_rate: p.sales_rate }))
 
-  // Same split as the risks: keys for the screen, the English originals for the PDF until the
-  // export batch reaches it. The two lists stay in the same order so one can replace the other.
+  // Keys, for the same reason as the risks above. Both readers translate them at the render site.
   const recommendationKeys: string[] = []
-  const recommendations: string[] = []
-  if (salesRate < 50) {
-    recommendationKeys.push('reports.general.recs.marketing')
-    recommendations.push('Intensify marketing efforts to accelerate sales velocity')
-  }
-  if (availableUnits > soldUnits) {
-    recommendationKeys.push('reports.general.recs.inventory')
-    recommendations.push('Significant inventory available - consider pricing strategies')
-  }
+  if (salesRate < 50) recommendationKeys.push('reports.general.recs.marketing')
+  if (availableUnits > soldUnits) recommendationKeys.push('reports.general.recs.inventory')
   recommendationKeys.push('reports.general.recs.budgets')
-  recommendations.push('Continue monitoring project budgets and timeline adherence')
   recommendationKeys.push('reports.general.recs.partners')
-  recommendations.push('Maintain strong relationships with financing partners')
 
   const totalInvoices = accountingInvoicesArray.length
   const totalInvoiceValue = accountingInvoicesArray.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
@@ -582,8 +565,7 @@ export async function fetchGeneralReportData(
     risks: risks,
     insights: {
       top_projects: topProjects,
-      recommendation_keys: recommendationKeys,
-      recommendations: recommendations
+      recommendation_keys: recommendationKeys
     }
   }
 }

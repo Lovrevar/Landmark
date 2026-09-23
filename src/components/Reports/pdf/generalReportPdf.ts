@@ -1,4 +1,4 @@
-import { format } from 'date-fns'
+import type { TFunction } from 'i18next'
 import {
   drawBarChart,
   drawPieChart,
@@ -7,27 +7,62 @@ import {
   drawProgressBar,
   hexToRgb
 } from './pdfCharts'
+import { pdfMoneyRounded, pdfMoneyCompact } from './pdfText'
 import type { ComprehensiveReport } from '../types'
 import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
-import { formatEuroCompact, formatEuroRounded } from '../../../utils/formatters'
-
-/**
- * jsPDF's built-in fonts are WinAnsi-encoded, which has no U+2212. `hr-HR` uses U+2212 as its
- * minus sign, and a single one of them makes jsPDF re-encode the whole string as two-byte
- * characters that the WinAnsi font then renders as mojibake — a negative net cash flow would come
- * out as garbage instead of a number. The euro sign itself is fine (WinAnsi 0x80).
- */
-const winAnsi = (text: string): string => text.replace(/\u2212/g, '-')
+import {
+  formatDate,
+  formatDateTime,
+  formatMonthShort,
+  formatMonthYear
+} from '../../../utils/formatters'
+import { loadUnicodeFont, PDF_FONT_FAMILY } from '../../../utils/pdfFont'
+import { RISK_LEVEL, statusLabel } from '../../../utils/statusDisplay'
+import { exportFileName } from '../../../utils/downloadFile'
+import { logActivity } from '../../../lib/activityLog'
 
 /** Whole euros, for the aggregate figures this report is made of. */
-const money = (value: number | null | undefined): string => winAnsi(formatEuroRounded(value))
+const money = pdfMoneyRounded
 
-/** Abbreviated euros (€1,2M / €45K), for the summary lines and KPI boxes. */
-const moneyCompact = (value: number | null | undefined): string => winAnsi(formatEuroCompact(value))
+/** Abbreviated euros (€1,2M / €45K), for the summary lines, KPI boxes and chart axes. */
+const moneyCompact = pdfMoneyCompact
 
-export async function generateGeneralReportPDF(report: ComprehensiveReport): Promise<void> {
+/**
+ * The executive portfolio report.
+ *
+ * `t` is the **export** translator (`exportT()`), which is pinned to Croatian whatever the UI
+ * language is — this document goes to a bank, and the recipient's language has nothing to do with
+ * the language of whoever clicked Export. `language` goes to the date helpers for the same reason.
+ *
+ * Almost every label here is a key the screen (`Reports/GeneralReports.tsx`) already renders, so
+ * the two cannot drift apart; only the PDF's own chrome — cover, page furniture, chart titles —
+ * is new. Two shapes of key meet here, which is what `withColon` / `bare` are for: the screen's
+ * grid labels mostly end in a colon ("Ukupno jedinica:"), its card labels mostly do not
+ * ("Budžet"), and a progress-bar caption appends its own separator.
+ */
+export async function generateGeneralReportPDF(
+  report: ComprehensiveReport,
+  t: TFunction,
+  language: string
+): Promise<void> {
   const { jsPDF } = await import('jspdf')
   const pdf = new jsPDF('p', 'mm', 'a4')
+
+  // No fallback: the WinAnsi built-ins have no `č`, `ć` or `đ`, and jsPDF answers one unmapped
+  // character by re-encoding the whole string into noise. A failure means the font asset did not
+  // ship; let it reach `useAsyncExport`, which tells the user, rather than emitting a document
+  // with a company letterhead and garbage under it.
+  await loadUnicodeFont(pdf)
+  const fontFamily = PDF_FONT_FAMILY
+
+  /** The label with exactly one trailing colon, whichever shape the key was written in. */
+  const withColon = (key: string): string => {
+    const text = t(key)
+    return text.endsWith(':') ? text : `${text}:`
+  }
+
+  /** The label with no trailing colon — chart titles and progress-bar captions add their own. */
+  const bare = (key: string): string => t(key).replace(/\s*:\s*$/, '')
 
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
@@ -43,6 +78,66 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     return false
   }
 
+  /**
+   * Centre a line, shrinking it until it fits between the margins.
+   *
+   * The cover was laid out around English at a fixed point size; "Sveobuhvatni izvještaj za
+   * rukovodstvo" is half as long again as "Executive Portfolio Report" and ran off the page.
+   */
+  const centered = (text: string, y: number, size: number) => {
+    const maxWidth = pageWidth - 2 * margin
+    let fontSize = size
+    pdf.setFontSize(fontSize)
+    while (fontSize > 8 && pdf.getTextWidth(text) > maxWidth) {
+      fontSize -= 1
+      pdf.setFontSize(fontSize)
+    }
+    pdf.text(text, pageWidth / 2 - pdf.getTextWidth(text) / 2, y)
+  }
+
+  /**
+   * A block of `[label, value]` or `[label, value, label, value]` rows.
+   *
+   * The value columns used to sit at hard-coded offsets that differed per block
+   * (`margin + 35 / 45 / 50 / 55 / 125 / 145`), tuned to English. Croatian labels run longer —
+   * "Ukupno podugovaratelja:" against "Total Subcontractors:", "Ukupna vrijednost investicija:"
+   * against "Investment Value:" — and several of them overran their value outright. Each column
+   * is now measured: the block keeps its intended shape when the labels are short and widens
+   * instead of colliding when they are not. Set the font size before calling — `getTextWidth`
+   * measures at whatever size the document is on.
+   */
+  const labelValueRows = (
+    rows: string[][],
+    opts: { x: number; y: number; step: number; col2?: number }
+  ) => {
+    const gap = 2
+    const gutter = 6
+
+    pdf.setFont(fontFamily, 'bold')
+    const label1Width = Math.max(0, ...rows.map(row => pdf.getTextWidth(row[0] || '')))
+    const label2Width = Math.max(0, ...rows.map(row => pdf.getTextWidth(row[2] || '')))
+    pdf.setFont(fontFamily, 'normal')
+    const value1Width = Math.max(0, ...rows.map(row => pdf.getTextWidth(row[1] || '')))
+
+    const value1X = opts.x + label1Width + gap
+    const col2X = Math.max(opts.col2 ?? 0, value1X + value1Width + gutter)
+    const value2X = col2X + label2Width + gap
+
+    rows.forEach((row, index) => {
+      const y = opts.y + index * opts.step
+      pdf.setFont(fontFamily, 'bold')
+      pdf.text(row[0], opts.x, y)
+      pdf.setFont(fontFamily, 'normal')
+      pdf.text(row[1], value1X, y)
+      if (row[2]) {
+        pdf.setFont(fontFamily, 'bold')
+        pdf.text(row[2], col2X, y)
+        pdf.setFont(fontFamily, 'normal')
+        pdf.text(row[3], value2X, y)
+      }
+    })
+  }
+
   // ── Cover page ───────────────────────────────────────────────────────────
   pdf.setFillColor(15, 23, 42)
   pdf.rect(0, 0, pageWidth, pageHeight, 'F')
@@ -51,49 +146,30 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.rect(0, 0, 10, pageHeight, 'F')
 
   pdf.setTextColor(255, 255, 255)
-  pdf.setFontSize(48)
-  pdf.setFont('helvetica', 'bold')
-  let text = 'LANDMARK'
-  let textWidth = pdf.getTextWidth(text)
-  pdf.text(text, pageWidth / 2 - textWidth / 2, 80)
-  text = 'GROUP'
-  textWidth = pdf.getTextWidth(text)
-  pdf.text(text, pageWidth / 2 - textWidth / 2, 95)
+  pdf.setFont(fontFamily, 'bold')
+  centered('LANDMARK', 80, 48)
+  centered('GROUP', 95, 48)
 
-  pdf.setFontSize(24)
-  pdf.setFont('helvetica', 'normal')
-  text = 'Executive Portfolio Report'
-  textWidth = pdf.getTextWidth(text)
-  pdf.text(text, pageWidth / 2 - textWidth / 2, 120)
+  pdf.setFont(fontFamily, 'normal')
+  centered(t('reports.general.exec_report'), 120, 24)
 
   pdf.setDrawColor(37, 99, 235)
   pdf.setLineWidth(1)
   pdf.line(pageWidth / 2 - 40, 125, pageWidth / 2 + 40, 125)
 
-  pdf.setFontSize(14)
   pdf.setTextColor(200, 200, 200)
-  text = `Report Period: ${format(new Date(), 'MMMM yyyy')}`
-  textWidth = pdf.getTextWidth(text)
-  pdf.text(text, pageWidth / 2 - textWidth / 2, 145)
-  text = `Generated: ${format(new Date(), 'MMMM dd, yyyy')}`
-  textWidth = pdf.getTextWidth(text)
-  pdf.text(text, pageWidth / 2 - textWidth / 2, 155)
+  centered(t('reports.general.pdf.period', { period: formatMonthYear(new Date(), language) }), 145, 14)
+  centered(`${withColon('common.generated')} ${formatDate(new Date(), language)}`, 155, 14)
 
-  pdf.setFontSize(12)
   const summaryStats = [
-    `${report.executive_summary.total_projects} Projects`,
-    `${moneyCompact(report.executive_summary.total_revenue)} Revenue`,
-    `${report.kpis.roi.toFixed(1)}% ROI`
+    t('reports.general.pdf.cover_projects', { count: report.executive_summary.total_projects }),
+    t('reports.general.pdf.cover_revenue', { value: moneyCompact(report.executive_summary.total_revenue) }),
+    t('reports.general.pdf.cover_roi', { value: report.kpis.roi.toFixed(1) })
   ]
-  text = summaryStats.join('  |  ')
-  textWidth = pdf.getTextWidth(text)
-  pdf.text(text, pageWidth / 2 - textWidth / 2, 180)
+  centered(summaryStats.join('  |  '), 180, 12)
 
-  pdf.setFontSize(10)
   pdf.setTextColor(150, 150, 150)
-  text = 'CONFIDENTIAL'
-  textWidth = pdf.getTextWidth(text)
-  pdf.text(text, pageWidth / 2 - textWidth / 2, pageHeight - 30)
+  centered(t('common.pdf.confidential'), pageHeight - 30, 10)
 
   // ── Page 2: KPIs ─────────────────────────────────────────────────────────
   pdf.addPage()
@@ -107,16 +183,16 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
 
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(32)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('LANDMARK GROUP', margin, 22)
+  pdf.setFont(fontFamily, 'bold')
+  pdf.text(t('reports.general.landmark_group'), margin, 22)
 
-  pdf.setFontSize(18)
-  pdf.setFont('helvetica', 'normal')
-  pdf.text('Executive Portfolio Report', margin, 33)
+  pdf.setFontSize(16)
+  pdf.setFont(fontFamily, 'normal')
+  pdf.text(t('reports.general.exec_report'), margin, 33)
 
   pdf.setFontSize(10)
   pdf.setTextColor(200, 200, 200)
-  pdf.text(`Generated: ${format(new Date(), 'MMMM dd, yyyy HH:mm')}`, margin, 43)
+  pdf.text(`${withColon('common.generated')} ${formatDateTime(new Date(), language)}`, margin, 43)
 
   pdf.setTextColor(0, 0, 0)
   yPosition = 65
@@ -125,44 +201,72 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 50, 'F')
 
   pdf.setFontSize(14)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(37, 99, 235)
-  pdf.text('EXECUTIVE SUMMARY', margin + 5, yPosition + 10)
+  pdf.text(t('reports.general.exec_summary'), margin + 5, yPosition + 10)
 
   pdf.setFontSize(9)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
+  const salesRatePercent = report.sales_performance.total_units > 0
+    ? (report.sales_performance.units_sold / report.sales_performance.total_units) * 100
+    : 0
+
+  // Whole sentences, not `t()` output with English glue welded on: Croatian word order differs,
+  // so each line has to be translatable as a unit. The screen renders these same five keys.
   const summaryLines = [
-    `• Portfolio: ${report.executive_summary.total_projects} projects (${report.executive_summary.active_projects} active, ${report.executive_summary.completed_projects} completed)`,
-    `• Financial: ${moneyCompact(report.executive_summary.total_revenue)} revenue, ${moneyCompact(report.executive_summary.total_expenses)} expenses, ${moneyCompact(report.executive_summary.total_profit)} profit (${report.executive_summary.profit_margin.toFixed(1)}% margin)`,
-    `• Capital Structure: ${moneyCompact(report.funding_structure.total_equity)} equity, ${moneyCompact(report.funding_structure.total_debt)} debt, ${report.funding_structure.debt_equity_ratio.toFixed(2)} D/E ratio`,
-    `• Sales: ${report.sales_performance.units_sold}/${report.sales_performance.total_units} units sold (${report.sales_performance.units_sold > 0 ? ((report.sales_performance.units_sold / report.sales_performance.total_units) * 100).toFixed(1) : '0'}%), ${report.sales_performance.total_sales} transactions`,
-    `• Construction: ${report.construction_status.total_contracts} contracts, ${report.construction_status.total_subcontractors} subcontractors, ${report.construction_status.work_logs_7days} work logs recorded`
+    t('reports.general.summary_portfolio', {
+      total: report.executive_summary.total_projects,
+      active: report.executive_summary.active_projects,
+      completed: report.executive_summary.completed_projects
+    }),
+    t('reports.general.summary_financial', {
+      revenue: moneyCompact(report.executive_summary.total_revenue),
+      expenses: moneyCompact(report.executive_summary.total_expenses),
+      profit: moneyCompact(report.executive_summary.total_profit),
+      margin: report.executive_summary.profit_margin.toFixed(1)
+    }),
+    t('reports.general.summary_capital', {
+      equity: moneyCompact(report.funding_structure.total_equity),
+      debt: moneyCompact(report.funding_structure.total_debt),
+      ratio: report.funding_structure.debt_equity_ratio.toFixed(2)
+    }),
+    t('reports.general.summary_sales', {
+      sold: report.sales_performance.units_sold,
+      total: report.sales_performance.total_units,
+      rate: salesRatePercent.toFixed(1),
+      transactions: report.sales_performance.total_sales
+    }),
+    t('reports.general.summary_construction', {
+      contracts: report.construction_status.total_contracts,
+      subcontractors: report.construction_status.total_subcontractors,
+      logs: report.construction_status.work_logs_7days
+    })
   ]
 
   summaryLines.forEach((line, index) => {
-    pdf.text(line, margin + 5, yPosition + 20 + (index * 6))
+    pdf.text(`• ${line}`, margin + 5, yPosition + 20 + (index * 6))
   })
 
   yPosition += 60
 
   checkPageBreak(40)
   pdf.setFontSize(14)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(37, 99, 235)
-  pdf.text('KEY PERFORMANCE INDICATORS', margin, yPosition)
+  pdf.text(t('reports.general.kpi_title'), margin, yPosition)
   yPosition += 10
 
   const kpiData = [
-    [moneyCompact(report.kpis.portfolio_value), 'Portfolio Value'],
-    [moneyCompact(report.kpis.total_revenue), 'Total Revenue'],
-    [moneyCompact(report.kpis.net_profit), 'Net Profit'],
-    [report.kpis.roi.toFixed(1) + '%', 'ROI'],
-    [report.kpis.sales_rate.toFixed(1) + '%', 'Sales Rate'],
-    [report.kpis.debt_equity_ratio.toFixed(2), 'D/E Ratio'],
-    [report.kpis.active_projects.toString(), 'Active Projects'],
-    [report.kpis.total_customers.toString(), 'Total Customers']
+    [moneyCompact(report.kpis.portfolio_value), bare('reports.general.portfolio_value')],
+    [moneyCompact(report.kpis.total_revenue), bare('reports.general.total_revenue')],
+    [moneyCompact(report.kpis.net_profit), bare('reports.general.net_profit')],
+    [report.kpis.roi.toFixed(1) + '%', bare('reports.general.roi')],
+    [report.kpis.sales_rate.toFixed(1) + '%', bare('reports.general.sales_rate')],
+    [report.kpis.debt_equity_ratio.toFixed(2), bare('reports.general.de_ratio')],
+    [report.kpis.active_projects.toString(), bare('reports.general.active_projects')],
+    [report.kpis.total_customers.toString(), bare('reports.general.total_customers')]
   ]
 
   const kpiBoxWidth = 45
@@ -179,13 +283,20 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     pdf.rect(xPos, yPosition, kpiBoxWidth, kpiBoxHeight, 'F')
 
     pdf.setFontSize(16)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(fontFamily, 'bold')
     pdf.setTextColor(37, 99, 235)
     let kpiTextWidth = pdf.getTextWidth(kpi[0])
     pdf.text(kpi[0], xPos + kpiBoxWidth / 2 - kpiTextWidth / 2, yPosition + 10)
 
-    pdf.setFontSize(8)
-    pdf.setFont('helvetica', 'normal')
+    // The label is the longer half in Croatian ("Vrijednost portfelja" against "Portfolio
+    // Value"), so it shrinks to the box rather than spilling into its neighbour.
+    let labelSize = 8
+    pdf.setFontSize(labelSize)
+    pdf.setFont(fontFamily, 'normal')
+    while (labelSize > 5 && pdf.getTextWidth(kpi[1]) > kpiBoxWidth - 4) {
+      labelSize -= 0.5
+      pdf.setFontSize(labelSize)
+    }
     pdf.setTextColor(100, 100, 100)
     kpiTextWidth = pdf.getTextWidth(kpi[1])
     pdf.text(kpi[1], xPos + kpiBoxWidth / 2 - kpiTextWidth / 2, yPosition + 16)
@@ -200,48 +311,52 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   yPosition = margin
 
   pdf.setFontSize(16)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(37, 99, 235)
-  pdf.text('PORTFOLIO ANALYTICS', margin, yPosition)
+  pdf.text(t('reports.general.pdf.portfolio_analytics'), margin, yPosition)
   yPosition += 10
 
   const fundingChartData = [
-    { label: 'Equity', value: report.funding_structure.total_equity, color: '#22c55e' },
-    { label: 'Debt', value: report.funding_structure.total_debt, color: '#ef4444' }
+    { label: t('reports.general.pdf.equity'), value: report.funding_structure.total_equity, color: '#22c55e' },
+    { label: t('reports.general.pdf.debt'), value: report.funding_structure.total_debt, color: '#ef4444' }
   ]
   drawPieChart(pdf, margin + 30, yPosition + 30, 25, fundingChartData, {
-    title: 'Capital Structure',
-    showLegend: true
+    title: t('reports.general.pdf.chart_capital_structure'),
+    showLegend: true,
+    fontFamily
   })
 
   const salesChartData = [
-    { label: 'Sold', value: report.sales_performance.units_sold, color: '#22c55e' },
-    { label: 'Reserved', value: report.sales_performance.reserved_units, color: '#f59e0b' },
-    { label: 'Available', value: report.sales_performance.available_units, color: '#6b7280' }
+    { label: t('status.sold'), value: report.sales_performance.units_sold, color: '#22c55e' },
+    { label: t('status.reserved'), value: report.sales_performance.reserved_units, color: '#f59e0b' },
+    { label: t('status.available'), value: report.sales_performance.available_units, color: '#6b7280' }
   ]
   drawPieChart(pdf, pageWidth - margin - 30, yPosition + 30, 25, salesChartData, {
-    title: 'Units Status',
+    title: t('reports.general.pdf.chart_units_status'),
     showLegend: true,
-    valueFormat: 'plain'
+    valueFormat: 'plain',
+    fontFamily
   })
 
   yPosition += 85
 
   checkPageBreak(60)
   const cashFlowData = report.cash_flow.slice(0, 6).map(m => ({
-    label: m.month.substring(0, 3),
+    label: formatMonthShort(m.month_key, language),
     value: m.net / 1000
   }))
   drawBarChart(pdf, margin, yPosition, pageWidth - 2 * margin, 50, cashFlowData, {
-    title: 'Monthly Net Cash Flow (€K)',
+    title: t('reports.general.pdf.chart_net_cash_flow'),
     color: '#2563eb',
-    showValues: true
+    showValues: true,
+    fontFamily
   })
 
   yPosition += 60
 
   checkPageBreak(60)
   const topProjectsChart = report.projects
+    .slice()
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5)
     .map(p => ({
@@ -252,8 +367,9 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
 
   if (topProjectsChart.length > 0) {
     drawHorizontalBarChart(pdf, margin + 50, yPosition, pageWidth - 2 * margin - 50, 50, topProjectsChart, {
-      title: 'Top Projects by Revenue (€M)',
-      showValues: true
+      title: t('reports.general.pdf.chart_top_projects'),
+      showValues: true,
+      fontFamily
     })
     yPosition += 60
   }
@@ -268,82 +384,76 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.rect(0, 0, 8, 45, 'F')
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(20)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('SALES PERFORMANCE', margin, 25)
+  pdf.setFont(fontFamily, 'bold')
+  pdf.text(t('reports.general.sales_performance'), margin, 25)
   pdf.setTextColor(0, 0, 0)
   yPosition = 55
 
   pdf.setFillColor(220, 252, 231)
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 40, 'F')
   pdf.setFontSize(14)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(22, 163, 74)
-  pdf.text('Sales Overview', margin + 5, yPosition + 10)
+  pdf.text(t('reports.general.pdf.sales_overview'), margin + 5, yPosition + 10)
   pdf.setFontSize(9)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
   const salesData = [
-    ['Total Units:', report.sales_performance.total_units.toString(), 'Avg Sale Price:', money(report.sales_performance.avg_sale_price)],
-    ['Units Sold:', `${report.sales_performance.units_sold} (${((report.sales_performance.units_sold / report.sales_performance.total_units) * 100).toFixed(1)}%)`, 'Total Sales:', report.sales_performance.total_sales.toString()],
-    ['Available:', report.sales_performance.available_units.toString(), 'Buyers:', report.sales_performance.buyers.toString()],
-    ['Reserved:', report.sales_performance.reserved_units.toString(), 'Active Leads:', report.sales_performance.active_leads.toString()],
-    ['Total Revenue:', money(report.sales_performance.total_revenue), 'Conversion Rate:', report.sales_performance.conversion_rate.toFixed(1) + '%']
+    [withColon('reports.general.total_units_label'), report.sales_performance.total_units.toString(), withColon('reports.general.avg_sale_price_label'), money(report.sales_performance.avg_sale_price)],
+    [withColon('reports.general.units_sold_label'), `${report.sales_performance.units_sold} (${salesRatePercent.toFixed(1)}%)`, withColon('reports.general.total_sales_label'), report.sales_performance.total_sales.toString()],
+    [withColon('reports.general.available_label'), report.sales_performance.available_units.toString(), withColon('reports.general.buyers_label'), report.sales_performance.buyers.toString()],
+    [withColon('reports.general.reserved_label'), report.sales_performance.reserved_units.toString(), withColon('reports.general.active_leads_label'), report.sales_performance.active_leads.toString()],
+    [withColon('reports.general.total_revenue_label'), money(report.sales_performance.total_revenue), withColon('reports.general.conversion_rate_label'), report.sales_performance.conversion_rate.toFixed(1) + '%']
   ]
 
-  salesData.forEach((row, index) => {
-    const y = yPosition + 18 + (index * 4)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[0], margin + 5, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[1], margin + 35, y)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[2], margin + 95, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[3], margin + 125, y)
-  })
+  labelValueRows(salesData, { x: margin + 5, y: yPosition + 18, step: 4, col2: margin + 95 })
 
   yPosition += 50
 
   checkPageBreak(40)
   pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(37, 99, 235)
-  pdf.text('Sales Progress', margin, yPosition)
+  pdf.text(t('reports.general.pdf.sales_progress'), margin, yPosition)
   yPosition += 8
 
-  const salesRate = (report.sales_performance.units_sold / report.sales_performance.total_units) * 100
-  drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, salesRate, {
-    label: 'Units Sold',
+  drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, salesRatePercent, {
+    label: bare('reports.general.units_sold_label'),
     color: '#22c55e',
-    showPercentage: true
+    showPercentage: true,
+    fontFamily
   })
   yPosition += 15
 
   pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(37, 99, 235)
-  pdf.text('Construction Progress', margin, yPosition)
+  pdf.text(t('reports.general.pdf.construction_progress'), margin, yPosition)
   yPosition += 8
 
-  const constructionProgress = (report.construction_status.completed_phases / report.construction_status.total_phases) * 100
+  const constructionProgress = report.construction_status.total_phases > 0
+    ? (report.construction_status.completed_phases / report.construction_status.total_phases) * 100
+    : 0
   drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, constructionProgress, {
-    label: 'Phases Completed',
+    label: bare('reports.general.completed_phases'),
     color: '#2563eb',
-    showPercentage: true
+    showPercentage: true,
+    fontFamily
   })
   yPosition += 15
 
   pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(37, 99, 235)
-  pdf.text('Budget Utilization', margin, yPosition)
+  pdf.text(bare('reports.general.budget_utilization'), margin, yPosition)
   yPosition += 8
 
   drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, report.construction_status.budget_utilization, {
-    label: 'Budget Realized',
+    label: bare('reports.general.budget_realized'),
     color: report.construction_status.budget_utilization > 90 ? '#ef4444' : '#f59e0b',
-    showPercentage: true
+    showPercentage: true,
+    fontFamily
   })
   yPosition += 20
 
@@ -356,41 +466,31 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.setFillColor(180, 83, 9)
   pdf.rect(0, 0, 8, 45, 'F')
   pdf.setTextColor(255, 255, 255)
-  pdf.setFontSize(20)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('FUNDING & FINANCE', margin, 25)
+  pdf.setFontSize(18)
+  pdf.setFont(fontFamily, 'bold')
+  pdf.text(t('reports.general.funding_structure'), margin, 25)
   pdf.setTextColor(0, 0, 0)
   yPosition = 55
 
   pdf.setFillColor(254, 243, 199)
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 50, 'F')
   pdf.setFontSize(14)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(245, 158, 11)
-  pdf.text('Financial Structure', margin + 5, yPosition + 10)
+  pdf.text(t('reports.general.pdf.financial_structure'), margin + 5, yPosition + 10)
   pdf.setFontSize(9)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
   const fundingData = [
-    ['Total Equity Invested:', money(report.funding_structure.total_equity), 'Active Funders:', report.funding_structure.active_investors.toString()],
-    ['Total Debt:', money(report.funding_structure.total_debt), 'Active Banks:', report.funding_structure.active_banks.toString()],
-    ['Debt-to-Equity Ratio:', report.funding_structure.debt_equity_ratio.toFixed(2), 'Bank Credits:', report.funding_structure.bank_credits.toString()],
-    ['Total Credit Lines:', money(report.funding_structure.total_credit_lines), 'Avg Interest Rate:', report.funding_structure.avg_interest_rate.toFixed(2) + '%'],
-    ['Available Credit:', money(report.funding_structure.available_credit), 'Monthly Debt Service:', money(report.funding_structure.monthly_debt_service)]
+    [withColon('reports.general.total_equity'), money(report.funding_structure.total_equity), withColon('reports.general.active_funders'), report.funding_structure.active_investors.toString()],
+    [withColon('reports.general.total_debt'), money(report.funding_structure.total_debt), withColon('reports.general.active_banks'), report.funding_structure.active_banks.toString()],
+    [withColon('reports.general.de_ratio_label'), report.funding_structure.debt_equity_ratio.toFixed(2), withColon('reports.general.bank_credits'), report.funding_structure.bank_credits.toString()],
+    [withColon('reports.general.total_credit_lines'), money(report.funding_structure.total_credit_lines), withColon('reports.general.avg_interest'), report.funding_structure.avg_interest_rate.toFixed(2) + '%'],
+    [withColon('reports.general.available_credit'), money(report.funding_structure.available_credit), withColon('reports.general.monthly_debt_service'), money(report.funding_structure.monthly_debt_service)]
   ]
 
-  fundingData.forEach((row, index) => {
-    const y = yPosition + 18 + (index * 5)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[0], margin + 5, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[1], margin + 50, y)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[2], margin + 105, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[3], margin + 145, y)
-  })
+  labelValueRows(fundingData, { x: margin + 5, y: yPosition + 18, step: 5, col2: margin + 100 })
 
   yPosition += 60
 
@@ -404,40 +504,30 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.rect(0, 0, 8, 45, 'F')
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(20)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('CONSTRUCTION STATUS', margin, 25)
+  pdf.setFont(fontFamily, 'bold')
+  pdf.text(t('reports.general.construction_status'), margin, 25)
   pdf.setTextColor(0, 0, 0)
   yPosition = 55
 
   pdf.setFillColor(254, 226, 226)
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 50, 'F')
   pdf.setFontSize(14)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(220, 38, 38)
-  pdf.text('Construction & Supervision Overview', margin + 5, yPosition + 10)
+  pdf.text(t('reports.general.pdf.construction_overview'), margin + 5, yPosition + 10)
   pdf.setFontSize(9)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
   const constructionData = [
-    ['Total Contracts:', report.construction_status.total_contracts.toString(), 'Budget Utilization:', report.construction_status.budget_utilization.toFixed(1) + '%'],
-    ['Active Contracts:', report.construction_status.active_contracts.toString(), 'Total Subcontractors:', report.construction_status.total_subcontractors.toString()],
-    ['Completed Contracts:', report.construction_status.completed_contracts.toString(), 'Total Phases:', report.construction_status.total_phases.toString()],
-    ['Contract Value:', money(report.construction_status.contract_value), 'Completed Phases:', report.construction_status.completed_phases.toString()],
-    ['Budget Realized:', money(report.construction_status.budget_realized), 'Work Logs (7 days):', report.construction_status.work_logs_7days.toString()]
+    [withColon('reports.general.total_contracts'), report.construction_status.total_contracts.toString(), withColon('reports.general.budget_utilization'), report.construction_status.budget_utilization.toFixed(1) + '%'],
+    [withColon('reports.general.active_contracts'), report.construction_status.active_contracts.toString(), withColon('reports.general.total_subcontractors'), report.construction_status.total_subcontractors.toString()],
+    [withColon('reports.general.completed_contracts'), report.construction_status.completed_contracts.toString(), withColon('reports.general.total_phases'), report.construction_status.total_phases.toString()],
+    [withColon('reports.general.contract_value'), money(report.construction_status.contract_value), withColon('reports.general.completed_phases'), report.construction_status.completed_phases.toString()],
+    [withColon('reports.general.budget_realized'), money(report.construction_status.budget_realized), withColon('reports.general.work_logs_7days'), report.construction_status.work_logs_7days.toString()]
   ]
 
-  constructionData.forEach((row, index) => {
-    const y = yPosition + 18 + (index * 5)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[0], margin + 5, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[1], margin + 45, y)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[2], margin + 105, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[3], margin + 145, y)
-  })
+  labelValueRows(constructionData, { x: margin + 5, y: yPosition + 18, step: 5, col2: margin + 95 })
 
   yPosition += 60
 
@@ -451,74 +541,64 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.rect(0, 0, 8, 45, 'F')
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(20)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('ACCOUNTING OVERVIEW', margin, 25)
+  pdf.setFont(fontFamily, 'bold')
+  pdf.text(t('reports.general.accounting_overview'), margin, 25)
   pdf.setTextColor(0, 0, 0)
   yPosition = 55
 
   pdf.setFillColor(224, 242, 254)
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 60, 'F')
   pdf.setFontSize(14)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(6, 182, 212)
-  pdf.text('Invoice & Payment Summary', margin + 5, yPosition + 10)
+  pdf.text(t('reports.general.pdf.invoice_payment_summary'), margin + 5, yPosition + 10)
   pdf.setFontSize(9)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
   const accountingData = [
-    ['Total Invoices:', report.accounting_overview.total_invoices.toString(), 'Paid Invoices:', report.accounting_overview.paid_invoices.toString()],
-    ['Total Invoice Value:', moneyCompact(report.accounting_overview.total_invoice_value), 'Paid Value:', moneyCompact(report.accounting_overview.paid_value)],
-    ['Pending Invoices:', report.accounting_overview.pending_invoices.toString(), 'Overdue Invoices:', report.accounting_overview.overdue_invoices.toString()],
-    ['Pending Value:', moneyCompact(report.accounting_overview.pending_value), 'Overdue Value:', moneyCompact(report.accounting_overview.overdue_value)],
-    ['Payment Completion Rate:', report.accounting_overview.payment_completion_rate.toFixed(1) + '%', '', '']
+    [withColon('reports.general.total_invoices'), report.accounting_overview.total_invoices.toString(), withColon('reports.general.paid_invoices'), report.accounting_overview.paid_invoices.toString()],
+    [withColon('reports.general.total_invoice_value'), moneyCompact(report.accounting_overview.total_invoice_value), withColon('reports.general.pdf.paid_value'), moneyCompact(report.accounting_overview.paid_value)],
+    [withColon('reports.general.pending_invoices'), report.accounting_overview.pending_invoices.toString(), withColon('reports.general.overdue_invoices'), report.accounting_overview.overdue_invoices.toString()],
+    [withColon('reports.general.pdf.pending_value'), moneyCompact(report.accounting_overview.pending_value), withColon('reports.general.pdf.overdue_value'), moneyCompact(report.accounting_overview.overdue_value)],
+    [withColon('reports.general.payment_completion'), report.accounting_overview.payment_completion_rate.toFixed(1) + '%', '', '']
   ]
 
-  accountingData.forEach((row, index) => {
-    const y = yPosition + 18 + (index * 6)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[0], margin + 5, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[1], margin + 55, y)
-    if (row[2]) {
-      pdf.setFont('helvetica', 'bold')
-      pdf.text(row[2], margin + 105, y)
-      pdf.setFont('helvetica', 'normal')
-      pdf.text(row[3], margin + 145, y)
-    }
-  })
+  labelValueRows(accountingData, { x: margin + 5, y: yPosition + 18, step: 6, col2: margin + 100 })
 
   yPosition += 50
 
   checkPageBreak(70)
   pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(37, 99, 235)
-  pdf.text('Invoice Status Distribution', margin, yPosition)
+  pdf.text(t('reports.general.pdf.invoice_status_distribution'), margin, yPosition)
   yPosition += 8
 
   const invoiceStatusData = [
-    { label: 'Paid', value: report.accounting_overview.paid_invoices },
-    { label: 'Pending', value: report.accounting_overview.pending_invoices },
-    { label: 'Overdue', value: report.accounting_overview.overdue_invoices }
+    { label: t('status.paid'), value: report.accounting_overview.paid_invoices },
+    { label: t('status.pending'), value: report.accounting_overview.pending_invoices },
+    { label: t('status.overdue'), value: report.accounting_overview.overdue_invoices }
   ]
   drawBarChart(pdf, margin, yPosition, pageWidth - 2 * margin, 45, invoiceStatusData, {
     color: '#06b6d4',
     showValues: true,
-    valueFormat: 'plain'
+    valueFormat: 'plain',
+    fontFamily
   })
   yPosition += 55
 
   checkPageBreak(25)
   pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(37, 99, 235)
-  pdf.text('Payment Completion Rate', margin, yPosition)
+  pdf.text(bare('reports.general.payment_completion'), margin, yPosition)
   yPosition += 8
 
   drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, report.accounting_overview.payment_completion_rate, {
     color: '#06b6d4',
-    showPercentage: true
+    showPercentage: true,
+    fontFamily
   })
   yPosition += 20
 
@@ -527,116 +607,92 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
 
   pdf.setFillColor(209, 250, 229)
   pdf.rect(margin, yPosition, halfWidth, 45, 'F')
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(11)
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(16, 185, 129)
-  pdf.text('TIC COST MANAGEMENT', margin + 5, yPosition + 10)
+  pdf.text(t('reports.general.pdf.tic_cost_management'), margin + 5, yPosition + 10)
   pdf.setFontSize(8)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
   const ticData = [
-    ['Planned Investment:', money(report.tic_cost_management.total_tic_budget)],
-    ['Projects with a Plan:', report.tic_cost_management.projects_with_tic.toString()],
-    ['Projects without a Plan:', report.tic_cost_management.projects_without_tic.toString()]
+    [withColon('reports.general.pdf.planned_investment'), money(report.tic_cost_management.total_tic_budget)],
+    [withColon('reports.general.pdf.projects_with_plan'), report.tic_cost_management.projects_with_tic.toString()],
+    [withColon('reports.general.pdf.projects_without_plan'), report.tic_cost_management.projects_without_tic.toString()]
   ]
 
-  ticData.forEach((row, index) => {
-    const y = yPosition + 16 + (index * 5)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[0], margin + 5, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[1], margin + 35, y)
-  })
+  labelValueRows(ticData, { x: margin + 5, y: yPosition + 16, step: 5 })
 
   pdf.setFillColor(254, 243, 199)
   pdf.rect(margin + halfWidth + 5, yPosition, halfWidth, 45, 'F')
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(11)
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(245, 158, 11)
-  pdf.text('OFFICE EXPENSES', margin + halfWidth + 10, yPosition + 10)
+  pdf.text(t('reports.general.office_expenses'), margin + halfWidth + 10, yPosition + 10)
   pdf.setFontSize(8)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
   const officeData = [
-    ['Office Suppliers:', report.office_expenses.total_office_suppliers.toString()],
-    ['Office Invoices:', report.office_expenses.total_office_invoices.toString()],
-    ['Total Spent:', money(report.office_expenses.total_office_spent)],
-    ['Avg Invoice:', money(report.office_expenses.avg_office_invoice)]
+    [withColon('reports.general.total_office_suppliers'), report.office_expenses.total_office_suppliers.toString()],
+    [withColon('reports.general.total_office_invoices'), report.office_expenses.total_office_invoices.toString()],
+    [withColon('reports.general.total_office_spent'), money(report.office_expenses.total_office_spent)],
+    [withColon('reports.general.avg_office_invoice'), money(report.office_expenses.avg_office_invoice)]
   ]
 
-  officeData.forEach((row, index) => {
-    const y = yPosition + 16 + (index * 5)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[0], margin + halfWidth + 10, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[1], margin + halfWidth + 40, y)
-  })
+  labelValueRows(officeData, { x: margin + halfWidth + 10, y: yPosition + 16, step: 5 })
 
   yPosition += 55
 
   checkPageBreak(100)
   pdf.setFillColor(254, 205, 211)
   pdf.rect(margin, yPosition, halfWidth, 50, 'F')
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(11)
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(225, 29, 72)
-  pdf.text('COMPANY INVESTMENTS', margin + 5, yPosition + 10)
+  pdf.text(t('reports.general.company_investments'), margin + 5, yPosition + 10)
   pdf.setFontSize(8)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
   const creditsData = [
-    ['Total Investments:', report.company_credits.total_credits.toString()],
-    ['Investment Value:', money(report.company_credits.total_credit_value)],
-    ['Available:', money(report.company_credits.credits_available)],
-    ['Used:', money(report.company_credits.credits_used)],
-    ['Cesija Payments:', report.company_credits.cesija_payments.toString()],
-    ['Cesija Value:', money(report.company_credits.cesija_value)]
+    [withColon('reports.general.total_investments_label'), report.company_credits.total_credits.toString()],
+    [withColon('reports.general.total_investment_value'), money(report.company_credits.total_credit_value)],
+    [withColon('reports.general.available_inv'), money(report.company_credits.credits_available)],
+    [withColon('reports.general.used_inv'), money(report.company_credits.credits_used)],
+    [withColon('reports.general.cesija_payments'), report.company_credits.cesija_payments.toString()],
+    [withColon('reports.general.cesija_value'), money(report.company_credits.cesija_value)]
   ]
 
-  creditsData.forEach((row, index) => {
-    const y = yPosition + 16 + (index * 5)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[0], margin + 5, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[1], margin + 35, y)
-  })
+  labelValueRows(creditsData, { x: margin + 5, y: yPosition + 16, step: 5 })
 
   pdf.setFillColor(241, 245, 249)
   pdf.rect(margin + halfWidth + 5, yPosition, halfWidth, 50, 'F')
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(11)
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(71, 85, 105)
-  pdf.text('BANK ACCOUNTS', margin + halfWidth + 10, yPosition + 10)
+  pdf.text(t('reports.general.bank_accounts'), margin + halfWidth + 10, yPosition + 10)
   pdf.setFontSize(8)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
   const bankData = [
-    ['Total Accounts:', report.bank_accounts.total_accounts.toString()],
-    ['Total Balance:', money(report.bank_accounts.total_balance)],
-    ['Positive Balance:', report.bank_accounts.positive_balance_accounts.toString()],
-    ['Negative Balance:', report.bank_accounts.negative_balance_accounts.toString()]
+    [withColon('reports.general.total_bank_accounts'), report.bank_accounts.total_accounts.toString()],
+    [withColon('reports.general.total_balance'), money(report.bank_accounts.total_balance)],
+    [withColon('reports.general.positive_accounts'), report.bank_accounts.positive_balance_accounts.toString()],
+    [withColon('reports.general.negative_accounts'), report.bank_accounts.negative_balance_accounts.toString()]
   ]
 
-  bankData.forEach((row, index) => {
-    const y = yPosition + 16 + (index * 5)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(row[0], margin + halfWidth + 10, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(row[1], margin + halfWidth + 40, y)
-  })
+  labelValueRows(bankData, { x: margin + halfWidth + 10, y: yPosition + 16, step: 5 })
 
   yPosition += 60
 
   if (report.contract_types.length > 0) {
     checkPageBreak(60)
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(fontFamily, 'bold')
     pdf.setTextColor(37, 99, 235)
-    pdf.text('CONTRACT DISTRIBUTION', margin, yPosition)
+    pdf.text(t('reports.general.contract_types'), margin, yPosition)
     yPosition += 8
 
     const contractData = report.contract_types.map((ct, idx) => ({
@@ -646,13 +702,14 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     }))
 
     if (contractData.length <= 6) {
-      drawPieChart(pdf, pageWidth / 2, yPosition + 35, 28, contractData, { showLegend: true, valueFormat: 'plain' })
+      drawPieChart(pdf, pageWidth / 2, yPosition + 35, 28, contractData, { showLegend: true, valueFormat: 'plain', fontFamily })
       yPosition += 80
     } else {
       drawBarChart(pdf, margin, yPosition, pageWidth - 2 * margin, 45, contractData.map(cd => ({ label: cd.label, value: cd.value })), {
         color: '#2563eb',
         showValues: true,
-        valueFormat: 'plain'
+        valueFormat: 'plain',
+        fontFamily
       })
       yPosition += 55
     }
@@ -660,40 +717,41 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
 
   checkPageBreak(70)
   pdf.setFontSize(14)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(37, 99, 235)
-  pdf.text('CASH FLOW TREND', margin, yPosition)
+  pdf.text(t('reports.general.pdf.cash_flow_trend'), margin, yPosition)
   yPosition += 8
 
   const cashFlowTrend = report.cash_flow.slice(0, 6).map(m => ({
-    label: m.month.substring(0, 3),
+    label: formatMonthShort(m.month_key, language),
     value: m.net / 1000
   }))
   drawLineChart(pdf, margin, yPosition, pageWidth - 2 * margin, 50, cashFlowTrend, {
     color: '#2563eb',
     showPoints: true,
-    fillArea: true
+    fillArea: true,
+    fontFamily
   })
   yPosition += 60
 
   checkPageBreak(60)
   pdf.setFontSize(14)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(37, 99, 235)
-  pdf.text('CASH FLOW ANALYSIS', margin, yPosition)
+  pdf.text(t('reports.general.cash_flow'), margin, yPosition)
   yPosition += 10
 
   pdf.setFillColor(240, 240, 240)
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 8, 'F')
   pdf.setFontSize(9)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Month', margin + 5, yPosition + 5)
-  pdf.text('Inflow', margin + 50, yPosition + 5)
-  pdf.text('Outflow', margin + 90, yPosition + 5)
-  pdf.text('Net Cash Flow', margin + 130, yPosition + 5)
+  pdf.setFont(fontFamily, 'bold')
+  pdf.text(t('reports.general.month_col'), margin + 5, yPosition + 5)
+  pdf.text(t('reports.general.inflow_col'), margin + 50, yPosition + 5)
+  pdf.text(t('reports.general.outflow_col'), margin + 90, yPosition + 5)
+  pdf.text(t('reports.general.net_col'), margin + 130, yPosition + 5)
   yPosition += 10
 
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   let totalInflow = 0
   let totalOutflow = 0
   let totalNet = 0
@@ -703,7 +761,7 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     totalOutflow += month.outflow
     totalNet += month.net
 
-    pdf.text(month.month, margin + 5, yPosition + (index * 5))
+    pdf.text(formatMonthYear(month.month_key, language), margin + 5, yPosition + (index * 5))
     pdf.text(moneyCompact(month.inflow), margin + 50, yPosition + (index * 5))
     pdf.text(moneyCompact(month.outflow), margin + 90, yPosition + (index * 5))
 
@@ -713,9 +771,14 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   })
 
   yPosition += report.cash_flow.length * 5 + 5
-  pdf.setFont('helvetica', 'bold')
-  pdf.text(`6-Month Totals:`, margin + 5, yPosition)
-  pdf.text(`Inflow: ${moneyCompact(totalInflow)} | Outflow: ${moneyCompact(totalOutflow)} | Net: ${moneyCompact(totalNet)}`, margin + 5, yPosition + 5)
+  pdf.setFont(fontFamily, 'bold')
+  pdf.text(t('reports.general.six_month_totals'), margin + 5, yPosition)
+  const totalsLine = [
+    `${withColon('reports.general.inflow_col')} ${moneyCompact(totalInflow)}`,
+    `${withColon('reports.general.outflow_col')} ${moneyCompact(totalOutflow)}`,
+    `${withColon('reports.general.net_col')} ${moneyCompact(totalNet)}`
+  ].join(' | ')
+  pdf.text(totalsLine, margin + 5, yPosition + 5)
   yPosition += 15
 
   // ── Project Portfolio page ────────────────────────────────────────────────
@@ -729,18 +792,19 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     pdf.rect(0, 0, 8, 45, 'F')
     pdf.setTextColor(255, 255, 255)
     pdf.setFontSize(20)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text('PROJECT PORTFOLIO', margin, 25)
+    pdf.setFont(fontFamily, 'bold')
+    pdf.text(t('reports.general.pdf.project_portfolio'), margin, 25)
     pdf.setTextColor(0, 0, 0)
     yPosition = 55
 
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(fontFamily, 'bold')
     pdf.setTextColor(37, 99, 235)
-    pdf.text('Project Performance Overview', margin, yPosition)
+    pdf.text(t('reports.general.pdf.project_performance'), margin, yPosition)
     yPosition += 10
 
     const projectPerformance = report.projects
+      .slice()
       .sort((a, b) => b.profit_margin - a.profit_margin)
       .slice(0, 8)
       .map(p => ({
@@ -751,18 +815,19 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
 
     if (projectPerformance.length > 0) {
       drawHorizontalBarChart(pdf, margin + 50, yPosition, pageWidth - 2 * margin - 50, 70, projectPerformance, {
-        title: 'Profit Margin (%)',
+        title: t('reports.general.pdf.chart_profit_margin'),
         showValues: true,
-        valueFormat: 'plain'
+        valueFormat: 'plain',
+        fontFamily
       })
       yPosition += 80
     }
 
     checkPageBreak(15)
     pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFont(fontFamily, 'bold')
     pdf.setTextColor(37, 99, 235)
-    pdf.text('Detailed Project Breakdown', margin, yPosition)
+    pdf.text(t('reports.general.project_breakdown'), margin, yPosition)
     yPosition += 10
 
     report.projects.forEach((project, idx) => {
@@ -776,12 +841,12 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
       pdf.line(margin, yPosition, margin, yPosition + 50)
 
       pdf.setFontSize(12)
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(fontFamily, 'bold')
       pdf.setTextColor(0, 0, 0)
       pdf.text(project.name, margin + 5, yPosition + 7)
 
       pdf.setFontSize(8)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(fontFamily, 'normal')
       pdf.setTextColor(100, 100, 100)
       // Category labels are Croatian domain terms; kept untranslated, and appended
       // to the location line so the fixed 50mm card height still holds.
@@ -799,36 +864,29 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
       pdf.roundedRect(pageWidth - margin - 25, yPosition + 4, 20, 6, 2, 2, 'F')
       pdf.setTextColor(255, 255, 255)
       pdf.setFontSize(7)
-      pdf.setFont('helvetica', 'bold')
-      const riskTextWidth = pdf.getTextWidth(project.risk_level)
-      pdf.text(project.risk_level, pageWidth - margin - 15 - riskTextWidth / 2, yPosition + 8.5)
+      pdf.setFont(fontFamily, 'bold')
+      // The stored value stays English ('Low' / 'Medium' / 'High'); only the label is mapped.
+      const riskText = statusLabel(RISK_LEVEL, project.risk_level, t)
+      const riskTextWidth = pdf.getTextWidth(riskText)
+      pdf.text(riskText, pageWidth - margin - 15 - riskTextWidth / 2, yPosition + 8.5)
 
       pdf.setTextColor(0, 0, 0)
       pdf.setFontSize(9)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(fontFamily, 'normal')
 
       const projectData = [
-        ['Budget:', project.has_budget ? moneyCompact(project.budget) : 'not set', 'Revenue:', moneyCompact(project.revenue)],
-        ['Expenses:', moneyCompact(project.expenses), 'Profit:', moneyCompact(project.profit)],
-        ['Units:', `${project.units_sold}/${project.total_units}`, 'Sales Rate:', `${project.sales_rate.toFixed(1)}%`],
-        ['Phases:', `${project.phases_done}/${project.total_phases}`, 'Contracts:', project.contracts.toString()]
+        [withColon('reports.general.budget_label'), project.has_budget ? moneyCompact(project.budget) : t('general_projects.budget_not_set'), withColon('reports.general.revenue_label'), moneyCompact(project.revenue)],
+        [withColon('reports.general.expenses_label'), moneyCompact(project.expenses), withColon('reports.portfolio.profit'), moneyCompact(project.profit)],
+        [withColon('reports.general.units_label'), `${project.units_sold}/${project.total_units}`, withColon('reports.general.sales_rate'), `${project.sales_rate.toFixed(1)}%`],
+        [withColon('reports.general.phases_label'), `${project.phases_done}/${project.total_phases}`, withColon('reports.general.contracts_label'), project.contracts.toString()]
       ]
 
-      projectData.forEach((row, index) => {
-        const y = yPosition + 20 + (index * 6)
-        pdf.setFont('helvetica', 'bold')
-        pdf.text(row[0], margin + 5, y)
-        pdf.setFont('helvetica', 'normal')
-        pdf.text(row[1], margin + 25, y)
-        pdf.setFont('helvetica', 'bold')
-        pdf.text(row[2], margin + 65, y)
-        pdf.setFont('helvetica', 'normal')
-        pdf.text(row[3], margin + 85, y)
-      })
+      labelValueRows(projectData, { x: margin + 5, y: yPosition + 20, step: 6, col2: margin + 70 })
 
       drawProgressBar(pdf, margin + 5, yPosition + 44, pageWidth - 2 * margin - 10, 4, project.profit_margin, {
         color: project.profit_margin > 20 ? '#22c55e' : project.profit_margin > 10 ? '#f59e0b' : '#ef4444',
-        showPercentage: false
+        showPercentage: false,
+        fontFamily
       })
 
       yPosition += 55
@@ -846,8 +904,8 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
     pdf.rect(0, 0, 8, 45, 'F')
     pdf.setTextColor(255, 255, 255)
     pdf.setFontSize(20)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text('RISK ASSESSMENT', margin, 25)
+    pdf.setFont(fontFamily, 'bold')
+    pdf.text(t('reports.general.risk_assessment'), margin, 25)
     pdf.setTextColor(0, 0, 0)
     yPosition = 55
 
@@ -861,14 +919,18 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
       pdf.line(margin, yPosition, margin, yPosition + 20)
 
       pdf.setFontSize(11)
-      pdf.setFont('helvetica', 'bold')
+      pdf.setFont(fontFamily, 'bold')
       pdf.setTextColor(220, 38, 38)
-      pdf.text(risk.type, margin + 5, yPosition + 8)
+      pdf.text(t(`reports.general.risks.${risk.kind}.type`), margin + 5, yPosition + 8)
 
       pdf.setFontSize(9)
-      pdf.setFont('helvetica', 'normal')
+      pdf.setFont(fontFamily, 'normal')
       pdf.setTextColor(0, 0, 0)
-      pdf.text(risk.description, margin + 5, yPosition + 15)
+      pdf.text(
+        t(`reports.general.risks.${risk.kind}.description`, { count: risk.count }),
+        margin + 5,
+        yPosition + 15
+      )
 
       yPosition += 25
     })
@@ -884,29 +946,34 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.setFillColor(21, 128, 61)
   pdf.rect(0, 0, 8, 45, 'F')
   pdf.setTextColor(255, 255, 255)
-  pdf.setFontSize(20)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('INSIGHTS & RECOMMENDATIONS', margin, 25)
+  pdf.setFontSize(18)
+  pdf.setFont(fontFamily, 'bold')
+  pdf.text(t('reports.general.insights'), margin, 25)
   pdf.setTextColor(0, 0, 0)
   yPosition = 55
 
   pdf.setFillColor(220, 252, 231)
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
   pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(22, 163, 74)
-  pdf.text('Top Performing Projects', margin + 5, yPosition + 8)
+  pdf.text(bare('reports.general.top_projects'), margin + 5, yPosition + 8)
   yPosition += 15
 
   pdf.setFontSize(9)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
   report.insights.top_projects.forEach((project, index) => {
-    pdf.setFont('helvetica', 'bold')
+    checkPageBreak(12)
+    pdf.setFont(fontFamily, 'bold')
     pdf.text(`${index + 1}. ${project.name}`, margin + 5, yPosition)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(`Revenue: ${moneyCompact(project.revenue)} | Sales Rate: ${project.sales_rate.toFixed(1)}%`, margin + 10, yPosition + 5)
+    pdf.setFont(fontFamily, 'normal')
+    const detail = [
+      `${withColon('reports.general.revenue_label')} ${moneyCompact(project.revenue)}`,
+      `${withColon('reports.general.sales_rate')} ${project.sales_rate.toFixed(1)}%`
+    ].join(' | ')
+    pdf.text(detail, margin + 10, yPosition + 5)
     yPosition += 10
   })
 
@@ -915,19 +982,22 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
   pdf.setFillColor(220, 252, 231)
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
   pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
+  pdf.setFont(fontFamily, 'bold')
   pdf.setTextColor(22, 163, 74)
-  pdf.text('Strategic Recommendations', margin + 5, yPosition + 8)
+  pdf.text(bare('reports.general.recommendations'), margin + 5, yPosition + 8)
   yPosition += 15
 
   pdf.setFontSize(9)
-  pdf.setFont('helvetica', 'normal')
+  pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
-  report.insights.recommendations.forEach((rec) => {
+  // The service hands over i18n keys, not prose: it has no translator and must not decide the
+  // language of a document. `GeneralReports.tsx` renders the same list.
+  report.insights.recommendation_keys.forEach((key) => {
+    checkPageBreak(10)
     pdf.setFillColor(240, 253, 244)
     pdf.rect(margin + 2, yPosition - 3, 3, 3, 'F')
-    pdf.text(rec, margin + 8, yPosition)
+    pdf.text(t(key), margin + 8, yPosition)
     yPosition += 7
   })
 
@@ -942,19 +1012,23 @@ export async function generateGeneralReportPDF(report: ComprehensiveReport): Pro
 
     pdf.setFontSize(8)
     pdf.setTextColor(100, 100, 100)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text('LANDMARK GROUP', margin, pageHeight - 10)
-    pdf.text('Confidential Executive Report', margin, pageHeight - 6)
+    pdf.setFont(fontFamily, 'normal')
+    pdf.text(t('reports.general.landmark_group'), margin, pageHeight - 10)
+    pdf.text(t('reports.general.pdf.footer'), margin, pageHeight - 6)
 
-    pdf.setFont('helvetica', 'bold')
-    const pageText = `Page ${i} of ${totalPages}`
-    const pageTextWidth = pdf.getTextWidth(pageText)
-    pdf.text(pageText, pageWidth - margin - pageTextWidth, pageHeight - 10)
-    pdf.setFont('helvetica', 'normal')
-    const dateText = format(new Date(), 'yyyy-MM-dd')
-    const dateTextWidth = pdf.getTextWidth(dateText)
-    pdf.text(dateText, pageWidth - margin - dateTextWidth, pageHeight - 6)
+    pdf.setFont(fontFamily, 'bold')
+    const pageText = t('common.pdf.page_of', { page: i, total: totalPages })
+    pdf.text(pageText, pageWidth - margin - pdf.getTextWidth(pageText), pageHeight - 10)
+    pdf.setFont(fontFamily, 'normal')
+    const dateText = formatDate(new Date(), language)
+    pdf.text(dateText, pageWidth - margin - pdf.getTextWidth(dateText), pageHeight - 6)
   }
 
-  pdf.save(`LANDMARK_Executive_Report_${format(new Date(), 'yyyy-MM-dd_HHmm')}.pdf`)
+  pdf.save(exportFileName('izvjestaj-portfelj', 'pdf'))
+
+  logActivity({
+    action: 'export.general_pdf',
+    entity: 'report',
+    metadata: { severity: 'low', format: 'pdf', row_count: report.projects.length }
+  })
 }
