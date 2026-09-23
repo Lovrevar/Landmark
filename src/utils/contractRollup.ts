@@ -38,10 +38,22 @@ export interface ContractRollup {
 }
 
 /**
+ * Whether a row has an agreed amount to measure payments against: a contract AND a non-zero value.
+ *
+ * A supplier engaged without a formal contract is stored with `contract_amount = 0`
+ * (`useSubcontractorManagement` writes `hasContract ? cost : 0`), and a contract row nobody ever
+ * filled in is a zero too. Neither has anything for "remaining" to be measured against — a view
+ * that subtracts payments from that zero prints a negative "remaining" that is really just money
+ * paid on an invoice. Exported so a table row and the totals above it use one definition.
+ */
+export const isContracted = (row: Pick<ContractRollupRow, 'hasContract' | 'cost'>): boolean =>
+  row.hasContract !== false && (row.cost ?? 0) > 0
+
+/**
  * Reproduces the split both phase cards have always used: a row counts as "contracted" only when
- * it has a contract AND a non-zero amount. Everything else — including a contract row with a zero
- * amount — is treated as uncontracted, where the amount owed comes from invoices rather than from
- * a contract value.
+ * it has a contract AND a non-zero amount (`isContracted`). Everything else — including a contract
+ * row with a zero amount — is treated as uncontracted, where the amount owed comes from invoices
+ * rather than from a contract value.
  */
 export function rollupContracts(rows: ContractRollupRow[]): ContractRollup {
   let contracted = 0
@@ -51,12 +63,11 @@ export function rollupContracts(rows: ContractRollupRow[]): ContractRollup {
 
   for (const row of rows) {
     const cost = row.cost ?? 0
-    const isContracted = row.hasContract !== false && cost > 0
     const rowPaid = row.paid || 0
 
     paid += rowPaid
 
-    if (isContracted) {
+    if (isContracted(row)) {
       contracted += cost
       unpaid += Math.max(0, cost - rowPaid)
     } else {

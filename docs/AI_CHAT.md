@@ -588,7 +588,7 @@ Three tiers, defined as arrays in [supabase/functions/_shared/tools.ts](../supab
 - `FINANCE_ROLES` (Director, Accounting) — `get_subcontractor_payment_status`, `list_payments_for_subcontractor`, `get_invoice_summary`, `get_project_financial_summary`.
 - `FINANCE_PLUS_SUPERVISION` (Director, Accounting, Supervision) — `list_unpaid_invoices`.
 
-The filter happens in `selectAvailableTools(ctx)`, called once per request. Tools the user is not allowed to invoke are never advertised to the model, so prompt injection cannot induce the model to "try" them.
+The filter happens in `selectAvailableTools(ctx)`, called once per request. Tools the user is not allowed to invoke are never advertised to the model, so prompt injection cannot induce the model to "try" them. The gate is also re-applied at dispatch: `dispatchTool` resolves the name the model returned through `findAvailableTool(ctx, name)`, which searches only the role's tools. An unadvertised or unknown name is refused, logged as `[ai-chat] tool refused at dispatch`, and returned to the model as an `is_error` tool_result. Advertisement is what the model sees; dispatch is what actually runs. `_shared/tools.test.ts` pins that the two sets are identical for every role.
 
 ### 5. Service-role write enforcement
 
