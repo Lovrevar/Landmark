@@ -1,0 +1,8 @@
+# Staff voice recordings are personal data: keep them in company storage, never in git
+# (docs/voice/02-voice-implementation-plan.md, phase 0 deliverables).
+clean/
+noisy/
+*.wav
+transcripts.csv
+stt_errors.log
+__pycache__/
