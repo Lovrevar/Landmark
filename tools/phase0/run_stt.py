@@ -15,6 +15,14 @@ own audio finished streaming (before the trailing silence). The take already
 ends with ~300 ms of post-roll, so a small negative value means the recognizer
 finalized inside the take's own tail. An empty value means no final result.
 
+Google model fallback: streaming hr-HR is tried on --google-model in
+--google-location first. If Google rejects that configuration (InvalidArgument /
+FailedPrecondition / NotFound: a config error, not a transient one), the take is
+retried on --google-fallback-model in --google-fallback-location (default chirp_2
+in europe-west4), and every later Google stream in the run uses the fallback
+directly. The `model` column records which model produced each transcript
+(e.g. google:long@global, google:chirp_2@europe-west4, azure:hr-HR).
+
 Resumable: rows already in transcripts.csv (same file, vendor, condition) are
 skipped. A failed stream writes NO row, so re-running retries it; failures are
 logged to stt_errors.log.
@@ -41,7 +49,7 @@ from pathlib import Path
 
 RATE = 16000
 BYTES_PER_MS = RATE * 2 // 1000  # 16-bit mono
-OUT_COLS = ["file", "vendor", "condition", "transcript", "time_to_final_ms"]
+OUT_COLS = ["file", "vendor", "condition", "transcript", "time_to_final_ms", "model"]
 
 
 @dataclass(frozen=True)
@@ -80,11 +88,10 @@ def paced_chunks(speech: bytes, silence_ms: int, chunk_ms: int):
 # ---------------------------------------------------------------------------
 
 class Google:
-    def __init__(self, location: str, model: str):
+    """Speech-to-Text v2 streaming, with a sticky fallback model (see module docstring)."""
+
+    def __init__(self, location: str, model: str, fallback_location: str, fallback_model: str):
         import google.auth
-        from google.api_core.client_options import ClientOptions
-        from google.cloud.speech_v2 import SpeechClient
-        from google.cloud.speech_v2.types import cloud_speech
 
         if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
             raise SystemExit("GOOGLE_APPLICATION_CREDENTIALS is not set")
@@ -92,29 +99,59 @@ class Google:
         project = os.environ.get("GOOGLE_CLOUD_PROJECT") or project
         if not project:
             raise SystemExit("could not determine the Google Cloud project (set GOOGLE_CLOUD_PROJECT)")
-        opts = None if location == "global" else ClientOptions(api_endpoint=f"{location}-speech.googleapis.com")
-        self.cs = cloud_speech
-        self.client = SpeechClient(client_options=opts)
-        self.recognizer = f"projects/{project}/locations/{location}/recognizers/_"
-        self.streaming_config = cloud_speech.StreamingRecognitionConfig(
-            config=cloud_speech.RecognitionConfig(
-                explicit_decoding_config=cloud_speech.ExplicitDecodingConfig(
-                    encoding=cloud_speech.ExplicitDecodingConfig.AudioEncoding.LINEAR16,
+        self.project = project
+        self.primary = (location, model)
+        self.fallback = (fallback_location, fallback_model)
+        self.use_fallback = False
+        self._lock = threading.Lock()
+        self._clients: dict[str, object] = {}
+
+    def _client(self, location: str):
+        from google.api_core.client_options import ClientOptions
+        from google.cloud.speech_v2 import SpeechClient
+
+        with self._lock:
+            if location not in self._clients:
+                opts = None if location == "global" else ClientOptions(api_endpoint=f"{location}-speech.googleapis.com")
+                self._clients[location] = SpeechClient(client_options=opts)
+            return self._clients[location]
+
+    def transcribe(self, pcm: bytes, chunk_ms: int, silence_ms: int) -> tuple[str, int | None, str]:
+        from google.api_core import exceptions as gexc
+
+        if not self.use_fallback:
+            try:
+                return self._stream(self.primary, pcm, chunk_ms, silence_ms)
+            except (gexc.InvalidArgument, gexc.FailedPrecondition, gexc.NotFound) as exc:
+                with self._lock:
+                    if not self.use_fallback:
+                        self.use_fallback = True
+                        print(f"  google: {self.primary[1]}@{self.primary[0]} rejected ({type(exc).__name__}: "
+                              f"{str(exc)[:160]}); switching to {self.fallback[1]}@{self.fallback[0]}",
+                              file=sys.stderr)
+        return self._stream(self.fallback, pcm, chunk_ms, silence_ms)
+
+    def _stream(self, target: tuple[str, str], pcm: bytes, chunk_ms: int, silence_ms: int) -> tuple[str, int | None, str]:
+        from google.cloud.speech_v2.types import cloud_speech as cs
+
+        location, model = target
+        streaming_config = cs.StreamingRecognitionConfig(
+            config=cs.RecognitionConfig(
+                explicit_decoding_config=cs.ExplicitDecodingConfig(
+                    encoding=cs.ExplicitDecodingConfig.AudioEncoding.LINEAR16,
                     sample_rate_hertz=RATE,
                     audio_channel_count=1,
                 ),
                 language_codes=["hr-HR"],
                 model=model,
             ),
-            streaming_features=cloud_speech.StreamingRecognitionFeatures(interim_results=False),
+            streaming_features=cs.StreamingRecognitionFeatures(interim_results=False),
         )
-
-    def transcribe(self, pcm: bytes, chunk_ms: int, silence_ms: int) -> tuple[str, int | None]:
-        cs = self.cs
+        recognizer = f"projects/{self.project}/locations/{location}/recognizers/_"
         speech_end: list[float] = []
 
         def requests():
-            yield cs.StreamingRecognizeRequest(recognizer=self.recognizer, streaming_config=self.streaming_config)
+            yield cs.StreamingRecognizeRequest(recognizer=recognizer, streaming_config=streaming_config)
             for chunk, last_speech in paced_chunks(pcm, silence_ms, chunk_ms):
                 yield cs.StreamingRecognizeRequest(audio=chunk)
                 if last_speech:
@@ -123,12 +160,12 @@ class Google:
         finals: list[str] = []
         last_final: float | None = None
         timeout = len(pcm) / (RATE * 2) + silence_ms / 1000 + 30
-        for response in self.client.streaming_recognize(requests=requests(), timeout=timeout):
+        for response in self._client(location).streaming_recognize(requests=requests(), timeout=timeout):
             for result in response.results:
                 if result.is_final and result.alternatives:
                     finals.append(result.alternatives[0].transcript)
                     last_final = time.monotonic()
-        return join(finals), ttf(last_final, speech_end)
+        return join(finals), ttf(last_final, speech_end), f"google:{model}@{location}"
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +182,7 @@ class Azure:
         self.sdk = speechsdk
         self.key, self.region = key, region
 
-    def transcribe(self, pcm: bytes, chunk_ms: int, silence_ms: int) -> tuple[str, int | None]:
+    def transcribe(self, pcm: bytes, chunk_ms: int, silence_ms: int) -> tuple[str, int | None, str]:
         sdk = self.sdk
         config = sdk.SpeechConfig(subscription=self.key, region=self.region, speech_recognition_language="hr-HR")
         stream = sdk.audio.PushAudioInputStream(
@@ -185,7 +222,7 @@ class Azure:
         recognizer.stop_continuous_recognition()
         if errors:
             raise RuntimeError(f"Azure canceled: {errors[0]}")
-        return join(finals), ttf(last_final[-1] if last_final else None, speech_end)
+        return join(finals), ttf(last_final[-1] if last_final else None, speech_end), "azure:hr-HR"
 
 
 def join(parts: list[str]) -> str:
@@ -230,7 +267,10 @@ def main() -> int:
     ap.add_argument("--trailing-silence-ms", type=int, default=1500)
     ap.add_argument("--google-location", default="global")
     ap.add_argument("--google-model", default="long",
-                    help="Speech-to-Text v2 model; check hr-HR streaming support for your location")
+                    help="Speech-to-Text v2 model tried first")
+    ap.add_argument("--google-fallback-location", default="europe-west4")
+    ap.add_argument("--google-fallback-model", default="chirp_2",
+                    help="used if the first model rejects streaming hr-HR")
     ap.add_argument("--limit", type=int, default=0, help="only process the first N pending tasks (smoke test)")
     ap.add_argument("--dry-run", action="store_true", help="list pending tasks without calling any service")
     args = ap.parse_args()
@@ -261,12 +301,19 @@ def main() -> int:
 
     engines = {}
     if "google" in {t.vendor for t in tasks}:
-        engines["google"] = Google(args.google_location, args.google_model)
+        engines["google"] = Google(args.google_location, args.google_model,
+                                   args.google_fallback_location, args.google_fallback_model)
     if "azure" in {t.vendor for t in tasks}:
         engines["azure"] = Azure()
 
     lock = threading.Lock()
     new_file = not args.out.exists()
+    if not new_file:
+        with open(args.out, newline="", encoding="utf-8") as f:
+            header = next(csv.reader(f), [])
+        if header != OUT_COLS:
+            raise SystemExit(f"{args.out} has columns {header}, expected {OUT_COLS}; "
+                             "it was written by an older run_stt.py: move it aside and re-run")
     out_f = open(args.out, "a", newline="", encoding="utf-8")
     writer = csv.DictWriter(out_f, fieldnames=OUT_COLS, lineterminator="\n")
     if new_file:
@@ -276,7 +323,7 @@ def main() -> int:
 
     def run(task: Task) -> tuple[Task, str | None]:
         try:
-            transcript, t_final = engines[task.vendor].transcribe(
+            transcript, t_final, model = engines[task.vendor].transcribe(
                 read_pcm(task.path), args.chunk_ms, args.trailing_silence_ms)
         except Exception as exc:
             with lock:
@@ -286,7 +333,8 @@ def main() -> int:
             return task, f"{type(exc).__name__}: {exc}"
         with lock:
             writer.writerow({"file": task.file, "vendor": task.vendor, "condition": task.condition,
-                             "transcript": transcript, "time_to_final_ms": "" if t_final is None else t_final})
+                             "transcript": transcript, "time_to_final_ms": "" if t_final is None else t_final,
+                             "model": model})
             out_f.flush()
         return task, None
 

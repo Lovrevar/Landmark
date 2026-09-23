@@ -1,91 +1,91 @@
-term_id,term,critical,carrier_no,sentence,target_form
-t01,građevinska dozvola,y,1,Je li građevinska dozvola za Funtanu već izdana?,građevinska dozvola
-t01,građevinska dozvola,y,2,Bez građevinske dozvole ne možemo početi s radovima.,građevinske dozvole
-t01,građevinska dozvola,y,3,Za zgradu u Osijeku još čekamo građevinsku dozvolu.,građevinsku dozvolu
-t02,uporabna dozvola,n,1,Kada stiže uporabna dozvola za stambeni blok?,uporabna dozvola
-t02,uporabna dozvola,n,2,Zahtjev za izdavanje uporabne dozvole predali smo prošli tjedan.,uporabne dozvole
-t02,uporabna dozvola,n,3,Kupci mogu useliti tek kad dobijemo uporabnu dozvolu.,uporabnu dozvolu
-t03,izvođač,y,1,Koji izvođač radi fasadu na projektu Kopko?,izvođač
-t03,izvođač,y,2,Pošalji izvođaču popis nedostataka do petka.,izvođaču
-t03,izvođač,y,3,Za elektroinstalacije još nismo odabrali izvođača.,izvođača
-t04,podizvođač,n,1,Tko je podizvođač za keramičarske radove?,podizvođač
-t04,podizvođač,n,2,Račun podizvođača stigao je bez potpisa voditelja.,podizvođača
-t04,podizvođač,n,3,Glavni izvođač je posao prepustio podizvođaču.,podizvođaču
-t05,troškovnik,n,1,Gdje je troškovnik za drugu fazu?,troškovnik
-t05,troškovnik,n,2,U troškovniku nedostaju stavke za hidroizolaciju.,troškovniku
-t05,troškovnik,n,3,Ponuda mora točno pratiti troškovnik.,troškovnik
-t06,situacija,n,1,Kada nam stiže sljedeća situacija od izvođača?,situacija
-t06,situacija,n,2,Iznos treće situacije veći je od ugovorenog.,situacije
-t06,situacija,n,3,Nadzorni inženjer još nije ovjerio situaciju.,situaciju
-t07,okončana situacija,n,1,Je li okončana situacija za Funtanu već ispostavljena?,okončana situacija
-t07,okončana situacija,n,2,Nakon okončane situacije zadržavamo pet posto do isteka jamstva.,okončane situacije
-t07,okončana situacija,n,3,Izvođač nam je jučer poslao okončanu situaciju.,okončanu situaciju
-t08,nadzorni inženjer,n,1,Tko je nadzorni inženjer na gradilištu u Zagrebu?,nadzorni inženjer
-t08,nadzorni inženjer,n,2,Bez potpisa nadzornog inženjera ne plaćamo situaciju.,nadzornog inženjera
-t08,nadzorni inženjer,n,3,Zapisnik smo poslali nadzornom inženjeru.,nadzornom inženjeru
-t09,aneks ugovora,n,1,Je li aneks ugovora s izvođačem potpisan?,aneks ugovora
-t09,aneks ugovora,n,2,Prema aneksu ugovora rok je produžen za dva mjeseca.,aneksu ugovora
-t09,aneks ugovora,n,3,Za dodatne radove trebamo novi aneks ugovora.,aneks ugovora
-t10,rokovi,y,1,Koji su rokovi za završetak druge faze?,rokovi
-t10,rokovi,y,2,Izvođač se ne drži dogovorenih rokova ni na jednom projektu.,rokova
-t10,rokovi,y,3,Molim te provjeri sve ugovorne rokove.,rokove
-t11,rok izvođenja,n,1,Koliki je rok izvođenja radova na krovu?,rok izvođenja
-t11,rok izvođenja,n,2,Po isteku roka izvođenja naplaćujemo penale.,roka izvođenja
-t11,rok izvođenja,n,3,Ugovor za fasadu nema definiran rok izvođenja.,rok izvođenja
-t12,primopredaja,n,1,Kada je primopredaja stanova kupcima?,primopredaja
-t12,primopredaja,n,2,Na primopredaji su pronađena tri nedostatka.,primopredaji
-t12,primopredaja,n,3,Zapisnik je sastavljen odmah nakon primopredaje.,primopredaje
-t13,proračun,y,1,Koliki je proračun projekta Funtana?,proračun
-t13,proračun,y,2,U proračunu nije predviđen trošak priključaka.,proračunu
-t13,proračun,y,3,Nabava opreme išla je preko proračuna.,proračuna
-t14,cesija,n,1,Je li cesija s bankom već potpisana?,cesija
-t14,cesija,n,2,Plaćanje putem cesije knjiženo je prošli mjesec.,cesije
-t14,cesija,n,3,Taj račun podmirili smo cesijom.,cesijom
-t15,kompenzacija,n,1,Kolika je kompenzacija s dobavljačem betona?,kompenzacija
-t15,kompenzacija,n,2,Izjavu o kompenzaciji treba potpisati direktor.,kompenzaciji
-t15,kompenzacija,n,3,Dug prema izvođaču zatvorili smo kompenzacijom.,kompenzacijom
-t16,PDV,n,1,Je li PDV uključen u ovu cijenu?,PDV
-t16,PDV,n,2,Iznos bez PDV-a je sto dvadeset tisuća eura.,PDV-a
-t16,PDV,n,3,Na cijenu stanova još treba dodati PDV.,PDV
-t17,R1 račun,n,1,Je li ovo R1 račun ili obični?,R1 račun
-t17,R1 račun,n,2,Bez R1 računa ne možemo odbiti pretporez.,R1 računa
-t17,R1 račun,n,3,Molim dobavljača da nam pošalje R1 račun.,R1 račun
-t18,avans,n,1,Koliki je avans isplaćen izvođaču?,avans
-t18,avans,n,2,Od avansa je ostalo još četrdeset tisuća eura.,avansa
-t18,avans,n,3,Radovi su započeli nakon uplate avansa.,avansa
-t19,dospijeće,n,1,Kada je dospijeće računa za armaturu?,dospijeće
-t19,dospijeće,n,2,Nakon dospijeća obračunavamo zakonske kamate.,dospijeća
-t19,dospijeće,n,3,Tri računa su već prošla rok dospijeća.,dospijeća
-t20,jamstvo za dobro izvršenje,n,1,Je li jamstvo za dobro izvršenje već dostavljeno?,jamstvo za dobro izvršenje
-t20,jamstvo za dobro izvršenje,n,2,Bez jamstva za dobro izvršenje ne potpisujemo ugovor.,jamstva za dobro izvršenje
-t20,jamstvo za dobro izvršenje,n,3,Izvođač još nije predao jamstvo za dobro izvršenje.,jamstvo za dobro izvršenje
-t21,bankovna garancija,n,1,Do kada vrijedi bankovna garancija izvođača?,bankovna garancija
-t21,bankovna garancija,n,2,Aktivirali smo naplatu bankovne garancije zbog kašnjenja.,bankovne garancije
-t21,bankovna garancija,n,3,Za avans tražimo bankovnu garanciju.,bankovnu garanciju
-t22,zadužnica,n,1,Je li zadužnica ovjerena kod javnog bilježnika?,zadužnica
-t22,zadužnica,n,2,Iznos na zadužnici pokriva cijeli ugovor.,zadužnici
-t22,zadužnica,n,3,Kao osiguranje plaćanja izvođač je dao bjanko zadužnicu.,zadužnicu
-t23,OIB,n,1,Koji je OIB tvrtke Građevinar?,OIB
-t23,OIB,n,2,Bez OIB-a dobavljača račun ne možemo knjižiti.,OIB-a
-t23,OIB,n,3,Na ponudi nedostaje OIB.,OIB
-t24,IBAN,n,1,Je li IBAN na računu ispravan?,IBAN
-t24,IBAN,n,2,Promjena IBAN-a mora biti pisano potvrđena.,IBAN-a
-t24,IBAN,n,3,Izvođač nam je poslao novi IBAN.,IBAN
-t25,TIC,y,1,Je li TIC za projekt Kopko već unesen?,TIC
-t25,TIC,y,2,Prema TIC-u za Osijek zemljište vrijedi četiri milijuna eura.,TIC-u
-t25,TIC,y,3,Budžet projekta izračunava se iz TIC-a.,TIC-a
-t26,klasifikacija troška,n,1,Koja je klasifikacija troška za ovaj ugovor?,klasifikacija troška
-t26,klasifikacija troška,n,2,Po klasifikaciji troška zemljište je najveća stavka.,klasifikaciji troška
-t26,klasifikacija troška,n,3,Za ugovor o opremanju treba promijeniti klasifikaciju troška.,klasifikaciju troška
-t27,faza projekta,n,1,Koja faza projekta sada traje?,faza projekta
-t27,faza projekta,n,2,U drugoj fazi projekta gradimo garaže.,fazi projekta
-t27,faza projekta,n,3,Garaže ulaze u drugu fazu projekta.,fazu projekta
-t28,repozitorij,n,1,Je li repozitorij uz stan broj dvanaest prodan?,repozitorij
-t28,repozitorij,n,2,Cijena repozitorija nije uključena u cijenu stana.,repozitorija
-t28,repozitorij,n,3,Kupac uz stan kupuje i repozitorij.,repozitorij
-t29,kreditna linija,n,1,Kolika je kreditna linija za projekt Funtana?,kreditna linija
-t29,kreditna linija,n,2,Iz kreditne linije povukli smo dvije tranše.,kreditne linije
-t29,kreditna linija,n,3,Banka nam je odobrila novu kreditnu liniju.,kreditnu liniju
-t30,investitor,n,1,Tko je investitor na projektu u Osijeku?,investitor
-t30,investitor,n,2,Izvještaj investitoru šaljemo svaki mjesec.,investitoru
-t30,investitor,n,3,Ugovor o financiranju potpisali smo s investitorom.,investitorom
+term_id,term,critical,carrier_no,sentence,target_form,accepted_alternates,review_status
+t01,građevinska dozvola,y,1,Je li građevinska dozvola za Funtanu već izdana?,građevinska dozvola,,draft
+t01,građevinska dozvola,y,2,Bez građevinske dozvole ne možemo početi s radovima.,građevinske dozvole,,draft
+t01,građevinska dozvola,y,3,Za zgradu u Osijeku još čekamo građevinsku dozvolu.,građevinsku dozvolu,,draft
+t02,uporabna dozvola,n,1,Kada stiže uporabna dozvola za stambeni blok?,uporabna dozvola,,draft
+t02,uporabna dozvola,n,2,Zahtjev za izdavanje uporabne dozvole predali smo prošli tjedan.,uporabne dozvole,,draft
+t02,uporabna dozvola,n,3,Kupci mogu useliti tek kad dobijemo uporabnu dozvolu.,uporabnu dozvolu,,draft
+t03,izvođač,y,1,Koji izvođač radi fasadu na projektu Kopko?,izvođač,,draft
+t03,izvođač,y,2,Pošalji izvođaču popis nedostataka do petka.,izvođaču,,draft
+t03,izvođač,y,3,Za elektroinstalacije još nismo odabrali izvođača.,izvođača,,draft
+t04,podizvođač,n,1,Tko je podizvođač za keramičarske radove?,podizvođač,,draft
+t04,podizvođač,n,2,Račun podizvođača stigao je bez potpisa voditelja.,podizvođača,,draft
+t04,podizvođač,n,3,Glavni izvođač je posao prepustio podizvođaču.,podizvođaču,,draft
+t05,troškovnik,n,1,Gdje je troškovnik za drugu fazu?,troškovnik,,draft
+t05,troškovnik,n,2,U troškovniku nedostaju stavke za hidroizolaciju.,troškovniku,,draft
+t05,troškovnik,n,3,Ponuda mora točno pratiti troškovnik.,troškovnik,,draft
+t06,situacija,n,1,Kada nam stiže sljedeća situacija od izvođača?,situacija,,draft
+t06,situacija,n,2,Iznos treće situacije veći je od ugovorenog.,situacije,,draft
+t06,situacija,n,3,Nadzorni inženjer još nije ovjerio situaciju.,situaciju,,draft
+t07,okončana situacija,n,1,Je li okončana situacija za Funtanu već ispostavljena?,okončana situacija,,draft
+t07,okončana situacija,n,2,Nakon okončane situacije zadržavamo pet posto do isteka jamstva.,okončane situacije,,draft
+t07,okončana situacija,n,3,Izvođač nam je jučer poslao okončanu situaciju.,okončanu situaciju,,draft
+t08,nadzorni inženjer,n,1,Tko je nadzorni inženjer na gradilištu u Zagrebu?,nadzorni inženjer,,draft
+t08,nadzorni inženjer,n,2,Bez potpisa nadzornog inženjera ne plaćamo situaciju.,nadzornog inženjera,,draft
+t08,nadzorni inženjer,n,3,Zapisnik smo poslali nadzornom inženjeru.,nadzornom inženjeru,,draft
+t09,aneks ugovora,n,1,Je li aneks ugovora s izvođačem potpisan?,aneks ugovora,,draft
+t09,aneks ugovora,n,2,Prema aneksu ugovora rok je produžen za dva mjeseca.,aneksu ugovora,,draft
+t09,aneks ugovora,n,3,Za dodatne radove trebamo novi aneks ugovora.,aneks ugovora,,draft
+t10,rokovi,y,1,Koji su rokovi za završetak druge faze?,rokovi,,draft
+t10,rokovi,y,2,Izvođač se ne drži dogovorenih rokova ni na jednom projektu.,rokova,,draft
+t10,rokovi,y,3,Molim te provjeri sve ugovorne rokove.,rokove,,draft
+t11,rok izvođenja,n,1,Koliki je rok izvođenja radova na krovu?,rok izvođenja,,draft
+t11,rok izvođenja,n,2,Po isteku roka izvođenja naplaćujemo penale.,roka izvođenja,,draft
+t11,rok izvođenja,n,3,Ugovor za fasadu nema definiran rok izvođenja.,rok izvođenja,,draft
+t12,primopredaja,n,1,Kada je primopredaja stanova kupcima?,primopredaja,,draft
+t12,primopredaja,n,2,Na primopredaji su pronađena tri nedostatka.,primopredaji,,draft
+t12,primopredaja,n,3,Zapisnik je sastavljen odmah nakon primopredaje.,primopredaje,,draft
+t13,proračun,y,1,Koliki je proračun projekta Funtana?,proračun,,draft
+t13,proračun,y,2,U proračunu nije predviđen trošak priključaka.,proračunu,,draft
+t13,proračun,y,3,Nabava opreme išla je preko proračuna.,proračuna,,draft
+t14,cesija,n,1,Je li cesija s bankom već potpisana?,cesija,,draft
+t14,cesija,n,2,Plaćanje putem cesije knjiženo je prošli mjesec.,cesije,,draft
+t14,cesija,n,3,Taj račun podmirili smo cesijom.,cesijom,,draft
+t15,kompenzacija,n,1,Kolika je kompenzacija s dobavljačem betona?,kompenzacija,,draft
+t15,kompenzacija,n,2,Izjavu o kompenzaciji treba potpisati direktor.,kompenzaciji,,draft
+t15,kompenzacija,n,3,Dug prema izvođaču zatvorili smo kompenzacijom.,kompenzacijom,,draft
+t16,PDV,n,1,Je li PDV uključen u ovu cijenu?,PDV,pe de ve|p d v,draft
+t16,PDV,n,2,Iznos bez PDV-a je sto dvadeset tisuća eura.,PDV-a,pdv-a|pdva|pe de ve a|pe de vea|pdv a,draft
+t16,PDV,n,3,Na cijenu stanova još treba dodati PDV.,PDV,pe de ve|p d v,draft
+t17,R1 račun,n,1,Je li ovo R1 račun ili obični?,R1 račun,r jedan račun|er jedan račun|r1 račun|r 1 račun,draft
+t17,R1 račun,n,2,Bez R1 računa ne možemo odbiti pretporez.,R1 računa,r jedan računa|er jedan računa|r1 računa|r 1 računa,draft
+t17,R1 račun,n,3,Molim dobavljača da nam pošalje R1 račun.,R1 račun,r jedan račun|er jedan račun|r1 račun|r 1 račun,draft
+t18,avans,n,1,Koliki je avans isplaćen izvođaču?,avans,,draft
+t18,avans,n,2,Od avansa je ostalo još četrdeset tisuća eura.,avansa,,draft
+t18,avans,n,3,Radovi su započeli nakon uplate avansa.,avansa,,draft
+t19,dospijeće,n,1,Kada je dospijeće računa za armaturu?,dospijeće,,draft
+t19,dospijeće,n,2,Nakon dospijeća obračunavamo zakonske kamate.,dospijeća,,draft
+t19,dospijeće,n,3,Tri računa su već prošla rok dospijeća.,dospijeća,,draft
+t20,jamstvo za dobro izvršenje,n,1,Je li jamstvo za dobro izvršenje već dostavljeno?,jamstvo za dobro izvršenje,,draft
+t20,jamstvo za dobro izvršenje,n,2,Bez jamstva za dobro izvršenje ne potpisujemo ugovor.,jamstva za dobro izvršenje,,draft
+t20,jamstvo za dobro izvršenje,n,3,Izvođač još nije predao jamstvo za dobro izvršenje.,jamstvo za dobro izvršenje,,draft
+t21,bankovna garancija,n,1,Do kada vrijedi bankovna garancija izvođača?,bankovna garancija,,draft
+t21,bankovna garancija,n,2,Aktivirali smo naplatu bankovne garancije zbog kašnjenja.,bankovne garancije,,draft
+t21,bankovna garancija,n,3,Za avans tražimo bankovnu garanciju.,bankovnu garanciju,,draft
+t22,zadužnica,n,1,Je li zadužnica ovjerena kod javnog bilježnika?,zadužnica,,draft
+t22,zadužnica,n,2,Iznos na zadužnici pokriva cijeli ugovor.,zadužnici,,draft
+t22,zadužnica,n,3,Kao osiguranje plaćanja izvođač je dao bjanko zadužnicu.,zadužnicu,,draft
+t23,OIB,n,1,Koji je OIB tvrtke Građevinar?,OIB,o i b|oi be,draft
+t23,OIB,n,2,Bez OIB-a dobavljača račun ne možemo knjižiti.,OIB-a,oib-a|oiba|oib a|o i b a,draft
+t23,OIB,n,3,Na ponudi nedostaje OIB.,OIB,o i b|oi be,draft
+t24,IBAN,n,1,Je li IBAN na računu ispravan?,IBAN,i ban,draft
+t24,IBAN,n,2,Promjena IBAN-a mora biti pisano potvrđena.,IBAN-a,iban-a|ibana|iban a,draft
+t24,IBAN,n,3,Izvođač nam je poslao novi IBAN.,IBAN,i ban,draft
+t25,TIC,y,1,Je li TIC za projekt Kopko već unesen?,TIC,tik|tic|t i c|te i ce,draft
+t25,TIC,y,2,Prema TIC-u za Osijek zemljište vrijedi četiri milijuna eura.,TIC-u,tiku|tik-u|ticu|tic u|tik u,draft
+t25,TIC,y,3,Budžet projekta izračunava se iz TIC-a.,TIC-a,tika|tik-a|tica|tic a|tik a,draft
+t26,klasifikacija troška,n,1,Koja je klasifikacija troška za ovaj ugovor?,klasifikacija troška,,draft
+t26,klasifikacija troška,n,2,Po klasifikaciji troška zemljište je najveća stavka.,klasifikaciji troška,,draft
+t26,klasifikacija troška,n,3,Za ugovor o opremanju treba promijeniti klasifikaciju troška.,klasifikaciju troška,,draft
+t27,faza projekta,n,1,Koja faza projekta sada traje?,faza projekta,,draft
+t27,faza projekta,n,2,U drugoj fazi projekta gradimo garaže.,fazi projekta,,draft
+t27,faza projekta,n,3,Garaže ulaze u drugu fazu projekta.,fazu projekta,,draft
+t28,repozitorij,n,1,Je li repozitorij uz stan broj dvanaest prodan?,repozitorij,,draft
+t28,repozitorij,n,2,Cijena repozitorija nije uključena u cijenu stana.,repozitorija,,draft
+t28,repozitorij,n,3,Kupac uz stan kupuje i repozitorij.,repozitorij,,draft
+t29,kreditna linija,n,1,Kolika je kreditna linija za projekt Funtana?,kreditna linija,,draft
+t29,kreditna linija,n,2,Iz kreditne linije povukli smo dvije tranše.,kreditne linije,,draft
+t29,kreditna linija,n,3,Banka nam je odobrila novu kreditnu liniju.,kreditnu liniju,,draft
+t30,investitor,n,1,Tko je investitor na projektu u Osijeku?,investitor,,draft
+t30,investitor,n,2,Izvještaj investitoru šaljemo svaki mjesec.,investitoru,,draft
+t30,investitor,n,3,Ugovor o financiranju potpisali smo s investitorom.,investitorom,,draft

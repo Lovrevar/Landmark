@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Mix one noise recording into every clean take at a fixed SNR.
 
-    python3 mix_noise.py --clean clean --noise noise.wav --out noisy [--snr-db 15]
+    python3 mix_noise.py --clean clean --noise noise.wav --out noisy [--snr-db 10]
+
+The default, 10 dB, is the frozen value from the plan's phase 0 protocol.
 
 Deterministic by construction: same inputs, byte-identical outputs.
   * The noise offset for each take comes from SHA-256 of the file NAME
@@ -90,7 +92,7 @@ def main() -> int:
     ap.add_argument("--clean", type=Path, default=Path("clean"))
     ap.add_argument("--noise", type=Path, default=Path("noise.wav"))
     ap.add_argument("--out", type=Path, default=Path("noisy"))
-    ap.add_argument("--snr-db", type=float, default=15.0)
+    ap.add_argument("--snr-db", type=float, default=10.0, help="frozen protocol value: 10 dB")
     args = ap.parse_args()
 
     noise = read_wav(args.noise)

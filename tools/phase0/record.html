@@ -29,9 +29,12 @@
   #progress { font-variant-numeric: tabular-nums; font-weight:700; }
   #log { color:var(--muted); font-size:13px; white-space:pre-wrap; max-height:10em; overflow:auto; }
   .hidden { display:none; }
+  #dryBanner { background:var(--rec); color:#fff; font-weight:700; padding:8px 16px; text-align:center; }
+  #section { text-transform:uppercase; letter-spacing:.05em; }
 </style>
 </head>
 <body>
+<div id="dryBanner" class="hidden">DRY RUN — script not frozen or entity placeholders present. These recordings do not count.</div>
 <main>
   <h1>Phase 0 — snimanje rečenica (Croatian STT test script)</h1>
 
@@ -39,22 +42,25 @@
     <p>
       <label for="speaker">Speaker ID</label>
       <input id="speaker" type="text" placeholder="s01" maxlength="3" autocomplete="off">
-      <button id="loadCsv">1. Load sentences.csv</button>
-      <input id="csvFile" type="file" accept=".csv,text/csv" class="hidden">
+      <button id="loadCsv">1. Load script</button>
+      <input id="csvFile" type="file" accept=".csv,text/csv" multiple class="hidden">
       <button id="pickDir">2. Choose output folder (clean/)</button>
       <button id="start" class="primary" disabled>3. Start</button>
     </p>
     <p class="keys">
       Serve this folder on localhost (see README) and use Chrome or Edge: the folder picker writes the
       WAV files and <code>manifest.csv</code> directly. In other browsers each take downloads instead.
-      Sentence order is shuffled with the speaker ID as the seed; reopening the page resumes, skipping
-      takes already in the folder.
+      The script is four files (<code>sentences.csv</code>, <code>entities.csv</code>,
+      <code>amounts.csv</code>, <code>questions.csv</code>: 125 takes). The order of all 125 is shuffled
+      with the speaker ID as the seed; reopening the page resumes, skipping takes already in the folder.
+      Recording is blocked until every row is <code>frozen</code> and no entity is a placeholder
+      (add <code>?dryrun=1</code> to the URL for a test run).
     </p>
     <p id="setupStatus" class="keys"></p>
   </section>
 
   <section class="card hidden" id="session">
-    <div id="meta"><span id="progress">0/90</span> · <span id="which"></span></div>
+    <div id="meta"><span id="progress">0/125</span> · <span id="section"></span> · <span id="which"></span></div>
     <div id="sentence"></div>
     <div id="state">Pritisnite i držite razmaknicu dok čitate.</div>
     <div id="meter"><div id="meterFill"></div></div>
@@ -73,11 +79,18 @@ const TARGET_RATE = 16000
 const PRE_ROLL_MS = 300   // audio kept from before the key press
 const POST_ROLL_MS = 300  // audio kept after the key release (protects sentence-final terms)
 const MANIFEST_NAME = 'manifest.csv'
-const MANIFEST_COLS = ['file', 'speaker', 'term_id', 'carrier_no', 'duration_ms', 'sample_rate', 'takes', 'order_index', 'recorded_at']
+const MANIFEST_COLS = ['file', 'speaker', 'section', 'item_id', 'term_id', 'carrier_no', 'duration_ms', 'sample_rate', 'takes', 'order_index', 'recorded_at']
+const SCRIPT_FILES = {
+  'sentences.csv': { section: 'term', count: 90, cols: ['term_id', 'term', 'critical', 'carrier_no', 'sentence', 'target_form', 'accepted_alternates', 'review_status'] },
+  'entities.csv': { section: 'entity', count: 15, cols: ['entity_id', 'entity_type', 'name', 'placeholder', 'sentence', 'target_form', 'accepted_alternates', 'review_status'] },
+  'amounts.csv': { section: 'amount', count: 10, cols: ['amount_id', 'amount_eur', 'sentence', 'review_status'] },
+  'questions.csv': { section: 'question', count: 10, cols: ['question_id', 'sentence', 'review_status'] },
+}
+const DRY_RUN = new URLSearchParams(location.search).get('dryrun') === '1'
 
 const $ = (id) => document.getElementById(id)
 const state = {
-  rows: null, speaker: null, dir: null, order: [], pending: [], idx: 0, done: new Set(),
+  rows: null, script: {}, blockers: [], speaker: null, dir: null, order: [], pending: [], idx: 0, done: new Set(),
   ctx: null, node: null, stream: null, recording: false, chunks: [], ring: [], ringLen: 0,
   phase: 'idle', // idle | recording | stopping | review | saving
   currentWav: null, currentDurationMs: 0, takes: 0, manifestMemory: [],
@@ -109,12 +122,37 @@ function parseCsv(text) {
 }
 const csvCell = (v) => { const s = String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }
 
-function acceptRows(rows) {
-  const need = ['term_id', 'term', 'critical', 'carrier_no', 'sentence', 'target_form']
-  if (!rows.length || !need.every((k) => k in rows[0])) throw new Error('sentences.csv is missing required columns')
-  if (rows.length !== 90) throw new Error(`sentences.csv has ${rows.length} rows, expected 90`)
-  state.rows = rows
-  $('setupStatus').textContent = `Loaded ${rows.length} sentences.`
+function acceptScriptFile(name, text) {
+  const spec = SCRIPT_FILES[name]
+  if (!spec) return
+  const rows = parseCsv(text)
+  if (!rows.length || !spec.cols.every((k) => k in rows[0])) throw new Error(`${name}: missing columns (need ${spec.cols.join(', ')})`)
+  if (rows.length !== spec.count) throw new Error(`${name}: ${rows.length} rows, expected ${spec.count}`)
+  state.script[name] = rows
+}
+
+// One flat list of takes: {section, item_id, file-name stem, sentence, row}.
+function buildItems() {
+  const items = []
+  for (const r of state.script['sentences.csv']) items.push({ section: 'term', item_id: `${r.term_id}_c${r.carrier_no}`, term_id: r.term_id, carrier_no: r.carrier_no, sentence: r.sentence, row: r })
+  for (const r of state.script['entities.csv']) items.push({ section: 'entity', item_id: r.entity_id, sentence: r.sentence, row: r })
+  for (const r of state.script['amounts.csv']) items.push({ section: 'amount', item_id: r.amount_id, sentence: r.sentence, row: r })
+  for (const r of state.script['questions.csv']) items.push({ section: 'question', item_id: r.question_id, sentence: r.sentence, row: r })
+  return items
+}
+
+function scriptLoaded() {
+  const missing = Object.keys(SCRIPT_FILES).filter((n) => !state.script[n])
+  if (missing.length) { $('setupStatus').textContent = `Still needed: ${missing.join(', ')}`; return }
+  state.rows = buildItems()
+  const drafts = state.rows.filter((i) => i.row.review_status !== 'frozen').length
+  const placeholders = state.script['entities.csv'].filter((r) => r.placeholder === 'y').length
+  state.blockers = []
+  if (drafts) state.blockers.push(`${drafts} row(s) not frozen`)
+  if (placeholders) state.blockers.push(`${placeholders} placeholder entit${placeholders === 1 ? 'y' : 'ies'}`)
+  $('setupStatus').textContent = `Loaded ${state.rows.length} takes.` + (state.blockers.length
+    ? ` Blocked: ${state.blockers.join(', ')}.` + (DRY_RUN ? ' Dry run allowed by ?dryrun=1.' : ' Freeze the script (or use ?dryrun=1 for a test run).')
+    : ' Script frozen.')
   refreshStart()
 }
 
@@ -126,26 +164,32 @@ function shuffled(items, seedStr) {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
   return a
 }
-const fileName = (r) => `${state.speaker}_${r.term_id}_c${r.carrier_no}.wav`
+const fileName = (item) => `${state.speaker}_${item.item_id}.wav`
 
 // ---------- setup ----------
 function refreshStart() {
-  const ok = /^s0[1-6]$/.test($('speaker').value.trim()) && state.rows
+  const ok = /^s0[1-6]$/.test($('speaker').value.trim()) && state.rows && (!state.blockers.length || DRY_RUN)
   $('start').disabled = !ok
 }
 $('speaker').addEventListener('input', refreshStart)
 $('loadCsv').addEventListener('click', async () => {
   try {
-    const res = await fetch('sentences.csv', { cache: 'no-store' })
-    if (!res.ok) throw new Error(String(res.status))
-    acceptRows(parseCsv(await res.text()))
-  } catch {
-    $('csvFile').click() // opened from file:// or elsewhere: pick the file instead
+    for (const name of Object.keys(SCRIPT_FILES)) {
+      const res = await fetch(name, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`)
+      acceptScriptFile(name, await res.text())
+    }
+    scriptLoaded()
+  } catch (err) {
+    if (err instanceof TypeError) { $('csvFile').click(); return } // file:// — pick the four files instead
+    $('setupStatus').textContent = err.message
   }
 })
 $('csvFile').addEventListener('change', async (e) => {
-  const f = e.target.files[0]; if (!f) return
-  try { acceptRows(parseCsv(await f.text())) } catch (err) { $('setupStatus').textContent = err.message }
+  try {
+    for (const f of e.target.files) acceptScriptFile(f.name, await f.text())
+    scriptLoaded()
+  } catch (err) { $('setupStatus').textContent = err.message }
 })
 $('pickDir').addEventListener('click', async () => {
   if (!window.showDirectoryPicker) { $('setupStatus').textContent = 'This browser has no folder picker: takes will download one by one.'; return }
@@ -164,9 +208,10 @@ $('start').addEventListener('click', async () => {
   }
   state.pending = state.order.filter((r) => !state.done.has(fileName(r)))
   try { await initAudio() } catch (err) { $('setupStatus').textContent = `Microphone unavailable: ${err.message}`; return }
+  if (state.blockers.length) $('dryBanner').classList.remove('hidden')
   $('setup').classList.add('hidden'); $('session').classList.remove('hidden')
   state.idx = 0
-  log(`speaker ${state.speaker}: ${state.pending.length} to record, ${90 - state.pending.length} already done`)
+  log(`speaker ${state.speaker}: ${state.pending.length} to record, ${state.order.length - state.pending.length} already done`)
   showCurrent()
 })
 
@@ -256,7 +301,8 @@ async function saveCurrent() {
   state.phase = 'saving'
   const r = state.pending[state.idx]; const name = fileName(r)
   const line = {
-    file: name, speaker: state.speaker, term_id: r.term_id, carrier_no: r.carrier_no,
+    file: name, speaker: state.speaker, section: r.section, item_id: r.item_id,
+    term_id: r.term_id ?? '', carrier_no: r.carrier_no ?? '',
     duration_ms: state.currentDurationMs, sample_rate: TARGET_RATE, takes: state.takes,
     order_index: state.order.indexOf(r) + 1, recorded_at: new Date().toISOString(),
   }
@@ -298,7 +344,9 @@ function download(name, blob) {
 
 // ---------- flow ----------
 function showCurrent() {
-  const total = 90; const doneCount = state.done.size ? [...state.done].filter((n) => n.startsWith(`${state.speaker}_`) && n.endsWith('.wav')).length : 0
+  const total = state.order.length
+  const names = new Set(state.order.map(fileName))
+  const doneCount = [...state.done].filter((n) => names.has(n)).length
   $('progress').textContent = `${Math.min(doneCount, total)}/${total}`
   if (state.idx >= state.pending.length) {
     $('sentence').textContent = 'Gotovo — hvala!'
@@ -312,6 +360,7 @@ function showCurrent() {
   }
   const r = state.pending[state.idx]
   $('sentence').textContent = r.sentence
+  $('section').textContent = r.section
   $('which').textContent = fileName(r)
   state.takes = 0; state.currentWav = null; state.phase = 'idle'
   setState('Pritisnite i držite razmaknicu dok čitate.')

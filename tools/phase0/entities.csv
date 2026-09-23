@@ -1,0 +1,16 @@
+entity_id,entity_type,name,placeholder,sentence,target_form,accepted_alternates,review_status
+e01,project,Stambena zgrada Lipa,y,Kako napreduju radovi na projektu Stambena zgrada Lipa?,Stambena zgrada Lipa,,draft
+e02,project,Vila Maslina,y,Pošalji mi troškovnik za projekt Vila Maslina.,Vila Maslina,,draft
+e03,project,Poslovni centar Zapad,y,Je li projekt Poslovni centar Zapad još u fazi pripreme?,Poslovni centar Zapad,,draft
+e04,project,Kvart Sunčana obala,y,Koliko je stanova prodano u projektu Kvart Sunčana obala?,Kvart Sunčana obala,,draft
+e05,project,Residence Marina,y,Tko je nadzorni inženjer na projektu Residence Marina?,Residence Marina,rezidens marina|rezidenc marina,draft
+e06,project,Park Jadran,y,Otvori mi financijski pregled projekta Park Jadran.,Park Jadran,,draft
+e07,project,Garaže Čakovec,y,Kada počinje gradnja projekta Garaže Čakovec?,Garaže Čakovec,,draft
+e08,subcontractor,Horvat gradnja d.o.o.,y,Koliko još dugujemo tvrtki Horvat gradnja d.o.o.?,Horvat gradnja d.o.o.,,draft
+e09,subcontractor,Kovačević i sinovi j.d.o.o.,y,Je li izvođač Kovačević i sinovi j.d.o.o. poslao situaciju?,Kovačević i sinovi j.d.o.o.,,draft
+e10,subcontractor,Elektro Babić obrt,y,Ugovor za elektroinstalacije potpisali smo s izvođačem Elektro Babić obrt.,Elektro Babić obrt,,draft
+e11,subcontractor,Novak inženjering d.o.o.,y,Koje sve ugovore imamo s tvrtkom Novak inženjering d.o.o.?,Novak inženjering d.o.o.,,draft
+e12,subcontractor,Stolarija Jurić obrt,y,Račun od izvođača Stolarija Jurić obrt stigao je jučer.,Stolarija Jurić obrt,,draft
+e13,subcontractor,Hidro Šimić d.o.o.,y,Koliko smo ukupno platili tvrtki Hidro Šimić d.o.o. ove godine?,Hidro Šimić d.o.o.,,draft
+e14,subcontractor,Schneider Bau GmbH,y,Ima li tvrtka Schneider Bau GmbH otvorenih računa?,Schneider Bau GmbH,šnajder bau|schneider bau|šnajder bau gmbh,draft
+e15,subcontractor,Tehnoplan d.o.o.,y,Provjeri plaćanja prema tvrtki Tehnoplan d.o.o.,Tehnoplan d.o.o.,,draft
