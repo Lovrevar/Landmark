@@ -50,7 +50,7 @@ import { encodeBase64 } from 'jsr:@std/encoding@1/base64'
 
 import { corsHeaders, handlePreflight } from '../_shared/cors.ts'
 import { authenticate, type AuthContext } from '../_shared/auth.ts'
-import { selectAvailableTools, TOOLS, type ToolHandlerExtras } from '../_shared/tools.ts'
+import { findAvailableTool, selectAvailableTools, TOOLS, type ToolHandlerExtras } from '../_shared/tools.ts'
 import { buildStaticSystemPrompt, buildUserContext } from '../_shared/prompts.ts'
 import { checkRateLimit } from '../_shared/rateLimit.ts'
 import { describeRoute, sanitizeRoute } from '../_shared/routeLabels.ts'
@@ -296,8 +296,21 @@ async function dispatchTool(
   ctx: AuthContext,
   extras: ToolHandlerExtras,
 ): Promise<unknown> {
-  const tool = TOOLS.find((t) => t.name === name)
-  if (!tool) throw new Error(`unknown tool: ${name}`)
+  // Role gate at dispatch, not just at advertisement: the name comes from the
+  // model's response, so it is checked again here against what this role may
+  // invoke. A refusal surfaces to the model as an is_error tool_result via
+  // dispatchToolWithTimeout.
+  const tool = findAvailableTool(ctx, name)
+  if (!tool) {
+    const exists = TOOLS.some((t) => t.name === name)
+    console.warn('[ai-chat] tool refused at dispatch', {
+      userId: ctx.userId,
+      role: ctx.role,
+      tool: name,
+      reason: exists ? 'not_permitted_for_role' : 'unknown_tool',
+    })
+    throw new Error(exists ? `tool not permitted for role: ${name}` : `unknown tool: ${name}`)
+  }
   return await tool.handler(input as Record<string, unknown>, ctx, extras)
 }
 
