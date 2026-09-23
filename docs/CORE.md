@@ -82,6 +82,13 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 ### dbErrors.ts
 - `isForeignKeyViolation(error)` — tells a Postgres FK violation (`23503`) apart from other Supabase errors, so a delete blocked by dependent rows can show a useful message instead of a generic failure
 
+### xlsxExport.ts
+- `buildWorkbook(sheets)` / `downloadWorkbook(sheets, prefix)` plus the cell helpers `toDateCell`, `moneyCell`, `textCell` — one way to write a spreadsheet, used by every "Export Excel" button outside TIC (whose layout is frozen by `ticImport.ts`)
+- Replaces six hand-rolled CSVs, five of which quoted nothing: a supplier named `PANNONIA, d.o.o.` shifted every column after it, a newline in a note split the record, a leading `=` was a formula waiting for whoever opened the file, none wrote a BOM (so the one export with Croatian headers was mojibake in Excel), and every amount was a dot decimal that Croatian Excel reads as text and refuses to sum. A real `.xlsx` removes all five at once — `aoa_to_sheet` only makes a formula from an explicit `{ f }`, so text stays text
+- **Money is a number** carrying the `#,##0.00 €` *format*, so the file is locale-free and `SUM()` works in whatever Excel the recipient opens it in. **A date is a date**, formatted `dd.mm.yyyy.`, so the column sorts and filters as dates rather than as text
+- `toDateCell` also settles the date-only trap: a `YYYY-MM-DD` column goes through `parseLocalDate` (three exports wrote the previous day), while a real timestamp takes its local calendar day
+- Each screen keeps a **pure, exported, tested** `buildXSheet(rows, t)`; only the `export*Excel` wrapper calls `exportT()`, so the tests pin the Croatian headers without a DOM
+
 ---
 
 ## Types — `src/types/`
@@ -226,8 +233,19 @@ read "Jan 05, 2026".
 - **Use these for every date-only column.** `new Date('2026-09-01')` parses as UTC and compares wrong against a local `new Date()` — Croatia is UTC+1/+2, so month buckets and overdue detection drift by a day at boundaries. Added during the June 2026 dashboard audit (see [`DASHBOARD_AUDIT.md`](./DASHBOARD_AUDIT.md) DASH-001)
 
 ### pdfFont.ts
-- `loadUnicodeFont(doc)` — loads NotoSans into a jsPDF document so Croatian diacritics (š č ć đ ž) render instead of turning into boxes
-- Falls back to helvetica if the font fetch fails
+- `loadUnicodeFont(doc)` + `PDF_FONT_FAMILY` — registers the embedded Noto Sans on a jsPDF document. Every generator calls it before drawing
+- **Why it is not optional.** jsPDF's built-in fonts are WinAnsi, which has `š` and `ž` but **no mapping for `č`, `ć` or `đ`** — and one unmapped character makes jsPDF re-encode the *whole string* as UCS-2BE, which the built-in font draws as two garbage glyphs per character. `Račun` came out as `R a u n`; the `hr-HR` minus sign (U+2212) did the same to any line holding a negative number
+- **There is no fallback**, and the failure is not silent: the font is a local asset now, so a failure means a broken deploy, and the export fails with a message rather than producing a corrupted document. It used to be fetched from fonts.gstatic.com per export (~1.1 MB a time, the app's only third-party origin) with a `catch` that carried on in the broken font
+- Only `normal` and `bold` are registered. jsPDF does **not** throw for an unregistered style — `setFont(family, 'italic')` silently resolves to WinAnsi Times-Italic, reintroducing the whole bug
+- The faces and their OFL licence live in `src/assets/fonts/`; `pdfFont.test.ts` pins the behaviour, including a test of the premise itself (the built-in font must still garble the same string)
+
+### downloadFile.ts
+- `downloadBlob(blob, name)` — nine call sites built this by hand and six never appended the anchor (unreliable in Firefox) or revoked the object URL, leaking each exported file for the tab's life
+- `exportFileName(prefix, ext)` → `prefix-2026-09-23.xlsx`, and `asciiSlug`. **ASCII only, deliberately**: a name picked by a Croatian UI lands in a Downloads folder, on a shared drive or in an email, and `č`/`đ` survive none of those reliably. The date is ISO so a folder sorts chronologically, and local rather than UTC (one export used to stamp yesterday between midnight and 02:00)
+
+### exportLanguage.ts
+- `exportT()` — a `t` pinned to Croatian, and `EXPORT_LANGUAGE`. **Exported documents are Croatian whatever the UI language**: they go to banks, investors and the accountant, and the recipient's language has nothing to do with the language the person clicking Export happens to be reading. Recorded in `docs/REPORTS.md`
+- Exports read the same locale files as the screens — roughly two thirds of a report's labels were already translated for the equivalent screen — rather than keeping a second set of hard-coded strings
 
 ### yieldToUI.ts
 - `yieldToUI()` — awaits the next macrotask, so a long PDF-builder loop can hand the main thread back and keep the UI responsive

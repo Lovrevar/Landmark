@@ -144,6 +144,15 @@ which this list had never carried. `[batch]` marked what the batch fixed; those 
   overlay needs a migration.
 - [ ] **UUIDs instead of names** *(deferred)* — Documents shows `entity_id.slice(0,8)` for units, customers and
   companies; the Activity Log shows the raw entity key and an ID fragment for every type.
+- [ ] **The TIC export loses a phased TIC's phases** *(found 2026-09-23, not fixed)* — `ticImport.ts`
+  reads `FAZA n` column groups into `LineItem.phases`, but `ticExport.ts` never writes them and
+  `TICExportData` carries no phase field. So exporting a phased TIC and re-importing it silently
+  returns an unphased one. The round-trip test passes because its fixture is unphased. Left alone
+  because the sheet layout is a frozen contract — fixing it means adding columns, which is exactly
+  what the freeze forbids without re-checking the importer.
+- [ ] **`InvestmentCreditsTable.tsx:58` renders `credit_type.replace(/_/g, ' ')`** *(found 2026-09-23)*
+  — the same "LINE OF_CREDIT" bug the screens fixed elsewhere, still on the investment dashboard.
+  One line, `getCreditTypeLabelKey`.
 
 ### Suggested order
 
