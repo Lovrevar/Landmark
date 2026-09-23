@@ -343,14 +343,14 @@ Ordered roughly by how much work each one implies.
 
 ## Appendix — drift found between docs and code
 
-Audited 2026-09-23 against the code and migrations on `development` at `97d87deb`. One item is
-**fixed** on the `feature/voice-assistant` branch; the rest are **logged, not fixed**, so each can
-be picked up deliberately.
+Audited 2026-09-23 against the code and migrations on `development` at `97d87deb`. Items 1 and 2
+are **fixed** on the `feature/voice-assistant` branch; the rest are **logged, not fixed**, so each
+can be picked up deliberately.
 
 | # | Where | Doc says | Code / schema says | Status |
 |---|---|---|---|---|
 | 1 | `AI_CHAT.md` → System Prompt | A single `buildSystemPrompt`; "tool names are deliberately not repeated"; file work listed as out of scope | `buildStaticSystemPrompt()` + `buildUserContext(ctx)` in a two-block `system` array; the prompt names `create_document` and `search_help`; document generation is explicitly *not* out of scope; landmines now include phase-vs-classification and TIC | **Fixed** on this branch |
-| 2 | `AI_CHAT.md` → Overview, Tool Catalog (intro, role table, "What each tool returns"), Security §4 tier list | 14 tools | 15 — `list_cost_classifications` (all roles) is missing everywhere | Logged. (`CODEBASE_INDEX.md` corrected to 15 on this branch) |
+| 2 | `AI_CHAT.md` → Overview, Tool Catalog (intro, role table, "What each tool returns"), Security §4 tier list | 14 tools; `list_contracts` filters by project / phase / subcontractor / status; the `ALL_ROLES` tier listed five tools | 15 — `list_cost_classifications` (all roles) was missing everywhere; `list_contracts` also filters by and joins `classification`; the `ALL_ROLES` tier also omitted `search_help` and the three document tools | **Fixed** on this branch (with `CODEBASE_INDEX.md`) |
 | 3 | `AI_CHAT.md` → Security §3 | `accounting_payments` and `accounting_companies` have `USING(true)` RLS | `accounting_payments` is role-gated since `20260526084700` (Director/Accounting full access, Sales a scoped SELECT). `accounting_companies` SELECT is still `USING(true)`; only its writes are gated. The doc predates the migration | Logged |
 | 4 | `CLAUDE.md` → Key Domain Concepts, "Cashflow profile" | `accounting_companies` is RLS-gated to Director/Accounting | Only INSERT/UPDATE/DELETE are gated; any authenticated user can SELECT | Logged |
 | 5 | `AI_CHAT.md` → Data Model | "Three tables back the feature" | Four — `ai_help_searches` (search telemetry, `20260520120000`) is not documented there | Logged |
@@ -358,3 +358,4 @@ be picked up deliberately.
 | 7 | `AI_CHAT.md` → Known Limitations | "No automated test coverage" | `_shared/help-score.test.ts` covers `search_help` retrieval (`npm run test:functions`). The orchestration loop, the tool handlers and the frontend still have none, and that matters for the voice plan | Logged |
 | 8 | `AI_CHAT.md` → Known Limitations | "221 of 223 migrations" unregistered on Landmark-Test | The counts are stale (347 migrations as of 2026-09-14). Whether the desync still exists was not checked | Logged |
 | 9 | `ai-chat/index.ts` header comment (lines 31–39) | *(code comment)* Client disconnect aborts `req.signal`, which cancels the loop | `AI_CHAT.md` → Cancellation is the accurate one: `req.signal` is a no-op in the Edge runtime, and the DB cancel beacon is the real mechanism. The header comment is stale | Logged |
+| 10 | `_shared/tools.ts` header comment | *(code comment)* "defines the 12 tools"; "each handler is currently a stub that echoes its input back" | 15 tools, all with real handlers in `tool-handlers.ts` / `help-search.ts` | Logged |

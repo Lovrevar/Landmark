@@ -22,7 +22,7 @@ This document is the maintenance reference for the Cognilion AI chat feature. It
 
 ## Overview
 
-The AI chat is a Croatian-language, read-only question-and-answer assistant embedded in the Cognilion web app. Users open a floating widget, type a question in any language about projects, phases, contracts, subcontractors, invoices, or payments, and receive an answer in Croatian. The answer is composed by Claude (model: `claude-sonnet-4-6`) via the Anthropic Messages API; Claude reaches into Cognilion data through a curated set of 14 tools exposed by a Supabase Edge Function.
+The AI chat is a Croatian-language, read-only question-and-answer assistant embedded in the Cognilion web app. Users open a floating widget, type a question in any language about projects, phases, contracts, subcontractors, invoices, or payments, and receive an answer in Croatian. The answer is composed by Claude (model: `claude-sonnet-4-6`) via the Anthropic Messages API; Claude reaches into Cognilion data through a curated set of 15 tools exposed by a Supabase Edge Function.
 
 The assistant explicitly does NOT mutate any data and does NOT have access to the retail/land-development side of the platform — only construction-side data is reachable. Refusal phrasing for out-of-scope requests is baked into the system prompt. It *can*, since the document-generation work, produce downloadable PDF / Excel / Markdown files on request (see [Document generation](#document-generation)) — that reads data but changes nothing.
 
@@ -282,7 +282,7 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 
 ## Tool Catalog
 
-14 tools, defined in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts) and implemented in [supabase/functions/_shared/tool-handlers.ts](../supabase/functions/_shared/tool-handlers.ts) (the help-search tool lives in `help-search.ts`). For each tool, JSON Schema and exact input/output shapes live in those files — do not duplicate them here.
+15 tools, defined in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts) and implemented in [supabase/functions/_shared/tool-handlers.ts](../supabase/functions/_shared/tool-handlers.ts) (the help-search tool lives in `help-search.ts`). For each tool, JSON Schema and exact input/output shapes live in those files — do not duplicate them here.
 
 ### Role gating
 
@@ -292,6 +292,7 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 | `get_project_details` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `list_project_phases` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `search_subcontractors` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `list_cost_classifications` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `list_contracts` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `get_subcontractor_payment_status` | ✓ | ✓ |   |   |   |
 | `list_unpaid_invoices` | ✓ | ✓ |   | ✓ |   |
@@ -348,7 +349,8 @@ partner) rather than OpenAI: add vectors alongside the existing fields and blend
 - **`get_project_details`** — full `projects` row plus exact counts of phases, contracts, and milestones for the project. The project lookup runs first so that RLS-hidden projects don't leak counts through the (USING(true)) related tables.
 - **`list_project_phases`** — phases for a given project, ordered by `phase_number`. Deliberately omits `budget_used` (see landmines below).
 - **`search_subcontractors`** — substring search on `subcontractors.name`; returns `{id, name, contact, active_contracts_count}`.
-- **`list_contracts`** — contracts filterable by project / phase / subcontractor / status, with joined `subcontractor`, `phase`, `project` summaries. For Supervision users, filters to assigned projects only.
+- **`list_cost_classifications`** — the global cost classifications (*stavke troškovnika*: "Zemljište", "Priprema i razvoj", … plus company-added ones), ordered by `sort_order`, active only unless `include_inactive`. Returns `{id, name, description, sort_order, is_system, is_active}`. The model uses it to turn a named cost category into a `classification_id` for `list_contracts`. Classification, not phase, is the axis that separates spend categories now that most projects have a single phase.
+- **`list_contracts`** — contracts filterable by project / phase / cost classification / subcontractor / status, with joined `subcontractor`, `phase`, `classification`, `project` summaries. For Supervision users, filters to assigned projects only.
 - **`get_subcontractor_payment_status`** — rollup of contracts + invoices for a single subcontractor: contracted total, invoiced total, paid total, outstanding balance.
 - **`list_unpaid_invoices`** — invoices with status `UNPAID` or `PARTIALLY_PAID`, optionally filtered by subcontractor or project. For Supervision users, RLS scopes results.
 - **`list_payments_for_subcontractor`** — individual payment records (date, amount, method, cesija flag, linked invoice number) for one subcontractor; joins through `accounting_invoices.supplier_id`.
@@ -582,7 +584,7 @@ Several tables that the AI chat reads have RLS policies of `USING(true)` — tha
 
 Three tiers, defined as arrays in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts):
 
-- `ALL_ROLES` (Director, Accounting, Sales, Supervision, Investment) — `search_projects`, `get_project_details`, `list_project_phases`, `search_subcontractors`, `list_contracts`.
+- `ALL_ROLES` (Director, Accounting, Sales, Supervision, Investment) — `search_projects`, `get_project_details`, `list_project_phases`, `search_subcontractors`, `list_cost_classifications`, `list_contracts`, `search_help`, `list_documents_for_entity`, `get_document_download_link`, `create_document`.
 - `FINANCE_ROLES` (Director, Accounting) — `get_subcontractor_payment_status`, `list_payments_for_subcontractor`, `get_invoice_summary`, `get_project_financial_summary`.
 - `FINANCE_PLUS_SUPERVISION` (Director, Accounting, Supervision) — `list_unpaid_invoices`.
 
