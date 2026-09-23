@@ -28,6 +28,7 @@ import {
 import type { ProjectOption } from './services/calendarService'
 import NewEventModal from './NewEventModal'
 import { EVENT_TYPE_COLORS } from './utils/eventTypeColors'
+import { intlLocale } from '../../utils/locale'
 
 interface Props {
   occurrence: ExpandedOccurrence | null
@@ -71,7 +72,7 @@ const EventDetailModal: React.FC<Props> = ({
   const [deleting, setDeleting] = useState(false)
   const [responding, setResponding] = useState(false)
   const [editing, setEditing] = useState(false)
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const dateLocale = intlLocale(i18n.language)
 
   const event = occurrence?.event ?? null
 

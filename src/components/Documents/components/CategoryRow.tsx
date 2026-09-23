@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronRight } from 'lucide-react'
 import type { DocumentCategoryNode } from '../types'
 
@@ -15,6 +16,7 @@ interface CategoryRowProps {
 export const CategoryRow: React.FC<CategoryRowProps> = ({
   node, depth, selectedId, expandedIds, counts, onSelect, onToggle,
 }) => {
+  const { t } = useTranslation()
   const expanded = expandedIds.has(node.id)
   const hasChildren = node.children.length > 0
   const isSelected = node.id === selectedId
@@ -44,7 +46,7 @@ export const CategoryRow: React.FC<CategoryRowProps> = ({
             type="button"
             onClick={(e) => { e.stopPropagation(); onToggle(node.id) }}
             className="flex items-center justify-center w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            aria-label={expanded ? 'Collapse' : 'Expand'}
+            aria-label={expanded ? t('documents.page.table.collapse') : t('documents.page.table.expand')}
           >
             <ChevronRight className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} />
           </button>

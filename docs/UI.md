@@ -140,8 +140,9 @@ Shared primitive component library. Always check here before building new UI —
 - Note: `subtitle` and `icon` are accepted by the prop type but not currently rendered by the component — only `title`, `description`, and `actions` are displayed
 
 ### Pagination.tsx
-- Previous/next pagination controls with page info in Croatian
-- Props: `currentPage`, `totalCount`, `pageSize`, `onPageChange`, `itemLabel?` (default: 'stavki'), `className?`
+- Previous/next pagination controls with page info
+- Props: `currentPage`, `totalCount`, `pageSize`, `onPageChange`, `itemLabel?`, `className?`, `extra?`
+- `itemLabel` is what is being counted, in the genitive, and the caller passes it **already translated** — `itemLabel={t('invoices.pagination.item_label')}` → "Prikazano 1-20 od 97 računa". Left out it falls back to `pagination.item_label` ("stavki" / "items"), which is the only caller-free default; it used to be the hardcoded Croatian literal `'stavki'`, so an English page read "Showing 1-20 of 97 stavki". `General/ActivityLog` is the one caller that relies on the fallback
 - Returns `null` when there is only one page
 
 ### SearchInput.tsx
@@ -151,7 +152,8 @@ Shared primitive component library. Always check here before building new UI —
 
 ### SearchableSelect.tsx
 - Dropdown with a type-to-filter search box — for selects long enough that a plain `Select` is unusable (suppliers, projects, partners)
-- Props: `value`, `options` (`SearchableOption[]` = `{value, label, sublabel?}`), `onChange`, `placeholder?`, `searchPlaceholder?`, `clearLabel?`, `allowClear?`, `disabled?`
+- Props: `value`, `options` (`SearchableOption[]` = `{value, label, sublabel?}`), `onChange`, `placeholder?`, `searchPlaceholder?`, `clearLabel?`, `allowClear?`, `disabled?`, `size?`
+- `clearLabel` is the clear (×) button's accessible name; no caller passes one, so it falls back to `common.clear` ("Očisti"). It used to fall back to the literal `'Clear'`
 - Exports the `SearchableOption` type
 
 ### Select.tsx
@@ -188,6 +190,7 @@ Shared primitive component library. Always check here before building new UI —
 - Generic tab navigation with optional icon and count badge per tab
 - Props: `tabs` (array of `{id, label, icon?` (ReactNode)`, count?}`), `activeTab`, `onChange`, `className?`
 - Generic over the tab ID type `T extends string`
+- The `<nav>`'s `aria-label` is `common.tabs` ("Kartice" / "Tabs") — it was the literal `"Tabs"`, English in every Croatian screen with tabs
 - **Mobile-responsive:** the tab bar scrolls horizontally (no visible scrollbar) and tabs never wrap, with tighter padding on small screens
 
 ### Textarea.tsx

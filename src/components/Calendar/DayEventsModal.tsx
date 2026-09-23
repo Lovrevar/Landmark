@@ -6,6 +6,7 @@ import type { ExpandedOccurrence } from './utils/recurrence'
 import type { TaskOccurrence } from './utils/expandTasks'
 import TaskPill from './components/TaskPill'
 import { EVENT_TYPE_COLORS } from './utils/eventTypeColors'
+import { intlLocale } from '../../utils/locale'
 
 interface Props {
   date: Date | null
@@ -30,7 +31,7 @@ const DayEventsModal: React.FC<Props> = ({
   currentUserId,
 }) => {
   const { t, i18n } = useTranslation()
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const dateLocale = intlLocale(i18n.language)
 
   const dayOccurrences = useMemo(() => {
     if (!date) return []

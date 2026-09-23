@@ -134,7 +134,8 @@ the geometry lives here once.
 
 - **TimelineColumn.tsx** — one day's hour grid plus its absolutely-positioned event cards. Below a
   40 px card height it drops the secondary time-range line, on the grounds that a full title beats a
-  clipped title over a clipped `"11:00 A…"`
+  clipped title over a clipped `"11:00 A…"`. Its overflow chip reuses `calendar.more_events`, the
+  same key MonthView's "+N more" uses — it was the literal `+{n} more`
 - **NowIndicator.tsx** — the current-time line; renders nothing when `now` falls outside the day it
   was given, so the week grid only draws it on today's column
 - **timeSlots.ts** — the shared constants and helpers both of the above key off (`HOUR_HEIGHT`,
@@ -208,6 +209,21 @@ A per-user "Show tasks" toolbar toggle (next to `ViewSwitcher`) merges task due-
   - **DayEventsModal** — tasks listed above events with a divider
 
 ---
+
+## Dates and times
+
+Every date and time on the calendar goes through `Intl` with a locale from
+[`intlLocale(i18n.language)`](../src/utils/locale.ts). Nine files here used to carry their own
+`const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'`, which is **false for `'hr-HR'`** —
+exactly what the detector hands back for a Croatian browser with nothing in localStorage — so those
+users read an English calendar inside a Croatian app.
+
+- `locale` is a **required** prop on `TaskPill`, `TimelineColumn` and `NowIndicator`. It defaulted to
+  `'en-US'`, so a caller that forgot it silently rendered an English clock; a forgotten prop is now a
+  compile error. Pass `intlLocale(i18n.language)` down, never a literal
+- `useCalendarReminderToasts` formats its reminder time in the app's locale too. It passed
+  `undefined` to `toLocaleTimeString`, which means *the browser's* locale, so an English browser put
+  "2:30 PM" inside a Croatian toast
 
 ## Notes
 - **A failed read never renders as an empty calendar.** Both range hooks expose `error`, the grid shows an Alert above it, the two sidebar widgets show an inline error instead of "nothing pending", and every option list (projects, users, busy blocks) says when it could not be fetched. The rule the whole module follows: a control must never display a value different from the one that would be saved, and "we could not ask" must never look like "there is nothing"

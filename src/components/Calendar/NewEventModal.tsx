@@ -23,6 +23,7 @@ import {
   type RecurrenceState,
 } from './utils/recurrencePresets'
 import { EVENT_TYPES, EVENT_TYPE_COLORS } from './utils/eventTypeColors'
+import { intlLocale } from '../../utils/locale'
 
 interface Props {
   show: boolean
@@ -74,7 +75,7 @@ const NewEventModal: React.FC<Props> = ({
   defaultEndTime,
 }) => {
   const { t, i18n } = useTranslation()
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const dateLocale = intlLocale(i18n.language)
   const { user } = useAuth()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')

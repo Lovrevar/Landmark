@@ -63,7 +63,7 @@ Three tables: `chat_conversations`, `chat_participants` (junction with `last_rea
 ### ConversationList.tsx
 - Sidebar list of conversations with last-message preview, unread badge, and search
 - Takes `loadFailed` + `onRetry`; when the list could not be read it shows a compact `ErrorState` instead of the "no conversations" message
-- Shows relative time ("now") for messages within 60 s, otherwise locale-aware short time/date
+- Shows relative time ("now") for messages within 60 s, otherwise a short date in the app's locale via `intlLocale(i18n.language)`. The `m` / `h` / `d` suffixes inside the first week are deliberately unit abbreviations, not translated words
 
 ### MessagePanel.tsx
 - Header with conversation name + participant count, message thread, and composer (textarea + file attach + send)
@@ -79,6 +79,7 @@ Three tables: `chat_conversations`, `chat_participants` (junction with `last_rea
 ### MessageBubble.tsx
 - Single message bubble with sender, timestamp, and optional file attachment preview
 - Renders date separators ("Today" / "Yesterday" / locale date) between message clusters
+- Both the bubble's clock and the separator's date take their locale from `intlLocale(i18n.language)` ([`utils/locale.ts`](../src/utils/locale.ts)). The clock passed `[]` to `toLocaleTimeString`, which means *the browser's* locale, so an English browser printed "2:30 PM" under a Croatian date separator; the separator tested `i18n.language === 'hr'`, which is false for the `'hr-HR'` the detector returns
 
 ### NewConversationModal.tsx
 - Picker for creating a new 1:1 or group conversation; multi-select user list with optional group name

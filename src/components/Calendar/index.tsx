@@ -54,6 +54,7 @@ import {
   startOfWeek,
 } from './views/_shared/timeSlots'
 import type { SlotSelection } from './views/_shared/useClickToCreate'
+import { intlLocale } from '../../utils/locale'
 
 function rangeForView(view: string, anchor: Date): { from: Date; to: Date } {
   if (view === 'day') {
@@ -91,7 +92,7 @@ const CalendarPage: React.FC = () => {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const toast = useToast()
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const dateLocale = intlLocale(i18n.language)
   const {
     prefs,
     anchor,

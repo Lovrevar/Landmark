@@ -17,6 +17,12 @@
     "language": "Jezik",
     "light_mode": "Svijetla tema",
     "dark_mode": "Tamna tema",
+    "menu": "Izbornik",
+    "open_menu": "Otvori izbornik",
+    "close_menu": "Zatvori izbornik",
+    "collapse_sidebar": "Sažmi bočnu traku",
+    "expand_sidebar": "Proširi bočnu traku",
+    "tabs": "Kartice",
     "save": "Spremi",
     "cancel": "Odustani",
     "delete": "Obriši",
@@ -220,6 +226,8 @@
     "logout": "Odjava",
     "email_required": "Email je obavezan",
     "email_invalid": "Unesite valjanu email adresu",
+    "email_placeholder": "Unesite email",
+    "password_placeholder": "Unesite lozinku",
     "password_required": "Lozinka je obavezna",
     "error_invalid_credentials": "Netočan email ili lozinka",
     "error_email_not_confirmed": "Potvrdite svoj email prije prijave",
@@ -288,6 +296,7 @@
     "erp_import": "Uvoz iz ERP-a"
   },
   "profiles": {
+    "title": "Profil",
     "general": "General",
     "supervision": "Supervision",
     "sales": "Sales",
@@ -390,7 +399,8 @@
     "previous": "Prethodno",
     "next": "Sljedeće",
     "page_info": "Stranica {{current}} od {{total}}",
-    "showing": "Prikazano {{from}}-{{to}} od {{total}}"
+    "showing": "Prikazano {{from}}-{{to}} od {{total}}",
+    "item_label": "stavki"
   },
   "invoices": {
     "title": "Računi",

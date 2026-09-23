@@ -6,6 +6,7 @@ import type { TaskOccurrence } from './utils/expandTasks'
 import { cellRows, computeMonthLayout, type CellRows, type PlacedSegment } from './utils/monthLayout'
 import { EVENT_TYPE_COLORS } from './utils/eventTypeColors'
 import TaskPill from './components/TaskPill'
+import { intlLocale } from '../../utils/locale'
 
 interface Props {
   anchor: Date
@@ -122,7 +123,7 @@ const MonthView: React.FC<Props> = ({
   currentUserId,
 }) => {
   const { t, i18n } = useTranslation()
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const dateLocale = intlLocale(i18n.language)
 
   const { cells, gridStart, monthIdx } = useMemo(() => {
     const year = anchor.getFullYear()

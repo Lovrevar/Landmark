@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDown, Search, X } from 'lucide-react'
 import { useFormFieldControl } from './FormField'
 
@@ -31,6 +32,7 @@ export default function SearchableSelect({
   allowClear = true,
   size = 'md',
 }: Props) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   // Inside a FormField the trigger takes the field's id, so the <label> names and focuses it.
   const field = useFormFieldControl()
@@ -102,7 +104,7 @@ export default function SearchableSelect({
               onClick={e => { e.stopPropagation(); onChange(null) }}
               onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); onChange(null) } }}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              aria-label={clearLabel || 'Clear'}
+              aria-label={clearLabel || t('common.clear')}
             >
               <X className="w-3.5 h-3.5" />
             </span>

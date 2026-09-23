@@ -13,6 +13,7 @@ import {
   startOfWeek,
 } from './_shared/timeSlots'
 import type { SlotSelection } from './_shared/useClickToCreate'
+import { intlLocale } from '../../../utils/locale'
 
 interface Props {
   anchor: Date
@@ -39,7 +40,7 @@ export default function WeekView({
   onSlotSelect,
 }: Props) {
   const { t, i18n } = useTranslation()
-  const locale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const locale = intlLocale(i18n.language)
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor])
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart])
   const todayStr = new Date().toDateString()

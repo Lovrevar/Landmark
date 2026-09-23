@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { useEscapeKey } from '../../../../hooks/useEscapeKey'
 import type { ExpandedOccurrence } from '../../utils/recurrence'
 import {
@@ -25,7 +26,12 @@ interface Props {
   onEventClick: (occurrence: ExpandedOccurrence) => void
   onSlotSelect: (selection: SlotSelection) => void
   showNowIndicator?: boolean
-  locale?: string
+  /**
+   * BCP-47 tag for the time labels, from `intlLocale(i18n.language)`. Required on purpose: it
+   * defaulted to `'en-US'`, so a caller that forgot the prop silently rendered an English clock
+   * inside a Croatian app.
+   */
+  locale: string
 }
 
 function compactTime(d: Date): string {
@@ -109,8 +115,9 @@ export default function TimelineColumn({
   onEventClick,
   onSlotSelect,
   showNowIndicator = true,
-  locale = 'en-US',
+  locale,
 }: Props) {
+  const { t } = useTranslation()
   const dayStart = startOfDay(day)
   const dayEnd = new Date(dayStart)
   dayEnd.setDate(dayEnd.getDate() + 1)
@@ -239,7 +246,7 @@ export default function TimelineColumn({
                   className="absolute z-10 px-2 h-5 text-[10px] font-semibold rounded-full bg-blue-600 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   style={{ top: chipTop, right: 4 }}
                 >
-                  +{hiddenCount} more
+                  {t('calendar.more_events', { count: hiddenCount })}
                 </button>
               )
             })()}

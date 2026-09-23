@@ -5,6 +5,7 @@ import type { ChatConversation } from '../../types/chat'
 import SearchInput from '../ui/SearchInput'
 import LoadingSpinner from '../ui/LoadingSpinner'
 import ErrorState from '../ui/ErrorState'
+import { intlLocale } from '../../utils/locale'
 
 interface ConversationListProps {
   conversations: ChatConversation[]
@@ -66,7 +67,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   const unknownLabel = t('chat.unknown_user')
   const chatLabel = t('chat.title')
   const nowLabel = t('chat.time_now')
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const dateLocale = intlLocale(i18n.language)
 
   const filtered = conversations.filter(c => {
     if (!search.trim()) return true

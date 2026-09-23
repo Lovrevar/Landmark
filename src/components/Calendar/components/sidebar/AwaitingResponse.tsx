@@ -7,6 +7,7 @@ import { relativeLabel } from '../../utils/relativeLabel'
 import { pendingWindow, selectPendingOccurrences } from '../../utils/pendingCount'
 import { EVENT_TYPE_COLORS } from '../../utils/eventTypeColors'
 import InlineLoadError from '../../../ui/InlineLoadError'
+import { intlLocale } from '../../../../utils/locale'
 
 interface Props {
   /**
@@ -34,7 +35,7 @@ export default function AwaitingResponse({
   limit = 10,
 }: Props) {
   const { t, i18n } = useTranslation()
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const dateLocale = intlLocale(i18n.language)
   const [busyKey, setBusyKey] = useState<string | null>(null)
 
   const { items, total, overflow } = useMemo(() => {

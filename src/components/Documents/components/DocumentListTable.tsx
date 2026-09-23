@@ -1,11 +1,10 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Files, ExternalLink, Trash2, Loader2, ChevronRight } from 'lucide-react'
-import { format } from 'date-fns'
 
 import { Table, Badge, EmptyState, Button } from '../../ui'
 import type { SearchableOption } from '../../ui/SearchableSelect'
-import { formatFileSize } from '../../../utils/formatters'
+import { formatDateTime, formatFileSize } from '../../../utils/formatters'
 import type { DocumentAssociation, DocumentCategory, DocumentWithRelations } from '../types'
 import { badgeVariantForType, resolveEntityLabel } from '../utils/entityHelpers'
 
@@ -30,7 +29,7 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
   contractOptions, creditOptions,
   breadcrumbFor, onOpen, onDelete,
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   const toggleExpand = (id: string) =>
@@ -141,7 +140,7 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
                   </Table.Td>
                   <Table.Td label={t('documents.page.table.uploaded_at')}>
                     <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                      {format(new Date(doc.uploaded_at), 'dd.MM.yyyy HH:mm')}
+                      {formatDateTime(new Date(doc.uploaded_at), i18n.language)}
                     </span>
                   </Table.Td>
                   <Table.Td sticky>

@@ -6,6 +6,7 @@ import TaskPill from '../components/TaskPill'
 import TimelineColumn from './_shared/TimelineColumn'
 import { DAY_HOURS, DAY_START_HOUR, HOUR_HEIGHT, formatHourLabel, startOfDay } from './_shared/timeSlots'
 import type { SlotSelection } from './_shared/useClickToCreate'
+import { intlLocale } from '../../../utils/locale'
 
 interface Props {
   date: Date
@@ -32,7 +33,7 @@ export default function DayView({
   onSlotSelect,
 }: Props) {
   const { t, i18n } = useTranslation()
-  const locale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const locale = intlLocale(i18n.language)
   const dayStart = startOfDay(date)
   const isToday = dayStart.toDateString() === new Date().toDateString()
   const dayTasks = useMemo(() => {

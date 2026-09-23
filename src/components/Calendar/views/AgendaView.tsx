@@ -5,6 +5,7 @@ import type { ExpandedOccurrence } from '../utils/recurrence'
 import type { TaskOccurrence } from '../utils/expandTasks'
 import TaskPill from '../components/TaskPill'
 import { EVENT_TYPE_COLORS } from '../utils/eventTypeColors'
+import { intlLocale } from '../../../utils/locale'
 
 interface Props {
   occurrences: ExpandedOccurrence[]
@@ -35,7 +36,7 @@ export default function AgendaView({
   currentUserId,
 }: Props) {
   const { t, i18n } = useTranslation()
-  const locale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const locale = intlLocale(i18n.language)
 
   const groups = useMemo<DayGroup[]>(() => {
     const map = new Map<string, DayGroup>()

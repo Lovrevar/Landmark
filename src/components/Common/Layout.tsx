@@ -274,7 +274,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <button
                 onClick={() => setMobileNavOpen(true)}
                 className="lg:hidden touch-target flex items-center justify-center -ml-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
-                aria-label="Open navigation menu"
+                aria-label={t('common.open_menu')}
               >
                 <MenuIcon className="w-6 h-6" />
               </button>
@@ -367,7 +367,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
               <button
                 onClick={toggleTheme}
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label={isDark ? t('common.light_mode') : t('common.dark_mode')}
                 className="hidden lg:block p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors duration-200"
               >
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -406,19 +406,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10"
-            title={sidebarOpen ? 'Zatvori sidebar' : 'Otvori sidebar'}
+            title={sidebarOpen ? t('common.collapse_sidebar') : t('common.expand_sidebar')}
+            aria-label={sidebarOpen ? t('common.collapse_sidebar') : t('common.expand_sidebar')}
           >
             {sidebarOpen ? <ChevronLeft className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
           </button>
 
           <div className="flex flex-col min-h-full">
             <div className={`flex items-center justify-between px-4 pt-5 pb-3 ${sidebarExpanded ? 'block' : 'hidden'}`}>
-              <span className="font-semibold text-gray-800 dark:text-gray-200 text-base tracking-tight">Menu</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-200 text-base tracking-tight">{t('common.menu')}</span>
               {/* Mobile-only close button */}
               <button
                 onClick={() => setMobileNavOpen(false)}
                 className="lg:hidden touch-target flex items-center justify-center text-gray-500 dark:text-gray-400"
-                aria-label="Close navigation menu"
+                aria-label={t('common.close_menu')}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -481,7 +482,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {user?.role !== 'Supervision' && (
               <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 p-2">
                 <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                  {t('profiles.title', 'Profile')}
+                  {t('profiles.title')}
                 </p>
                 <ul className="space-y-1">
                   {profiles.map((profile) => (
@@ -509,11 +510,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Mobile-only account section (language, theme, logout live in the header on desktop) */}
             <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 p-2 safe-bottom">
               <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                {t('common.account', 'Account')}
+                {t('common.account')}
               </p>
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('common.language', 'Language')}
+                  {t('common.language')}
                 </span>
                 <LanguageSwitcher />
               </div>
@@ -523,7 +524,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               >
                 {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 <span>
-                  {isDark ? t('common.light_mode', 'Light mode') : t('common.dark_mode', 'Dark mode')}
+                  {isDark ? t('common.light_mode') : t('common.dark_mode')}
                 </span>
               </button>
               <button

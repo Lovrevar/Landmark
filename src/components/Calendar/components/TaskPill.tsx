@@ -15,7 +15,12 @@ interface Props {
   onToggle?: (occurrence: TaskOccurrence) => void
   compact?: boolean
   showTime?: boolean
-  locale?: string
+  /**
+   * BCP-47 tag for the due-time label, from `intlLocale(i18n.language)`. Required on purpose: it
+   * defaulted to `'en-US'`, so a caller that forgot the prop silently rendered an English clock
+   * inside a Croatian app.
+   */
+  locale: string
 }
 
 const TaskPill: React.FC<Props> = ({
@@ -25,7 +30,7 @@ const TaskPill: React.FC<Props> = ({
   onToggle,
   compact = false,
   showTime = false,
-  locale = 'en-US',
+  locale,
 }) => {
   const { t } = useTranslation()
   const { task, isOverdue, isDone, due_at } = occurrence

@@ -11,13 +11,17 @@ interface Props {
   /** Day that the timeline represents. If `now` does not fall within this day,
    *  the indicator is hidden. */
   date: Date
-  /** Optional locale for the time label. */
-  locale?: string
+  /**
+   * BCP-47 tag for the time label, from `intlLocale(i18n.language)`. Required on purpose: it
+   * defaulted to `'en-US'`, so a caller that forgot the prop silently rendered an English clock
+   * inside a Croatian app.
+   */
+  locale: string
   /** Offset of the timeline grid from the left — e.g. width of the hour gutter. */
   leftOffsetPx?: number
 }
 
-export default function NowIndicator({ date, locale = 'en-US', leftOffsetPx = 0 }: Props) {
+export default function NowIndicator({ date, locale, leftOffsetPx = 0 }: Props) {
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
