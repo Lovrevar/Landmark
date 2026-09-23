@@ -837,8 +837,14 @@ streaming, parallel dispatch, a bounded history read) — worth knowing when dec
 
 ### Phase 1 — characterisation tests (non-optional)
 
-Phase 1 is its own phase, and it gates the orchestrator extraction. The loop that answers
-financial questions has **no test coverage today** (`help-score.test.ts` covers only `search_help`
+> **Done 2026-09-23.** 106 tests in `supabase/functions/ai-chat/tests/`, green against the
+> unmodified orchestrator. Scenario list, coverage map and the paths it cannot reach are in
+> [`03-characterisation-tests.md`](./03-characterisation-tests.md). Behaviour pinned for review is
+> in [`open-questions.md`](./open-questions.md), and two items there (OQ-1, OQ-2) bear directly on
+> voice. **Phase 2 does not start until phase 0 has also passed.**
+
+Phase 1 is its own phase, and it gates the orchestrator extraction. Before it, the loop that
+answered financial questions had no test coverage (`help-score.test.ts` covered only `search_help`
 retrieval — analysis appendix, item 7).
 
 - **What**: Deno tests that drive `ai-chat` end to end and assert on the **SSE wire output** (event
@@ -846,9 +852,10 @@ retrieval — analysis appendix, item 7).
 - **Scenarios**: plain answer; single tool; multi-tool turn; tool error; tool timeout; iteration
   cap; `max_tokens` truncation mid-`tool_use`; cancel beacon; request timeout; persistence
   failure; edit/branch parent chaining; the pre-stream 400 / 404 / 429 responses.
-- **Seam**: a scripted fake Anthropic client that implements both `create` and `stream`, so the
-  same suite survives phase 2's switch to streaming. Making the client injectable is the one code
-  change phase 1 allows.
+- **Seam**: a scripted fake for Anthropic that serves both `create` and `stream`, so the same suite
+  survives phase 2's switch to streaming. *As built*, no seam was needed at all. The fakes answer
+  the Anthropic and Supabase **HTTP APIs**, and the SDK reads `ANTHROPIC_BASE_URL`, so `index.ts`
+  is untouched.
 - **Parity rule**: phases 2 and 3 must each show the suite green before and after. Phase 2 may add
   delta events; phase 3 may change nothing observable. **The extraction PR links both runs.**
 
