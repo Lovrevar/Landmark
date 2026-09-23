@@ -78,7 +78,11 @@ assertion and nothing else, so parity across phase 2 is checkable.
 - **Phase 3 (extraction)** may change **no test at all**. The PR links a green run on the commit
   before the extraction and on the commit after it (plan §4.1).
 - **An `[OQ-n]` test changes only when that open question is decided.** Such a change goes in its
-  own commit, never inside a refactor.
+  own commit, never inside a refactor. As decided on 2026-09-23 (plan §4.7):
+  - the **OQ-1 commit** may change L25, L26 and L27, and adds an invariant test and a recovery test;
+  - the **OQ-2 commit** may change M05, M06, M07 and M04 (and M01/M02 if the prompt or tool wording
+    changes);
+  - **M16 (OQ-6)** stays pinned here. It changes only when the team's chat fix is merged in.
 
 ## Coverage of the orchestration paths
 

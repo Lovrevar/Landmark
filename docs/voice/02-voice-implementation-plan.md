@@ -16,7 +16,11 @@ by channel; the Croatian STT/TTS prototype became a parallel phase 0 with pass c
 characterisation tests now gate the extraction PR with a before/after parity requirement; the
 estimate was re-cut into v1 and v2. **Second revision (same day):** the `voice_calls` token
 lifecycle is explicit (§4.4); phase 0 has a concrete, measurable test protocol (§10); and the
-dispatch-time role check was split out as its own PR against `development` (§5).
+dispatch-time role check was split out as its own PR against `development` (§5). **Third
+revision (2026-09-23, after phase 1):** the fixes for two open questions found by the
+characterisation suite are decided and specified for phase 2 (§4.7). An RLS integration test
+against a real Postgres is added to the v1 pre-ship gates (§10), and the estimate is updated to
+match (§11).
 
 Goal: a user talks, in Croatian, to the same assistant that answers in the app — first from an
 in-app call button, then from a phone number, later over WhatsApp.
@@ -425,6 +429,87 @@ diverge. Evaluate `claude-haiku-4-5` for voice only if §3's measurements demand
 landmines are exactly the kind of reasoning a smaller model gets wrong.
 
 ---
+
+### 4.7 Decided behaviour changes that ship in phase 2
+
+Two findings from phase 1 ([`open-questions.md`](./open-questions.md)) are decided, and both are
+fixed in phase 2. Neither is coded before then. Each is a **deliberate behaviour change**, so each
+lands as its **own commit** with the affected characterisation tests updated in that same commit,
+never folded into the streaming or dispatch commits. That keeps the phase 2 parity check honest:
+the streaming commit still changes only the `[PHASE 2]`-tagged tests.
+
+#### OQ-1 — a conversation must never end on a bare tool call
+
+Today, a stop (or timeout) that arrives while tools run leaves an assistant `tool_use` row with no
+`tool_result` after it. Every later message on that branch is then rejected by the Anthropic API.
+The fix has two parts.
+
+**(a) Repair at message-assembly time**, so threads that are already stuck recover. When
+`handleChat` builds the in-memory history from the ancestor chain, every assistant message whose
+`tool_use` ids are not answered by the next message gets a **synthetic user message inserted
+straight after it**. That message holds only `tool_result` blocks, one per unanswered id, with
+`is_error: true` and content `{"error":"cancelled by user"}`.
+
+- It goes in as a **separate** message rather than being prepended to the following user turn.
+  `splitTurns` treats a message whose first block is a `tool_result` as a continuation, so
+  prepending would glue two turns together and shift compaction boundaries. The API merges the two
+  consecutive user messages itself.
+- It is **in memory only**, like the route line and the summary banner. Persisted rows are never
+  rewritten.
+- It runs **before** `selectKeptChain` / `enforceHardCeiling`, so turn-splitting sees a
+  well-formed chain.
+- (a) also repairs rows left by the *persistence-failure* exits (OQ-4, OQ-5). There, "cancelled by
+  user" is inaccurate. Settle the wording in the commit: one neutral text, such as "interrupted
+  before the tool returned", fits both causes.
+
+**(b) Cancellation as a first-class exit** in the refactored loop, so new threads never get stuck.
+On any abort — the DB beacon, the request timeout, or a client disconnect if the runtime ever
+delivers one — the loop persists a `tool_result` row **before** it exits:
+
+- tools that finished keep their real output;
+- tools that didn't finish get the synthetic `cancelled by user` result;
+- everything goes in one row, in `tool_use` order, chained off the assistant row as usual.
+
+The beacon is also checked **between** the model call and dispatch. A stop that arrives while the
+model is still generating then skips the tools entirely, and they get synthetic results. Today
+they run and their results are thrown away (L27).
+
+Invariant, pinned by a new test: on every exit path that can still write, the newest row of the
+branch is never an assistant row with an unanswered `tool_use`. The exit paths that *can't* write
+(a failed insert) are covered by (a) on the next request.
+
+Tests changed in the OQ-1 commit: **L25** gains the `tool_result` row, **L26** follow-ups succeed,
+**L27** the tool no longer runs. Plus the invariant test, and an (a) test that recovers a seeded
+stuck thread.
+
+#### OQ-2 — the financial tools report whether a TIC exists
+
+The prompt's rule ("no TIC → no planned budget; say *budžet nije postavljen*") becomes something
+the model applies **from data** instead of taking on trust. `get_project_financial_summary` and
+`get_project_details` gain a TIC block:
+
+```jsonc
+"tic": { "exists": true,  "budget": 1200000 }   // TIC present: its total
+"tic": { "exists": false, "budget": null }      // no TIC, or an all-zero template
+```
+
+- `budget` is the TIC total computed the same way `sync_project_from_tic` computes it
+  (`20260909140000_tic_sole_budget_source.sql`). An all-zero template counts as "no plan", which
+  matches both that function and the prompt's "ili je TIC prazan".
+- Confirm in the commit review that every role able to call these tools can read
+  `tic_cost_structures` under RLS. A hidden row would read as "no TIC".
+- Update the prompt and the tool descriptions in the same commit, so they point at the field
+  rather than restating the rule in the abstract.
+- **To confirm when reviewing the commit:** with no TIC, should `project_budget`,
+  `remaining_to_commit`, `remaining_to_spend` and `over_budget` become `null`, rather than being
+  computed against a stale or zero budget? The tool description already says remaining budget is
+  "meaningless" without a TIC. This removes M06's "over budget" for a project with no plan. The
+  decision above covers *reporting* the TIC. This is the natural next step, but it is a separate
+  choice.
+
+Tests changed in the OQ-2 commit: **M05**, **M06** and **M07** gain the TIC block (and the nulls, if
+confirmed). **M04** gains `tic: { exists: true, … }`. **M01** and **M02** change if the prompt or
+tool wording changes.
 
 ## 5. Voice tool allowlist
 
@@ -867,7 +952,7 @@ Every phase leaves chat fully working. v2 starts only after v1 has run in produc
 |---|---|---|---|
 | **0** | v1 | STT/TTS prototype — parallel track | Go/no-go against the pass criteria; platform chosen |
 | **1** | v1 | Characterisation tests | Suite green on current `development` |
-| **2** | v1 | Latency critical path: streaming, parallel dispatch, bounded history, concurrent pre-stream reads (§3) | Suite parity; latency before/after recorded |
+| **2** | v1 | Latency critical path: streaming, parallel dispatch, bounded history, concurrent pre-stream reads (§3). Then, **as separate commits**, the decided OQ-1 and OQ-2 fixes (§4.7) | Suite parity for the latency commits; OQ-1 and OQ-2 commits change only their listed tests; latency before/after recorded |
 | **3** | v1 | Orchestrator extraction + `EventSink` (§4.1) | **Suite parity before/after, linked in the PR** |
 | **4** | v1 | `voice-llm`, channel flag, allowlist + dispatch check, voice prompt, server filler (§4.2, 4.3, 5, 6, 3.4) | `curl` returns valid OpenAI chunks; a platform test agent holds a Croatian conversation for a hardcoded test user |
 | **5** | v1 | `voice-session` + JWT handoff, `voice_calls`, `ai_sessions` columns, call button, voice rate limits (§4.4, 7) | Internal users make in-app calls for a week |
@@ -876,6 +961,36 @@ Every phase leaves chat fully working. v2 starts only after v1 has run in produc
 | **8** | v2 | Token minting, PSTN number, DTMF PIN + lockout (§9) | Internal test number; 3–5 staff enrolled |
 | **9** | v2 | PSTN rollout: monitoring, spoofing/PIN alerting | **v2 live** |
 | — | later | WhatsApp calling | scoped after v2 |
+
+### v1 pre-ship gates
+
+v1 does not go live until every gate below is met. Each one names who or what signs it off.
+
+| Gate | Signed off by |
+|---|---|
+| Phase 0 passed (the pass criteria above) | Team, from the scoring sheet |
+| Characterisation parity across phases 2 and 3; the OQ-1 and OQ-2 commits change only their listed tests | The PR links to green runs |
+| **RLS integration test for Supervision invoice scoping, against a real Postgres** (below) | Green run attached to the phase 6 PR |
+| Native-speaker review of `VOICE_PRESENTATION_HR` and the filler phrases (§3.4, §6) | A named reviewer |
+| DPAs in place for the platform and its STT/TTS sub-processors; recording off; a voice retention sweep running (§8) | DPO |
+
+**The RLS integration test.** The characterisation fakes cannot evaluate Postgres policies (phase 1
+coverage map, [`03-characterisation-tests.md`](./03-characterisation-tests.md)).
+`list_unpaid_invoices` adds no project filter for Supervision users. It relies entirely on the RLS
+policies on `accounting_invoices` (OQ-10, M13), and voice will read those same rows aloud. The test
+signs in as a real Supervision user and runs the exact query `list_unpaid_invoices` sends (same
+select, embeds and filters) through that user's JWT. It asserts:
+
+- invoices on an assigned project are returned;
+- invoices on an unassigned project are not;
+- an invoice with `project_id` null that is linked only through a contract on an assigned project:
+  record which way it goes. This case is the reason to test against real policies;
+- a Supervision user with no assignments sees nothing.
+
+Where it runs: the dev project `nxvbglegqcgxlxvyfuht`, where all migrations are applied and the
+e2e suite already provisions a Supervision user and its `project_managers` link. It fits naturally
+beside the Playwright global setup. A local `supabase start` stack is the alternative. Never run it
+against production.
 
 ---
 
@@ -888,25 +1003,26 @@ Excludes calendar time waiting on vendor accounts, and legal/DPO review.
 | Phase | | Days | Notes |
 |---|---|---|---|
 | 0 — STT/TTS prototype | v1 | 3–4 | Script and scoring rules ~1, recording coordination ~1, replay and scoring across vendors 1–1.5, TTS panel ~0.5. Runs in parallel with planning, so it is off the critical path of calendar time |
-| 1 — characterisation tests | v1 | 2–3 | Includes making the Anthropic client injectable |
-| 2 — latency critical path | v1 | 5–7 | Streaming 3–4, parallel dispatch ~1, bounded-history SQL function 1–2 |
+| 1 — characterisation tests | v1 | 2–3 | **Done**; no change to `index.ts` was needed |
+| 2 — latency critical path + decided fixes | v1 | 7–10 | Streaming 3–4, parallel dispatch ~1, bounded-history SQL function 1–2; OQ-1 repair + cancellation exit 1–2; OQ-2 TIC reporting ~1 |
 | 3 — orchestrator extraction | v1 | 3–5 | **Widest variance**: a 1789-line file |
 | 4 — `voice-llm` + allowlist + prompt + filler | v1 | 5–7 | The old 4–6, plus the allowlist, the dispatch check and the filler sink |
 | 5 — `voice-session`, handoff, call button | v1 | 4–6 | New in this revision — the in-app button was unestimated before |
-| 6 — v1 rollout | v1 | 2–3 | Plus external legal time |
-| **v1 total (in-app only)** | | **24–35** | ≈ 5–7 weeks; **21–31** excluding phase 0 |
+| 6 — v1 rollout | v1 | 3–5 | Includes the RLS integration test (1–2); plus external legal time |
+| **v1 total (in-app only)** | | **27–40** | ≈ 5–8 weeks; **24–36** excluding phase 0 |
 | 7 — caller identity + enrolment | v2 | 2–3 | |
 | 8 — minting, PSTN, DTMF PIN | v2 | 3–4 | |
 | 9 — PSTN rollout | v2 | 1–2 | |
 | **v2 total** | | **6–9** | |
-| **v1 + v2 total** | | **30–44** | ≈ 6–9 weeks |
+| **v1 + v2 total** | | **33–49** | ≈ 7–10 weeks |
 
 **Against the first draft (19–28, PSTN-first):** the total rises because three things are now
 counted that weren't before — the promoted latency work (≈ +2–3), the in-app button (+4–6,
 previously deferred to "later" and unestimated), the allowlist, dispatch check and filler
 (≈ +1), and phase 0's measurable protocol (+1 over the draft's 2–3). The PSTN-specific work (identity, minting, PIN), about 5–7 days that the draft spread
 across its phases 4–6, has moved to v2. v1 alone is therefore larger than the old PSTN-first
-path, but it carries none of the spoofing risk.
+path, but it carries none of the spoofing risk. The third revision adds the two decided fixes to
+phase 2 (+2–3) and the RLS integration test to phase 6 (+1–2).
 
 ### Open questions for the team
 

@@ -10,21 +10,25 @@ matters for voice, and the question for review. Severity is a first read for tri
 verdict.
 
 Code references are to `feature/voice-assistant` after the merge of `development` at `c4ee5d04`.
+
+**Decisions (2026-09-23):** OQ-1 and OQ-2 are **decided**: both are fixed in phase 2, each in its
+own commit, as specified in the plan (§4.7). OQ-6 has gone to the team as a **chat bug, outside
+this branch**; its test stays pinned. The rest are open.
 The suite and its coverage map are described in
 [`03-characterisation-tests.md`](./03-characterisation-tests.md).
 
-| # | Summary | Severity | Pinned by |
-|---|---|---|---|
-| [OQ-1](#oq-1--a-stop-during-a-tool-call-leaves-the-branch-permanently-broken) | A stop during a tool call leaves the branch permanently broken | **High** | L25, L26, L27 (+ L18, L21) |
-| [OQ-2](#oq-2--the-tic-rule-cannot-be-followed-no-tool-says-whether-a-tic-exists) | The TIC rule can't be followed: no tool says whether a TIC exists; no-budget projects read "over budget" | **High** | M05, M06, M07 |
-| [OQ-3](#oq-3--tool-round-trips-count-against-the-user-message-rate-limit) | Tool round trips count against the user-message rate limit | Medium | P14 |
-| [OQ-4](#oq-4--synthetic-answers-are-emitted-even-when-they-were-not-persisted) | Synthetic answers are emitted even when they weren't persisted | Low | L18, L47 |
-| [OQ-5](#oq-5--tool_result-events-are-sent-before-their-row-exists) | `tool_result` events are sent before their row exists | Medium | L21 |
-| [OQ-6](#oq-6--is_fully_paid-is-true-when-nothing-has-been-invoiced) | `is_fully_paid` is true when nothing has been invoiced | Medium | M16 (+ M15) |
-| [OQ-7](#oq-7--a-pre-stream-failure-can-leave-an-empty-session-behind) | A pre-stream failure can leave an empty session behind | Low | P24 |
-| [OQ-8](#oq-8--with-a-text-attachment-the-route-line-lands-on-the-attachment) | With a text attachment, the route line lands on the attachment | Low | L34 |
-| [OQ-9](#oq-9--the-per-tool-timeout-timer-is-never-cleared) | The per-tool timeout timer is never cleared | Low | (harness note) |
-| [OQ-10](#oq-10--informational) | Informational: RLS-only invoice scoping; stale generated types | Info | M13 |
+| # | Summary | Severity | Status | Pinned by |
+|---|---|---|---|---|
+| [OQ-1](#oq-1--a-stop-during-a-tool-call-leaves-the-branch-permanently-broken) | A stop during a tool call leaves the branch permanently broken | **High** | **Decided**, fix in phase 2 | L25, L26, L27 (+ L18, L21) |
+| [OQ-2](#oq-2--the-tic-rule-cannot-be-followed-no-tool-says-whether-a-tic-exists) | The TIC rule can't be followed: no tool says whether a TIC exists; no-budget projects read "over budget" | **High** | **Decided**, fix in phase 2 | M05, M06, M07 |
+| [OQ-3](#oq-3--tool-round-trips-count-against-the-user-message-rate-limit) | Tool round trips count against the user-message rate limit | Medium | Open | P14 |
+| [OQ-4](#oq-4--synthetic-answers-are-emitted-even-when-they-were-not-persisted) | Synthetic answers are emitted even when they weren't persisted | Low | Open | L18, L47 |
+| [OQ-5](#oq-5--tool_result-events-are-sent-before-their-row-exists) | `tool_result` events are sent before their row exists | Medium | Open | L21 |
+| [OQ-6](#oq-6--is_fully_paid-is-true-when-nothing-has-been-invoiced) | `is_fully_paid` is true when nothing has been invoiced | Medium | **With the team**, as a chat bug; outside this branch | M16 (+ M15) |
+| [OQ-7](#oq-7--a-pre-stream-failure-can-leave-an-empty-session-behind) | A pre-stream failure can leave an empty session behind | Low | Open | P24 |
+| [OQ-8](#oq-8--with-a-text-attachment-the-route-line-lands-on-the-attachment) | With a text attachment, the route line lands on the attachment | Low | Open | L34 |
+| [OQ-9](#oq-9--the-per-tool-timeout-timer-is-never-cleared) | The per-tool timeout timer is never cleared | Low | Open | (harness note) |
+| [OQ-10](#oq-10--informational) | Informational: RLS-only invoice scoping; stale generated types | Info | Scoping → v1 pre-ship RLS gate | M13 |
 
 ---
 
@@ -66,6 +70,14 @@ the loop. Any cancellation or timeout added for voice goes through the same afte
 `tool_use`? Either way it is a behaviour change to decide before phase 3, not something to slip
 into the refactor.
 
+**✅ Decided (2026-09-23): both, in phase 2, as their own commit.** (a) At message assembly, an
+unanswered `tool_use` gets a synthetic `tool_result` ("cancelled by user") injected in memory, so
+threads that are already stuck recover. (b) In the refactored loop, cancellation is a first-class
+exit: on abort, the `tool_result` row is persisted before exiting (real results for tools that
+finished, synthetic ones for the rest), and the beacon is also checked before dispatch. A
+conversation must never end on a bare tool call. Full specification: plan §4.7. Tests that change
+in that commit: L25, L26, L27, plus a new invariant test and a recovery test.
+
 ## OQ-2 — The TIC rule cannot be followed: no tool says whether a TIC exists
 
 **What happens.** The system prompt and the `get_project_financial_summary` description both say
@@ -102,6 +114,13 @@ left" or "you're 80 000 over budget" is worse than a written one: there's no tab
 **Question.** Should the financial tools report TIC presence (for example `has_tic`, or
 `project_budget: null` without a TIC), so the prompt rule can actually be followed? This is also a
 money-correctness question for chat today.
+
+**✅ Decided (2026-09-23): yes, in phase 2, as its own commit.** `get_project_financial_summary` and
+`get_project_details` report `tic: { exists, budget }`, with the TIC total when one exists, so the
+model applies the no-TIC-no-budget rule from data. The affected tests (M05–M07, M04, and M01/M02 if
+the wording changes) are updated in the same commit. A follow-on choice goes to that commit's
+review: whether to null `project_budget`, `remaining_*` and `over_budget` when there is no TIC
+(plan §4.7).
 
 ## OQ-3 — Tool round trips count against the user-message rate limit
 
@@ -183,6 +202,9 @@ wrong fact.
 **Question.** Should `is_fully_paid` require something to have been invoiced, or compare against the
 contracted amount? And which "paid" should the model quote?
 
+**➡️ Handed to the team (2026-09-23)** as a chat bug, to be fixed outside `feature/voice-assistant`.
+M16 stays pinned on this branch until that fix lands and is merged in; M16 then changes with it.
+
 ## OQ-7 — A pre-stream failure can leave an empty session behind
 
 **What happens.** A new session row is created ([`index.ts:821`](../../supabase/functions/ai-chat/index.ts#L821))
@@ -237,7 +259,8 @@ loop is extracted in phase 3?
 - **Invoice scoping for Supervision users relies on RLS alone.** `list_contracts` adds an explicit
   `project_id in (assigned)` filter. `list_unpaid_invoices` adds none and relies on the RLS policies
   on `accounting_invoices` (M13). That is consistent with the docs, but it is inconsistent defence
-  in depth. The fake cannot evaluate RLS, so the suite pins only the request shape.
+  in depth. The fake cannot evaluate RLS, so the suite pins only the request shape. **Now a v1
+  pre-ship gate:** an RLS integration test against a real Postgres (plan §10, "v1 pre-ship gates").
 - **The generated types are missing `contracts_classification_id_fkey`.** `list_contracts` embeds
   through that FK, and the migration creates it, but `_shared/database.ts` has no such relationship.
   The fake adds it by hand. This is just stale types: the next `npm run db:types` should pick it up.
