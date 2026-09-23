@@ -1,8 +1,7 @@
 import React from 'react'
 import { ClipboardCheck, FileText } from 'lucide-react'
-import { format } from 'date-fns'
-import { parseLocalDate, isValidDate } from '../../../utils/dateOnly'
 import { useTranslation } from 'react-i18next'
+import { formatDayMonth } from '../../../utils/formatters'
 import type { WorkLog } from '../types/supervisionTypes'
 import { StatusBadge } from '../../Supervision/WorkLogs/StatusBadge'
 import { stripeClass } from '../../Supervision/WorkLogs/workLogStatus'
@@ -12,7 +11,7 @@ interface Props {
 }
 
 const SupervisionWeekView: React.FC<Props> = ({ weekLogs }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -50,7 +49,7 @@ const SupervisionWeekView: React.FC<Props> = ({ weekLogs }) => {
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{log.work_description}</p>
                   </div>
                   <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full text-xs font-semibold">
-                    {isValidDate(log.date) ? format(parseLocalDate(log.date), 'MMM dd') : '—'}
+                    {formatDayMonth(log.date, i18n.language)}
                   </span>
                 </div>
                 {log.blocker_details && (

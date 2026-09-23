@@ -1,10 +1,8 @@
 import React from 'react'
 import { Building2, TrendingUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
 import { Badge, StatGrid } from '../../ui'
-import { isValidDate, parseLocalDate } from '../../../utils/dateOnly'
-import { formatEuro, formatEuropean, NO_VALUE } from '../../../utils/formatters'
+import { formatEuro, formatEuropean, formatDate } from '../../../utils/formatters'
 import { getCreditStatusDisplay } from '../Investors/utils/creditStatus'
 import { getCreditTypeLabelKey } from '../Investors/utils/creditCalculations'
 import { calculateCreditUsage } from './utils/creditUsage'
@@ -36,9 +34,6 @@ export interface CreditSummaryCredit {
   usage_expiration_date?: string | null
   disbursed_to_account?: boolean | null
 }
-
-const formatDateOnly = (value: string | null | undefined): string =>
-  isValidDate(value) ? format(parseLocalDate(value), 'dd.MM.yyyy') : NO_VALUE
 
 /** Equity marker plus the translated status. Both used to be raw English enums. */
 export const CreditBadges: React.FC<{ credit: CreditSummaryCredit }> = ({ credit }) => {
@@ -155,9 +150,9 @@ export const CreditUsageTiles: React.FC<CreditUsageTilesProps> = ({
   )
 }
 
-/** Credit terms and dates. Dates are `dd.MM.yyyy` — `'MMM dd, yyyy'` printed English months. */
+/** Credit terms and dates, both rendered in the UI language (`formatDate`). */
 export const CreditDetailsGrid: React.FC<{ credit: CreditSummaryCredit }> = ({ credit }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const typeKey = getCreditTypeLabelKey(credit.credit_type, credit.credit_seniority)
 
   return (
@@ -197,16 +192,16 @@ export const CreditDetailsGrid: React.FC<{ credit: CreditSummaryCredit }> = ({ c
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.start_date_label')}</span>
-            <span className="font-medium text-gray-900 dark:text-white">{formatDateOnly(credit.start_date)}</span>
+            <span className="font-medium text-gray-900 dark:text-white">{formatDate(credit.start_date, i18n.language)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.maturity_date_label')}</span>
-            <span className="font-medium text-gray-900 dark:text-white">{formatDateOnly(credit.maturity_date)}</span>
+            <span className="font-medium text-gray-900 dark:text-white">{formatDate(credit.maturity_date, i18n.language)}</span>
           </div>
           {credit.usage_expiration_date && (
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.usage_expiration_label')}</span>
-              <span className="font-medium text-gray-900 dark:text-white">{formatDateOnly(credit.usage_expiration_date)}</span>
+              <span className="font-medium text-gray-900 dark:text-white">{formatDate(credit.usage_expiration_date, i18n.language)}</span>
             </div>
           )}
         </div>

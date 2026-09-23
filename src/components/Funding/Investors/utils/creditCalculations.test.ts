@@ -103,24 +103,24 @@ describe('calculateEquityCashflow', () => {
     payment_schedule: 'yearly' as const,
   }
 
-  it('returns sentinel string when required fields are missing', () => {
-    expect(calculateEquityCashflow({ ...baseEquity, amount: 0 })).toBe('Enter amount, dates, and IRR to calculate')
-    expect(calculateEquityCashflow({ ...baseEquity, investment_date: '' })).toBe('Enter amount, dates, and IRR to calculate')
-    expect(calculateEquityCashflow({ ...baseEquity, maturity_date: '' })).toBe('Enter amount, dates, and IRR to calculate')
-    expect(calculateEquityCashflow({ ...baseEquity, expected_return: 0 })).toBe('Enter amount, dates, and IRR to calculate')
+  // The reason is reported as a status, not as an English sentence — the modal supplies the
+  // words, so a Croatian user no longer reads "Enter amount, dates, and IRR to calculate".
+  it('reports incomplete when required fields are missing', () => {
+    expect(calculateEquityCashflow({ ...baseEquity, amount: 0 })).toEqual({ status: 'incomplete' })
+    expect(calculateEquityCashflow({ ...baseEquity, investment_date: '' })).toEqual({ status: 'incomplete' })
+    expect(calculateEquityCashflow({ ...baseEquity, maturity_date: '' })).toEqual({ status: 'incomplete' })
+    expect(calculateEquityCashflow({ ...baseEquity, expected_return: 0 })).toEqual({ status: 'incomplete' })
   })
 
-  it('returns "Invalid date range" when maturity is before investment', () => {
-    expect(calculateEquityCashflow({ ...baseEquity, maturity_date: '2025-01-01' })).toBe('Invalid date range')
+  it('reports invalid_range when maturity is before investment', () => {
+    expect(calculateEquityCashflow({ ...baseEquity, maturity_date: '2025-01-01' })).toEqual({ status: 'invalid_range' })
   })
 
   it('returns a localized number string for valid inputs', () => {
     const result = calculateEquityCashflow(baseEquity)
-    // Should be a parse-able formatted integer — not a sentinel
-    expect(result).not.toContain('Enter')
-    expect(result).not.toContain('Invalid')
+    expect(result.status).toBe('ok')
     // Strip locale separators and parse
-    const numeric = Number(result.replace(/[^\d.-]/g, ''))
+    const numeric = Number((result as { value: string }).value.replace(/[^\d.-]/g, ''))
     expect(numeric).toBeGreaterThan(0)
   })
 })
@@ -133,24 +133,24 @@ describe('calculateMoneyMultiple', () => {
     maturity_date: '2036-01-01', // 10 years
   }
 
-  it('returns sentinel when inputs are incomplete', () => {
-    expect(calculateMoneyMultiple({ ...baseEquity, amount: 0 })).toBe('Enter amount, dates, and IRR to calculate')
-    expect(calculateMoneyMultiple({ ...baseEquity, expected_return: 0 })).toBe('Enter amount, dates, and IRR to calculate')
+  it('reports incomplete when inputs are incomplete', () => {
+    expect(calculateMoneyMultiple({ ...baseEquity, amount: 0 })).toEqual({ status: 'incomplete' })
+    expect(calculateMoneyMultiple({ ...baseEquity, expected_return: 0 })).toEqual({ status: 'incomplete' })
   })
 
-  it('returns "Invalid date range" for maturity before investment', () => {
-    expect(calculateMoneyMultiple({ ...baseEquity, maturity_date: '2020-01-01' })).toBe('Invalid date range')
+  it('reports invalid_range for maturity before investment', () => {
+    expect(calculateMoneyMultiple({ ...baseEquity, maturity_date: '2020-01-01' })).toEqual({ status: 'invalid_range' })
   })
 
   it('computes (1 + rate)^years — 10% over 10y ≈ 2.59x', () => {
     // (1.10)^10 = 2.5937...
-    expect(calculateMoneyMultiple(baseEquity)).toBe('2.59x (259%)')
+    expect(calculateMoneyMultiple(baseEquity)).toEqual({ status: 'ok', value: '2.59x (259%)' })
   })
 
   it('computes 0% return as 1.00x', () => {
     // expected_return must be truthy to pass the guard, so use a tiny positive value.
     const result = calculateMoneyMultiple({ ...baseEquity, expected_return: 0.0001 })
-    expect(result.startsWith('1.00x')).toBe(true)
+    expect((result as { value: string }).value.startsWith('1.00x')).toBe(true)
   })
 
   it('computes 5% over 1 year ≈ 1.05x', () => {
@@ -159,7 +159,7 @@ describe('calculateMoneyMultiple', () => {
       expected_return: 5,
       maturity_date: '2027-01-01',
     })
-    expect(result).toBe('1.05x (105%)')
+    expect(result).toEqual({ status: 'ok', value: '1.05x (105%)' })
   })
 })
 
@@ -184,20 +184,22 @@ describe('parseCreditTypeAndSeniority', () => {
 })
 
 describe('getCreditRiskLevel', () => {
+  // `level` is a `RISK_LEVEL` key, not a label: the badge wording comes from statusDisplay, the
+  // bands stay where they are (looser than `utilisationTone`'s, deliberately).
   it('returns High above 80', () => {
-    expect(getCreditRiskLevel(81).label).toBe('High')
-    expect(getCreditRiskLevel(100).label).toBe('High')
+    expect(getCreditRiskLevel(81).level).toBe('High')
+    expect(getCreditRiskLevel(100).level).toBe('High')
   })
 
   it('returns Medium for >60 and ≤80 (boundary at 60 is Low, at 80 is Medium)', () => {
-    expect(getCreditRiskLevel(61).label).toBe('Medium')
-    expect(getCreditRiskLevel(80).label).toBe('Medium')
+    expect(getCreditRiskLevel(61).level).toBe('Medium')
+    expect(getCreditRiskLevel(80).level).toBe('Medium')
   })
 
   it('returns Low at and below 60', () => {
-    expect(getCreditRiskLevel(60).label).toBe('Low')
-    expect(getCreditRiskLevel(0).label).toBe('Low')
-    expect(getCreditRiskLevel(-10).label).toBe('Low')
+    expect(getCreditRiskLevel(60).level).toBe('Low')
+    expect(getCreditRiskLevel(0).level).toBe('Low')
+    expect(getCreditRiskLevel(-10).level).toBe('Low')
   })
 
   it('returns matching tailwind className per tier', () => {
@@ -340,15 +342,15 @@ describe('calculatePaymentSchedule', () => {
     expect(yearly!.totalPrincipalPayments).toBeLessThanOrEqual(10)
   })
 
-  it('exposes the human-readable frequency labels', () => {
+  it('passes the stored repayment type through, for the renderer to translate', () => {
     const result = calculatePaymentSchedule(baseParams)
-    expect(result!.principalFrequency).toBe('month')
-    expect(result!.interestFrequency).toBe('month')
+    expect(result!.principalFrequency).toBe('monthly')
+    expect(result!.interestFrequency).toBe('monthly')
 
     const quarterly = calculatePaymentSchedule({
       ...baseParams,
       principal_repayment_type: 'quarterly',
     })
-    expect(quarterly!.principalFrequency).toBe('quarter')
+    expect(quarterly!.principalFrequency).toBe('quarterly')
   })
 })

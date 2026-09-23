@@ -9,8 +9,8 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, Badge, Button, EmptyState, ErrorState } from '../../ui'
-import { format } from 'date-fns'
-import { parseLocalDate } from '../../../utils/dateOnly'
+import { formatDate } from '../../../utils/formatters'
+import { PROJECT_STATUS, RISK_LEVEL, statusLabel, statusVariant } from '../../../utils/statusDisplay'
 import { useCachedData } from '../../../lib/useCachedData'
 import type { ProjectWithFinancials } from '../../General/Projects/types'
 import { fetchInvestmentProjects } from './services/investmentService'
@@ -23,7 +23,7 @@ const getFundingColor = (ratio: number) => {
 }
 
 const InvestmentProjects: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [selectedProject, setSelectedProject] = useState<ProjectWithFinancials | null>(null)
   // Was an inline loader whose catch only reached the console: a failed fetch left
   // `projects: []` and rendered the page header over an empty div — indistinguishable from a
@@ -58,25 +58,19 @@ const InvestmentProjects: React.FC = () => {
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{project.name}</h3>
-                  <Badge variant={
-                    project.status === 'Completed' ? 'green'
-                      : project.status === 'In Progress' ? 'blue'
-                      : 'gray'
-                  } size="sm">
-                    {project.status}
+                  <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="sm">
+                    {statusLabel(PROJECT_STATUS, project.status, t)}
                   </Badge>
-                  <Badge variant={
-                    project.risk_level === 'High' ? 'red'
-                      : project.risk_level === 'Medium' ? 'orange'
-                      : 'green'
-                  } size="sm">
-                    {project.risk_level} {t('funding.projects.risk_label')}
+                  {/* Read "High Rizik" before the shared map; now "Rizik: Visok", the same
+                      wording the general report uses. */}
+                  <Badge variant={statusVariant(RISK_LEVEL, project.risk_level)} size="sm">
+                    {t('funding.projects.risk_label')}: {statusLabel(RISK_LEVEL, project.risk_level, t)}
                   </Badge>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mb-1">{project.location}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {format(parseLocalDate(project.start_date), 'MMM dd, yyyy')} -&nbsp;
-                  {project.end_date ? format(parseLocalDate(project.end_date), 'MMM dd, yyyy') : t('funding.projects.modal.tbd')}
+                  {formatDate(project.start_date, i18n.language)} -&nbsp;
+                  {project.end_date ? formatDate(project.end_date, i18n.language) : t('funding.projects.modal.tbd')}
                 </p>
               </div>
               <div className="text-right">

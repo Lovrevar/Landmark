@@ -141,7 +141,7 @@ function deriveContractStatus(
       cost,
       budget_realized: budgetRealized,
       phase_id: c.phase_id,
-      project_name: c.phase?.project?.name || 'Unknown Project'
+      project_name: c.phase?.project?.name || null
     }
   })
 }

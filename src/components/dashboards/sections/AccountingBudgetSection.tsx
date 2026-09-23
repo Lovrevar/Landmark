@@ -2,9 +2,8 @@ import React from 'react'
 import { Calendar } from 'lucide-react'
 import { StatGrid } from '../../ui'
 import StatCard from '../../ui/StatCard'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { formatEuroRounded } from '../../../utils/formatters'
+import { formatEuroRounded, formatMonthYear } from '../../../utils/formatters'
 import type { CashFlowStats, MonthlyBudget } from '../types/accountingDashboardTypes'
 
 interface Props {
@@ -13,7 +12,7 @@ interface Props {
 }
 
 const AccountingBudgetSection: React.FC<Props> = ({ monthlyBudget, cashFlowStats }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const budgetAmount = parseFloat(monthlyBudget.budget_amount.toString())
   const remaining = budgetAmount - cashFlowStats.currentMonthOutgoing
   const usagePercent = budgetAmount > 0
@@ -26,7 +25,7 @@ const AccountingBudgetSection: React.FC<Props> = ({ monthlyBudget, cashFlowStats
       <div className="flex items-center mb-4">
         <Calendar className="w-6 h-6 text-teal-600 mr-2" />
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          {t('dashboards.accounting.monthly_budget', { month: format(new Date(), 'MMMM yyyy') })}
+          {t('dashboards.accounting.monthly_budget', { month: formatMonthYear(new Date(), i18n.language) })}
         </h2>
       </div>
       <StatGrid columns={4} className="gap-6">

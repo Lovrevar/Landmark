@@ -5,6 +5,7 @@ import { Badge } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import { useTranslation } from 'react-i18next'
 import { formatEuroCompact } from '../../../utils/formatters'
+import { PROJECT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDisplay'
 import type { ProjectStats } from '../types/directorTypes'
 
 interface Props {
@@ -64,12 +65,10 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                     </div>
                   </td>
                   <td data-label={t('dashboards.director.status_col')} className="px-6 py-4">
-                    <Badge variant={
-                      project.status === 'Completed' ? 'green' :
-                      project.status === 'In Progress' ? 'blue' :
-                      project.status === 'On Hold' ? 'red' : 'gray'
-                    }>
-                      {project.status}
+                    {/* "On Hold" was red here and yellow/grey/orange on four other screens; the
+                        shared map settles it on amber — paused, not failing. */}
+                    <Badge variant={statusVariant(PROJECT_STATUS, project.status)}>
+                      {statusLabel(PROJECT_STATUS, project.status, t)}
                     </Badge>
                   </td>
                   <td data-label={t('dashboards.director.budget_col')} className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">

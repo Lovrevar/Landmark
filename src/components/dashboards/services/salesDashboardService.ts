@@ -142,7 +142,9 @@ export async function fetchSalesDashboardData(): Promise<{
     const monthPayments = payments.filter(p => monthKey(p.payment_date) === key)
     const monthSales = sales.filter(s => monthKey(s.sale_date) === key)
     monthlyTrends.push({
-      month: format(monthDate, 'MMM yy'),
+      // A machine key, not a label: nothing but the dashboard reads this, and it is the one
+      // that knows which language to render it in.
+      month: format(startOfMonth(monthDate), 'yyyy-MM-dd'),
       sales_count: monthSales.length,
       revenue: monthPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
     })

@@ -12,18 +12,18 @@ import {
   BarChart3,
   Home
 } from 'lucide-react'
-import { format } from 'date-fns'
 import { LoadingSpinner, Button, Badge, EmptyState, ErrorState, Table } from '../ui'
 import ProjectCategoryBadge from '../Common/ProjectCategoryBadge'
 import { generateGeneralReportPDF } from './pdf/generalReportPdf'
 import { useGeneralReportData } from './hooks/useGeneralReportData'
 import { useToast } from '../../contexts/ToastContext'
 import { useTranslation } from 'react-i18next'
-import { formatEuroCompact, formatEuroRounded } from '../../utils/formatters'
+import { formatEuroCompact, formatEuroRounded, formatDateTime, formatMonthYear } from '../../utils/formatters'
+import { PROJECT_STATUS, RISK_LEVEL, statusLabel, statusVariant } from '../../utils/statusDisplay'
 
 const GeneralReports: React.FC = () => {
   const toast = useToast()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { report, loading, error, fetchedAt, refetch } = useGeneralReportData()
   const [generatingPDF, setGeneratingPDF] = useState(false)
 
@@ -51,7 +51,7 @@ const GeneralReports: React.FC = () => {
           <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}</h1>
           <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
           {fetchedAt && (
-            <p className="text-sm opacity-90">{t('reports.general.generated')} {format(new Date(fetchedAt), 'MMMM dd, yyyy HH:mm')}</p>
+            <p className="text-sm opacity-90">{t('reports.general.generated')} {formatDateTime(new Date(fetchedAt), i18n.language)}</p>
           )}
         </div>
         <div className="flex items-center gap-3">
@@ -107,11 +107,33 @@ const GeneralReports: React.FC = () => {
           <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-100">{t('reports.general.exec_summary')}</h2>
         </div>
         <div className="space-y-2 text-gray-800 dark:text-gray-100">
-          <p>• Portfolio: {report.executive_summary.total_projects} projects ({report.executive_summary.active_projects} active, {report.executive_summary.completed_projects} completed)</p>
-          <p>• Financial: {formatEuroCompact(report.executive_summary.total_revenue)} revenue, {formatEuroCompact(report.executive_summary.total_expenses)} expenses, {formatEuroCompact(report.executive_summary.total_profit)} profit ({report.executive_summary.profit_margin.toFixed(1)}% margin)</p>
-          <p>• Capital Structure: {formatEuroCompact(report.funding_structure.total_equity)} equity, {formatEuroCompact(report.funding_structure.total_debt)} debt, {report.funding_structure.debt_equity_ratio.toFixed(2)} D/E ratio</p>
-          <p>• Sales: {report.sales_performance.units_sold}/{report.sales_performance.total_units} units sold ({report.kpis.sales_rate.toFixed(1)}%), {report.sales_performance.total_sales} transactions</p>
-          <p>• Construction: {report.construction_status.total_contracts} contracts, {report.construction_status.total_subcontractors} subcontractors, {report.construction_status.work_logs_7days} work logs recorded</p>
+          <p>• {t('reports.general.summary_portfolio', {
+            total: report.executive_summary.total_projects,
+            active: report.executive_summary.active_projects,
+            completed: report.executive_summary.completed_projects
+          })}</p>
+          <p>• {t('reports.general.summary_financial', {
+            revenue: formatEuroCompact(report.executive_summary.total_revenue),
+            expenses: formatEuroCompact(report.executive_summary.total_expenses),
+            profit: formatEuroCompact(report.executive_summary.total_profit),
+            margin: report.executive_summary.profit_margin.toFixed(1)
+          })}</p>
+          <p>• {t('reports.general.summary_capital', {
+            equity: formatEuroCompact(report.funding_structure.total_equity),
+            debt: formatEuroCompact(report.funding_structure.total_debt),
+            ratio: report.funding_structure.debt_equity_ratio.toFixed(2)
+          })}</p>
+          <p>• {t('reports.general.summary_sales', {
+            sold: report.sales_performance.units_sold,
+            total: report.sales_performance.total_units,
+            rate: report.kpis.sales_rate.toFixed(1),
+            transactions: report.sales_performance.total_sales
+          })}</p>
+          <p>• {t('reports.general.summary_construction', {
+            contracts: report.construction_status.total_contracts,
+            subcontractors: report.construction_status.total_subcontractors,
+            logs: report.construction_status.work_logs_7days
+          })}</p>
         </div>
       </div>
 
@@ -380,7 +402,7 @@ const GeneralReports: React.FC = () => {
           <Table.Body>
             {report.cash_flow.map((month, index) => (
               <Table.Tr key={index}>
-                <Table.Td label={t('reports.general.month_col')} className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
+                <Table.Td label={t('reports.general.month_col')} className="font-medium text-gray-900 dark:text-white">{formatMonthYear(month.month_key, i18n.language)}</Table.Td>
                 <Table.Td label={t('reports.general.inflow_col')}>{formatEuroCompact(month.inflow)}</Table.Td>
                 <Table.Td label={t('reports.general.outflow_col')}>{formatEuroCompact(month.outflow)}</Table.Td>
                 <Table.Td label={t('reports.general.net_col')} className={`font-bold ${month.net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -413,22 +435,22 @@ const GeneralReports: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <ProjectCategoryBadge category={project.category} size="md" />
-                    <Badge variant={project.risk_level === 'High' ? 'red' : project.risk_level === 'Medium' ? 'yellow' : 'green'}>
-                      {t('reports.general.risk')} {project.risk_level}
+                    <Badge variant={statusVariant(RISK_LEVEL, project.risk_level)}>
+                      {t('reports.general.risk')} {statusLabel(RISK_LEVEL, project.risk_level, t)}
                     </Badge>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.status_label')}</p><p className="font-bold text-gray-900 dark:text-white">{project.status}</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.status_label')}</p><p className="font-bold text-gray-900 dark:text-white">{statusLabel(PROJECT_STATUS, project.status, t)}</p></div>
                   <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.budget_label')}</p>{project.has_budget
                     ? <p className="font-bold text-gray-900 dark:text-white">{formatEuroRounded(project.budget)}</p>
                     : <p className="font-bold text-orange-600 dark:text-orange-400">{t('general_projects.budget_not_set')}</p>}</div>
                   <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.revenue_label')}</p><p className="font-bold text-green-600">{formatEuroRounded(project.revenue)}</p></div>
                   <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.expenses_label')}</p><p className="font-bold text-red-600">{formatEuroRounded(project.expenses)}</p></div>
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.units_label')}</p><p className="font-bold text-gray-900 dark:text-white">{project.units_sold}/{project.total_units} sold ({project.sales_rate.toFixed(1)}%)</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.units_label')}</p><p className="font-bold text-gray-900 dark:text-white">{t('reports.general.units_value', { sold: project.units_sold, total: project.total_units, rate: project.sales_rate.toFixed(1) })}</p></div>
                   <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.contracts_label')}</p><p className="font-bold text-gray-900 dark:text-white">{project.contracts}</p></div>
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.phases_label')}</p><p className="font-bold text-gray-900 dark:text-white">{project.phases_done}/{project.total_phases} done</p></div>
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.funding_label')}</p><p className="font-bold text-gray-900 dark:text-white">{formatEuroRounded(project.equity)} equity, {formatEuroRounded(project.debt)} debt</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.phases_label')}</p><p className="font-bold text-gray-900 dark:text-white">{t('reports.general.phases_value', { done: project.phases_done, total: project.total_phases })}</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.funding_label')}</p><p className="font-bold text-gray-900 dark:text-white">{t('reports.general.funding_value', { equity: formatEuroRounded(project.equity), debt: formatEuroRounded(project.debt) })}</p></div>
                 </div>
               </div>
             ))}
@@ -446,7 +468,10 @@ const GeneralReports: React.FC = () => {
             {report.risks.map((risk, index) => (
               <li key={index} className="flex items-start">
                 <span className="text-red-600 mr-2">•</span>
-                <span className="text-gray-800 dark:text-gray-100"><strong>{risk.type}:</strong> {risk.description}</span>
+                <span className="text-gray-800 dark:text-gray-100">
+                  <strong>{t(`reports.general.risks.${risk.kind}.type`)}:</strong>{' '}
+                  {t(`reports.general.risks.${risk.kind}.description`, { count: risk.count })}
+                </span>
               </li>
             ))}
           </ul>
@@ -465,7 +490,7 @@ const GeneralReports: React.FC = () => {
             {report.insights.top_projects.map((project, index) => (
               <li key={index} className="flex items-start">
                 <span className="text-green-600 mr-2">-</span>
-                <span className="text-gray-800 dark:text-gray-100">{project.name}: {formatEuroCompact(project.revenue)} revenue, {project.sales_rate.toFixed(1)}% sales rate</span>
+                <span className="text-gray-800 dark:text-gray-100">{t('reports.general.top_project_line', { name: project.name, revenue: formatEuroCompact(project.revenue), rate: project.sales_rate.toFixed(1) })}</span>
               </li>
             ))}
           </ul>
@@ -474,10 +499,10 @@ const GeneralReports: React.FC = () => {
         <div>
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">{t('reports.general.recommendations')}</h3>
           <ul className="space-y-2">
-            {report.insights.recommendations.map((rec, index) => (
-              <li key={index} className="flex items-start">
+            {report.insights.recommendation_keys.map((key) => (
+              <li key={key} className="flex items-start">
                 <span className="text-green-600 mr-2">•</span>
-                <span className="text-gray-800 dark:text-gray-100">{rec}</span>
+                <span className="text-gray-800 dark:text-gray-100">{t(key)}</span>
               </li>
             ))}
           </ul>

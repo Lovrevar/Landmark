@@ -3,7 +3,6 @@ import { Euro, TrendingUp, TrendingDown, Wallet, CreditCard, Activity, PieChart,
 import { StatGrid } from '../../ui'
 import StatCard from '../../ui/StatCard'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
 import { formatEuroCompact } from '../../../utils/formatters'
 import type { FinancialMetrics } from '../types/directorTypes'
 
@@ -13,6 +12,8 @@ interface Props {
 
 const DirectorFinancialSection: React.FC<Props> = ({ metrics }) => {
   const { t } = useTranslation()
+  // "Novčani tok (rujan)" — a Croatian month name, from `common.months`, not date-fns' English.
+  const monthName = (t('common.months', { returnObjects: true }) as string[])[new Date().getMonth()]
   return (
     <div className="bg-gradient-to-br from-blue-50 dark:from-blue-900/20 to-green-50 dark:to-green-900/20 rounded-xl shadow-lg border border-blue-200 dark:border-blue-700 p-6">
       <div className="flex items-center mb-6">
@@ -53,7 +54,7 @@ const DirectorFinancialSection: React.FC<Props> = ({ metrics }) => {
           size="lg"
         />
         <StatCard
-          label={t('dashboards.director.cash_flow_month', { month: format(new Date(), 'MMMM') })}
+          label={t('dashboards.director.cash_flow_month', { month: monthName })}
           value={formatEuroCompact(metrics.cash_flow_current_month)}
           subtitle={t('dashboards.director.current_month')}
           icon={Activity}

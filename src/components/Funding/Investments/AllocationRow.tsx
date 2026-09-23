@@ -2,8 +2,7 @@ import React, { useState } from 'react'
 import { ChevronDown, ChevronUp, Trash2, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Badge, LoadingSpinner } from '../../ui'
-import { format } from 'date-fns'
-import { formatEuro } from '../../../utils/formatters'
+import { formatEuro, formatDate } from '../../../utils/formatters'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 import { fetchAllocationInvoices, AllocationInvoice } from './services/allocationService'
 
@@ -46,7 +45,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
   onToggle,
   onDelete,
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [invoicesExpanded, setInvoicesExpanded] = useState(false)
   const [invoices, setInvoices] = useState<AllocationInvoice[]>([])
   const [invoicesLoading, setInvoicesLoading] = useState(false)
@@ -259,7 +258,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                                 {inv.supplier_name ?? '-'}
                               </td>
                               <td data-label={t('funding.allocation_row.table.payment_date')} className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
-                                {format(new Date(inv.payment_date), 'dd.MM.yyyy')}
+                                {formatDate(inv.payment_date, i18n.language)}
                               </td>
                               <td data-label={t('funding.allocation_row.table.payment_amount')} className="px-4 py-2.5 text-right font-semibold text-blue-700 dark:text-blue-300">
                                 {formatEuro(inv.payment_amount)}

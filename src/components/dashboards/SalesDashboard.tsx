@@ -14,9 +14,7 @@ import {
   PieChart,
   BarChart3
 } from 'lucide-react'
-import { format } from 'date-fns'
-import { parseLocalDate } from '../../utils/dateOnly'
-import { formatEuroCompact } from '../../utils/formatters'
+import { formatEuroCompact, formatDayMonth, formatMonthYear } from '../../utils/formatters'
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from './types/salesDashboardTypes'
 import * as salesService from './services/salesDashboardService'
 import DashboardError from './DashboardError'
@@ -28,7 +26,7 @@ const defaultStats: SalesDashboardStats = {
 }
 
 const SalesDashboard: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data, loading, error, refetch } = useCachedData('dashboard:sales', salesService.fetchSalesDashboardData)
 
   const stats: SalesDashboardStats = data?.stats ?? defaultStats
@@ -109,7 +107,7 @@ const SalesDashboard: React.FC = () => {
             {monthlyTrends.map((trend, index) => (
               <div key={index}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600 dark:text-gray-400">{trend.month}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{formatMonthYear(trend.month, i18n.language)}</span>
                   <span className="font-medium text-gray-900 dark:text-white">
                     {t('dashboards.sales.trend_row', { count: trend.sales_count, revenue: formatEuroCompact(trend.revenue) })}
                   </span>
@@ -219,7 +217,12 @@ const SalesDashboard: React.FC = () => {
               return (
                 <div key={method}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-700 dark:text-gray-200 capitalize">{method.replace(/_/g, ' ')}</span>
+                    {/* `sales.payment_method` is cash | credit | bank_loan | installments
+                        (baseline_schema.sql:3954). It printed the raw value with the underscore
+                        swapped and a CSS `capitalize`, so a Croatian dashboard read "Bank Loan".
+                        `payment_type.*` already labels these four — it is what the sale form's
+                        own select uses (`SaleFormModal.tsx:197-200`). */}
+                    <span className="text-gray-700 dark:text-gray-200">{t(`payment_type.${method}`, { defaultValue: method.replace(/_/g, ' ') })}</span>
                     <span className="font-medium text-gray-900 dark:text-white">{count} ({percentage.toFixed(0)}%)</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
@@ -250,7 +253,7 @@ const SalesDashboard: React.FC = () => {
                 </div>
                 <div className="text-right ml-4">
                   <p className="text-sm font-bold text-gray-900 dark:text-white">{formatEuroCompact(sale.sale_price)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{format(parseLocalDate(sale.sale_date), 'dd.MM.')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{formatDayMonth(sale.sale_date, i18n.language)}</p>
                 </div>
               </div>
             ))}

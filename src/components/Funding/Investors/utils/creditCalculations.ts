@@ -10,10 +10,6 @@ export function getPaymentFrequency(type: string): number {
   }
 }
 
-function freqLabel(type: string): string {
-  return (({ monthly: 'month', quarterly: 'quarter', biyearly: '6 months', yearly: 'year' } as Record<string, string>)[type] ?? type)
-}
-
 function getMaturityYears(startDate: string, maturityDate: string | null): number {
   if (!maturityDate || !startDate) return 10
   const start    = new Date(startDate)
@@ -51,16 +47,28 @@ export function calculateAnnuityPayment(params: {
   }
 }
 
-export function calculateEquityCashflow(equity: Pick<EquityFormData, 'amount' | 'expected_return' | 'grace_period' | 'investment_date' | 'maturity_date' | 'payment_schedule'>): string {
+/**
+ * What the equity form's two preview boxes show: either a number, or a reason there isn't one.
+ *
+ * Both used to return the reason as an English sentence ("Enter amount, dates, and IRR to
+ * calculate"), which a Croatian user read verbatim. These are pure functions with no translator,
+ * so they report the state and `EquityFormModal` supplies the words.
+ */
+export type EquityPreview =
+  | { status: 'ok'; value: string }
+  | { status: 'incomplete' }
+  | { status: 'invalid_range' }
+
+export function calculateEquityCashflow(equity: Pick<EquityFormData, 'amount' | 'expected_return' | 'grace_period' | 'investment_date' | 'maturity_date' | 'payment_schedule'>): EquityPreview {
   const { amount, expected_return, grace_period, investment_date, maturity_date, payment_schedule } = equity
   if (!amount || !investment_date || !maturity_date || !expected_return) {
-    return 'Enter amount, dates, and IRR to calculate'
+    return { status: 'incomplete' }
   }
   const principal        = amount
   const annualRate       = expected_return / 100
   const gracePeriodYears = grace_period / 12
   const totalYears       = getMaturityYears(investment_date, maturity_date)
-  if (totalYears <= 0) return 'Invalid date range'
+  if (totalYears <= 0) return { status: 'invalid_range' }
   const repaymentYears = Math.max(0.1, totalYears - gracePeriodYears)
 
   let payment: number
@@ -77,20 +85,20 @@ export function calculateEquityCashflow(equity: Pick<EquityFormData, 'amount' | 
     payment = (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
   }
   // hr-HR, not the viewer's browser locale: an en-US machine rendered "10,436" for €10.436.
-  return payment.toLocaleString('hr-HR', { maximumFractionDigits: 0 })
+  return { status: 'ok', value: payment.toLocaleString('hr-HR', { maximumFractionDigits: 0 }) }
 }
 
-export function calculateMoneyMultiple(equity: Pick<EquityFormData, 'amount' | 'expected_return' | 'investment_date' | 'maturity_date'>): string {
+export function calculateMoneyMultiple(equity: Pick<EquityFormData, 'amount' | 'expected_return' | 'investment_date' | 'maturity_date'>): EquityPreview {
   const { amount, expected_return, investment_date, maturity_date } = equity
   if (!amount || !investment_date || !maturity_date || !expected_return) {
-    return 'Enter amount, dates, and IRR to calculate'
+    return { status: 'incomplete' }
   }
   const years = getMaturityYears(investment_date, maturity_date)
-  if (years <= 0) return 'Invalid date range'
+  if (years <= 0) return { status: 'invalid_range' }
   const annualRate    = expected_return / 100
   const totalReturn   = amount * Math.pow(1 + annualRate, years)
   const moneyMultiple = totalReturn / amount
-  return `${moneyMultiple.toFixed(2)}x (${(moneyMultiple * 100).toFixed(0)}%)`
+  return { status: 'ok', value: `${moneyMultiple.toFixed(2)}x (${(moneyMultiple * 100).toFixed(0)}%)` }
 }
 
 export function parseCreditTypeAndSeniority(combined: string): { creditType: string; seniority: string } {
@@ -100,10 +108,18 @@ export function parseCreditTypeAndSeniority(combined: string): { creditType: str
   return { creditType, seniority }
 }
 
-export function getCreditRiskLevel(utilization: number): { label: string; className: string } {
-  if (utilization > 80) return { label: 'High',   className: 'text-red-600'    }
-  if (utilization > 60) return { label: 'Medium', className: 'text-orange-600' }
-  return                       { label: 'Low',    className: 'text-green-600'  }
+/**
+ * An investor's credit risk from its utilisation: **> 80 High, > 60 Medium, else Low**.
+ *
+ * The bands are deliberately looser than `utilisationTone`'s ≥ 90 / ≥ 70 — this reads a whole
+ * investor relationship, that one reads a single facility's bar. Only the wording changed with
+ * the i18n sweep: `level` is the same value `RISK_LEVEL` in `src/utils/statusDisplay.ts` maps,
+ * so the investor modal now says "Visok" where every other screen does.
+ */
+export function getCreditRiskLevel(utilization: number): { level: 'Low' | 'Medium' | 'High'; className: string } {
+  if (utilization > 80) return { level: 'High',   className: 'text-red-600'    }
+  if (utilization > 60) return { level: 'Medium', className: 'text-orange-600' }
+  return                       { level: 'Low',    className: 'text-green-600'  }
 }
 
 export interface UtilisationTone {
@@ -182,6 +198,12 @@ export interface PaymentScheduleResult {
   totalPrincipalPayments: number
   totalInterestPayments: number
   paymentStartDate: Date
+  /**
+   * The stored repayment type (`monthly` / `quarterly` / `biyearly` / `yearly`), not a label.
+   * It used to be the English noun ("month", "6 months"), which `banks.credit_form.every_frequency`
+   * interpolated into "Svakih month" — Croatian needs a whole phrase per frequency, so
+   * `PaymentSchedulePreview` picks one.
+   */
   principalFrequency: string
   interestFrequency: string
 }
@@ -215,7 +237,7 @@ export function calculatePaymentSchedule(params: PaymentScheduleParams): Payment
     totalPrincipalPayments,
     totalInterestPayments,
     paymentStartDate,
-    principalFrequency: freqLabel(params.principal_repayment_type),
-    interestFrequency:  freqLabel(params.interest_repayment_type),
+    principalFrequency: params.principal_repayment_type,
+    interestFrequency:  params.interest_repayment_type,
   }
 }

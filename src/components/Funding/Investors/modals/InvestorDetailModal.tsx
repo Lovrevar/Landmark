@@ -5,6 +5,8 @@ import { Modal, EmptyState } from '../../../ui'
 import type { BankCredit } from '../../../../lib/supabase'
 import type { BankWithCredits } from '../types'
 import { getCreditRiskLevel } from '../utils/creditCalculations'
+import { RISK_LEVEL, statusLabel } from '../../../../utils/statusDisplay'
+import { NO_VALUE } from '../../../../utils/formatters'
 import CreditFacilityCard from '../components/CreditFacilityCard'
 
 interface InvestorDetailModalProps {
@@ -91,7 +93,7 @@ const InvestorDetailModal: React.FC<InvestorDetailModalProps> = ({
                   <div className="flex justify-between">
                     <span className="text-orange-700 dark:text-orange-400">{t('funding.investors.detail_modal.credit_risk_label')}</span>
                     <span className={`font-medium ${riskLevel?.className}`}>
-                      {riskLevel?.label}
+                      {riskLevel ? statusLabel(RISK_LEVEL, riskLevel.level, t) : NO_VALUE}
                     </span>
                   </div>
                   <div className="flex justify-between">

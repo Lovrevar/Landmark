@@ -185,6 +185,56 @@ Two things to know before adding a figure here:
 
 ---
 
+## Language, dates and service-built prose
+
+### The exports decision (for the deferred exports batch)
+
+Recorded here so the next batch starts from a decision rather than re-litigating it:
+
+- **Every export is Croatian, with the embedded font.** `src/utils/pdfFont.ts` exists and works —
+  `retailReportPdf.ts` already loads Noto Sans through it. The other generators adopt it and the
+  transliteration goes; a PDF that drops Croatian diacritics is not an acceptable export.
+- **The TIC export stays Croatian and its sheet layout must not change.** `ticImport.ts` reads its
+  own output back, so a column moved for cosmetic reasons breaks the round trip.
+- Until that batch lands, the generators are English and `Reports/pdf/**` +
+  `dashboards/investmentReportPdf.ts` are out of scope for i18n work.
+
+### The screens
+
+The screens are Croatian-first; the PDF generators are not yet. That split is why two report
+types carry the same value twice.
+
+- **Dates go through `src/utils/formatters.ts`.** `formatDate` / `formatDateTime` /
+  `formatMonthYear` take `i18n.language` explicitly, so the executive report's "Generirano:" line
+  and the sales report's start date read `05.01.2026.` in Croatian and `Jan 05, 2026` in English.
+  No view calls date-fns `format` any more.
+- **Two fields are deliberately duplicated, and both halves are documented in `types.ts`:**
+  `ComprehensiveReport['cash_flow'][].month_key` and `SalesData.month_key` are machine keys (the
+  month's first day, `'YYYY-MM-DD'`) that the **screens** format; the old `month` fields keep
+  their English `'MMM yyyy'` label because `pdf/generalReportPdf.ts` still reads them — and slices
+  one to three characters for a chart axis, so changing it in place would have broken the export.
+  `insights.recommendation_keys` sits beside `insights.recommendations` for the same reason.
+  **The exports batch replaces the English halves and deletes them**; they are marked
+  `@deprecated`.
+- **`generalReportService` no longer writes English prose.** A risk is `{ kind, count }`
+  (`ReportRisk`) and `GeneralReports` renders `reports.general.risks.<kind>.*`; the four strategic
+  recommendations are keys under `reports.general.recs.*`. This is the shape
+  `dashboards/utils/directorAlerts.ts` settled on. A service has no translator and must not decide
+  the user's language.
+- **The interpolated summary sentences are whole keys**, not `t()` output with English glue
+  welded on: `reports.general.summary_portfolio` / `_financial` / `_capital` / `_sales` /
+  `_construction`, `units_value`, `phases_value`, `funding_value`, `top_project_line`, and the
+  sales report's `highlight_*` / `opportunity_*` family. Croatian word order differs from
+  English, so each sentence has to be translatable as a unit.
+- **Status and risk badges use the shared maps** in `src/utils/statusDisplay.ts` —
+  `PROJECT_STATUS` in `GeneralReports`, `SalesReports` and `ProjectPerformanceTable` (which had
+  its own local `statusBadgeVariants`), `RISK_LEVEL` for the project risk badge, which read
+  "Rizik: High". The stored value stays English; only the label is mapped.
+- Supplier types (Retail / Site / Office / Mixed) in `CostAnalysis` are **not** translated — they
+  are internal domain labels, per the sweep's decision.
+
+---
+
 ## Notes
 - `dashboards/investmentReportPdf.ts` is a related PDF generator that lives in the Dashboards folder — not here
 - `retailReportPdf.ts` uses Noto Sans (dynamically loaded from Google Fonts) to ensure Croatian characters render correctly in PDF — do not replace with helvetica for this file

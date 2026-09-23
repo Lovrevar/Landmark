@@ -4,9 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useCachedData } from '../../lib/useCachedData'
 import StatCard from '../ui/StatCard'
 import { BarChart3, FolderOpen, Users, Euro, TrendingUp, AlertCircle } from 'lucide-react'
-import { format } from 'date-fns'
-import { parseLocalDate } from '../../utils/dateOnly'
-import { formatEuro, NO_VALUE } from '../../utils/formatters'
+import { formatEuro, formatDate, NO_VALUE } from '../../utils/formatters'
 import { EMPTY_RETAIL_TOTALS } from './utils/retailTotals'
 import type { DashboardStats, OverdueInvoice } from './types/retailDashboardTypes'
 import { fetchRetailDashboardData } from './services/retailDashboardService'
@@ -20,7 +18,7 @@ const defaultStats: DashboardStats = {
 }
 
 const RetailDashboard: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data, loading, error, refetch } = useCachedData('dashboard:retail', fetchRetailDashboardData)
 
   const stats: DashboardStats = data?.stats ?? defaultStats
@@ -169,7 +167,7 @@ const RetailDashboard: React.FC = () => {
                           {invoice.invoice_number} • {t('dashboards.retail.contract')} {invoice.contract_number}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {t('dashboards.retail.due')} {format(parseLocalDate(invoice.due_date), 'dd.MM.yyyy')}
+                          {t('dashboards.retail.due')} {formatDate(invoice.due_date, i18n.language)}
                         </p>
                         <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                           {invoice.days_overdue === 1

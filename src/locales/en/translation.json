@@ -79,6 +79,7 @@
     "inactive": "Inactive",
     "yes_confirm": "Yes, confirm",
     "no_data": "No data",
+    "no_project": "No project",
     "adding": "Adding...",
     "saving": "Saving...",
     "deleting": "Deleting...",
@@ -1148,6 +1149,12 @@
       "add_button": "Add Credit",
       "payments_start_label": "Payments start: ",
       "grace_period_after": "After {{months}} month grace period",
+      "frequency_every": {
+        "monthly": "Every month",
+        "quarterly": "Every quarter",
+        "biyearly": "Every 6 months",
+        "yearly": "Every year"
+      },
       "every_freq": "Every {{frequency}}",
       "total_payments_label": "{{count}} total payments",
       "bank_required": "Bank is required",
@@ -3321,6 +3328,12 @@
       "error_delete_credit_linked": "Cannot delete this credit facility — other records still reference it.",
       "error_delete_bank": "Error deleting investor.",
       "error_delete_bank_linked": "Cannot delete this investor — other records still reference it.",
+      "error_bank_name_required": "Please enter the bank name",
+      "error_add_bank": "Error adding bank. Please try again.",
+      "error_update_bank": "Error updating bank.",
+      "error_credit_fields_required": "Please fill in the required fields (Bank, Credit Name, Amount, Start Date)",
+      "error_add_credit": "Error adding credit facility.",
+      "error_update_credit": "Error updating credit facility.",
       "investor_form": {
         "title_add": "Add New Bank",
         "title_edit": "Edit Bank",
@@ -3603,7 +3616,13 @@
       "notes_label": "Notes",
       "notes_placeholder": "Additional notes about this investment...",
       "cancel_button": "Cancel",
-      "submit_button": "Add Investment"
+      "submit_button": "Add Investment",
+      "error_fields_required": "Please fill in the required fields (Bank, Amount, Investment Date)",
+      "error_custom_schedule": "Custom payment schedules are not supported yet. Choose Monthly or Yearly.",
+      "add_success": "Equity investment added",
+      "add_error": "Error adding equity investment.",
+      "preview_incomplete": "Enter amount, dates, and IRR to calculate",
+      "preview_invalid_range": "Invalid date range"
     }
   },
   "tic": {
@@ -3798,7 +3817,8 @@
       "completion_col": "Completion",
       "no_projects": "No projects available",
       "credit_utilization": "Credit Utilization",
-      "total_credit_facilities": "Total Credit"
+      "total_credit_facilities": "Total Credit",
+      "revenue_amount": "{{amount}} revenue"
     },
     "accounting": {
       "title": "Accounting Dashboard",
@@ -3901,6 +3921,10 @@
       "weekly_logs": "Weekly Logs",
       "no_logs": "No logs",
       "na": "N/A",
+      "days_over_short_one": "{{count}}d over",
+      "days_over_short_other": "{{count}}d over",
+      "days_left_short_one": "{{count}}d left",
+      "days_left_short_other": "{{count}}d left",
       "overdue_tasks": "Overdue Tasks ({{count}})",
       "days_overdue": "{{days}} days overdue",
       "complete": "complete",
@@ -3955,7 +3979,26 @@
       "usage_expiring": "Usage Expiring",
       "investment_amount": "Investment Amount",
       "recent_activity": "Recent Activity",
-      "no_recent_activity": "No recent activity"
+      "no_recent_activity": "No recent activity",
+      "unknown_company": "Unknown company",
+      "days_short": "{{count}}d",
+      "activity": {
+        "credit": {
+          "title": "Credit facility approved",
+          "description": "{{company}} - {{amount}} {{creditType}}",
+          "description_with_project": "{{company}} - {{amount}} {{creditType}} for {{project}}"
+        },
+        "maturity": {
+          "title": "Upcoming loan maturity",
+          "description_one": "{{name}} matures in {{count}} day",
+          "description_other": "{{name}} matures in {{count}} days"
+        },
+        "usage_expiring": {
+          "title": "Credit usage period expiring",
+          "description_one": "{{name}} usage expires in {{count}} day",
+          "description_other": "{{name}} usage expires in {{count}} days"
+        }
+      }
     },
     "retail": {
       "title": "Retail Dashboard",
@@ -4109,7 +4152,29 @@
       "risk_assessment": "RISK ASSESSMENT",
       "insights": "EXECUTIVE INSIGHTS & RECOMMENDATIONS",
       "top_projects": "TOP PERFORMING PROJECTS:",
-      "recommendations": "STRATEGIC RECOMMENDATIONS:"
+      "recommendations": "STRATEGIC RECOMMENDATIONS:",
+      "summary_portfolio": "Portfolio: {{total}} projects ({{active}} active, {{completed}} completed)",
+      "summary_financial": "Financial: {{revenue}} revenue, {{expenses}} expenses, {{profit}} profit ({{margin}}% margin)",
+      "summary_capital": "Capital Structure: {{equity}} equity, {{debt}} debt, {{ratio}} D/E ratio",
+      "summary_sales": "Sales: {{sold}}/{{total}} units sold ({{rate}}%), {{transactions}} transactions",
+      "summary_construction": "Construction: {{contracts}} contracts, {{subcontractors}} subcontractors, {{logs}} work logs recorded",
+      "units_value": "{{sold}}/{{total}} sold ({{rate}}%)",
+      "phases_value": "{{done}}/{{total}} done",
+      "funding_value": "{{equity}} equity, {{debt}} debt",
+      "top_project_line": "{{name}}: {{revenue}} revenue, {{rate}}% sales rate",
+      "risks": {
+        "slow_sales": {
+          "type": "SLOW SALES",
+          "description_one": "{{count}} project with a sales rate below 40%",
+          "description_other": "{{count}} projects with a sales rate below 40%"
+        }
+      },
+      "recs": {
+        "marketing": "Intensify marketing efforts to accelerate sales velocity",
+        "inventory": "Significant inventory available - consider pricing strategies",
+        "budgets": "Continue monitoring project budgets and timeline adherence",
+        "partners": "Maintain strong relationships with financing partners"
+      }
     },
     "sales": {
       "title": "Sales Reports",
@@ -4172,7 +4237,20 @@
       "customer_highlights": "Customer Highlights",
       "sales_opportunities": "Sales Opportunities",
       "focus_converting": "Focus on converting interested customers to buyers",
-      "targeted_campaigns": "Develop targeted campaigns for lead segments"
+      "targeted_campaigns": "Develop targeted campaigns for lead segments",
+      "highlight_performance": "{{rating}} sales performance at {{rate}}%",
+      "highlight_revenue": "Generated {{amount}} in total revenue",
+      "highlight_avg_price": "Average unit price of {{amount}}",
+      "highlight_total_customers_one": "{{count}} customer in the database",
+      "highlight_total_customers_other": "{{count}} customers in the database",
+      "highlight_conversions_one": "{{count}} successful conversion to buyer",
+      "highlight_conversions_other": "{{count}} successful conversions to buyers",
+      "highlight_conversion_rate": "{{rate}}% conversion rate",
+      "highlight_avg_purchase": "{{amount}} average purchase value",
+      "opportunity_interested_one": "{{count}} interested customer to nurture",
+      "opportunity_interested_other": "{{count}} interested customers to nurture",
+      "opportunity_leads_one": "{{count}} new lead to follow up",
+      "opportunity_leads_other": "{{count}} new leads to follow up"
     },
     "retail": {
       "title": "Retail Reports",

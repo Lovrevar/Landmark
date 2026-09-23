@@ -158,27 +158,64 @@ export interface ComprehensiveReport {
     count: number
   }>
   cash_flow: Array<{
+    /**
+     * @deprecated English `'MMM yyyy'` label, read only by `pdf/generalReportPdf.ts` (which
+     * also slices it to three characters for a chart axis). The screen formats `month_key` in
+     * the UI language; this field goes when the export batch translates the PDF.
+     */
     month: string
+    /** The month's first day as `'YYYY-MM-DD'`, for `formatMonthYear`. */
+    month_key: string
     inflow: number
     outflow: number
     net: number
   }>
   projects: ProjectData[]
-  risks: Array<{
-    type: string
-    count: number
-    description: string
-  }>
+  risks: ReportRisk[]
   insights: {
     top_projects: Array<{ name: string; revenue: number; sales_rate: number }>
+    /**
+     * i18n keys under `reports.general.recs.*`, translated at the render site. The service has
+     * no translator and must not decide the user's language.
+     */
+    recommendation_keys: string[]
+    /**
+     * @deprecated English copy, read only by `pdf/generalReportPdf.ts`. Goes with the export
+     * batch, which will render `recommendation_keys` instead.
+     */
     recommendations: string[]
   }
+}
+
+/** The risks the general report can raise. One key per `reports.general.risks.*` block. */
+export type RiskKind = 'slow_sales'
+
+/**
+ * A risk finding, as a key plus the numbers that go into its sentence.
+ *
+ * The service used to build `'SLOW SALES'` and `'N project(s) with sales rate below 40%'` as
+ * English strings and the page rendered them verbatim, so a Croatian executive report carried
+ * English prose. `kind` + `count` is the shape `dashboards/utils/directorAlerts.ts` settled on.
+ */
+export interface ReportRisk {
+  kind: RiskKind
+  count: number
+  /** @deprecated English heading, read only by `pdf/generalReportPdf.ts`. */
+  type: string
+  /** @deprecated English sentence, read only by `pdf/generalReportPdf.ts`. */
+  description: string
 }
 
 // ── Sales Report ─────────────────────────────────────────────────────────────
 
 export interface SalesData {
+  /**
+   * @deprecated English `'MMM yyyy'` label, read only by `pdf/salesReportPdf.ts`. The screen
+   * formats `month_key`; this field goes with the export batch.
+   */
   month: string
+  /** The month's first day as `'YYYY-MM-DD'`, for `formatMonthYear`. */
+  month_key: string
   sales: number
   revenue: number
   units_sold: number

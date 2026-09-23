@@ -1,10 +1,9 @@
 import React from 'react'
 import { Edit2, Trash2 } from 'lucide-react'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { Badge, Button } from '../../../ui'
-import { daysFromToday, isValidDate, parseLocalDate } from '../../../../utils/dateOnly'
-import { formatEuro, NO_VALUE } from '../../../../utils/formatters'
+import { daysFromToday } from '../../../../utils/dateOnly'
+import { formatEuro, formatDate } from '../../../../utils/formatters'
 import { getCreditStatusDisplay } from '../utils/creditStatus'
 import { getCreditTypeLabelKey, getCreditTypeBadgeVariant } from '../utils/creditCalculations'
 import type { BankCredit } from '../../../../lib/supabase'
@@ -19,7 +18,7 @@ interface CreditFacilityCardProps {
 }
 
 const CreditFacilityCard: React.FC<CreditFacilityCardProps> = ({ credit, onEdit, onDelete }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   // `differenceInDays(maturity, now) <= 90` was also true for every credit that matured years ago,
   // and said nothing about whether the credit was still live: a repaid one wore "USKORO DOSPIJEVA"
@@ -112,9 +111,7 @@ const CreditFacilityCard: React.FC<CreditFacilityCardProps> = ({ credit, onEdit,
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('funding.investors.credit_facility_card.maturity_date_label')}</p>
           <p className={`text-sm font-medium ${maturityClass}`}>
-            {isValidDate(credit.maturity_date)
-              ? format(parseLocalDate(credit.maturity_date), 'dd.MM.yyyy')
-              : NO_VALUE}
+            {formatDate(credit.maturity_date, i18n.language)}
           </p>
         </div>
       </div>

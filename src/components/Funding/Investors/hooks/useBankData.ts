@@ -44,7 +44,7 @@ export function useBankData() {
 
   const addBank = async (newBank: BankFormPayload, onDone: () => void) => {
     if (!newBank.name.trim()) {
-      toast.warning('Please enter bank name')
+      toast.warning(t('funding.investors.error_bank_name_required'))
       return
     }
     try {
@@ -53,7 +53,7 @@ export function useBankData() {
       await fetchData()
     } catch (error) {
       console.error('Error adding bank:', error)
-      toast.error('Error adding bank. Please try again.')
+      toast.error(t('funding.investors.error_add_bank'))
     }
   }
 
@@ -69,7 +69,7 @@ export function useBankData() {
       await fetchData()
     } catch (error) {
       console.error('Error updating bank:', error)
-      toast.error('Error updating bank.')
+      toast.error(t('funding.investors.error_update_bank'))
     }
   }
 

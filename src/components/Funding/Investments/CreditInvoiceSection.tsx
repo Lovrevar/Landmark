@@ -2,7 +2,7 @@ import React from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Badge, LoadingSpinner, ErrorState } from '../../ui'
-import { format } from 'date-fns'
+import { formatDate } from '../../../utils/formatters'
 import { useLazySection } from './hooks/useLazySection'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 import { fetchCreditInvoices } from './services/creditService'
@@ -36,7 +36,7 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
   icon: Icon,
   showAllocation = false,
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const colors = COLOR_CLASSES[accentColor]
 
   const fetcher = () => fetchCreditInvoices(creditId, invoiceType, showAllocation)
@@ -150,11 +150,11 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
                           </td>
                         )}
                         <td className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
-                          {format(new Date(inv.issue_date), 'dd.MM.yyyy')}
+                          {formatDate(inv.issue_date, i18n.language)}
                         </td>
                         <td className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
                           {inv.payment_date
-                            ? format(new Date(inv.payment_date), 'dd.MM.yyyy')
+                            ? formatDate(inv.payment_date, i18n.language)
                             : '-'}
                         </td>
                         <td className={`px-4 py-2.5 text-right font-semibold ${colors.bold}`}>

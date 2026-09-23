@@ -1,7 +1,7 @@
 import React from 'react'
 import { Calendar } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { formatEuroRounded } from '../../../utils/formatters'
+import { formatEuroRounded, formatMonthYear } from '../../../utils/formatters'
 import type { MonthlyData } from '../types/accountingDashboardTypes'
 import { monthlyBarMax, barPercent } from '../utils/barScale'
 
@@ -32,7 +32,7 @@ const MonthBar: React.FC<MonthBarProps> = ({ value, max, barClass, labelClass })
 )
 
 const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   if (monthlyData.length === 0) return null
 
   // One denominator for the whole year, so bar length compares across months. It used to be
@@ -57,7 +57,7 @@ const AccountingMonthlyTrendsSection: React.FC<Props> = ({ monthlyData }) => {
               // Phone: month and net on one line, the two bars stacked beneath. From md up: one
               // row per month. `order` moves the net column without rendering it twice.
               <div key={data.month} className="flex flex-wrap items-center gap-y-2 md:flex-nowrap md:gap-x-3">
-                <div className="order-1 w-1/2 md:w-24 md:shrink-0 text-sm font-medium text-gray-700 dark:text-gray-200">{data.month}</div>
+                <div className="order-1 w-1/2 md:w-24 md:shrink-0 text-sm font-medium text-gray-700 dark:text-gray-200">{formatMonthYear(data.month, i18n.language)}</div>
                 <div className={`order-2 md:order-3 w-1/2 md:w-32 md:shrink-0 text-right text-sm font-semibold ${net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {net >= 0 ? '+' : ''}{formatEuroRounded(net)}
                 </div>

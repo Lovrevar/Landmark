@@ -8,14 +8,14 @@ import { paymentTotalsByDirection, DIRECTION_AMOUNT_CLASS, formatSignedEuro } fr
 import type { BankPaymentWithDetails } from './services/bankPaymentsService'
 import type { PaymentDirection } from '../../Cashflow/services/invoiceHelpers'
 import { getCreditTypeLabelKey } from '../Investors/utils/creditCalculations'
-import { formatEuro, NO_VALUE } from '../../../utils/formatters'
+import { formatEuro, formatDate, NO_VALUE } from '../../../utils/formatters'
 
 // A drawdown is money in (green), a repayment or credit fee money out (red). The amount classes
 // and the signed-net formatter are shared with the Cashflow payments screen.
 const DIRECTION_BADGE: Record<PaymentDirection, 'green' | 'red'> = { IN: 'green', OUT: 'red' }
 
 const FundingPaymentsManagement: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { payments, stats, loading, error, refetch } = usePaymentsData()
   const [errorDismissed, setErrorDismissed] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -60,8 +60,8 @@ const FundingPaymentsManagement: React.FC = () => {
     const rows = filteredPayments.map(p => [
       p.payment_date ? format(new Date(p.payment_date), 'yyyy-MM-dd') : format(new Date(p.created_at), 'yyyy-MM-dd'),
       directionLabel(p.direction),
-      p.bank_name,
-      p.project_name,
+      p.bank_name ?? '',
+      p.project_name ?? '',
       p.credit_type,
       p.amount.toString(),
       p.notes || ''
@@ -172,8 +172,8 @@ const FundingPaymentsManagement: React.FC = () => {
               <Table.Tr key={payment.id}>
                 <Table.Td label={t('funding.payments.table.date_col')}>
                   {payment.payment_date
-                    ? format(new Date(payment.payment_date), 'MMM dd, yyyy')
-                    : format(new Date(payment.created_at), 'MMM dd, yyyy')}
+                    ? formatDate(payment.payment_date, i18n.language)
+                    : formatDate(new Date(payment.created_at), i18n.language)}
                 </Table.Td>
                 <Table.Td label={t('funding.payments.table.type_col')}>
                   {payment.direction ? (
@@ -182,8 +182,8 @@ const FundingPaymentsManagement: React.FC = () => {
                     NO_VALUE
                   )}
                 </Table.Td>
-                <Table.Td label={t('funding.payments.table.recipient_col')} className="font-medium">{payment.bank_name}</Table.Td>
-                <Table.Td label={t('funding.payments.table.project_col')}>{payment.project_name}</Table.Td>
+                <Table.Td label={t('funding.payments.table.recipient_col')} className="font-medium">{payment.bank_name || t('funding.investments.unknown_bank')}</Table.Td>
+                <Table.Td label={t('funding.payments.table.project_col')}>{payment.project_name || t('common.no_project')}</Table.Td>
                 <Table.Td label={t('funding.payments.table.category_col')} className="text-gray-500 dark:text-gray-400">
                   {creditTypeLabel(payment)}
                 </Table.Td>

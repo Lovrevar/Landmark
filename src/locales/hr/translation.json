@@ -79,6 +79,7 @@
     "inactive": "Neaktivno",
     "yes_confirm": "Da, potvrdi",
     "no_data": "Nema podataka",
+    "no_project": "Bez projekta",
     "adding": "Dodavanje...",
     "saving": "Spremanje...",
     "deleting": "Brisanje...",
@@ -1153,6 +1154,12 @@
       "add_button": "Dodaj kredit",
       "payments_start_label": "Plaćanja počinju: ",
       "grace_period_after": "Nakon {{months}} mj. počeka",
+      "frequency_every": {
+        "monthly": "Svaki mjesec",
+        "quarterly": "Svako tromjesečje",
+        "biyearly": "Svakih 6 mjeseci",
+        "yearly": "Svake godine"
+      },
       "every_freq": "Svakih {{frequency}}",
       "total_payments_label": "{{count}} plaćanja ukupno",
       "bank_required": "Banka je obavezna",
@@ -3330,6 +3337,12 @@
       "error_delete_credit_linked": "Nije moguće obrisati ovu kreditnu liniju — drugi zapisi još uvijek je koriste.",
       "error_delete_bank": "Greška prilikom brisanja investitora.",
       "error_delete_bank_linked": "Nije moguće obrisati ovog investitora — drugi zapisi još uvijek ga koriste.",
+      "error_bank_name_required": "Unesite naziv banke",
+      "error_add_bank": "Greška pri dodavanju banke. Pokušajte ponovno.",
+      "error_update_bank": "Greška pri ažuriranju banke.",
+      "error_credit_fields_required": "Popunite obavezna polja (banka, naziv kredita, iznos, datum početka)",
+      "error_add_credit": "Greška pri dodavanju kreditne linije.",
+      "error_update_credit": "Greška pri ažuriranju kreditne linije.",
       "investor_form": {
         "title_add": "Dodaj novu banku",
         "title_edit": "Uredi banku",
@@ -3615,7 +3628,13 @@
       "notes_label": "Napomene",
       "notes_placeholder": "Dodatne napomene o ovoj investiciji...",
       "cancel_button": "Odustani",
-      "submit_button": "Dodaj investiciju"
+      "submit_button": "Dodaj investiciju",
+      "error_fields_required": "Popunite obavezna polja (banka, iznos, datum investicije)",
+      "error_custom_schedule": "Prilagođeni raspored plaćanja još nije podržan. Odaberite mjesečno ili godišnje.",
+      "add_success": "Investicija je dodana",
+      "add_error": "Greška pri dodavanju investicije.",
+      "preview_incomplete": "Unesite iznos, datume i IRR za izračun",
+      "preview_invalid_range": "Neispravan raspon datuma"
     }
   },
   "tic": {
@@ -3813,7 +3832,8 @@
       "completion_col": "Završenost",
       "no_projects": "Nema dostupnih projekata",
       "credit_utilization": "Iskorištenost kredita",
-      "total_credit_facilities": "Ukupni krediti"
+      "total_credit_facilities": "Ukupni krediti",
+      "revenue_amount": "{{amount}} prihoda"
     },
     "accounting": {
       "title": "Računovodstvena nadzorna ploča",
@@ -3917,6 +3937,12 @@
       "weekly_logs": "Tjedni dnevnici",
       "no_logs": "Nema dnevnika",
       "na": "N/P",
+      "days_over_short_one": "{{count}} dan kašnjenja",
+      "days_over_short_few": "{{count}} dana kašnjenja",
+      "days_over_short_other": "{{count}} dana kašnjenja",
+      "days_left_short_one": "još {{count}} dan",
+      "days_left_short_few": "još {{count}} dana",
+      "days_left_short_other": "još {{count}} dana",
       "overdue_tasks": "Zakašnjeli zadaci ({{count}})",
       "days_overdue": "{{days}} dana zakašnjenja",
       "complete": "završeno",
@@ -3971,7 +3997,28 @@
       "usage_expiring": "Istječe korištenje",
       "investment_amount": "Iznos investicije",
       "recent_activity": "Nedavna aktivnost",
-      "no_recent_activity": "Nema nedavnih aktivnosti"
+      "no_recent_activity": "Nema nedavnih aktivnosti",
+      "unknown_company": "Nepoznata tvrtka",
+      "days_short": "{{count}} d",
+      "activity": {
+        "credit": {
+          "title": "Odobrena kreditna linija",
+          "description": "{{company}} – {{amount}} {{creditType}}",
+          "description_with_project": "{{company}} – {{amount}} {{creditType}} za {{project}}"
+        },
+        "maturity": {
+          "title": "Nadolazeće dospijeće kredita",
+          "description_one": "{{name}} dospijeva za {{count}} dan",
+          "description_few": "{{name}} dospijeva za {{count}} dana",
+          "description_other": "{{name}} dospijeva za {{count}} dana"
+        },
+        "usage_expiring": {
+          "title": "Istječe rok korištenja kredita",
+          "description_one": "Rok korištenja za {{name}} istječe za {{count}} dan",
+          "description_few": "Rok korištenja za {{name}} istječe za {{count}} dana",
+          "description_other": "Rok korištenja za {{name}} istječe za {{count}} dana"
+        }
+      }
     },
     "retail": {
       "title": "Retail nadzorna ploča",
@@ -4125,7 +4172,30 @@
       "risk_assessment": "PROCJENA RIZIKA",
       "insights": "UVIDI I PREPORUKE ZA RUKOVODSTVO",
       "top_projects": "NAJBOLJI PROJEKTI:",
-      "recommendations": "STRATEŠKE PREPORUKE:"
+      "recommendations": "STRATEŠKE PREPORUKE:",
+      "summary_portfolio": "Portfelj: {{total}} projekata ({{active}} aktivnih, {{completed}} završenih)",
+      "summary_financial": "Financije: {{revenue}} prihoda, {{expenses}} troškova, {{profit}} profita ({{margin}}% marže)",
+      "summary_capital": "Struktura kapitala: {{equity}} vlastitog kapitala, {{debt}} duga, omjer D/K {{ratio}}",
+      "summary_sales": "Prodaja: prodano {{sold}}/{{total}} jedinica ({{rate}}%), {{transactions}} transakcija",
+      "summary_construction": "Gradnja: {{contracts}} ugovora, {{subcontractors}} podugovaratelja, {{logs}} evidentiranih dnevnika radova",
+      "units_value": "{{sold}}/{{total}} prodano ({{rate}}%)",
+      "phases_value": "{{done}}/{{total}} završeno",
+      "funding_value": "{{equity}} kapitala, {{debt}} duga",
+      "top_project_line": "{{name}}: {{revenue}} prihoda, stopa prodaje {{rate}}%",
+      "risks": {
+        "slow_sales": {
+          "type": "SPORA PRODAJA",
+          "description_one": "{{count}} projekt sa stopom prodaje ispod 40%",
+          "description_few": "{{count}} projekta sa stopom prodaje ispod 40%",
+          "description_other": "{{count}} projekata sa stopom prodaje ispod 40%"
+        }
+      },
+      "recs": {
+        "marketing": "Pojačati marketinške aktivnosti radi ubrzanja prodaje",
+        "inventory": "Velik broj dostupnih jedinica – razmotriti cjenovnu strategiju",
+        "budgets": "Nastaviti praćenje projektnih budžeta i poštivanja rokova",
+        "partners": "Održavati dobre odnose s financijskim partnerima"
+      }
     },
     "sales": {
       "title": "Prodajni izvještaji",
@@ -4188,7 +4258,24 @@
       "customer_highlights": "Istaknuti kupci",
       "sales_opportunities": "Prodajne prilike",
       "focus_converting": "Fokusirajte se na konverziju zainteresiranih kupaca",
-      "targeted_campaigns": "Razvijte ciljane kampanje za segmente potencijalnih kupaca"
+      "targeted_campaigns": "Razvijte ciljane kampanje za segmente potencijalnih kupaca",
+      "highlight_performance": "Prodajni učinak: {{rating}} ({{rate}}%)",
+      "highlight_revenue": "Ostvareno {{amount}} ukupnog prihoda",
+      "highlight_avg_price": "Prosječna cijena jedinice {{amount}}",
+      "highlight_total_customers_one": "{{count}} kupac u bazi",
+      "highlight_total_customers_few": "{{count}} kupca u bazi",
+      "highlight_total_customers_other": "{{count}} kupaca u bazi",
+      "highlight_conversions_one": "{{count}} uspješna konverzija u kupca",
+      "highlight_conversions_few": "{{count}} uspješne konverzije u kupce",
+      "highlight_conversions_other": "{{count}} uspješnih konverzija u kupce",
+      "highlight_conversion_rate": "{{rate}}% stopa konverzije",
+      "highlight_avg_purchase": "{{amount}} prosječna vrijednost kupnje",
+      "opportunity_interested_one": "{{count}} zainteresirani kupac za daljnji rad",
+      "opportunity_interested_few": "{{count}} zainteresirana kupca za daljnji rad",
+      "opportunity_interested_other": "{{count}} zainteresiranih kupaca za daljnji rad",
+      "opportunity_leads_one": "{{count}} novi potencijalni kupac za kontakt",
+      "opportunity_leads_few": "{{count}} nova potencijalna kupca za kontakt",
+      "opportunity_leads_other": "{{count}} novih potencijalnih kupaca za kontakt"
     },
     "retail": {
       "title": "Retail izvještaji",

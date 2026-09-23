@@ -20,11 +20,12 @@ import {
 import { generateSalesReportPDF } from './pdf/salesReportPdf'
 import type { ProjectSalesReport, CustomerReport } from './types'
 import { useToast } from '../../contexts/ToastContext'
-import { formatEuro, formatEuroCompact } from '../../utils/formatters'
+import { formatEuro, formatEuroCompact, formatDate, formatMonthYear } from '../../utils/formatters'
+import { PROJECT_STATUS, statusLabel, statusVariant } from '../../utils/statusDisplay'
 
 const SalesReports: React.FC = () => {
   const toast = useToast()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [reportType, setReportType] = useState<'project' | 'customer'>('project')
@@ -173,12 +174,8 @@ const SalesReports: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('reports.sales.project_overview')}</h2>
-              <Badge variant={
-                projectReport.project.status === 'Completed' ? 'green'
-                  : projectReport.project.status === 'In Progress' ? 'blue'
-                  : 'gray'
-              }>
-                {projectReport.project.status}
+              <Badge variant={statusVariant(PROJECT_STATUS, projectReport.project.status)}>
+                {statusLabel(PROJECT_STATUS, projectReport.project.status, t)}
               </Badge>
             </div>
 
@@ -187,7 +184,7 @@ const SalesReports: React.FC = () => {
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{projectReport.project.name}</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.location')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.project.location}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium text-gray-900 dark:text-white">{format(new Date(projectReport.project.start_date), 'MMM dd, yyyy')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium text-gray-900 dark:text-white">{formatDate(projectReport.project.start_date, i18n.language)}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">{formatEuro(projectReport.project.budget)}</span></div>
                 </div>
               </div>
@@ -269,7 +266,7 @@ const SalesReports: React.FC = () => {
               <Table.Body>
                 {projectReport.monthly_sales.map((month, index) => (
                   <Table.Tr key={index}>
-                    <Table.Td label={t('reports.sales.month_col')} className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
+                    <Table.Td label={t('reports.sales.month_col')} className="font-medium text-gray-900 dark:text-white">{formatMonthYear(month.month_key, i18n.language)}</Table.Td>
                     <Table.Td label={t('reports.sales.units_sold_col')}>{month.units_sold}</Table.Td>
                     <Table.Td label={t('reports.sales.revenue_col')}>€{month.revenue.toLocaleString('hr-HR')}</Table.Td>
                     <Table.Td label={t('reports.sales.avg_price_col')}>€{month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString('hr-HR') : '0'}</Table.Td>
@@ -285,9 +282,12 @@ const SalesReports: React.FC = () => {
               <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                 <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('reports.sales.performance_highlights')}</h3>
                 <ul className="space-y-2 text-blue-800 dark:text-blue-200">
-                  <li>• {projectReport.sales_rate > 70 ? t('reports.sales.excellent') : projectReport.sales_rate > 50 ? t('reports.sales.good') : t('reports.sales.needs_improvement')} sales performance at {projectReport.sales_rate.toFixed(1)}%</li>
-                  <li>• Generated €{projectReport.total_revenue.toLocaleString('hr-HR')} in total revenue</li>
-                  <li>• Average unit price of €{projectReport.average_price.toLocaleString('hr-HR')}</li>
+                  <li>• {t('reports.sales.highlight_performance', {
+                    rating: projectReport.sales_rate > 70 ? t('reports.sales.excellent') : projectReport.sales_rate > 50 ? t('reports.sales.good') : t('reports.sales.needs_improvement'),
+                    rate: projectReport.sales_rate.toFixed(1)
+                  })}</li>
+                  <li>• {t('reports.sales.highlight_revenue', { amount: formatEuro(projectReport.total_revenue) })}</li>
+                  <li>• {t('reports.sales.highlight_avg_price', { amount: formatEuro(projectReport.average_price) })}</li>
                   <li>• {t('reports.sales.units_available', { count: projectReport.available_units })}</li>
                 </ul>
               </div>
@@ -365,18 +365,18 @@ const SalesReports: React.FC = () => {
               <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                 <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('reports.sales.customer_highlights')}</h3>
                 <ul className="space-y-2 text-blue-800 dark:text-blue-200">
-                  <li>• {customerReport.total_customers} total customers in database</li>
-                  <li>• {customerReport.buyers} successful conversions to buyers</li>
-                  <li>• {customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0'}% conversion rate</li>
-                  <li>• {formatEuro(customerReport.average_purchase)} average purchase value</li>
+                  <li>• {t('reports.sales.highlight_total_customers', { count: customerReport.total_customers })}</li>
+                  <li>• {t('reports.sales.highlight_conversions', { count: customerReport.buyers })}</li>
+                  <li>• {t('reports.sales.highlight_conversion_rate', { rate: customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0' })}</li>
+                  <li>• {t('reports.sales.highlight_avg_purchase', { amount: formatEuro(customerReport.average_purchase) })}</li>
                 </ul>
               </div>
 
               <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                 <h3 className="font-semibold text-green-900 dark:text-green-300 mb-3">{t('reports.sales.sales_opportunities')}</h3>
                 <ul className="space-y-2 text-green-800 dark:text-green-300">
-                  <li>• {customerReport.interested} interested customers to nurture</li>
-                  <li>• {customerReport.leads} new leads to follow up</li>
+                  <li>• {t('reports.sales.opportunity_interested', { count: customerReport.interested })}</li>
+                  <li>• {t('reports.sales.opportunity_leads', { count: customerReport.leads })}</li>
                   <li>• {t('reports.sales.focus_converting')}</li>
                   <li>• {t('reports.sales.targeted_campaigns')}</li>
                 </ul>

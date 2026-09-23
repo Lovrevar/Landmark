@@ -40,6 +40,9 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### investmentDashboardService.ts
 - `fetchInvestmentDashboardData()` — returns projects, companies, banks, bankCredits, recentActivities, financialSummary in one call
+- `recentActivities` are `{ type, params, date }`, not prose. They used to be English sentences
+  built here ("Credit facility approved", "… matures in 12 days") and rendered verbatim into a
+  Croatian dashboard; `InvestmentDashboard` now translates `dashboards.investment.activity.*`
 - **Depends on:** supabase client
 
 ### retailDashboardService.ts
@@ -95,6 +98,9 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 ### salesDashboardTypes.ts
 - Exports: `SalesDashboardStats`, `ProjectStats`, `MonthlyTrend`, `RecentSale`
 - No `monthlyTarget`: there is no target data in the database
+- `MonthlyTrend.month` is a **key**, the month's first day as `'YYYY-MM-DD'` — not a label.
+  `SalesDashboard` formats it with `formatMonthYear`. Same for `MonthlyData.month` in
+  `accountingDashboardTypes.ts`
 
 ### supervisionTypes.ts
 - Exports: `WorkLog`, `SubcontractorStatus`, `WeeklyStats`
@@ -274,6 +280,34 @@ Net figures show their own sign; colour is reinforcement, never the only cue. Ne
 - `directorService` and `supervisionService` were consolidated during the May 2026 audit: each now exposes a single `fetch{Director,Supervision}Dashboard()` that batches all queries in one `Promise.all` and returns a typed bundle. The previous per-metric `fetch*` functions and the standalone `buildWeeklyStats` are now private helpers
 - PDF export buttons use the shared `useAsyncExport` hook (`src/hooks/useAsyncExport.ts`) for the exporting flag and error toast instead of inline try/catch
 - All dashboards are internationalised (react-i18next, keys under `dashboards.*`) and dark-mode aware; this is presentational only and does not change the data each view shows
+
+### Language, dates and enums (September 2026 i18n sweep)
+- **No dashboard formats a date itself.** Every `format(…, 'MMM dd, yyyy')` is gone; the helpers
+  in `src/utils/formatters.ts` (`formatDate`, `formatDateTime`, `formatMonthYear`,
+  `formatDayMonth`) take `i18n.language` explicitly, so a Croatian UI reads `05.01.2026.` and an
+  English one `Jan 05, 2026`. A `date` column is passed as a **string** so `parseLocalDate` keeps
+  it on the day it says — `InvestmentCreditsTable`'s three credit dates went through `new Date()`
+  and rendered the previous day east of UTC
+- **A service never renders a month name.** `salesDashboardService`'s `MonthlyTrend.month` and
+  `accountingDashboardService`'s `MonthlyData.month` are now the month's **first day**
+  (`'YYYY-MM-DD'`), not `'MMM yy'` / `'MMM yyyy'` labels; `SalesDashboard` and
+  `AccountingMonthlyTrendsSection` format them. Neither is read by a PDF
+- **The three Croatian labels that interpolated an English month** —
+  `dashboards.director.monthly_sales`, `.cash_flow_month`, `dashboards.accounting.monthly_budget` —
+  are fed `common.months` (nominative, which is what a parenthesised label wants) or
+  `formatMonthYear`. Croatian grammar wants the genitive after some prepositions; these three do
+  not take one, so do not invent forms for them
+- **`investmentDashboardService` no longer writes sentences.** `RecentActivity` carries
+  `{ type, params }` and `InvestmentDashboard` looks up
+  `dashboards.investment.activity.<type>.*`, the shape `directorAlerts` already uses. A credit's
+  project clause is a separate key (`description_with_project`), not an interpolated fragment
+- **Raw DB enums are mapped at render time**, never compared against a translation:
+  `DirectorProjectsTable` uses `PROJECT_STATUS` from `src/utils/statusDisplay.ts` (which settles
+  "On Hold" on amber — it was red only here), and `SalesDashboard`'s payment-method breakdown uses
+  the existing `payment_type.*` keys for `sales.payment_method`'s four CHECK values rather than
+  `replace(/_/g,' ')` plus a CSS `capitalize`, which read "Bank Loan"
+- **Services return `null`, not an English placeholder.** `supervisionService`'s `project_name`
+  was `'Unknown Project'`; the views now label the gap with `common.no_project`
 - **EVM is not surfaced on any dashboard.** The Earned Value Management utility (`src/utils/evm.ts`) is consumed only by the Budget Control feature (`src/components/General/BudgetControl/`)
 - Role visibility is controlled via `src/utils/permissions.ts` and `AuthContext`
 - Dashboard services are read-only aggregation — they do not mutate data

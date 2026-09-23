@@ -17,8 +17,7 @@ import {
   Target,
   Calendar
 } from 'lucide-react'
-import { format } from 'date-fns'
-import { formatEuroCompact } from '../../utils/formatters'
+import { formatEuroCompact, formatDateTime } from '../../utils/formatters'
 import type { ProjectStats, FinancialMetrics, SalesMetrics, ConstructionMetrics, FundingMetrics, Alert } from './types/directorTypes'
 import * as directorService from './services/directorService'
 import DashboardError from './DashboardError'
@@ -49,8 +48,12 @@ const defaultFunding: FundingMetrics = {
 
 const DirectorDashboard: React.FC = () => {
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data, loading, error, refetch, fetchedAt } = useCachedData('dashboard:director', directorService.fetchDirectorDashboard)
+  // The tile labels read "Prodaja (rujan)" — a Croatian sentence needs a Croatian month, so the
+  // name comes from `common.months` rather than date-fns. The array is nominative, which is what
+  // these parenthesised labels want.
+  const monthName = (t('common.months', { returnObjects: true }) as string[])[new Date().getMonth()]
 
   const projects: ProjectStats[] = data?.projects ?? []
   const financialMetrics: FinancialMetrics = data?.financial ?? defaultFinancial
@@ -76,7 +79,7 @@ const DirectorDashboard: React.FC = () => {
         </div>
         <div className="sm:text-right">
           <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.director.last_updated')}</p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-white">{format(fetchedAt ? new Date(fetchedAt) : new Date(), 'MMM dd, yyyy HH:mm')}</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatDateTime(fetchedAt ? new Date(fetchedAt) : new Date(), i18n.language)}</p>
         </div>
       </div>
 
@@ -101,9 +104,9 @@ const DirectorDashboard: React.FC = () => {
           <StatCard label={t('dashboards.director.total_sales_revenue')} value={formatEuroCompact(salesMetrics.total_sales_revenue)} color="gray" size="md" />
           <StatCard label={t('dashboards.director.avg_price_per_unit')} value={formatEuroCompact(salesMetrics.avg_price_per_unit)} color="gray" size="md" />
           <StatCard
-            label={t('dashboards.director.monthly_sales', { month: format(new Date(), 'MMM') })}
+            label={t('dashboards.director.monthly_sales', { month: monthName })}
             value={`${salesMetrics.monthly_sales_count} ${t('dashboards.director.units')}`}
-            subtitle={`${formatEuroCompact(salesMetrics.monthly_sales_revenue)} revenue`}
+            subtitle={t('dashboards.director.revenue_amount', { amount: formatEuroCompact(salesMetrics.monthly_sales_revenue) })}
             color="gray"
             size="md"
           />

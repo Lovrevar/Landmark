@@ -2,10 +2,10 @@ import { supabase, BankCreditPayment } from '../../../../lib/supabase'
 import { paymentDirection, type PaymentDirection } from '../../../Cashflow/services/invoiceHelpers'
 
 export interface BankPaymentWithDetails extends BankCreditPayment {
-  bank_name?: string
+  bank_name?: string | null
   credit_type?: string
   credit_seniority?: string | null
-  project_name?: string
+  project_name?: string | null
   invoice_type: string
   /**
    * Money into the company (a drawdown, OUTGOING_BANK) or out of it (a repayment, INCOMING_BANK,
@@ -51,10 +51,12 @@ export async function fetchBankPayments(): Promise<BankPaymentWithDetails[]> {
 
     return {
       ...payment,
-      bank_name: bankCredit?.banks?.name || 'Unknown Bank',
+      // Left null rather than filled with an English placeholder; the table and the CSV
+      // decide what an unlinked payment reads as.
+      bank_name: bankCredit?.banks?.name || null,
       credit_type: bankCredit?.credit_type || 'N/A',
       credit_seniority: bankCredit?.credit_seniority ?? null,
-      project_name: project?.name || 'No Project',
+      project_name: project?.name || null,
       invoice_type: payment.invoice?.invoice_type ?? '',
       direction: paymentDirection(payment.invoice?.invoice_type),
       created_at: payment.created_at,

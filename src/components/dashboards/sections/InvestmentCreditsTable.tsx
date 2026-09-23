@@ -1,11 +1,10 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CreditCard, Calendar, Clock } from 'lucide-react'
-import { format } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
 import { Button, Badge } from '../../ui'
 import StatCard from '../../ui/StatCard'
-import { formatEuro } from '../../../utils/formatters'
+import { formatEuro, formatDate } from '../../../utils/formatters'
 import { utilisationTone } from '../../Funding/Investors/utils/creditCalculations'
 import { useTranslation } from 'react-i18next'
 import type { BankCredit } from '../../../types/investment'
@@ -16,7 +15,7 @@ interface Props {
 
 const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -56,13 +55,13 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace(/_/g, ' ')}`}
+                          {credit.credit_name || `${credit.company?.name || t('dashboards.investment.unknown_company')} - ${credit.credit_type.replace(/_/g, ' ')}`}
                         </h3>
                         {credit.project && <Badge variant="blue" size="sm">{credit.project.name}</Badge>}
                         {maturityWarning && <Badge variant="orange" size="sm">{t('dashboards.investment.maturing_soon')}</Badge>}
                         {usageWarning && <Badge variant="yellow" size="sm">{t('dashboards.investment.usage_expiring')}</Badge>}
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400">{credit.company?.name || 'Unknown Company'}</p>
+                      <p className="text-gray-600 dark:text-gray-400">{credit.company?.name || t('dashboards.investment.unknown_company')}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-gray-900 dark:text-white">{formatEuro(Number(credit.amount))}</p>
@@ -89,7 +88,9 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                         <Calendar className="w-3 h-3" />
                         <span>{t('dashboards.investment.start_date')}</span>
                       </span>
-                      <p className="font-medium text-gray-900 dark:text-white">{format(new Date(credit.start_date), 'MMM dd, yyyy')}</p>
+                      {/* A `date` column: pass the string, so `parseLocalDate` keeps it on the day
+                          it says instead of `new Date()`'s UTC-midnight previous day. */}
+                      <p className="font-medium text-gray-900 dark:text-white">{formatDate(credit.start_date, i18n.language)}</p>
                     </div>
                     {credit.maturity_date && (
                       <div>
@@ -98,9 +99,9 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                           <span>{t('dashboards.investment.maturity_date')}</span>
                         </span>
                         <p className={`font-medium ${maturityWarning ? 'text-orange-600' : 'text-gray-900 dark:text-white'}`}>
-                          {format(new Date(credit.maturity_date), 'MMM dd, yyyy')}
+                          {formatDate(credit.maturity_date, i18n.language)}
                           {maturityDays !== null && maturityDays >= 0 && (
-                            <span className="text-xs ml-1">({maturityDays}d)</span>
+                            <span className="text-xs ml-1">({t('dashboards.investment.days_short', { count: maturityDays })})</span>
                           )}
                         </p>
                       </div>
@@ -112,9 +113,9 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                           <span>{t('dashboards.investment.usage_expires')}</span>
                         </span>
                         <p className={`font-medium ${usageWarning ? 'text-yellow-600' : 'text-gray-900 dark:text-white'}`}>
-                          {format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}
+                          {formatDate(credit.usage_expiration_date, i18n.language)}
                           {usageDays !== null && usageDays >= 0 && (
-                            <span className="text-xs ml-1">({usageDays}d)</span>
+                            <span className="text-xs ml-1">({t('dashboards.investment.days_short', { count: usageDays })})</span>
                           )}
                         </p>
                       </div>

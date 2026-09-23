@@ -75,8 +75,12 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
       activities.push({
         id: credit.id,
         type: 'credit',
-        title: 'Credit facility approved',
-        description: `${credit.company?.name || 'Company'} - ${formatEuroCompact(Number(credit.amount))} ${credit.credit_type.replace(/_/g, ' ')}${credit.project ? ` for ${credit.project.name}` : ''}`,
+        params: {
+          company: credit.company?.name || '',
+          amount: formatEuroCompact(Number(credit.amount)),
+          creditType: credit.credit_type.replace(/_/g, ' '),
+          project: credit.project?.name || ''
+        },
         date: credit.start_date,
         amount: Number(credit.amount)
       })
@@ -91,8 +95,7 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
       activities.push({
         id: credit.id + '_maturity',
         type: 'maturity',
-        title: 'Upcoming loan maturity',
-        description: `${credit.credit_name || credit.company?.name || 'Credit'} matures in ${daysUntil} days`,
+        params: { name: credit.credit_name || credit.company?.name || '', count: daysUntil },
         date: credit.maturity_date!
       })
     })
@@ -106,8 +109,7 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
       activities.push({
         id: credit.id + '_usage',
         type: 'usage_expiring',
-        title: 'Credit usage period expiring',
-        description: `${credit.credit_name || credit.company?.name || 'Credit'} usage expires in ${daysUntil} days`,
+        params: { name: credit.credit_name || credit.company?.name || '', count: daysUntil },
         date: credit.usage_expiration_date!
       })
     })

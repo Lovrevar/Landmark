@@ -9,8 +9,10 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Modal, Badge, StatGrid, EmptyState } from '../../../ui'
-import { format, differenceInDays } from 'date-fns'
-import { parseLocalDate, daysFromToday } from '../../../../utils/dateOnly'
+import { differenceInDays } from 'date-fns'
+import { daysFromToday } from '../../../../utils/dateOnly'
+import { formatDate } from '../../../../utils/formatters'
+import { RISK_LEVEL, statusLabelKey } from '../../../../utils/statusDisplay'
 import {
   utilisationTone,
   getCreditTypeLabelKey,
@@ -24,7 +26,9 @@ interface Props {
 }
 
 const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  // The colour bands here are the modal's own; only the word comes from the shared map.
+  const riskLabelKey = statusLabelKey(RISK_LEVEL, project.risk_level)
   const [activeTab, setActiveTab] = useState<'overview' | 'funding'>('overview')
 
   // Derived, not fetched. `fetchFundingUtilization` re-ran the same `credit_allocations`
@@ -173,7 +177,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                         )}
                         {allocation.credit?.maturity_date && (
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                            {t('funding.projects.modal.credit_matures_label')} {format(parseLocalDate(allocation.credit.maturity_date), 'MMM dd, yyyy')}
+                            {t('funding.projects.modal.credit_matures_label')} {formatDate(allocation.credit.maturity_date, i18n.language)}
                           </p>
                         )}
                       </div>
@@ -230,7 +234,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                       project.risk_level === 'High' ? 'text-red-600' :
                       project.risk_level === 'Medium' ? 'text-orange-600' : 'text-green-600'
                     }`}>
-                      {project.risk_level}
+                      {riskLabelKey ? t(riskLabelKey) : project.risk_level}
                     </span>
                   </div>
                 </div>
@@ -242,13 +246,13 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.start_date_label')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {format(parseLocalDate(project.start_date), 'MMM dd, yyyy')}
+                      {formatDate(project.start_date, i18n.language)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.target_end_label')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {project.end_date ? format(parseLocalDate(project.end_date), 'MMM dd, yyyy') : t('funding.projects.modal.tbd')}
+                      {project.end_date ? formatDate(project.end_date, i18n.language) : t('funding.projects.modal.tbd')}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -330,13 +334,13 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                             {isExpiringSoon && <Badge variant="orange" size="sm">{t('funding.projects.modal.expiring_soon_badge')}</Badge>}
                           </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {t('funding.projects.modal.received_label')} {format(parseLocalDate(source.investmentDate), 'MMM dd, yyyy')}
+                            {t('funding.projects.modal.received_label')} {formatDate(source.investmentDate, i18n.language)}
                             {source.usageExpirationDate && (
                               <> • {t('funding.projects.modal.expires_label')} <span className={
                                 isExpired ? 'text-red-600 dark:text-red-400 font-medium'
                                   : isExpiringSoon ? 'text-orange-600 dark:text-orange-400 font-medium' : ''
                               }>
-                                {format(parseLocalDate(source.usageExpirationDate), 'MMM dd, yyyy')}
+                                {formatDate(source.usageExpirationDate, i18n.language)}
                               </span></>
                             )}
                           </p>

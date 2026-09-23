@@ -291,19 +291,31 @@ maths here rather than inlining it in a hook.
 
 - `calculateAnnuityPayment({...})` — standard annuity instalment
 - `calculatePaymentSchedule(params)` → `PaymentScheduleResult | null` — the full schedule
-  driving `PaymentSchedulePreview`
-- `calculateEquityCashflow(equity)` / `calculateMoneyMultiple(equity)` — equity return maths
+  driving `PaymentSchedulePreview`. Its `principalFrequency` / `interestFrequency` are the
+  **stored repayment type** (`monthly` / `quarterly` / …), not a label: they were English nouns
+  that `banks.credit_form.every_frequency` interpolated into "Svakih month". Croatian needs a
+  whole phrase per frequency, so the preview picks one from
+  `banks.credit_form.frequency_every.*`
+- `calculateEquityCashflow(equity)` / `calculateMoneyMultiple(equity)` — equity return maths.
+  Both return an `EquityPreview` (`{ status: 'ok', value }` / `{ status: 'incomplete' }` /
+  `{ status: 'invalid_range' }`), **not** a display string. They used to return the reason as an
+  English sentence ("Enter amount, dates, and IRR to calculate") that a Croatian user read
+  verbatim; `EquityFormModal` supplies the words from `funding.equity_form.preview_*`
 - `getPaymentFrequency(type)` — payments per year for `monthly` / `quarterly` / `biyearly` / `yearly`
 - `parseCreditTypeAndSeniority(combined)` — splits the combined form value back into its two fields
-- `getCreditRiskLevel(utilization)` / `getCreditTypeBadgeVariant(creditType)` — display helpers
+- `getCreditRiskLevel(utilization)` → `{ level, className }` where `level` is a `RISK_LEVEL` key
+  (`Low` / `Medium` / `High`), not a label. `InvestorDetailModal` renders it through
+  `statusLabel(RISK_LEVEL, …)` from `src/utils/statusDisplay.ts`, so the investor modal says
+  "Visok" where every other screen does. **The > 80 / > 60 bands are unchanged** — they are
+  deliberately looser than `utilisationTone`'s ≥ 90 / ≥ 70
+- `getCreditTypeBadgeVariant(creditType)` — badge colour per credit type
 - `utilisationTone(percent)` → `{ text, bar }` and `utilisationToneRgb(percent)` — **the one
   utilisation colour scale**: ≥ 90 red, ≥ 70 orange, else green, with a `dark:` pair on every
   class. Five screens each had their own thresholds (`InvestorCard` > 80 / > 60,
   `InvestmentCreditsTable` ≥ 90 / ≥ 70 over blue, `CompanyDetailsModal` ≥ 90 / ≥ 70,
   `investmentReportPdf` the same in RGB) and inside `InvestmentProjectModal` the percentage and
   its own bar disagreed — at 92% the figure was orange while the bar beside it was red. All five
-  read from here now. Distinct from `getCreditRiskLevel`, which keeps its own looser bands and
-  its English risk labels
+  read from here now. Distinct from `getCreditRiskLevel`, which keeps its own looser bands
 - `getCreditTypeLabelKey(creditType, seniority?)` — i18n key for a stored `credit_type`, reusing the
   credit form's `banks.credit_form.*` option labels (a `line_of_credit` picks `loc_senior` /
   `loc_junior` by seniority; `equity` → `funding.equity`); `null` for anything else, where callers
@@ -652,6 +664,36 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 - `InvestmentTable` owns the phase columns: a bin per column header (confirmed, because it clears
   that phase from every row and renumbers the rest), an "Add phase" button, phase cells that open
   `PhaseSplitModal`, and a warning beside the row total when a split no longer adds up
+
+---
+
+## Language, dates and enums (September 2026 i18n sweep)
+
+- **Nothing in this module formats a date itself.** `formatDate` / `formatMonthYear` from
+  `src/utils/formatters.ts` take `i18n.language` explicitly: `05.01.2026.` in Croatian,
+  `Jan 05, 2026` in English. That covers the twelve sites that were split between English
+  `'MMM dd, yyyy'` (Projects, `InvestmentProjectModal`, Payments, `PaymentSchedulePreview`) and a
+  hardcoded Croatian `'dd.MM.yyyy'` (Investments, `CreditFacilityCard`, `CreditSummary`) — the
+  latter never showed an English month but also never followed the language switcher. `date`
+  columns are passed as strings so `parseLocalDate` keeps them on the day they say.
+- **Risk and project status come from `src/utils/statusDisplay.ts`.** `Projects/index.tsx` read
+  "**High Rizik**" (raw enum then the word "Rizik") and now reads "Rizik: Visok"; the project
+  status badge beside it and `InvestmentProjectModal`'s risk row use the same maps. The **stored
+  value stays English** and is still what the code compares against — only the label is mapped.
+- **Hook toasts are translated.** The fourteen English `toast.warning` / `toast.error` strings in
+  `useBankData`, `useCreditForm` and `useEquityForm` are keys under `funding.investors.error_*`
+  and `funding.equity_form.*`. `useEquityForm` gained `useTranslation` for this.
+- **`bankPaymentsService` returns `null`, not an English placeholder.** `bank_name` and
+  `project_name` were `'Unknown Bank'` / `'No Project'`; the table labels the gap with
+  `funding.investments.unknown_bank` and `common.no_project`, and the CSV writes an empty cell.
+- **Two things are deliberately still English and should not be "fixed" here:**
+  `equityService.createEquityInvestment` writes `credit_name: "Equity Investment <MMM yyyy>"` — a
+  **stored** column, not a display string, so translating it would make the data depend on whoever
+  created the row; and `Funding/TIC/**` is hardcoded **Croatian** domain vocabulary (cost
+  classifications, sheet headings), which is a convention gap rather than a user-visible bug and
+  belongs to a later batch. `ticExport.ts` is frozen anyway — `ticImport.ts` reads its output back.
+- `CreditFormModal`'s `e.g., Kozara Construction Loan 2024` placeholder is left in English: the
+  example is a business call, per the sweep's rule on ambiguous strings.
 
 ---
 
