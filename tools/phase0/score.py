@@ -3,7 +3,7 @@
 
     python3 score.py [--transcripts transcripts.csv] [--out results.md] [--script-dir .]
 
-Four sections, each scored against its own file (see README):
+Five sections, each scored against its own file (see README):
 
   terms      sentences.csv  hit = target_form OR any accepted_alternate appears as a
                             contiguous word sequence in the transcript
@@ -11,6 +11,9 @@ Four sections, each scored against its own file (see README):
                             obrt, GmbH) optional
   amounts    amounts.csv    hit = some amount parsed from the transcript (Croatian number
                             words or digits, "eura i N centi") equals amount_eur
+  dates      dates.csv      hit = some date parsed from the transcript has the right day and
+                            month (ordinal words in any case, "15.10.", "15. listopada"), and
+                            the right year when the sentence speaks one
   questions  questions.csv  word error rate against the question text, pooled
 
 Normalisation:
@@ -25,7 +28,7 @@ Gates, per vendor, clean + noisy pooled (plan §10, phase 0):
              per-term floor 70 %; per-speaker floor 80 %
              critical terms each >= 85 %; any critical term < 70 % is a no-go
   entities   exact >= 80 %
-  amounts    >= 95 %
+  amounts + dates, pooled (the plan's single "amounts / dates" gate) >= 95 %
   questions  WER <= 15 %
 Not scored here: entity recoverability through the real search tools (a later step),
 TTS, turn-taking, and the platform latency floor.
@@ -46,13 +49,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SCRIPT_DIR = HERE  # overridden by --script-dir
 TERM_RE = re.compile(r"^(s0[1-6])_(t\d{2})_c([123])\.wav$")
-ITEM_RE = re.compile(r"^(s0[1-6])_([eaq]\d{2})\.wav$")
-SECTION_OF = {"e": "entity", "a": "amount", "q": "question"}
+ENTITY_RE = re.compile(r"^(s0[1-6])_(e\d{2})_c([12])\.wav$")
+ITEM_RE = re.compile(r"^(s0[1-6])_([adq]\d{2})\.wav$")
+SECTION_OF = {"a": "amount", "d": "date", "q": "question"}
 
 TERM_PASS, TERM_NOGO = 0.90, 0.80
 TERM_FLOOR, SPEAKER_FLOOR = 0.70, 0.80
 CRITICAL_PASS, CRITICAL_NOGO = 0.85, 0.70
-ENTITY_PASS, AMOUNT_PASS, WER_MAX = 0.80, 0.95, 0.15
+ENTITY_PASS, NUMERIC_PASS, WER_MAX = 0.80, 0.95, 0.15
 LEGAL_FORMS = {"doo", "jdoo", "dd", "obrt", "gmbh"}
 
 
@@ -183,6 +187,74 @@ def parse_amounts(text: str) -> list[float]:
 
 
 # ---------------------------------------------------------------------------
+# Croatian dates
+# ---------------------------------------------------------------------------
+
+_ORD_STEMS = {
+    "prv": 1, "drug": 2, "trec": 3, "cetvrt": 4, "pet": 5, "sest": 6, "sedm": 7, "osm": 8, "devet": 9,
+    "deset": 10, "jedanaest": 11, "dvanaest": 12, "trinaest": 13, "cetrnaest": 14, "petnaest": 15,
+    "sesnaest": 16, "sedamnaest": 17, "osamnaest": 18, "devetnaest": 19, "dvadeset": 20, "trideset": 30,
+}
+# Ordinal endings across the cases dates take (nom. -i, gen. -og(a)/-eg(a), dat./loc. -om(u)/-em(u),
+# feminine year forms -a/-e/-oj/-u); longest first so "-oga" wins over "-a".
+_ORD_ENDINGS = sorted(["i", "og", "oga", "om", "omu", "ome", "eg", "ega", "em", "emu", "a", "e", "oj", "u"], key=len, reverse=True)
+_MONTHS = {
+    "sijecnja": 1, "sijecanj": 1, "veljace": 2, "veljaca": 2, "ozujka": 3, "ozujak": 3, "travnja": 4,
+    "travanj": 4, "svibnja": 5, "svibanj": 5, "lipnja": 6, "lipanj": 6, "srpnja": 7, "srpanj": 7,
+    "kolovoza": 8, "kolovoz": 8, "rujna": 9, "rujan": 9, "listopada": 10, "listopad": 10,
+    "studenoga": 11, "studenog": 11, "studeni": 11, "prosinca": 12, "prosinac": 12,
+}
+_TENS = {"dvadeset": 20, "trideset": 30}
+_NUMERIC_DATE = re.compile(r"(?<!\d)(\d{1,2})\.\s?(\d{1,2})\.(?:\s?(\d{4})\.?)?")
+
+
+def ordinal(word: str) -> int | None:
+    for end in _ORD_ENDINGS:
+        if word.endswith(end) and word[: -len(end)] in _ORD_STEMS:
+            return _ORD_STEMS[word[: -len(end)]]
+    return None
+
+
+def parse_dates(text: str) -> list[tuple[int, int, int | None]]:
+    """Every (day, month, year-or-None) in a transcript: "15.10.", "15.10.2026.",
+    "15. listopada", "petnaesti listopada", "petnaestog listopada", "dvadeset prvog
+    ožujka", with an optional year after the month ("dvije tisuće dvadeset šeste",
+    "2026")."""
+    s = fold(text.lower())
+    out: list[tuple[int, int, int | None]] = []
+    for m in _NUMERIC_DATE.finditer(s):
+        d, mo = int(m.group(1)), int(m.group(2))
+        if 1 <= d <= 31 and 1 <= mo <= 12:
+            out.append((d, mo, int(m.group(3)) if m.group(3) else None))
+    toks = re.findall(r"\d+\.?|[a-z]+", s)
+    for i, tok in enumerate(toks):
+        if tok not in _MONTHS:
+            continue
+        day = None
+        prev = toks[i - 1] if i >= 1 else ""
+        if re.fullmatch(r"\d{1,2}\.?", prev):
+            day = int(prev.rstrip("."))
+        elif (o := ordinal(prev)) is not None:
+            day = o
+            if o < 10 and i >= 2 and toks[i - 2] in _TENS:
+                day = _TENS[toks[i - 2]] + o
+        if day is None or not 1 <= day <= 31:
+            continue
+        year = None
+        nxt = toks[i + 1 : i + 5]
+        if nxt and re.fullmatch(r"\d{4}\.?", nxt[0]):
+            year = int(nxt[0].rstrip("."))
+        elif len(nxt) >= 3 and nxt[0] == "dvije" and nxt[1] in ("tisuce", "tisuca"):
+            rest = nxt[2:]
+            if rest and rest[0] in _TENS and len(rest) > 1 and (o := ordinal(rest[1])) is not None and o < 10:
+                year = 2000 + _TENS[rest[0]] + o
+            elif rest and (o := ordinal(rest[0])) is not None:
+                year = 2000 + o
+        out.append((day, _MONTHS[tok], year))
+    return out
+
+
+# ---------------------------------------------------------------------------
 # WER
 # ---------------------------------------------------------------------------
 
@@ -256,8 +328,10 @@ def main() -> int:
 
     terms_script = {(r["term_id"], r["carrier_no"]): r for r in load("sentences.csv")}
     term_info = {r["term_id"]: (r["term"], r["critical"] == "y") for r in terms_script.values()}
-    entities = {r["entity_id"]: r for r in load("entities.csv")}
+    entities = {(r["entity_id"], r["carrier_no"]): r for r in load("entities.csv")}
+    entity_names = {r["entity_id"]: r for r in entities.values()}
     amounts = {r["amount_id"]: r for r in load("amounts.csv")}
+    dates = {r["date_id"]: r for r in load("dates.csv")}
     questions = {r["question_id"]: r for r in load("questions.csv")}
 
     with open(args.transcripts, newline="", encoding="utf-8") as f:
@@ -293,6 +367,16 @@ def main() -> int:
             speakers.add(spk)
             seen_sections["term"] += 1
             continue
+        m = ENTITY_RE.match(r["file"])
+        if m and (m.group(2), m.group(3)) in entities:
+            spk, eid, car = m.groups()
+            row = entities[(eid, car)]
+            s, rx = matches(text, [row["target_form"], *alternates(row["accepted_alternates"])], strip_legal=True)
+            for key in [("entity", v), ("entity", v, c), ("entity_i", v, eid)]:
+                T[key].add(s, rx)
+            speakers.add(spk)
+            seen_sections["entity"] += 1
+            continue
         m = ITEM_RE.match(r["file"])
         if not m:
             skipped += 1
@@ -300,15 +384,16 @@ def main() -> int:
         spk, item = m.groups()
         section = SECTION_OF[item[0]]
         speakers.add(spk)
-        if section == "entity" and item in entities:
-            row = entities[item]
-            s, rx = matches(text, [row["target_form"], *alternates(row["accepted_alternates"])], strip_legal=True)
-            for key in [("entity", v), ("entity", v, c), ("entity_i", v, item)]:
-                T[key].add(s, rx)
-        elif section == "amount" and item in amounts:
+        if section == "amount" and item in amounts:
             target = round(float(amounts[item]["amount_eur"]), 2)
             hit = any(abs(a - target) < 0.005 for a in parse_amounts(text))
-            for key in [("amount", v), ("amount", v, c), ("amount_i", v, item)]:
+            for key in [("amount", v), ("amount", v, c), ("amount_i", v, item), ("numeric", v)]:
+                T[key].add(hit, hit)
+        elif section == "date" and item in dates:
+            want = dates[item]
+            d, mo, y = int(want["day"]), int(want["month"]), (int(want["year"]) if want["year"] else None)
+            hit = any(pd == d and pm == mo and (y is None or py == y) for pd, pm, py in parse_dates(text))
+            for key in [("date", v), ("date", v, c), ("date_i", v, item), ("numeric", v)]:
                 T[key].add(hit, hit)
         elif section == "question" and item in questions:
             e, n = word_errors(questions[item]["sentence"], text)
@@ -327,12 +412,12 @@ def main() -> int:
     w("# Phase 0 — Croatian STT results\n")
     w(f"From `{args.transcripts.name}`. Speakers: {', '.join(sorted(speakers)) or '—'}. "
       f"Conditions: {', '.join(conditions)}. Rows per section: "
-      + ", ".join(f"{k} {seen_sections[k]}" for k in ("term", "entity", "amount", "question")) + ".\n")
+      + ", ".join(f"{k} {seen_sections[k]}" for k in ("term", "entity", "amount", "date", "question")) + ".\n")
     w("**Gate metric: RELAXED** (diacritics folded). STRICT (diacritics must match) is reported alongside. "
       "Accepted alternates count under both. 95 % intervals are Wilson.\n")
     if skipped:
         w(f"> {skipped} row(s) ignored: file name not in a known scheme or not in the script.\n")
-    drafts = sum(1 for d in (terms_script, entities, amounts, questions) for r in d.values()
+    drafts = sum(1 for d in (terms_script, entities, amounts, dates, questions) for r in d.values()
                  if r.get("review_status", "frozen") != "frozen")
     placeholders = sum(1 for r in entities.values() if r.get("placeholder") == "y")
     if drafts or placeholders:
@@ -341,7 +426,7 @@ def main() -> int:
 
     # ---- verdict ----------------------------------------------------------------
     w("## Verdict against the frozen gates\n")
-    w("| Vendor | Terms (relaxed, 95 % CI) | Terms strict | Entities exact | Amounts | Question WER | Verdict |")
+    w("| Vendor | Terms (relaxed, 95 % CI) | Terms strict | Entities exact | Amounts + dates | Question WER | Verdict |")
     w("|---|---|---|---|---|---|---|")
     notes = {}
     for v in vendors:
@@ -353,7 +438,7 @@ def main() -> int:
         crit = [x for x in sorted(term_info) if term_info[x][1] and T[("term_t", v, x)].n]
         crit_low = [x for x in crit if T[("term_t", v, x)].acc() < CRITICAL_PASS]
         crit_nogo = [x for x in crit if T[("term_t", v, x)].acc() < CRITICAL_NOGO]
-        ent, amt = T[("entity", v)], T[("amount", v)]
+        ent, num = T[("entity", v)], T[("numeric", v)]
         we, wn = wer[(v, "*")]
         wer_v = we / wn if wn else float("nan")
 
@@ -372,7 +457,7 @@ def main() -> int:
             review.append("speaker floor: " + ", ".join(spk_low))
         if crit_low and not crit_nogo:
             review.append("critical < 85 %: " + ", ".join(crit_low))
-        for label, tally, bar in (("entities", ent, ENTITY_PASS), ("amounts", amt, AMOUNT_PASS)):
+        for label, tally, bar in (("entities", ent, ENTITY_PASS), ("amounts/dates", num, NUMERIC_PASS)):
             if tally.n == 0:
                 review.append(f"{label} not recorded")
             elif tally.acc() < bar:
@@ -383,14 +468,14 @@ def main() -> int:
             review.append(f"question WER {pct(wer_v)} > 15 %")
         verdict = "**NO-GO**" if nogo else ("**REVIEW**" if review else "**PASS**")
         notes[v] = "; ".join(nogo + review)
-        w(f"| {v} | {pct(acc)} ({pct(lo)}–{pct(hi)}) | {pct(t.acc(strict=True))} | {cell(ent)} | {cell(amt)} | "
+        w(f"| {v} | {pct(acc)} ({pct(lo)}–{pct(hi)}) | {pct(t.acc(strict=True))} | {cell(ent)} | {cell(num)} | "
           f"{'—' if not wn else pct(wer_v)} | {verdict} |")
     w("")
     for v in vendors:
         if notes[v]:
             w(f"- **{v}**: {notes[v]}")
     w("\nThresholds: terms ≥ 90 % pass, 80–90 % review, < 80 % no-go; term floor 70 %; speaker floor 80 %; "
-      "critical terms ≥ 85 % (any < 70 % is a no-go); entities ≥ 80 %; amounts ≥ 95 %; question WER ≤ 15 %. "
+      "critical terms ≥ 85 % (any < 70 % is a no-go); entities ≥ 80 %; amounts and dates pooled ≥ 95 %; question WER ≤ 15 %. "
       "Entity recoverability through the real search tools is a later step, not scored here.\n")
 
     # ---- per section, clean vs noisy ------------------------------------------------
@@ -398,7 +483,7 @@ def main() -> int:
     w("| Vendor | Section | " + " | ".join(conditions) + " |")
     w("|---|---|" + "---|" * len(conditions))
     for v in vendors:
-        for sec in ("term", "entity", "amount"):
+        for sec in ("term", "entity", "amount", "date"):
             cells = []
             for c in conditions:
                 tt = T.get((sec, v, c))
@@ -444,17 +529,23 @@ def main() -> int:
         w(f"| {s} | " + " | ".join(cells) + " |")
 
     # ---- entities, amounts, questions per item ------------------------------------
-    w("\n## Per entity (relaxed; legal form optional)\n")
+    w("\n## Per entity (relaxed; legal form optional; both carriers pooled)\n")
     w("| Entity | " + " | ".join(vendors) + " |")
     w("|---|" + "---|" * len(vendors))
-    for e in sorted(entities):
-        tag = " *(placeholder)*" if entities[e].get("placeholder") == "y" else ""
-        w(f"| {e} {entities[e]['name']}{tag} | " + " | ".join(cell(T.get(("entity_i", v, e))) for v in vendors) + " |")
+    for e in sorted(entity_names):
+        tag = " *(placeholder)*" if entity_names[e].get("placeholder") == "y" else ""
+        w(f"| {e} {entity_names[e]['name']}{tag} | " + " | ".join(cell(T.get(("entity_i", v, e))) for v in vendors) + " |")
     w("\n## Per amount\n")
     w("| Amount | Value (EUR) | " + " | ".join(vendors) + " |")
     w("|---|---|" + "---|" * len(vendors))
     for a in sorted(amounts):
         w(f"| {a} | {amounts[a]['amount_eur']} | " + " | ".join(cell(T.get(("amount_i", v, a))) for v in vendors) + " |")
+    w("\n## Per date\n")
+    w("| Date | Day.month.year | " + " | ".join(vendors) + " |")
+    w("|---|---|" + "---|" * len(vendors))
+    for d in sorted(dates):
+        r = dates[d]
+        w(f"| {d} | {r['day']}.{r['month']}.{r['year'] or ''} | " + " | ".join(cell(T.get(("date_i", v, d))) for v in vendors) + " |")
     w("\n## Per question (WER)\n")
     w("| Question | " + " | ".join(vendors) + " |")
     w("|---|" + "---|" * len(vendors))

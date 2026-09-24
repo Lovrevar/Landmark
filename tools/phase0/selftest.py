@@ -61,7 +61,7 @@ def fold(s: str) -> str:
 
 def test_script() -> None:
     print("script files")
-    from score import parse_amounts
+    from score import parse_amounts, parse_dates
 
     terms = rows_of("sentences.csv")
     check(len(terms) == 90, "sentences.csv: 90 rows")
@@ -80,15 +80,30 @@ def test_script() -> None:
     check(all(r["review_status"] in ("draft", "frozen") for r in terms), "review_status is draft or frozen")
 
     ents = rows_of("entities.csv")
-    check(len(ents) == 15 and all(r["target_form"] in r["sentence"] for r in ents), "entities.csv: 15 rows, targets in sentences")
+    names = {r["entity_id"]: r for r in ents}
+    check(len(ents) == 40 and len(names) == 20 and all(r["target_form"] in r["sentence"] for r in ents),
+          "entities.csv: 20 names x 2 carriers = 40 rows (the plan's 480-observation design)")
+    check(sorted(r["carrier_no"] for r in ents) == ["1"] * 20 + ["2"] * 20, "every entity has carrier 1 and carrier 2")
+    check(sum(r["entity_type"] == "project" for r in names.values()) == 10, "10 projects + 10 subcontractors")
+    check(all(r["sentence"].endswith("?") for r in ents if r["carrier_no"] == "1"), "entity carrier 1 is a question")
+    check(all(not re.search(re.escape(r["target_form"]) + r"[.?!]$", r["sentence"]) and not r["sentence"].startswith(r["target_form"])
+              for r in ents if r["carrier_no"] == "2"), "entity carrier 2 has the name mid-sentence")
+    legal = sum(bool(re.search(r"\b(d\.o\.o\.|j\.d\.o\.o\.|obrt|GmbH)$", n["name"])) for n in names.values())
+    diacritic = sum(bool(re.search(r"[čćđšžČĆĐŠŽ]", n["name"])) for n in names.values())
+    check(legal >= 5 and diacritic >= 3, f"name mix: {legal} legal forms (>= 5), {diacritic} with diacritics (>= 3)")
     check(all(r["placeholder"] in ("y", "n") for r in ents), "entities.csv: placeholder flag on every row")
     amts = rows_of("amounts.csv")
     check(len(amts) == 10, "amounts.csv: 10 rows")
     check(all(any(abs(a - float(r["amount_eur"])) < 0.005 for a in parse_amounts(r["sentence"])) for r in amts),
           "every amount sentence parses back to its own amount_eur")
+    dts = rows_of("dates.csv")
+    check(len(dts) == 10 and not any(re.search(r"\d", r["sentence"]) for r in dts), "dates.csv: 10 rows, written out in words")
+    check(all((int(r["day"]), int(r["month"]), int(r["year"]) if r["year"] else None) in parse_dates(r["sentence"]) for r in dts),
+          "every date sentence parses back to its own day, month and year")
+    check(len(amts) + len(dts) == 20, "amounts + dates = 20 items (the plan's 240-observation pooled gate)")
     qs = rows_of("questions.csv")
     check(len(qs) == 10 and not any(re.search(r"\d", r["sentence"]) for r in qs), "questions.csv: 10 rows, no numerals")
-    check(len(terms) + len(ents) + len(amts) + len(qs) == 125, "125 takes per speaker")
+    check(len(terms) + len(ents) + len(amts) + len(dts) + len(qs) == 160, "160 takes per speaker")
 
 
 def test_mix(tmp: Path) -> None:
@@ -115,7 +130,7 @@ def test_mix(tmp: Path) -> None:
 
 def test_matching() -> None:
     print("score.py rules")
-    from score import matches, parse_amounts, word_errors
+    from score import matches, parse_amounts, parse_dates, word_errors
 
     check(matches("Budžet se računa iz tika.", ["TIC-a", "tika", "tik-a"]) == (True, True), "alias: 'tika' scores for TIC-a (strict and relaxed)")
     check(matches("Je li tik za Kopko unesen", ["TIC", "tik", "tic"]) == (True, True), "alias: 'tik' scores for TIC")
@@ -131,6 +146,14 @@ def test_matching() -> None:
     for text, want in [("dvanaest tisuća petsto eura i pedeset centi", 12500.5), ("12.500,50 €", 12500.5),
                        ("1,2 milijuna eura", 1_200_000), ("dvadeset i pet eura", 25)]:
         check(any(abs(a - want) < 0.005 for a in parse_amounts(text)), f"amount: '{text}' -> {want:g}")
+    for text, want in [("petnaesti listopada", (15, 10, None)), ("15.10.", (15, 10, None)), ("15. listopada", (15, 10, None)),
+                       ("do petnaestog listopada", (15, 10, None)), ("petnaestoga listopada", (15, 10, None)),
+                       ("do trećeg svibnja", (3, 5, None)), ("dvadeset prvog ožujka dvije tisuće dvadeset sedme", (21, 3, 2027)),
+                       ("15.10.2026.", (15, 10, 2026)), ("1. ožujka 2027.", (1, 3, 2027))]:
+        check(want in parse_dates(text), f"date: '{text}' -> {want}")
+    check(parse_dates("Koliko košta druga faza?") == [], "date: an ordinal with no month is not a date")
+    check((1, 3, None) in parse_dates("prvog ožujka") and not any(y == 2027 for _, _, y in parse_dates("prvog ožujka")),
+          "date: a transcript that drops the spoken year yields no year (so it scores as a miss)")
     check(word_errors("Koji računi dospijevaju ovaj tjedan?", "koji racuni dospijevaju ovaj tjedan") == (0, 5),
           "WER ignores case, punctuation and diacritics")
     check(word_errors("Koji računi dospijevaju ovaj tjedan?", "koji računi dospjevaju taj tjedan") == (2, 5), "WER counts substitutions")
@@ -139,8 +162,9 @@ def test_matching() -> None:
 def test_score(tmp: Path) -> None:
     print("score.py verdicts")
     items = [(f"s01_{r['term_id']}_c{r['carrier_no']}.wav", r["sentence"]) for r in rows_of("sentences.csv")]
-    items += [(f"s01_{r['entity_id']}.wav", r["sentence"]) for r in rows_of("entities.csv")]
+    items += [(f"s01_{r['entity_id']}_c{r['carrier_no']}.wav", r["sentence"]) for r in rows_of("entities.csv")]
     items += [(f"s01_{r['amount_id']}.wav", r["sentence"]) for r in rows_of("amounts.csv")]
+    items += [(f"s01_{r['date_id']}.wav", r["sentence"]) for r in rows_of("dates.csv")]
     items += [(f"s01_{r['question_id']}.wav", r["sentence"]) for r in rows_of("questions.csv")]
     with open(tmp / "t.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -149,19 +173,25 @@ def test_score(tmp: Path) -> None:
             w.writerow([file, "perfect", "clean", sentence, 300, "google:long@global"])
             w.writerow([file, "nodiacritics", "clean", fold(sentence), 350, "azure:hr-HR"])
             w.writerow([file, "broken", "clean", "ne razumijem" if "_t" in file else sentence, "", "azure:hr-HR"])
+            garble = file in ("s01_d01.wav", "s01_d02.wav")  # 2 of 10 dates wrong -> 18/20 amounts+dates
+            w.writerow([file, "datesbad", "clean", "negdje u jesen" if garble else sentence, 300, "azure:hr-HR"])
     r = subprocess.run([PY, str(HERE / "score.py"), "--transcripts", str(tmp / "t.csv"), "--out", str(tmp / "r.md")],
                        capture_output=True, text=True)
     check(r.returncode == 0, f"score.py exits 0 {r.stderr.strip()[:120]}")
     md = (tmp / "r.md").read_text(encoding="utf-8")
-    row = {v: next(line for line in md.splitlines() if line.startswith(f"| {v} |")) for v in ("perfect", "nodiacritics", "broken")}
+    row = {v: next(line for line in md.splitlines() if line.startswith(f"| {v} |")) for v in ("perfect", "nodiacritics", "broken", "datesbad")}
     check(row["perfect"].endswith("**PASS** |") and "100.0 %" in row["perfect"],
           "perfect transcripts pass every section (terms, entities, amounts, WER)")
     check(row["nodiacritics"].endswith("**PASS** |"), "diacritics-only errors still PASS: the verdict keys off relaxed")
     strict_cell = row["nodiacritics"].split(" | ")[2]
     check(strict_cell != "100.0 %", f"...while strict is reported lower ({strict_cell})")
     check(row["broken"].endswith("**NO-GO** |"), "terms at 0 % are a no-go even with other sections perfect")
+    check(row["datesbad"].endswith("**REVIEW** |") and "90.0 % (18/20)" in row["datesbad"],
+          "amounts and dates share one pooled gate: 18/20 = 90 % < 95 % is a review")
+    check("amounts/dates 90.0 % < 95 %" in md, "the pooled-gate miss is named in the reasons")
     check("Script not frozen" in md, "an unfrozen script is flagged on the report")
-    check("## Per entity" in md and "## Per amount" in md and "## Per question" in md, "per-section tables present")
+    check(all(f"## Per {x}" in md for x in ("entity", "amount", "date", "question")), "per-section tables present")
+    check("entity 160" in md and "date 40" in md, "row counts per section reported (40 entity + 10 date takes x 4 vendors)")
     check("google:long@global" in md and "## Models used" in md, "model usage reported")
 
 
@@ -169,7 +199,7 @@ def test_run_stt(tmp: Path) -> None:
     print("run_stt.py")
     (tmp / "clean").mkdir(exist_ok=True)
     (tmp / "noisy").mkdir(exist_ok=True)
-    for name in ["s01_t01_c1.wav", "s01_e01.wav"]:
+    for name in ["s01_t01_c1.wav", "s01_e01_c2.wav"]:
         write_wav(tmp / "clean" / name, np.zeros(1600))
         write_wav(tmp / "noisy" / name, np.zeros(1600))
     with open(tmp / "clean" / "manifest.csv", "w", newline="") as f:
@@ -177,7 +207,7 @@ def test_run_stt(tmp: Path) -> None:
         w.writerow(["file", "speaker", "section", "item_id", "term_id", "carrier_no", "duration_ms", "sample_rate",
                     "takes", "order_index", "recorded_at"])
         w.writerow(["s01_t01_c1.wav", "s01", "term", "t01_c1", "t01", 1, 100, 16000, 1, 1, "x"])
-        w.writerow(["s01_e01.wav", "s01", "entity", "e01", "", "", 100, 16000, 1, 2, "x"])
+        w.writerow(["s01_e01_c2.wav", "s01", "entity", "e01_c2", "", 2, 100, 16000, 1, 2, "x"])
     with open(tmp / "transcripts.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["file", "vendor", "condition", "transcript", "time_to_final_ms", "model"])

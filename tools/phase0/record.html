@@ -50,8 +50,8 @@
     <p class="keys">
       Serve this folder on localhost (see README) and use Chrome or Edge: the folder picker writes the
       WAV files and <code>manifest.csv</code> directly. In other browsers each take downloads instead.
-      The script is four files (<code>sentences.csv</code>, <code>entities.csv</code>,
-      <code>amounts.csv</code>, <code>questions.csv</code>: 125 takes). The order of all 125 is shuffled
+      The script is five files (<code>sentences.csv</code>, <code>entities.csv</code>,
+      <code>amounts.csv</code>, <code>dates.csv</code>, <code>questions.csv</code>: 160 takes). The order of all 160 is shuffled
       with the speaker ID as the seed; reopening the page resumes, skipping takes already in the folder.
       Recording is blocked until every row is <code>frozen</code> and no entity is a placeholder
       (add <code>?dryrun=1</code> to the URL for a test run).
@@ -60,7 +60,7 @@
   </section>
 
   <section class="card hidden" id="session">
-    <div id="meta"><span id="progress">0/125</span> · <span id="section"></span> · <span id="which"></span></div>
+    <div id="meta"><span id="progress">0/160</span> · <span id="section"></span> · <span id="which"></span></div>
     <div id="sentence"></div>
     <div id="state">Pritisnite i držite razmaknicu dok čitate.</div>
     <div id="meter"><div id="meterFill"></div></div>
@@ -82,8 +82,9 @@ const MANIFEST_NAME = 'manifest.csv'
 const MANIFEST_COLS = ['file', 'speaker', 'section', 'item_id', 'term_id', 'carrier_no', 'duration_ms', 'sample_rate', 'takes', 'order_index', 'recorded_at']
 const SCRIPT_FILES = {
   'sentences.csv': { section: 'term', count: 90, cols: ['term_id', 'term', 'critical', 'carrier_no', 'sentence', 'target_form', 'accepted_alternates', 'review_status'] },
-  'entities.csv': { section: 'entity', count: 15, cols: ['entity_id', 'entity_type', 'name', 'placeholder', 'sentence', 'target_form', 'accepted_alternates', 'review_status'] },
+  'entities.csv': { section: 'entity', count: 40, cols: ['entity_id', 'entity_type', 'name', 'placeholder', 'carrier_no', 'sentence', 'target_form', 'accepted_alternates', 'review_status'] },
   'amounts.csv': { section: 'amount', count: 10, cols: ['amount_id', 'amount_eur', 'sentence', 'review_status'] },
+  'dates.csv': { section: 'date', count: 10, cols: ['date_id', 'day', 'month', 'year', 'sentence', 'review_status'] },
   'questions.csv': { section: 'question', count: 10, cols: ['question_id', 'sentence', 'review_status'] },
 }
 const DRY_RUN = new URLSearchParams(location.search).get('dryrun') === '1'
@@ -135,8 +136,9 @@ function acceptScriptFile(name, text) {
 function buildItems() {
   const items = []
   for (const r of state.script['sentences.csv']) items.push({ section: 'term', item_id: `${r.term_id}_c${r.carrier_no}`, term_id: r.term_id, carrier_no: r.carrier_no, sentence: r.sentence, row: r })
-  for (const r of state.script['entities.csv']) items.push({ section: 'entity', item_id: r.entity_id, sentence: r.sentence, row: r })
+  for (const r of state.script['entities.csv']) items.push({ section: 'entity', item_id: `${r.entity_id}_c${r.carrier_no}`, carrier_no: r.carrier_no, sentence: r.sentence, row: r })
   for (const r of state.script['amounts.csv']) items.push({ section: 'amount', item_id: r.amount_id, sentence: r.sentence, row: r })
+  for (const r of state.script['dates.csv']) items.push({ section: 'date', item_id: r.date_id, sentence: r.sentence, row: r })
   for (const r of state.script['questions.csv']) items.push({ section: 'question', item_id: r.question_id, sentence: r.sentence, row: r })
   return items
 }
@@ -146,7 +148,7 @@ function scriptLoaded() {
   if (missing.length) { $('setupStatus').textContent = `Still needed: ${missing.join(', ')}`; return }
   state.rows = buildItems()
   const drafts = state.rows.filter((i) => i.row.review_status !== 'frozen').length
-  const placeholders = state.script['entities.csv'].filter((r) => r.placeholder === 'y').length
+  const placeholders = new Set(state.script['entities.csv'].filter((r) => r.placeholder === 'y').map((r) => r.entity_id)).size
   state.blockers = []
   if (drafts) state.blockers.push(`${drafts} row(s) not frozen`)
   if (placeholders) state.blockers.push(`${placeholders} placeholder entit${placeholders === 1 ? 'y' : 'ies'}`)
