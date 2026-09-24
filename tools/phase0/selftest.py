@@ -106,6 +106,45 @@ def test_script() -> None:
     check(len(terms) + len(ents) + len(amts) + len(dts) + len(qs) == 160, "160 takes per speaker")
 
 
+def test_assignment(tmp: Path) -> None:
+    print("assign.py")
+    import shutil
+
+    from assign import SPEAKERS, balance, build
+
+    r = subprocess.run([PY, str(HERE / "assign.py"), "--check"], capture_output=True, text=True)
+    check(r.returncode == 0, "committed assignment.csv matches the script ids and is balanced")
+    rows = build(HERE)
+    check(rows == build(HERE), "deterministic: two builds are identical")
+    for name in ("sentences.csv", "entities.csv", "amounts.csv", "dates.csv", "questions.csv"):
+        shutil.copy(HERE / name, tmp / name)
+    # Reword every sentence and reverse the row order: the assignment must not move.
+    for name in ("sentences.csv", "questions.csv"):
+        rs = list(csv.DictReader(open(tmp / name, encoding="utf-8")))
+        for x in rs:
+            x["sentence"] = "IZMIJENJENO " + x["sentence"]
+        with open(tmp / name, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=list(rs[0]), lineterminator="\n")
+            w.writeheader()
+            w.writerows(reversed(rs))
+    check(build(tmp) == rows, "assignment depends only on item ids (not on wording or row order)")
+
+    per_speaker, per_cell = balance(rows)
+    check(len(rows) == 160, "160 takes assigned")
+    check(max(per_speaker.values()) - min(per_speaker.values()) <= 1 and sorted(set(per_speaker.values())) == [87, 88],
+          f"takes per speaker are equal to within 1 ({sorted(per_speaker.values())})")
+    check(all(per_cell[(s, sec)] == n for s in SPEAKERS for sec, n in (("entity", 20), ("amount", 5), ("date", 5), ("question", 5))),
+          "every speaker records exactly half of each even-sized section")
+    check(all(per_cell[(s, "term")] in (52, 53) for s in SPEAKERS), "terms: 15 critical + 37 or 38 split takes each")
+    crit = [x for x in rows if x["critical"] == "y"]
+    check(len(crit) == 15 and all(x["speakers"] == "|".join(SPEAKERS) and x["complement"] == "" for x in crit),
+          "the 15 critical-term takes go to all six speakers")
+    split = [x for x in rows if x["critical"] == "n"]
+    check(all(len(x["speakers"].split("|")) == 3 and set(x["speakers"].split("|")) | set(x["complement"].split("|")) == set(SPEAKERS)
+              and not set(x["speakers"].split("|")) & set(x["complement"].split("|")) for x in split),
+          "every other take: 3 speakers + the 3 others as its complement, disjoint")
+
+
 def test_mix(tmp: Path) -> None:
     print("mix_noise.py")
     clean = tmp / "clean"
@@ -195,6 +234,61 @@ def test_score(tmp: Path) -> None:
     check("google:long@global" in md and "## Models used" in md, "model usage reported")
 
 
+def test_split_scoring(tmp: Path) -> None:
+    print("score.py split design and complement merge")
+    from assign import build
+
+    sentence = {}
+    for name, idf in (("sentences.csv", lambda r: f"{r['term_id']}_c{r['carrier_no']}"),
+                      ("entities.csv", lambda r: f"{r['entity_id']}_c{r['carrier_no']}"),
+                      ("amounts.csv", lambda r: r["amount_id"]), ("dates.csv", lambda r: r["date_id"]),
+                      ("questions.csv", lambda r: r["question_id"])):
+        for r in rows_of(name):
+            sentence[idf(r)] = r["sentence"]
+    assignment = build(HERE)
+
+    def write(path: Path, include_complement: bool, bad_terms: int = 0) -> None:
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(["file", "vendor", "condition", "transcript", "time_to_final_ms", "model"])
+            misses = 0
+            for a in assignment:
+                who = a["speakers"].split("|") + (a["complement"].split("|") if include_complement and a["complement"] else [])
+                for spk in who:
+                    text = sentence[a["item_id"]]
+                    if a["section"] == "term" and a["critical"] == "n" and misses < bad_terms:
+                        text, misses = "ne razumijem", misses + 1
+                    w.writerow([f"{spk}_{a['item_id']}.wav", "vendor", "clean", text, 300, "azure:hr-HR"])
+
+    def score(path: Path) -> str:
+        r = subprocess.run([PY, str(HERE / "score.py"), "--transcripts", str(path), "--out", str(tmp / "s.md")],
+                           capture_output=True, text=True)
+        check(r.returncode == 0, f"score.py exits 0 {r.stderr.strip()[:120]}")
+        return (tmp / "s.md").read_text(encoding="utf-8")
+
+    write(tmp / "split.csv", include_complement=False)
+    md = score(tmp / "split.csv")
+    check("Design found: **split (primary sessions only)**" in md and "primary 525/525, complement 0/435" in md,
+          "split run: design and coverage reported (525 primary takes = 15x6 + 145x3; 0 of 435 complement)")
+    check("| Terms | 90 % | 315 | ±3.3 pp | 540 | ±2.5 pp |" in md, "terms: 315 observations (15x6 + 75x3), interval stated next to the full design")
+    check("| Entities | 80 % | 120 | ±7.2 pp | 240 | ±5.1 pp |" in md, "entities: 120 observations, widened interval stated")
+    check("| Amounts + dates | 95 % | 60 | ±5.5 pp | 120 | ±3.9 pp |" in md, "amounts + dates: 60 observations, widened interval stated")
+    check("a single term has 9–18 observations" in md, "floor granularity reported (9 per split term, 18 per critical term)")
+    check("**PASS**" in md, "perfect split transcripts pass")
+
+    write(tmp / "split_review.csv", include_complement=False, bad_terms=35)  # 280/315 = 88.9 %: the REVIEW band
+    md = score(tmp / "split_review.csv")
+    check("| vendor | 88.9 %" in md and md.count("**REVIEW**") == 1 and "record the complement sessions" in md,
+          "split run in the REVIEW band (88.9 %) points to the complement sessions")
+
+    write(tmp / "full.csv", include_complement=True)
+    md = score(tmp / "full.csv")
+    check("Design found: **full (split + complement sessions merged)**" in md and "complement 435/435" in md,
+          "complement merged: design reported as full")
+    check("| Terms | 90 % | 540 | ±2.5 pp | 540 | ±2.5 pp |" in md, "merged run restores the full-design counts")
+    check("record the complement sessions" not in md, "no complement hint once merged")
+
+
 def test_run_stt(tmp: Path) -> None:
     print("run_stt.py")
     (tmp / "clean").mkdir(exist_ok=True)
@@ -216,6 +310,18 @@ def test_run_stt(tmp: Path) -> None:
             "--clean-dir", str(tmp / "clean"), "--noisy-dir", str(tmp / "noisy"), "--out", str(tmp / "transcripts.csv")]
     r = subprocess.run(args, capture_output=True, text=True, cwd=tmp)
     check(r.returncode == 0 and "1 results already done; 7 to run" in r.stdout, "resume: 8 tasks minus 1 done = 7")
+    # A complement session's manifest merges with the primary one: its takes just add tasks.
+    write_wav(tmp / "clean" / "s01_a01.wav", np.zeros(1600))
+    write_wav(tmp / "noisy" / "s01_a01.wav", np.zeros(1600))
+    with open(tmp / "complement.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["file", "speaker", "session", "section", "item_id", "term_id", "carrier_no", "duration_ms", "sample_rate",
+                    "takes", "order_index", "recorded_at"])
+        w.writerow(["s01_a01.wav", "s01", "complement", "amount", "a01", "", "", 100, 16000, 1, 1, "x"])
+    args2 = args[:4] + [str(tmp / "clean" / "manifest.csv"), str(tmp / "complement.csv")] + args[5:]
+    r = subprocess.run(args2, capture_output=True, text=True, cwd=tmp)
+    check(r.returncode == 0 and "3 takes in manifest" in r.stdout and "11 to run" in r.stdout,
+          "primary + complement manifests merge: 3 takes, 12 tasks minus 1 done = 11")
 
     from run_stt import Google, paced_chunks
 
@@ -270,8 +376,10 @@ def main() -> int:
     test_matching()
     with tempfile.TemporaryDirectory() as d:
         tmp = Path(d)
+        test_assignment(tmp)
         test_mix(tmp)
         test_score(tmp)
+        test_split_scoring(tmp)
         test_run_stt(tmp)
     print(f"\n{'all checks passed' if not failures else f'{len(failures)} check(s) failed'}")
     return 1 if failures else 0

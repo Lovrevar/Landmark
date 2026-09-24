@@ -32,6 +32,12 @@ Gates, per vendor, clean + noisy pooled (plan §10, phase 0):
   questions  WER <= 15 %
 Not scored here: entity recoverability through the real search tools (a later step),
 TTS, turn-taking, and the platform latency floor.
+
+Split design (assignment.csv): the 5 critical terms are recorded by all six speakers, every
+other take by 3 of 6. All intervals, floors and verdicts use the observations actually
+present, and results.md states them next to the full-design figures. Complement sessions
+(each speaker's other half) merge in simply by being present: their takes are ordinary rows
+of transcripts.csv, and the report says which design it found (split, partial, full).
 """
 
 from __future__ import annotations
@@ -298,6 +304,15 @@ class Tally:
         return (self.strict if strict else self.relaxed) / self.n if self.n else float("nan")
 
 
+def half_width(p: float, n: int) -> float:
+    """95 % half-width at proportion p for n observations (normal approximation)."""
+    return 1.959964 * math.sqrt(p * (1 - p) / n) if n else float("nan")
+
+
+def pp(x: float) -> str:
+    return "—" if math.isnan(x) else f"±{100 * x:.1f} pp"
+
+
 def pct(x: float) -> str:
     return "—" if math.isnan(x) else f"{100 * x:.1f} %"
 
@@ -333,6 +348,7 @@ def main() -> int:
     amounts = {r["amount_id"]: r for r in load("amounts.csv")}
     dates = {r["date_id"]: r for r in load("dates.csv")}
     questions = {r["question_id"]: r for r in load("questions.csv")}
+    assignment = {r["item_id"]: r for r in load("assignment.csv")}
 
     with open(args.transcripts, newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
@@ -423,6 +439,58 @@ def main() -> int:
     if drafts or placeholders:
         w(f"> ⚠️ Script not frozen: {drafts} row(s) still `draft`, {placeholders} placeholder entit"
           f"{'y' if placeholders == 1 else 'ies'}. Results from an unfrozen script are not a phase 0 decision.\n")
+
+    # ---- design, coverage and precision --------------------------------------------
+    recorded = {r["file"] for r in rows}
+    sessions = Counter()
+    for f in recorded:
+        spk, item = f[:3], f[4:-4]
+        a = assignment.get(item)
+        if a is None:
+            continue
+        if spk in a["speakers"].split("|"):
+            sessions["primary"] += 1
+        elif a["complement"] and spk in a["complement"].split("|"):
+            sessions["complement"] += 1
+        else:
+            sessions["unassigned"] += 1
+    expected_primary = sum(len(a["speakers"].split("|")) for a in assignment.values())
+    expected_complement = sum(len(a["complement"].split("|")) for a in assignment.values() if a["complement"])
+    if sessions["complement"] == 0:
+        design = "split (primary sessions only)"
+    elif sessions["complement"] >= expected_complement:
+        design = "full (split + complement sessions merged)"
+    else:
+        design = "partial (some complement sessions merged)"
+    split_design = sessions["complement"] < expected_complement
+    n_cond = max(1, len(conditions))
+    w("## Design and precision\n")
+    w(f"Design found: **{design}**. Recorded takes: primary {sessions['primary']}/{expected_primary}, "
+      f"complement {sessions['complement']}/{expected_complement}"
+      + (f", {sessions['unassigned']} recorded by a speaker not assigned to them" if sessions["unassigned"] else "")
+      + f". Every interval, floor and verdict below uses the observations actually present, pooled over "
+      f"{n_cond} condition(s).\n")
+    full = {"term": 90 * 6 * n_cond, "entity": 40 * 6 * n_cond, "numeric": 20 * 6 * n_cond, "question": 10 * 6 * n_cond}
+    gates = [("Terms", "term", TERM_PASS), ("Entities", "entity", ENTITY_PASS), ("Amounts + dates", "numeric", NUMERIC_PASS)]
+    w("| Gate | At | Observations per vendor | 95 % half-width | Full design | Full-design half-width |")
+    w("|---|---|---|---|---|---|")
+    for label, key, p in gates:
+        ns = sorted({T[(key, v)].n for v in vendors if T[(key, v)].n})
+        n_txt = "—" if not ns else (str(ns[0]) if len(ns) == 1 else f"{ns[0]}–{ns[-1]}")
+        w(f"| {label} | {int(p * 100)} % | {n_txt} | {pp(half_width(p, ns[0])) if ns else '—'} | "
+          f"{full[key]} | {pp(half_width(p, full[key]))} |")
+    q_utts = sorted({sum(1 for r in rows if r['vendor'] == v and ITEM_RE.match(r['file']) and ITEM_RE.match(r['file']).group(2)[0] == 'q') for v in vendors})
+    w(f"| Question WER | ≤ 15 % | {q_utts[-1] if q_utts else '—'} utterances | — | {full['question']} utterances | — |")
+    term_ns = sorted({T[("term_t", v, x)].n for v in vendors for x in term_info if T[("term_t", v, x)].n})
+    spk_ns = sorted({T[("term_s", v, s)].n for v in vendors for s in speakers if T[("term_s", v, s)].n})
+    if term_ns:
+        w(f"\nFloor granularity: a single term has {term_ns[0]}–{term_ns[-1]} observations "
+          f"(one miss moves it by {100 / term_ns[0]:.1f} pp at the smallest); a single speaker has "
+          f"{spk_ns[0] if spk_ns else 0}–{spk_ns[-1] if spk_ns else 0} term observations. "
+          "Full design: 36 per term, 180 per speaker.\n")
+    if split_design:
+        w("> Split design: intervals are wider than the plan's full design. If a gate lands in the REVIEW band, "
+          "record the complement sessions (README, step 6) and re-run: they merge in and restore the full counts.\n")
 
     # ---- verdict ----------------------------------------------------------------
     w("## Verdict against the frozen gates\n")
