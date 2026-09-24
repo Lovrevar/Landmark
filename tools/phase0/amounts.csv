@@ -1,11 +1,11 @@
 amount_id,amount_eur,sentence,review_status
-a01,45,Trošak dostave iznosi četrdeset pet eura.,draft
-a02,380,Za popravak je potrošeno tristo osamdeset eura.,draft
-a03,1250,Račun za elektromaterijal glasi na tisuću dvjesto pedeset eura.,draft
-a04,12500.50,Avans iznosi dvanaest tisuća petsto eura i pedeset centi.,draft
-a05,87000,Situacija za ožujak iznosi osamdeset sedam tisuća eura.,draft
-a06,350000,Ugovor s izvođačem vrijedan je tristo pedeset tisuća eura.,draft
-a07,1200000,Proračun druge faze je milijun dvjesto tisuća eura.,draft
-a08,4750000,Zemljište smo platili četiri milijuna sedamsto pedeset tisuća eura.,draft
-a09,23400000,Ukupna investicija iznosi dvadeset tri milijuna četiristo tisuća eura.,draft
-a10,999.99,Mjesečni najam skele je devetsto devedeset devet eura i devedeset devet centi.,draft
+a01,45,Trošak dostave iznosi četrdeset pet eura.,frozen
+a02,380,Za popravak je potrošeno tristo osamdeset eura.,frozen
+a03,1250,Račun za elektromaterijal glasi na tisuću dvjesto pedeset eura.,frozen
+a04,12500.50,Avans iznosi dvanaest tisuća petsto eura i pedeset centi.,frozen
+a05,87000,Situacija za ožujak iznosi osamdeset sedam tisuća eura.,frozen
+a06,350000,Ugovor s izvođačem vrijedan je tristo pedeset tisuća eura.,frozen
+a07,1200000,Proračun druge faze je milijun dvjesto tisuća eura.,frozen
+a08,4750000,Zemljište smo platili četiri milijuna sedamsto pedeset tisuća eura.,frozen
+a09,23400000,Ukupna investicija iznosi dvadeset tri milijuna četiristo tisuća eura.,frozen
+a10,999.99,Mjesečni najam skele je devetsto devedeset devet eura i devedeset devet centi.,frozen

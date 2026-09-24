@@ -1,11 +1,11 @@
 date_id,day,month,year,sentence,review_status
-d01,15,10,,Rok za predaju situacije je petnaesti listopada.,draft
-d02,1,3,2027,Radovi počinju prvog ožujka dvije tisuće dvadeset sedme.,draft
-d03,28,2,,Primopredaja je zakazana za dvadeset osmi veljače.,draft
-d04,3,5,,Do trećeg svibnja moramo dobiti uporabnu dozvolu.,draft
-d05,31,12,2026,Ugovor vrijedi do trideset prvog prosinca dvije tisuće dvadeset šeste.,draft
-d06,20,6,,Sastanak s investitorom je dvadesetog lipnja.,draft
-d07,7,1,,Račun je dospio sedmog siječnja.,draft
-d08,12,11,2026,Nadzorni inženjer dolazi dvanaestog studenoga dvije tisuće dvadeset šeste.,draft
-d09,22,9,,Isplata avansa bila je dvadeset drugog rujna.,draft
-d10,16,8,2028,Planirani završetak je šesnaesti kolovoza dvije tisuće dvadeset osme.,draft
+d01,15,10,,Rok za predaju situacije je petnaesti listopada.,frozen
+d02,1,3,2027,Radovi počinju prvog ožujka dvije tisuće dvadeset sedme.,frozen
+d03,28,2,,Primopredaja je zakazana za dvadeset osmi veljače.,frozen
+d04,3,5,,Do trećeg svibnja moramo dobiti uporabnu dozvolu.,frozen
+d05,31,12,2026,Ugovor vrijedi do trideset prvog prosinca dvije tisuće dvadeset šeste.,frozen
+d06,20,6,,Sastanak s investitorom je dvadesetog lipnja.,frozen
+d07,7,1,,Račun je dospio sedmog siječnja.,frozen
+d08,12,11,2026,Nadzorni inženjer dolazi dvanaestog studenoga dvije tisuće dvadeset šeste.,frozen
+d09,22,9,,Isplata avansa bila je dvadeset drugog rujna.,frozen
+d10,16,8,2028,Planirani završetak je šesnaesti kolovoza dvije tisuće dvadeset osme.,frozen

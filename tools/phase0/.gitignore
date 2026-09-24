@@ -6,3 +6,4 @@ noisy/
 transcripts.csv
 stt_errors.log
 __pycache__/
+.venv/
