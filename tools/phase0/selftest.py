@@ -92,6 +92,18 @@ def test_script() -> None:
     diacritic = sum(bool(re.search(r"[čćđšžČĆĐŠŽ]", n["name"])) for n in names.values())
     check(legal >= 5 and diacritic >= 3, f"name mix: {legal} legal forms (>= 5), {diacritic} with diacritics (>= 3)")
     check(all(r["placeholder"] in ("y", "n") for r in ents), "entities.csv: placeholder flag on every row")
+    check(all(r["placeholder"] == "n" for r in ents), "no placeholder entities remain (real names from the dev database)")
+    check(all(len({x["target_form"] for x in ents if x["entity_id"] == e}) == 1 for e in names),
+          "both carriers of an entity use the same spoken target")
+    all_targets = {r["target_form"].lower() for r in ents}
+    own = {r["entity_id"]: r["target_form"].lower() for r in ents}
+    clashes = [a for r in ents for a in r["accepted_alternates"].split("|") if a and a.lower() in all_targets - {own[r["entity_id"]]}]
+    check(not clashes, "no entity alternate is another entity's name")
+    tic = [r for r in terms if r["term_id"] == "t25"]
+    check(all(not re.search(r"\b(te i ce|t i c)\b", r["accepted_alternates"]) for r in tic),
+          "TIC alternates are one-syllable spellings only (it is said 'tic', never spelled out)")
+    check(all(r["review_status"] == "draft" for f in ("sentences.csv", "entities.csv", "amounts.csv", "dates.csv", "questions.csv")
+              for r in rows_of(f)), "everything is still draft (the flip to frozen is the reviewers' step)")
     amts = rows_of("amounts.csv")
     check(len(amts) == 10, "amounts.csv: 10 rows")
     check(all(any(abs(a - float(r["amount_eur"])) < 0.005 for a in parse_amounts(r["sentence"])) for r in amts),
@@ -179,6 +191,17 @@ def test_matching() -> None:
     check(matches("iznos bez PDV-a je", ["PDV-a"]) == (True, True), "hyphen deleted on both sides: PDV-a")
     check(matches("iznos bez tax je", ["PDV-a", "pdva"]) == (False, False), "no alias match is a miss")
     check(matches("posalji izvodacu popis", ["izvođaču"]) == (False, True), "diacritics-only difference: strict miss, relaxed hit")
+    check(matches("prema tiću za osijek", ["TIC-u", "ticu", "tic-u", "tiku", "tik-u", "tiću"]) == (True, True), "alias: 'tiću' scores for TIC-u")
+    check(matches("dobavljač nije poslao r jedan račun", ["R1 račun", "er jedan račun", "r jedan račun", "r 1 račun"]) == (True, True),
+          "alias: multi-word 'r jedan račun' scores for R1 račun")
+    check(matches("račune od tvrtke geo informatički studio plaćamo", ["Geo-informatički studio d.o.o.", "geo informatički studio"],
+                  strip_legal=True) == (True, True), "entity: multi-word alternate with the legal form dropped")
+    check(matches("je li zona trideset jedan dobila dozvolu", ["Zona 31", "zona trideset jedan", "zona trideset i jedan"],
+                  strip_legal=True) == (True, True), "entity: number spoken as words ('Zona trideset jedan')")
+    check(matches("je li el roj potpisao ugovor", ["El Roy d.o.o.", "el roj", "elroy", "elroj"], strip_legal=True) == (True, True),
+          "entity: sound spelling of a foreign name ('El Roj')")
+    check(matches("je li el potpisao ugovor", ["El Roy d.o.o.", "el roj"], strip_legal=True) == (False, False),
+          "entity: a partial name is still a miss")
     check(matches("dugujemo tvrtki Horvat gradnja", ["Horvat gradnja d.o.o."], strip_legal=True) == (True, True),
           "entity: legal form optional")
     check(matches("Schneider bau GmbH", ["Schneider Bau GmbH"], strip_legal=True)[1], "entity: foreign legal form optional")

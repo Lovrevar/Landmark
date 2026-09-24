@@ -1,41 +1,41 @@
 entity_id,entity_type,name,placeholder,carrier_no,sentence,target_form,accepted_alternates,review_status
-e01,project,Stambena zgrada Lipa,y,1,Kako napreduje Stambena zgrada Lipa?,Stambena zgrada Lipa,,draft
-e01,project,Stambena zgrada Lipa,y,2,Na projektu Stambena zgrada Lipa kasni fasada.,Stambena zgrada Lipa,,draft
-e02,project,Vila Maslina,y,1,Je li Vila Maslina već u prodaji?,Vila Maslina,,draft
-e02,project,Vila Maslina,y,2,Za projekt Vila Maslina još nemamo uporabnu dozvolu.,Vila Maslina,,draft
-e03,project,Poslovni centar Zapad,y,1,Kada se završava Poslovni centar Zapad?,Poslovni centar Zapad,,draft
-e03,project,Poslovni centar Zapad,y,2,Troškovnik projekta Poslovni centar Zapad treba ažurirati.,Poslovni centar Zapad,,draft
-e04,project,Kvart Sunčana obala,y,1,Koliko stanova ima Kvart Sunčana obala?,Kvart Sunčana obala,,draft
-e04,project,Kvart Sunčana obala,y,2,U projektu Kvart Sunčana obala prodano je pola stanova.,Kvart Sunčana obala,,draft
-e05,project,Residence Marina,y,1,Je li Residence Marina završena?,Residence Marina,rezidens marina|rezidenc marina,draft
-e05,project,Residence Marina,y,2,Za Residence Marina tražimo novog izvođača.,Residence Marina,rezidens marina|rezidenc marina,draft
-e06,project,Park Jadran,y,1,Je li Park Jadran dobio građevinsku dozvolu?,Park Jadran,,draft
-e06,project,Park Jadran,y,2,Financijski pregled projekta Park Jadran pošalji direktoru.,Park Jadran,,draft
-e07,project,Garaže Čakovec,y,1,Jesu li Garaže Čakovec u proračunu?,Garaže Čakovec,,draft
-e07,project,Garaže Čakovec,y,2,Gradnja projekta Garaže Čakovec počinje u proljeće.,Garaže Čakovec,,draft
-e08,project,Loft Tvornica,y,1,Je li Loft Tvornica spreman za primopredaju?,Loft Tvornica,,draft
-e08,project,Loft Tvornica,y,2,Na projektu Loft Tvornica radi pet izvođača.,Loft Tvornica,,draft
-e09,project,Naselje Đurđevac,y,1,Koliko košta Naselje Đurđevac?,Naselje Đurđevac,,draft
-e09,project,Naselje Đurđevac,y,2,Za projekt Naselje Đurđevac potpisali smo aneks ugovora.,Naselje Đurđevac,,draft
-e10,project,Rezidencija Kaštel,y,1,Je li Rezidencija Kaštel u drugoj fazi?,Rezidencija Kaštel,,draft
-e10,project,Rezidencija Kaštel,y,2,Izvođači na projektu Rezidencija Kaštel traže avans.,Rezidencija Kaštel,,draft
-e11,subcontractor,Horvat gradnja d.o.o.,y,1,Je li Horvat gradnja d.o.o. poslao situaciju?,Horvat gradnja d.o.o.,,draft
-e11,subcontractor,Horvat gradnja d.o.o.,y,2,Koliko još dugujemo tvrtki Horvat gradnja d.o.o. za fasadu?,Horvat gradnja d.o.o.,,draft
-e12,subcontractor,Kovačević i sinovi j.d.o.o.,y,1,Radi li Kovačević i sinovi j.d.o.o. još na Funtani?,Kovačević i sinovi j.d.o.o.,,draft
-e12,subcontractor,Kovačević i sinovi j.d.o.o.,y,2,Ugovor s tvrtkom Kovačević i sinovi j.d.o.o. ističe u lipnju.,Kovačević i sinovi j.d.o.o.,,draft
-e13,subcontractor,Elektro Babić obrt,y,1,Je li Elektro Babić obrt završio instalacije?,Elektro Babić obrt,,draft
-e13,subcontractor,Elektro Babić obrt,y,2,Račun od izvođača Elektro Babić obrt stigao je jučer.,Elektro Babić obrt,,draft
-e14,subcontractor,Novak inženjering d.o.o.,y,1,Koje ugovore ima Novak inženjering d.o.o.?,Novak inženjering d.o.o.,,draft
-e14,subcontractor,Novak inženjering d.o.o.,y,2,S tvrtkom Novak inženjering d.o.o. imamo tri ugovora.,Novak inženjering d.o.o.,,draft
-e15,subcontractor,Stolarija Jurić obrt,y,1,Kada Stolarija Jurić obrt montira prozore?,Stolarija Jurić obrt,,draft
-e15,subcontractor,Stolarija Jurić obrt,y,2,Ponudu od izvođača Stolarija Jurić obrt treba odobriti.,Stolarija Jurić obrt,,draft
-e16,subcontractor,Hidro Šimić d.o.o.,y,1,Je li Hidro Šimić d.o.o. dostavio jamstvo?,Hidro Šimić d.o.o.,,draft
-e16,subcontractor,Hidro Šimić d.o.o.,y,2,Tvrtki Hidro Šimić d.o.o. isplatili smo avans.,Hidro Šimić d.o.o.,,draft
-e17,subcontractor,Schneider Bau GmbH,y,1,Ima li Schneider Bau GmbH otvorenih računa?,Schneider Bau GmbH,šnajder bau|schneider bau,draft
-e17,subcontractor,Schneider Bau GmbH,y,2,S tvrtkom Schneider Bau GmbH potpisali smo ugovor za fasadu.,Schneider Bau GmbH,šnajder bau|schneider bau,draft
-e18,subcontractor,Tehnoplan d.o.o.,y,1,Je li Tehnoplan d.o.o. predao troškovnik?,Tehnoplan d.o.o.,,draft
-e18,subcontractor,Tehnoplan d.o.o.,y,2,Plaćanja prema tvrtki Tehnoplan d.o.o. kasne dva tjedna.,Tehnoplan d.o.o.,,draft
-e19,subcontractor,Petrović krovovi obrt,y,1,Je li Petrović krovovi obrt popravio krov?,Petrović krovovi obrt,,draft
-e19,subcontractor,Petrović krovovi obrt,y,2,Izvođaču Petrović krovovi obrt treba poslati nacrt ugovora.,Petrović krovovi obrt,,draft
-e20,subcontractor,Adriatic Steel d.o.o.,y,1,Kada Adriatic Steel d.o.o. isporučuje armaturu?,Adriatic Steel d.o.o.,adrijatik stil|adriatik stil,draft
-e20,subcontractor,Adriatic Steel d.o.o.,y,2,Narudžbu od tvrtke Adriatic Steel d.o.o. još nismo potvrdili.,Adriatic Steel d.o.o.,adrijatik stil|adriatik stil,draft
+e01,project,Tar,n,1,Je li Tar još u izgradnji?,Tar,,draft
+e01,project,Tar,n,2,Na projektu Tar kasne radovi na fasadi.,Tar,,draft
+e02,project,Precko Zapad,n,1,Kada se završava Prečko Zapad?,Prečko Zapad,,draft
+e02,project,Precko Zapad,n,2,Troškovnik projekta Prečko Zapad treba ažurirati.,Prečko Zapad,,draft
+e03,project,Zona 31,n,1,Je li Zona 31 dobila građevinsku dozvolu?,Zona 31,zona trideset jedan|zona trideset i jedan,draft
+e03,project,Zona 31,n,2,Za projekt Zona 31 potpisali smo novi ugovor.,Zona 31,zona trideset jedan|zona trideset i jedan,draft
+e04,project,Zabok,n,1,Je li Zabok još u okviru proračuna?,Zabok,,draft
+e04,project,Zabok,n,2,Na projektu Zabok radi pet izvođača.,Zabok,,draft
+e05,project,Samobor,n,1,Je li Samobor već dobio građevinsku dozvolu?,Samobor,,draft
+e05,project,Samobor,n,2,Za projekt Samobor još nemamo glavnog izvođača.,Samobor,,draft
+e06,project,Funtana,n,1,Je li Funtana spremna za primopredaju?,Funtana,,draft
+e06,project,Funtana,n,2,Financijski pregled projekta Funtana pošalji direktoru.,Funtana,,draft
+e07,project,Mala Savska Opatovina,n,1,Koliko košta Mala Savska Opatovina?,Mala Savska Opatovina,,draft
+e07,project,Mala Savska Opatovina,n,2,Na projektu Mala Savska Opatovina kasni fasada.,Mala Savska Opatovina,,draft
+e08,project,Nin-retail,n,1,Je li Nin još u fazi planiranja?,Nin,,draft
+e08,project,Nin-retail,n,2,Za projekt Nin kupili smo još jednu parcelu.,Nin,,draft
+e09,project,Jastrebarsko - Retail,n,1,Ima li Jastrebarsko već troškovnik?,Jastrebarsko,,draft
+e09,project,Jastrebarsko - Retail,n,2,Ugovore za projekt Jastrebarsko potpisujemo idući tjedan.,Jastrebarsko,,draft
+e10,project,Srebrenjak,n,1,Je li Srebrenjak već u izgradnji?,Srebrenjak,,draft
+e10,project,Srebrenjak,n,2,Izvođači na projektu Srebrenjak traže avans.,Srebrenjak,,draft
+e11,subcontractor,GEO-INFORMATIČKI STUDIO d.o.o.,n,1,Je li Geo-informatički studio d.o.o. poslao novi račun?,Geo-informatički studio d.o.o.,geo informatički studio|geoinformatički studio,draft
+e11,subcontractor,GEO-INFORMATIČKI STUDIO d.o.o.,n,2,Račune od tvrtke Geo-informatički studio d.o.o. plaćamo svaki mjesec.,Geo-informatički studio d.o.o.,geo informatički studio|geoinformatički studio,draft
+e12,subcontractor,ŠPINA d.o.o.,n,1,Je li Špina d.o.o. dostavila ponudu?,Špina d.o.o.,,draft
+e12,subcontractor,ŠPINA d.o.o.,n,2,S tvrtkom Špina d.o.o. imamo ugovor za vodoinstalacije.,Špina d.o.o.,,draft
+e13,subcontractor,HEP ELEKTRA d.o.o.,n,1,Je li HEP Elektra spojila struju na gradilištu?,HEP Elektra,,draft
+e13,subcontractor,HEP ELEKTRA d.o.o.,n,2,Račun od tvrtke HEP Elektra stigao je jučer.,HEP Elektra,,draft
+e14,subcontractor,EL ROY d.o.o.,n,1,Je li El Roy d.o.o. potpisao ugovor za Tar?,El Roy d.o.o.,el roj|elroy|elroj,draft
+e14,subcontractor,EL ROY d.o.o.,n,2,S izvođačem El Roy d.o.o. imamo najveći ugovor na projektu.,El Roy d.o.o.,el roj|elroy|elroj,draft
+e15,subcontractor,ACO GRAĐEVINSKI ELEMENTI d.o.o.,n,1,Je li ACO Građevinski elementi isporučio kanalice?,ACO Građevinski elementi,,draft
+e15,subcontractor,ACO GRAĐEVINSKI ELEMENTI d.o.o.,n,2,Narudžbu od tvrtke ACO Građevinski elementi još nismo potvrdili.,ACO Građevinski elementi,,draft
+e16,subcontractor,GEOENERGETIKA SOLUTIONS d.o.o.,n,1,Je li Geoenergetika Solutions d.o.o. predala elaborat?,Geoenergetika Solutions d.o.o.,geo energetika solutions,draft
+e16,subcontractor,GEOENERGETIKA SOLUTIONS d.o.o.,n,2,Plaćanja prema tvrtki Geoenergetika Solutions d.o.o. kasne dva tjedna.,Geoenergetika Solutions d.o.o.,geo energetika solutions,draft
+e17,subcontractor,DRUGI FORMAT d.o.o.,n,1,Radi li Drugi format d.o.o. još na Funtani?,Drugi format d.o.o.,,draft
+e17,subcontractor,DRUGI FORMAT d.o.o.,n,2,Ugovor s tvrtkom Drugi format d.o.o. ističe u lipnju.,Drugi format d.o.o.,,draft
+e18,subcontractor,TRUTANIĆ d.o.o.,n,1,Je li Trutanić d.o.o. dostavio jamstvo?,Trutanić d.o.o.,,draft
+e18,subcontractor,TRUTANIĆ d.o.o.,n,2,Tvrtki Trutanić d.o.o. isplatili smo avans.,Trutanić d.o.o.,,draft
+e19,subcontractor,KERAMIKA FRIŠČIĆ d.o.o.,n,1,Kada Keramika Friščić d.o.o. dolazi postavljati pločice?,Keramika Friščić d.o.o.,,draft
+e19,subcontractor,KERAMIKA FRIŠČIĆ d.o.o.,n,2,Ponudu od tvrtke Keramika Friščić d.o.o. treba odobriti.,Keramika Friščić d.o.o.,,draft
+e20,subcontractor,CERAMICA KOREN j.d.o.o.,n,1,Je li Ceramica Koren j.d.o.o. poslala račun za pločice?,Ceramica Koren j.d.o.o.,čeramika koren|ceramika koren,draft
+e20,subcontractor,CERAMICA KOREN j.d.o.o.,n,2,Pločice od tvrtke Ceramica Koren j.d.o.o. stižu u petak.,Ceramica Koren j.d.o.o.,čeramika koren|ceramika koren,draft
