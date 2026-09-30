@@ -251,7 +251,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ## 4. Supervision
 
 ### SUP-1 · High · Contract comments never load or save
-- **Check:** Confirmed. **Status:** Open
+- **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(supervision))
 - **Where:** [SiteManagement/index.tsx:307-321](../src/components/Supervision/SiteManagement/index.tsx#L307-L321) passes `subcontractor.id`, which in the Site Management tree is the **contract** id; `subcontractor_comments.subcontractor_id` references `subcontractors(id)` ([baseline:7107](../supabase/migrations/00000000000000_baseline_schema.sql#L7107)).
 - **What happens:** reads always return nothing; inserts fail with a foreign-key error ("add
   failed" toast).
@@ -259,13 +259,16 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   also carries the contract id.
 
 ### SUP-2 · Medium · Subcontractor payments page shows the wrong phase
+- **Status:** Fixed on `fix/defect-backlog` (fix(supervision)): `contract_id` selected, `!inner` join, no fallback to another contract
 - **Where:** `Supervision/Payments` service: the invoice embed does not select `contract_id`, so the lookup always falls back to the supplier's first contract, in any project. The embed is also not `!inner`, so all payments are fetched and filtered client-side (see SUP-3).
 
 ### SUP-3 · Medium · Unpaginated lists hit the 1000-row cap
+- **Status:** Fixed on `fix/defect-backlog` (fix(supervision)): new `src/lib/fetchAllRows.ts`, used by the register, invoices, payments and work logs
 - **Where:** subcontractor register, supervision invoices, supervision payments, work logs.
 - **What happens:** older rows silently disappear once a table passes 1000 rows.
 
 ### SUP-4 · Medium · Contract status and subcontractor completion never change
+- **Status:** Partly fixed on `fix/defect-backlog` (fix(supervision)): the dashboard card now counts crews with a `work_finished` log this week. **Open decision:** contract status transitions. Site Management lists only draft/active contracts, so completing a contract would drop it from every phase total; decide how completed contracts should appear before adding a status control
 - New contracts are always `active` and nothing moves them to `completed` or `terminated`.
   `subcontractors.completed_at` is never written, so the dashboard's "completed this week" is
   always 0.

@@ -36,7 +36,6 @@ export async function fetchSupervisionDashboard(): Promise<SupervisionDashboardD
     { data: contractsData, error: contractsError },
     { data: invoicesData, error: invoicesError },
     { data: recentLogsData, error: recentLogsError },
-    { data: completedSubsData, error: completedSubsError }
   ] = await Promise.all([
     supabase
       .from('work_logs')
@@ -65,24 +64,20 @@ export async function fetchSupervisionDashboard(): Promise<SupervisionDashboardD
       .gte('date', weekStart)
       .lte('date', weekEnd)
       .order('date', { ascending: false }),
-    // Subcontractor-level completion timestamp (one row per subcontractor — no
-    // per-contract double counting).
-    supabase
-      .from('subcontractors')
-      .select('id, completed_at')
-      .not('completed_at', 'is', null)
   ])
 
   if (weekLogsError) throw weekLogsError
   if (contractsError) throw contractsError
   if (invoicesError) throw invoicesError
   if (recentLogsError) throw recentLogsError
-  if (completedSubsError) throw completedSubsError
 
-  const completedThisWeek = (completedSubsData || []).filter(s => {
-    const day = (s.completed_at || '').slice(0, 10)
-    return day >= weekStart && day <= weekEnd
-  }).length
+  // Crews that logged finished work this week. subcontractors.completed_at, the previous source,
+  // is never written by the app, so the card always read 0.
+  const completedThisWeek = new Set(
+    (weekLogsData || [])
+      .filter(log => log.status === 'work_finished' && log.subcontractor_id)
+      .map(log => log.subcontractor_id)
+  ).size
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const weekLogs: WorkLog[] = (weekLogsData || []).map((log: any) => ({

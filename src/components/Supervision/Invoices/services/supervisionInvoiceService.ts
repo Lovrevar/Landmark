@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
+import { fetchAllRows } from '../../../../lib/fetchAllRows'
 import { logActivity } from '../../../../lib/activityLog'
 import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
@@ -56,7 +57,7 @@ type RawInvoice = Record<string, unknown> & {
 }
 
 export async function fetchSupervisionInvoices(): Promise<InvoiceWithDetails[]> {
-  const { data: invoicesData, error: invoicesError } = await supabase
+  const invoicesData = await fetchAllRows<RawInvoice>((from, to) => supabase
     .from('accounting_invoices')
     .select(`
       *,
@@ -69,13 +70,13 @@ export async function fetchSupervisionInvoices(): Promise<InvoiceWithDetails[]> 
         phase:project_phases(id, phase_name)
       )
     `)
-    .in('invoice_category', ['SUBCONTRACTOR', 'SUPERVISION'])
+    .eq('invoice_category', 'SUBCONTRACTOR')
     .not('project_id', 'is', null)
     .order('issue_date', { ascending: false })
+    .order('id')
+    .range(from, to))
 
-  if (invoicesError) throw invoicesError
-
-  return (invoicesData || []).map((invoice: RawInvoice) => {
+  return invoicesData.map((invoice: RawInvoice) => {
     return {
       id: invoice.id,
       invoice_number: invoice.invoice_number,

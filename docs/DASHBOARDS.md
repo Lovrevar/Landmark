@@ -277,7 +277,7 @@ Net figures show their own sign; colour is reinforcement, never the only cue. Ne
 - Retail figures follow the Retail report, not the invoice table: revenue is the contracted sales
   value, collections are sales-phase `budget_realized` (net of VAT, cash basis), and outstanding /
   invoiced come from the invoices on those sales contracts. Profit is collected − costs.
-- Supervision "completed this week" = distinct subcontractors with `completed_at` in the calendar week; progress bars are a **payment** ratio ("Paid Out"), not work completion.
+- Supervision "completed this week" = distinct subcontractors with a `work_finished` work log in the calendar week (`subcontractors.completed_at`, the previous source, is never written); progress bars are a **payment** ratio ("Paid Out"), not work completion.
 
 ## Notes
 - `investmentReportPdf.ts` lives in this module (not in Reports/) — it generates the investment PDF report. It runs `yieldToUI()` (`src/utils/yieldToUI.ts`) periodically during long credit/project loops so the export does not freeze the UI

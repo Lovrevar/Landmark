@@ -314,24 +314,28 @@ const SiteManagement: React.FC = () => {
     }
   }
 
+  // Rows in the site tree are contracts: `id` is the contract, `subcontractor_id` the company.
+  // Comments belong to the company (subcontractor_comments.subcontractor_id → subcontractors).
+  const companyIdOf = (row: Subcontractor) => row.subcontractor_id ?? row.id
+
   const openSubcontractorDetails = async (subcontractor: Subcontractor) => {
     setSelectedSubcontractor(subcontractor)
     setSubcontractorComments([])
     setCommentsError(null)
-    await loadComments(subcontractor.id)
+    await loadComments(companyIdOf(subcontractor))
   }
 
   const handleAddComment = async () => {
     if (!selectedSubcontractor || !user?.id) return
     const success = await addSubcontractorComment(
-      selectedSubcontractor.id,
+      companyIdOf(selectedSubcontractor),
       user.id,
       newComment,
       commentType
     )
     if (success) {
       setNewComment('')
-      await loadComments(selectedSubcontractor.id)
+      await loadComments(companyIdOf(selectedSubcontractor))
     }
   }
 
@@ -531,7 +535,7 @@ const SiteManagement: React.FC = () => {
           canManagePayments={userCanManagePayments}
           comments={subcontractorComments}
           commentsError={commentsError}
-          onRetryComments={selectedSubcontractor ? () => loadComments(selectedSubcontractor.id) : undefined}
+          onRetryComments={selectedSubcontractor ? () => loadComments(companyIdOf(selectedSubcontractor)) : undefined}
           newComment={newComment}
           commentType={commentType}
           onCommentChange={setNewComment}
