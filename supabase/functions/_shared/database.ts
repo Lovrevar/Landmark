@@ -4763,6 +4763,22 @@ export type Database = {
           difference: number
         }[]
       }
+      complete_apartment_sale: {
+        Args: {
+          p_apartment_id: string
+          p_buyer_name: string
+          p_contract_signed: boolean
+          p_customer_id: string | null
+          p_down_payment: number
+          p_monthly_payment: number
+          p_new_customer: Json | null
+          p_notes: string | null
+          p_payment_method: string
+          p_sale_date: string
+          p_sale_price: number
+        }
+        Returns: Json
+      }
       create_task_with_assignees: {
         Args: {
           p_assignee_ids: string[]

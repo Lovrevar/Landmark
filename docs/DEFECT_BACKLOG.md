@@ -171,7 +171,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ## 3. Sales
 
 ### SALES-1 · High · Selling a standalone garage or storage unit always fails
-- **Check:** Confirmed. **Status:** Open
+- **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(sales)): Sell is shown on apartments only; `completeSale` refuses other unit types
 - **Where:** [salesService.ts:592-599](../src/components/Sales/SalesProjects/services/salesService.ts#L592-L599) inserts `garage_id` / `repository_id` into `sales`; the table has neither column and `apartment_id` is `NOT NULL` ([baseline:3939-3941](../supabase/migrations/00000000000000_baseline_schema.sql#L3939-L3941)).
 - **What happens:** the "Sell" button on a garage or storage card always shows the error toast. In
   "new customer" mode the customer row (status `buyer`) has already been created and is left
@@ -181,7 +181,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   one unit id is set. Create the customer only after the sale insert succeeds (see SALES-5).
 
 ### SALES-2 · High · Bulk price update wipes prices of units without a price per m²
-- **Check:** Confirmed. **Status:** Open
+- **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(sales)): `effectivePricePerM2` fallback in the service and preview, plus the trigger and backfill in migration `20260930100200`
 - **Where:** [salesService.ts:693](../src/components/Sales/SalesProjects/services/salesService.ts#L693) `const currentPricePerM2 = unit.price_per_m2 || 0`.
 - **What happens:** units with `price_per_m2 = 0` get `price = size × adjustment`, losing the old
   total. That covers every apartment created on the Apartments page (bulk or single), garages
@@ -190,24 +190,28 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   is 0, and backfill `price_per_m2` for existing rows.
 
 ### SALES-3 · Medium · Editing a price leaves `price_per_m2` stale
+- **Status:** Fixed on `fix/defect-backlog` (fix(sales))
 - **Where:** `apartmentService.updateApartment` and the create paths on the Apartments page.
 - **What happens:** a later bulk update recalculates the price from the stale per-m² value.
 - **Fix direction:** recompute `price_per_m2` whenever `price` or `size_m2` changes (or make it a
   generated column).
 
 ### SALES-4 · Medium · Re-importing the apartment Excel resets sold apartments to Available
+- **Status:** Fixed on `fix/defect-backlog` (fix(sales))
 - **Where:** `apartmentImportService.importApartmentRow` updates existing rows with `status: 'Available'`.
 - **What happens:** a sold or reserved apartment becomes Available, while its `sales` row and
   `buyer_name` stay.
 - **Fix direction:** do not write `status` on update.
 
 ### SALES-5 · Medium · The sale flow is not transactional
+- **Status:** Fixed on `fix/defect-backlog` (fix(sales))
 - **Where:** `completeSale` in [salesService.ts](../src/components/Sales/SalesProjects/services/salesService.ts): customer insert, sale insert, unit update, linked-unit updates and customer status update are separate calls.
 - **What happens:** a failure midway leaves partial state (orphan customer, sale without Sold
   status, and so on).
 - **Fix direction:** move the sequence into one RPC.
 
 ### SALES-6 · Medium · "Paid" and "total" are computed five different ways
+- **Status:** Partly fixed on `fix/defect-backlog` (fix(sales)): every apartment-level screen now counts payments on the apartment's `OUTGOING_SALES` invoices (Customers keeps a per-customer view on purpose); `sales.total_paid`/`remaining_amount` are documented as a sale-time snapshot. The package-total denominator (list price vs `sale_price`) is still per screen
 - **Where:** Sales Projects cards, Apartments page, Customers, Sales dashboard, Sales Payments; `sales.total_paid` / `remaining_amount` are written once and never updated.
 - **What happens:** the same apartment can show different paid, total and remaining figures on
   different screens (invoice-type filter, customer match, list price vs `sale_price`).
@@ -215,6 +219,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   the two stale `sales` columns.
 
 ### SALES-7 · Medium · Unit links can be lost or left inconsistent
+- **Status:** Fixed on `fix/defect-backlog` (fix(sales)): both linkers share one code path with error checks. Decision: unlinking a unit from a sold apartment still returns it to Available, because it has left the package
 - **Where:** `linkUnitsService` (Apartments page) and the SalesProjects linker.
 - **What happens:**
   - `saveUnitLinks` deletes all links, then inserts the selection. `fetchLinkedUnitIds` and

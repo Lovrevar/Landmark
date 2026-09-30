@@ -27,7 +27,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `createBuilding(data)`, `deleteBuilding(id)` — building CRUD
 - `createUnit(data)`, `bulkCreateUnits(data)`, `deleteUnit(id)` — unit CRUD
 - `updateUnitStatus(id, status)` — updates a unit's availability status
-- `bulkUpdateUnitPrice(ids, unitType, adjustmentType, value)` — adjusts price per m² for selected units. Sold units are never repriced: they are excluded from the fetch and each update re-checks `status <> 'Sold'`. The `apartment.bulk_price_update` log `count` is the number of rows actually updated, not the number of ids passed
+- `bulkUpdateUnitPrice(ids, unitType, adjustmentType, value)` — adjusts price per m² for selected units. Sold units are never repriced: they are excluded from the fetch and each update re-checks `status <> 'Sold'`. The `apartment.bulk_price_update` log `count` is the number of rows actually updated, not the number of ids passed. The current per-m² value comes from `effectivePricePerM2` (`Sales/utils/priceUtils.ts`), which falls back to price ÷ size when the stored value is 0; the `trg_sync_price_per_m2` trigger (migration `20260930100200`) keeps `price_per_m2 = round(price / size_m2, 2)` on apartments, garages and repositories whenever price or size is written, so every create, edit and import path stays consistent
   - **Returns `{ selected, updated, failed }`** (`bulkPriceResult.ts`, folded by the pure
     `summarizeBulkPriceUpdate`, unit-tested) instead of throwing on a partial failure. It used
     to throw `Failed to update N units`, which both discarded the count and skipped the page's
@@ -38,7 +38,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `linkGarageToApartment(garageId, apartmentId)`, `unlinkGarageFromApartment(...)` — garage linking
 - `linkRepositoryToApartment(repoId, apartmentId)`, `unlinkRepositoryFromApartment(...)` — storage linking
 - `createCustomer(data)` — creates a new customer from the sale form
-- `completeSale(saleData)` — records a sale and updates unit status, links customer
+- `completeSale(saleData)` — records the sale through the `complete_apartment_sale` RPC, one transaction that creates the new customer (if any), inserts the `sales` row, marks the apartment and its linked garages/storage units Sold with the buyer's name, and sets the customer to `buyer`. Runs as the caller, so RLS decides who may sell (Director, Sales, Accounting). **Only apartments are sold**: garages and storage units go with the apartment's package, and the Sell button is shown on apartments only. `sales.total_paid` / `remaining_amount` are a snapshot at sale time; paid-to-date always comes from `accounting_payments` on the apartment's `OUTGOING_SALES` invoices
 - `updateCustomerStatus(customerId, status)` — updates customer CRM status
 - `updateUnitAfterSale(apartmentId, saleData)` — patches unit record post-sale
 - **Depends on:** supabase client
@@ -178,8 +178,8 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 
 ### services/linkUnitsService.ts
 - `fetchLinkedUnitIds(apartmentId)` — returns IDs of currently linked garages and storage units
-- `fetchAvailableUnits(buildingId)` — returns unlinked garages and storage units in the building
-- `saveUnitLinks(apartmentId, garageIds, storageIds)` — upserts and removes links to match selection; logs `apartment.link_garage` / `apartment.link_repository` when links are added
+- `fetchAvailableUnits(buildingId)` — returns all garages and storage units in the building (the modal decides which are selectable); throws on a failed read
+- `saveUnitLinks(apartmentId, garageIds, storageIds)` — diffs the selection against the current links and applies it through the Sales Projects `linkGarageToApartment` / `unlinkGarageFromApartment` (and repository) functions, so both screens behave alike: a unit linked to a sold apartment becomes Sold with the same buyer, an unlinked unit returns to Available. Logs `apartment.link_garage` / `apartment.unlink_garage` (and repository) per change
 - **Depends on:** supabase client, activityLog
 
 #### Hooks

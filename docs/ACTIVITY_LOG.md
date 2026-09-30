@@ -209,7 +209,7 @@ logActivity({
 | `apartment.link_repository` | L | `Sales/SalesProjects/services/salesService.ts` |
 | `apartment.unlink_garage` | L | `Sales/SalesProjects/services/salesService.ts` |
 | `apartment.unlink_repository` | L | `Sales/SalesProjects/services/salesService.ts` |
-| `apartment.link_units` | L | `Sales/Apartments/services/linkUnitsService.ts` (replace-all link save) |
+| `apartment.link_units` | L | Retired 2026-09-30: `saveUnitLinks` now logs `apartment.link_garage` / `unlink_garage` (and repository) per change. Label kept for old rows |
 | `apartment.import_excel` | H | `Sales/SalesProjects/services/apartmentImportService.ts` |
 | `garage.import_excel` | H | `Sales/SalesProjects/services/garageImportService.ts` |
 | `customer.create` | L | `Sales/Customers/services/customerService.ts` + `Sales/SalesProjects/services/salesService.ts` |
