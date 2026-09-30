@@ -315,3 +315,11 @@ Net figures show their own sign; colour is reinforcement, never the only cue. Ne
 - **EVM is not surfaced on any dashboard.** The Earned Value Management utility (`src/utils/evm.ts`) is consumed only by the Budget Control feature (`src/components/General/BudgetControl/`)
 - Role visibility is controlled via `src/utils/permissions.ts` and `AuthContext`
 - Dashboard services are read-only aggregation — they do not mutate data
+
+## Every read is checked (September 2026, DEFECT_BACKLOG GEN-3)
+
+`directorService` checked only the projects query and `investmentDashboardService` none, so a
+failed read rendered as zeros. Both now throw on any query error, as do the Budget Control and
+Project Details services. The Accounting dashboard's top-companies payments and invoice counts are
+paged through `fetchAllRows` (a year of payments passes PostgREST's 1000-row page) and throw on
+failure. RLS-limited roles are unaffected: a table they may not read returns no rows, not an error.

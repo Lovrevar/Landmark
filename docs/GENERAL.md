@@ -46,6 +46,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - **Depends on:** supabase client
 
 ### milestoneService.ts
+- **Who may write:** the `project_milestones` write policy (migration `20260930100000`) allows Directors and Supervision on assigned projects (`user_has_project_access`). `ProjectDetailsEnhanced` mirrors it with `hasProjectAccess(id)` and hides add, template, edit, toggle and delete for everyone else
 - `addMilestone(projectId, data)` — inserts a new milestone for a project (`data` may include an optional `phase`)
 - `updateMilestone(id, data)` — updates an existing milestone (writes `phase` only when provided)
 - `deleteMilestone(id)` — removes a milestone

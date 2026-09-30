@@ -113,15 +113,15 @@ export interface DirectorDashboardData {
 export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const [
     { data: projectsData, error: projectsError },
-    { data: apartmentsData },
-    { data: contractsData },
-    { data: invoicesData },
-    { data: paymentsData },
-    { data: salesRowsData },
-    { data: allocationsData },
-    { data: creditsData },
-    { data: subcontractorsData },
-    { data: milestonesData }
+    { data: apartmentsData, error: apartmentsError },
+    { data: contractsData, error: contractsError },
+    { data: invoicesData, error: invoicesError },
+    { data: paymentsData, error: paymentsError },
+    { data: salesRowsData, error: salesRowsError },
+    { data: allocationsData, error: allocationsError },
+    { data: creditsData, error: creditsError },
+    { data: subcontractorsData, error: subcontractorsError },
+    { data: milestonesData, error: milestonesError }
   ] = await Promise.all([
     supabase
       .from('projects')
@@ -148,7 +148,17 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
       .select('id, milestone_name, due_date, status, contract_id')
   ])
 
+  // Every read is checked: a failure shows the error panel instead of a dashboard of zeros.
   if (projectsError) throw projectsError
+  if (apartmentsError) throw apartmentsError
+  if (contractsError) throw contractsError
+  if (invoicesError) throw invoicesError
+  if (paymentsError) throw paymentsError
+  if (salesRowsError) throw salesRowsError
+  if (allocationsError) throw allocationsError
+  if (creditsError) throw creditsError
+  if (subcontractorsError) throw subcontractorsError
+  if (milestonesError) throw milestonesError
 
   const projects = (projectsData || []) as ProjectRow[]
   const apartments = (apartmentsData || []) as ApartmentRow[]

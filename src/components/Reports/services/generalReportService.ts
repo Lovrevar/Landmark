@@ -1,7 +1,7 @@
 import { supabase } from '../../../lib/supabase'
 import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
 import type { ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 
@@ -180,8 +180,15 @@ export async function fetchGeneralReportData(
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
   const portfolioValue = projectsArray.reduce((sum, p) => sum + plannedBudget(p.id), 0)
-  const totalEquity = creditAllocationsArray.reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
-  const totalDebt = bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0)
+  // Same definitions as the Director dashboard: debt is what is still owed on live, non-equity
+  // credits; equity is the equity facilities. (Equity used to be the credit allocations and debt
+  // the face value of every credit, repaid and equity ones included.)
+  const liveDebtCredits = bankCreditsArray.filter(bc =>
+    bc.credit_type !== 'equity' && bc.status !== 'paid' && bc.status !== 'defaulted')
+  const totalEquity = bankCreditsArray
+    .filter(bc => bc.credit_type === 'equity')
+    .reduce((sum, bc) => sum + (bc.amount || 0), 0)
+  const totalDebt = liveDebtCredits.reduce((sum, bc) => sum + (bc.outstanding_balance || 0), 0)
   const activeFunderIds = new Set(
     creditAllocationsArray
       .map(alloc => bankCreditsArray.find(bc => bc.id === alloc.credit_id)?.bank_id)
@@ -202,21 +209,28 @@ export async function fetchGeneralReportData(
   const interested = customersArray.filter(c => c.status === 'interested').length
   const conversionRate = customersArray.length > 0 ? (buyers / customersArray.length) * 100 : 0
 
-  const avgInterestRate = bankCreditsArray.length > 0
-    ? bankCreditsArray.reduce((sum, bc) => sum + (bc.interest_rate || 0), 0) / bankCreditsArray.length
+  // Weighted by facility size, like the Director dashboard; a small credit no longer moves it as
+  // much as a large one.
+  const liveDebtAmount = liveDebtCredits.reduce((sum, bc) => sum + (bc.amount || 0), 0)
+  const avgInterestRate = liveDebtAmount > 0
+    ? liveDebtCredits.reduce((sum, bc) => sum + (bc.interest_rate || 0) * (bc.amount || 0), 0) / liveDebtAmount
     : 0
-  const monthlyDebtService = bankCreditsArray.reduce((sum, bc) => sum + (bc.monthly_payment || 0), 0)
+  const monthlyDebtService = liveDebtCredits.reduce((sum, bc) => sum + (bc.monthly_payment || 0), 0)
 
   const totalContractValue = contractsArray.reduce((sum, c) => sum + c.contract_amount, 0)
   const budgetRealized = contractsArray.reduce((sum, c) => sum + c.budget_realized, 0)
   const budgetUtilization = totalContractValue > 0 ? (budgetRealized / totalContractValue) * 100 : 0
 
   const completedPhases = projectPhasesArray.filter(p => p.status === 'completed').length
-  const sevenDaysAgo = subMonths(new Date(), 0.25)
-  const recentWorkLogs = workLogsArray.filter(w => new Date(w.date) >= sevenDaysAgo).length
+  // Today and the six days before it, in local days (subMonths(now, 0.25) was not seven days).
+  const recentWorkLogs = workLogsArray.filter(w => {
+    const days = daysFromToday(w.date)
+    return days <= 0 && days >= -6 // NaN (no date) fails both
+  }).length
 
   const totalMilestones = subcontractorMilestonesArray.length
-  const completedMilestones = subcontractorMilestonesArray.filter(m => m.status === 'completed').length
+  // 'completed' is the trigger's word for *partly* paid; a milestone is done when it is 'paid'.
+  const completedMilestones = subcontractorMilestonesArray.filter(m => m.status === 'paid').length
 
   const months = eachMonthOfInterval({
     start: new Date(dateRange.start),
@@ -473,7 +487,8 @@ export async function fetchGeneralReportData(
       total_debt: totalDebt,
       debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
       total_credit_lines: bankCreditsArray.reduce((sum, bc) => sum + (bc.amount || 0), 0),
-      available_credit: bankCreditsArray.reduce((sum, bc) => sum + ((bc.available_balance || 0) - (bc.drawn_amount || 0)), 0),
+      // Undrawn headroom. It read available_balance/drawn_amount, which bank_credits does not have.
+      available_credit: bankCreditsArray.reduce((sum, bc) => sum + ((bc.amount || 0) - (bc.used_amount || 0)), 0),
       active_investors: activeFundersCount,
       active_banks: banksArray.length,
       bank_credits: bankCreditsArray.length,

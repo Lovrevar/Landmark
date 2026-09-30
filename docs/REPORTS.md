@@ -89,7 +89,7 @@ Two things to know before adding a figure here:
 ## Hooks
 
 ### hooks/useGeneralReportData.ts
-- `useGeneralReportData()` — fetches ComprehensiveReport data for the last 6 months on mount with loading state
+- `useGeneralReportData()` — fetches ComprehensiveReport data for the last six calendar months (this one included; `subMonths(now, 6)` used to yield seven buckets) on mount with loading state
 - **Calls:** generalReportService
 - **Returns:** report, loading, error, fetchedAt, refetch — `error` was deliberately omitted from
   the result interface until September 2026, which is why the page could only say "No data"
@@ -290,3 +290,19 @@ Screens and exports are both Croatian-first now; they differ only in that an exp
 - The long-running PDF generators (`salesReportPdf`, `retailReportPdf`) call `yieldToUI()` (`src/utils/yieldToUI.ts`) inside their row loops so a large export does not freeze the UI; this does not change report content
 - All report views are internationalised (react-i18next, keys under `reports.*`) and dark-mode aware, and long tables expose per-cell `label` props for the mobile card layout — presentational only, the report data and sections are unchanged
 - **EVM is not surfaced in any report.** The Earned Value Management utility (`src/utils/evm.ts`) is consumed only by the Budget Control feature (`src/components/General/BudgetControl/`)
+
+## General report definitions (September 2026, DEFECT_BACKLOG GEN-1/GEN-2)
+
+The funding and construction figures follow the Director dashboard, so the same number means the
+same thing on both screens:
+
+- **Debt** = Σ `outstanding_balance` of live, non-equity credits (not repaid or defaulted); it was
+  the face value of every credit, equity and repaid ones included.
+- **Equity** = Σ `amount` of `equity` credits; it was Σ credit allocations. ROI and D/E use these.
+- **Average interest** is weighted by facility amount over live debt; it was a plain mean.
+- **Monthly debt service** sums live debt only.
+- **Available credit** = Σ (`amount` − `used_amount`); it read two columns `bank_credits` does not
+  have and was always €0.
+- **Completed milestones** counts `paid` (fully paid) milestones; `completed` is the payment
+  trigger's word for partly paid.
+- **Work logs (7 days)** counts today and the six days before in local days.

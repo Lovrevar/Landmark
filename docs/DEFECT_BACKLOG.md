@@ -457,11 +457,12 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ## 7. Projects, dashboards and reports
 
 ### GEN-1 · Medium · General report shows available credit as €0
-- **Check:** Confirmed. **Status:** Open
+- **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(reports))
 - **Where:** [generalReportService.ts:476](../src/components/Reports/services/generalReportService.ts#L476) reads `available_balance` and `drawn_amount`, which do not exist on `bank_credits`.
 - **Fix direction:** `Σ (amount − used_amount)`, as the "company investments" section already does.
 
 ### GEN-2 · Medium · Other General report formulas are off
+- **Status:** Fixed on `fix/defect-backlog` (fix(reports)): definitions aligned with the Director dashboard, see REPORTS.md
 - "Completed milestones" counts `status = 'completed'`, which means partly paid; fully paid
   (`paid`) milestones are not counted.
 - "Work logs (7 days)" uses `subMonths(now, 0.25)` (runtime check needed; likely not 7 days).
@@ -470,11 +471,13 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - The cash-flow window has 7 month buckets while the screen says six months.
 
 ### GEN-3 · Medium · Several dashboards show zeros instead of an error
+- **Status:** Fixed on `fix/defect-backlog` (fix(reports)): every read checked in the Director, Investment, Budget Control and Project Details services; Accounting top companies paged and checked
 - Director dashboard checks only the `projects` error; Investment checks none; Accounting's
   top-companies sub-queries, Budget Control sub-queries and Project Details sub-queries are
   unchecked. This contradicts the "never render zeros on a failed load" rule.
 
 ### GEN-4 · Medium · Milestones can be edited by every role
+- **Status:** Fixed on `fix/defect-backlog` (RLS in fix(security), UI in fix(reports)): writes limited to Directors and Supervision on assigned projects
 - UI and RLS both allow any authenticated user to create, edit and delete project milestones,
   while projects themselves are Director-only.
 
