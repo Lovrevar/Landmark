@@ -304,9 +304,12 @@ export const handleSubmit = async (
   }
 
   if (editingInvoice) {
+    // An edit keeps the invoice's approval (set on the Supervision invoices page, and the type
+    // cannot change on edit) and its author; the create payload would reset both.
+    const { approved: _approved, created_by: _createdBy, ...editableFields } = invoiceData
     const { error } = await supabase
       .from('accounting_invoices')
-      .update(invoiceData)
+      .update(editableFields)
       .eq('id', editingInvoice.id)
 
     if (error) throw error

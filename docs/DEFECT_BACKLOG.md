@@ -305,7 +305,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ## 5. Cashflow
 
 ### CASH-1 · High · New companies lose their opening bank balance
-- **Check:** Code reading. **Status:** Open
+- **Check:** Code reading. **Status:** Fixed on `fix/defect-backlog` (fix(cashflow)): opening balance written to `initial_balance`; resets go through `reset_company_bank_account_balance`; backfill for untouched accounts. Accounts already wiped need a manual check (query at the end of migration `20260930100300`)
 - **Where:** `createCompany` writes the entered balance into `current_balance` with
   `initial_balance = 0`; the balance trigger rebuilds from `initial_balance`.
 - **What happens:** the first payment or loan on the account resets the balance to
@@ -314,7 +314,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   `balance_reset_at`).
 
 ### CASH-2 · High · Credit disbursements to an account are erased by the next recompute
-- **Check:** Code reading. **Status:** Open
+- **Check:** Code reading. **Status:** Fixed on `fix/defect-backlog` (fix(cashflow)): disbursements are a term of the one balance formula; the loan trigger delegates to it
 - **Where:** `trigger_disbursed_credit_balance` adds the credit amount to `current_balance`, but
   `recalc_company_bank_account_balance` (`20260917100000`) does not include disbursements.
 - **What happens:** the next payment or loan on that account removes the disbursed amount from the
@@ -322,26 +322,31 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - **Fix direction:** add disbursed credits to the recompute formula.
 
 ### CASH-3 · Medium · Editing an invoice un-approves it and changes its author
+- **Status:** Fixed on `fix/defect-backlog` (fix(cashflow))
 - **Where:** `invoiceService.handleSubmit` sends the create payload on edit.
 - **What happens:** `approved` is recomputed (false for supplier and sales invoices) and
   `created_by` is overwritten with the editor.
 - **Fix direction:** omit `approved` and `created_by` from the update payload.
 
 ### CASH-4 · Medium · Invoice count and list can disagree on search
+- **Status:** Fixed on `fix/defect-backlog` (fix(cashflow)): statistics use the list's joins and search predicate
 - `get_invoice_statistics` and `get_filtered_invoices` search slightly different fields (customer
   full name vs refund and retail-project names).
 
 ### CASH-5 · Medium · Invoice categories cannot be managed
+- **Status:** Fixed on `fix/defect-backlog` (fix(cashflow))
 - The manage policy on `invoice_categories` tests `role = 'director'` in lower case, which never
   matches; there is no UI either.
 
 ### CASH-6 · Medium · Cesija from a credit decreases the allocation's usage
+- **Status:** Open — **needs an accounting decision**: should a cesija paid from a credit allocation add to or subtract from that allocation's `used_amount`? The code subtracts while the credit's own `used_amount` adds; migration `20260917100000` kept the sign deliberately, with no recorded reason
 - **Check:** Runtime check needed.
 - `update_credit_allocation_used_amount()` subtracts the amount for `cesija_credit_allocation_id`,
   while `recalculate_bank_credit_fields` adds cesija to the credit's `used_amount`. One of the two
   signs is likely wrong.
 
 ### CASH-7 · Medium · Income and expense are classified four different ways
+- **Status:** Open — **needs a product decision**: which screens mean cash flow (the balance trigger's rule: `OUTGOING_*` in, `INCOMING_*` out) and which mean revenue/expense (company statistics)? In particular, is `INCOMING_INVESTMENT` money in (dashboard, general report) or out (balance trigger, payments list)?
 - `company_statistics`, the Accounting dashboard, `paymentDirection()` and the General report
   cash-flow table disagree on `INCOMING_INVESTMENT`, `OUTGOING_SUPPLIER`, `OUTGOING_BANK` and the
   bank types. The dashboard service comment claiming it matches the calendar convention is wrong.

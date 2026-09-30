@@ -5018,6 +5018,10 @@ export type Database = {
         Args: { p_associations: Json; p_document_id: string }
         Returns: undefined
       }
+      reset_company_bank_account_balance: {
+        Args: { p_account_id: string; p_balance: number; p_reset_at?: string }
+        Returns: number
+      }
       save_push_subscription: {
         Args: {
           p_auth: string

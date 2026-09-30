@@ -81,11 +81,15 @@ export const createCompany = async (formData: CompanyFormData) => {
 
   if (companyError) throw companyError
 
+  // The entered figure is the opening balance: it goes into initial_balance, which the balance
+  // trigger rebuilds from, dated now. With initial_balance 0 the first payment wiped it.
+  const openedAt = new Date().toISOString()
   const bankAccountsToInsert = formData.bankAccounts.map(acc => ({
     company_id: companyData.id,
     bank_name: acc.bank_name,
-    initial_balance: 0,
-    current_balance: acc.current_balance
+    initial_balance: acc.current_balance,
+    current_balance: acc.current_balance,
+    balance_reset_at: openedAt
   }))
 
   if (bankAccountsToInsert.length > 0) {
@@ -128,21 +132,18 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
 
   for (const account of formData.bankAccounts) {
     if (account.id) {
-      const now = new Date().toISOString()
       const resetAt = account.balance_reset_at
         ? `${account.balance_reset_at}T00:00:00+00:00`
-        : now
-      const { error: updateError } = await supabase
-        .from('company_bank_accounts')
-        .update({
-          initial_balance: account.current_balance,
-          current_balance: account.current_balance,
-          balance_reset_at: resetAt,
-          updated_at: now
-        })
-        .eq('id', account.id)
+        : new Date().toISOString()
 
-      if (updateError) throw updateError
+      // The database sets the new balance and date and rebuilds current_balance with the same
+      // formula the payment and loan triggers use (reset_company_bank_account_balance).
+      const { error: resetError } = await supabase.rpc('reset_company_bank_account_balance', {
+        p_account_id: account.id,
+        p_balance: account.current_balance,
+        p_reset_at: resetAt,
+      })
+      if (resetError) throw resetError
 
       logActivity({
         action: 'bank_account.balance_reset',
@@ -155,85 +156,8 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
           entity_name: account.bank_name,
         },
       })
-
-      await recalculateBankAccountBalance(account.id, resetAt)
     }
   }
-}
-
-const recalculateBankAccountBalance = async (bankAccountId: string, resetAt: string) => {
-  const resetDate = resetAt.split('T')[0]
-
-  const [paymentsResult, loansFromResult, loansToResult, accountResult] = await Promise.all([
-    supabase
-      .from('accounting_payments')
-      .select(`
-        amount,
-        payment_date,
-        is_cesija,
-        cesija_bank_account_id,
-        company_bank_account_id,
-        accounting_invoices!inner(invoice_type)
-      `)
-      .or(`company_bank_account_id.eq.${bankAccountId},cesija_bank_account_id.eq.${bankAccountId}`)
-      .gte('payment_date', resetDate),
-
-    supabase
-      .from('company_loans')
-      .select('amount, loan_date')
-      .eq('from_bank_account_id', bankAccountId)
-      .gte('loan_date', resetDate),
-
-    supabase
-      .from('company_loans')
-      .select('amount, loan_date')
-      .eq('to_bank_account_id', bankAccountId)
-      .gte('loan_date', resetDate),
-
-    supabase
-      .from('company_bank_accounts')
-      .select('initial_balance')
-      .eq('id', bankAccountId)
-      .maybeSingle()
-  ])
-
-  // Don't silently recompute a balance from partial data — a failed query would
-  // otherwise overwrite current_balance with just initial_balance.
-  const queryError = paymentsResult.error || loansFromResult.error || loansToResult.error || accountResult.error
-  if (queryError) throw queryError
-
-  let delta = 0
-
-  for (const p of paymentsResult.data || []) {
-    const invoiceType = (p.accounting_invoices as { invoice_type?: string } | null)?.invoice_type ?? ''
-
-    if (p.company_bank_account_id === bankAccountId) {
-      const outgoing = ['OUTGOING_SALES', 'OUTGOING_OFFICE', 'OUTGOING_SUPPLIER', 'OUTGOING_BANK', 'OUTGOING_RETAIL_DEVELOPMENT', 'OUTGOING_RETAIL_CONSTRUCTION']
-      const incoming = ['INCOMING_SUPPLIER', 'INCOMING_OFFICE', 'INCOMING_INVESTMENT', 'INCOMING_BANK', 'INCOMING_BANK_EXPENSES']
-      if (outgoing.includes(invoiceType)) delta += p.amount
-      else if (incoming.includes(invoiceType)) delta -= p.amount
-    }
-
-    if (p.cesija_bank_account_id === bankAccountId && p.is_cesija) {
-      delta -= p.amount
-    }
-  }
-
-  for (const loan of loansFromResult.data || []) {
-    delta -= loan.amount
-  }
-
-  for (const loan of loansToResult.data || []) {
-    delta += loan.amount
-  }
-
-  const initialBalance = accountResult.data?.initial_balance ?? 0
-
-  const { error: updateError } = await supabase
-    .from('company_bank_accounts')
-    .update({ current_balance: initialBalance + delta, updated_at: new Date().toISOString() })
-    .eq('id', bankAccountId)
-  if (updateError) throw updateError
 }
 
 export const deleteCompany = async (companyId: string) => {

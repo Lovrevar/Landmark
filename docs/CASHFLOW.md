@@ -306,11 +306,10 @@ Legal entity management. Tracks company financial summaries, bank accounts, and 
 ### companyService.ts
 - `fetchCompaniesWithStats()` — fetches companies with aggregated financial stats
 - `fetchBankAccountsForCompany(companyId)` — fetches bank accounts for a company
-- `createCompany(formData)` — inserts a new company record with bank accounts
-- `updateCompany(companyId, formData)` — updates company and bank account records
+- `createCompany(formData)` — inserts a new company record with bank accounts. The entered balance is the opening balance: it is written to both `initial_balance` and `current_balance` with `balance_reset_at` = now (with `initial_balance = 0`, the first payment used to wipe it)
+- `updateCompany(companyId, formData)` — updates the company; each account's balance reset goes through the `reset_company_bank_account_balance` RPC (Director/Accounting), which sets `initial_balance`, `current_balance` and `balance_reset_at` and rebuilds the balance with the one database formula
 - `deleteCompany(companyId)` — removes a company
 - `fetchCompanyDetails(companyId)` — fetches bank accounts, credits, recent invoices, and cesija data
-- `recalculateBankAccountBalance(bankAccountId, resetAt)` — recomputes running balance from all payments, loans, and cesija transactions
 - **Depends on:** supabase client
 
 #### Hooks
@@ -480,7 +479,7 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 
 ### invoiceService.ts
 - `fetchData(filterType, filterStatus, filterCompany, searchTerm, currentPage, pageSize, sortField?, sortDirection?)` — paginated invoice fetch with filters via the `get_filtered_invoices` RPC. Sorting (`'due_date' | 'invoice_number'`, `'asc' | 'desc'`) is done **server-side** so it spans every page; `p_sort_field`/`p_sort_dir` are only sent when a sort is active, so the unsorted list still works against a database without the sort migration (see Notes)
-- `handleSubmit(formData, editingInvoice, isOfficeInvoice)` — creates or updates an invoice
+- `handleSubmit(formData, editingInvoice, isOfficeInvoice)` — creates or updates an invoice. An update leaves `approved` and `created_by` alone (the create payload used to un-approve supplier and sales invoices and replace the author)
 - `handlePaymentSubmit(paymentFormData, invoice)` — records a payment against an invoice. Builds the row with `Payments/services/paymentPayload.ts` `buildPaymentData`, the same builder the Payments page uses
 - `handleDelete(invoiceId)` — deletes an invoice
 - `fetchCreditAllocations(creditId)` — fetches allocations for a credit line
@@ -1042,5 +1041,17 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 - Multi-VAT support uses separate `base_amount_1–4`, `vat_rate_1–4`, `vat_amount_1–4` fields for up to 4 VAT rates per invoice (Croatian accounting requirement)
 - Cesija is tracked with `is_cesija`, `cesija_company_id`, and `cesija_bank_account_id` fields on invoices and payments
 - **Security note.** The Cashflow password modal (`Layout.tsx`) and `CashflowRoute` (`App.tsx`) gate UI navigation only. RLS on cashflow tables enforces role-based access (`Director`, `Accounting`) and does NOT depend on the password flag. A user with one of those roles and a valid Supabase JWT can query cashflow data directly via supabase-js without entering the password. This is a known limitation tracked as **SEC-001** in [`docs/SECURITY_BACKLOG.md`](./SECURITY_BACKLOG.md).
-  - As of migration `20260526084700_tighten_cashflow_rls.sql` (2026-05-26), five tables that previously had blanket `USING (true)` policies (`accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`) are now role-gated, with scoped exceptions for the Sales workflow (sales-related invoices/payments) and broad SELECT on `accounting_companies` (names + OIB are treated as reference data). `bank_credits` SELECT additionally allows `Investment`. The companion migration `20260526084701_get_invoice_statistics_role_check.sql` adds a defense-in-depth role check inside the SECURITY DEFINER `get_invoice_statistics` RPC. These close the blanket-open gap but do NOT couple data access to the password flag, so SEC-001 remains open.
+  - As of migration `20260526084700_tighten_cashflow_rls.sql` (2026-05-26), five tables that previously had blanket `USING (true)` policies (`accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`) are now role-gated, with scoped exceptions for the Sales workflow (sales-related invoices/payments) and broad SELECT on `accounting_companies` (names + OIB are treated as reference data). `bank_credits` SELECT additionally allows `Investment`. The companion migration `20260526084701_get_invoice_statistics_role_check.sql` adds a defense-in-depth role check inside the SECURITY DEFINER `get_invoice_statistics` RPC. Since `20260930100300` that RPC uses exactly the joins and search predicate of `get_filtered_invoices`, so the count above the list matches the rows. These close the blanket-open gap but do NOT couple data access to the password flag, so SEC-001 remains open.
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`
+
+## Bank-account balance formula
+
+One function computes every balance: `recalc_company_bank_account_balance(account)` (migration
+`20260930100300`). `current_balance = initial_balance` plus payments on `OUTGOING_*` invoices,
+minus payments on `INCOMING_*` invoices, minus cesija payments made from the account, minus loans
+out, plus loans in, **plus credits disbursed to the account** (by `start_date`), counting only
+rows dated on or after `balance_reset_at`. The payment trigger, the `company_loans` trigger, the
+`bank_credits` trigger (disbursement on/off, amount, account or date changes) and the reset RPC
+all call it; no other code computes a balance. Before this, credit disbursements were added with
+`+=` and erased by the next recompute, and the loan trigger and the Companies screen each carried
+their own copy of the formula.
