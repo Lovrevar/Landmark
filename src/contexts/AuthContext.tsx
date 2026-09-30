@@ -50,6 +50,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<AuthResult>
   loginWithMicrosoft: () => Promise<AuthResult>
   resetPassword: (email: string) => Promise<AuthResult>
+  /** Sets a new password for the signed-in user (the recovery link signs them in). */
+  updatePassword: (password: string) => Promise<boolean>
   logout: () => Promise<void>
   /** Set when a redirect-based sign-in fails after the OAuth round trip. */
   authError: LoginErrorCode | null
@@ -231,7 +233,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      // A reset-password link arrives as PASSWORD_RECOVERY; it carries a normal session.
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'PASSWORD_RECOVERY') {
         handleAuthChange(session?.user || null)
       } else if (event === 'SIGNED_OUT') {
         setCachedDataOwner(null)
@@ -349,6 +352,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const updatePassword = async (password: string): Promise<boolean> => {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) {
+      console.error('Password update failed:', error.message)
+      return false
+    }
+    if (user) {
+      logActivity({
+        userId: user.id,
+        userRole: user.role,
+        action: 'auth.password_reset',
+        entity: 'user',
+        entityId: user.id,
+        metadata: { severity: 'medium' },
+      })
+    }
+    return true
+  }
+
   const logout = async () => {
     if (user) {
       await logActivity({
@@ -401,6 +423,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     loginWithMicrosoft,
     resetPassword,
+    updatePassword,
     logout,
     authError,
     clearAuthError,

@@ -250,7 +250,18 @@
     "back_to_sign_in": "Natrag na prijavu",
     "or": "ili",
     "sign_in_with_microsoft": "Prijava putem Microsoft računa",
-    "redirecting_to_microsoft": "Preusmjeravanje na Microsoft..."
+    "redirecting_to_microsoft": "Preusmjeravanje na Microsoft...",
+    "new_password": "Nova lozinka",
+    "confirm_password": "Potvrdite lozinku",
+    "set_new_password": "Postavite novu lozinku",
+    "set_new_password_subtitle": "Unesite novu lozinku za svoj račun",
+    "save_password": "Spremi lozinku",
+    "saving_password": "Spremanje...",
+    "password_too_short": "Lozinka mora imati najmanje {{min}} znakova",
+    "passwords_do_not_match": "Lozinke se ne podudaraju",
+    "password_updated": "Lozinka je promijenjena",
+    "password_update_failed": "Lozinku nije moguće promijeniti. Pokušajte ponovno",
+    "reset_link_invalid": "Poveznica za resetiranje nije valjana ili je istekla. Zatražite novu na stranici za prijavu"
   },
   "nav": {
     "dashboard": "Nadzorna ploča",
@@ -5171,6 +5182,7 @@
     "actions": {
       "auth.login": "Korisnik se prijavio",
       "auth.logout": "Korisnik se odjavio",
+      "auth.password_reset": "Promjena lozinke",
       "project.create": "Projekt kreiran",
       "project.update": "Projekt ažuriran",
       "project.delete": "Projekt obrisan",

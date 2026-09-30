@@ -142,7 +142,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ## 2. Auth and platform
 
 ### AUTH-1 · Medium · Password reset cannot be completed
-- **Check:** Code reading. **Status:** Open
+- **Check:** Code reading. **Status:** Fixed on `fix/defect-backlog` (fix(auth))
 - **Where:** [AuthContext.tsx](../src/contexts/AuthContext.tsx) `resetPassword` redirects to `/reset-password`; [App.tsx](../src/App.tsx) has no such route and nothing handles the `PASSWORD_RECOVERY` event.
 - **What happens:** the recovery link falls through to `/` and, at best, signs the user in; there is
   no screen to set a new password.
@@ -150,7 +150,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   when a recovery session is present.
 
 ### AUTH-2 · Medium · User provisioning trigger is not in any migration
-- **Check:** Code reading. **Status:** Open
+- **Check:** Code reading. **Status:** Fixed on `fix/defect-backlog` (fix(auth))
 - **Where:** `on_auth_user_created` on `auth.users` exists on the remote database only; the function
   `handle_new_user()` is in `20260825100000_sso_pre_provisioned_only.sql`.
 - **What happens:** a fresh project built from migrations (demo, a new e2e project) has no trigger,

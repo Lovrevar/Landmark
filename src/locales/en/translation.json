@@ -247,7 +247,18 @@
     "back_to_sign_in": "Back to sign in",
     "or": "or",
     "sign_in_with_microsoft": "Sign in with Microsoft",
-    "redirecting_to_microsoft": "Redirecting to Microsoft..."
+    "redirecting_to_microsoft": "Redirecting to Microsoft...",
+    "new_password": "New password",
+    "confirm_password": "Confirm password",
+    "set_new_password": "Set a new password",
+    "set_new_password_subtitle": "Enter a new password for your account",
+    "save_password": "Save password",
+    "saving_password": "Saving...",
+    "password_too_short": "Password must be at least {{min}} characters",
+    "passwords_do_not_match": "Passwords do not match",
+    "password_updated": "Your password has been changed",
+    "password_update_failed": "The password could not be changed. Please try again",
+    "reset_link_invalid": "This reset link is invalid or has expired. Request a new one from the sign-in page"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -5145,6 +5156,7 @@
     "actions": {
       "auth.login": "User logged in",
       "auth.logout": "User logged out",
+      "auth.password_reset": "Password reset",
       "project.create": "Project created",
       "project.update": "Project updated",
       "project.delete": "Project deleted",

@@ -5,6 +5,7 @@ import { ToastProvider } from './contexts/ToastContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { UnsavedChangesProvider } from './contexts/UnsavedChangesContext'
 import LoginForm from './components/Auth/LoginForm'
+import ResetPasswordForm from './components/Auth/ResetPasswordForm'
 import Layout from './components/Common/Layout'
 import PageFallback from './components/Common/PageFallback'
 import AiChatProvider from './components/AiChat/AiChatProvider'
@@ -103,6 +104,8 @@ function AppContent() {
   return (
     <Router>
       <Routes>
+        {/* Outside ProtectedRoute: the recovery link's session is the only credential here. */}
+        <Route path="/reset-password" element={<ResetPasswordForm />} />
         <Route
           path="/"
           element={
