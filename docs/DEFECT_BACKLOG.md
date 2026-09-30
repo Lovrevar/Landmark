@@ -518,22 +518,26 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ## 8. Tasks, calendar, chat, documents and AI assistant
 
 ### COLLAB-1 · Medium · Calendar reminders are never delivered
+- **Status:** Open — **needs a product decision**: `config.toml` marks the dispatcher "DISABLED — not in use". Either turn reminders on (shared-secret auth per SEC-A9, a pg_cron job like `deadline-reminders`, skip declined invitees, mount the toast listener in Layout) or remove the reminder field from the event form so nothing promises them
 - `dispatch-calendar-reminders` is `enabled = false` in `config.toml` and has no schedule; the toast
   listener is mounted only on `/calendar`. Users can still set reminder offsets, which are stored
   and ignored. It would also notify invitees who declined. See SEC-A9 before enabling.
 
 ### COLLAB-2 · Medium · The assistant's help articles are stale
+- **Status:** Fixed on `fix/defect-backlog` (fix(collab)): tasks, calendar and ai-chat-widget articles rewritten from the current UI labels; index rebuilt. The calendar article leaves reminders out until COLLAB-1 is decided
 - `help-kb/tasks.md` describes removed statuses, sorting and filters; `help-kb/calendar.md` mentions
   a "Možda" RSVP and event types that do not exist; `help-kb/ai-chat-widget.md` says the assistant
   cannot create PDFs. The assistant repeats these answers.
 - **Fix direction:** update the articles and run `npm run kb:build`.
 
 ### COLLAB-3 · Medium · Misfiled documents cannot be fixed in the UI
+- **Status:** Fixed on `fix/defect-backlog` (fix(collab)): Edit action (uploader, Director, Accounting) reusing the upload modal in edit mode. The dedicated Uncategorized filter node is still missing (Low)
 - `updateDocument` exists but nothing calls it; there is no way to re-categorise or re-link a
   document, although EMAIL_DOCUMENT_SORTING.md tells users to fix misfiled imports on the Documents
   page. Uncategorised documents have no dedicated filter node, only a count.
 
 ### COLLAB-4 · Medium · AI rate limiting miscounts
+- **Status:** Deferred to the voice branch: this is open question OQ-3 there, and `feature/voice-assistant` pins the assistant with characterisation tests; change it with that work
 - Tool-result rows are stored as `role = 'user'` and count against the 20-per-5-minutes and
   200-per-day limits; the check fails open on query errors and can be raced by concurrent requests.
 

@@ -4972,6 +4972,7 @@
   "documents": {
     "upload_modal": {
       "title": "Upload document",
+      "edit_title": "Edit document",
       "file_label": "File",
       "drag_or_click": "Drag a file here or click to select",
       "any_type_hint": "Any file type, up to 50 MB",
@@ -5012,7 +5013,9 @@
       "toast": {
         "success": "Document uploaded",
         "success_many": "{{count}} documents uploaded",
-        "error_generic": "Failed to upload document"
+        "error_generic": "Failed to upload document",
+        "update_success": "Document updated",
+        "update_error": "The document could not be saved"
       }
     },
     "page": {
@@ -5045,6 +5048,7 @@
       },
       "actions": {
         "open": "Open",
+        "edit": "Edit",
         "delete": "Delete"
       },
       "delete_confirm_title": "Delete document?",

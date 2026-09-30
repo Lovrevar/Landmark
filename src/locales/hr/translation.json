@@ -4998,6 +4998,7 @@
   "documents": {
     "upload_modal": {
       "title": "Učitaj dokument",
+      "edit_title": "Uredi dokument",
       "file_label": "Datoteka",
       "drag_or_click": "Povucite datoteku ovdje ili kliknite za odabir",
       "any_type_hint": "Bilo koja vrsta datoteke, najviše 50 MB",
@@ -5038,7 +5039,9 @@
       "toast": {
         "success": "Dokument učitan",
         "success_many": "Učitano dokumenata: {{count}}",
-        "error_generic": "Greška pri učitavanju dokumenta"
+        "error_generic": "Greška pri učitavanju dokumenta",
+        "update_success": "Dokument ažuriran",
+        "update_error": "Dokument nije moguće spremiti"
       }
     },
     "page": {
@@ -5071,6 +5074,7 @@
       },
       "actions": {
         "open": "Otvori",
+        "edit": "Uredi",
         "delete": "Obriši"
       },
       "delete_confirm_title": "Obriši dokument?",

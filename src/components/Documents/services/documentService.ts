@@ -284,11 +284,14 @@ export async function updateDocument(
   if ('description' in input) updateData.description = input.description ?? null
 
   if (Object.keys(updateData).length > 0) {
-    const { error } = await supabase
+    const { data: updatedRows, error } = await supabase
       .from('documents')
       .update(updateData)
       .eq('id', id)
+      .select('id')
     if (error) throw error
+    // RLS lets only the uploader, Director or Accounting change a document.
+    assertRowsAffected(updatedRows)
   }
 
   if (input.associations !== undefined) {

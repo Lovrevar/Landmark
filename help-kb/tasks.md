@@ -1,23 +1,21 @@
 ---
 id: tasks
 title: Zadaci
-keywords: [zadaci, tasks, todo, u tijeku, gotovo, due date, dodijeljeni meni]
+keywords: [zadaci, tasks, todo, gotovo, rok, dodijeljeni meni, privatni, podzadaci, kontrolna lista, komentari]
 routes: [/tasks]
 roles: [Director, Accounting, Sales, Supervision, Investment]
 ---
 
-**Zadaci** je modul za praćenje zadataka među korisnicima. Naslov stranice: **Zadaci**.
+**Zadaci** je zajednička lista zadataka cijele firme. Otvara se ikonom u gornjoj navigaciji; broj na ikoni pokazuje nepročitane zadatke koji su vam dodijeljeni.
 
-Tabovi: **Dodijeljeni meni**, **Kreirani od mene**, **Privatni**.
+Tabovi: **Svi zadaci** (zadano), **Dodijeljeni meni**, **Dodijelio sam**, **Privatni**. Svi vide sve zadatke koji nisu privatni; privatni zadatak vidi samo onaj tko ga je stvorio.
 
-Glavna akcija: **Dodaj zadatak** (+ gumb).
+Zadatak je ili otvoren ili gotov — kvačica ga označava gotovim. Zadatak s podzadacima (kontrolnom listom) postaje gotov sam kad su gotove sve stavke; njegovu kvačicu tada ne možete mijenjati ručno.
 
-Statusi: **todo** (Za napraviti), **in_progress** (U tijeku), **done** (Gotovo).
+Zadaci su uvijek grupirani po projektu (bez projekta na kraju). Grupa pokazuje broj zadataka i koliko ih kasni. Unutar grupe otvoreni su poredani po roku, a gotovi na kraju. Prekidač **Prikaži gotove** skriva ili prikazuje gotove zadatke; pretraga filtrira po nazivu.
 
-Sortiranje: po datumu dospijeća, datumu kreiranja ili nazivu. Grupiranje: bez grupiranja, po projektu, statusu ili datumu dospijeća. Prekidač **Prikaži/sakrij završene** kontrolira vidljivost gotovih zadataka.
+Novi zadatak: gumb **Novi zadatak** (naslov, projekt, rok, boja, privatno, osobe, opis, podzadaci) ili brzi unos u grupi projekta — upišite naslov i pritisnite Enter.
 
-Filtri: tekstualna pretraga (s debounce), multi-select statusa, padajući izbornik projekta, multi-select dodjelitelja.
+Klik na zadatak otvara detalje s desne strane: sve se sprema automatski. Tu su podzadaci, privitci (do 25 MB, najviše 10), komentari s @spominjanjem kolega i brisanje zadatka. Uređivati mogu autor i osobe kojima je zadatak dodijeljen.
 
-Zadaci su grupirani u kategorije po datumu: **Overdue**, **Today**, **Tomorrow**, **This week**, **Later**, **No due date**. Detaljni modal sadrži opis, privitke, dodijeljene osobe i vrijeme dospijeća.
-
-Ikona zvona u gornjoj navigaciji pokazuje broj nepročitanih obavijesti o zadacima.
+**Označi sve kao pročitano** uklanja oznaku nepročitanog sa svih zadataka dodijeljenih vama.
