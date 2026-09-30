@@ -1,5 +1,6 @@
 import { supabase, ProjectPhase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
+import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { PhaseFormInput } from '../types'
 
 export const fetchProjectPhases = async () => {
@@ -221,12 +222,14 @@ export const deletePhase = async (phaseId: string) => {
     .eq('id', phaseId)
     .maybeSingle()
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('project_phases')
     .delete()
     .eq('id', phaseId)
+    .select('id')
 
   if (error) throw error
+  assertRowsAffected(data)
 
   logActivity({ action: 'phase.delete', entity: 'phase', entityId: phaseId, projectId: phaseRow?.project_id ?? null, metadata: { severity: 'high' } })
 }

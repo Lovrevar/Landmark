@@ -22,7 +22,7 @@ import { InvoicesModal } from './modals/InvoicesModal'
 import { PhaseClassificationBudgetsModal } from './modals/PhaseClassificationBudgetsModal'
 import { ManageCostClassificationsModal } from './modals/ManageCostClassificationsModal'
 import { MilestoneList } from './MilestoneList'
-import { canManagePayments, getAccessibleProjectIds, isSupervisionRole } from '../../../utils/permissions'
+import { canManagePayments, getAccessibleProjectIds, isDirectorRole, isSupervisionRole } from '../../../utils/permissions'
 
 /** Remembers the phase-first vs classification-first choice per browser. */
 const GROUPING_STORAGE_KEY = 'cognilion.site_management_grouping'
@@ -350,6 +350,8 @@ const SiteManagement: React.FC = () => {
   }
 
   const userCanManagePayments = canManagePayments(user)
+  // Deleting contracts and phases is Director-only under RLS; other roles would get a no-op.
+  const userCanDelete = isDirectorRole(user)
 
   if (selectedProject) {
     return (
@@ -377,7 +379,7 @@ const SiteManagement: React.FC = () => {
             setIsPhaseSetupEditMode(true)
           }}
           onEditPhase={openEditPhaseModal}
-          onDeletePhase={handleDeletePhase}
+          onDeletePhase={userCanDelete ? handleDeletePhase : undefined}
           onAddSubcontractor={(phase) => {
             setSelectedPhase(phase)
             setShowSubcontractorForm(true)
@@ -391,7 +393,7 @@ const SiteManagement: React.FC = () => {
             setShowEditModal(true)
           }}
           onOpenSubDetails={openSubcontractorDetails}
-          onDeleteSubcontractor={handleDeleteSubcontractor}
+          onDeleteSubcontractor={userCanDelete ? handleDeleteSubcontractor : undefined}
           onManageMilestones={handleManageMilestones}
           canManagePayments={userCanManagePayments}
           classifications={classifications}

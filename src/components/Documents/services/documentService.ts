@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { logActivity } from '../../../lib/activityLog'
+import { assertRowsAffected } from '../../../lib/dbErrors'
 import type {
   AssociationInput,
   Document,
@@ -335,16 +336,20 @@ export async function deleteDocument(id: string): Promise<void> {
   const filePath = (doc as { file_path: string }).file_path
   const source = (doc as { source: DocumentSource }).source
 
-  const { error: storageErr } = await supabase.storage
-    .from(bucketForSource(source))
-    .remove([filePath])
-  if (storageErr) throw storageErr
-
-  const { error: dbErr } = await supabase
+  // Row first: RLS lets only the uploader or a finance role delete it, and a refused delete must
+  // not have removed the file already. A storage failure afterwards only orphans the object.
+  const { data: deleted, error: dbErr } = await supabase
     .from('documents')
     .delete()
     .eq('id', id)
+    .select('id')
   if (dbErr) throw dbErr
+  assertRowsAffected(deleted)
+
+  const { error: storageErr } = await supabase.storage
+    .from(bucketForSource(source))
+    .remove([filePath])
+  if (storageErr) console.warn('[documents] row deleted but storage object was not removed:', filePath, storageErr.message)
 
   logActivity({
     action: 'document.delete',

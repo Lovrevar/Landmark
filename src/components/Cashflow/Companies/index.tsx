@@ -6,9 +6,14 @@ import CompanyFormModal from './forms/CompanyFormModal'
 import CompanyDetailsModal from './modals/CompanyDetailsModal'
 import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, ConfirmDialog } from '../../ui'
 import { toErrorMessage } from '../../../lib/errorMessage'
+import { useAuth } from '../../../contexts/AuthContext'
+import { isDirectorRole } from '../../../utils/permissions'
 
 const AccountingCompanies: React.FC = () => {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  // Deleting companies is Director-only under RLS.
+  const canDelete = isDirectorRole(user)
   const {
     companies,
     loading,
@@ -167,7 +172,9 @@ const AccountingCompanies: React.FC = () => {
                   {t('common.details')}
                 </Button>
                 <Button variant="ghost" size="icon-md" icon={Edit} onClick={() => handleOpenAddModal(company)} title={t('common.edit')} />
-                <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => handleDelete(company.id)} title={t('common.delete')} />
+                {canDelete && (
+                  <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => handleDelete(company.id)} title={t('common.delete')} />
+                )}
               </div>
             </div>
           ))}

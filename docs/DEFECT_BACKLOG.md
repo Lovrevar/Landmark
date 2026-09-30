@@ -44,7 +44,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ## 1. Security and access
 
 ### SEC-A1 · High · `public.users` is readable without logging in
-- **Check:** Confirmed. **Status:** Open
+- **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(security))
 - **Where:** [baseline_schema.sql:7396](../supabase/migrations/00000000000000_baseline_schema.sql#L7396), policy `"Allow reading users for authentication"`, `FOR SELECT TO anon, authenticated USING (true)`.
 - **What happens:** anyone holding the anon key (it ships in the JS bundle) can list every user's
   username, email and role.
@@ -52,7 +52,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   before authentication; `AuthContext.fetchUserData` runs after sign-in, so it should not need it.
 
 ### SEC-A2 · High · Any signed-in user can insert roster rows with any role
-- **Check:** Confirmed. **Status:** Open
+- **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(security))
 - **Where:** [baseline_schema.sql:7361](../supabase/migrations/00000000000000_baseline_schema.sql#L7361), `"Allow authenticated to insert users"`, `WITH CHECK (true)`.
 - **What happens:** a Sales user can insert a `public.users` row with `role = 'Director'` for an
   email address. SSO provisioning links a Microsoft identity to a pre-created row by email
@@ -62,7 +62,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   admin SQL insert today).
 
 ### SEC-A3 · Medium · Activity-log rows can be forged
-- **Check:** Confirmed. **Status:** Open
+- **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(security))
 - **Where:** [baseline_schema.sql:7671](../supabase/migrations/00000000000000_baseline_schema.sql#L7671), `activity_logs` INSERT `WITH CHECK (true)`; [src/lib/activityLog.ts](../src/lib/activityLog.ts) sends `user_id` and `user_role` from the client.
 - **What happens:** any authenticated user can write log rows attributed to another user or role,
   which undermines the audit trail.
@@ -70,7 +70,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   or fill `user_id`/`user_role` in a BEFORE INSERT trigger and ignore the client values.
 
 ### SEC-A4 · Medium · Chat attachments are publicly readable
-- **Check:** Confirmed. **Status:** Open
+- **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(security))
 - **Where:** [20260527100100_restore_other_storage_buckets_and_policies.sql:51](../supabase/migrations/20260527100100_restore_other_storage_buckets_and_policies.sql#L51) (`chat-attachments` is `public = true`); the chat service stores `getPublicUrl`.
 - **What happens:** anyone with a file URL can download it without authenticating. URLs are
   guessable only with difficulty (`{conversationId}/{timestamp}_{random}.{ext}`), but they leak
@@ -80,7 +80,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   which never matches the `conversationId` path.
 
 ### SEC-A5 · Medium · Blanket `USING (true)` policies make role policies ineffective
-- **Check:** Code reading. **Status:** Open
+- **Check:** Code reading. **Status:** Fixed on `fix/defect-backlog` (fix(security))
 - **Where:** baseline policies on `apartments`, `buildings`, `garages`, `repositories`,
   `apartment_garages`, `apartment_repositories`, `customers`, `sales`, `banks`,
   `credit_allocations`, `monthly_budgets`, `hidden_approved_invoices`, `project_milestones`,
@@ -94,7 +94,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   with `document_categories` DELETE and `credit_allocations` writes.
 
 ### SEC-A6 · Medium · Dashboard cache is shared between users in the same tab
-- **Check:** Code reading. **Status:** Open
+- **Check:** Code reading. **Status:** Fixed on `fix/defect-backlog` (fix(security))
 - **Where:** [src/lib/useCachedData.ts](../src/lib/useCachedData.ts), a module-level `Map`; nothing calls `invalidateCachedData`.
 - **What happens:** after logout and login as another user in the same tab, dashboards and reports
   can show the previous user's (RLS-scoped) figures for up to 5 minutes. Figures are also up to
@@ -103,7 +103,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   relevant keys after mutations.
 
 ### SEC-A7 · Medium · RLS-filtered writes report success and are logged
-- **Check:** Code reading. **Status:** Open
+- **Check:** Code reading. **Status:** Fixed on `fix/defect-backlog` (fix(security))
 - **Where:** delete and update paths across modules; PostgREST returns success with zero rows when
   RLS filters an UPDATE or DELETE.
 - **What happens (examples):**

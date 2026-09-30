@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { logActivity } from '../../../../lib/activityLog'
 import type { Invoice, CreditAllocation, Contract } from '../types'
 import { buildPaymentData } from '../../Payments/services/paymentPayload'
@@ -372,12 +373,14 @@ export const handlePaymentSubmit = async (
 }
 
 export const handleDelete = async (id: string) => {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('accounting_invoices')
     .delete()
     .eq('id', id)
+    .select('id')
 
   if (error) throw error
+  assertRowsAffected(data)
 
   logActivity({
     action: 'invoice.delete',

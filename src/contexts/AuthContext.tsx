@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
+import { setCachedDataOwner } from '../lib/useCachedData'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 // Survives the full-page redirect to Microsoft and back, so the SIGNED_IN
@@ -173,6 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return
       }
 
+      setCachedDataOwner(userData.id)
       setUser(userData)
       setIsAuthenticated(true)
       setAuthError(null)
@@ -207,6 +209,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userData = await fetchUserData(session.user)
           if (!mounted) return
           if (userData) {
+            setCachedDataOwner(userData.id)
             setUser(userData)
             setIsAuthenticated(true)
           } else {
@@ -231,6 +234,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         handleAuthChange(session?.user || null)
       } else if (event === 'SIGNED_OUT') {
+        setCachedDataOwner(null)
         if (mounted) {
           setUser(null)
           setIsAuthenticated(false)
@@ -275,6 +279,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (data.user) {
         const userData = await fetchUserData(data.user)
         if (userData) {
+          setCachedDataOwner(userData.id)
           setUser(userData)
           setIsAuthenticated(true)
           setCurrentProfile('General')
@@ -360,6 +365,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
+      setCachedDataOwner(null)
       setUser(null)
       setIsAuthenticated(false)
       setAuthError(null)

@@ -18,7 +18,7 @@ interface CustomerGridProps {
   onSelectAll: () => void
   onViewDetails: (customer: CustomerWithApartments) => void
   onEdit: (customer: CustomerWithApartments) => void
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
   onUpdateContact: (id: string) => void
 }
 

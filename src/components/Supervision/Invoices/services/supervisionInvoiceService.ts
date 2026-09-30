@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
+import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
 import { exportT } from '../../../../utils/exportLanguage'
 import { getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
@@ -111,12 +112,14 @@ export function calculateInvoiceStats(invoices: InvoiceWithDetails[]): InvoiceSt
 }
 
 export async function toggleInvoiceApproval(invoiceId: string, currentApproved: boolean): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('accounting_invoices')
     .update({ approved: !currentApproved })
     .eq('id', invoiceId)
+    .select('id')
 
   if (error) throw error
+  assertRowsAffected(data)
 
   logActivity({ action: 'invoice.approve', entity: 'invoice', entityId: invoiceId, metadata: { severity: 'high', approved: !currentApproved } })
 }

@@ -89,6 +89,8 @@ logActivity({
 **Key behaviors:**
 - `severity` is merged into `metadata.severity` (not a separate column)
 - When `userId`/`userRole` are omitted, the function calls `supabase.auth.getUser()` and looks up the `users` row internally
+- Whatever the client sends, the `trg_stamp_activity_log_actor` trigger overwrites `user_id` and `user_role` from `auth.uid()` (migration `20260930100000`), so a row cannot be attributed to another user. Service-role inserts keep the values they send
+- Every call except `export.*` and `auth.*` also clears the `useCachedData` cache, because the figures on dashboards and reports just went stale
 - The insert uses a try/catch with `console.warn` — never throws
 
 ---

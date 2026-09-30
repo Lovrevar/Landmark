@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { logActivity } from '../../../../lib/activityLog'
 import { CompanyStats, CompanyFormData } from '../types'
 
@@ -236,12 +237,14 @@ const recalculateBankAccountBalance = async (bankAccountId: string, resetAt: str
 }
 
 export const deleteCompany = async (companyId: string) => {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('accounting_companies')
     .delete()
     .eq('id', companyId)
+    .select('id')
 
   if (error) throw error
+  assertRowsAffected(data)
 
   logActivity({ action: 'company.delete', entity: 'company', entityId: companyId, metadata: { severity: 'high' } })
 }
