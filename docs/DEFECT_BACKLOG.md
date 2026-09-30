@@ -382,7 +382,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ## 6. Funding and TIC
 
 ### FUND-1 · High · Renaming an investor fails
-- **Check:** Runtime check needed. **Status:** Open
+- **Check:** Runtime check needed. **Status:** Fixed on `fix/defect-backlog` (fix(funding)): trigger and function dropped
 - **Where:** trigger `trigger_update_bank_in_accounting_companies` runs
   `UPDATE accounting_companies SET name = … WHERE bank_id = …`; `accounting_companies.bank_id` was
   removed in `20260203113055`.
@@ -390,6 +390,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - **Fix direction:** drop the trigger.
 
 ### FUND-2 · Medium · First TIC save and non-Director TIC saves may be rejected
+- **Status:** Fixed on `fix/defect-backlog` (fix(funding)): insert check compares `public.users.id`; TIC writes limited to Director, Accounting, Investment; sync runs `SECURITY DEFINER`. Still worth a runtime check once the migration is on dev
 - **Check:** Runtime check needed.
 - The client sends `created_by = public.users.id`, but the INSERT policy requires
   `auth.uid() = created_by` (and the FK points at `users(id)`), so a first-time TIC insert is likely
@@ -398,14 +399,17 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   classification-budget writes it performs violate RLS and would abort the save.
 
 ### FUND-3 · Medium · Allocation limit ignores direct drawdowns
+- **Status:** Fixed on `fix/defect-backlog` (fix(funding))
 - The modal shows "Nealocirano" = amount − allocations − direct drawdowns, but validation only
   checks amount − allocations, so users can allocate more than the figure shown.
 
 ### FUND-4 · Medium · Credit status cannot be changed
+- **Status:** Fixed on `fix/defect-backlog` (fix(funding)): status select in the credit form on edit
 - No UI writes `bank_credits.status`; credits stay `active`, so "paid" and "defaulted" badges
   depend on manual database edits.
 
 ### FUND-5 · Medium · Two repayment models disagree
+- **Status:** Open — **needs a finance decision**: which repayment model do the company's credits follow — an annuity (what `monthly_payment` stores), or linear principal with interest per the chosen frequency, and is interest charged on the full amount (what the preview shows) or on the outstanding balance? Then both the stored figure and the preview use it
 - The stored `monthly_payment` is an annuity (monthly by default, 10 years when no maturity is set),
   while the schedule preview uses linear principal plus flat interest on the full amount. No
   schedule is persisted.
