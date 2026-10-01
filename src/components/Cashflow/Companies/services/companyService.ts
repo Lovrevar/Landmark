@@ -130,8 +130,24 @@ export const updateCompany = async (companyId: string, formData: CompanyFormData
 
   logActivity({ action: 'company.update', entity: 'company', entityId: companyId, metadata: { severity: 'medium', entity_name: formData.name, changed_fields: ['name', 'oib'] } })
 
+  // The form is pre-filled with every account's stored opening balance and reset date and sends
+  // them all back. Only an account whose figures were actually changed gets a reset: resetting an
+  // untouched account with no reset date would date it today and drop every earlier payment and
+  // loan from its balance — which is what a plain rename used to do.
+  const { data: storedAccounts, error: storedError } = await supabase
+    .from('company_bank_accounts')
+    .select('id, initial_balance, balance_reset_at')
+    .eq('company_id', companyId)
+  if (storedError) throw storedError
+  const storedById = new Map((storedAccounts || []).map(a => [a.id, a]))
+
   for (const account of formData.bankAccounts) {
-    if (account.id) {
+    const stored = account.id ? storedById.get(account.id) : undefined
+    const storedDate = stored?.balance_reset_at ? stored.balance_reset_at.split('T')[0] : null
+    const unchanged = !!stored
+      && Number(stored.initial_balance) === Number(account.current_balance)
+      && storedDate === (account.balance_reset_at || null)
+    if (account.id && !unchanged) {
       const resetAt = account.balance_reset_at
         ? `${account.balance_reset_at}T00:00:00+00:00`
         : new Date().toISOString()

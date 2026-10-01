@@ -32,7 +32,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 | Auth and platform | 0 | 2 | 3 |
 | Sales | 2 | 5 | 5 |
 | Supervision | 1 | 3 | 7 |
-| Cashflow | 2 | 5 | 8 |
+| Cashflow | 3 | 5 | 8 |
 | Funding and TIC | 1 | 4 | 10 |
 | Projects, dashboards, reports | 0 | 4 | 10 |
 | Tasks, calendar, chat, documents, AI | 0 | 4 | 5 |
@@ -376,6 +376,12 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### CASH-15 · Low · Dead code
 - `BankCreditFormModal` in Cashflow/Banks is rendered but has no entry point.
+
+### CASH-16 · High · Saving a company resets every bank account's balance
+- **Check:** Confirmed (found while re-checking the fix/defect-backlog branch). **Status:** Fixed on `fix/defect-backlog` (fix(cashflow) follow-up)
+- **Where:** `updateCompany` in [companyService.ts](../src/components/Cashflow/Companies/services/companyService.ts); the edit form is pre-filled from `fetchBankAccountsForCompany` with each account's `initial_balance` and reset date.
+- **What happened:** every save sent a balance reset for every account. An account with no reset date got one dated today, so all earlier payments and loans dropped out of its balance — a plain rename was enough. Existed before this branch; the branch first carried it into the reset RPC.
+- **Fix:** only accounts whose balance or date differs from the stored values are reset. Accounts already hit by this show `balance_reset_at` on the day the company was last edited; check them with the query at the end of migration `20260930100300`.
 
 ---
 
