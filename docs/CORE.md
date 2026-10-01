@@ -206,6 +206,7 @@ read "Jan 05, 2026".
 - `isSupervisionRole(user)` — true if role is Supervision
 - `isDirectorRole(user)` — true if role is Director
 - `canViewActivityLog(user)` — alias for `isDirectorRole`; the activity log is Director-only
+- `canUseCashflow(user)` — Director or Accounting, the roles the finance RLS lets through. The profile switcher offers Cashflow only to them (a stored Cashflow profile falls back to General), and `CashflowRoute` uses the same check
 - `getAccessibleProjectIds(user)` — returns `[]` for roles with full access; returns assigned project IDs for Supervision; returns `[]` for others
 - **Depends on:** AuthContext User type
 

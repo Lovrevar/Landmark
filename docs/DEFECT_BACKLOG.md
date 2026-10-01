@@ -119,7 +119,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   [permissions.ts](../src/utils/permissions.ts) exist but are unused).
 
 ### SEC-A8 · Low · Non-finance roles can open the Cashflow dashboard
-- **Check:** Code reading. **Status:** Open
+- **Check:** Code reading. **Status:** Fixed on `fix/backlog-batch-2` (fix(platform)): `canUseCashflow` (Director, Accounting) filters the profile list and backs `CashflowRoute`; a stored Cashflow profile falls back to General
 - **Where:** [Layout.tsx](../src/components/Common/Layout.tsx) profile switcher, [Dashboard.tsx](../src/components/Common/Dashboard.tsx).
 - **What happens:** Sales and Investment users can select the Cashflow profile, enter the password
   and see `AccountingDashboard` at `/` (RLS-limited data). Every `/accounting-*` route still
@@ -170,12 +170,14 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - **Fix direction:** add a migration that creates the trigger idempotently.
 
 ### AUTH-3 · Low · `npm run e2e:seed` points at a missing script
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(platform)): the `e2e:seed` script entry was removed
 - **Where:** `package.json` → `scripts/seed-e2e.mjs` (does not exist). Remove or restore it.
 
 ### AUTH-4 · Low · Client and SQL disagree on project access
 - **Where:** `hasProjectAccess` in [AuthContext.tsx](../src/contexts/AuthContext.tsx) returns `false` for Accounting, Sales and Investment; SQL `user_has_project_access(user, proj)` grants them all projects. Align one to the other.
 
 ### AUTH-5 · Low · Profile switcher shows raw English names
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(platform)): the switcher and the header label use `profiles.*`
 - **Where:** [Layout.tsx](../src/components/Common/Layout.tsx) renders `{profile}` although `profiles.*` i18n keys exist.
 
 ---
@@ -542,6 +544,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - "Unknown", "N/A" (Sales dashboard), "Uncategorized" (General report contract types).
 
 ### GEN-13 · Low · Reports menu item shown to non-Directors
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(platform)): the menu item is shown to Directors only
 - `/general-reports` appears in every General-profile menu but only Directors can open it.
 
 ### GEN-14 · Low · Credit types rendered raw

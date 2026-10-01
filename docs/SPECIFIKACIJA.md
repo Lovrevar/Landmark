@@ -271,7 +271,7 @@ kroz zaštitu od nespremljenih izmjena i vodi na `/`. Profil Cashflow označen j
 |---|---|---|
 | Director | svih 6 | sve; Cashflow nakon lozinke |
 | Accounting | svih 6 | Cashflow rute nakon lozinke |
-| Sales, Investment | svih 6 | mogu otvoriti Cashflow dashboard (podaci ograničeni RLS-om), ali sve Cashflow rute ih vraćaju na `/`; `/general-reports` je samo za direktora |
+| Sales, Investment | svi osim Cashflowa | spremljeni profil Cashflow vraća se na General; stavka Izvještaji (`/general-reports`) vidljiva je samo direktoru |
 | Supervision | nijedan (izmjenjivač skriven) | fiksni izbornik s tri stavke; `/` preusmjerava na `/site-management` |
 
 ### 4.3 Lozinka za Cashflow
@@ -279,7 +279,8 @@ kroz zaštitu od nespremljenih izmjena i vodi na `/`. Profil Cashflow označen j
 Ulazak u profil Cashflow traži lozinku iz `VITE_CASHFLOW_PASSWORD`. Točna lozinka postavlja
 `sessionStorage.cashflow_unlocked = 'true'` (vrijedi za karticu, briše se pri odjavi). Ako
 varijabla nije postavljena, dijalog se zatvara bez mogućnosti otključavanja. Ako je spremljeni
-profil Cashflow, a kartica nije otključana, dijalog se otvara automatski.
+profil Cashflow, a kartica nije otključana, dijalog se otvara automatski. Profil Cashflow nude se
+samo ulogama Director i Accounting (`canUseCashflow`), istima koje RLS pušta do financijskih podataka.
 
 Lozinka je **zaštita od slučajnog otkrivanja podataka** (npr. pri dijeljenju ekrana), a ne
 sigurnosna granica: stvarnu zaštitu financijskih podataka provode RLS politike u bazi
@@ -297,7 +298,7 @@ sigurnosna granica: stvarnu zaštitu financijskih podataka provode RLS politike 
 2. Projekti → `/projects`
 3. Kontrola proračuna → `/budget-control`
 4. Dokumenti → `/documents`
-5. Izvještaji → `/general-reports`
+5. Izvještaji → `/general-reports` (samo Director)
 6. Dnevnik aktivnosti → `/activity-log` (samo Director)
 
 **Profil Supervision:**
@@ -489,6 +490,7 @@ baza):
 | `canManageWorkLogs` | Director, Supervision |
 | `canManageProjectPhases` | Director |
 | `canViewActivityLog` | Director |
+| `canUseCashflow` | Director, Accounting (profil Cashflow i `CashflowRoute`) |
 | `getAccessibleProjectIds` | prazan popis (= svi) za uloge s punim pristupom; dodijeljeni projekti za Supervision |
 
 ### 6.5 Pohrana datoteka (Supabase Storage)
