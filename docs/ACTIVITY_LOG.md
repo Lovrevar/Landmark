@@ -68,9 +68,9 @@ Returns rows with JOINed `username`, `project_name`, and `total_count` (window f
 
 ## Shared Logger — `src/lib/activityLog.ts`
 
-### `logActivity(params): void`
+### `logActivity(params): Promise<void>`
 
-Fire-and-forget function. Returns `void` (not `Promise`). A logging failure **never** blocks or errors the user's CRUD operation — failures are caught and sent to `console.warn`.
+Fire-and-forget function. Returns a `Promise<void>` that never rejects, so most callers ignore it; a caller that needs the insert to finish before its next step (e.g. logout, which clears the session) can `await` it. A logging failure **never** blocks or errors the user's CRUD operation — failures are caught and sent to `console.warn`.
 
 ```typescript
 logActivity({
@@ -130,7 +130,7 @@ logActivity({
 ### types.ts
 - `ActivityLogEntry` — row shape returned by the RPC
 - `ActivityLogFilters` — filter state shape
-- `ACTION_CATEGORIES` — 35 action category prefixes for the category filter
+- `ACTION_CATEGORIES` — `'ALL'` plus 46 action category prefixes for the category filter. There is no category for the `erp_*` prefixes (`erp_import`, `erp_account_map`, `erp_cost_center_map`, `erp_partner_map`), `ai_session` or `cost_classification`, so those rows are reachable only through "all" and the search box
 - `ENTITY_ROUTE_MAP` — maps entity types to their app routes for "View Entity" navigation
 - `SeverityFilter`, `ActionCategory` — union types
 
@@ -189,7 +189,7 @@ logActivity({
 | `office_supplier.delete` | M | `Cashflow/OfficeSuppliers/services/officeSupplierService.ts` |
 | `loan.create` | H | `Cashflow/Loans/services/loanService.ts` |
 | `loan.delete` | H | `Cashflow/Loans/services/loanService.ts` |
-| `monthly_budget.update` | M | `Cashflow/Budget/services/budgetService.ts` + `Cashflow/Calendar/services/calendarService.ts` |
+| `monthly_budget.update` | M | `Cashflow/Calendar/services/calendarService.ts` |
 | `export.debt_excel` | L | `Cashflow/DebtStatus/services/debtExport.ts` (metadata carries `row_count` and the `project` filter) |
 | `export.debt_pdf` | L | `Cashflow/DebtStatus/services/debtExport.ts` (metadata carries `row_count` and the `project` filter) |
 
@@ -210,7 +210,8 @@ logActivity({
 | `apartment.unlink_garage` | L | `Sales/SalesProjects/services/salesService.ts` |
 | `apartment.unlink_repository` | L | `Sales/SalesProjects/services/salesService.ts` |
 | `apartment.link_units` | L | Retired 2026-09-30: `saveUnitLinks` now logs `apartment.link_garage` / `unlink_garage` (and repository) per change. Label kept for old rows |
-| `apartment.import_excel` | H | `Sales/SalesProjects/services/apartmentImportService.ts` |
+| `apartment.import_excel` | H | `Sales/SalesProjects/services/apartmentImportService.ts` (one row per imported apartment) |
+| `apartment.import_excel_summary` | H | `Sales/SalesProjects/services/apartmentImportService.ts` (`logApartmentImportSummary` — one row per run, so a run whose rows all fail still leaves a trace; metadata carries `count`, `failed`, `garages_linked`, `storages_linked`) |
 | `garage.import_excel` | H | `Sales/SalesProjects/services/garageImportService.ts` |
 | `customer.create` | L | `Sales/Customers/services/customerService.ts` + `Sales/SalesProjects/services/salesService.ts` |
 | `customer.update` | L | `Sales/Customers/services/customerService.ts` + `Sales/SalesProjects/services/salesService.ts` |
@@ -227,7 +228,7 @@ logActivity({
 | `phase.bulk_update` | H | `Supervision/SiteManagement/services/phaseService.ts` (phase sync + resequence) |
 | `subcontractor.create` | M | `Supervision/SiteManagement/services/siteSubcontractorService.ts` |
 | `subcontractor.update` | M | `Supervision/SiteManagement/services/siteSubcontractorService.ts` |
-| `subcontractor.delete` | H | `Supervision/SiteManagement/services/siteSubcontractorService.ts` + `Supervision/Subcontractors/hooks/useSubcontractorData.ts` |
+| `subcontractor.delete` | H | `Supervision/SiteManagement/services/siteSubcontractorService.ts` + `Supervision/Subcontractors/services/subcontractorService.ts` |
 | `subcontractor.comment` | L | `Supervision/SiteManagement/services/siteSubcontractorService.ts` |
 | `contract.create` | H | `Supervision/SiteManagement/services/siteContractService.ts` |
 | `contract_type.create` | M | `Supervision/SiteManagement/services/siteContractService.ts` |
@@ -244,21 +245,22 @@ logActivity({
 | `export.supervision_invoices_excel` | L | `Supervision/Invoices/services/supervisionInvoiceService.ts` (metadata carries `row_count`) |
 | `export.supervision_payments_excel` | L | `Supervision/Payments/services/supervisionPaymentService.ts` (metadata carries `row_count`) |
 
-### Funding (15)
+### Funding (16)
 | Action | Severity | File |
 |---|---|---|
-| `investor.create` | M | `Funding/Investors/hooks/useBankData.ts` |
-| `investor.update` | M | `Funding/Investors/hooks/useBankData.ts` |
-| `investor.delete` | H | `Funding/Investors/hooks/useBankData.ts` |
+| `investor.create` | M | `Funding/Investors/services/bankService.ts` |
+| `investor.update` | M | `Funding/Investors/services/bankService.ts` |
+| `investor.delete` | H | `Funding/Investors/services/bankService.ts` |
 | `bank_credit.create` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
 | `bank_credit.update` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
 | `bank_credit.delete` | H | `Funding/Investors/services/creditService.ts` + `Cashflow/Banks/services/bankService.ts` |
 | `credit_allocation.create` | H | `Funding/Investments/services/creditService.ts` |
 | `credit_allocation.delete` | H | `Funding/Investments/services/creditService.ts` |
-| `equity_investment.create` | H | `Funding/Investors/hooks/useEquityForm.ts` |
+| `equity_investment.create` | H | `Funding/Investors/services/equityService.ts` |
 | `invoice.bulk_detach_credit` | H | `Funding/Investors/services/creditService.ts` |
 | `tic.create` | M | `Funding/TIC/services/ticService.ts` |
-| `tic.update` | M | `Funding/TIC/hooks/useTIC.ts` |
+| `tic.update` | M | `Funding/TIC/services/ticService.ts` |
+| `tic.import_excel` | H | `Funding/TIC/hooks/useTIC.ts` (fills the form from a workbook; metadata carries `file_name`, `sheets`, `count`) |
 | `export.tic_excel` | L | `Funding/TIC/services/ticExport.ts` |
 | `export.tic_pdf` | L | `Funding/TIC/services/ticExport.ts` |
 | `export.funding_payments_excel` | L | `Funding/Payments/services/fundingPaymentsExport.ts` (metadata carries `row_count`) |

@@ -14,11 +14,11 @@ Personal and shared scheduling with four views (Day / Week / Month / Agenda), RS
 
 Five tables:
 
-- `calendar_events` — master record. Recurrence rule stored on the event as an RFC-5545 `RRULE` string in `recurrence`; reminder offsets (minutes before start) in `reminder_offsets int[]` (no longer set from the UI — see "Reminders (parked)" below); `busy` flag controls whether the event blocks team-calendar slots. Event types: `meeting`, `personal`, `deadline`, `reminder`. `is_private` events are only visible to the creator.
+- `calendar_events` — master record. Recurrence rule stored on the event as an RFC-5545 `RRULE` string in `recurrence`; reminder offsets (minutes before start) in `reminder_offsets int[]` (no longer set from the UI — see "Reminders (parked)" below); `busy` flag controls whether the event blocks team-calendar slots. Event types: `meeting`, `personal`, `deadline`, `reminder`. Every event, private or not, is visible to its creator plus its participants (RLS "Events: creator or participant can view" never reads `is_private`). A private event is creator-only only because the app gives it no other participants (`createEvent` / `planParticipantChanges` leave just the creator's row); the database does not enforce that.
 - `calendar_event_participants` — junction rows with `response` (`pending` | `accepted` | `declined`) and `acknowledged_at`. This is the **series-scope** RSVP.
 - `calendar_event_exceptions` — per-occurrence overrides keyed by `(event_id, original_start_at)`. Stores `override_start_at`, `override_end_at`, `override_title`, or `is_cancelled`.
 - `calendar_occurrence_responses` — per-occurrence RSVP keyed by `(event_id, user_id, original_start_at)`. If present, shadows the series-scope response for that single occurrence.
-- `calendar_notifications` — reminder dispatcher writes one row per user per occurrence per offset. Clients subscribe to INSERTs to surface toasts.
+- `calendar_notifications` — meant to receive one row per user per occurrence per offset from the reminder dispatcher, which clients subscribe to for toasts. The dispatcher is switched off, so nothing writes here — see "Reminders (parked)" below.
 
 Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`). Recurring masters are fetched with an unbounded lower bound and the client expands occurrences into the visible window.
 
@@ -60,14 +60,14 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 - **Returns:** `rawEvents`, `occurrences`, `loading`, `error`, `refresh`
 
 ### hooks/useTasksInRange.ts
-- `useTasksInRange({ fromIso, toIso, enabled, activeProjectId, activeParticipantIds, search })` — fetches tasks with a `due_date` in the window via `tasksService.fetchTasksInRange`, then memoises the expansion via [expandTasks](../src/components/Calendar/utils/expandTasks.ts)
+- `useTasksInRange({ fromIso, toIso, enabled, activeProjectId, activeParticipantIds, search })` — fetches tasks with a `deadline` in the window via `tasksService.fetchTasksInRange`, then memoises the expansion via [expandTasks](../src/components/Calendar/utils/expandTasks.ts)
 - Gated by `enabled` — nothing fetches or subscribes when the "Show tasks" toggle is off
 - Subscribes to `tasks` and `task_assignees` realtime channels
 - Same error normalisation and same stale-data caveat as `useEventsInRange`
 - **Returns:** `rawTasks`, `taskOccurrences`, `loading`, `error`, `refresh`
 
 ### hooks/useCalendarReminderToasts.ts
-- `useCalendarReminderToasts()` — subscribes to `INSERT`s on `calendar_notifications` filtered to the current user and surfaces each as a `ToastContext` notification formatted as `"{title} · {offset} · {HH:MM}"`
+- `useCalendarReminderToasts()` — subscribes to `INSERT`s on `calendar_notifications` filtered to the current user and surfaces each as a `ToastContext` notification formatted as `"{title} · {offset} · {HH:MM}"`. Inert today: nothing inserts those rows (see "Reminders (parked)")
 - **Mounted in:** [CalendarPage](../src/components/Calendar/index.tsx)
 
 ### hooks/useCalendarNotifications.ts
@@ -86,7 +86,7 @@ Non-recurring queries use an overlap filter (`start_at < to AND end_at > from`).
 - `utils/eventEdit.ts` — the pure half of editing: `buildEventUpdate(previous, input)` (changed columns only; series timing excluded) and `planParticipantChanges(existing, creatorId, { isPrivate, participantIds })` → `{ removeRowIds, addUserIds, creatorRow }`, plus `hasParticipantChanges`. Tested in `eventEdit.test.ts`
 - `utils/monthLayout.ts` — `computeMonthLayout()` packs multi-day event segments into 7-column week rows with stable vertical slots and `continuesLeft/continuesRight` flags, mirroring Google/Outlook month layout. `eventSlotsByDay` lists the slots covering each day — gaps included, since a slot is stable across the week. `cellRows(eventSlots, taskCount, maxRows)` decides which rows a day's task pills take (the ones events leave free, top down) and the "+N more" count, in one place so the two cannot disagree. Tested in `monthLayout.test.ts`
 - `utils/eventTypeColors.ts` — `EVENT_TYPE_COLORS`, the only event-type colour map, and `EVENT_TYPES` (filter-bar / form order). See [Colours](#colours). Tested in `eventTypeColors.test.ts`
-- `utils/expandTasks.ts` — turns each `Task` with a `due_date` in the window into a `TaskOccurrence { occurrenceKey, task, due_at, isOverdue, isDone }`. Date-only tasks are anchored at 23:59 local so they sort after timed items for the day
+- `utils/expandTasks.ts` — turns each `Task` with a `deadline` (plus optional `due_time`) in the window into a `TaskOccurrence { occurrenceKey, task, due_at, isOverdue, isDone }`. Date-only tasks are anchored at 23:59 local so they sort after timed items for the day
 - `utils/pendingCount.ts` — `PENDING_WINDOW_DAYS` (30) and `pendingWindow(now)`, the one definition of "awaiting my response"; `selectPendingOccurrences(occurrences, from, to)` (resolved `pending`, starting inside the window, sorted) and `countPendingOccurrences(events, userId, from, to)` built on it. The badge and the sidebar's AwaitingResponse both go through these. Tested in `pendingCount.test.ts`
 - `utils/teamColors.ts` — stable color-per-user-id via simple hash over the user id
 - `utils/relativeLabel.ts` — shared "in 2 h / tomorrow / Fri 14:00" formatter

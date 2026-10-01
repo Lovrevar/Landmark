@@ -28,7 +28,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 | Area | High | Medium | Low |
 |---|---|---|---|
-| Security and access | 2 | 6 | 3 |
+| Security and access | 2 | 7 | 3 |
 | Auth and platform | 0 | 2 | 3 |
 | Sales | 2 | 5 | 5 |
 | Supervision | 1 | 3 | 7 |
@@ -142,6 +142,12 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - **Where:** the `company_statistics` view in the baseline schema was a plain view, which Postgres runs as its owner.
 - **What happened:** RLS on `accounting_invoices`, `company_bank_accounts` and `bank_credits` did not apply through it, so any role able to select from the view — with Supabase's default grants, every signed-in user and possibly `anon` — could read every company's bank balances and income/expense totals.
 - **Fix:** `security_invoker = on`.
+
+### SEC-A12 · Medium · Any signed-in user can delete any stored document file
+- **Check:** Confirmed (found 2026-10-01 while fixing AI_CHAT.md). **Status:** Open
+- **Where:** [20260527100000_restore_documents_bucket_and_policies.sql](../supabase/migrations/20260527100000_restore_documents_bucket_and_policies.sql) and [20260527100100_restore_other_storage_buckets_and_policies.sql](../supabase/migrations/20260527100100_restore_other_storage_buckets_and_policies.sql): the `storage.objects` INSERT / SELECT / DELETE policies on the `documents` and `contract-documents` buckets check only `bucket_id`.
+- **What happens:** `20260930100000` limited deleting a `public.documents` row to its uploader, Director and Accounting, but the file itself can be removed (or overwritten by path) by any signed-in user through the Storage API, leaving a row that points at nothing. Reading every file is also open to every signed-in user, which matches the table's SELECT policy today but has no per-entity check.
+- **Fix direction:** mirror the table rule in the DELETE (and UPDATE) policies on `storage.objects` — owner (`owner_id = auth.uid()`) or `app_user_role() IN ('Director','Accounting')` — the way `can_access_chat_object` does for chat.
 
 ---
 
@@ -682,6 +688,13 @@ entry's **ERP** line).
 
 Docs that disagree with the code. None of these change behaviour, but people and the AI assistant
 rely on them.
+
+**Status:** Fixed on `fix/backlog-batch-2` (docs), 2026-10-01, item by item against the code. Two
+claims were already out of date and were not applied: the chat attachment bucket is private since
+SEC-A4, and CASHFLOW.md never claimed a PDF preview (the nearest thing, `InvoicePreview.tsx`, is now
+described as the VAT-totals card it is). Left for later: the "138 discrete actions across 11
+categories" total in ACTIVITY_LOG.md is probably stale. Found on the way: SEC-A12. The list below is
+what was wrong.
 
 - **Presentation docs** ([PRESENTATION_MODULES.md](./PRESENTATION_MODULES.md),
   [PRESENTATION_DECK.md](./PRESENTATION_DECK.md)):

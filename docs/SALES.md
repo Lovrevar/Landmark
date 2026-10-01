@@ -18,7 +18,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 #### Services
 
 ### services/salesService.ts
-- `fetchProjects()` — fetches all sales projects
+- `fetchProjects()` — fetches the projects whose `category` is in `SALES_PROJECT_CATEGORIES` (`stambeno`, `retail`); Interno projects are excluded
 - `fetchBuildings()` — fetches buildings for a project
 - `fetchApartments()`, `fetchGarages()`, `fetchRepositories()` — fetches units by type
 - `fetchCustomers()` — fetches all customers
@@ -68,7 +68,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 ### ProjectsGrid.tsx
 - Project card grid showing building count, unit count, sold count, revenue, and progress bar
-- Only `stambeno` projects reach this screen: `fetchProjects()` filters on `category = 'stambeno'`, since the Sales module sells residential units and Interno/Retail projects have nothing to sell here
+- Both sellable categories reach this screen: `fetchProjects()` filters on `SALES_PROJECT_CATEGORIES` (`stambeno`, `retail`), and `index.tsx` splits them with a Stambeno / Retail `Tabs` bar (with per-category counts) above the grid. Interno projects are company-internal and never shown
 
 ### BuildingsGrid.tsx
 - Building card grid for a selected project showing unit counts and revenue per building
@@ -356,14 +356,14 @@ Payment tracking for apartment sales contracts.
 
 ## Shared Utilities
 
-### Payments/paymentMethod.ts
-- `PAYMENT_METHOD_LABEL_KEY` + `paymentMethodLabel(method, t)` — label for
-  `accounting_payments.payment_method` (WIRE / CASH / CHECK / CARD), using the same
-  `payments.method_*` keys `Cashflow/components/PaymentMethodField` already uses. Three screens
-  printed the raw stored value in a Croatian UI: `Sales/Payments`, `Retail/Sales` and
-  `Retail/Projects/modals/RetailPaymentHistoryModal` (which imports it from here). The stored
-  value is a CHECK constraint — map at render only. An unknown value keeps its raw text, a
-  missing one renders `—`. Covered by `paymentMethod.test.ts`
+### Payment method labels (no Sales-local helper)
+- There is no `Sales/Payments/paymentMethod.ts`. `Sales/Payments` (table and Excel export),
+  `Retail/Sales` and `Retail/Projects/modals/RetailPaymentHistoryModal` all label
+  `accounting_payments.payment_method` (WIRE / CASH / CHECK / CARD) with
+  `getPaymentMethodLabel(method, source, t)` from `Cashflow/services/paymentHelpers.ts`, which maps
+  to the `payments.method_*` keys. The stored value is a CHECK constraint — map at render only. An
+  unknown value keeps its raw text, a missing one (or a kompenzacija source) renders `—`. Covered
+  by `paymentHelpers.test.ts`
 
 ### utils/priceUtils.ts
 - `calculateAdjustedPriceRange(range, adjustmentType, amount)` — applies an `'increase'` / `'decrease'` of `amount` to a `PriceRange` (`{ min, max }`) for the bulk price update preview; decrease clamps each bound to 0. Exports the `PriceRange` interface
@@ -401,6 +401,6 @@ Payment tracking for apartment sales contracts.
   `BulkUnitsModal` and `CustomerFormModal`
 
 ## Notes
-- Customer records here are property buyers (Sales CRM) — distinct from `Cashflow/Customers` (accounting customers)
+- Customer records here are property buyers (Sales CRM). `Cashflow/Customers` is a different screen over the **same** `customers` table (its `customerService.fetchCustomers` reads `customers` and adds the buyer's `accounting_invoices` and `sales`, read-only), so a buyer edited here is what Cashflow shows
 - Unit types: `stan` (apartment), `garaža` (garage), `repozitorij` (storage) — linked via junction tables `apartment_garages` and `apartment_repositories`
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item pattern — never use `window.confirm()` or `confirm()`

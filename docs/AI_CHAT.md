@@ -282,7 +282,7 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 
 ## Tool Catalog
 
-14 tools, defined in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts) and implemented in [supabase/functions/_shared/tool-handlers.ts](../supabase/functions/_shared/tool-handlers.ts) (the help-search tool lives in `help-search.ts`). For each tool, JSON Schema and exact input/output shapes live in those files — do not duplicate them here.
+15 tools, defined in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts) and implemented in [supabase/functions/_shared/tool-handlers.ts](../supabase/functions/_shared/tool-handlers.ts) (the help-search tool lives in `help-search.ts`). For each tool, JSON Schema and exact input/output shapes live in those files — do not duplicate them here.
 
 ### Role gating
 
@@ -292,6 +292,7 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 | `get_project_details` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `list_project_phases` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `search_subcontractors` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `list_cost_classifications` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `list_contracts` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `get_subcontractor_payment_status` | ✓ | ✓ |   |   |   |
 | `list_unpaid_invoices` | ✓ | ✓ |   | ✓ |   |
@@ -348,6 +349,7 @@ partner) rather than OpenAI: add vectors alongside the existing fields and blend
 - **`get_project_details`** — full `projects` row plus exact counts of phases, contracts, and milestones for the project. The project lookup runs first so that RLS-hidden projects don't leak counts through the (USING(true)) related tables.
 - **`list_project_phases`** — phases for a given project, ordered by `phase_number`. Deliberately omits `budget_used` (see landmines below).
 - **`search_subcontractors`** — substring search on `subcontractors.name`; returns `{id, name, contact, active_contracts_count}`.
+- **`list_cost_classifications`** — the global `cost_classifications` list (`id, name, description, sort_order, is_system, is_active`, ordered by `sort_order`; inactive ones only with `include_inactive`), so a cost category the user names can be resolved to a `classification_id` for `list_contracts`.
 - **`list_contracts`** — contracts filterable by project / phase / subcontractor / status, with joined `subcontractor`, `phase`, `project` summaries. For Supervision users, filters to assigned projects only.
 - **`get_subcontractor_payment_status`** — rollup of contracts + invoices for a single subcontractor: contracted total, invoiced total, paid total, outstanding balance.
 - **`list_unpaid_invoices`** — invoices with status `UNPAID` or `PARTIALLY_PAID`, optionally filtered by subcontractor or project. For Supervision users, RLS scopes results.
@@ -565,7 +567,7 @@ Why both: tool handlers benefit from RLS doing the per-row gating "for free" (e.
 Several tables that the AI chat reads have RLS policies of `USING(true)` — that is, RLS is enabled but gates nothing. These tables include `subcontractors`, `contracts`, `accounting_payments`, `accounting_companies`, and `project_milestones`. For these, access control is enforced two ways:
 
 - **Role gating** at the tool layer: `selectAvailableTools(ctx)` filters TOOLS by `requiredRoles.includes(ctx.role)`. A Sales user simply cannot invoke `list_payments_for_subcontractor` — the tool is not exposed to the model in their session.
-- **Parent-entity probing** for the two document tools. `documents` and `document_associations` are also `USING(true)`, and the `documents` / `contract-documents` storage buckets have **no `storage.objects` policies at all** — so neither the rows nor the files have a database backstop. `list_documents_for_entity` and `get_document_download_link` compensate entirely in application code: for each association they call `probeParentEntity()`, which re-reads the parent (project / phase / subcontractor / contract / unit / customer / credit / company) through the caller's `userClient` and only allows the document if that read succeeds. Director and Accounting skip the probe; documents with no associations at all are restricted to those two roles. Any new code path that reads `documents` must re-implement this gate.
+- **Parent-entity probing** for the two document tools. `documents` and `document_associations` are also `USING(true)`, and the `documents` / `contract-documents` storage buckets have `storage.objects` policies (since `20260527100000` and `20260527100100`) that check only `bucket_id` — any authenticated user may read, upload and delete any object in them — so neither the rows nor the files have a per-entity database backstop. `list_documents_for_entity` and `get_document_download_link` compensate entirely in application code: for each association they call `probeParentEntity()`, which re-reads the parent (project / phase / subcontractor / contract / unit / customer / credit / company) through the caller's `userClient` and only allows the document if that read succeeds. Director and Accounting skip the probe; documents with no associations at all are restricted to those two roles. Any new code path that reads `documents` must re-implement this gate.
 - **Explicit project scoping** for Supervision users at the handler layer: `list_contracts` calls `query.in('project_id', ctx.assignedProjects.map(p => p.project_id))`; `list_unpaid_invoices` inherits RLS scoping from `accounting_invoices`, which DOES have proper RLS (see [supabase/migrations/20251128113128_fix_all_accounting_invoices_policies.sql](../supabase/migrations/20251128113128_fix_all_accounting_invoices_policies.sql)).
 
 ### 4. Role-based tool gating

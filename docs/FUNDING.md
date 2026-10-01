@@ -353,10 +353,18 @@ Read-only history of accounting payments made against bank credits.
 
 > The payment-notification UI (`PaymentNotifications`, its hook and service) and the bank /
 > investor / subcontractor wire-payment modals were removed on 2026-09-14. Nothing had rendered
-> them since the November 2025 Funding overview rewrite, and migration
-> `20260518110001_deprecate_remaining_unused_tables` had already dropped the `payment_notifications`
-> table and its triggers. One orphan remains in the database: `update_overdue_notifications()`
-> still references that table and would fail if called — nothing calls it.
+> them since the November 2025 Funding overview rewrite. There is no `payment_notifications` table
+> in the database: the 2026-05-15 baseline already has none (only function bodies still name it).
+> Migration `20260518110001_deprecate_remaining_unused_tables` dropped nothing of that table; it
+> dropped the triggers on `project_investments` / `funding_payments` and their functions
+> (`trigger_generate_payment_schedule`, `trigger_update_payment_schedule`,
+> `update_bank_balance_for_investment`, `trigger_mark_notification_completed`), the dead RPCs
+> `generate_payment_schedule`, `get_bank_credit_payments`, `get_investor_payments` and
+> `count_invoices_with_search`, rewrote `get_filtered_invoices` / `get_invoice_statistics` without
+> the `investors` join, and **moved** (not dropped) `investors`, `project_investments` and
+> `funding_payments` to the `deprecated` schema. One orphan remains in the database:
+> `update_overdue_notifications()` still references the missing `payment_notifications` table and
+> would fail if called — nothing calls it.
 
 #### Services
 

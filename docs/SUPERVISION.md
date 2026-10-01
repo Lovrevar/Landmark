@@ -94,6 +94,20 @@ then `ProjectSummaryBanner`, then the contract tree.
   second query is needed and summing the invoices' `paid_amount` would give the same figure. Only
   `invoice_total_owed` still comes from invoices — payments cannot say what is *still* outstanding.
   (This bullet used to say "invoice-derived"; it was describing an older implementation.)
+- **That single definition stops at Site Management.** Two other screens still compute "paid"
+  their own way, from invoices rather than from `budget_realized`:
+  - the subcontractor register (`Subcontractors/services/subcontractorService.ts`) sums
+    `paid_amount` of the contract's **`SUBCONTRACTOR`-category** invoices, and reads
+    `budget_realized` only for a contract that has no such invoice;
+  - the Supervision dashboard (`dashboards/services/supervisionService.ts`) does the same (falling
+    back to `budget_realized` only when `has_contract` and `contract_amount > 0`), and its
+    invoice read is a single unpaged request, so past PostgREST's 1000-row page some contracts
+    lose their invoices.
+
+  `budget_realized` sums payments on **every** invoice linked to the contract, whatever its
+  category, so a contract with payments on a non-`SUBCONTRACTOR` invoice shows less paid on those
+  two screens (and a lower progress %) than here. The dashboard half is GEN-10 in
+  [DEFECT_BACKLOG.md](./DEFECT_BACKLOG.md)
 
 #### Contract status (completed and terminated contracts)
 
@@ -443,8 +457,8 @@ the orchestrator does the writes and re-fetches.
 - The sort-order input (`aria-label` = `sort_order_label`) keeps a draft while typing and saves on blur only when the value changed, then reloads without the spinner so the list re-sorts and focus is not lost. Failures go to the modal's error `Alert`
 
 #### EditPhaseModal.tsx
-- Edits a single phase (name, budget allocation, dates, status)
-- Props: `visible`, `onClose`, `phase` (`ProjectPhase | null`), `project`, `onSubmit(updates: EditPhaseFormData)`
+- Edits a single phase's name, dates and status. The budget is **not** editable: it is shown read-only (`phase.budget_allocated`, the phase's share of the TIC, or "budget not set"), and `EditPhaseFormData` carries no budget field
+- Props: `visible`, `onClose`, `phase` (`ProjectPhase | null`), `onSubmit(updates: EditPhaseFormData)`
 
 #### EditSubcontractorModal.tsx
 - Edits a subcontractor in the site-management context (contract-adjacent fields, financing source)
@@ -594,8 +608,8 @@ Invoices raised by subcontractors for work completed on site. Supports approval 
 #### Services
 
 ### services/supervisionInvoiceService.ts
-- `fetchSupervisionInvoices()` — fetches accounting invoices with subcontractor, project, and contract relations; phase name now comes from the nested `contract.phase` join (no separate phases query). Filtered to `invoice_category = 'SUBCONTRACTOR'` with a project, paged through `fetchAllRows`
-- `calculateInvoiceStats(invoices)` — aggregates monthly and total invoice statistics
+- `fetchSupervisionInvoices()` — fetches accounting invoices with subcontractor, project, and contract relations; phase name now comes from the nested `contract.phase` join (no separate phases query). Filtered in the database to `invoice_category = 'SUBCONTRACTOR'` and `project_id IS NOT NULL` (any `invoice_type`; an invoice with no project never appears here), ordered by `issue_date` desc, paged through `fetchAllRows`
+- `calculateInvoiceStats(invoices)` — aggregates monthly and total invoice statistics; "this month" is by `created_at` (entry date), not `issue_date`
 - `toggleInvoiceApproval(invoiceId, currentApproved)` — flips the approval flag on an invoice; logs `invoice.approve`
 - `exportSupervisionInvoicesExcel(invoices)` — async; writes a real `.xlsx` (one `Računi` sheet) through `src/lib/xlsxExport.ts` and logs `export.supervision_invoices_excel`
 - `buildSupervisionInvoicesSheet(invoices, t)` — pure AOA builder, exported for `supervisionInvoiceService.test.ts`
@@ -604,9 +618,9 @@ Invoices raised by subcontractors for work completed on site. Supports approval 
 #### Hooks
 
 ### hooks/useSupervisionInvoices.ts
-- `useSupervisionInvoices()` — manages invoice list with filters (status, approval, date range) and Excel export (through `useAsyncExport`, which owns the `exporting` flag and toasts `common.export_error`); returns `error`, `hasData` and `refetch`. A failed load no longer toasts and empties the register — the stat cards are withheld and the table area carries an `ErrorState`
+- `useSupervisionInvoices()` — manages invoice list with client-side filters: search (invoice number, supplier, project, contract number), a status preset (`all` / `recent` = created in the last 7 days / `large` = `total_amount` > 10.000), approval (`all` / `approved` / `not_approved`) and an `issue_date` range; pages the filtered list 100 rows at a time (`paginatedInvoices`, reset to page 1 when a filter changes). Stats are computed on the unfiltered list. Excel export (of the whole filtered list, not just the page) (through `useAsyncExport`, which owns the `exporting` flag and toasts `common.export_error`); returns `error`, `hasData` and `refetch`. A failed load no longer toasts and empties the register — the stat cards are withheld and the table area carries an `ErrorState`
 - **Calls:** supervisionInvoiceService.ts
-- **Returns:** loading, stats, filteredInvoices, searchTerm, setSearchTerm, filterStatus, setFilterStatus, filterApproved, setFilterApproved, dateRange, setDateRange, handleApprove, exporting, handleExportExcel
+- **Returns:** loading, error, hasData, refetch, stats, filteredInvoices, paginatedInvoices, currentPage, setCurrentPage, pageSize, totalCount, searchTerm, setSearchTerm, filterStatus, setFilterStatus, filterApproved, setFilterApproved, dateRange, setDateRange, handleApprove, exporting, handleExportExcel
 
 #### Views
 
@@ -620,13 +634,13 @@ Invoices raised by subcontractors for work completed on site. Supports approval 
 ### Payments
 **Path:** `Supervision/Payments/`
 
-Payments made to subcontractors against their invoices, including cesija and bank/investor payment tracking.
+Payments made to subcontractors against their invoices, including cesija and the paying company (bank account or bank credit).
 
 #### Services
 
 ### services/supervisionPaymentService.ts
-- `fetchSupervisionPayments()` — fetches accounting payments joined `!inner` with invoices (INCOMING_SUPPLIER, SUBCONTRACTOR, with a project, so the database filters them), plus subcontractors, projects, contracts, cesija company, and paid-by bank/investor, all paged through `fetchAllRows`. The phase comes from the invoice's own `contract_id`; there is no fallback to another contract of the same supplier (it showed other projects' phases)
-- `calculatePaymentStats(payments)` — aggregates total and monthly payment statistics
+- `fetchSupervisionPayments()` — fetches accounting payments joined `!inner` with invoices (`invoice_type = 'INCOMING_SUPPLIER'`, `invoice_category = 'SUBCONTRACTOR'`, `project_id IS NOT NULL`, so the database filters them; payments on other invoice types or on project-less invoices never appear), plus subcontractors, projects, contracts, cesija company, bank credit and bank account, all paged through `fetchAllRows`. "Paid by" is the cesija company when `is_cesija`, else the credit's company, else the bank account's company. The phase comes from the invoice's own `contract_id`; there is no fallback to another contract of the same supplier (it showed other projects' phases)
+- `calculatePaymentStats(payments)` — aggregates total and monthly payment statistics; "this month" is by `created_at` (entry date), not `payment_date`
 - `exportSupervisionPaymentsExcel(payments)` — async; writes a real `.xlsx` (one `Plaćanja` sheet) through `src/lib/xlsxExport.ts` and logs `export.supervision_payments_excel`
 - `buildSupervisionPaymentsSheet(payments, t)` — pure AOA builder, exported for `supervisionPaymentService.test.ts`
 - **Depends on:** supabase client, logActivity, xlsxExport, exportT
@@ -634,7 +648,7 @@ Payments made to subcontractors against their invoices, including cesija and ban
 #### Hooks
 
 ### hooks/useSupervisionPayments.ts
-- `useSupervisionPayments()` — manages payment list with filters (search, status, date range) and Excel export (through `useAsyncExport`, which owns the `exporting` flag and toasts `common.export_error`); returns `error`, `hasData` and `refetch`, and the screen withholds the stat cards rather than reporting €0 paid on a failed read
+- `useSupervisionPayments()` — manages payment list with client-side filters: search (subcontractor, project, contract number, notes), a status preset (`all` / `recent` = created in the last 7 days / `large` = amount > 10.000) and a date range on `payment_date` (falling back to `created_at`); stats are computed on the unfiltered list. Excel export (through `useAsyncExport`, which owns the `exporting` flag and toasts `common.export_error`); returns `error`, `hasData` and `refetch`, and the screen withholds the stat cards rather than reporting €0 paid on a failed read
 - **Calls:** supervisionPaymentService.ts
 - **Returns:** loading, error, hasData, refetch, stats, filteredPayments, searchTerm, setSearchTerm, filterStatus, setFilterStatus, dateRange, setDateRange, exporting, handleExportExcel
 

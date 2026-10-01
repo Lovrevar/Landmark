@@ -12,7 +12,7 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### accountingDashboardService.ts
 - `fetchVATStats()` — returns VATStats (collected, paid, net, monthly breakdown)
-- `fetchCashFlowStats()` — returns CashFlowStats (incoming, outgoing, net with YoY comparison)
+- `fetchCashFlowStats()` — returns CashFlowStats: year-to-date incoming, outgoing and net, plus current- and previous-month incoming/outgoing for a month-over-month comparison (no year-over-year figures)
 - `fetchTopCompanies()` — returns top 5 companies ranked by net balance
 - `fetchMonthlyTrends()` — returns MonthlyData[] for stacked bar chart
 - `fetchMonthlyBudget()` — returns current MonthlyBudget or null
@@ -181,7 +181,7 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 - Props: `MonthlyBudget`, `CashFlowStats`
 
 ### AccountingCashFlowSection.tsx
-- Three-card layout for incoming, outgoing, and net cashflow with YoY comparison
+- Three-card layout for year-to-date incoming, outgoing, and net cashflow. Each card's "this month" line shows the current month; incoming and outgoing add the % change against the previous month (month-over-month, hidden when the previous month is 0), net shows the current month's net only
 - Props: `CashFlowStats`
 
 ### AccountingCompaniesSection.tsx
