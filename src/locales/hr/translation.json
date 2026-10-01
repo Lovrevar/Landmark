@@ -1010,7 +1010,9 @@
   },
   "companies": {
     "toast": {
-      "accounts_load_error": "Bankovne račune firme nije moguće učitati pa obrazac nije otvoren"
+      "accounts_load_error": "Bankovne račune firme nije moguće učitati pa obrazac nije otvoren",
+      "delete_error": "Greška prilikom brisanja firme",
+      "delete_in_use": "Firma ima račune ili druge povezane zapise pa se ne može obrisati"
     },
     "title": "Moje firme",
     "subtitle": "Financijski pregled svih firmi pod Landmarkom",

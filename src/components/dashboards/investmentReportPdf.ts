@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next'
-import type { Project, BankCredit, FinancialSummary } from '../../types/investment'
+import type { Project, BankCredit, CreditAllocation, FinancialSummary } from '../../types/investment'
 import { formatDate, formatDateTime } from '../../utils/formatters'
 import { pdfMoney } from '../Reports/pdf/pdfText'
 import { loadUnicodeFont, PDF_FONT_FAMILY } from '../../utils/pdfFont'
@@ -15,6 +15,16 @@ import { yieldToUI } from '../../utils/yieldToUI'
  * the screen draws them that way, and some do not ("Iskorišteno").
  */
 const rowLabel = (t: TFunction, key: string): string => `${t(key).replace(/\s*:\s*$/, '')}:`
+
+// Same wording as the Funding screen's AllocationRow: an allocation without a project is OPEX
+// only when it is one; refinancing used to be printed as OPEX too (FUND-11).
+const allocationLabel = (t: TFunction, allocation: CreditAllocation): string => {
+  if (allocation.project?.name) return allocation.project.name
+  if (allocation.allocation_type === 'refinancing') {
+    return `${t('funding.allocation_row.refinancing_prefix')}${allocation.refinancing_name ?? ''}`.trim()
+  }
+  return 'OPEX'
+}
 
 const addHeader = (doc: import('jspdf').jsPDF, yPos: number, t: TFunction) => {
   doc.setFillColor(15, 23, 42)
@@ -337,7 +347,7 @@ export const generateInvestmentReportPDF = async (
     let allocated = 0
     allocations.forEach(allocation => {
       const slice = Number(allocation.allocated_amount) || 0
-      addToProject(allocation.project?.name || 'OPEX', slice)
+      addToProject(allocationLabel(t, allocation), slice)
       allocated += slice
     })
     const remainder = amount - allocated
@@ -383,7 +393,7 @@ export const generateInvestmentReportPDF = async (
   bankCredits.forEach(credit => {
     if (credit.credit_allocations && credit.credit_allocations.length > 0) {
       credit.credit_allocations.forEach(allocation => {
-        const projectName = allocation.project?.name || 'OPEX'
+        const projectName = allocationLabel(t, allocation)
         const utilPercent = allocation.allocated_amount > 0 ? (allocation.used_amount / allocation.allocated_amount) * 100 : 0
         const color: [number, number, number] = utilPercent >= 90 ? [239, 68, 68] : utilPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
 
@@ -510,7 +520,7 @@ export const generateInvestmentReportPDF = async (
       currentY += 5
 
       credit.credit_allocations!.forEach(allocation => {
-        const projectName = allocation.project?.name || 'OPEX'
+        const projectName = allocationLabel(t, allocation)
         const allocPercent = allocation.allocated_amount > 0 ? (allocation.allocated_amount / credit.amount) * 100 : 0
 
         doc.setFont(PDF_FONT_FAMILY, 'normal')

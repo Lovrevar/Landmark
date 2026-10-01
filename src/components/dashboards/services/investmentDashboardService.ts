@@ -1,7 +1,7 @@
 import { supabase } from '../../../lib/supabase'
 import { daysFromToday } from '../../../utils/dateOnly'
 import { formatEuroCompact } from '../../../utils/formatters'
-import type { Project, Company, Bank, BankCredit, FinancialSummary, RecentActivity } from '../../../types/investment'
+import type { Project, Company, Bank, BankCredit, CreditAllocation, FinancialSummary, RecentActivity } from '../../../types/investment'
 
 export interface InvestmentDashboardData {
   projects: Project[]
@@ -33,6 +33,9 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
         allocated_amount,
         used_amount,
         description,
+        allocation_type,
+        refinancing_entity_type,
+        refinancing_entity_id,
         project:projects(id, name, location, budget, status)
       )
     `).order('created_at', { ascending: false })
@@ -47,7 +50,21 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
   const projects = projectsData || []
   const companies = companiesData || []
   const banks = banksData || []
-  const credits = creditsData || []
+  // Refinancing allocations point at a company or bank by id; name them from the lists already
+  // loaded so the PDF can say "Refinanciranje - X" instead of calling them OPEX (FUND-11).
+  const nameById = new Map<string, string>([
+    ...(companiesData || []).map(c => [`company:${c.id}`, c.name] as [string, string]),
+    ...(banksData || []).map(b => [`bank:${b.id}`, b.name] as [string, string]),
+  ])
+  const credits = (creditsData || []).map(credit => ({
+    ...credit,
+    credit_allocations: ((credit.credit_allocations || []) as CreditAllocation[]).map(allocation => ({
+      ...allocation,
+      refinancing_name: allocation.refinancing_entity_id
+        ? nameById.get(`${allocation.refinancing_entity_type}:${allocation.refinancing_entity_id}`) ?? null
+        : null,
+    })),
+  }))
 
   const total_portfolio_value = projects.reduce((sum, p) => sum + Number(p.budget), 0)
   const total_credit_lines = credits.reduce((sum, c) => sum + Number(c.amount), 0)

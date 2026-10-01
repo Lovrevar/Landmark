@@ -12,6 +12,7 @@ import {
 } from '../services/companyService'
 import { useToast } from '../../../../contexts/ToastContext'
 import { toLoadError } from '../../services/loadError'
+import { isForeignKeyViolation } from '../../../../lib/dbErrors'
 
 export const useCompanies = () => {
   const toast = useToast()
@@ -127,7 +128,12 @@ export const useCompanies = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting company:', error)
-      toast.error('Greška prilikom brisanja firme')
+      // Invoices keep the company (company_id is NOT NULL, so ON DELETE SET NULL fails with
+      // 23502); other references fail with 23503. Say why instead of a generic error (CASH-12).
+      const code = (error as { code?: string } | null)?.code
+      toast.error(code === '23502' || isForeignKeyViolation(error)
+        ? t('companies.toast.delete_in_use')
+        : t('companies.toast.delete_error'))
     } finally {
       setDeleting(false)
       setPendingDeleteId(null)

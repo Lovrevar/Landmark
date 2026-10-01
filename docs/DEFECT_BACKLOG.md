@@ -399,6 +399,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   than a bug.
 
 ### CASH-12 · Low · Deleting a company with invoices fails with a generic error
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(funding)): the delete says the company has invoices or other linked records
 - `accounting_invoices.company_id` is `NOT NULL` with `ON DELETE SET NULL`.
 
 ### CASH-13 · Low · `company_bank_accounts.account_number` is never captured
@@ -478,6 +479,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   invisible.
 
 ### FUND-11 · Low · Investment dashboard shows zeros on failure
+- **Status:** Fixed. Query errors were already checked (batch 1); on `fix/backlog-batch-2` (fix(funding)) the PDF labels refinancing allocations "Refinanciranje - X" instead of OPEX. `total_equity` / `debt_to_equity_ratio` stay 0 in this service, but the Investment dashboard does not display them
 - No query error is checked; `total_equity` and `debt_to_equity_ratio` are hard-coded to 0; the
   PDF labels refinancing allocations "OPEX".
 
@@ -486,6 +488,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   allocation's `used_amount` are missing.
 
 ### FUND-13 · Low · TIC odds and ends
+- **Status:** Partly fixed on `fix/backlog-batch-2` (fix(funding)): the "funtana" auto-select is gone. Open: the Excel export drops phases and classifications; messages are hard-coded Croatian
 - A project whose name contains "funtana" is auto-selected (hard-coded); the Excel export drops
   phases and classifications, so a round trip yields an unphased TIC; messages are hard-coded
   Croatian.

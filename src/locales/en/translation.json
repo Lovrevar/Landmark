@@ -1007,7 +1007,9 @@
   },
   "companies": {
     "toast": {
-      "accounts_load_error": "The company's bank accounts could not be loaded, so the form was not opened"
+      "accounts_load_error": "The company's bank accounts could not be loaded, so the form was not opened",
+      "delete_error": "The company could not be deleted",
+      "delete_in_use": "The company has invoices or other linked records, so it cannot be deleted"
     },
     "title": "My Companies",
     "subtitle": "Financial overview of all companies under Landmark",

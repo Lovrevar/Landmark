@@ -597,7 +597,7 @@ zeroed split reads as "planned at nothing", which is not what "not attributed to
 #### Hooks
 
 ### useTIC.ts
-- `useTIC()` — loads projects and the selected project's line items **and construction sections**, manages edits/investor/date, computes both tabs' totals, applies Excel imports, and saves (create or update)
+- `useTIC()` — selects the first project on load (it used to prefer any project named "…funtana…"); loads projects and the selected project's line items **and construction sections**, manages edits/investor/date, computes both tabs' totals, applies Excel imports, and saves (create or update)
 - **Calls:** ticService.ts
 - **Uses utils:** ticFormatters (calculateTotals, calculateConstructionTotals, toRomanNumeral, toSectionCode)
 - **Returns:** projects, lineItems, constructionSections, investorName, documentDate, selectedProjectId, loading, saving, message, totals, grandTotal, constructionTotals, constructionGrandTotal, `isDirty`, saveTIC, `applyImport`, and the row/section/phase mutators (`addLineItem`, `updateLineItem`, `removeLineItem`, `moveLineItem`, `setLineItemPhases`, `addPhase`, `removePhase`, `addSection`, `updateSection`, `removeSection`, `moveSection`, `addConstructionItem`, `updateConstructionItem`, `removeConstructionItem`, `moveConstructionItem`)

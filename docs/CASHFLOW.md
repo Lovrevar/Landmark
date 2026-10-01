@@ -308,7 +308,7 @@ Legal entity management. Tracks company financial summaries, bank accounts, and 
 - `fetchBankAccountsForCompany(companyId)` — fetches bank accounts for a company
 - `createCompany(formData)` — inserts a new company record with bank accounts. The entered balance is the opening balance: it is written to both `initial_balance` and `current_balance` with `balance_reset_at` = now (with `initial_balance = 0`, the first payment used to wipe it)
 - `updateCompany(companyId, formData)` — updates the company; each account's balance reset goes through the `reset_company_bank_account_balance` RPC (Director/Accounting), which sets `initial_balance`, `current_balance` and `balance_reset_at` and rebuilds the balance with the one database formula
-- `deleteCompany(companyId)` — removes a company
+- `deleteCompany(companyId)` — removes a company. A company with invoices cannot be deleted (`accounting_invoices.company_id` is NOT NULL, so its `ON DELETE SET NULL` fails with 23502); `useCompanies` reports that and other references (23503) as `companies.toast.delete_in_use` rather than a generic error
 - `fetchCompanyDetails(companyId)` — fetches bank accounts, credits, recent invoices, and cesija data
 - **Depends on:** supabase client
 
