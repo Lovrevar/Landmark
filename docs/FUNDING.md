@@ -331,6 +331,9 @@ maths here rather than inlining it in a hook.
   credit form's `banks.credit_form.*` option labels (a `line_of_credit` picks `loc_senior` /
   `loc_junior` by seniority; `equity` → `funding.equity`); `null` for anything else, where callers
   show the value with every `_` replaced
+- `formatCreditType(t, creditType, seniority?)` — the translated label, or that `_`-spaced fallback.
+  Used wherever a credit type is shown outside Funding too (project financing tab, Investment
+  dashboard), so no screen renders the raw value
 - Exports `PaymentScheduleParams` and `PaymentScheduleResult`
 
 > The tests assert the code's **actual** output, including a known 119-vs-120 off-by-one in the

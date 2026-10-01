@@ -1,5 +1,7 @@
 {
   "common": {
+    "unknown": "Nepoznato",
+    "uncategorized": "Bez kategorije",
     "contact": "Kontakt",
     "value": "Vrijednost",
     "all_projects": "Svi projekti",

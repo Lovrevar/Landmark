@@ -522,6 +522,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - Director dashboard portfolio table, Investment dashboard portfolio value and PDF, Sales report.
 
 ### GEN-6 · Low · Project details "Aktivni ugovori" counts contracts of every status
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(general)): counts draft and active contracts only
 
 ### GEN-7 · Low · Budget Control chart and scope
 - The forecast bar is drawn in red when the forecast is suppressed; contracts without a phase
@@ -539,8 +540,10 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - Contrary to the rule that `contracts.budget_realized` is the only paid figure.
 
 ### GEN-11 · Low · Projects list hides load failures behind the empty state
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(general)): error Alert with retry
 
 ### GEN-12 · Low · English literals in Croatian UI
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(general)): the cited Sales dashboard and General report literals go through `common.unknown` / `common.uncategorized` (other `N/A` fallbacks in Cashflow remain)
 - "Unknown", "N/A" (Sales dashboard), "Uncategorized" (General report contract types).
 
 ### GEN-13 · Low · Reports menu item shown to non-Directors
@@ -548,6 +551,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - `/general-reports` appears in every General-profile menu but only Directors can open it.
 
 ### GEN-14 · Low · Credit types rendered raw
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(general)): `formatCreditType` in creditCalculations.ts
 - Project details financing tab and Investment dashboard use `replace(/_/g, ' ')` instead of the
   label map.
 

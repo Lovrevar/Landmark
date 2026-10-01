@@ -436,7 +436,7 @@ export async function fetchGeneralReportData(
 
   const contractTypeCounts: { [key: string]: number } = {}
   contractsArray.forEach(c => {
-    const typeName = (c as { contract_types?: { name?: string } | null }).contract_types?.name || 'Uncategorized'
+    const typeName = (c as { contract_types?: { name?: string } | null }).contract_types?.name || ''
     contractTypeCounts[typeName] = (contractTypeCounts[typeName] || 0) + 1
   })
   const contractTypesData = Object.entries(contractTypeCounts).map(([name, count]) => ({ name, count }))

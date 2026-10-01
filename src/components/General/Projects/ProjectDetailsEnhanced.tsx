@@ -32,6 +32,8 @@ import { formatDate } from '../../../utils/formatters'
 import { PROJECT_STATUS, UNIT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 import { useAuth } from '../../../contexts/AuthContext'
+import { isClosedContract } from '../../../utils/contractRollup'
+import { formatCreditType } from '../../Funding/Investors/utils/creditCalculations'
 
 const ProjectDetailsEnhanced: React.FC = () => {
   const { t, i18n } = useTranslation()
@@ -150,6 +152,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
 
   // contracts.budget_realized is the app's single "paid" figure — a trigger-kept cache of
   // accounting_payments, repaired and sealed by migration 20260910120000.
+  // Draft and active only: completed and terminated contracts are no longer "active" (GEN-6).
+  const activeContractCount = contracts.filter(c => !isClosedContract(c.status)).length
   const totalSpent = contracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
   const hasPlan = ticTotal !== null && ticTotal > 0
   const totalRevenue = apartments.filter(a => a.status === 'Sold').reduce((sum, a) => sum + Number(a.price), 0)
@@ -253,7 +257,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <span className="text-sm text-orange-700 dark:text-orange-400">{t('general_projects.team')}</span>
               <Users className="w-5 h-5 text-orange-400" />
             </div>
-            <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{contracts.length}</p>
+            <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{activeContractCount}</p>
             <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">{t('general_projects.stat_active_contracts')}</p>
           </div>
         </div>
@@ -417,7 +421,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                             {investment.bank_credits?.banks?.name || t('general_projects.unknown_bank')}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            {investment.bank_credits?.credit_name} • {investment.bank_credits?.credit_type?.replace(/_/g, ' ')}
+                            {investment.bank_credits?.credit_name} • {formatCreditType(t, investment.bank_credits?.credit_type)}
                             {investment.bank_credits?.start_date ? ` • ${formatDate(investment.bank_credits.start_date, i18n.language)}` : ''}
                           </p>
                           {investment.description && (

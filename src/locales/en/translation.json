@@ -1,5 +1,7 @@
 {
   "common": {
+    "unknown": "Unknown",
+    "uncategorized": "Uncategorized",
     "contact": "Contact",
     "value": "Value",
     "all_projects": "All projects",

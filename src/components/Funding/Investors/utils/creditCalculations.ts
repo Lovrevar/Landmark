@@ -153,6 +153,16 @@ export function getCreditTypeLabelKey(creditType: string | null | undefined, sen
   }
 }
 
+/** The credit type's label, or the raw value with underscores spaced out when it has none. */
+export function formatCreditType(
+  t: (key: string) => string,
+  creditType: string | null | undefined,
+  seniority?: string | null,
+): string {
+  const key = getCreditTypeLabelKey(creditType, seniority)
+  return key ? t(key) : (creditType ?? '').replace(/_/g, ' ')
+}
+
 export interface PaymentScheduleParams {
   start_date: string
   maturity_date: string

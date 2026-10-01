@@ -185,6 +185,8 @@ exactly what kept regressing.
 
 ### index.tsx (ProjectsManagement)
 - Project list with search by name/location, a status filter and a project-category filter (Interno / Retail / Stambeno), grid layout, and new project modal
+- A failed load shows an error `Alert` with a retry instead of the "no projects" empty state
+- The project detail's "Aktivni ugovori" figure counts draft and active contracts only (`isClosedContract`), and its financing tab labels credit types through `formatCreditType`
 - **Uses hooks:** (direct fetch via projectService)
 - **Uses services:** projectService
 - **Uses components:** ProjectCard, ProjectFormModal

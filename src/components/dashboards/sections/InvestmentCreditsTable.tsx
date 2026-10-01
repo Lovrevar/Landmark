@@ -5,7 +5,7 @@ import { daysFromToday } from '../../../utils/dateOnly'
 import { Button, Badge } from '../../ui'
 import StatCard from '../../ui/StatCard'
 import { formatEuro, formatDate } from '../../../utils/formatters'
-import { utilisationTone } from '../../Funding/Investors/utils/creditCalculations'
+import { formatCreditType, utilisationTone } from '../../Funding/Investors/utils/creditCalculations'
 import { useTranslation } from 'react-i18next'
 import type { BankCredit } from '../../../types/investment'
 
@@ -55,7 +55,7 @@ const InvestmentCreditsTable: React.FC<Props> = ({ bankCredits }) => {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {credit.credit_name || `${credit.company?.name || t('dashboards.investment.unknown_company')} - ${credit.credit_type.replace(/_/g, ' ')}`}
+                          {credit.credit_name || `${credit.company?.name || t('dashboards.investment.unknown_company')} - ${formatCreditType(t, credit.credit_type, credit.credit_seniority)}`}
                         </h3>
                         {credit.project && <Badge variant="blue" size="sm">{credit.project.name}</Badge>}
                         {maturityWarning && <Badge variant="orange" size="sm">{t('dashboards.investment.maturing_soon')}</Badge>}

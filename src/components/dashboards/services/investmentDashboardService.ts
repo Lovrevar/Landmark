@@ -84,7 +84,7 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
         params: {
           company: credit.company?.name || '',
           amount: formatEuroCompact(Number(credit.amount)),
-          creditType: credit.credit_type.replace(/_/g, ' '),
+          creditType: credit.credit_type,
           project: credit.project?.name || ''
         },
         date: credit.start_date,
