@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { FileDown, FileSpreadsheet, Save, AlertCircle, Upload } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { exportToExcel, exportToPDF, type TICExportData } from './services/ticExport'
+import { useAsyncExport } from '../../../hooks/useAsyncExport'
 import { LoadingSpinner, Button, FormField, Select, Input, Alert, Card, EmptyState, Tabs } from '../../ui'
 import { useTIC } from './hooks/useTIC'
 import { useUnsavedChanges, useLeaveGuard } from '../../../contexts/UnsavedChangesContext'
@@ -15,7 +16,6 @@ const TICManagement: React.FC = () => {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<TICTab>('investment')
   const [showImport, setShowImport] = useState(false)
-  const [exporting, setExporting] = useState(false)
 
   const {
     projects,
@@ -77,16 +77,14 @@ const TICManagement: React.FC = () => {
     projectName: selectedProject?.name,
   })
 
-  const handleExportExcel = async () => {
-    setExporting(true)
-    try {
-      await exportToExcel(exportData())
-    } catch (error) {
-      console.error('Error exporting TIC to Excel:', error)
-    } finally {
-      setExporting(false)
-    }
-  }
+  // Both exports used to fail in silence — Excel swallowed the error in a `catch` that only
+  // reached the console, and the PDF button called the synchronous `exportToPDF` with no
+  // try/catch at all, so a throw took the click with it and left the button looking idle.
+  const { exporting: exportingExcel, run: runExportExcel } = useAsyncExport(exportToExcel, 'tic.export_error')
+  const { exporting: exportingPdf, run: runExportPdf } = useAsyncExport(
+    async (data: TICExportData) => { exportToPDF(data) },
+    'tic.export_error'
+  )
 
   const constructionItemCount = constructionSections.reduce((sum, section) => sum + section.items.length, 0)
 
@@ -138,17 +136,18 @@ const TICManagement: React.FC = () => {
           </Button>
           <Button
             variant="success"
-            onClick={handleExportExcel}
+            onClick={() => runExportExcel(exportData())}
             disabled={!selectedProjectId}
-            loading={exporting}
+            loading={exportingExcel}
             icon={FileSpreadsheet}
           >
             {t('tic.export_excel_button')}
           </Button>
           <Button
             variant="danger"
-            onClick={() => exportToPDF(exportData())}
+            onClick={() => runExportPdf(exportData())}
             disabled={!selectedProjectId}
+            loading={exportingPdf}
             icon={FileDown}
           >
             {t('tic.export_pdf_button')}

@@ -185,10 +185,10 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
                     <Table.Td label={t('general_projects.contract_amount')} className="font-semibold">
                       {formatEur(contract.contract_amount)}
                     </Table.Td>
-                    <Table.Td label={t('general_projects.realized')} className="text-blue-600">
+                    <Table.Td label={t('general_projects.realized')} className="text-blue-600 dark:text-blue-400">
                       {formatEur(contract.budget_realized)}
                     </Table.Td>
-                    <Table.Td label={t('common.remaining')} className="text-green-600">
+                    <Table.Td label={t('common.remaining')} className="text-green-600 dark:text-green-400">
                       {formatEur(remainingOf(contract))}
                     </Table.Td>
                     <Table.Td label={t('common.status')}>

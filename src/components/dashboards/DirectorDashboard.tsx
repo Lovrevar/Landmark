@@ -17,7 +17,7 @@ import {
   Target,
   Calendar
 } from 'lucide-react'
-import { format } from 'date-fns'
+import { formatEuroCompact, formatDateTime } from '../../utils/formatters'
 import type { ProjectStats, FinancialMetrics, SalesMetrics, ConstructionMetrics, FundingMetrics, Alert } from './types/directorTypes'
 import * as directorService from './services/directorService'
 import DashboardError from './DashboardError'
@@ -48,8 +48,12 @@ const defaultFunding: FundingMetrics = {
 
 const DirectorDashboard: React.FC = () => {
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data, loading, error, refetch, fetchedAt } = useCachedData('dashboard:director', directorService.fetchDirectorDashboard)
+  // The tile labels read "Prodaja (rujan)" — a Croatian sentence needs a Croatian month, so the
+  // name comes from `common.months` rather than date-fns. The array is nominative, which is what
+  // these parenthesised labels want.
+  const monthName = (t('common.months', { returnObjects: true }) as string[])[new Date().getMonth()]
 
   const projects: ProjectStats[] = data?.projects ?? []
   const financialMetrics: FinancialMetrics = data?.financial ?? defaultFinancial
@@ -75,7 +79,7 @@ const DirectorDashboard: React.FC = () => {
         </div>
         <div className="sm:text-right">
           <p className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.director.last_updated')}</p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-white">{format(fetchedAt ? new Date(fetchedAt) : new Date(), 'MMM dd, yyyy HH:mm')}</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatDateTime(fetchedAt ? new Date(fetchedAt) : new Date(), i18n.language)}</p>
         </div>
       </div>
 
@@ -97,12 +101,12 @@ const DirectorDashboard: React.FC = () => {
           <StatCard label={t('dashboards.director.sales_rate')} value={`${salesMetrics.sales_rate.toFixed(1)}%`} icon={Percent} color="teal" size="lg" />
         </div>
         <StatGrid columns={3}>
-          <StatCard label={t('dashboards.director.total_sales_revenue')} value={`€${(salesMetrics.total_sales_revenue / 1000000).toFixed(2)}M`} color="gray" size="md" />
-          <StatCard label={t('dashboards.director.avg_price_per_unit')} value={`€${(salesMetrics.avg_price_per_unit / 1000).toFixed(0)}K`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_sales_revenue')} value={formatEuroCompact(salesMetrics.total_sales_revenue)} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.avg_price_per_unit')} value={formatEuroCompact(salesMetrics.avg_price_per_unit)} color="gray" size="md" />
           <StatCard
-            label={t('dashboards.director.monthly_sales', { month: format(new Date(), 'MMM') })}
+            label={t('dashboards.director.monthly_sales', { month: monthName })}
             value={`${salesMetrics.monthly_sales_count} ${t('dashboards.director.units')}`}
-            subtitle={`€${(salesMetrics.monthly_sales_revenue / 1000).toFixed(0)}K revenue`}
+            subtitle={t('dashboards.director.revenue_amount', { amount: formatEuroCompact(salesMetrics.monthly_sales_revenue) })}
             color="gray"
             size="md"
           />
@@ -126,13 +130,15 @@ const DirectorDashboard: React.FC = () => {
             size="lg"
           />
           <StatCard label={t('dashboards.director.completed_contracts')} value={constructionMetrics.completed_contracts} subtitle={t('dashboards.director.finished_work')} color="green" size="lg" />
-          <StatCard label={t('dashboards.director.overdue_tasks')} value={constructionMetrics.overdue_tasks} subtitle={t('dashboards.director.need_attention')} color="red" size="lg" />
+          {/* These are `subcontractor_milestones` — payment milestones on subcontractor
+              contracts, not tasks. */}
+          <StatCard label={t('dashboards.director.overdue_milestones')} value={constructionMetrics.overdue_tasks} subtitle={t('dashboards.director.need_attention')} color="red" size="lg" />
           <StatCard label={t('dashboards.director.critical_deadlines')} value={constructionMetrics.critical_deadlines} subtitle={t('dashboards.director.within_7_days')} color="orange" size="lg" />
         </div>
         <StatGrid columns={3}>
-          <StatCard label={t('dashboards.director.total_contract_value')} value={`€${(constructionMetrics.total_contract_value / 1000000).toFixed(2)}M`} color="gray" size="md" />
-          <StatCard label={t('dashboards.director.total_paid')} value={`€${(constructionMetrics.total_paid / 1000000).toFixed(2)}M`} color="gray" size="md" />
-          <StatCard label={t('dashboards.director.pending_payments')} value={`€${(constructionMetrics.pending_payments / 1000000).toFixed(2)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_contract_value')} value={formatEuroCompact(constructionMetrics.total_contract_value)} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_paid')} value={formatEuroCompact(constructionMetrics.total_paid)} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.pending_payments')} value={formatEuroCompact(constructionMetrics.pending_payments)} color="gray" size="md" />
         </StatGrid>
       </div>
 
@@ -142,7 +148,7 @@ const DirectorDashboard: React.FC = () => {
             <Banknote className="w-6 h-6 text-blue-600 mr-2" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.funding_investment')}</h2>
           </div>
-          <Button variant="primary" onClick={() => navigate('/funding-overview')}>{t('dashboards.director.view_details')}</Button>
+          <Button variant="primary" onClick={() => navigate('/funding-credits')}>{t('dashboards.director.view_details')}</Button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <StatCard label={t('dashboards.director.funded_projects')} value={fundingMetrics.funded_projects} icon={Users} color="green" size="lg" />
@@ -151,10 +157,10 @@ const DirectorDashboard: React.FC = () => {
           <StatCard label={t('dashboards.director.upcoming_maturities')} value={fundingMetrics.upcoming_maturities} icon={Calendar} color="orange" size="lg" />
         </div>
         <StatGrid columns={4}>
-          <StatCard label={t('dashboards.director.total_credit_facilities')} value={`€${(fundingMetrics.total_bank_credit / 1000000).toFixed(1)}M`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.total_credit_facilities')} value={formatEuroCompact(fundingMetrics.total_bank_credit)} color="gray" size="md" />
           <StatCard label={t('dashboards.director.avg_interest_rate')} value={`${fundingMetrics.avg_interest_rate.toFixed(2)}%`} color="gray" size="md" />
-          <StatCard label={t('dashboards.director.outstanding_debt')} value={`€${(fundingMetrics.outstanding_debt / 1000000).toFixed(1)}M`} color="gray" size="md" />
-          <StatCard label={t('dashboards.director.monthly_debt_service')} value={`€${(fundingMetrics.monthly_debt_service / 1000).toFixed(0)}K`} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.outstanding_debt')} value={formatEuroCompact(fundingMetrics.outstanding_debt)} color="gray" size="md" />
+          <StatCard label={t('dashboards.director.monthly_debt_service')} value={formatEuroCompact(fundingMetrics.monthly_debt_service)} color="gray" size="md" />
         </StatGrid>
       </div>
 

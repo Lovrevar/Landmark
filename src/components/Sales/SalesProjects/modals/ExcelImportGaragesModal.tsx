@@ -5,6 +5,8 @@ import { Upload, CheckCircle } from 'lucide-react'
 import { Modal, Button } from '../../../ui'
 import { importGaragesFromExcel, fetchExistingGarageNumbers } from '../services/garageImportService'
 import { useToast } from '../../../../contexts/ToastContext'
+import { parseNumber } from '../../../../utils/excelParsers'
+import { ImportOutcomeSummary } from './ImportOutcomeSummary'
 
 interface ParsedGarageRow {
   rowIndex: number
@@ -37,6 +39,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
     created: number
     updated: number
     failed: number
+    errors: string[]
   } | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,8 +66,10 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
         .map((row, idx) => ({
           rowIndex: idx + 2,
           number: String(row[0]),
-          size_m2: Number(row[1]) || 0,
-          price: Number(row[2]) || 0,
+          // Same parser as importGaragesFromExcel, so the preview shows the values that will be
+          // written: Number() reads a European "3.000,00" as NaN and previewed it as 0.
+          size_m2: parseNumber(row[1]),
+          price: parseNumber(row[2]),
           exists: existingNumbers.has(String(row[0]))
         }))
 
@@ -72,7 +77,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
       setStep(2)
     } catch (error) {
       console.error('Error parsing file:', error)
-      toast.error('Error parsing Excel file. Please check the file format.')
+      toast.error(t('sales_projects.excel_import.parse_error'))
     }
   }
 
@@ -82,17 +87,26 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
     setImporting(true)
     try {
       const result = await importGaragesFromExcel(file, selectedBuilding.id)
-      setImportResults({ created: result.created, updated: result.updated, failed: result.errors.length })
+      setImportResults({
+        created: result.created,
+        updated: result.updated,
+        failed: result.errors.length,
+        errors: result.errors.map(({ number, message }) =>
+          t('sales_projects.excel_import.garage_error', { number, message })
+        )
+      })
       setStep(3)
     } catch (error) {
       console.error('Import error:', error)
-      toast.error('An error occurred during import. Please check the console.')
+      toast.error(t('sales_projects.excel_import.import_failed'))
     } finally {
       setImporting(false)
     }
   }
 
   const handleClose = () => {
+    // Escape, the backdrop and the header X all land here; closing mid-import would hide the result.
+    if (importing) return
     if (importResults && (importResults.created > 0 || importResults.updated > 0)) {
       onComplete()
     }
@@ -122,7 +136,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
                 {t('sales_projects.excel_import.upload_garages_file')}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Select an Excel file with 3 columns: parking oznaka, parking m2, parking cijena
+                {t('sales_projects.excel_import.select_garages_file')}
               </p>
               <input
                 type="file"
@@ -138,7 +152,10 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
               )}
             </div>
             <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 rounded-lg p-4">
-              <h4 className="font-medium text-orange-900 dark:text-orange-400 mb-2">Expected File Format:</h4>
+              <h4 className="font-medium text-orange-900 dark:text-orange-400 mb-2">{t('sales_projects.excel_import.expected_format')}</h4>
+              {/* The bullets name literal Croatian spreadsheet columns (parking oznaka, parking m2,
+                  parking cijena) and must stay verbatim; left in English pending a wording
+                  decision, like the apartments modal. */}
               <ul className="text-sm text-orange-800 dark:text-orange-300 space-y-1 list-disc list-inside">
                 <li>Header row on row 1</li>
                 <li>Column 1: parking oznaka (garage number/label)</li>
@@ -148,10 +165,10 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
             </div>
             <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Building:</strong> {selectedBuilding?.name}
+                <strong>{t('common.building')}:</strong> {selectedBuilding?.name}
               </p>
               <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
-                Garages will be imported to this building. Existing garages with the same number will be updated.
+                {t('sales_projects.excel_import.garages_note')}
               </p>
             </div>
           </div>
@@ -160,20 +177,20 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
         {step === 2 && (
           <div className="space-y-4">
             <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-900 dark:text-white mb-2">Import Summary</h4>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-2">{t('sales_projects.excel_import.summary')}</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Total garages:</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('sales_projects.excel_import.total_garages')}</span>
                   <span className="ml-2 font-medium">{parsedRows.length}</span>
                 </div>
                 <div>
-                  <span className="text-green-600">New:</span>
+                  <span className="text-green-600">{t('sales_projects.excel_import.new_count')}</span>
                   <span className="ml-2 font-medium text-green-600">
                     {parsedRows.filter(r => !r.exists).length}
                   </span>
                 </div>
                 <div>
-                  <span className="text-yellow-600">Update existing:</span>
+                  <span className="text-yellow-600">{t('sales_projects.excel_import.update_existing')}</span>
                   <span className="ml-2 font-medium text-yellow-600">
                     {parsedRows.filter(r => r.exists).length}
                   </span>
@@ -186,11 +203,11 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Row</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Garage Number</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Size (m²)</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Price</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('sales_projects.excel_import.row')}</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('sales_projects.excel_import.garage_number')}</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('apartments.table.size')} (m²)</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('apartments.table.price')}</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{t('common.status')}</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -205,9 +222,9 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
                         <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">€{row.price.toLocaleString('hr-HR')}</td>
                         <td className="px-4 py-2 text-sm">
                           {row.exists ? (
-                            <span className="text-yellow-600 text-xs">Will update</span>
+                            <span className="text-yellow-600 text-xs">{t('sales_projects.excel_import.will_update')}</span>
                           ) : (
-                            <span className="text-green-600 text-xs">New</span>
+                            <span className="text-green-600 text-xs">{t('sales_projects.excel_import.new_label')}</span>
                           )}
                         </td>
                       </tr>
@@ -221,10 +238,11 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
 
         {step === 3 && importResults && (
           <div className="space-y-4">
-            <div className="text-center py-8">
-              <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('sales_projects.excel_import.import_complete')}</h3>
-            </div>
+            <ImportOutcomeSummary
+              succeeded={importResults.created + importResults.updated}
+              failed={importResults.failed}
+              errors={importResults.errors}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-4">
@@ -260,7 +278,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
 
         {step === 2 && (
           <>
-            <Button variant="secondary" onClick={() => setStep(1)}>{t('common.back')}</Button>
+            <Button variant="secondary" onClick={() => setStep(1)} disabled={importing}>{t('common.back')}</Button>
             <Button
               variant="primary"
               onClick={handleImport}

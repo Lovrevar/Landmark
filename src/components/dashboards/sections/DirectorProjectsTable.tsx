@@ -4,6 +4,8 @@ import { Building2 } from 'lucide-react'
 import { Badge } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import { useTranslation } from 'react-i18next'
+import { formatEuroCompact } from '../../../utils/formatters'
+import { PROJECT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDisplay'
 import type { ProjectStats } from '../types/directorTypes'
 
 interface Props {
@@ -63,22 +65,20 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                     </div>
                   </td>
                   <td data-label={t('dashboards.director.status_col')} className="px-6 py-4">
-                    <Badge variant={
-                      project.status === 'Completed' ? 'green' :
-                      project.status === 'In Progress' ? 'blue' :
-                      project.status === 'On Hold' ? 'red' : 'gray'
-                    }>
-                      {project.status}
+                    {/* "On Hold" was red here and yellow/grey/orange on four other screens; the
+                        shared map settles it on amber — paused, not failing. */}
+                    <Badge variant={statusVariant(PROJECT_STATUS, project.status)}>
+                      {statusLabel(PROJECT_STATUS, project.status, t)}
                     </Badge>
                   </td>
                   <td data-label={t('dashboards.director.budget_col')} className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                    €{(project.budget / 1000000).toFixed(2)}M
+                    {formatEuroCompact(project.budget)}
                   </td>
                   <td data-label={t('dashboards.director.expenses_col')} className="px-6 py-4 text-sm font-medium text-red-600">
-                    €{(project.total_expenses / 1000000).toFixed(2)}M
+                    {formatEuroCompact(project.total_expenses)}
                   </td>
                   <td data-label={t('dashboards.director.revenue_col')} className="px-6 py-4 text-sm font-medium text-green-600">
-                    €{(project.apartment_sales / 1000000).toFixed(2)}M
+                    {formatEuroCompact(project.apartment_sales)}
                   </td>
                   <td data-label={t('dashboards.director.profit_margin_col')} className="px-6 py-4">
                     <span className={`inline-flex items-center text-sm font-semibold ${

@@ -1,6 +1,11 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import type { Invoice, CreditAllocation, Contract } from '../types'
+import { buildPaymentData } from '../../Payments/services/paymentPayload'
+import type { getDefaultPaymentFormData } from './invoiceFormDefaults'
+
+export type InvoiceSortField = 'due_date' | 'invoice_number'
+export type InvoiceSortDirection = 'asc' | 'desc'
 
 export const fetchData = async (
   filterType: string,
@@ -8,7 +13,9 @@ export const fetchData = async (
   filterCompany: string,
   debouncedSearchTerm: string,
   currentPage: number,
-  pageSize: number
+  pageSize: number,
+  sortField: InvoiceSortField | null = null,
+  sortDirection: InvoiceSortDirection = 'asc'
 ) => {
   const [
     invoicesResult,
@@ -32,7 +39,12 @@ export const fetchData = async (
       p_company_id: filterCompany !== 'ALL' ? filterCompany : null,
       p_search_term: debouncedSearchTerm || null,
       p_offset: (currentPage - 1) * pageSize,
-      p_limit: pageSize
+      p_limit: pageSize,
+      // Sorted server-side so the order spans every page, not just the loaded one
+      // (20260915120000_invoice_list_server_sort.sql). Sent only when a sort is active:
+      // the unsorted call keeps the original six arguments, so the default list still
+      // loads against a database where that migration has not been applied yet.
+      ...(sortField ? { p_sort_field: sortField, p_sort_dir: sortDirection } : {})
     }),
 
     supabase.rpc('get_invoice_statistics', {
@@ -325,31 +337,15 @@ export const handleSubmit = async (
 }
 
 export const handlePaymentSubmit = async (
-  paymentFormData: Record<string, unknown>,
+  paymentFormData: ReturnType<typeof getDefaultPaymentFormData>,
   payingInvoice: Invoice
 ) => {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isKompenzacija = !paymentFormData.is_cesija && paymentFormData.payment_source_type === 'kompenzacija'
 
-  const paymentData = {
-    invoice_id: payingInvoice.id,
-    payment_source_type: paymentFormData.payment_source_type,
-    company_bank_account_id: paymentFormData.is_cesija || isKompenzacija ? null : (paymentFormData.payment_source_type === 'bank_account' ? (paymentFormData.company_bank_account_id || null) : null),
-    credit_id: paymentFormData.is_cesija || isKompenzacija ? null : (paymentFormData.payment_source_type === 'credit' ? (paymentFormData.credit_id || null) : null),
-    credit_allocation_id: paymentFormData.is_cesija || isKompenzacija ? null : (paymentFormData.payment_source_type === 'credit' ? (paymentFormData.credit_allocation_id || null) : null),
-    is_cesija: paymentFormData.is_cesija,
-    cesija_company_id: paymentFormData.is_cesija ? (paymentFormData.cesija_company_id || null) : null,
-    cesija_bank_account_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'bank_account' ? (paymentFormData.cesija_bank_account_id || null) : null,
-    cesija_credit_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'credit' ? (paymentFormData.cesija_credit_id || null) : null,
-    cesija_credit_allocation_id: paymentFormData.is_cesija && paymentFormData.payment_source_type === 'credit' ? (paymentFormData.cesija_credit_allocation_id || null) : null,
-    payment_date: paymentFormData.payment_date,
-    amount: paymentFormData.amount,
-    payment_method: paymentFormData.payment_method,
-    reference_number: paymentFormData.reference_number || null,
-    description: paymentFormData.description,
-    created_by: user?.id
-  }
+  // Same row shape as the Payments page (createPayment/updatePayment) — one builder for both.
+  const paymentData = buildPaymentData({ ...paymentFormData, invoice_id: payingInvoice.id }, user?.id)
 
   const { data: inserted, error } = await supabase
     .from('accounting_payments')
@@ -436,9 +432,18 @@ export const fetchMilestones = async (contractId: string) => {
   const contractAmount = parseFloat(contractData.contract_amount || '0')
   const milestoneIds = milestones.map(m => m.id)
 
+  /**
+   * Gross against gross, matching Supervision's milestone list.
+   *
+   * `contract_amount` is the contract's gross value (a trigger keeps it equal to
+   * `total_amount`), so a milestone's amount is gross too. Subtracting the linked invoices' net
+   * `base_amount` from it — which is what this did, and regardless of whether those invoices
+   * were ever paid — left a "Preostalo" inflated by the VAT on everything already settled.
+   * `paid_amount` is gross money received.
+   */
   const { data: invoices, error: invoicesError } = await supabase
     .from('accounting_invoices')
-    .select('milestone_id, base_amount')
+    .select('milestone_id, paid_amount')
     .in('milestone_id', milestoneIds)
     .not('milestone_id', 'is', null)
 
@@ -448,7 +453,7 @@ export const fetchMilestones = async (contractId: string) => {
 
   const paymentsByMilestone = (invoices || []).reduce((acc, inv) => {
     if (inv.milestone_id) {
-      acc[inv.milestone_id] = (acc[inv.milestone_id] || 0) + parseFloat(inv.base_amount || '0')
+      acc[inv.milestone_id] = (acc[inv.milestone_id] || 0) + parseFloat(inv.paid_amount || '0')
     }
     return acc
   }, {} as Record<string, number>)

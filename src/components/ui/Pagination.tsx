@@ -7,6 +7,12 @@ interface PaginationProps {
   totalCount: number
   pageSize: number
   onPageChange: (page: number) => void
+  /**
+   * What is being counted, in the genitive: "Prikazano 1-20 od 97 **računa**". Already
+   * translated by the caller — pass `t('…pagination.item_label')`. Left out, it falls back to
+   * the neutral `pagination.item_label` ("stavki" / "items"), which used to be a hardcoded
+   * Croatian literal and so read as Croatian inside an otherwise English page.
+   */
   itemLabel?: string
   className?: string
   extra?: ReactNode
@@ -17,11 +23,12 @@ export default function Pagination({
   totalCount,
   pageSize,
   onPageChange,
-  itemLabel = 'stavki',
+  itemLabel,
   className = '',
   extra,
 }: PaginationProps) {
   const { t } = useTranslation()
+  const label = itemLabel ?? t('pagination.item_label')
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
   const from = Math.min((currentPage - 1) * pageSize + 1, totalCount)
   const to = Math.min(currentPage * pageSize, totalCount)
@@ -33,7 +40,7 @@ export default function Pagination({
       <div className="flex justify-between items-center gap-4 flex-wrap">
         <div className="flex items-center gap-6 text-sm">
           <span className="text-gray-600 dark:text-gray-400">
-            {t('pagination.showing', { from, to, total: totalCount })} {itemLabel}
+            {t('pagination.showing', { from, to, total: totalCount })} {label}
           </span>
           {extra}
         </div>

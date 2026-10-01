@@ -26,6 +26,11 @@ export interface TopCompany {
 }
 
 export interface MonthlyData {
+  /**
+   * The month's first day as `'YYYY-MM-DD'`. It was a rendered `'MMM yyyy'` label until the
+   * i18n sweep — an English month on a Croatian dashboard; `AccountingMonthlyTrendsSection`
+   * formats it with `formatMonthYear`.
+   */
   month: string
   incoming: number
   outgoing: number

@@ -44,13 +44,13 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const errors: Record<string, string> = {}
-    if (!formData.project_id) errors.project_id = 'Project is required'
-    if (!formData.building_id) errors.building_id = 'Building is required'
-    if (!formData.start_number) errors.start_number = 'Starting number is required'
-    if (!formData.quantity) errors.quantity = 'Quantity is required'
-    if (!formData.floor && formData.floor !== 0) errors.floor = 'Floor is required'
-    if (!formData.size_m2) errors.size_m2 = 'Size is required'
-    if (!formData.price) errors.price = 'Price is required'
+    if (!formData.project_id) errors.project_id = t('apartments.form.errors.project')
+    if (!formData.building_id) errors.building_id = t('apartments.form.errors.building')
+    if (!formData.start_number) errors.start_number = t('apartments.form.errors.start_number')
+    if (!formData.quantity) errors.quantity = t('apartments.form.errors.quantity')
+    if (!formData.floor && formData.floor !== 0) errors.floor = t('apartments.form.errors.floor')
+    if (!formData.size_m2) errors.size_m2 = t('apartments.form.errors.size')
+    if (!formData.price) errors.price = t('apartments.form.errors.price')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     onSubmit(formData)
@@ -122,7 +122,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Size (m2)" required error={fieldErrors.size_m2}>
+              <FormField label={t('apartments.form.size_m2')} required error={fieldErrors.size_m2}>
                 <Input
                   type="number"
                   value={formData.size_m2}
@@ -131,7 +131,7 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label="Price (EUR)" required error={fieldErrors.price}>
+              <FormField label={t('apartments.form.price')} required error={fieldErrors.price}>
                 <Input
                   type="number"
                   value={formData.price}
@@ -142,9 +142,11 @@ export const BulkApartmentModal: React.FC<BulkApartmentModalProps> = ({
             </div>
 
             <Alert variant="info">
-              This will create <strong>{formData.quantity}</strong> apartments starting from{' '}
-              <strong>A{formData.start_number}</strong> to{' '}
-              <strong>A{formData.start_number + formData.quantity - 1}</strong>
+              {t('apartments.form.bulk_preview', {
+                count: formData.quantity,
+                from: `A${formData.start_number}`,
+                to: `A${formData.start_number + formData.quantity - 1}`
+              })}
             </Alert>
           </div>
         </Modal.Body>

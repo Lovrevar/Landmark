@@ -5,6 +5,8 @@ import { Modal, EmptyState } from '../../../ui'
 import type { BankCredit } from '../../../../lib/supabase'
 import type { BankWithCredits } from '../types'
 import { getCreditRiskLevel } from '../utils/creditCalculations'
+import { RISK_LEVEL, statusLabel } from '../../../../utils/statusDisplay'
+import { NO_VALUE } from '../../../../utils/formatters'
 import CreditFacilityCard from '../components/CreditFacilityCard'
 
 interface InvestorDetailModalProps {
@@ -57,8 +59,12 @@ const InvestorDetailModal: React.FC<InvestorDetailModalProps> = ({
                 <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('funding.investors.detail_modal.credit_facilities_heading')}</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-blue-700 dark:text-blue-300">{t('funding.investors.detail_modal.credit_utilized_label')}</span>
-                    <span className="font-medium text-green-700 dark:text-green-400">€{bank.credit_utilized.toLocaleString('hr-HR')}</span>
+                    <span className="text-blue-700 dark:text-blue-300">{t('funding.investors.detail_modal.credit_total_label')}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">€{bank.credit_total.toLocaleString('hr-HR')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700 dark:text-blue-300">{t('funding.investors.detail_modal.credit_used_label')}</span>
+                    <span className="font-medium text-green-700 dark:text-green-400">€{bank.credit_used.toLocaleString('hr-HR')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-blue-700 dark:text-blue-300">{t('funding.investors.detail_modal.outstanding_label')}</span>
@@ -87,7 +93,7 @@ const InvestorDetailModal: React.FC<InvestorDetailModalProps> = ({
                   <div className="flex justify-between">
                     <span className="text-orange-700 dark:text-orange-400">{t('funding.investors.detail_modal.credit_risk_label')}</span>
                     <span className={`font-medium ${riskLevel?.className}`}>
-                      {riskLevel?.label}
+                      {riskLevel ? statusLabel(RISK_LEVEL, riskLevel.level, t) : NO_VALUE}
                     </span>
                   </div>
                   <div className="flex justify-between">

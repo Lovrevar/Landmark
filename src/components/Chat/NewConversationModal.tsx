@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Users, User, Check } from 'lucide-react'
 import Modal from '../ui/Modal'
 import SearchInput from '../ui/SearchInput'
 import LoadingSpinner from '../ui/LoadingSpinner'
+import ErrorState from '../ui/ErrorState'
 import type { ChatUser } from '../../types/chat'
 import { fetchAllUsers } from './services/chatService'
 
@@ -27,11 +28,27 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
   const { t } = useTranslation()
   const [users, setUsers] = useState<ChatUser[]>([])
   const [loading, setLoading] = useState(true)
+  // An empty user list after a failed fetch reads as "there is nobody to message".
+  const [loadError, setLoadError] = useState<Error | null>(null)
   const [search, setSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [groupName, setGroupName] = useState('')
   const [creating, setCreating] = useState(false)
   const isGroup = selectedIds.length > 1
+
+  const loadUsers = useCallback(async () => {
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const data = await fetchAllUsers()
+      setUsers(data.filter(u => u.id !== currentUserId))
+    } catch (err) {
+      console.error('Failed to load users:', err)
+      setLoadError(err instanceof Error ? err : new Error(String(err)))
+    } finally {
+      setLoading(false)
+    }
+  }, [currentUserId])
 
   useEffect(() => {
     if (!show) return
@@ -40,19 +57,8 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
     setGroupName('')
     setCreating(false)
 
-    const load = async () => {
-      setLoading(true)
-      try {
-        const data = await fetchAllUsers()
-        setUsers(data.filter(u => u.id !== currentUserId))
-      } catch (err) {
-        console.error('Failed to load users:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [show, currentUserId])
+    void loadUsers()
+  }, [show, currentUserId, loadUsers])
 
   const filtered = users.filter(u => {
     if (!search.trim()) return true
@@ -69,8 +75,11 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
     if (selectedIds.length === 0) return
     setCreating(true)
     const name = isGroup && groupName.trim() ? groupName.trim() : null
-    await onCreate(selectedIds, name, isGroup)
-    onClose()
+    // `onCreate` returns null when the insert failed (it toasts the reason itself). Closing
+    // unconditionally made a failed create look like a conversation that had been started.
+    const conversationId = await onCreate(selectedIds, name, isGroup)
+    setCreating(false)
+    if (conversationId) onClose()
   }
 
   return (
@@ -117,6 +126,8 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
         <div className="max-h-64 overflow-y-auto">
           {loading ? (
             <LoadingSpinner size="sm" className="mt-4 mb-4" />
+          ) : loadError ? (
+            <ErrorState compact onRetry={() => { void loadUsers() }} />
           ) : filtered.length === 0 ? (
             <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-6">
               {t('common.no_results')}
@@ -167,7 +178,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
           {t('common.cancel')}
         </button>
         <button
-          onClick={handleCreate}
+          onClick={() => { void handleCreate() }}
           disabled={selectedIds.length === 0 || creating}
           className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
         >

@@ -1,39 +1,57 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Invoice, MonthlyBudget } from '../types'
+import { toLoadError } from '../../services/loadError'
 import { fetchInvoices as fetchInvoicesService, fetchBudgets as fetchBudgetsService } from '../services/calendarService'
 
 export const useCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [budgets, setBudgets] = useState<MonthlyBudget[]>([])
   const [showBudgetModal, setShowBudgetModal] = useState(false)
   const [budgetYear, setBudgetYear] = useState(new Date().getFullYear())
   const [budgetFormData, setBudgetFormData] = useState<{ [key: number]: number }>({})
 
-  useEffect(() => {
-    fetchInvoices()
-    fetchBudgets()
-    // Clear any day selection from the previous month so the detail panel
-    // never shows invoices that don't belong to the visible month.
-    setSelectedDate(null)
-  }, [currentDate])
-
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
       const data = await fetchInvoicesService()
       setInvoices(data)
+    } catch (e) {
+      // An empty grid would read as "nothing due this month", which on a payment calendar is
+      // the most expensive sentence the page can say by accident.
+      console.error('Error fetching invoices:', e)
+      setError(toLoadError(e))
+      setInvoices([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const fetchBudgets = async () => {
-    const data = await fetchBudgetsService()
-    setBudgets(data)
-  }
+  const fetchBudgets = useCallback(async () => {
+    try {
+      const data = await fetchBudgetsService()
+      setBudgets(data)
+    } catch (e) {
+      console.error('Error fetching budgets:', e)
+      setError(prev => prev ?? toLoadError(e))
+    }
+  }, [])
+
+  const refetch = useCallback(async () => {
+    await Promise.all([fetchInvoices(), fetchBudgets()])
+  }, [fetchInvoices, fetchBudgets])
+
+  useEffect(() => {
+    void fetchInvoices()
+    void fetchBudgets()
+    // Clear any day selection from the previous month so the detail panel
+    // never shows invoices that don't belong to the visible month.
+    setSelectedDate(null)
+  }, [currentDate, fetchInvoices, fetchBudgets])
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
@@ -142,6 +160,8 @@ export const useCalendar = () => {
     currentDate,
     invoices,
     loading,
+    error,
+    refetch,
     selectedDate,
     selectedInvoices,
     budgets,

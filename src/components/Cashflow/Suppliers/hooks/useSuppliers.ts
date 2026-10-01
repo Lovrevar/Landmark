@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SupplierSummary, SupplierFormData, Project, Phase } from '../types'
 import * as supplierService from '../services/supplierService'
 import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOverflow'
 import { useToast } from '../../../../contexts/ToastContext'
+import { toLoadError } from '../../services/loadError'
 
 export const useSuppliers = () => {
   const toast = useToast()
+  const { t } = useTranslation()
   const [suppliers, setSuppliers] = useState<SupplierSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierSummary | null>(null)
@@ -31,12 +35,14 @@ export const useSuppliers = () => {
   }, [])
 
   const fetchData = async () => {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
       const data = await supplierService.fetchSuppliers()
       setSuppliers(data)
     } catch (error) {
       console.error('Error fetching suppliers:', error)
+      setError(toLoadError(error))
     } finally {
       setLoading(false)
     }
@@ -48,7 +54,10 @@ export const useSuppliers = () => {
       const data = await supplierService.fetchProjects()
       setProjects(data)
     } catch (error) {
+      // Only the add-supplier form's dropdown; the toast is enough to stop the user
+      // concluding the company has no projects.
       console.error('Error loading projects:', error)
+      toast.error(t('suppliers.toast.projects_load_error'))
     } finally {
       setLoadingProjects(false)
     }
@@ -61,6 +70,7 @@ export const useSuppliers = () => {
     } catch (error) {
       console.error('Error loading phases:', error)
       setPhases([])
+      toast.error(t('suppliers.toast.phases_load_error'))
     }
   }
 
@@ -184,6 +194,9 @@ export const useSuppliers = () => {
   return {
     suppliers,
     loading,
+    error,
+    refetch: fetchData,
+    dismissError: () => setError(null),
     showAddModal,
     showDetailsModal,
     selectedSupplier,

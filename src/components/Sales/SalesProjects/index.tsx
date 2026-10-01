@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Building2, FileUp } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Button, ConfirmDialog, Tabs } from '../../ui'
+import { LoadingSpinner, PageHeader, Button, ConfirmDialog, Tabs, ErrorState, Alert } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { Apartment, Garage, Repository, PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { useSalesData } from './hooks/useSalesData'
 import * as salesService from './services/salesService'
@@ -24,6 +25,7 @@ import {
 import { ProjectsGrid } from './ProjectsGrid'
 import { BuildingsGrid } from './BuildingsGrid'
 import { UnitsGrid } from './UnitsGrid'
+import { getSelectableUnitIds, getUnitsOfType } from './unitFilters'
 import { BuildingQuantityModal } from './modals/BuildingQuantityModal'
 import { SingleBuildingModal } from './modals/SingleBuildingModal'
 import { SingleUnitModal } from './modals/SingleUnitModal'
@@ -37,7 +39,7 @@ import { ExcelImportGaragesModal } from './modals/ExcelImportGaragesModal'
 const SalesProjectsEnhanced: React.FC = () => {
   const { t } = useTranslation()
   const toast = useToast()
-  const { projects, garages, repositories, customers, loading, refetch } = useSalesData()
+  const { projects, garages, repositories, customers, loading, error, dismissError, refetch } = useSalesData()
 
   const [selectedProject, setSelectedProject] = useState<ProjectWithBuildings | null>(null)
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingWithUnits | null>(null)
@@ -102,13 +104,15 @@ const SalesProjectsEnhanced: React.FC = () => {
     setDeletingBuilding(true)
     try {
       await salesService.deleteBuilding(pendingDeleteBuildingId)
+      // Closed only on success: a `finally` dismissed the dialog even when the delete was
+      // refused, so a failure was indistinguishable from a completed one.
+      setPendingDeleteBuildingId(null)
       await refetch()
     } catch (error) {
       console.error('Error deleting building:', error)
-      toast.error('Error deleting building.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.building_delete_error')))
     } finally {
       setDeletingBuilding(false)
-      setPendingDeleteBuildingId(null)
     }
   }
 
@@ -121,7 +125,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating buildings:', error)
-      toast.error('Error creating buildings. Please try again.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.buildings_create_error')))
     }
   }
 
@@ -134,7 +138,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating building:', error)
-      toast.error('Error creating building. Please try again.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.building_create_error')))
     }
   }
 
@@ -152,10 +156,10 @@ const SalesProjectsEnhanced: React.FC = () => {
         data.price_per_m2
       )
       setShowUnitForm(false)
-      refetch()
+      await refetch()
     } catch (error) {
       console.error('Error creating unit:', error)
-      toast.error('Error creating unit. Please try again.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.unit_create_error')))
     }
   }
 
@@ -165,10 +169,10 @@ const SalesProjectsEnhanced: React.FC = () => {
     try {
       await salesService.bulkCreateUnits(activeUnitType, selectedBuilding.id, selectedBuilding.project_id, data)
       setShowBulkUnitForm(false)
-      refetch()
+      await refetch()
     } catch (error) {
       console.error('Error bulk creating units:', error)
-      toast.error('Error creating units. Please try again.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.units_create_error')))
     }
   }
 
@@ -181,13 +185,13 @@ const SalesProjectsEnhanced: React.FC = () => {
     setDeletingUnit(true)
     try {
       await salesService.deleteUnit(pendingDeleteUnit.id, pendingDeleteUnit.unitType)
+      setPendingDeleteUnit(null)
       refetch()
     } catch (error) {
       console.error('Error deleting unit:', error)
-      toast.error('Error deleting unit.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.unit_delete_error')))
     } finally {
       setDeletingUnit(false)
-      setPendingDeleteUnit(null)
     }
   }
 
@@ -197,7 +201,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error updating status:', error)
-      toast.error('Error updating status.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.status_update_error')))
     }
   }
 
@@ -207,7 +211,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error linking garage:', error)
-      toast.error('Error linking garage.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.garage_link_error')))
     }
   }
 
@@ -217,7 +221,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error linking repository:', error)
-      toast.error('Error linking repository.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.repository_link_error')))
     }
   }
 
@@ -227,7 +231,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error unlinking garage:', error)
-      toast.error('Error unlinking garage.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.garage_unlink_error')))
     }
   }
 
@@ -237,7 +241,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       refetch()
     } catch (error) {
       console.error('Error unlinking repository:', error)
-      toast.error('Error unlinking repository.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.repository_unlink_error')))
     }
   }
 
@@ -258,13 +262,20 @@ const SalesProjectsEnhanced: React.FC = () => {
 
   const handleSelectAllUnits = () => {
     if (!selectedBuilding) return
-    let units: { id: string }[] = []
-    if (activeUnitType === 'apartment') units = selectedBuilding.apartments
-    else if (activeUnitType === 'garage') units = selectedBuilding.garages
-    else if (activeUnitType === 'repository') units = selectedBuilding.repositories
+    // Same status filter the grid shows, minus Sold units (never bulk-repriced)
+    setSelectedUnitIds(getSelectableUnitIds(getUnitsOfType(selectedBuilding, activeUnitType), filterStatus))
+  }
 
-    const allIds = units.map(u => u.id)
-    setSelectedUnitIds(allIds)
+  // A selection only makes sense for the units on screen, so switching the
+  // unit tab or the status filter starts over
+  const handleSetActiveUnitType = (unitType: UnitType) => {
+    setActiveUnitType(unitType)
+    setSelectedUnitIds([])
+  }
+
+  const handleSetFilterStatus = (status: FilterStatus) => {
+    setFilterStatus(status)
+    setSelectedUnitIds([])
   }
 
   const handleDeselectAllUnits = () => {
@@ -276,16 +287,22 @@ const SalesProjectsEnhanced: React.FC = () => {
   }
 
   const handleBulkPriceUpdate = async (adjustmentType: 'increase' | 'decrease', adjustmentValue: number) => {
-   
-
     try {
-      await salesService.bulkUpdateUnitPrice(selectedUnitIds, activeUnitType, adjustmentType, adjustmentValue)
+      const result = await salesService.bulkUpdateUnitPrice(selectedUnitIds, activeUnitType, adjustmentType, adjustmentValue)
       setShowBulkPriceModal(false)
       setSelectedUnitIds([])
-      refetch()
-    } catch (error) {
-      console.error('Error updating prices:', error)
-      toast.error('Error updating prices. Please try again.')
+      // Refetch whichever way it went: rows that were written must not keep showing the
+      // old price just because a sibling update failed.
+      await refetch()
+      if (result.failed > 0) {
+        toast.error(t('sales_projects.bulk_price.toast_partial', { updated: result.updated, selected: result.selected, failed: result.failed }))
+      } else {
+        // Sold units are skipped by design, so `updated` is routinely below `selected`.
+        toast.success(t('sales_projects.bulk_price.toast_success', { updated: result.updated, selected: result.selected }))
+      }
+    } catch (err) {
+      console.error('Error updating prices:', err)
+      toast.error(toErrorMessage(err, t('sales_projects.bulk_price.toast_failed')))
     }
   }
 
@@ -301,10 +318,10 @@ const SalesProjectsEnhanced: React.FC = () => {
       })
       setShowSaleForm(false)
       setUnitForSale(null)
-      refetch()
+      await refetch()
     } catch (error) {
       console.error('Error completing sale:', error)
-      toast.error('Error completing sale. Please try again.')
+      toast.error(toErrorMessage(error, t('sales_projects.toast.sale_complete_error')))
     }
   }
 
@@ -320,9 +337,14 @@ const SalesProjectsEnhanced: React.FC = () => {
     return t('common.storage')
   }
 
-  if (loading) {
+  // First load only: a refetch after a mutation must not unmount the open modal
+  if (loading && projects.length === 0) {
     return <LoadingSpinner message={t('common.loading')} />
   }
+
+  // The project cards carry revenue, sold and total counts. A failed aggregation left all
+  // three at 0, which reads as a project that has sold nothing.
+  const loadFailed = !!error && projects.length === 0
 
   return (
     <div>
@@ -390,7 +412,18 @@ const SalesProjectsEnhanced: React.FC = () => {
         }
       />
 
-      {viewMode === 'projects' && (
+      {error && !loadFailed && (
+        <Alert variant="error" className="mb-4" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {loadFailed && <ErrorState onRetry={() => { void refetch() }} />}
+
+      {!loadFailed && viewMode === 'projects' && (
         <>
           {/* Category names are Croatian domain terms and stay untranslated. */}
           <Tabs
@@ -429,8 +462,8 @@ const SalesProjectsEnhanced: React.FC = () => {
           filterStatus={filterStatus}
           garages={garages}
           repositories={repositories}
-          onSetActiveUnitType={setActiveUnitType}
-          onSetFilterStatus={setFilterStatus}
+          onSetActiveUnitType={handleSetActiveUnitType}
+          onSetFilterStatus={handleSetFilterStatus}
           onDeleteUnit={handleDeleteUnit}
           onUpdateUnitStatus={handleUpdateUnitStatus}
           onSellUnit={handleSellUnit}
@@ -511,12 +544,8 @@ const SalesProjectsEnhanced: React.FC = () => {
         visible={showBulkPriceModal}
         selectedUnits={
           selectedBuilding
-            ? (activeUnitType === 'apartment'
-                ? selectedBuilding.apartments
-                : activeUnitType === 'garage'
-                ? selectedBuilding.garages
-                : selectedBuilding.repositories
-              ).filter(u => selectedUnitIds.includes(u.id))
+            ? getUnitsOfType(selectedBuilding, activeUnitType)
+                .filter(u => selectedUnitIds.includes(u.id) && u.status !== 'Sold')
             : []
         }
         unitType={activeUnitType}

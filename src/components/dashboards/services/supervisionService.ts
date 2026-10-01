@@ -41,7 +41,7 @@ export async function fetchSupervisionDashboard(): Promise<SupervisionDashboardD
     supabase
       .from('work_logs')
       .select(
-        'id, date, subcontractor_id, work_description, notes, status, color, blocker_details, created_at, subcontractors!work_logs_subcontractor_id_fkey(name), contracts!work_logs_contract_id_fkey(contract_number, job_description)'
+        'id, date, subcontractor_id, work_description, notes, status, blocker_details, created_at, subcontractors!work_logs_subcontractor_id_fkey(name), contracts!work_logs_contract_id_fkey(contract_number, job_description)'
       )
       .gte('date', weekStart)
       .lte('date', weekEnd)
@@ -141,7 +141,7 @@ function deriveContractStatus(
       cost,
       budget_realized: budgetRealized,
       phase_id: c.phase_id,
-      project_name: c.phase?.project?.name || 'Unknown Project'
+      project_name: c.phase?.project?.name || null
     }
   })
 }

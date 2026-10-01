@@ -1,32 +1,43 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { DollarSign, Calendar, FileText, Download, Filter, TrendingUp, AlertCircle } from 'lucide-react'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, Table } from '../../ui'
-import { format } from 'date-fns'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { useSalesPayments } from './hooks/useSalesPayments'
-import { exportSalesPaymentsCSV } from './services/salesPaymentsService'
+import { exportSalesPaymentsExcel } from './services/salesPaymentsService'
+import { useAsyncExport } from '../../../hooks/useAsyncExport'
+import { formatDate } from '../../../utils/formatters'
+import { getPaymentMethodLabel } from '../../Cashflow/services/paymentHelpers'
 
 const SalesPaymentsManagement: React.FC = () => {
   const {
-    loading, stats, filteredPayments,
+    loading, error, hasData, refetch, dismissError, stats, filteredPayments,
     searchTerm, setSearchTerm,
     filterStatus, setFilterStatus,
     dateRange, setDateRange
   } = useSalesPayments()
 
-  const { t } = useTranslation()
-  if (loading) return <LoadingSpinner message={t('common.loading')} />
+  const { t, i18n } = useTranslation()
+  // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
+  const { exporting, run: runExportExcel } = useAsyncExport(exportSalesPaymentsExcel, 'common.export_error')
+
+  if (loading && !hasData) return <LoadingSpinner message={t('common.loading')} />
+
+  // Nothing loaded: the stat cards would read €0, which is a claim about the business
+  // rather than about the request. They stay off until there is data to put in them.
+  const loadFailed = !!error && !hasData
 
   return (
     <div className="max-w-7xl mx-auto">
       <PageHeader title={t('customers.sales_payments.title')} description={t('customers.sales_payments.subtitle')} />
 
+      {!loadFailed && (
       <StatGrid columns={4}>
         <StatCard label={t('customers.sales_payments.total_payments')} value={stats.totalPayments} icon={FileText} color="blue" />
         <StatCard label={t('customers.sales_payments.total_amount')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={DollarSign} color="green" />
         <StatCard label={t('customers.sales_payments.this_month')} value={stats.paymentsThisMonth} subtitle={t('customers.sales_payments.title')} icon={Calendar} color="blue" />
         <StatCard label={t('customers.sales_payments.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="green" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -45,8 +56,14 @@ const SalesPaymentsManagement: React.FC = () => {
             <option value="large">{t('customers.sales_payments.large')}</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={() => exportSalesPaymentsCSV(filteredPayments)} fullWidth>
-            {t('common.export_csv')}
+          <Button
+            variant="success"
+            icon={Download}
+            onClick={() => void runExportExcel(filteredPayments)}
+            loading={exporting}
+            fullWidth
+          >
+            {t('common.export_excel')}
           </Button>
         </div>
 
@@ -68,7 +85,18 @@ const SalesPaymentsManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredPayments.length === 0 ? (
+      {error && hasData && (
+        <Alert variant="error" className="mb-6" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={refetch} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {loadFailed ? (
+        <ErrorState onRetry={refetch} />
+      ) : filteredPayments.length === 0 ? (
         <EmptyState icon={AlertCircle} title={t('customers.sales_payments.no_payments')} description={t('customers.sales_payments.adjust_search')} />
       ) : (
         <Table>
@@ -88,11 +116,11 @@ const SalesPaymentsManagement: React.FC = () => {
           <Table.Body>
             {filteredPayments.map((payment) => (
               <Table.Tr key={payment.id}>
-                <Table.Td label={t('customers.sales_payments.payment_date')}>{format(new Date(payment.payment_date), 'MMM dd, yyyy')}</Table.Td>
+                <Table.Td label={t('customers.sales_payments.payment_date')}>{formatDate(payment.payment_date, i18n.language)}</Table.Td>
                 <Table.Td label={t('customers.sales_payments.invoice')}>
                   <div className="font-medium">{payment.invoice_number}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {payment.issue_date ? format(new Date(payment.issue_date), 'MMM dd, yyyy') : '-'}
+                    {payment.issue_date ? formatDate(payment.issue_date, i18n.language) : '-'}
                   </div>
                 </Table.Td>
                 <Table.Td label={t('customers.sales_payments.customer')}>{payment.customer_name}</Table.Td>
@@ -101,10 +129,10 @@ const SalesPaymentsManagement: React.FC = () => {
                 <Table.Td label={t('customers.sales_payments.invoice_total')} align="right" className="text-gray-500 dark:text-gray-400">
                   €{payment.invoice_total_amount.toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td label={t('customers.sales_payments.payment')} align="right" className="font-semibold text-green-600">
+                <Table.Td label={t('customers.sales_payments.payment')} align="right" className="font-semibold text-green-600 dark:text-green-400">
                   €{Number(payment.amount).toLocaleString('hr-HR')}
                 </Table.Td>
-                <Table.Td label={t('customers.sales_payments.method')}>{payment.payment_method}</Table.Td>
+                <Table.Td label={t('customers.sales_payments.method')}>{getPaymentMethodLabel(payment.payment_method, null, t)}</Table.Td>
                 <Table.Td label={t('customers.sales_payments.bank')} className="text-gray-500 dark:text-gray-400">{payment.bank_account_name}</Table.Td>
               </Table.Tr>
             ))}

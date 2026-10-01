@@ -3,7 +3,6 @@ import {
   buildContractTree,
   rollupContracts,
   isFullySettled,
-  remainingBudget,
   exceedsPhaseBudget,
   unallocatedBudget,
   nodeKey,
@@ -58,26 +57,31 @@ const ctx = (over: Partial<TreeContext> = {}): TreeContext => ({
 const leafContracts = (nodes: TreeNode[]): string[] =>
   nodes.flatMap(n => (n.children.length ? leafContracts(n.children) : n.contracts.map(c => c.id))).sort()
 
-describe('rollupContracts', () => {
-  it('sums contracted rows and the shortfall still owed on them', () => {
+// The arithmetic itself is tested in src/utils/contractRollup.test.ts, which Retail shares. What
+// is pinned here is the mapping from a subcontractor row onto it — which column is "paid", which
+// is "owed", and how a zero-amount row is classified.
+describe('rollupContracts — mapping the subcontractor row', () => {
+  it('reads paid from budget_realized and nothing else', () => {
+    // There used to be a second field, `invoice_total_paid`, summed from the invoices. Both were
+    // caches of sum(accounting_payments.amount), but only budget_realized could go stale — and it
+    // did, by €25.000 on Zona 31. Migration 20260910120000 fixed the cache; this pins the app to
+    // one field so a second "paid" cannot quietly reappear.
     const r = rollupContracts([
-      contract({ id: 'a', cost: 1000, budget_realized: 400 }),
-      contract({ id: 'b', cost: 500, budget_realized: 0 })
+      contract({ id: 'a', cost: 1000, budget_realized: 600 }),
+      contract({ id: 'b', cost: 1000, budget_realized: 0 }),
     ])
-    expect(r).toEqual({ contracted: 1500, paid: 400, unpaid: 1100, unpaidWithoutContract: 0, count: 2 })
+    expect(r.paid).toBe(600)
+    expect(r.contracted).toBe(2000)
+    expect(r.unpaid).toBe(1400)
   })
 
-  it('never reports negative unpaid when a row is overpaid', () => {
-    const r = rollupContracts([contract({ cost: 1000, budget_realized: 1800 })])
-    expect(r.unpaid).toBe(0)
-    expect(r.paid).toBe(1800)
-  })
-
-  it('takes the amount owed from invoices for rows with no contract', () => {
+  it('still takes what is OWED from invoices, which payments cannot answer', () => {
     const r = rollupContracts([
-      contract({ has_contract: false, cost: 0, budget_realized: 100, invoice_total_owed: 250 })
+      contract({ has_contract: false, cost: 0, budget_realized: 100, invoice_total_owed: 250 }),
     ])
-    expect(r).toEqual({ contracted: 0, paid: 100, unpaid: 250, unpaidWithoutContract: 250, count: 1 })
+    expect(r.paid).toBe(100)
+    expect(r.unpaid).toBe(250)
+    expect(r.unpaidWithoutContract).toBe(250)
   })
 
   // Pins the pre-existing behaviour of PhaseCard: a zero-cost row counts as uncontracted even
@@ -88,34 +92,6 @@ describe('rollupContracts', () => {
     ])
     expect(r.contracted).toBe(0)
     expect(r.unpaidWithoutContract).toBe(700)
-  })
-
-  it('mixes contracted and uncontracted rows without double counting', () => {
-    const r = rollupContracts([
-      contract({ id: 'a', cost: 1000, budget_realized: 250 }),
-      contract({ id: 'b', has_contract: false, cost: 0, budget_realized: 50, invoice_total_owed: 300 })
-    ])
-    expect(r).toEqual({ contracted: 1000, paid: 300, unpaid: 1050, unpaidWithoutContract: 300, count: 2 })
-  })
-
-  it('is empty for no contracts', () => {
-    expect(rollupContracts([])).toEqual({
-      contracted: 0, paid: 0, unpaid: 0, unpaidWithoutContract: 0, count: 0
-    })
-  })
-})
-
-describe('remainingBudget', () => {
-  it('subtracts contracted value and uncontracted debt from the budget', () => {
-    const r = rollupContracts([
-      contract({ id: 'a', cost: 1000 }),
-      contract({ id: 'b', has_contract: false, cost: 0, invoice_total_owed: 200 })
-    ])
-    expect(remainingBudget(5000, r)).toBe(3800)
-  })
-
-  it('goes negative when over budget, rather than clamping', () => {
-    expect(remainingBudget(500, rollupContracts([contract({ cost: 900 })]))).toBe(-400)
   })
 })
 
@@ -316,29 +292,6 @@ describe('isFullySettled', () => {
     expect(isFullySettled(contract({
       has_contract: false, cost: 0, budget_realized: 0, invoice_total_owed: 0
     }))).toBe(false)
-  })
-})
-
-describe('the single definition of paid', () => {
-  it('reads paid from budget_realized and nothing else', () => {
-    // There used to be a second field, `invoice_total_paid`, summed from the invoices. Both were
-    // caches of sum(accounting_payments.amount), but only budget_realized could go stale — and it
-    // did, by €25.000 on Zona 31. Migration 20260910120000 fixed the cache; this pins the app to
-    // one field so a second "paid" cannot quietly reappear.
-    const r = rollupContracts([
-      contract({ id: 'a', cost: 1000, budget_realized: 600 }),
-      contract({ id: 'b', cost: 1000, budget_realized: 0 }),
-    ])
-    expect(r.paid).toBe(600)
-  })
-
-  it('still takes what is OWED from invoices, which payments cannot answer', () => {
-    const r = rollupContracts([
-      contract({ has_contract: false, cost: 0, budget_realized: 100, invoice_total_owed: 250 }),
-    ])
-    expect(r.paid).toBe(100)
-    expect(r.unpaid).toBe(250)
-    expect(r.unpaidWithoutContract).toBe(250)
   })
 })
 

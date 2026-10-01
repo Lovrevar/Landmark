@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Badge, EmptyState } from '../../ui'
 import type { RetailProjectWithPhases } from '../../../types/retail'
 import { formatCurrency, getStatusBadgeVariant } from '../utils'
+import { PROJECT_STATUS, statusLabel } from '../../../utils/statusDisplay'
 
 interface ProjectsGridProps {
   projects: RetailProjectWithPhases[]
@@ -30,7 +31,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
               </div>
               <div className="flex items-center space-x-2">
                 <Badge variant={getStatusBadgeVariant(project.status)}>
-                  {project.status}
+                  {statusLabel(PROJECT_STATUS, project.status, t)}
                 </Badge>
                 {project.land_plot_id && (
                   <span className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 flex items-center">

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Trash2 } from 'lucide-react'
-import { Modal, Button, Badge, Alert, Input, LoadingSpinner } from '../../../ui'
+import { Modal, Button, Badge, Alert, Input, LoadingSpinner, ConfirmDialog } from '../../../ui'
 import { CostClassification } from '../types'
+import { isForeignKeyViolation } from '../../../../lib/dbErrors'
 import {
   fetchCostClassifications,
   updateCostClassification,
@@ -31,24 +32,36 @@ export const ManageCostClassificationsModal: React.FC<Props> = ({ visible, onClo
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<CostClassification | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  // Sort-order edits in progress, by row id. `rows` stays what the database last returned, so a
+  // blur can tell whether the value actually changed.
+  const [sortDrafts, setSortDrafts] = useState<Record<number, string>>({})
 
-  const load = async () => {
+  /** `showSpinner` is off for background refreshes, so tabbing between sort inputs keeps focus. */
+  const load = async (showSpinner = true) => {
     try {
-      setLoading(true)
+      if (showSpinner) setLoading(true)
       setError(null)
       setRows(await fetchCostClassifications(true))
     } catch (e) {
       console.error('Error loading cost classifications:', e)
       setError(t('supervision.cost_classification.errors.save_error'))
     } finally {
-      setLoading(false)
+      if (showSpinner) setLoading(false)
     }
   }
 
-  // `load` is recreated each render; depending on it would refetch in a loop. Reloading when the
-  // modal opens is the intended behaviour.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (visible) load() }, [visible])
+  useEffect(() => {
+    if (visible) {
+      setPendingDelete(null)
+      setSortDrafts({})
+      load()
+    }
+    // `load` is recreated each render; depending on it would refetch in a loop. Reloading when the
+    // modal opens is the intended behaviour.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible])
 
   const toggleActive = async (row: CostClassification) => {
     try {
@@ -61,7 +74,38 @@ export const ManageCostClassificationsModal: React.FC<Props> = ({ visible, onClo
     }
   }
 
-  const remove = async (row: CostClassification) => {
+  const clearSortDraft = (id: number) =>
+    setSortDrafts(prev => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+
+  const saveSortOrder = async (row: CostClassification) => {
+    const draft = sortDrafts[row.id]
+    if (draft === undefined) return
+    const sortOrder = parseInt(draft, 10)
+    if (Number.isNaN(sortOrder) || sortOrder === row.sort_order) {
+      clearSortDraft(row.id)
+      return
+    }
+    try {
+      setError(null)
+      await updateCostClassification(row.id, { sort_order: sortOrder })
+      await load(false)
+      onChanged()
+    } catch (e) {
+      console.error('Error updating cost classification sort order:', e)
+      setError(t('supervision.cost_classification.errors.save_error'))
+    } finally {
+      clearSortDraft(row.id)
+    }
+  }
+
+  const confirmRemove = async () => {
+    const row = pendingDelete
+    if (!row) return
+    setDeleting(true)
     try {
       setError(null)
       const usage = await countClassificationUsage(row.id)
@@ -74,7 +118,14 @@ export const ManageCostClassificationsModal: React.FC<Props> = ({ visible, onClo
       onChanged()
     } catch (e) {
       console.error('Error deleting cost classification:', e)
-      setError(t('supervision.cost_classification.errors.in_use'))
+      // The FKs are NO ACTION, so a row that became used after the pre-check is refused with a
+      // foreign-key violation. Anything else (network, RLS, the system-row trigger) is not "in use".
+      setError(isForeignKeyViolation(e)
+        ? t('supervision.cost_classification.errors.in_use')
+        : t('supervision.cost_classification.errors.save_error'))
+    } finally {
+      setDeleting(false)
+      setPendingDelete(null)
     }
   }
 
@@ -106,19 +157,27 @@ export const ManageCostClassificationsModal: React.FC<Props> = ({ visible, onClo
                 <div className="w-20">
                   <Input
                     type="number"
-                    value={row.sort_order}
+                    aria-label={t('supervision.cost_classification.sort_order_label')}
+                    value={sortDrafts[row.id] ?? String(row.sort_order)}
                     onChange={(e) => {
-                      const sort_order = parseInt(e.target.value) || 0
-                      setRows(prev => prev.map(r => (r.id === row.id ? { ...r, sort_order } : r)))
+                      const value = e.target.value
+                      setSortDrafts(prev => ({ ...prev, [row.id]: value }))
                     }}
-                    onBlur={() => updateCostClassification(row.id, { sort_order: row.sort_order }).then(onChanged)}
+                    onBlur={() => saveSortOrder(row)}
                   />
                 </div>
                 <Button variant="secondary" size="sm" onClick={() => toggleActive(row)}>
                   {row.is_active ? t('common.deactivate') : t('common.activate')}
                 </Button>
                 {!row.is_system && (
-                  <Button variant="outline-danger" size="icon-sm" icon={Trash2} onClick={() => remove(row)} />
+                  <Button
+                    variant="outline-danger"
+                    size="icon-sm"
+                    icon={Trash2}
+                    title={t('common.delete')}
+                    aria-label={t('common.delete')}
+                    onClick={() => setPendingDelete(row)}
+                  />
                 )}
               </div>
             ))}
@@ -140,6 +199,18 @@ export const ManageCostClassificationsModal: React.FC<Props> = ({ visible, onClo
         visible={showCreate}
         onClose={() => setShowCreate(false)}
         onCreated={() => { load(); onChanged() }}
+      />
+
+      <ConfirmDialog
+        show={!!pendingDelete}
+        title={t('common.confirm_delete')}
+        message={t('supervision.cost_classification.delete_confirm_message', { name: pendingDelete?.name ?? '' })}
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
+        variant="danger"
+        onConfirm={confirmRemove}
+        onCancel={() => { if (!deleting) setPendingDelete(null) }}
+        loading={deleting}
       />
     </Modal>
   )

@@ -2,7 +2,9 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Home, Plus, Building2, Warehouse, Package, Link as LinkIcon } from 'lucide-react'
-import { LoadingSpinner, SearchInput, Button, Select, EmptyState, PageHeader, ConfirmDialog, Pagination } from '../../ui'
+import { LoadingSpinner, SearchInput, Button, Select, EmptyState, ErrorState, Alert, PageHeader, ConfirmDialog, Pagination } from '../../ui'
+import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { ApartmentWithDetails, ApartmentFormData, BulkApartmentData, PaymentWithCustomer } from './types'
 import * as apartmentService from './services/apartmentService'
 import { useApartmentData } from './hooks/useApartmentData'
@@ -11,11 +13,12 @@ import { SingleApartmentModal } from './modals/SingleApartmentModal'
 import { EditApartmentModal } from './modals/EditApartmentModal'
 import { ApartmentDetailsModal } from './modals/ApartmentDetailsModal'
 import { PaymentHistoryModal } from './modals/PaymentHistoryModal'
-import { EditPaymentModal } from './modals/EditPaymentModal'
 import { LinkUnitsModal } from './modals/LinkUnitsModal'
+import { formatEuroRounded } from '../../../utils/formatters'
 
 const ApartmentManagement: React.FC = () => {
   const { t } = useTranslation()
+  const toast = useToast()
   useAuth()
   const {
     apartments,
@@ -26,6 +29,8 @@ const ApartmentManagement: React.FC = () => {
     linkedGarages,
     linkedStorages,
     loading,
+    error,
+    dismissError,
     refetch: fetchData,
     pageSize,
     currentPage,
@@ -45,12 +50,10 @@ const ApartmentManagement: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showPaymentHistory, setShowPaymentHistory] = useState(false)
-  const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
   const [showLinkUnitsModal, setShowLinkUnitsModal] = useState(false)
 
   const [selectedApartment, setSelectedApartment] = useState<ApartmentWithDetails | null>(null)
   const [payments, setPayments] = useState<PaymentWithCustomer[]>([])
-  const [editingPayment, setEditingPayment] = useState<PaymentWithCustomer | null>(null)
   const [pendingDeleteApartmentId, setPendingDeleteApartmentId] = useState<string | null>(null)
   const [deletingApartment, setDeletingApartment] = useState(false)
 
@@ -59,9 +62,11 @@ const ApartmentManagement: React.FC = () => {
       await apartmentService.createBulkApartments(data)
       setShowBulkModal(false)
       fetchData()
+      toast.success(t('apartments.toast.bulk_create_success'))
     } catch (error) {
       console.error('Error creating apartments:', error)
- 
+      // The modal stays open so the entered range is not lost.
+      toast.error(toErrorMessage(error, t('apartments.toast.create_error')))
     }
   }
 
@@ -70,10 +75,10 @@ const ApartmentManagement: React.FC = () => {
       await apartmentService.createSingleApartment(data)
       setShowSingleModal(false)
       fetchData()
-
+      toast.success(t('apartments.toast.create_success'))
     } catch (error) {
       console.error('Error creating apartment:', error)
-
+      toast.error(toErrorMessage(error, t('apartments.toast.create_error')))
     }
   }
 
@@ -83,8 +88,10 @@ const ApartmentManagement: React.FC = () => {
       setShowEditModal(false)
       setSelectedApartment(null)
       fetchData()
+      toast.success(t('apartments.toast.update_success'))
     } catch (error) {
       console.error('Error updating apartment:', error)
+      toast.error(toErrorMessage(error, t('apartments.toast.update_error')))
     }
   }
 
@@ -97,12 +104,16 @@ const ApartmentManagement: React.FC = () => {
     setDeletingApartment(true)
     try {
       await apartmentService.deleteApartment(pendingDeleteApartmentId)
+      // Closing only here: a `finally` closed the dialog whether or not the row went, so a
+      // refused delete looked exactly like a successful one.
+      setPendingDeleteApartmentId(null)
       fetchData()
+      toast.success(t('apartments.toast.delete_success'))
     } catch (error) {
       console.error('Error deleting apartment:', error)
+      toast.error(toErrorMessage(error, t('apartments.toast.delete_error')))
     } finally {
       setDeletingApartment(false)
-      setPendingDeleteApartmentId(null)
     }
   }
 
@@ -115,47 +126,15 @@ const ApartmentManagement: React.FC = () => {
       setShowPaymentHistory(true)
     } catch (error) {
       console.error('Error fetching payments:', error)
-    }
-  }
-
-  const handleUpdatePayment = async (
-    paymentId: string,
-    amount: number,
-    date: string,
-    paymentType: 'down_payment' | 'installment' | 'final_payment' | 'other',
-    notes: string
-  ) => {
-    if (!selectedApartment) return
-
-    try {
-      const saleId = await apartmentService.fetchSaleIdForApartment(selectedApartment.id)
-      await apartmentService.updatePayment(paymentId, amount, date, paymentType, notes, saleId)
-      setShowEditPaymentModal(false)
-      setEditingPayment(null)
-      const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
-      setPayments(paymentsData)
-      fetchData()
-    } catch (error) {
-      console.error('Error updating payment:', error)
-    }
-  }
-
-  const handleDeletePayment = async (paymentId: string, saleId: string | null, amount: number) => {
-    if (!selectedApartment) return
-
-    try {
-      await apartmentService.deletePayment(paymentId, saleId, amount)
-      const paymentsData = await apartmentService.fetchApartmentPayments(selectedApartment.id)
-      setPayments(paymentsData)
-      fetchData()
-    } catch (error) {
-      console.error('Error deleting payment:', error)
+      toast.error(toErrorMessage(error, t('apartments.toast.payments_load_error')))
     }
   }
 
   if (loading && apartments.length === 0) {
     return <LoadingSpinner message={t('common.loading')} />
   }
+
+  const loadFailed = !!error && apartments.length === 0
 
   return (
     <div className="space-y-6">
@@ -166,7 +145,8 @@ const ApartmentManagement: React.FC = () => {
           <div className="flex items-center space-x-3">
             <div className="text-right mr-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">{t('apartments.title')}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalCount}</p>
+              {/* A count of 0 would be a claim about the portfolio; the load failed instead. */}
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{loadFailed ? '—' : totalCount}</p>
             </div>
             <Button variant="success" icon={Plus} onClick={() => setShowBulkModal(true)}>
               {t('apartments.bulk_create')}
@@ -259,7 +239,18 @@ const ApartmentManagement: React.FC = () => {
         </div>
       </div>
 
-      {apartments.length === 0 ? (
+      {error && !loadFailed && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={fetchData} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
+      {loadFailed ? (
+        <ErrorState onRetry={fetchData} />
+      ) : apartments.length === 0 ? (
         <EmptyState
           icon={Home}
           title={t('common.no_data')}
@@ -293,7 +284,7 @@ const ApartmentManagement: React.FC = () => {
                 }`}
               >
                 <div className="mb-3">
-                  <h4 className="font-semibold text-gray-900 dark:text-white">Unit {apartment.number}</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">{t('common.unit')} {apartment.number}</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {apartment.floor}</p>
                 </div>
 
@@ -368,7 +359,7 @@ const ApartmentManagement: React.FC = () => {
                           ></div>
                         </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
-                          €{totalPaid.toLocaleString()} / €{totalPrice.toLocaleString('hr-HR')}
+                          {formatEuroRounded(totalPaid)} / {formatEuroRounded(totalPrice)}
                         </div>
                       </div>
                     </>
@@ -488,21 +479,6 @@ const ApartmentManagement: React.FC = () => {
         payments={payments}
         linkedGarages={selectedApartment ? (linkedGarages[selectedApartment.id] || []) : []}
         linkedStorages={selectedApartment ? (linkedStorages[selectedApartment.id] || []) : []}
-        onEditPayment={(payment) => {
-          setEditingPayment(payment)
-          setShowEditPaymentModal(true)
-        }}
-        onDeletePayment={handleDeletePayment}
-      />
-
-      <EditPaymentModal
-        visible={showEditPaymentModal}
-        onClose={() => {
-          setShowEditPaymentModal(false)
-          setEditingPayment(null)
-        }}
-        payment={editingPayment}
-        onSubmit={handleUpdatePayment}
       />
 
       <LinkUnitsModal
@@ -517,14 +493,16 @@ const ApartmentManagement: React.FC = () => {
 
       <ConfirmDialog
         show={!!pendingDeleteApartmentId}
-        title="Potvrda brisanja"
+        title={t('common.confirm_delete')}
         message={(() => {
           const apt = apartments.find(a => a.id === pendingDeleteApartmentId)
-          const label = apt ? `Unit ${apt.number} (${apt.project_name} - ${apt.building_name})` : 'this apartment'
-          return `Are you sure you want to delete ${label}? This action cannot be undone.`
+          const label = apt
+            ? `${t('common.unit')} ${apt.number} (${apt.project_name} - ${apt.building_name})`
+            : t('apartments.confirm_delete_fallback')
+          return t('apartments.confirm_delete_message', { label })
         })()}
-        confirmLabel="Da, obriši"
-        cancelLabel="Odustani"
+        confirmLabel={t('common.yes_delete')}
+        cancelLabel={t('common.cancel')}
         variant="danger"
         onConfirm={confirmDeleteApartment}
         onCancel={() => setPendingDeleteApartmentId(null)}

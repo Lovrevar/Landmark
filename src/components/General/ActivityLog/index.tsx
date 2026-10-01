@@ -15,6 +15,8 @@ import Select from '../../ui/Select'
 import Pagination from '../../ui/Pagination'
 import LoadingSpinner from '../../ui/LoadingSpinner'
 import EmptyState from '../../ui/EmptyState'
+import ErrorState from '../../ui/ErrorState'
+import Alert from '../../ui/Alert'
 import Button from '../../ui/Button'
 
 const ActivityLog: React.FC = () => {
@@ -24,6 +26,7 @@ const ActivityLog: React.FC = () => {
   const {
     logs,
     loading,
+    error,
     totalCount,
     currentPage,
     pageSize,
@@ -155,6 +158,10 @@ const ActivityLog: React.FC = () => {
       {/* Results */}
       {loading ? (
         <LoadingSpinner message={t('common.loading')} />
+      ) : error && logs.length === 0 ? (
+        /* "Nothing happened" has to be trustworthy on an audit trail, so a failed query says so
+           rather than borrowing the empty state. */
+        <ErrorState onRetry={refetch} />
       ) : logs.length === 0 ? (
         <EmptyState
           icon={ScrollText}
@@ -163,6 +170,15 @@ const ActivityLog: React.FC = () => {
         />
       ) : (
         <>
+          {error && (
+            <Alert variant="error" className="mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                {/* The rows below are from the last successful read, not from these filters. */}
+                <span>{t('activity_log.stale_after_error')}</span>
+                <Button size="sm" variant="secondary" onClick={refetch}>{t('common.retry')}</Button>
+              </div>
+            </Alert>
+          )}
           <ActivityLogTable logs={logs} onViewDetail={setSelectedLog} />
           <Pagination
             currentPage={currentPage}

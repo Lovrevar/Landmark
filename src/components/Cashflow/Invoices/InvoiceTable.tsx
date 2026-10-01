@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { formatDate } from '../../../utils/formatters'
 import { FileText, Edit, Trash2, DollarSign, Eye, Check, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
-import { format } from 'date-fns'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import { Table, Button, EmptyState } from '../../ui'
 import type { Invoice } from './types'
@@ -41,7 +41,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   getSupplierCustomerName,
   isOverdue
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   return (
     <Table>
       <Table.Head>
@@ -149,13 +149,13 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               )}
               {visibleColumns.issue_date && (
                 <Table.Td label={t('invoices.table.issue_date')} className="text-gray-600 dark:text-gray-400">
-                  {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                  {formatDate(invoice.issue_date, i18n.language)}
                 </Table.Td>
               )}
               {visibleColumns.due_date && (
                 <Table.Td label={t('invoices.table.due_date')} className="text-gray-600 dark:text-gray-400">
                   <span className={isOverdue(invoice.due_date, invoice.status) ? 'text-red-600 font-semibold' : ''}>
-                    {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                    {formatDate(invoice.due_date, i18n.language)}
                   </span>
                 </Table.Td>
               )}
@@ -209,12 +209,12 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 </Table.Td>
               )}
               {visibleColumns.paid_amount && (
-                <Table.Td label={t('invoices.table.paid')} className="text-green-600">
+                <Table.Td label={t('invoices.table.paid')} className="text-green-600 dark:text-green-400">
                   €{formatCurrency(invoice.paid_amount)}
                 </Table.Td>
               )}
               {visibleColumns.remaining_amount && (
-                <Table.Td label={t('invoices.table.remaining')} className="text-red-600 font-medium">
+                <Table.Td label={t('invoices.table.remaining')} className="text-red-600 dark:text-red-400 font-medium">
                   €{formatCurrency(invoice.remaining_amount)}
                 </Table.Td>
               )}
@@ -238,29 +238,26 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                   />
                   {invoice.status !== 'PAID' && (
                     <Button
-                      variant="ghost"
+                      variant="ghost-success"
                       size="icon-sm"
                       icon={DollarSign}
                       onClick={() => onPayment(invoice)}
                       title="Plaćanje"
-                      className="text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 bg-transparent"
                     />
                   )}
                   <Button
-                    variant="ghost"
+                    variant="ghost-primary"
                     size="icon-sm"
                     icon={Edit}
                     onClick={() => onEdit(invoice)}
                     title="Uredi"
-                    className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 bg-transparent"
                   />
                   <Button
-                    variant="ghost"
+                    variant="ghost-danger"
                     size="icon-sm"
                     icon={Trash2}
                     onClick={() => onDelete(invoice.id)}
                     title="Obriši"
-                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
                   />
                 </div>
               </Table.Td>

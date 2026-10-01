@@ -19,7 +19,7 @@ export interface Credit {
   id: string
   credit_name: string
   start_date: string
-  maturity_date: string
+  maturity_date: string | null
   grace_period_months: number
   interest_rate: number
   amount: number

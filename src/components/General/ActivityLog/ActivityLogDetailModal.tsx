@@ -1,5 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useNavigate } from 'react-router-dom'
 import { ExternalLink } from 'lucide-react'
 import Modal from '../../ui/Modal'
@@ -32,11 +33,11 @@ function formatTimestamp(iso: string): string {
   })
 }
 
-function formatMetadataValue(value: unknown): string {
+function formatMetadataValue(value: unknown, t: TFunction): string {
   if (value === null || value === undefined) return '—'
   if (typeof value === 'string') return value
   if (typeof value === 'number') return String(value)
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (typeof value === 'boolean') return t(value ? 'common.yes' : 'common.no')
   if (Array.isArray(value)) return value.join(', ')
   return JSON.stringify(value)
 }
@@ -90,7 +91,7 @@ const ActivityLogDetailModal: React.FC<Props> = ({ log, onClose }) => {
             </div>
             {log.entity_id && (
               <div className="flex justify-between">
-                <span className="text-sm text-gray-500 dark:text-gray-400">ID</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('activity_log.detail_entity_id')}</span>
                 <span className="text-sm font-mono text-gray-600 dark:text-gray-300">{log.entity_id}</span>
               </div>
             )}
@@ -120,7 +121,7 @@ const ActivityLogDetailModal: React.FC<Props> = ({ log, onClose }) => {
                 <div key={key} className="flex justify-between">
                   <span className="text-sm text-gray-500 dark:text-gray-400">{key}</span>
                   <span className="text-sm font-medium text-gray-900 dark:text-white max-w-[60%] text-right break-words">
-                    {formatMetadataValue(value)}
+                    {formatMetadataValue(value, t)}
                   </span>
                 </div>
               ))}

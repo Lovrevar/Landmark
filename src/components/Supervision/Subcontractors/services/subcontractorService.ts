@@ -1,5 +1,6 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
+import { NO_VALUE } from '../../../../utils/formatters'
 import type { SubcontractorSummary, SubcontractorContract } from '../types'
 
 export async function fetchSubcontractorsWithSummary(): Promise<Map<string, SubcontractorSummary>> {
@@ -46,7 +47,7 @@ export async function fetchSubcontractorsWithSummary(): Promise<Map<string, Subc
 
       return {
         id: contractData.id,
-        project_name: phase?.project?.name || 'Unknown Project',
+        project_name: phase?.project?.name || NO_VALUE,
         phase_name: phase?.phase_name || null,
         job_description: contractData.job_description || '',
         cost,

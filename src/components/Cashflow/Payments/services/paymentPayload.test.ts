@@ -55,6 +55,11 @@ describe('buildPaymentData', () => {
       expect(r.is_cesija).toBe(false)
       expect(r.cesija_company_id).toBeNull()
     })
+
+    it('stores WIRE as a placeholder method (the column is NOT NULL; the UI shows "—")', () => {
+      const r = buildPaymentData({ ...base, payment_source_type: 'kompenzacija', payment_method: 'CASH' }, 'user-1')
+      expect(r.payment_method).toBe('WIRE')
+    })
   })
 
   describe('gotovina (cash)', () => {

@@ -1,6 +1,10 @@
+import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
-import { format } from 'date-fns'
+import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
+import { exportT } from '../../../../utils/exportLanguage'
+import { getPaymentMethodLabel } from '../../../Cashflow/services/paymentHelpers'
+import { daysFromToday } from '../../../../utils/dateOnly'
 import type { RetailLandPlot, RetailCustomer, RetailSale } from '../../../../types/retail'
 
 export interface SaleWithRelations extends RetailSale {
@@ -26,7 +30,9 @@ export async function fetchRetailSalesWithRelations(): Promise<SaleWithRelations
   if (error) throw error
   return ((data || []) as SaleWithRelations[]).map(sale => ({
     ...sale,
-    payment_status: new Date(sale.payment_deadline) < new Date() && sale.payment_status !== 'paid'
+    // `new Date('YYYY-MM-DD')` parses as UTC midnight, so a sale went "overdue" from 01:00
+    // on the day it was actually due. One definition of overdue: `daysFromToday(d) < 0`.
+    payment_status: daysFromToday(sale.payment_deadline) < 0 && sale.payment_status !== 'paid'
       ? 'overdue' as const
       : sale.payment_status
   }))
@@ -209,26 +215,70 @@ export function calculateSalesStats(payments: RetailSalesPaymentWithDetails[]): 
   }
 }
 
-export function exportRetailSalesCSV(payments: RetailSalesPaymentWithDetails[]): void {
-  const headers = ['Payment Date', 'Invoice #', 'Invoice Date', 'Contract #', 'Project', 'Customer', 'Invoice Total', 'Payment Amount', 'Payment Method', 'Bank Account', 'Description']
-  const rows = payments.map(p => [
-    format(new Date(p.payment_date), 'yyyy-MM-dd'),
-    p.invoice_number,
-    p.issue_date ? format(new Date(p.issue_date), 'yyyy-MM-dd') : '',
-    p.contract_number,
-    p.project_name,
-    p.customer_name,
-    p.invoice_total_amount.toString(),
-    p.amount.toString(),
-    p.payment_method,
-    p.bank_account_name,
-    p.description || '',
-  ])
-  const csv = [headers, ...rows].map(row => row.join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `retail-sales-payments-${format(new Date(), 'yyyy-MM-dd')}.csv`
-  a.click()
+const PAYMENTS_SHEET_NAME = 'Plaćanja'
+const PAYMENTS_COLUMN_WIDTHS = [14, 18, 14, 18, 24, 26, 16, 16, 14, 20, 40]
+const PAYMENTS_MONEY_COLUMNS = [6, 7]
+
+/**
+ * The retail sales payment register as a spreadsheet.
+ *
+ * The CSV it replaces quoted nothing and wrote `payment_method` raw ("WIRE"), which is neither
+ * Croatian nor a word a reader of the register uses.
+ */
+export function buildRetailSalesPaymentsSheet(
+  payments: RetailSalesPaymentWithDetails[],
+  t: TFunction
+): SheetRows {
+  const header = [
+    t('retail_sales.payments.table.payment_date'),
+    t('retail_sales.payments.table.invoice'),
+    t('invoices.filters.invoice_date'),
+    t('common.contract'),
+    t('common.project'),
+    t('common.customer'),
+    t('retail_sales.payments.table.invoice_total'),
+    t('common.payment'),
+    t('retail_sales.payments.table.method'),
+    t('common.bank'),
+    t('common.description'),
+  ]
+
+  return [
+    header,
+    ...payments.map(p => [
+      toDateCell(p.payment_date),
+      textCell(p.invoice_number),
+      toDateCell(p.issue_date),
+      textCell(p.contract_number),
+      textCell(p.project_name),
+      textCell(p.customer_name),
+      Number(p.invoice_total_amount),
+      Number(p.amount),
+      // These payments have no source column, so no kompenzacija placeholder to suppress.
+      getPaymentMethodLabel(p.payment_method, null, t),
+      textCell(p.bank_account_name),
+      textCell(p.description),
+    ]),
+  ]
+}
+
+export async function exportRetailSalesPaymentsExcel(
+  payments: RetailSalesPaymentWithDetails[]
+): Promise<void> {
+  const t = exportT()
+  await downloadWorkbook(
+    [{
+      name: PAYMENTS_SHEET_NAME,
+      rows: buildRetailSalesPaymentsSheet(payments, t),
+      columnWidths: PAYMENTS_COLUMN_WIDTHS,
+      moneyColumns: PAYMENTS_MONEY_COLUMNS,
+    }],
+    'placanja-retail'
+  )
+
+  logActivity({
+    action: 'export.retail_sales_payments_excel',
+    entity: 'report',
+    metadata: { severity: 'low', format: 'excel', row_count: payments.length },
+  })
 }

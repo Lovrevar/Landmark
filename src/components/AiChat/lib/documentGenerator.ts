@@ -104,19 +104,16 @@ async function generatePdf(
   markdown: string,
   filename: string,
 ): Promise<void> {
-  const [{ default: JsPDF }, { loadUnicodeFont }] = await Promise.all([
+  const [{ default: JsPDF }, { loadUnicodeFont, PDF_FONT_FAMILY }] = await Promise.all([
     import('jspdf'),
     import('../../../utils/pdfFont'),
   ])
   const doc = new JsPDF('p', 'mm', 'a4')
-  let font = 'helvetica'
-  try {
-    await loadUnicodeFont(doc)
-    font = 'NotoSans'
-  } catch {
-    // Offline / firewalled — fall back to Helvetica (Croatian glyphs degrade).
-  }
-  renderMarkdownToPdf(doc, title, markdown, font)
+  // No fallback: Helvetica cannot encode č/ć/đ, and jsPDF answers one unmapped character by
+  // re-encoding the whole string into garbage. A failure here means the font asset did not ship,
+  // so let it reach the caller rather than handing the user an unreadable document.
+  await loadUnicodeFont(doc)
+  renderMarkdownToPdf(doc, title, markdown, PDF_FONT_FAMILY)
   doc.save(filename)
 }
 

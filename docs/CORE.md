@@ -82,6 +82,13 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 ### dbErrors.ts
 - `isForeignKeyViolation(error)` — tells a Postgres FK violation (`23503`) apart from other Supabase errors, so a delete blocked by dependent rows can show a useful message instead of a generic failure
 
+### xlsxExport.ts
+- `buildWorkbook(sheets)` / `downloadWorkbook(sheets, prefix)` plus the cell helpers `toDateCell`, `moneyCell`, `textCell` — one way to write a spreadsheet, used by every "Export Excel" button outside TIC (whose layout is frozen by `ticImport.ts`)
+- Replaces six hand-rolled CSVs, five of which quoted nothing: a supplier named `PANNONIA, d.o.o.` shifted every column after it, a newline in a note split the record, a leading `=` was a formula waiting for whoever opened the file, none wrote a BOM (so the one export with Croatian headers was mojibake in Excel), and every amount was a dot decimal that Croatian Excel reads as text and refuses to sum. A real `.xlsx` removes all five at once — `aoa_to_sheet` only makes a formula from an explicit `{ f }`, so text stays text
+- **Money is a number** carrying the `#,##0.00 €` *format*, so the file is locale-free and `SUM()` works in whatever Excel the recipient opens it in. **A date is a date**, formatted `dd.mm.yyyy.`, so the column sorts and filters as dates rather than as text
+- `toDateCell` also settles the date-only trap: a `YYYY-MM-DD` column goes through `parseLocalDate` (three exports wrote the previous day), while a real timestamp takes its local calendar day
+- Each screen keeps a **pure, exported, tested** `buildXSheet(rows, t)`; only the `export*Excel` wrapper calls `exportT()`, so the tests pin the Croatian headers without a DOM
+
 ---
 
 ## Types — `src/types/`
@@ -117,9 +124,78 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 
 ### formatters.ts
 - `formatFileSize(bytes)` — returns human-readable file size string (B / KB / MB)
-- `formatEuropean(value)` — formats a number using `hr-HR` locale with 2 decimal places (comma as decimal separator)
-- `formatEuro(value)` — returns `€` prefix plus `formatEuropean(value)`
+- `formatEuropean(value)` — `hr-HR` number, always 2 decimals, no symbol: `1.234,56`. Use when the `€` is supplied separately, e.g. it already sits inside a translated string
+- `formatEuro(value)` — `€1.234,56`. **Exact cents**: invoices, contracts, payments, per-record amounts
+- `formatEuroRounded(value)` — `€1.235`. **Aggregates**, where cents are noise (phase and group rollups, yearly totals). Also cures the ragged `toLocaleString('hr-HR')` output, where a whole number renders `73.125` but a fractional one renders `1.425.597,5`
+- `formatEuroCompact(value)` — `€1,2M` / `€45K` / `€9.500`. **Dashboard tiles and chart axes only.** Thousands start at 10.000, so a five-figure amount keeps its digits; every screen used to divide by a million itself, which rendered €45.000 as `€0.0M`
+- All four accept `number | null | undefined` and render `—` (`NO_VALUE`) for a missing value or `NaN`. A budget that was never set must never read as €0
+- **`€` goes first** — `€1.234,56`, not `1.234,56 €`. `Intl` with `style: 'currency'` emits the suffix form, so don't use it; the module-local formatters that did now delegate to these helpers
 - Use these everywhere — do not inline number/currency formatting
+- **PDF exception:** `hr-HR` renders the minus as U+2212, which is outside WinAnsi and garbles a whole string in jsPDF built-in fonts. PDF generators swap it for an ASCII hyphen (see `docs/REPORTS.md`) or embed a Unicode font
+
+**Dates (same file).** 74 call sites formatted with `'MMM dd, yyyy'` and no locale, so a Croatian UI
+read "Jan 05, 2026".
+- `formatDate(value, language)` — `05.01.2026.` / `Jan 05, 2026`. The trailing dot is the Croatian
+  convention (date-fns' own `hr` locale and `supabase/functions/_shared/prompts.ts:73` both use it)
+- `formatDateTime(value, language)` — adds `HH:mm`, for timestamps
+- `formatMonthYear(value, language)` — `siječanj 2026.` / `Jan 2026`. Croatian uses the **standalone**
+  month (`LLLL`, "siječanj"); `MMMM` yields the genitive "siječnja", which reads wrong in a label
+- `formatDayMonth(value, language)` — `05.01.` / `Jan 05`
+- All four take the language explicitly (`i18n.language` in a component) rather than reaching for
+  i18n, so they stay pure and callable from services, and all render `—` for a missing or
+  unparseable value
+- A **string** argument is parsed as a *date-only* value through `parseLocalDate` — a `date` column
+  through `new Date()` is UTC midnight and renders as the previous day in Croatia. Pass a `Date`
+  where the time of day matters
+- `'yyyy-MM-dd'` values written to the database, query bounds and file names are machine data and
+  stay as they are
+
+### locale.ts
+- `isCroatian(language)` / `appLanguage(language)` / `intlLocale(language)` — one answer to "which
+  language is the UI in"
+- Fourteen components carried `i18n.language === 'hr' ? 'hr-HR' : 'en-US'`. That test is **false for
+  `'hr-HR'`**, which is what the detector returns for a Croatian browser with nothing in
+  localStorage — so those users read an English calendar. `src/i18n.ts` now sets `supportedLngs` and
+  `load: 'languageOnly'` so the detector returns a bare `'hr'`; these helpers are the second line of
+  defence and the single place to touch if a third language is added
+- `appLanguage` falls back to Croatian for an unknown language, mirroring what `fallbackLng: 'hr'`
+  does to the strings on the same screen
+
+### statusDisplay.ts
+- `PROJECT_STATUS`, `CONTRACT_STATUS`, `RETAIL_CONTRACT_STATUS`, `RETAIL_PHASE_STATUS`,
+  `UNIT_STATUS`, `MILESTONE_STATUS`, `RETAIL_MILESTONE_STATUS`, `RISK_LEVEL` — one label key and one
+  badge colour per database status, read with `statusVariant(map, value)` /
+  `statusLabel(map, value, t)`
+- Same shape as `Cashflow/services/invoiceHelpers.ts` (invoice status) and
+  `Funding/Investors/utils/creditStatus.ts` (credits), which stay where they are
+- The problem it replaces: a project "On Hold" was yellow, grey, red and orange on four different
+  screens, and all eleven sites printed the raw English column value in a Croatian UI
+- **The stored value is English and CHECK-constrained — map at render time only.** `UnitsGrid` and
+  `ApartmentDetailsModal` compare against `'Sold'` / `'Available'` / `'Reserved'` and write them
+  back; those comparisons stay English
+- An unknown value keeps its raw text in a grey badge rather than disappearing
+- The test asserts each map covers exactly its CHECK values and that every key exists in both locales
+
+### contractRollup.ts
+- `rollupContracts(rows)` / `remainingBudget(budget, rollup)` — the contract totals behind a phase card: contracted value, paid, unpaid, and unpaid-without-contract, then budget headroom
+- Takes a neutral row (`hasContract` / `cost` / `paid` / `owed`), so Supervision and Retail map their own columns onto it instead of keeping two copies of the arithmetic
+
+### contractVariance.ts
+- `contractVariance({ contracted, paid, settled })` → `{ kind: 'none' } | { kind: 'overrun', amount } | { kind: 'saving', amount }` — what one contract's payments say about its price. **Overrun** when paid exceeds contracted (at any time); **saving** only when the caller says the contract is `settled` and it closed below its value; otherwise **none**, and the caller renders no row — an open, part-paid contract has nothing to report that "Remaining" doesn't already say
+- Replaces the "Gain/Loss" rows (paid − contracted with the sign inverted) on Supervision's `ContractCard` and `SubcontractorDetailsModal` and Retail's `PhaseCard`. Each caller defines `settled` for its own rows
+- Compares in whole cents, so floating-point noise from summing payments (`0.1 + 0.2`) is neither an overrun nor a saving, and amounts come back cent-rounded. `contracted <= 0` (no contract amount) or a non-number is always `none`
+- Both amounts must be in the same unit — compare gross with gross. Comparing gross payments against a net `base_amount` is what made every fully-paid subcontractor contract show a 25% overrun
+- Pure; covered by `contractVariance.test.ts`
+
+### errorMessage.ts (`src/lib/`)
+- `toErrorMessage(error, fallback)` — the sentence to show a user for a rejected promise. Prefers a message written for people (a service's own "Ne možete obrisati faze koje imaju ugovore: …"), and falls back to the caller's translated string when the error is machine text (`violates … constraint`, a bare `PGRST301`) or an RLS refusal
+- `isPermissionError(error)` — Postgres `42501`
+- Pair with `isForeignKeyViolation` from `src/lib/dbErrors.ts`
+
+### Data-loading hook contract
+- A loader hook returns `error: Error | null` alongside its data and a `refetch` (add `refetch` as an alias where the loader is already exported under another name)
+- A service must **throw** on a failed query — never `return []`. An empty array below the hook makes the failure invisible to everything above it, and the page then says "no rows"
+- Rendering rule: see `ErrorState` in [UI.md](./UI.md)
 
 ### permissions.ts
 - `canManagePayments(user)` — true for Director, Accounting, Investment
@@ -157,8 +233,19 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 - **Use these for every date-only column.** `new Date('2026-09-01')` parses as UTC and compares wrong against a local `new Date()` — Croatia is UTC+1/+2, so month buckets and overdue detection drift by a day at boundaries. Added during the June 2026 dashboard audit (see [`DASHBOARD_AUDIT.md`](./DASHBOARD_AUDIT.md) DASH-001)
 
 ### pdfFont.ts
-- `loadUnicodeFont(doc)` — loads NotoSans into a jsPDF document so Croatian diacritics (š č ć đ ž) render instead of turning into boxes
-- Falls back to helvetica if the font fetch fails
+- `loadUnicodeFont(doc)` + `PDF_FONT_FAMILY` — registers the embedded Noto Sans on a jsPDF document. Every generator calls it before drawing
+- **Why it is not optional.** jsPDF's built-in fonts are WinAnsi, which has `š` and `ž` but **no mapping for `č`, `ć` or `đ`** — and one unmapped character makes jsPDF re-encode the *whole string* as UCS-2BE, which the built-in font draws as two garbage glyphs per character. `Račun` came out as `R a u n`; the `hr-HR` minus sign (U+2212) did the same to any line holding a negative number
+- **There is no fallback**, and the failure is not silent: the font is a local asset now, so a failure means a broken deploy, and the export fails with a message rather than producing a corrupted document. It used to be fetched from fonts.gstatic.com per export (~1.1 MB a time, the app's only third-party origin) with a `catch` that carried on in the broken font
+- Only `normal` and `bold` are registered. jsPDF does **not** throw for an unregistered style — `setFont(family, 'italic')` silently resolves to WinAnsi Times-Italic, reintroducing the whole bug
+- The faces and their OFL licence live in `src/assets/fonts/`; `pdfFont.test.ts` pins the behaviour, including a test of the premise itself (the built-in font must still garble the same string)
+
+### downloadFile.ts
+- `downloadBlob(blob, name)` — nine call sites built this by hand and six never appended the anchor (unreliable in Firefox) or revoked the object URL, leaking each exported file for the tab's life
+- `exportFileName(prefix, ext)` → `prefix-2026-09-23.xlsx`, and `asciiSlug`. **ASCII only, deliberately**: a name picked by a Croatian UI lands in a Downloads folder, on a shared drive or in an email, and `č`/`đ` survive none of those reliably. The date is ISO so a folder sorts chronologically, and local rather than UTC (one export used to stamp yesterday between midnight and 02:00)
+
+### exportLanguage.ts
+- `exportT()` — a `t` pinned to Croatian, and `EXPORT_LANGUAGE`. **Exported documents are Croatian whatever the UI language**: they go to banks, investors and the accountant, and the recipient's language has nothing to do with the language the person clicking Export happens to be reading. Recorded in `docs/REPORTS.md`
+- Exports read the same locale files as the screens — roughly two thirds of a report's labels were already translated for the equivalent screen — rather than keeping a second set of hard-coded strings
 
 ### yieldToUI.ts
 - `yieldToUI()` — awaits the next macrotask, so a long PDF-builder loop can hand the main thread back and keep the UI responsive

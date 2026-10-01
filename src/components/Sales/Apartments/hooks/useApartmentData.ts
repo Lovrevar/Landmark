@@ -18,6 +18,8 @@ interface UseApartmentDataResult {
   linkedStorages: Record<string, LinkedUnit[]>
   loading: boolean
   refreshing: boolean
+  error: Error | null
+  dismissError: () => void
   refetch: () => void
   pageSize: number
   currentPage: number
@@ -42,6 +44,7 @@ export function useApartmentData(): UseApartmentDataResult {
   const [linkedStorages, setLinkedStorages] = useState<Record<string, LinkedUnit[]>>({})
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
   const hasLoadedRef = useRef(false)
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -72,6 +75,7 @@ export function useApartmentData(): UseApartmentDataResult {
   const fetchData = useCallback(async () => {
     if (hasLoadedRef.current) setRefreshing(true)
     else setLoading(true)
+    setError(null)
     try {
       const data = await fetchApartmentListPage({
         page: currentPage,
@@ -87,8 +91,9 @@ export function useApartmentData(): UseApartmentDataResult {
       setLinkedGarages(data.linkedGarages)
       setLinkedStorages(data.linkedStorages)
       hasLoadedRef.current = true
-    } catch (error) {
-      console.error('Error fetching apartments:', error)
+    } catch (err) {
+      console.error('Error fetching apartments:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -98,6 +103,8 @@ export function useApartmentData(): UseApartmentDataResult {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const dismissError = useCallback(() => setError(null), [])
 
   return {
     apartments,
@@ -109,6 +116,8 @@ export function useApartmentData(): UseApartmentDataResult {
     linkedStorages,
     loading,
     refreshing,
+    error,
+    dismissError,
     refetch: fetchData,
     pageSize: APARTMENTS_PAGE_SIZE,
     currentPage,

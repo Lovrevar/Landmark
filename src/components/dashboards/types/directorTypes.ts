@@ -1,4 +1,5 @@
 import type { ProjectCategory } from '../../../lib/supabase'
+import type { DerivedAlert } from '../utils/directorAlerts'
 
 export interface ProjectStats {
   id: string
@@ -47,6 +48,7 @@ export interface ConstructionMetrics {
   total_contract_value: number
   total_paid: number
   pending_payments: number
+  /** Payment milestones past their due date that are not fully paid. */
   overdue_tasks: number
   critical_deadlines: number
 }
@@ -62,9 +64,9 @@ export interface FundingMetrics {
   upcoming_maturities: number
 }
 
-export interface Alert {
-  type: 'critical' | 'warning' | 'info'
-  title: string
-  message: string
-  date?: string
-}
+/**
+ * An alert carries a `kind` and its parameters, not finished prose — the titles and messages
+ * were English string literals built in the service and rendered raw.
+ * `DirectorAlertsSection` translates and formats them.
+ */
+export type Alert = DerivedAlert

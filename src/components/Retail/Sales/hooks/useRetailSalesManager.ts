@@ -18,12 +18,16 @@ export function useRetailSalesManager() {
   const [landPlots, setLandPlots] = useState<RetailLandPlot[]>([])
   const [customers, setCustomers] = useState<RetailCustomer[]>([])
   const [loading, setLoading] = useState(true)
+  // Revenue, paid and remaining are summed from `sales`; an empty list after a failure
+  // renders all three as €0.
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const [salesData, plotsData, customersData] = await Promise.all([
         fetchRetailSalesWithRelations(),
         fetchRetailLandPlotsForSale(),
@@ -32,8 +36,9 @@ export function useRetailSalesManager() {
       setSales(salesData)
       setLandPlots(plotsData)
       setCustomers(customersData)
-    } catch (error) {
-      console.error('Error fetching data:', error)
+    } catch (err) {
+      console.error('Error fetching data:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
       toast.error('Greška pri učitavanju podataka')
     } finally {
       setLoading(false)
@@ -57,17 +62,20 @@ export function useRetailSalesManager() {
     setDeleting(true)
     try {
       await deleteRetailSale(pendingDeleteId)
+      // Closed only on success, so a refused delete stays visible and explains itself.
+      setPendingDeleteId(null)
       await loadData()
     } catch (error) {
       console.error('Error deleting sale:', error)
       toast.error('Greška pri brisanju prodaje')
     } finally {
       setDeleting(false)
-      setPendingDeleteId(null)
     }
   }
 
   const cancelDelete = () => setPendingDeleteId(null)
+
+  const dismissError = useCallback(() => setError(null), [])
 
   const handleAddPayment = async (sale: SaleWithRelations, amount: number) => {
     const newPaidAmount = sale.paid_amount + amount
@@ -103,6 +111,10 @@ export function useRetailSalesManager() {
 
   return {
     loading,
+    error,
+    dismissError,
+    refetch: loadData,
+    hasData: sales.length > 0,
     landPlots,
     customers,
     filteredSales,

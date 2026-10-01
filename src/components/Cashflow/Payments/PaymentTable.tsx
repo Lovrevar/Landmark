@@ -1,9 +1,11 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { CreditCard, Edit, Trash2 } from 'lucide-react'
-import { format } from 'date-fns'
 import { Payment, VisibleColumns } from './types'
 import { getPaymentMethodLabel, getPaymentMethodColor } from '../services/paymentHelpers'
+import { paymentDirection } from '../services/invoiceHelpers'
+import { DIRECTION_AMOUNT_CLASS } from '../services/paymentTotals'
+import { formatEuro, formatDate } from '../../../utils/formatters'
 import { Table, Button, EmptyState } from '../../ui'
 
 interface PaymentTableProps {
@@ -21,7 +23,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
   onEdit,
   onDelete
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   return (
     <Table>
       <Table.Head>
@@ -53,11 +55,15 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             const invoice = payment.accounting_invoices
             if (!invoice) return null
 
+            // The amount takes the direction's colour. It used to be green on every row —
+            // including the rows the type column beside it marked RASHOD in red.
+            const direction = paymentDirection(invoice.invoice_type)
+
             return (
               <Table.Tr key={payment.id} onClick={() => onView(payment)} className="cursor-pointer">
                 {visibleColumns.payment_date && (
                   <Table.Td label={t('payments.table.payment_date')}>
-                    {format(new Date(payment.payment_date), 'dd.MM.yyyy')}
+                    {formatDate(payment.payment_date, i18n.language)}
                   </Table.Td>
                 )}
                 {visibleColumns.invoice_number && (
@@ -73,10 +79,8 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 {visibleColumns.invoice_type && (
                   <Table.Td label={t('payments.table.invoice_type')}>
                     <span className={`text-xs font-semibold ${
-                      invoice.invoice_type.startsWith('INCOMING_')
-                      ? 'text-red-600' : 'text-green-600'}`}>
-                      {invoice.invoice_type.startsWith('INCOMING_')
-                      ? t('payments.table.expense') : t('payments.table.income')}
+                      direction ? DIRECTION_AMOUNT_CLASS[direction] : 'text-gray-900 dark:text-white'}`}>
+                      {direction === 'OUT' ? t('payments.table.expense') : t('payments.table.income')}
                     </span>
                   </Table.Td>
                 )}
@@ -92,14 +96,17 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                   </Table.Td>
                 )}
                 {visibleColumns.amount && (
-                  <Table.Td label={t('payments.table.amount')} className="font-semibold text-green-600">
-                    €{payment.amount.toLocaleString('hr-HR')}
+                  <Table.Td
+                    label={t('payments.table.amount')}
+                    className={`font-semibold ${direction ? DIRECTION_AMOUNT_CLASS[direction] : 'text-gray-900 dark:text-white'}`}
+                  >
+                    {formatEuro(payment.amount)}
                   </Table.Td>
                 )}
                 {visibleColumns.payment_method && (
                   <Table.Td label={t('payments.table.payment_method')}>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(payment.payment_method)}`}>
-                      {getPaymentMethodLabel(payment.payment_method)}
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(payment.payment_method, payment.payment_source_type)}`}>
+                      {getPaymentMethodLabel(payment.payment_method, payment.payment_source_type, t)}
                     </span>
                   </Table.Td>
                 )}
@@ -122,7 +129,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 <Table.Td sticky>
                   <div className="flex items-center space-x-2">
                     <Button
-                      variant="ghost"
+                      variant="ghost-primary"
                       size="icon-sm"
                       icon={Edit}
                       onClick={(e) => {
@@ -130,10 +137,9 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                         onEdit(payment)
                       }}
                       title="Uredi"
-                      className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 bg-transparent"
                     />
                     <Button
-                      variant="ghost"
+                      variant="ghost-danger"
                       size="icon-sm"
                       icon={Trash2}
                       onClick={(e) => {
@@ -141,7 +147,6 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                         onDelete(payment.id)
                       }}
                       title="Obriši"
-                      className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 bg-transparent"
                     />
                   </div>
                 </Table.Td>

@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Building2, FileText, DollarSign } from 'lucide-react'
-import { format } from 'date-fns'
 import { Subcontractor, WirePayment } from '../../../../lib/supabase'
 import { fetchContractInvoiceTotals } from '../services/siteService'
-import { Modal, Button, Badge, EmptyState } from '../../../ui'
+import { Modal, Button, Badge, EmptyState, ErrorState } from '../../../ui'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
+import { getPaymentMethodLabel } from '../../../Cashflow/services/paymentHelpers'
+import { formatDate, formatDateTime } from '../../../../utils/formatters'
 
 interface AccountingPayment {
   id: string
@@ -40,10 +42,11 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   onEditPayment,
   onDeletePayment
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [totalInvoiceAmount, setTotalInvoiceAmount] = useState<number>(0)
   const [totalPaidAmount, setTotalPaidAmount] = useState<number>(0)
   const [loading, setLoading] = useState(false)
+  const [totalsError, setTotalsError] = useState<Error | null>(null)
 
   useEffect(() => {
     if (visible) {
@@ -62,14 +65,16 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
     const contractId = (subcontractor as Subcontractor & { contract_id?: string }).contract_id || subcontractor.id
 
     setLoading(true)
+    setTotalsError(null)
     try {
       const { totalInvoiceAmount, totalPaidAmount } = await fetchContractInvoiceTotals(contractId)
       setTotalInvoiceAmount(totalInvoiceAmount)
       setTotalPaidAmount(totalPaidAmount)
     } catch (error) {
       console.error('Error fetching invoice totals:', error)
-      setTotalInvoiceAmount(0)
-      setTotalPaidAmount(0)
+      // Zeroing these read as "never invoiced, never paid, nothing outstanding" on a contract
+      // that may be fully billed. The figures are withheld instead, and the failure is named.
+      setTotalsError(error instanceof Error ? error : new Error(String(error)))
     } finally {
       setLoading(false)
     }
@@ -80,10 +85,6 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
       fetchInvoiceTotals()
     }
   }, [visible, subcontractor, fetchInvoiceTotals])
-
-  const getStatusVariant = (status: string): 'green' | 'yellow' => {
-    return status === 'paid' ? 'green' : 'yellow'
-  }
 
   if (!visible || !subcontractor) return null
 
@@ -97,6 +98,9 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
 
       <Modal.Body>
           <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            {totalsError ? (
+              <ErrorState compact onRetry={fetchInvoiceTotals} />
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{t('supervision.payment_history.total_invoices')}</p>
@@ -117,6 +121,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                 </p>
               </div>
             </div>
+            )}
           </div>
 
         <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('supervision.payment_history.all_payments')} ({payments.length})</h4>
@@ -140,7 +145,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                           <span className="text-lg font-bold text-gray-900 dark:text-white">€{payment.amount.toLocaleString('hr-HR')}</span>
                           {payment.payment_date && (
                             <span className="text-sm text-gray-600 dark:text-gray-400">
-                              {format(new Date(payment.payment_date), 'MMM dd, yyyy')}
+                              {formatDate(payment.payment_date, i18n.language)}
                             </span>
                           )}
                           {!payment.payment_date && (
@@ -156,15 +161,17 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                                 {accountingPayment.invoice.invoice_number}
                               </span>
                             </span>
-                            <Badge variant={getStatusVariant(accountingPayment.invoice.status)} size="sm">
-                              {accountingPayment.invoice.status}
+                            {/* Shared renderer: the local copy compared against lowercase 'paid', which
+                                accounting statuses never are, so every invoice showed yellow. */}
+                            <Badge variant={getInvoiceStatusVariant(accountingPayment.invoice.status)} size="sm">
+                              {getInvoiceStatusLabel(accountingPayment.invoice.status, t)}
                             </Badge>
                           </div>
                         )}
 
                         {isAccountingPayment && accountingPayment.payment_method && (
                           <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                            {t('supervision.payment_history.method')} <span className="font-medium">{accountingPayment.payment_method}</span>
+                            {t('supervision.payment_history.method')} <span className="font-medium">{getPaymentMethodLabel(accountingPayment.payment_method, null, t)}</span>
                           </div>
                         )}
 
@@ -192,7 +199,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                         )}
 
                         <p className="text-xs text-gray-400 dark:text-gray-500">
-                          {t('supervision.payment_history.created')} {format(new Date(payment.created_at), 'MMM dd, yyyy HH:mm')}
+                          {t('supervision.payment_history.created')} {formatDateTime(new Date(payment.created_at), i18n.language)}
                         </p>
                       </div>
                       {!isAccountingPayment && (

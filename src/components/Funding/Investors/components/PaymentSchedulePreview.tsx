@@ -1,6 +1,6 @@
 import React from 'react'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
+import { formatEuroRounded, formatDate } from '../../../../utils/formatters'
 import type { PaymentScheduleResult } from '../utils/creditCalculations'
 
 interface PaymentSchedulePreviewProps {
@@ -8,9 +8,17 @@ interface PaymentSchedulePreviewProps {
   gracePeriodMonths: number
 }
 
+const KNOWN_FREQUENCIES = ['monthly', 'quarterly', 'biyearly', 'yearly']
+
 const PaymentSchedulePreview: React.FC<PaymentSchedulePreviewProps> = ({ calculation, gracePeriodMonths }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   if (!calculation) return null
+
+  // A whole phrase per frequency, not a noun slotted into "Svakih {{frequency}}": Croatian
+  // wants "Svaki mjesec" but "Svake godine", and the old interpolation produced "Svakih month".
+  const everyText = (frequency: string) => KNOWN_FREQUENCIES.includes(frequency)
+    ? t(`banks.credit_form.frequency_every.${frequency}`)
+    : t('banks.credit_form.every_frequency', { frequency })
 
   return (
     <div className="mb-6 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
@@ -18,19 +26,19 @@ const PaymentSchedulePreview: React.FC<PaymentSchedulePreviewProps> = ({ calcula
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <p className="text-sm text-blue-700 dark:text-blue-300 mb-1">{t('banks.credit_form.principal_payment')}</p>
-          <p className="text-xl font-bold text-blue-900 dark:text-blue-100">{calculation.principalPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-          <p className="text-xs text-blue-600">{t('banks.credit_form.every_frequency', { frequency: calculation.principalFrequency })}</p>
+          <p className="text-xl font-bold text-blue-900 dark:text-blue-100">{formatEuroRounded(calculation.principalPerPayment)}</p>
+          <p className="text-xs text-blue-600">{everyText(calculation.principalFrequency)}</p>
           <p className="text-xs text-blue-600 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalPrincipalPayments })}</p>
         </div>
         <div>
           <p className="text-sm text-green-700 dark:text-green-400 mb-1">{t('banks.credit_form.interest_payment')}</p>
-          <p className="text-xl font-bold text-green-900 dark:text-green-300">{calculation.interestPerPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-          <p className="text-xs text-green-600">{t('banks.credit_form.every_frequency', { frequency: calculation.interestFrequency })}</p>
+          <p className="text-xl font-bold text-green-900 dark:text-green-300">{formatEuroRounded(calculation.interestPerPayment)}</p>
+          <p className="text-xs text-green-600">{everyText(calculation.interestFrequency)}</p>
           <p className="text-xs text-green-600 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalInterestPayments })}</p>
         </div>
       </div>
       <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
-        <p className="text-sm text-blue-700 dark:text-blue-300">{t('banks.credit_form.payments_start_label')} <span className="font-semibold">{format(calculation.paymentStartDate, 'MMM dd, yyyy')}</span></p>
+        <p className="text-sm text-blue-700 dark:text-blue-300">{t('banks.credit_form.payments_start_label')} <span className="font-semibold">{formatDate(calculation.paymentStartDate, i18n.language)}</span></p>
         <p className="text-xs text-blue-600 mt-1">{t('banks.credit_form.grace_period_after', { months: gracePeriodMonths })}</p>
       </div>
     </div>

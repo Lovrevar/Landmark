@@ -25,11 +25,12 @@ import {
   saveCostCenterMapping,
   savePartnerMapping,
 } from '../services/sifrarniciService'
+import { toLoadError } from '../../services/loadError'
 
 export function useSifrarnici() {
   const [activeTab, setActiveTab] = useState<SifrarnikTab>('accounts')
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [onlyUnmapped, setOnlyUnmapped] = useState(false)
 
@@ -67,7 +68,7 @@ export function useSifrarnici() {
       setRetailProjects(projs.retailProjects)
     } catch (e) {
       console.error('Error loading šifrarnici:', e)
-      setError(e instanceof Error ? e.message : 'Failed to load')
+      setError(toLoadError(e))
     } finally {
       setLoading(false)
     }
@@ -81,7 +82,10 @@ export function useSifrarnici() {
       const opts = await fetchPartnerTargets(kind)
       setPartnerTargets(prev => ({ ...prev, [kind]: opts }))
     } catch (e) {
+      // An empty entity dropdown otherwise reads as "there are no subcontractors to map to".
       console.error(`Error loading targets for ${kind}:`, e)
+      setError(toLoadError(e))
+      throw e
     }
   }, [partnerTargets])
 
@@ -163,6 +167,8 @@ export function useSifrarnici() {
     partnerTargets, ensurePartnerTargets,
     saveAccount, saveCostCenter, savePartner,
     clearAccount, clearCostCenter, clearPartner,
+    dismissError: () => setError(null),
     reload: load,
+    refetch: load,
   }
 }

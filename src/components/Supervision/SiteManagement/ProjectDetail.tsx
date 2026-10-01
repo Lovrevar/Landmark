@@ -8,6 +8,7 @@ import { ClassificationCard } from './ClassificationCard'
 import { buildContractTree } from './utils/contractTree'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
 import { formatEuroRounded } from '../../../utils/formatters'
+import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import { TICBudgetBadge } from './TICBudgetBadge'
 import { ProjectSummaryBanner } from './ProjectSummaryBanner'
 import { TreeGroup } from './TreeGroup'
@@ -35,6 +36,11 @@ interface ProjectDetailProps {
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
+  /**
+   * Whether this user may see money already paid. Defaults to **false**: every figure derived
+   * from payments below this point is hidden unless the caller says otherwise, so a screen that
+   * forgets to pass it leaks nothing.
+   */
   canManagePayments?: boolean
   expandedPhases: Set<string>
   /** Flat set of full path keys. Encodes the dimension order, so each view keeps its own state. */
@@ -63,7 +69,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   onOpenSubDetails,
   onDeleteSubcontractor,
   onManageMilestones,
-  canManagePayments = true,
+  canManagePayments = false,
   expandedPhases,
   expandedNodes,
   onTogglePhase,
@@ -150,12 +156,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
           </div>
           <div className="flex items-center space-x-3">
             <ProjectCategoryBadge category={project.category} size="md" />
-            <Badge variant={
-              project.status === 'Completed' ? 'green' :
-              project.status === 'In Progress' ? 'blue' :
-              'gray'
-            } size="md">
-              {project.status}
+            <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="md">
+              {statusLabel(PROJECT_STATUS, project.status, t)}
             </Badge>
             {project.has_phases && (
               <div className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
@@ -319,6 +321,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   onOpenSubDetails={onOpenSubDetails}
                   onDeleteSubcontractor={onDeleteSubcontractor}
                   onManageMilestones={onManageMilestones}
+                  canManagePayments={canManagePayments}
                 />
               ))}
             </div>
@@ -352,6 +355,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   onOpenSubDetails={onOpenSubDetails}
                   onDeleteSubcontractor={onDeleteSubcontractor}
                   onManageMilestones={onManageMilestones}
+                  canManagePayments={canManagePayments}
                   isExpanded={expandedPhases.has(phase.id)}
                   expandedNodes={expandedNodes}
                   onToggleExpand={() => onTogglePhase(phase.id)}
@@ -378,6 +382,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 onOpenSubDetails={onOpenSubDetails}
                 onDeleteSubcontractor={onDeleteSubcontractor}
                 onManageMilestones={onManageMilestones}
+                canManagePayments={canManagePayments}
               />
             ))}
           </div>

@@ -2,11 +2,18 @@ import * as XLSX from '@e965/xlsx'
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { parseNumber } from '../../../../utils/excelParsers'
+import { importErrorMessage } from '../importOutcome'
+
+export interface GarageImportError {
+  /** The garage label from the file's first column. */
+  number: string
+  message: string
+}
 
 export interface ImportResult {
   updated: number
   created: number
-  errors: string[]
+  errors: GarageImportError[]
 }
 
 interface ParsedGarageRow {
@@ -50,7 +57,7 @@ export async function importGaragesFromExcel(file: File, buildingId: string): Pr
 
   let created = 0
   let updated = 0
-  const errors: string[] = []
+  const errors: GarageImportError[] = []
 
   for (const row of parsedRows) {
     try {
@@ -77,8 +84,8 @@ export async function importGaragesFromExcel(file: File, buildingId: string): Pr
         created++
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      errors.push(`Garage ${row.number}: ${message}`)
+      // Supabase errors are plain objects, so `instanceof Error` alone rendered "[object Object]".
+      errors.push({ number: row.number, message: importErrorMessage(error) })
     }
   }
 

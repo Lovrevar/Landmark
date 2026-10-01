@@ -8,14 +8,19 @@ import {
 export const useSubcontractorData = () => {
   const [subcontractors, setSubcontractors] = useState<Map<string, SubcontractorSummary>>(new Map())
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const grouped = await fetchSubcontractorsWithSummary()
       setSubcontractors(grouped)
-    } catch (error) {
-      console.error('Error fetching subcontractors:', error)
+    } catch (err) {
+      console.error('Error fetching subcontractors:', err)
+      // The page's four stat cards are summed from this map; leaving it empty reported €0 paid
+      // and €0 outstanding across every subcontractor in the company.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -25,5 +30,5 @@ export const useSubcontractorData = () => {
     await deleteSubcontractorService(id)
   }
 
-  return { subcontractors, loading, fetchData, deleteSubcontractor }
+  return { subcontractors, loading, error, fetchData, refetch: fetchData, deleteSubcontractor }
 }

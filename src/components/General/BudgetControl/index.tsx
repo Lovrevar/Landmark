@@ -19,31 +19,30 @@ import {
   TrendingDown,
   CheckCircle,
   AlertCircle,
+  HelpCircle,
   Activity,
 } from 'lucide-react'
 import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { useBudgetControl } from './hooks/useBudgetControl'
 import LoadingSpinner from '../../ui/LoadingSpinner'
+import ErrorState from '../../ui/ErrorState'
+import { formatEuro, formatEuroCompact, NO_VALUE } from '../../../utils/formatters'
 
-function formatEuro(value: number): string {
-  if (Math.abs(value) >= 1_000_000) {
-    return `€${(value / 1_000_000).toFixed(2)}M`
-  }
-  if (Math.abs(value) >= 1_000) {
-    return `€${(value / 1_000).toFixed(0)}K`
-  }
-  return `€${value.toFixed(0)}`
-}
+/**
+ * Abbreviated euros for the EVM tiles and the chart's Y axis. Named for what it does, so it no
+ * longer shadows the shared `formatEuro` — which is the exact-cents renderer, not this one.
+ */
+const compactEuro = formatEuroCompact
 
-function formatEuroFull(value: number): string {
-  return new Intl.NumberFormat('hr-HR', { style: 'currency', currency: 'EUR' }).format(value)
-}
+/** The same figure in full, under a tile and in the chart tooltip. */
+const formatEuroFull = formatEuro
 
 interface IndexCardProps {
   label: string
-  value: number
+  /** `null` when the index cannot be computed — rendered as "—" rather than a made-up 1.00. */
+  value: number | null
   sublabel: string
-  status: 'good' | 'warning' | 'bad'
+  status: 'good' | 'warning' | 'bad' | 'unknown'
 }
 
 function IndexCard({ label, value, sublabel, status }: IndexCardProps) {
@@ -51,14 +50,15 @@ function IndexCard({ label, value, sublabel, status }: IndexCardProps) {
     good: { bg: 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700', text: 'text-green-700 dark:text-green-400', sub: 'text-green-600 dark:text-green-400', label: 'text-green-800 dark:text-green-300' },
     warning: { bg: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700', text: 'text-yellow-700 dark:text-yellow-400', sub: 'text-yellow-600 dark:text-yellow-400', label: 'text-yellow-800 dark:text-yellow-300' },
     bad: { bg: 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800', text: 'text-red-700 dark:text-red-400', sub: 'text-red-600 dark:text-red-400', label: 'text-red-800 dark:text-red-300' },
+    unknown: { bg: 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700', text: 'text-gray-500 dark:text-gray-400', sub: 'text-gray-500 dark:text-gray-400', label: 'text-gray-500 dark:text-gray-400' },
   }
   const c = colors[status]
-  const Icon = status === 'good' ? CheckCircle : AlertCircle
+  const Icon = status === 'good' ? CheckCircle : status === 'unknown' ? HelpCircle : AlertCircle
 
   return (
     <div className={`rounded-xl border p-4 ${c.bg}`}>
       <p className={`text-sm font-medium mb-1 ${c.label}`}>{label}</p>
-      <p className={`text-2xl font-bold ${c.text}`}>{value.toFixed(2)}</p>
+      <p className={`text-2xl font-bold ${c.text}`}>{value === null ? NO_VALUE : value.toFixed(2)}</p>
       <div className={`flex items-center gap-1 mt-1 text-xs ${c.sub}`}>
         <Icon className="w-3 h-3" />
         <span>{sublabel}</span>
@@ -67,17 +67,23 @@ function IndexCard({ label, value, sublabel, status }: IndexCardProps) {
   )
 }
 
-function getIndexStatus(value: number, type: 'CPI' | 'SPI'): { status: 'good' | 'warning' | 'bad'; label: string } {
-  if (value >= 1.0) return { status: 'good', label: type === 'CPI' ? 'Under budget ✓' : 'On schedule ✓' }
-  if (value >= 0.9) return { status: 'warning', label: type === 'CPI' ? 'Slightly over budget' : 'Slightly behind' }
-  return { status: 'bad', label: type === 'CPI' ? 'Over budget ✗' : 'Behind schedule ✗' }
+function getIndexStatus(value: number, type: 'CPI' | 'SPI'): { status: 'good' | 'warning' | 'bad'; labelKey: string } {
+  if (value >= 1.0) return { status: 'good', labelKey: type === 'CPI' ? 'budget_control.cpi_good' : 'budget_control.spi_good' }
+  if (value >= 0.9) return { status: 'warning', labelKey: type === 'CPI' ? 'budget_control.cpi_warning' : 'budget_control.spi_warning' }
+  return { status: 'bad', labelKey: type === 'CPI' ? 'budget_control.cpi_bad' : 'budget_control.spi_bad' }
 }
 
 const CHART_COLORS = {
   planned: '#4f86c6',
   committed: '#f59e0b',
   paid: '#22c55e',
-  forecast: '#ef4444',
+  /**
+   * The forecast bar follows the sign of VAC, exactly as the EAC and VAC tiles already do.
+   * It was hardcoded red, so a project forecast to come in **under** budget got a red bar
+   * beside two green tiles saying the opposite.
+   */
+  forecastUnder: '#16a34a',
+  forecastOver: '#ef4444',
   cpi: '#4f86c6',
   spi: '#22c55e',
 }
@@ -91,7 +97,7 @@ const tooltipStyle = {
 
 export default function BudgetControl() {
   const { t } = useTranslation()
-  const { projects, selectedProjectId, setSelectedProjectId, data, loading, error } = useBudgetControl()
+  const { projects, selectedProjectId, setSelectedProjectId, data, loading, error, refetch } = useBudgetControl()
 
   const barData = data
     ? [
@@ -106,11 +112,32 @@ export default function BudgetControl() {
     : []
 
   const scatterCPI = data ? [{ x: t('budget_control.current'), y: data.metrics.CPI }] : []
-  const scatterSPI = data ? [{ x: t('budget_control.current'), y: data.metrics.SPI }] : []
+  // No schedule baseline means no SPI point to plot — a fabricated 1.00 on the target line is
+  // the most reassuring thing this chart could draw.
+  const scatterSPI = data && data.metrics.scheduleAvailable !== false
+    ? [{ x: t('budget_control.current'), y: data.metrics.SPI }]
+    : []
 
   const hasBudgetData = !!data && data.plannedBudget > 0
   const cpiStatus = hasBudgetData ? getIndexStatus(data.metrics.CPI, 'CPI') : null
-  const spiStatus = hasBudgetData ? getIndexStatus(data.metrics.SPI, 'SPI') : null
+
+  /**
+   * SPI is only a figure when at least one phase carries both a start and an end date.
+   * Without one `calculateProjectEVM` falls back to 1 (`evm.ts:135`) and nothing read
+   * `scheduleAvailable`, so a project with no dates at all reported a confident
+   * "On schedule ✓".
+   */
+  const scheduleAvailable = hasBudgetData && data.metrics.scheduleAvailable !== false
+  const spiStatus = scheduleAvailable ? getIndexStatus(data.metrics.SPI, 'SPI') : null
+
+  /**
+   * EAC is `plannedBudget / CPI`, and CPI is 0 when money has been spent with no earned value
+   * against it. `evm.ts:138` then falls back to EAC = the budget, so VAC = 0 — and the tiles
+   * read a cheerful green "Ispod proračuna" next to a red CPI of 0.00. There is no forecast to
+   * give in that state, so both tiles say so.
+   */
+  const forecastAvailable = hasBudgetData && data.metrics.CPI !== 0
+  const forecastUnderBudget = forecastAvailable && data.metrics.VAC >= 0
 
   return (
     <div className="p-6 space-y-6">
@@ -136,7 +163,13 @@ export default function BudgetControl() {
         </div>
       </div>
 
-      {error && (
+      {/* No figures loaded and the load failed: the screen says so and offers a retry, instead of
+          leaving the reader with an empty page that looks like a project with no cost plan. */}
+      {error && !loading && !data && (
+        <ErrorState onRetry={refetch} description={error} />
+      )}
+
+      {error && data && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg px-4 py-3 text-sm">
           {error}
         </div>
@@ -180,7 +213,9 @@ export default function BudgetControl() {
                 : '—'}
               value={formatEuroFull(data.committed)}
               icon={Activity}
-              variant="active"
+              /* Amber, matching this figure's own bar in the chart below. The green ring said
+                 "good" about a number that is neither good nor bad. */
+              variant="amber"
             />
             <MetricCard
               label={t('budget_control.paid')}
@@ -193,10 +228,12 @@ export default function BudgetControl() {
             />
             <MetricCard
               label={t('budget_control.forecast_eac')}
-              sublabel={data.metrics.VAC >= 0 ? t('budget_control.under_budget') : t('budget_control.over_budget')}
-              value={formatEuroFull(data.metrics.EAC)}
-              icon={data.metrics.VAC >= 0 ? TrendingDown : TrendingUp}
-              variant={data.metrics.VAC >= 0 ? 'good' : 'bad'}
+              sublabel={!forecastAvailable
+                ? t('budget_control.no_forecast')
+                : forecastUnderBudget ? t('budget_control.under_budget') : t('budget_control.over_budget')}
+              value={forecastAvailable ? formatEuroFull(data.metrics.EAC) : NO_VALUE}
+              icon={!forecastAvailable ? HelpCircle : forecastUnderBudget ? TrendingDown : TrendingUp}
+              variant={!forecastAvailable ? 'default' : forecastUnderBudget ? 'good' : 'bad'}
             />
           </div>
 
@@ -209,7 +246,7 @@ export default function BudgetControl() {
                 <BarChart data={barData} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                  <YAxis tickFormatter={formatEuro} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                  <YAxis tickFormatter={compactEuro} tick={{ fill: '#6b7280', fontSize: 11 }} />
                   <Tooltip
                     formatter={(value) => formatEuroFull(Number(value))}
                     contentStyle={tooltipStyle}
@@ -218,7 +255,11 @@ export default function BudgetControl() {
                   <Bar dataKey={t('budget_control.planned')} fill={CHART_COLORS.planned} radius={[4, 4, 0, 0]} />
                   <Bar dataKey={t('budget_control.committed')} fill={CHART_COLORS.committed} radius={[4, 4, 0, 0]} />
                   <Bar dataKey={t('budget_control.paid')} fill={CHART_COLORS.paid} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey={t('budget_control.forecast_eac')} fill={CHART_COLORS.forecast} radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey={t('budget_control.forecast_eac')}
+                    fill={forecastUnderBudget ? CHART_COLORS.forecastUnder : CHART_COLORS.forecastOver}
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -271,33 +312,45 @@ export default function BudgetControl() {
                 <IndexCard
                   label={t('budget_control.cpi')}
                   value={data.metrics.CPI}
-                  sublabel={cpiStatus.label}
+                  sublabel={t(cpiStatus.labelKey)}
                   status={cpiStatus.status}
                 />
               )}
-              {spiStatus && (
-                <IndexCard
-                  label={t('budget_control.spi')}
-                  value={data.metrics.SPI}
-                  sublabel={spiStatus.label}
-                  status={spiStatus.status}
-                />
-              )}
+              <IndexCard
+                label={t('budget_control.spi')}
+                value={spiStatus ? data.metrics.SPI : null}
+                sublabel={spiStatus ? t(spiStatus.labelKey) : t('budget_control.no_schedule')}
+                status={spiStatus ? spiStatus.status : 'unknown'}
+              />
               <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 p-4">
                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">{t('budget_control.eac')}</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{formatEuro(data.metrics.EAC)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatEuroFull(data.metrics.EAC)}</p>
+                <p className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                  {forecastAvailable ? compactEuro(data.metrics.EAC) : NO_VALUE}
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  {forecastAvailable ? formatEuroFull(data.metrics.EAC) : t('budget_control.no_forecast')}
+                </p>
               </div>
-              <div className={`rounded-xl border p-4 ${data.metrics.VAC >= 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'}`}>
-                <p className={`text-sm mb-1 ${data.metrics.VAC >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{t('budget_control.vac')}</p>
-                <p className={`text-xl font-bold ${data.metrics.VAC >= 0 ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}`}>{formatEuro(data.metrics.VAC)}</p>
-                <div className={`flex items-center gap-1 mt-1 text-xs ${data.metrics.VAC >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {data.metrics.VAC >= 0
-                    ? <><CheckCircle className="w-3 h-3" /><span>{t('budget_control.under_budget')} ✓</span></>
-                    : <><AlertCircle className="w-3 h-3" /><span>{t('budget_control.over_budget')} ✗</span></>
-                  }
+              {forecastAvailable ? (
+                <div className={`rounded-xl border p-4 ${forecastUnderBudget ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'}`}>
+                  <p className={`text-sm mb-1 ${forecastUnderBudget ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{t('budget_control.vac')}</p>
+                  <p className={`text-xl font-bold ${forecastUnderBudget ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}`}>{compactEuro(data.metrics.VAC)}</p>
+                  <div className={`flex items-center gap-1 mt-1 text-xs ${forecastUnderBudget ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {forecastUnderBudget
+                      ? <><CheckCircle className="w-3 h-3" /><span>{t('budget_control.under_budget')} ✓</span></>
+                      : <><AlertCircle className="w-3 h-3" /><span>{t('budget_control.over_budget')} ✗</span></>
+                    }
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 p-4">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">{t('budget_control.vac')}</p>
+                  <p className="text-xl font-bold text-gray-500 dark:text-gray-400">{NO_VALUE}</p>
+                  <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <HelpCircle className="w-3 h-3" /><span>{t('budget_control.no_forecast')}</span>
+                  </div>
+                </div>
+              )}
               <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 p-4">
                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">{t('budget_control.completion')}</p>
                 <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{data.completionPct.toFixed(0)}%</p>
@@ -324,7 +377,7 @@ export default function BudgetControl() {
 
 // ── Internal metric card ───────────────────────────────────────────────────
 
-type MetricVariant = 'default' | 'active' | 'good' | 'bad'
+type MetricVariant = 'default' | 'active' | 'amber' | 'good' | 'bad'
 
 interface MetricCardProps {
   label: string
@@ -347,6 +400,14 @@ function MetricCard({ label, sublabel, value, icon: Icon, variant }: MetricCardP
       label: 'text-gray-500 dark:text-gray-400',
       value: 'text-green-600 dark:text-green-400',
       icon: 'text-green-400',
+    },
+    // Matches CHART_COLORS.committed, so the tile and its bar are the same quantity in the
+    // same colour.
+    amber: {
+      container: 'bg-white dark:bg-gray-800 border-amber-400 ring-1 ring-amber-400',
+      label: 'text-gray-500 dark:text-gray-400',
+      value: 'text-amber-600 dark:text-amber-400',
+      icon: 'text-amber-500',
     },
     good: {
       container: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700',

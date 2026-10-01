@@ -20,9 +20,20 @@ export const fetchMilestonesByContract = async (
     return []
   }
 
+  /**
+   * What has actually been **paid** against each milestone, gross.
+   *
+   * A milestone's amount is a percentage of the contract's gross value (`contract_amount`, which
+   * a trigger keeps equal to `total_amount`). This used to sum the linked invoices'
+   * `base_amount` — net, and counted whether or not the invoice was ever paid — so at 25% VAT a
+   * fully paid milestone read as 80% "Djelomično" and `paid >= amount` could never be true.
+   * `accounting_invoices.paid_amount` is gross money received, which is also what the
+   * `update_milestone_status_on_payment` trigger compares against `total_amount` when it sets
+   * the milestone's status. Gross against gross, and the UI now agrees with the database.
+   */
   const { data: invoices, error: invoicesError } = await supabase
     .from('accounting_invoices')
-    .select('milestone_id, base_amount, status')
+    .select('milestone_id, paid_amount, status')
     .in('milestone_id', milestoneIds)
     .not('milestone_id', 'is', null)
 
@@ -32,7 +43,7 @@ export const fetchMilestonesByContract = async (
 
   const paymentsByMilestone = (invoices || []).reduce((acc, inv) => {
     if (inv.milestone_id) {
-      acc[inv.milestone_id] = (acc[inv.milestone_id] || 0) + parseFloat(inv.base_amount || 0)
+      acc[inv.milestone_id] = (acc[inv.milestone_id] || 0) + parseFloat(inv.paid_amount || 0)
     }
     return acc
   }, {} as Record<string, number>)

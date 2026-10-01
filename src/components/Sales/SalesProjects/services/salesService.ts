@@ -1,6 +1,7 @@
 import { supabase, Apartment } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { UnitType, BulkCreateData, SaleFormData, CustomerMode, UnitForSale, SALES_PROJECT_CATEGORIES } from '../types'
+import { summarizeBulkPriceUpdate, type BulkPriceUpdateResult } from '../bulkPriceResult'
 
 export interface CompleteSalePayload {
   unitForSale: UnitForSale
@@ -658,24 +659,35 @@ export const updateUnitAfterSale = async (
   })
 }
 
+/**
+ * Adjusts the price per m² of every selected unit that is not sold.
+ *
+ * Returns a report rather than throwing on a partial failure: some rows will have been
+ * written, and the caller has to refetch and say "n of m" instead of implying nothing
+ * happened. A failure to even read the units still throws — there is nothing to report then.
+ */
 export const bulkUpdateUnitPrice = async (
   unitIds: string[],
   unitType: UnitType,
   adjustmentType: 'increase' | 'decrease',
   adjustmentValue: number
-) => {
+): Promise<BulkPriceUpdateResult> => {
   let tableName = ''
   if (unitType === 'apartment') tableName = 'apartments'
   else if (unitType === 'garage') tableName = 'garages'
   else if (unitType === 'repository') tableName = 'repositories'
 
+  // Sold units keep the price they were sold at: they are skipped here, and
+  // re-checked on each update in case a unit was sold in the meantime
   const { data: units, error: fetchError } = await supabase
     .from(tableName)
     .select('id, size_m2, price_per_m2')
     .in('id', unitIds)
+    .neq('status', 'Sold')
 
   if (fetchError) throw fetchError
-  if (!units || units.length === 0) return
+  // Every selected unit was already sold — nothing to do, and not a failure.
+  if (!units || units.length === 0) return summarizeBulkPriceUpdate(unitIds.length, [])
 
   const updates = units.map((unit: { id: string; size_m2: number; price_per_m2: number | null }) => {
     const currentPricePerM2 = unit.price_per_m2 || 0
@@ -692,14 +704,16 @@ export const bulkUpdateUnitPrice = async (
         price: newTotalPrice
       })
       .eq('id', unit.id)
+      .neq('status', 'Sold')
+      .select('id')
   })
 
   const results = await Promise.all(updates)
+  const outcome = summarizeBulkPriceUpdate(unitIds.length, results)
 
-  const errors = results.filter(result => result.error)
-  if (errors.length > 0) {
-    throw new Error(`Failed to update ${errors.length} units`)
+  if (outcome.updated > 0) {
+    logActivity({ action: `${unitType}.bulk_price_update`, entity: unitType, metadata: { severity: 'high', count: outcome.updated, failed: outcome.failed, adjustment_type: adjustmentType, adjustment_value: adjustmentValue } })
   }
 
-  logActivity({ action: `${unitType}.bulk_price_update`, entity: unitType, metadata: { severity: 'high', count: unitIds.length, adjustment_type: adjustmentType, adjustment_value: adjustmentValue } })
+  return outcome
 }

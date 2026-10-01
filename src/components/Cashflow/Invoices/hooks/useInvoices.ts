@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation, Supplier, OfficeSupplier, Customer, Project, Refund, Contract, Milestone } from '../types'
 import * as invoiceService from '../services/invoiceService'
@@ -7,6 +7,10 @@ import { lockBodyScroll, unlockBodyScroll } from '../../../../hooks/useModalOver
 import { useInvoiceColumns } from './useInvoiceColumns'
 import { getDefaultInvoiceFormData, getDefaultPaymentFormData } from '../services/invoiceFormDefaults'
 import { useToast } from '../../../../contexts/ToastContext'
+import { isInvoiceCategoryValidForDirection, type InvoiceDirection } from '../../services/invoiceHelpers'
+import { validatePaymentForm } from '../../Payments/services/paymentValidation'
+import { toLoadError } from '../../services/loadError'
+import { toErrorMessage } from '../../../../lib/errorMessage'
 
 export const useInvoices = () => {
   const toast = useToast()
@@ -28,6 +32,10 @@ export const useInvoices = () => {
   const [customerApartments, setCustomerApartments] = useState<Record<string, unknown>[]>([])
   const [invoiceCategories, setInvoiceCategories] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  // True once the first fetch has settled. Later refetches keep the page mounted (so the
+  // search box keeps focus) instead of swapping everything for a full-page spinner.
+  const [hasLoaded, setHasLoaded] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [filteredTotalCount, setFilteredTotalCount] = useState(0)
@@ -37,15 +45,23 @@ export const useInvoices = () => {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
-  const [filterDirection, setFilterDirection] = useState<'INCOMING' | 'OUTGOING'>('INCOMING')
+  const [filterDirection, setFilterDirectionState] = useState<InvoiceDirection>('INCOMING')
   const [filterCategory, setFilterCategory] = useState<string>('ALL')
+  // A category picked under one direction may not exist under the other (there is no
+  // OUTGOING_INVESTMENT), which would request a type no invoice can have. Fall back to ALL.
+  const setFilterDirection = useCallback((direction: InvoiceDirection) => {
+    setFilterDirectionState(direction)
+    setFilterCategory(prev =>
+      prev === 'ALL' || isInvoiceCategoryValidForDirection(direction, prev) ? prev : 'ALL'
+    )
+  }, [])
   const filterType = filterCategory === 'ALL'
     ? (filterDirection === 'INCOMING' ? 'INCOMING' : 'OUTGOING')
     : `${filterDirection}_${filterCategory}`
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'UNPAID' | 'PAID' | 'PARTIALLY_PAID' | 'UNPAID_AND_PARTIAL'>('ALL')
   const [filterCompany, setFilterCompany] = useState<string>('ALL')
-  const [sortField, setSortField] = useState<'due_date' | 'invoice_number' | null>(null)
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [sortField, setSortField] = useState<invoiceService.InvoiceSortField | null>(null)
+  const [sortDirection, setSortDirection] = useState<invoiceService.InvoiceSortDirection>('asc')
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [isOfficeInvoice, setIsOfficeInvoice] = useState(false)
   const [showRetailInvoiceModal, setShowRetailInvoiceModal] = useState(false)
@@ -70,9 +86,16 @@ export const useInvoices = () => {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
+  // Changing a filter or the sort while on page > 1 fires two fetches (the new criteria on the
+  // old page, then page 1). Only the latest one may write state, or a slow earlier response
+  // could land last and show the wrong page.
+  const latestRequestRef = useRef(0)
+
   const fetchData = useCallback(async () => {
+    const requestId = ++latestRequestRef.current
     try {
       setLoading(true)
+      setError(null)
 
       const result = await invoiceService.fetchData(
         filterType,
@@ -80,8 +103,12 @@ export const useInvoices = () => {
         filterCompany,
         debouncedSearchTerm,
         currentPage,
-        pageSize
+        pageSize,
+        sortField,
+        sortDirection
       )
+
+      if (requestId !== latestRequestRef.current) return
 
       setInvoices(result.invoices as unknown as Invoice[])
       setTotalCount(result.stats.filtered_count)
@@ -103,11 +130,19 @@ export const useInvoices = () => {
       setRefunds(result.refunds)
 
     } catch (error) {
-      console.error('Error fetching data:', error)
+      if (requestId === latestRequestRef.current) {
+        console.error('Error fetching data:', error)
+        // Whatever is on screen stays, with the stats it was loaded with — the page shows a
+        // retry rather than swapping in a register that reads "0 invoices, €0 unpaid".
+        setError(toLoadError(error))
+      }
     } finally {
-      setLoading(false)
+      if (requestId === latestRequestRef.current) {
+        setLoading(false)
+        setHasLoaded(true)
+      }
     }
-  }, [filterType, filterStatus, filterCompany, debouncedSearchTerm, currentPage, pageSize])
+  }, [filterType, filterStatus, filterCompany, debouncedSearchTerm, currentPage, pageSize, sortField, sortDirection])
 
   useEffect(() => {
     fetchData()
@@ -115,7 +150,7 @@ export const useInvoices = () => {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [filterDirection, filterCategory, filterStatus, filterCompany, debouncedSearchTerm])
+  }, [filterDirection, filterCategory, filterStatus, filterCompany, debouncedSearchTerm, sortField, sortDirection])
 
   useEffect(() => {
     const loadMilestones = async () => {
@@ -124,8 +159,10 @@ export const useInvoices = () => {
           const data = await invoiceService.fetchMilestones(formData.contract_id)
           setMilestones(data)
         } catch (error) {
+          // "No milestones available" in the form would be a claim about the contract.
           console.error('Error loading milestones:', error)
           setMilestones([])
+          toast.error(t('invoices.toast.milestones_load_error'))
         }
       } else {
         setMilestones([])
@@ -134,6 +171,9 @@ export const useInvoices = () => {
     }
 
     loadMilestones()
+    // `toast` is context-stable and `t` only changes on a language switch; neither should
+    // re-trigger a milestone fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.contract_id])
 
   const handleOpenModal = (invoice?: Invoice) => {
@@ -259,7 +299,7 @@ export const useInvoices = () => {
           invoice_number: t('invoices.form.error_invoice_number_duplicate'),
         })
       } else {
-        toast.error(t('invoices.form.error_save'))
+        toast.error(toErrorMessage(error, t('invoices.form.error_save')))
       }
     }
   }
@@ -271,6 +311,7 @@ export const useInvoices = () => {
     } catch (error) {
       console.error('Error fetching credit allocations:', error)
       setCreditAllocations([])
+      toast.error(t('payments.toast.allocations_load_error'))
     }
   }
 
@@ -306,40 +347,11 @@ export const useInvoices = () => {
 
     if (!payingInvoice) return
 
-    const source = paymentFormData.payment_source_type
-    const isCesija = paymentFormData.is_cesija
-
-    const amount = Number(paymentFormData.amount)
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error(t('payments.form.error_amount_required'))
-      return
-    }
-    if (amount > payingInvoice.remaining_amount) {
-      toast.error(t('payments.form.error_amount_exceeds_remaining'))
-      return
-    }
-    if (!isCesija && source === 'bank_account' && !paymentFormData.company_bank_account_id) {
-      toast.error(t('payments.form.error_bank_account_required'))
-      return
-    }
-    if (!isCesija && source === 'credit' && !paymentFormData.credit_id) {
-      toast.error(t('payments.form.error_credit_required'))
-      return
-    }
-    if (!isCesija && source === 'credit' && !paymentFormData.credit_allocation_id) {
-      toast.error(t('payments.form.error_credit_allocation_required'))
-      return
-    }
-    if (isCesija && !paymentFormData.cesija_company_id) {
-      toast.error(t('payments.form.error_cesija_company_required'))
-      return
-    }
-    if (isCesija && source === 'bank_account' && !paymentFormData.cesija_bank_account_id) {
-      toast.error(t('payments.form.error_bank_account_required'))
-      return
-    }
-    if (isCesija && source === 'credit' && (!paymentFormData.cesija_credit_id || !paymentFormData.cesija_credit_allocation_id)) {
-      toast.error(t('payments.form.error_credit_required'))
+    const validationError = validatePaymentForm(paymentFormData, {
+      remainingAmount: payingInvoice.remaining_amount
+    })
+    if (validationError) {
+      toast.error(t(validationError))
       return
     }
 
@@ -347,9 +359,10 @@ export const useInvoices = () => {
       await invoiceService.handlePaymentSubmit(paymentFormData, payingInvoice)
       await fetchData()
       handleClosePaymentModal()
+      toast.success(t('payments.toast.create_success'))
     } catch (error) {
       console.error('Error saving payment:', error)
-      toast.error('Greška prilikom spremanja plaćanja')
+      toast.error(toErrorMessage(error, t('payments.form.error_save')))
     }
   }
 
@@ -366,7 +379,7 @@ export const useInvoices = () => {
       await fetchData()
     } catch (error) {
       console.error('Error deleting invoice:', error)
-      toast.error('Greška prilikom brisanja računa')
+      toast.error(toErrorMessage(error, t('invoices.toast.delete_error')))
     } finally {
       setDeleting(false)
       setPendingDeleteId(null)
@@ -393,6 +406,10 @@ export const useInvoices = () => {
     customerApartments,
     invoiceCategories,
     loading,
+    error,
+    refetch: fetchData,
+    dismissError: () => setError(null),
+    hasLoaded,
     currentPage,
     totalCount,
     filteredTotalCount,

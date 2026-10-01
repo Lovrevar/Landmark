@@ -97,3 +97,58 @@ export function serializeRecurrence(state: RecurrenceState, startDate: Date): st
   // rrule.toString() prefixes with "RRULE:"
   return rule.toString().replace(/^RRULE:/, '')
 }
+
+type Translate = (key: string, options?: Record<string, unknown>) => string
+
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
+const WEEKDAY_STRS: string[] = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
+
+/**
+ * A stored rule as one line of text, for the edit form where a series' timing is read-only.
+ *
+ * Deliberately not rrule's `toText()`: that is English-only, and would put "every week on
+ * Monday for 10 times" into the Croatian UI. This reads the parsed rule and reuses the labels
+ * the recurrence picker already shows, so the description matches what the creator picked:
+ * "Weekly (Mon) · Ends: After 10 occurrence(s)". A rule the picker cannot produce falls back
+ * to the generic "Recurring" label rather than a wrong description.
+ */
+export function describeRecurrence(rule: string, t: Translate, locale: string): string {
+  let options: Partial<ReturnType<typeof RRule.parseString>>
+  try {
+    options = RRule.parseString(rule.replace(/^RRULE:/, ''))
+  } catch {
+    return t('calendar.detail.recurring')
+  }
+
+  const freqKey =
+    options.freq === Frequency.DAILY ? 'daily'
+      : options.freq === Frequency.WEEKLY ? 'weekly'
+        : options.freq === Frequency.MONTHLY ? 'monthly'
+          : options.freq === Frequency.YEARLY ? 'yearly'
+            : null
+  if (!freqKey) return t('calendar.detail.recurring')
+
+  const interval = options.interval ?? 1
+  let text =
+    interval > 1 && freqKey !== 'yearly'
+      ? `${t('calendar.modal.recurrence.every')} ${interval} ${t(`calendar.modal.recurrence.freq.${freqKey}`)}`
+      : t(`calendar.modal.recurrence.preset.${freqKey}`)
+
+  if (freqKey === 'weekly' && options.byweekday) {
+    const raw = Array.isArray(options.byweekday) ? options.byweekday : [options.byweekday]
+    const days = raw
+      .map(w => (typeof w === 'number' ? w : typeof w === 'string' ? WEEKDAY_STRS.indexOf(w) : w.weekday))
+      .filter(i => i >= 0 && i < DAY_KEYS.length)
+      .sort((a, b) => a - b)
+      .map(i => t(`calendar.day_names.${DAY_KEYS[i]}`))
+    if (days.length > 0) text += ` (${days.join(', ')})`
+  }
+
+  const ends = t('calendar.modal.recurrence.ends')
+  if (options.count) {
+    text += ` · ${ends}: ${t('calendar.modal.recurrence.end.after')} ${options.count} ${t('calendar.modal.recurrence.occurrences')}`
+  } else if (options.until) {
+    text += ` · ${ends}: ${options.until.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}`
+  }
+  return text
+}

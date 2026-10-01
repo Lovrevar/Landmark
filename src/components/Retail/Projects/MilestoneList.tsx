@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Plus, Edit2, Trash2, Calendar, CheckCircle, DollarSign } from 'lucide-react'
-import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
-import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
+import { Button, Badge, EmptyState, ErrorState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import type { RetailContractMilestone } from '../../../types/retail'
 import { MilestoneFormModal } from './forms/MilestoneFormModal'
 import { retailProjectService } from './services/retailProjectService'
 import { useToast } from '../../../contexts/ToastContext'
+import { formatEuroRounded, formatDate } from '../../../utils/formatters'
 
 interface MilestoneStats {
   totalPercentage: number
@@ -34,26 +34,30 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   contractCost,
   onClose
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const toast = useToast()
   const [milestones, setMilestones] = useState<RetailContractMilestone[]>([])
   const [stats, setStats] = useState<MilestoneStats | null>(null)
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<RetailContractMilestone | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [pendingDeleteMilestoneId, setPendingDeleteMilestoneId] = useState<string | null>(null)
   const [deletingMilestone, setDeletingMilestone] = useState(false)
 
   const loadMilestones = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await retailProjectService.fetchMilestonesByContract(contractId)
       setMilestones(data)
 
       const statsData = await retailProjectService.getMilestoneStatsForContract(contractId, contractCost)
       setStats(statsData)
-    } catch (error) {
-      console.error('Error loading milestones:', error)
+    } catch (err) {
+      // Without this the panel showed "no milestones" and no invoiced percentage at all.
+      console.error('Error loading milestones:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -113,24 +117,18 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     setDeletingMilestone(true)
     try {
       await retailProjectService.deleteMilestone(pendingDeleteMilestoneId)
+      // Closed only on success, so a refused delete does not look like a done one.
+      setPendingDeleteMilestoneId(null)
       loadMilestones()
     } catch (error) {
       console.error('Error deleting milestone:', error)
       toast.error(t('retail_projects.milestones.error_delete'))
     } finally {
       setDeletingMilestone(false)
-      setPendingDeleteMilestoneId(null)
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
-  }
+  const formatCurrency = formatEuroRounded
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl">
@@ -225,6 +223,8 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
 
         {loading ? (
           <LoadingSpinner message={t('retail_projects.milestones.loading')} />
+        ) : error ? (
+          <ErrorState compact onRetry={() => { void loadMilestones() }} />
         ) : milestones.length === 0 ? (
           <EmptyState
             icon={Calendar}
@@ -313,7 +313,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                           <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">{t('retail_projects.milestones.due_date')}</p>
                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                              {format(new Date(milestone.due_date), 'dd.MM.yyyy')}
+                              {formatDate(milestone.due_date, i18n.language)}
                             </p>
                           </div>
                         )}

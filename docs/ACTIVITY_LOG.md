@@ -155,7 +155,7 @@ logActivity({
 | `milestone.delete` | H | `General/Projects/services/milestoneService.ts` |
 | `milestone.bulk_create` | M | `General/Projects/services/milestoneService.ts` |
 
-### Cashflow / Accounting (29)
+### Cashflow / Accounting (31)
 | Action | Severity | File |
 |---|---|---|
 | `invoice.create` | H | `Cashflow/Invoices/services/invoiceService.ts` |
@@ -188,6 +188,8 @@ logActivity({
 | `loan.create` | H | `Cashflow/Loans/services/loanService.ts` |
 | `loan.delete` | H | `Cashflow/Loans/services/loanService.ts` |
 | `monthly_budget.update` | M | `Cashflow/Budget/services/budgetService.ts` + `Cashflow/Calendar/services/calendarService.ts` |
+| `export.debt_excel` | L | `Cashflow/DebtStatus/services/debtExport.ts` (metadata carries `row_count` and the `project` filter) |
+| `export.debt_pdf` | L | `Cashflow/DebtStatus/services/debtExport.ts` (metadata carries `row_count` and the `project` filter) |
 
 ### Sales (21+)
 | Action | Severity | File |
@@ -212,9 +214,9 @@ logActivity({
 | `customer.update` | L | `Sales/Customers/services/customerService.ts` + `Sales/SalesProjects/services/salesService.ts` |
 | `customer.delete` | M | `Sales/Customers/services/customerService.ts` |
 | `sale.create` | H | `Sales/SalesProjects/services/salesService.ts` |
-| `export.payments_csv` | L | `Sales/Payments/services/salesPaymentsService.ts` |
+| `export.sales_payments_excel` | L | `Sales/Payments/services/salesPaymentsService.ts` (metadata carries `row_count`) |
 
-### Supervision (18)
+### Supervision (20)
 | Action | Severity | File |
 |---|---|---|
 | `phase.create` | M | `Supervision/SiteManagement/services/phaseService.ts` |
@@ -237,8 +239,10 @@ logActivity({
 | `work_log.update` | L | `Supervision/WorkLogs/services/workLogService.ts` |
 | `work_log.delete` | M | `Supervision/WorkLogs/services/workLogService.ts` |
 | `invoice.approve` | H | `Supervision/Invoices/services/supervisionInvoiceService.ts` |
+| `export.supervision_invoices_excel` | L | `Supervision/Invoices/services/supervisionInvoiceService.ts` (metadata carries `row_count`) |
+| `export.supervision_payments_excel` | L | `Supervision/Payments/services/supervisionPaymentService.ts` (metadata carries `row_count`) |
 
-### Funding (14)
+### Funding (15)
 | Action | Severity | File |
 |---|---|---|
 | `investor.create` | M | `Funding/Investors/hooks/useBankData.ts` |
@@ -255,8 +259,9 @@ logActivity({
 | `tic.update` | M | `Funding/TIC/hooks/useTIC.ts` |
 | `export.tic_excel` | L | `Funding/TIC/services/ticExport.ts` |
 | `export.tic_pdf` | L | `Funding/TIC/services/ticExport.ts` |
+| `export.funding_payments_excel` | L | `Funding/Payments/services/fundingPaymentsExport.ts` (metadata carries `row_count`) |
 
-### Retail (27)
+### Retail (29)
 | Action | Severity | File |
 |---|---|---|
 | `retail_project.create` | M | `Retail/Projects/services/retailProjectService.ts` |
@@ -287,6 +292,30 @@ logActivity({
 | `land_plot.update` | M | `Retail/LandPlots/services/landPlotService.ts` |
 | `land_plot.delete` | H | `Retail/LandPlots/services/landPlotService.ts` (logged only when a row was actually deleted) |
 | `invoice.approve` | H | `Retail/Invoices/services/retailInvoiceService.ts` |
+| `export.retail_invoices_excel` | L | `Retail/Invoices/services/retailInvoiceService.ts` (metadata carries `row_count`) |
+| `export.retail_sales_payments_excel` | L | `Retail/Sales/services/retailSalesService.ts` (metadata carries `row_count`) |
+
+### Reports (5)
+| Action | Severity | File |
+|---|---|---|
+| `export.general_pdf` | L | `Reports/pdf/generalReportPdf.ts` (executive portfolio report; metadata carries `row_count` = projects) |
+| `export.retail_pdf` | L | `Reports/pdf/retailReportPdf.ts` (metadata carries `row_count` = retail projects) |
+| `export.sales_pdf` | L | `Reports/pdf/salesReportPdf.ts` (project report; metadata carries `project_id`, `row_count`, the date range) |
+| `export.customer_pdf` | L | `Reports/pdf/salesReportPdf.ts` (customer report — a different document, so a different action) |
+| `export.investment_pdf` | L | `dashboards/investmentReportPdf.ts` (metadata carries `row_count` = credits, `project_count`) |
+
+> **One action per document, not one per button.** `export.report_pdf` exists in both locale files
+> from an earlier pass and is emitted by nothing: a single label covering five different reports
+> cannot answer the question an audit log is for, which is *which* report left the building. It is
+> left in place because a label with no matching `logActivity()` call is not dead by that fact
+> alone (see **Notes**), but new report exports get their own action.
+>
+> `entity` is `'report'`, which deliberately has no `ENTITY_ROUTE_MAP` entry — an export is not a
+> row anyone can navigate to. `export.tic_excel` has done the same since it was added.
+
+> Logged inside the generator rather than at the button, the way `ticExport.ts` does it: the export
+> is the thing worth recording, and it has three call sites between the two screens. The log line is
+> written **after** `pdf.save()`, so a failed generation does not record a document that never left.
 
 ### Chat / Calendar
 
@@ -436,7 +465,7 @@ logActivity({
 | `*.delete` | `{ severity, entity_name? }` |
 | `*.bulk_*` | `{ severity, count: number }` |
 | `*.import_excel` | `{ severity, filename?, row_count?, created_count? }` |
-| `export.*` | `{ severity: 'low', format: 'csv'\|'excel'\|'pdf' }` |
+| `export.*` | `{ severity: 'low', format: 'excel'\|'pdf', row_count }` — plus whatever narrows the document, e.g. `project` for the debt register |
 
 ### 5. Action naming convention
 
@@ -477,7 +506,7 @@ Add translated action labels in both locale files under the `activity_log.action
 ## Notes
 
 - **Logs are immutable** — no UPDATE or DELETE RLS policies. This is by design for audit integrity.
-- **Retired actions keep their labels.** `bank_credit.generate_schedule`, `payment_notification.dismiss` and `subcontractor_payment.create` stopped being emitted when the Funding payment-notification code was deleted (2026-09-14), but older `activity_logs` rows may carry them. Their `activity_log.actions` labels must stay so those rows keep rendering — a label with no matching `logActivity()` call is not dead by that fact alone.
+- **Retired actions keep their labels.** `bank_credit.generate_schedule`, `payment_notification.dismiss` and `subcontractor_payment.create` stopped being emitted when the Funding payment-notification code was deleted (2026-09-14), and `export.payments_csv` stopped when the six CSV exports became `.xlsx` (2026-09-23), but older `activity_logs` rows may carry them. Their `activity_log.actions` labels must stay so those rows keep rendering — a label with no matching `logActivity()` call is not dead by that fact alone.
 - **IP address column** exists but is always NULL — client-side Supabase cannot reliably capture IP. An Edge Function could populate this in the future.
 - **No log retention policy** — at current usage levels the table stays small. Consider `pg_cron` pruning or monthly partitioning if the table grows large.
 - **Mutations live in both service files and hook files** depending on the module. Always trace to wherever the `supabase.from().insert/update/delete` actually executes.

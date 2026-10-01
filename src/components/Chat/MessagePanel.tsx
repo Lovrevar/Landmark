@@ -6,6 +6,7 @@ import MessageBubble, { DateSeparator } from './MessageBubble'
 import GroupMembersPanel from './GroupMembersPanel'
 import AvatarStack from '../ui/AvatarStack'
 import LoadingSpinner from '../ui/LoadingSpinner'
+import ErrorState from '../ui/ErrorState'
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024
 
@@ -14,6 +15,9 @@ interface MessagePanelProps {
   messages: ChatMessage[]
   currentUserId: string
   loading: boolean
+  /** The thread could not be read — never render that as an empty conversation. */
+  loadFailed?: boolean
+  onRetry?: () => void
   sending: boolean
   onSendMessage: (content: string, file?: File | null) => Promise<void>
   onBack?: () => void
@@ -56,6 +60,8 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
   messages,
   currentUserId,
   loading,
+  loadFailed = false,
+  onRetry,
   sending,
   onSendMessage,
   onBack,
@@ -245,6 +251,8 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
       <div className="flex-1 overflow-y-auto px-4 py-2 bg-white dark:bg-gray-800/50">
         {loading ? (
           <LoadingSpinner size="sm" className="mt-8" />
+        ) : loadFailed ? (
+          <ErrorState compact onRetry={onRetry} />
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-sm text-gray-400 dark:text-gray-500">{t('chat.no_messages')}</p>

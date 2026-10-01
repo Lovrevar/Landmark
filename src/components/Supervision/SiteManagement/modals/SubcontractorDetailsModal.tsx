@@ -1,26 +1,55 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MessageSquare, Send, Calendar, Building2, FileText, DollarSign } from 'lucide-react'
-import { format } from 'date-fns'
 import { CommentWithUser, SubcontractorWithPhase } from '../types'
-import { Modal, FormField, Select, Textarea, Button, Badge } from '../../../ui'
+import { Modal, FormField, Select, Textarea, Button, Badge, ErrorState } from '../../../ui'
 import { fetchContractDetails, fetchBankById, ContractDetailsRow } from '../services/siteService'
 import { ContractDocumentViewer } from '../ContractDocumentViewer'
-import { formatEuro } from '../../../../utils/formatters'
+import { formatEuro, formatDate, formatDateTime } from '../../../../utils/formatters'
+import { contractVariance } from '../../../../utils/contractVariance'
 
 type ContractData = ContractDetailsRow
+
+// Literal classes (Tailwind only emits what it finds in the source) for the third payment tile,
+// which shows an overrun, a saving, or — when there is neither — what is still to pay.
+const VARIANCE_TILE_TONES = {
+  red: {
+    box: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
+    label: 'text-red-700 dark:text-red-400',
+    value: 'text-red-900 dark:text-red-300'
+  },
+  green: {
+    box: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+    label: 'text-green-700 dark:text-green-400',
+    value: 'text-green-900 dark:text-green-400'
+  },
+  orange: {
+    box: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800',
+    label: 'text-orange-700 dark:text-orange-400',
+    value: 'text-orange-900 dark:text-orange-300'
+  }
+} as const
 
 interface SubcontractorDetailsModalProps {
   visible: boolean
   onClose: () => void
   subcontractor: SubcontractorWithPhase | null
   comments: CommentWithUser[]
+  /** Set when the comment read failed, so the list does not claim there are no comments. */
+  commentsError?: Error | null
+  onRetryComments?: () => void
   newComment: string
   commentType: 'completed' | 'issue' | 'general'
   onCommentChange: (comment: string) => void
   onCommentTypeChange: (type: 'completed' | 'issue' | 'general') => void
   onAddComment: () => void
   onManageMilestones?: () => void
+  /**
+   * False hides the payment tiles, the paid-derived header badge and the uncontracted row's
+   * "total paid", as everywhere else on this screen. The contract's own base/VAT/total stay:
+   * they are the agreement, not what has been paid against it.
+   */
+  canManagePayments: boolean
 }
 
 export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps> = ({
@@ -28,14 +57,17 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   onClose,
   subcontractor,
   comments,
+  commentsError = null,
+  onRetryComments,
   newComment,
   commentType,
   onCommentChange,
   onCommentTypeChange,
   onAddComment,
-  onManageMilestones
+  onManageMilestones,
+  canManagePayments
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [funderName, setFunderName] = useState<string | null>(null)
   const [, setLoadingFunder] = useState(false)
   const [contractData, setContractData] = useState<ContractData | null>(null)
@@ -85,19 +117,27 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   if (!visible || !subcontractor) return null
 
   const realized = subcontractor.budget_realized ?? 0
-  const contractCost = subcontractor.cost ?? 0
+  // Gross against gross. `budget_realized` is the sum of payments, VAT included, so it is
+  // compared with the contract's total_amount — never base_amount, which is net and made every
+  // fully-paid contract read as a 25% overrun. `cost` is contract_amount, which a trigger keeps
+  // equal to total_amount, so it is the same figure while the details are still loading. `||`, not
+  // `??`: fetchContractDetails maps a null total to 0, and that must not zero out the contract.
+  const contracted = contractData?.total_amount || subcontractor.cost || 0
+  const settled = contracted > 0 && realized >= contracted
+  const variance = contractVariance({ contracted, paid: realized, settled })
 
-  const getBudgetStatus = () =>
-    realized > contractCost ? t('supervision.subcontractor_details.status_over_budget') :
-    realized === contractCost ? t('supervision.subcontractor_details.status_fully_paid') :
-    realized > 0 ? t('supervision.subcontractor_details.status_partial') : t('supervision.subcontractor_details.status_unpaid')
+  // The header badge and the tiles below read the same three values, so they cannot disagree.
+  const budgetBadge: { variant: 'red' | 'green' | 'blue' | 'gray'; label: string } =
+    variance.kind === 'overrun' ? { variant: 'red', label: t('supervision.subcontractor_details.status_over_budget') } :
+    settled ? { variant: 'green', label: t('supervision.subcontractor_details.status_fully_paid') } :
+    realized > 0 ? { variant: 'blue', label: t('supervision.subcontractor_details.status_partial') } :
+    { variant: 'gray', label: t('supervision.subcontractor_details.status_unpaid') }
 
-  const getBudgetVariant = (): 'red' | 'green' | 'blue' | 'gray' => {
-    if (realized > contractCost) return 'red'
-    if (realized === contractCost) return 'green'
-    if (realized > 0) return 'blue'
-    return 'gray'
-  }
+  // Nothing to report while a contract is simply being paid, so the tile says what is left.
+  const varianceTile =
+    variance.kind === 'overrun' ? { tone: VARIANCE_TILE_TONES.red, label: t('common.contract_overrun'), amount: variance.amount } :
+    variance.kind === 'saving' ? { tone: VARIANCE_TILE_TONES.green, label: t('common.contract_saving'), amount: variance.amount } :
+    { tone: VARIANCE_TILE_TONES.orange, label: t('common.remaining'), amount: Math.max(0, contracted - realized) }
 
   return (
     <Modal show={true} onClose={onClose} size="xl">
@@ -108,9 +148,9 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
               {t('supervision.subcontractor_details.no_contract_badge')}
             </Badge>
           )}
-          {subcontractor.has_contract !== false && (
-            <Badge variant={getBudgetVariant()} size="sm">
-              {getBudgetStatus()}
+          {canManagePayments && subcontractor.has_contract !== false && contracted > 0 && (
+            <Badge variant={budgetBadge.variant} size="sm">
+              {budgetBadge.label}
             </Badge>
           )}
         </div>
@@ -150,7 +190,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                   <div>
                     <p className="text-xs text-blue-700 dark:text-blue-300">{t('supervision.subcontractor_details.deadline')}</p>
                     <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                      {format(new Date(contractData.end_date), 'dd.MM.yyyy')}
+                      {formatDate(contractData.end_date, i18n.language)}
                     </p>
                   </div>
                 )}
@@ -194,8 +234,8 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
             </div>
           )}
 
-          {/* Payment Status */}
-          {subcontractor.has_contract !== false ? (
+          {/* Payment Status — every tile here is money paid or derived from it. */}
+          {!canManagePayments ? null : subcontractor.has_contract !== false ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center mb-2">
@@ -203,7 +243,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                   <p className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.subcontractor_details.contracted_base')}</p>
                 </div>
                 <p className="text-xl font-bold text-gray-900 dark:text-white">
-                  {formatEuro(contractData?.base_amount ?? contractCost)}
+                  {formatEuro(contracted)}
                 </p>
               </div>
 
@@ -217,27 +257,13 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                 </p>
               </div>
 
-              <div className={`p-4 rounded-lg border ${
-                realized > (contractData?.base_amount ?? contractCost) ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
-                realized < (contractData?.base_amount ?? contractCost) ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
-                'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700'
-              }`}>
+              <div className={`p-4 rounded-lg border ${varianceTile.tone.box}`}>
                 <div className="flex items-center mb-2">
-                  <DollarSign className="w-4 h-4 mr-1" />
-                  <p className={`text-xs ${
-                    realized > (contractData?.base_amount ?? contractCost) ? 'text-red-700 dark:text-red-400' :
-                    realized < (contractData?.base_amount ?? contractCost) ? 'text-green-700 dark:text-green-400' :
-                    'text-gray-600 dark:text-gray-400'
-                  }`}>{t('supervision.subcontractor_details.gain_loss')}</p>
+                  <DollarSign className={`w-4 h-4 mr-1 ${varianceTile.tone.label}`} />
+                  <p className={`text-xs ${varianceTile.tone.label}`}>{varianceTile.label}</p>
                 </div>
-                <p className={`text-xl font-bold ${
-                  realized > (contractData?.base_amount ?? contractCost) ? 'text-red-900 dark:text-red-300' :
-                  realized < (contractData?.base_amount ?? contractCost) ? 'text-green-900 dark:text-green-400' :
-                  'text-gray-900 dark:text-white'
-                }`}>
-                  {realized > (contractData?.base_amount ?? contractCost) ? '-' :
-                   realized < (contractData?.base_amount ?? contractCost) ? '+' : ''}
-                  {formatEuro(Math.abs(realized - (contractData?.base_amount ?? contractCost)))}
+                <p className={`text-xl font-bold ${varianceTile.tone.value}`}>
+                  {formatEuro(varianceTile.amount)}
                 </p>
               </div>
             </div>
@@ -292,7 +318,11 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
             </h4>
 
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-              {comments.length === 0 ? (
+              {commentsError && comments.length === 0 ? (
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <ErrorState compact onRetry={onRetryComments} />
+                </div>
+              ) : comments.length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
                   <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
                   <p className="text-gray-500 dark:text-gray-400 text-sm">{t('supervision.subcontractor_details.no_comments')}</p>
@@ -321,7 +351,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
                         </Badge>
                       </div>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {format(new Date(comment.created_at), 'dd.MM.yyyy HH:mm')}
+                        {formatDateTime(new Date(comment.created_at), i18n.language)}
                       </span>
                     </div>
                     <p className="text-gray-700 dark:text-gray-200 text-sm">{comment.comment}</p>

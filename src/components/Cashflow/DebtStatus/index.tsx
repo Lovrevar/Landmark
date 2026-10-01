@@ -4,13 +4,19 @@ import { TrendingUp, AlertCircle, DollarSign, Users, FileDown, FileSpreadsheet, 
 import { useDebtStatus } from './hooks/useDebtStatus'
 import { formatEuropeanNumber } from './services/debtService'
 import { exportToExcel, exportToPDF } from './services/debtExport'
-import { PageHeader, StatGrid, StatCard, LoadingSpinner, Button, Badge, EmptyState, Alert, Select } from '../../ui'
+import { PageHeader, StatGrid, StatCard, LoadingSpinner, Button, Badge, EmptyState, ErrorState, Alert, Select } from '../../ui'
+import { useAsyncExport } from '../../../hooks/useAsyncExport'
+import { toErrorMessage } from '../../../lib/errorMessage'
 
 const DebtStatus: React.FC = () => {
   const { t } = useTranslation()
   const {
     debtData,
     loading,
+    error,
+    refetch,
+    dismissError,
+    canExport,
     sortBy,
     sortOrder,
     sortedData,
@@ -43,12 +49,23 @@ const DebtStatus: React.FC = () => {
     return project ? project.name : null
   }
 
+  // Both run through `useAsyncExport`, which owns the per-button loading flag and toasts on
+  // failure. The Excel half used to be called bare (a throw died inside the click handler) and the
+  // PDF half was `async` called without `await` or `.catch`, so a failure was an unhandled
+  // rejection the user never saw — and the PDF now throws for real if the embedded font is missing.
+  const { exporting: exportingExcel, run: runExportExcel } = useAsyncExport(exportToExcel, 'common.export_error')
+  const { exporting: exportingPdf, run: runExportPdf } = useAsyncExport(exportToPDF, 'common.export_error')
+
+  // Guarded as well as disabled: an export built from a failed load is a document that says
+  // "no debt" with a company letterhead on it.
   const handleExportExcel = () => {
-    exportToExcel(sortedData, totalUnpaid, totalPaid, getSelectedProjectName())
+    if (!canExport) return
+    void runExportExcel(sortedData, totalUnpaid, totalPaid, getSelectedProjectName())
   }
 
   const handleExportPDF = () => {
-    exportToPDF(sortedData, totalUnpaid, totalPaid, totalSuppliers, suppliersWithDebt, getSelectedProjectName())
+    if (!canExport) return
+    void runExportPdf(sortedData, totalUnpaid, totalPaid, totalSuppliers, suppliersWithDebt, getSelectedProjectName())
   }
 
   if (loading) {
@@ -62,16 +79,28 @@ const DebtStatus: React.FC = () => {
         description={t('debt_status.description')}
         actions={
           <>
-            <Button variant="success" icon={FileSpreadsheet} onClick={handleExportExcel}>
+            <Button variant="success" icon={FileSpreadsheet} onClick={handleExportExcel} loading={exportingExcel} disabled={!canExport}>
               {t('common.export_excel')}
             </Button>
-            <Button variant="danger" icon={FileDown} onClick={handleExportPDF}>
+            <Button variant="danger" icon={FileDown} onClick={handleExportPDF} loading={exportingPdf} disabled={!canExport}>
               {t('common.export_pdf')}
             </Button>
           </>
         }
       />
 
+      {error && debtData.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {!(error && debtData.length === 0) && (
       <StatGrid columns={4}>
         <StatCard
           label={t('debt_status.stats.total_suppliers')}
@@ -98,6 +127,7 @@ const DebtStatus: React.FC = () => {
           color="green"
         />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center gap-4">
@@ -132,7 +162,9 @@ const DebtStatus: React.FC = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {debtData.length === 0 ? (
+        {error && debtData.length === 0 ? (
+          <ErrorState onRetry={() => void refetch()} />
+        ) : debtData.length === 0 ? (
           <EmptyState
             icon={AlertCircle}
             title={t('debt_status.empty.title')}

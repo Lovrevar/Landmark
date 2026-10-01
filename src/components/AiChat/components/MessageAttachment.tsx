@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Download, FileText, Image as ImageIcon, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { formatFileSize } from '../../../utils/formatters'
+import { useEscapeKey } from '../../../hooks/useEscapeKey'
+import { useFocusTrap } from '../../../hooks/useFocusTrap'
 import { getAiAttachmentSignedUrl } from '../services/aiAttachmentsService'
 import { UI_LABELS_HR } from '../lib/labels'
 import type { AiAttachmentRow } from '../../../types/aiChat'
@@ -112,21 +114,25 @@ function ImageLightbox({
   onClose: () => void
   onError: () => void
 }) {
+  const overlayRef = useRef<HTMLDivElement>(null)
+  useEscapeKey(true, onClose)
+  useFocusTrap(overlayRef, true)
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
     return () => {
-      document.removeEventListener('keydown', onKey)
       document.body.style.overflow = 'unset'
     }
-  }, [onClose])
+  }, [])
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-6"
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={fileName}
+      tabIndex={-1}
+      className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-6 outline-none"
       onClick={onClose}
     >
       <button

@@ -1,6 +1,11 @@
 import { supabase } from '../../../lib/supabase'
 import { logActivity } from '../../../lib/activityLog'
 import { countPendingOccurrences } from '../utils/pendingCount'
+import {
+  buildEventUpdate,
+  hasParticipantChanges,
+  planParticipantChanges,
+} from '../utils/eventEdit'
 import type {
   CalendarEvent,
   EventException,
@@ -374,6 +379,110 @@ export async function updateEvent(
   return updated
 }
 
+/**
+ * Saves the edit form: the changed event columns, then the participant rows.
+ *
+ * `previous` is the event as the form loaded it, participants included. Only columns that
+ * differ are written (see buildEventUpdate — a recurring series never gets new timing), and
+ * participants are reconciled row by row (see planParticipantChanges), so an unchanged
+ * invitee keeps their RSVP.
+ *
+ * Logged once as `calendar_event.update`. `changed_fields` gains `participants` when rows were
+ * added or removed, with the counts in metadata. There is no transaction across the writes: if
+ * a participant write fails after the event row was updated, what did succeed is still logged
+ * and the error is rethrown for the form to show.
+ */
+export async function updateEventWithParticipants(
+  eventId: string,
+  input: NewEventInput,
+  previous: CalendarEvent,
+): Promise<void> {
+  const updates = buildEventUpdate(previous, input)
+  const plan = planParticipantChanges(previous.participants ?? [], previous.created_by, {
+    isPrivate: input.is_private,
+    participantIds: input.participant_ids,
+  })
+  if (Object.keys(updates).length === 0 && !hasParticipantChanges(plan)) return
+
+  const changedFields: string[] = []
+  let projectId = previous.project_id
+  let removed = 0
+  let added = 0
+
+  try {
+    if (Object.keys(updates).length > 0) {
+      const { data, error } = await supabase
+        .from('calendar_events')
+        // No trigger maintains updated_at on this table.
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', eventId)
+        .select('id, project_id')
+        .single()
+      if (error) throw error
+      projectId = (data as { project_id: string | null }).project_id
+      changedFields.push(...Object.keys(updates))
+    }
+
+    if (plan.removeRowIds.length > 0) {
+      const { error } = await supabase
+        .from('calendar_event_participants')
+        .delete()
+        .eq('event_id', eventId)
+        .in('id', plan.removeRowIds)
+      if (error) throw error
+      removed = plan.removeRowIds.length
+    }
+
+    const now = new Date().toISOString()
+    const rows: {
+      event_id: string
+      user_id: string
+      response: EventResponse
+      acknowledged_at: string | null
+    }[] = plan.addUserIds.map(uid => ({
+      event_id: eventId,
+      user_id: uid,
+      response: 'pending',
+      acknowledged_at: null,
+    }))
+    if (plan.creatorRow === 'insert') {
+      rows.push({ event_id: eventId, user_id: previous.created_by, response: 'accepted', acknowledged_at: now })
+    }
+    if (rows.length > 0) {
+      const { error } = await supabase.from('calendar_event_participants').insert(rows)
+      if (error) throw error
+      added = plan.addUserIds.length
+    }
+
+    if (plan.creatorRow === 'accept') {
+      const { error } = await supabase
+        .from('calendar_event_participants')
+        .update({ response: 'accepted', acknowledged_at: now })
+        .eq('event_id', eventId)
+        .eq('user_id', previous.created_by)
+      if (error) throw error
+    }
+  } finally {
+    if (removed > 0 || added > 0) changedFields.push('participants')
+    if (changedFields.length > 0) {
+      logActivity({
+        action: 'calendar_event.update',
+        entity: 'calendar_event',
+        entityId: eventId,
+        projectId,
+        severity: 'medium',
+        metadata: {
+          entity_name: input.title || previous.title,
+          changed_fields: changedFields,
+          ...(removed > 0 || added > 0
+            ? { participants_added: added, participants_removed: removed }
+            : {}),
+        },
+      })
+    }
+  }
+}
+
 export interface ExceptionOverride {
   override_start_at?: string | null
   override_end_at?: string | null
@@ -387,16 +496,22 @@ export async function createException(
   override: ExceptionOverride,
   eventTitle?: string,
 ): Promise<EventException> {
+  // Upsert: the table is UNIQUE (event_id, original_start_at), so a plain insert failed for an
+  // occurrence that already had an exception — cancelling a renamed or moved occurrence did
+  // nothing. The creator holds INSERT and UPDATE policies on this table, which ON CONFLICT needs.
   const { data, error } = await supabase
     .from('calendar_event_exceptions')
-    .insert({
-      event_id: eventId,
-      original_start_at: originalStartAt,
-      override_start_at: override.override_start_at ?? null,
-      override_end_at: override.override_end_at ?? null,
-      override_title: override.override_title ?? null,
-      is_cancelled: override.is_cancelled ?? false,
-    })
+    .upsert(
+      {
+        event_id: eventId,
+        original_start_at: originalStartAt,
+        override_start_at: override.override_start_at ?? null,
+        override_end_at: override.override_end_at ?? null,
+        override_title: override.override_title ?? null,
+        is_cancelled: override.is_cancelled ?? false,
+      },
+      { onConflict: 'event_id,original_start_at' },
+    )
     .select('id, event_id, original_start_at, override_start_at, override_end_at, override_title, is_cancelled, created_at')
     .single()
   if (error) throw error
@@ -447,33 +562,4 @@ export async function fetchPendingCount(
 ): Promise<number> {
   const events = await fetchEventsInRange(userId, fromIso, toIso)
   return countPendingOccurrences(events, userId, new Date(fromIso), new Date(toIso))
-}
-
-export async function getUnacknowledgedEventCount(userId: string): Promise<number> {
-  const { count, error } = await supabase
-    .from('calendar_event_participants')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .is('acknowledged_at', null)
-  if (error) return 0
-  return count || 0
-}
-
-export async function acknowledgeAllEvents(userId: string): Promise<void> {
-  const { data } = await supabase
-    .from('calendar_event_participants')
-    .update({ acknowledged_at: new Date().toISOString() })
-    .eq('user_id', userId)
-    .is('acknowledged_at', null)
-    .select('id')
-
-  const count = data?.length ?? 0
-  if (count > 0) {
-    logActivity({
-      action: 'calendar_event.acknowledge_all',
-      entity: 'calendar_event',
-      severity: 'low',
-      metadata: { count },
-    })
-  }
 }

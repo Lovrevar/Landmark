@@ -524,13 +524,47 @@ export async function deleteTaskComment(commentId: string, actor: TaskActor): Pr
   })
 }
 
+/**
+ * Marks the user's assignment on one task as read — called when they open it. RLS on
+ * task_assignees lets a user update only their own row, and only `acknowledged_at`.
+ *
+ * Throws on failure like every other write here; the caller decides what to do about it (see
+ * `acknowledgeOpenedTask`). Resolves to whether a row actually changed, and logs only then, so
+ * re-opening a task that was already read writes nothing to the activity log.
+ */
+export async function acknowledgeTask(taskId: string, authUserId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('task_assignees')
+    .update({ acknowledged_at: new Date().toISOString() })
+    .eq('task_id', taskId)
+    .eq('assignee_id', authUserId)
+    .is('acknowledged_at', null)
+    .select('id')
+  if (error) throw error
+
+  if ((data?.length ?? 0) === 0) return false
+  logActivity({
+    action: 'task.acknowledge',
+    entity: 'task',
+    entityId: taskId,
+    severity: 'low',
+  })
+  return true
+}
+
+/**
+ * "Mark all as read": clears every unread assignment the user has. An explicit action on the
+ * Tasks page now, not something visiting the page does. Throws on failure, so the button can
+ * say it did not work.
+ */
 export async function acknowledgeAllTasks(authUserId: string): Promise<void> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('task_assignees')
     .update({ acknowledged_at: new Date().toISOString() })
     .eq('assignee_id', authUserId)
     .is('acknowledged_at', null)
     .select('id')
+  if (error) throw error
 
   const count = data?.length ?? 0
   if (count > 0) {

@@ -2,15 +2,26 @@ import { useTranslation } from 'react-i18next'
 import { UsersRound } from 'lucide-react'
 import type { TaskUser } from '../../../../types/tasks'
 import { colorForUser } from '../../utils/teamColors'
+import InlineLoadError from '../../../ui/InlineLoadError'
 
 interface Props {
   users: TaskUser[]
   enabledIds: string[]
   onToggle: (userId: string) => void
   colors?: Record<string, string>
+  /** The user list failed to load — "no colleagues available" would be a guess, not a fact. */
+  loadFailed?: boolean
+  onRetry?: () => void
 }
 
-export default function TeamCalendars({ users, enabledIds, onToggle, colors }: Props) {
+export default function TeamCalendars({
+  users,
+  enabledIds,
+  onToggle,
+  colors,
+  loadFailed = false,
+  onRetry,
+}: Props) {
   const { t } = useTranslation()
 
   return (
@@ -19,7 +30,9 @@ export default function TeamCalendars({ users, enabledIds, onToggle, colors }: P
         <UsersRound className="w-4 h-4 text-blue-600 dark:text-blue-400" />
         {t('calendar.team_calendars.title')}
       </h3>
-      {users.length === 0 ? (
+      {loadFailed ? (
+        <InlineLoadError message={t('common.users_load_error')} onRetry={onRetry} />
+      ) : users.length === 0 ? (
         <p className="text-xs text-gray-500 dark:text-gray-400">{t('calendar.team_calendars.empty')}</p>
       ) : (
         <div className="space-y-1.5 max-h-64 overflow-y-auto">

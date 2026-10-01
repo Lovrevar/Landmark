@@ -322,7 +322,7 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
               <div key={c.id}>
                 <p className="text-xs text-gray-600 dark:text-gray-400">{c.name}</p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {formatNumber(amount)} €
+                  €{formatNumber(amount)}
                 </p>
               </div>
             )
@@ -333,7 +333,7 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
                 {t('tic.classification_unmapped_total')}
               </p>
               <p className="text-sm font-semibold text-orange-700 dark:text-orange-300">
-                {formatNumber(classificationTotals.unmapped)} €
+                €{formatNumber(classificationTotals.unmapped)}
               </p>
             </div>
           )}

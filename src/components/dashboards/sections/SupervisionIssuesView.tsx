@@ -1,7 +1,7 @@
 import React from 'react'
 import { XCircle, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
 import { useTranslation } from 'react-i18next'
+import { formatDate, formatDayMonth } from '../../../utils/formatters'
 import type { SubcontractorStatus } from '../types/supervisionTypes'
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 }
 
 const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadlines, needsAttention }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const allClear = overdueTasks.length === 0 && criticalDeadlines.length === 0 && needsAttention.length === 0
 
   return (
@@ -30,7 +30,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{sub.name}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{sub.project_name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{sub.project_name || t('common.no_project')}</p>
                     <p className="text-sm text-red-600 font-medium mt-2">
                       {t('dashboards.supervision.days_overdue', { days: Math.abs(sub.days_until_deadline) })} • {sub.progress}% {t('dashboards.supervision.paid_out')}
                     </p>
@@ -38,7 +38,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                   <div className="text-right">
                     <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboards.supervision.deadline_was')}</p>
                     <p className="text-sm font-medium text-red-700 dark:text-red-400">
-                      {sub.deadline ? format(parseISO(sub.deadline), 'MMM dd, yyyy') : t('dashboards.supervision.na')}
+                      {sub.deadline ? formatDate(sub.deadline, i18n.language) : t('dashboards.supervision.na')}
                     </p>
                   </div>
                 </div>
@@ -62,7 +62,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{sub.name}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{sub.project_name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{sub.project_name || t('common.no_project')}</p>
                     <p className="text-sm text-orange-600 font-medium mt-2">
                       {t('dashboards.supervision.days_remaining', { days: sub.days_until_deadline })} • {sub.progress}% {t('dashboards.supervision.paid_out')}
                     </p>
@@ -70,7 +70,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                   <div className="text-right">
                     <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboards.supervision.due')}</p>
                     <p className="text-sm font-medium text-orange-700 dark:text-orange-400">
-                      {sub.deadline ? format(parseISO(sub.deadline), 'MMM dd, yyyy') : t('dashboards.supervision.na')}
+                      {sub.deadline ? formatDate(sub.deadline, i18n.language) : t('dashboards.supervision.na')}
                     </p>
                   </div>
                 </div>
@@ -94,7 +94,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">{sub.name}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{sub.project_name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{sub.project_name || t('common.no_project')}</p>
                     <p className="text-sm text-yellow-600 font-medium mt-2">
                       {t('dashboards.supervision.no_work_logs_week')} • {sub.progress}% {t('dashboards.supervision.paid_out')}
                     </p>
@@ -102,7 +102,7 @@ const SupervisionIssuesView: React.FC<Props> = ({ overdueTasks, criticalDeadline
                   <div className="text-right">
                     <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboards.supervision.last_activity_label')}</p>
                     <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
-                      {sub.last_activity ? format(parseISO(sub.last_activity), 'MMM dd') : t('dashboards.supervision.none')}
+                      {sub.last_activity ? formatDayMonth(sub.last_activity, i18n.language) : t('dashboards.supervision.none')}
                     </p>
                   </div>
                 </div>

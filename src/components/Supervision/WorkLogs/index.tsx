@@ -4,66 +4,28 @@ import {
   ClipboardCheck,
   Plus,
   Calendar,
-  AlertTriangle,
-  CheckCircle2,
-  Loader,
-  AlertCircle,
-  CloudRain,
-  Package,
   Edit2,
   Trash2,
-  Palette,
-  Wrench,
-  HelpCircle
+  Wrench
 } from 'lucide-react'
-import { LoadingSpinner, PageHeader, Modal, Button, Badge, Input, Select, Textarea, Card, EmptyState, Form, FormField, ConfirmDialog } from '../../ui'
-import { format } from 'date-fns'
+import { LoadingSpinner, PageHeader, Modal, Button, Input, Select, Textarea, Card, EmptyState, ErrorState, Alert, Form, FormField, ConfirmDialog } from '../../ui'
 import { useWorkLogs } from './hooks/useWorkLogs'
-import type { WorkLog, WorkLogStatus } from './services/workLogService'
+import type { WorkLogStatus } from './services/workLogService'
+import { statusConfig, stripeClass } from './workLogStatus'
+import { StatusBadge } from './StatusBadge'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
-
-const statusConfig = {
-  work_finished: { tKey: 'supervision.work_logs.status.work_finished', icon: CheckCircle2, color: 'green' },
-  in_progress: { tKey: 'supervision.work_logs.status.in_progress', icon: Loader, color: 'blue' },
-  blocker: { tKey: 'supervision.work_logs.status.blocker', icon: AlertTriangle, color: 'red' },
-  quality_issue: { tKey: 'supervision.work_logs.status.quality_issue', icon: AlertCircle, color: 'orange' },
-  waiting_materials: { tKey: 'supervision.work_logs.status.waiting_materials', icon: Package, color: 'yellow' },
-  weather_delay: { tKey: 'supervision.work_logs.status.weather_delay', icon: CloudRain, color: 'gray' },
-}
-
-const variantMap: Record<string, 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 'orange'> = {
-  green: 'green', red: 'red', yellow: 'yellow', blue: 'blue', gray: 'gray', orange: 'orange',
-}
-
-// `work_logs.status` is a nullable column with no default, so a row can legitimately carry no
-// status — anything written before the column existed, or outside this form. Without a fallback
-// the lookup returns undefined and the whole page unmounts on one such row.
-const unknownStatusConfig = {
-  tKey: 'supervision.work_logs.status.unknown',
-  icon: HelpCircle,
-  color: 'gray',
-} as const
-
-function StatusBadge({ status }: { status: WorkLog['status'] }) {
-  const { t } = useTranslation()
-  const config = (status ? statusConfig[status] : undefined) ?? unknownStatusConfig
-  const Icon = config.icon
-  return (
-    <Badge variant={variantMap[config.color] || 'gray'}>
-      <Icon className="w-3 h-3 mr-1" />
-      {t(config.tKey)}
-    </Badge>
-  )
-}
+import { formatDate, formatDateTime } from '../../../utils/formatters'
 
 const WorkLogs: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     workLogs,
     projects,
     phases,
     contracts,
     loading,
+    error,
+    refetch,
     showForm,
     editingLog,
     formData,
@@ -82,6 +44,7 @@ const WorkLogs: React.FC = () => {
   } = useWorkLogs()
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [errorDismissed, setErrorDismissed] = useState(false)
 
   const handleValidatedSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -93,10 +56,11 @@ const WorkLogs: React.FC = () => {
     if (!formData.work_description?.trim()) errors.work_description = t('supervision.work_logs.errors.description')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
-    handleSubmit(e)
+    // Returning the promise is what lets Form block re-submits and spin the submit button.
+    return handleSubmit(e)
   }
 
-  if (loading) {
+  if (loading && workLogs.length === 0) {
     return <LoadingSpinner message={t('supervision.work_logs.loading')} />
   }
 
@@ -107,6 +71,15 @@ const WorkLogs: React.FC = () => {
         description={t('supervision.work_logs.subtitle')}
         actions={<Button icon={Plus} onClick={openNewForm}>{t('supervision.work_logs.new_log')}</Button>}
       />
+
+      {error && workLogs.length > 0 && !errorDismissed && (
+        <Alert variant="error" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            <Button size="sm" variant="secondary" onClick={refetch} loading={loading}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
 
       <Modal show={showForm} onClose={closeForm} size="md">
         <Modal.Header
@@ -222,27 +195,6 @@ const WorkLogs: React.FC = () => {
                 placeholder={t('supervision.work_logs.form.notes_placeholder')}
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                <Palette className="w-4 h-4 inline mr-1" />
-                {t('supervision.work_logs.form.color_label')}
-              </label>
-              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                {['blue', 'green', 'red', 'yellow', 'orange', 'purple', 'pink', 'gray'].map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, color })}
-                    className={`h-10 rounded-lg border-2 transition-all ${
-                      formData.color === color ? 'border-gray-900 dark:border-white scale-110' : 'border-gray-300 dark:border-gray-600'
-                    }`}
-                    style={{ backgroundColor: color === 'yellow' ? '#fbbf24' : color === 'orange' ? '#f97316' : color === 'purple' ? '#a855f7' : color === 'pink' ? '#ec4899' : color === 'gray' ? '#6b7280' : color }}
-                    title={color}
-                  />
-                ))}
-              </div>
-            </div>
           </Modal.Body>
 
           <Modal.Footer>
@@ -262,7 +214,13 @@ const WorkLogs: React.FC = () => {
           </h2>
         </div>
         <div className="p-6">
-          {workLogs.length === 0 ? (
+          {error && workLogs.length === 0 ? (
+            /* "No work logs yet" is a statement about the site. A failed read is not entitled
+               to make it, so the list area carries the failure instead. */
+            <Card variant="bordered" padding="lg" className="bg-gray-50 dark:bg-gray-700/50">
+              <ErrorState onRetry={refetch} />
+            </Card>
+          ) : workLogs.length === 0 ? (
             <Card variant="bordered" padding="lg" className="bg-gray-50 dark:bg-gray-700/50">
               <EmptyState
                 icon={Wrench}
@@ -275,8 +233,7 @@ const WorkLogs: React.FC = () => {
               {workLogs.map((log) => (
                 <div
                   key={log.id}
-                  className="border-l-4 rounded-lg hover:shadow-md transition-shadow bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
-                  style={{ borderLeftColor: log.color || 'blue' }}
+                  className={`border-l-4 rounded-lg hover:shadow-md transition-shadow bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 ${stripeClass(log.status)}`}
                 >
                   <Card variant="bordered" padding="md">
                     <div className="flex justify-between items-start mb-3">
@@ -296,14 +253,14 @@ const WorkLogs: React.FC = () => {
                         <div className="text-right mr-2">
                           <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm mb-1">
                             <Calendar className="w-4 h-4 mr-1" />
-                            {format(new Date(log.date), 'MMM dd, yyyy')}
+                            {formatDate(log.date, i18n.language)}
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {t('supervision.work_logs.logged')} {format(new Date(log.created_at), 'MMM dd, HH:mm')}
+                            {t('supervision.work_logs.logged')} {formatDateTime(new Date(log.created_at), i18n.language)}
                           </p>
                         </div>
-                        <Button size="icon-md" variant="ghost" icon={Edit2} onClick={() => openEditForm(log)} title="Edit" className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30" />
-                        <Button size="icon-md" variant="ghost" icon={Trash2} onClick={() => handleDelete(log.id)} title="Delete" className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" />
+                        <Button size="icon-md" variant="ghost-primary" icon={Edit2} onClick={() => openEditForm(log)} title={t('common.edit')} />
+                        <Button size="icon-md" variant="ghost-danger" icon={Trash2} onClick={() => handleDelete(log.id)} title={t('common.delete')} />
                       </div>
                     </div>
 

@@ -13,6 +13,12 @@ i18n
       en: { translation: en },
     },
     fallbackLng: 'hr',
+    // A Croatian browser with nothing stored makes the detector report 'hr-HR', which matches no
+    // resource bundle and fails every `i18n.language === 'hr'` test in the app — those users got an
+    // English calendar. `load: 'languageOnly'` strips the region before lookup, and `supportedLngs`
+    // keeps anything else falling back to Croatian. See src/utils/locale.ts.
+    supportedLngs: ['hr', 'en'],
+    load: 'languageOnly',
     // Suppresses i18next's Locize promo console.info on every dev boot.
     showSupportNotice: false,
     detection: {

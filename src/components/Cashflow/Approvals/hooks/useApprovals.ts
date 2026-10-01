@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../../../contexts/AuthContext'
+import { toLoadError } from '../../services/loadError'
 import {
   ApprovedInvoice,
   fetchApprovedInvoices,
@@ -18,6 +19,11 @@ interface UseApprovalsResult {
   filteredInvoices: ApprovedInvoice[]
   stats: ApprovalsStats
   loading: boolean
+  /** The last load failure, or null. Non-null with `invoices` empty means "we don't know",
+   *  never "everything is processed" — the page must not render its empty state then. */
+  error: Error | null
+  refetch: () => Promise<void>
+  dismissError: () => void
   searchTerm: string
   setSearchTerm: (term: string) => void
   selectedIds: Set<string>
@@ -35,6 +41,7 @@ export function useApprovals(): UseApprovalsResult {
   const { user } = useAuth()
   const [invoices, setInvoices] = useState<ApprovedInvoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [stats, setStats] = useState<ApprovalsStats>({
@@ -45,6 +52,7 @@ export function useApprovals(): UseApprovalsResult {
 
   const load = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await fetchApprovedInvoices()
       setInvoices(data)
@@ -54,6 +62,7 @@ export function useApprovals(): UseApprovalsResult {
       setStats({ totalInvoices: data.length, totalAmount, oldestInvoice })
     } catch (error) {
       console.error('Error fetching approved invoices:', error)
+      setError(toLoadError(error))
     } finally {
       setLoading(false)
     }
@@ -124,6 +133,9 @@ export function useApprovals(): UseApprovalsResult {
     filteredInvoices,
     stats,
     loading,
+    error,
+    refetch: load,
+    dismissError: () => setError(null),
     searchTerm,
     setSearchTerm,
     selectedIds,

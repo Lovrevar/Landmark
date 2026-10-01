@@ -13,7 +13,7 @@ export interface BankeCredit {
   outstanding_balance: number
   interest_rate: number
   start_date: string
-  maturity_date: string
+  maturity_date: string | null
   usage_expiration_date: string | null
   status: string
   purpose: string

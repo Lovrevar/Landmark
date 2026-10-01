@@ -1,8 +1,10 @@
 import React from 'react'
-import { CreditCard, Building2, ChevronDown, ChevronUp, TrendingUp, Plus } from 'lucide-react'
-import { format } from 'date-fns'
+import { CreditCard, ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { PageHeader, LoadingSpinner, StatGrid, Modal, FormField, Input, Select, Textarea, Button, Badge, EmptyState, Form, ConfirmDialog } from '../../ui'
+import { PageHeader, LoadingSpinner, Modal, FormField, Input, Select, Textarea, Button, EmptyState, ErrorState, Alert, Form, ConfirmDialog } from '../../ui'
+import { formatEuro } from '../../../utils/formatters'
+import { CreditBadges, CreditUsageTiles, CreditDetailsGrid } from './CreditSummary'
+import { calculateCreditUsage } from './utils/creditUsage'
 import AllocationRow from './AllocationRow'
 import CreditDisbursements from './CreditDisbursements'
 import CreditRepayments from './CreditRepayments'
@@ -11,6 +13,7 @@ import { useCreditManagement } from './hooks/useCreditManagement'
 
 const CreditsManagement: React.FC = () => {
   const { t } = useTranslation()
+  const [errorDismissed, setErrorDismissed] = React.useState(false)
   const {
     credits,
     allocations,
@@ -18,6 +21,8 @@ const CreditsManagement: React.FC = () => {
     expandedCredits,
     expandedAllocations,
     loading,
+    error,
+    refetch,
     projects,
     companies,
     banks,
@@ -38,7 +43,20 @@ const CreditsManagement: React.FC = () => {
     fieldErrors,
   } = useCreditManagement()
 
-  if (loading) {
+  // What is still free on the credit the allocation modal is open on. Computed by the same helper
+  // as the tile behind the modal, so the two cannot disagree.
+  const selectedCreditAllocations = selectedCredit ? allocations.get(selectedCredit.id) || [] : []
+  const modalUnallocated = selectedCredit
+    ? calculateCreditUsage({
+        amount: selectedCredit.amount,
+        disbursedToAccount: selectedCredit.disbursed_to_account,
+        totalAllocated: selectedCreditAllocations.reduce((sum, a) => sum + a.allocated_amount, 0),
+        usedInAllocations: selectedCreditAllocations.reduce((sum, a) => sum + (a.used_amount || 0), 0),
+        unallocatedDisbursements: disbursedAmounts.get(selectedCredit.id) || 0,
+      }).unallocated
+    : 0
+
+  if (loading && credits.length === 0) {
     return <LoadingSpinner message={t('funding.investments.loading')} />
   }
 
@@ -49,7 +67,20 @@ const CreditsManagement: React.FC = () => {
         description={t('funding.investments.description')}
       />
 
-      {credits.length === 0 ? (
+      {error && credits.length > 0 && !errorDismissed && (
+        <Alert variant="error" className="mb-4" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            <Button size="sm" variant="secondary" onClick={refetch} loading={loading}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {/* The hook has always returned this error; the screen used to drop it and render the
+          "no credit lines yet" empty state over a failed read of the whole credit register. */}
+      {error && credits.length === 0 ? (
+        <ErrorState onRetry={refetch} />
+      ) : credits.length === 0 ? (
         <EmptyState
           icon={CreditCard}
           title={t('funding.investments.no_investments_title')}
@@ -63,20 +94,6 @@ const CreditsManagement: React.FC = () => {
             const totalAllocated = creditAllocations.reduce((sum, alloc) => sum + alloc.allocated_amount, 0)
             const totalUsedInAllocations = creditAllocations.reduce((sum, alloc) => sum + (alloc.used_amount || 0), 0)
             const unallocatedDisbursements = disbursedAmounts.get(credit.id) || 0
-            const directlyDisbursed = credit.disbursed_to_account ? credit.amount : 0
-            const totalIskorišteno = credit.disbursed_to_account
-              ? directlyDisbursed
-              : totalUsedInAllocations + unallocatedDisbursements
-            const paidOut = totalIskorišteno
-            const remainingAllocated = credit.disbursed_to_account ? 0 : Math.max(0, totalAllocated - totalUsedInAllocations)
-            const unallocatedAmount = credit.disbursed_to_account
-              ? 0
-              : Math.max(0, credit.amount - totalAllocated - unallocatedDisbursements)
-            const allocationPercentage = credit.amount > 0 ? (totalAllocated / credit.amount) * 100 : 0
-            const remainingAllocatedPercentage = credit.amount > 0 ? (remainingAllocated / credit.amount) * 100 : 0
-            const usedPercentage = credit.amount > 0 ? (totalIskorišteno / credit.amount) * 100 : 0
-            const totalUsagePercentage = usedPercentage + remainingAllocatedPercentage
-            const netUsed = (credit.used_amount || 0) + paidOut - (credit.repaid_amount || 0)
 
             return (
               <div key={credit.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -99,16 +116,7 @@ const CreditsManagement: React.FC = () => {
                           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                             {credit.credit_name || t('funding.investments.unnamed_credit')}
                           </h3>
-                          {credit.credit_type === 'equity' && (
-                            <Badge variant="purple">EQUITY</Badge>
-                          )}
-                          <Badge variant={
-                            credit.status.toLowerCase() === 'active' ? 'green' :
-                            credit.status.toLowerCase() === 'pending' ? 'yellow' :
-                            credit.status.toLowerCase() === 'closed' ? 'gray' : 'blue'
-                          }>
-                            {credit.status}
-                          </Badge>
+                          <CreditBadges credit={credit} />
                         </div>
                         <p className="text-gray-600 dark:text-gray-400 mt-1">
                           {credit.bank?.name || t('funding.investments.unknown_bank')}
@@ -118,7 +126,7 @@ const CreditsManagement: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900 dark:text-white">€{credit.amount.toLocaleString('hr-HR')}</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">{formatEuro(credit.amount)}</p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">{t('banks.index.credit.investment_amount')}</p>
                       </div>
                       {!credit.disbursed_to_account && (
@@ -129,127 +137,17 @@ const CreditsManagement: React.FC = () => {
                     </div>
                   </div>
 
-                  <StatGrid columns={5} className="mt-4">
-                    <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
-                      <p className="text-sm text-blue-700 dark:text-blue-300">{t('banks.index.credit.investment_amount')}</p>
-                      <p className="text-lg font-bold text-blue-900 dark:text-blue-100">€{credit.amount.toLocaleString('hr-HR')}</p>
-                    </div>
-                    <div className="bg-slate-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                      <p className="text-sm text-slate-700 dark:text-gray-200">{t('banks.index.credit.allocated')}</p>
-                      <p className="text-lg font-bold text-slate-900 dark:text-white">€{totalAllocated.toLocaleString('hr-HR')}</p>
-                    </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
-                      <p className="text-sm text-orange-700 dark:text-orange-400">{t('banks.index.credit.paid_out')}</p>
-                      <p className="text-lg font-bold text-orange-900 dark:text-orange-300">€{paidOut.toLocaleString('hr-HR')}</p>
-                    </div>
-                    <div className={`p-3 rounded-lg ${netUsed > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-50 dark:bg-gray-700/50'}`}>
-                      <p className={`text-sm ${netUsed > 0 ? 'text-red-700 dark:text-red-400' : 'text-gray-700 dark:text-gray-200'}`}>{t('banks.index.credit.debt')}</p>
-                      <p className={`text-lg font-bold ${netUsed > 0 ? 'text-red-900 dark:text-red-300' : 'text-gray-900 dark:text-white'}`}>
-                        €{(credit.outstanding_balance || 0).toLocaleString('hr-HR')}
-                      </p>
-                    </div>
-                    <div className={`p-3 rounded-lg ${unallocatedAmount < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
-                      <p className={`text-sm ${unallocatedAmount < 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>{t('banks.index.credit.unallocated')}</p>
-                      <p className={`text-lg font-bold ${unallocatedAmount < 0 ? 'text-red-900 dark:text-red-300' : 'text-green-900 dark:text-green-300'}`}>
-                        €{unallocatedAmount.toLocaleString('hr-HR')}
-                      </p>
-                    </div>
-                  </StatGrid>
-
-                  <div className="mt-4">
-                    <div className="flex justify-between mb-2">
-                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-medium text-gray-700 dark:text-gray-200">{t('funding.investments.investment_usage_label')}</span>
-                        {usedPercentage > 0 && (
-                          <span className="flex items-center gap-1">
-                            <span className="inline-block w-3 h-3 rounded-sm bg-orange-500"></span>
-                            {t('funding.investments.used_percent', { percent: usedPercentage.toFixed(1) })}
-                          </span>
-                        )}
-                        {remainingAllocatedPercentage > 0 && (
-                          <span className="flex items-center gap-1">
-                            <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
-                            {t('funding.investments.allocated_percent', { percent: remainingAllocatedPercentage.toFixed(1) })}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{totalUsagePercentage.toFixed(1)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3 flex overflow-hidden">
-                      <div
-                        className="h-3 bg-orange-500 transition-all duration-300"
-                        style={{ width: `${Math.min(100, usedPercentage)}%` }}
-                      />
-                      <div
-                        className={`h-3 transition-all duration-300 ${allocationPercentage > 100 ? 'bg-red-600' : 'bg-slate-500'}`}
-                        style={{ width: `${Math.min(100 - Math.min(100, usedPercentage), remainingAllocatedPercentage)}%` }}
-                      />
-                    </div>
-                    {allocationPercentage > 100 && (
-                      <p className="text-xs text-red-600 mt-1">
-                        {t('funding.investments.over_allocated', { amount: (totalAllocated - credit.amount).toLocaleString('hr-HR') })}
-                      </p>
-                    )}
-                  </div>
+                  <CreditUsageTiles
+                    credit={credit}
+                    totalAllocated={totalAllocated}
+                    usedInAllocations={totalUsedInAllocations}
+                    unallocatedDisbursements={unallocatedDisbursements}
+                  />
                 </div>
 
                 {isExpanded && (
                   <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-gray-900 dark:text-white flex items-center">
-                          <Building2 className="w-5 h-5 mr-2" />
-                          {t('banks.index.credit.credit_details')}
-                        </h4>
-                        <div className="space-y-3 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.loan_type_label')}</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{credit.credit_type}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.interest_rate_label')}</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{credit.interest_rate}%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.outstanding_balance_label')}</span>
-                            <span className="font-medium text-gray-900 dark:text-white">€{(credit.outstanding_balance || 0).toLocaleString('hr-HR')}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.repaid_amount_label')}</span>
-                            <span className="font-medium text-green-600">€{(credit.repaid_amount || 0).toLocaleString('hr-HR')}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-gray-900 dark:text-white flex items-center">
-                          <TrendingUp className="w-5 h-5 mr-2" />
-                          {t('banks.index.credit.dates_timeline')}
-                        </h4>
-                        <div className="space-y-3 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.start_date_label')}</span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              {format(new Date(credit.start_date), 'MMM dd, yyyy')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.maturity_date_label')}</span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              {format(new Date(credit.maturity_date), 'MMM dd, yyyy')}
-                            </span>
-                          </div>
-                          {credit.usage_expiration_date && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 dark:text-gray-400">{t('banks.index.credit.usage_expiration_label')}</span>
-                              <span className="font-medium text-gray-900 dark:text-white">
-                                {format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <CreditDetailsGrid credit={credit} />
 
                     {creditAllocations.length > 0 && (
                       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -299,8 +197,10 @@ const CreditsManagement: React.FC = () => {
             {selectedCredit && (
               <div>
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('funding.investments.allocation_modal.credit_label')} {selectedCredit.credit_name}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {t('funding.investments.allocation_modal.unallocated_label')} {(selectedCredit.amount - (allocations.get(selectedCredit.id) || []).reduce((sum, a) => sum + a.allocated_amount, 0)).toLocaleString('hr-HR')}
+                {/* The same figure as the "Nealocirano" tile, from the same helper: the modal used
+                    to leave direct drawdowns out, so it offered money the tile had already spent. */}
+                <p className={`text-sm ${modalUnallocated < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                  {t('funding.investments.allocation_modal.unallocated_label')} {formatEuro(modalUnallocated)}
                 </p>
               </div>
             )}

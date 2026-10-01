@@ -5,6 +5,14 @@
 // across Projects, Supervision, Sales, Cashflow, Funding, Retail and Tasks so the
 // app can be showcased with realistic, mutually consistent numbers.
 //
+// Documents, Chat and Calendar are seeded too. The demo PDFs are generated in
+// this file and uploaded to the `documents` Storage bucket, so a document really
+// opens when it is clicked instead of 404-ing mid-presentation.
+//
+// One deliberate inconsistency: calendar events (and chat timestamps) are anchored
+// to the REAL current week, while every other table uses fixed 2026 dates. A demo
+// calendar that opens on an empty month is worse than one whose dates drift.
+//
 // Derived fields (invoice status/paid amounts, contract realizacija, bank account
 // balances, credit utilization) are NOT set by hand — the DB triggers compute them
 // from the payments we insert, exactly as in production use.
@@ -12,15 +20,27 @@
 // Usage:  node --env-file=.env scripts/seed-demo-data.mjs
 
 import { createClient } from '@supabase/supabase-js'
+import { createHash } from 'node:crypto'
 
-const EXPECTED_PROJECT = 'nxvbglegqcgxlxvyfuht' // shared dev/test project (same as E2E allowlist)
+// An allowlist, not a deny-prod list, so a misconfigured environment fails closed.
+// Production (Landmark, xhlgviunhitdgzkeucxc) is deliberately absent and must never
+// be added — this script wipes every business table.
+const SEEDABLE_PROJECTS = [
+  'nxvbglegqcgxlxvyfuht', // LandmarkDev  — shared dev/test project (same as the E2E allowlist)
+  'asvuyvmuzroyrzlgyzij', // LandmarkDemo — the showcase instance
+]
 
 const url = process.env.VITE_SUPABASE_URL
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!url || !key) throw new Error('VITE_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing (run with --env-file=.env)')
-if (!url.includes(EXPECTED_PROJECT)) {
-  throw new Error(`Safety check failed: ${url} is not the expected test project (${EXPECTED_PROJECT}). Refusing to wipe.`)
+if (!SEEDABLE_PROJECTS.some((ref) => url.includes(ref))) {
+  throw new Error(`Safety check failed: ${url} is not a seedable project (${SEEDABLE_PROJECTS.join(', ')}). Refusing to wipe.`)
 }
+
+// The Playwright suite runs against LandmarkDev only. Its fixture project is seeded
+// there and nowhere else — on the demo instance it is just a stray row called
+// "E2E Anchor Project" sitting in the project list during a presentation.
+const IS_E2E_TARGET = url.includes('nxvbglegqcgxlxvyfuht')
 
 const db = createClient(url, key, { auth: { persistSession: false } })
 
@@ -51,6 +71,113 @@ async function wipe(table, pk = 'id', kind = 'uuid') {
 
 const iso = (d) => d // dates passed as 'YYYY-MM-DD' strings
 
+// ---------- demo-file helpers ----------
+
+// Helvetica + WinAnsiEncoding covers s-caron and z-caron but not c-caron, c-acute
+// or d-stroke, so those are transliterated. Only the PDF's page text is affected;
+// file names and descriptions are DB text and keep full Croatian spelling.
+const WIN_ANSI = {
+  '€': 0x80, '„': 0x84, '…': 0x85, 'Š': 0x8a, 'Ž': 0x8e,
+  '‘': 0x91, '’': 0x92, '“': 0x93, '”': 0x94, '•': 0x95,
+  '–': 0x96, '—': 0x97, 'š': 0x9a, 'ž': 0x9e,
+}
+const TRANSLIT = { 'č': 'c', 'ć': 'c', 'Č': 'C', 'Ć': 'C', 'đ': 'd', 'Đ': 'D' }
+
+function winAnsi(str) {
+  const out = []
+  for (const ch of str) {
+    const t = TRANSLIT[ch]
+    if (t !== undefined) { out.push(t.charCodeAt(0)); continue }
+    const w = WIN_ANSI[ch]
+    if (w !== undefined) { out.push(w); continue }
+    const cp = ch.codePointAt(0)
+    out.push(cp < 0x100 ? cp : 0x3f) // '?'
+  }
+  return Buffer.from(out)
+}
+
+/** Minimal valid single-page PDF, so a seeded document opens in the viewer. */
+function makePdf(title, lines) {
+  const esc = (s) => s.replace(/([\\()])/g, '\\$1')
+  const content = winAnsi([
+    `BT /F1 15 Tf 56 782 Td (${esc(title)}) Tj ET`,
+    ...lines.map((l, i) => `BT /F1 10 Tf 56 ${744 - i * 17} Td (${esc(l)}) Tj ET`),
+  ].join('\n'))
+
+  const objs = [
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>'),
+    Buffer.from('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'),
+    Buffer.from('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>'),
+    Buffer.from('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'),
+    Buffer.concat([Buffer.from(`<< /Length ${content.length} >>\nstream\n`), content, Buffer.from('\nendstream')]),
+  ]
+
+  const chunks = [Buffer.from('%PDF-1.4\n')]
+  let len = chunks[0].length
+  const offsets = []
+  for (let i = 0; i < objs.length; i++) {
+    offsets.push(len)
+    const c = Buffer.concat([Buffer.from(`${i + 1} 0 obj\n`), objs[i], Buffer.from('\nendobj\n')])
+    chunks.push(c)
+    len += c.length
+  }
+  let tail = `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`
+  for (const off of offsets) tail += `${String(off).padStart(10, '0')} 00000 n \n`
+  tail += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${len}\n%%EOF\n`
+  chunks.push(Buffer.from(tail))
+  return Buffer.concat(chunks)
+}
+
+/** Storage-safe object key: strip diacritics, keep the extension readable. */
+const slugName = (s) => s
+  .normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+  .replace(/[^A-Za-z0-9._-]+/g, '_')
+  .replace(/\.{2,}/g, '.')
+
+/** Generate a PDF, upload it, and return what the `documents` row needs. */
+async function putPdf(fileName, title, lines) {
+  const bytes = makePdf(title, lines)
+  const path = `${uid()}/${slugName(fileName)}`
+  const { error } = await db.storage.from('documents')
+    .upload(path, bytes, { contentType: 'application/pdf', upsert: true })
+  if (error) throw new Error(`upload ${path}: ${error.message}`)
+  return { path, size: bytes.length, hash: createHash('sha256').update(bytes).digest('hex') }
+}
+
+/**
+ * Delete every object in a bucket. Without this, each reseed orphans the previous
+ * run's files — the `documents` rows go, the Storage objects stay and bill.
+ * Objects live at `<uuid>/<name>`, so this lists one level deep. A listing entry
+ * with a null `id` is a folder, not a file.
+ */
+async function wipeBucket(bucket) {
+  const { data: top, error } = await db.storage.from(bucket).list('', { limit: 1000 })
+  if (error) { console.log(`  ! skipped storage wipe (${bucket}): ${error.message}`); return }
+  const paths = []
+  for (const entry of top ?? []) {
+    if (entry.id) { paths.push(entry.name); continue }
+    const { data: inner } = await db.storage.from(bucket).list(entry.name, { limit: 1000 })
+    for (const f of inner ?? []) paths.push(`${entry.name}/${f.name}`)
+  }
+  if (!paths.length) { console.log(`  - ${bucket}: already empty`); return }
+  const { error: rmErr } = await db.storage.from(bucket).remove(paths)
+  if (rmErr) console.log(`  ! storage remove (${bucket}): ${rmErr.message}`)
+  else console.log(`  - wiped ${paths.length} object(s) from ${bucket}`)
+}
+
+// ---------- clock helpers (chat + calendar are anchored to the real today) ----------
+
+const NOW = new Date()
+const hoursAgo = (h) => new Date(NOW.getTime() - h * 3600_000).toISOString()
+const daysAgo = (d, h = 10, m = 0) => {
+  const x = new Date(NOW)
+  x.setDate(x.getDate() - d)
+  x.setHours(h, m, 0, 0)
+  return x.toISOString()
+}
+
+
 // ---------- main ----------
 
 console.log(`Seeding demo data into ${url}`)
@@ -75,6 +202,8 @@ await wipe('ai_messages')
 await wipe('ai_sessions')
 await wipe('document_associations')
 await wipe('documents')
+await wipeBucket('documents')
+await wipeBucket('chat-attachments')
 await wipe('chat_messages')
 await wipe('chat_participants')
 await wipe('chat_conversations')
@@ -170,8 +299,10 @@ await ins('projects', [
   { id: P_MARJAN, name: 'Vila Marjan', location: 'Split — Marjan', status: 'In Progress', budget: 4200000, start_date: '2025-09-01', end_date: '2027-03-31', investor: 'Vlastita sredstva', aliases: ['Marjan'] },
   { id: P_CRNOMEREC, name: 'Kvart Črnomerec', location: 'Zagreb — Črnomerec', status: 'Planning', budget: 12000000, start_date: '2026-10-01', end_date: '2029-12-31', investor: 'HBOR (odobren kredit)', aliases: ['Črnomerec'] },
   { id: P_TRESNJEVKA, name: 'Stambena zgrada Trešnjevka', location: 'Zagreb — Trešnjevka', status: 'Completed', budget: 3100000, start_date: '2023-05-01', end_date: '2025-11-30', investor: 'Erste banka', aliases: ['Trešnjevka'] },
-  // E2E anchor kept so the Playwright suite still has its fixture project.
-  { id: P_ANCHOR, name: 'E2E Anchor Project', location: 'E2E', status: 'In Progress', budget: 0, start_date: iso('2026-01-01'), aliases: [] },
+  // Kept so the Playwright suite still has its fixture project — dev target only.
+  ...(IS_E2E_TARGET
+    ? [{ id: P_ANCHOR, name: 'E2E Anchor Project', location: 'E2E', status: 'In Progress', budget: 0, start_date: iso('2026-01-01'), aliases: [] }]
+    : []),
 ])
 
 const PH_J1 = uid(), PH_J2 = uid(), PH_J3 = uid(), PH_J4 = uid(), PH_J5 = uid()
@@ -739,6 +870,482 @@ await ins('task_assignees', [
   { id: uid(), task_id: taskRows[0].id, assignee_id: director.auth_user_id },
 ])
 
+// ---------- 11. DOCUMENTS: category tree, generated PDFs, associations ----------
+
+// The category tree ships in no migration, so the seeder owns it. Upserted on the
+// unique `code` rather than wiped: a category is reference data, and the Documents
+// page, the upload modal and the sort-document classifier all read it.
+// Three paths are special-cased by DocumentUploadModal and must keep their spelling:
+// PRAVNO/KUPOPRODAJNI_UGOVORI (seller picker), PRODAJA (unit + customer pickers),
+// FINANCIJE (credit picker).
+const CATEGORY_DEFS = [
+  { code: 'PROJEKTNA', name: 'Projektna dokumentacija', order: 1 },
+  { code: 'GLAVNI_PROJEKT', parent: 'PROJEKTNA', name: 'Glavni projekt', order: 1, required: ['project'] },
+  { code: 'IZVEDBENI_PROJEKT', parent: 'PROJEKTNA', name: 'Izvedbeni projekt', order: 2, required: ['project'] },
+  { code: 'DOZVOLE', parent: 'PROJEKTNA', name: 'Dozvole i suglasnosti', order: 3, required: ['project'] },
+
+  { code: 'GRADILISTE', name: 'Gradilište', order: 2 },
+  { code: 'GRADEVINSKI_DNEVNIK', parent: 'GRADILISTE', name: 'Građevinski dnevnik', order: 1, required: ['project'] },
+  { code: 'SITUACIJE', parent: 'GRADILISTE', name: 'Situacije i obračuni', order: 2, required: ['contract'] },
+  { code: 'ATESTI', parent: 'GRADILISTE', name: 'Atesti i izjave o svojstvima', order: 3 },
+  { code: 'ZAPISNICI', parent: 'GRADILISTE', name: 'Zapisnici i primopredaje', order: 4, required: ['project'] },
+
+  { code: 'PRAVNO', name: 'Pravna dokumentacija', order: 3 },
+  { code: 'UGOVORI_PODIZVODACI', parent: 'PRAVNO', name: 'Ugovori s podizvođačima', order: 1, required: ['subcontractor'] },
+  { code: 'KUPOPRODAJNI_UGOVORI', parent: 'PRAVNO', name: 'Kupoprodajni ugovori (zemljište)', order: 2 },
+
+  { code: 'PRODAJA', name: 'Prodaja', order: 4 },
+  { code: 'PRODAJNI_UGOVORI', parent: 'PRODAJA', name: 'Ugovori o kupoprodaji nekretnine', order: 1, required: ['unit', 'customer'] },
+  { code: 'PONUDE', parent: 'PRODAJA', name: 'Ponude i rezervacije', order: 2 },
+
+  { code: 'FINANCIJE', name: 'Financije', order: 5 },
+  { code: 'KREDITNA_DOKUMENTACIJA', parent: 'FINANCIJE', name: 'Kreditna dokumentacija', order: 1, required: ['credit'] },
+  { code: 'BANKOVNI_IZVODI', parent: 'FINANCIJE', name: 'Bankovni izvodi', order: 2 },
+
+  { code: 'RACUNOVODSTVO', name: 'Računovodstvo', order: 6 },
+  { code: 'ULAZNI_RACUNI', parent: 'RACUNOVODSTVO', name: 'Ulazni računi', order: 1 },
+  { code: 'IZLAZNI_RACUNI', parent: 'RACUNOVODSTVO', name: 'Izlazni računi', order: 2 },
+]
+
+const catId = {}
+// Two passes: parent_id is an FK, so roots must exist before their children.
+for (const isChild of [false, true]) {
+  const batch = CATEGORY_DEFS.filter((d) => Boolean(d.parent) === isChild)
+  const { data, error } = await db
+    .from('document_categories')
+    .upsert(
+      batch.map((d) => ({
+        code: d.code,
+        name_hr: d.name,
+        parent_id: d.parent ? catId[d.parent] : null,
+        path: d.parent ? `${d.parent}/${d.code}` : d.code,
+        display_order: d.order,
+        required_associations: d.required ?? [],
+        is_active: true,
+      })),
+      { onConflict: 'code' },
+    )
+    .select('id, code')
+  if (error) throw new Error(`upsert document_categories: ${error.message}`)
+  for (const row of data) catId[row.code] = row.id
+}
+console.log(`  ~ document_categories: ${Object.keys(catId).length} upserted`)
+
+// `uploaded_by` is an AUTH user id (documents_uploaded_by_fkey -> auth.users),
+// unlike chat/calendar below, which reference public.users(id).
+const DOCS = [
+  {
+    file: 'Glavni projekt — Rezidencija Jarun (mapa 1).pdf', cat: 'GLAVNI_PROJEKT', at: '2026-02-12T09:20:00Z',
+    lines: [
+      'Investitor: AD Projekt Jarun d.o.o., OIB 34567890123',
+      'Građevina: stambena građevina, 2 lamele, 6 etaza',
+      'Lokacija: Zagreb — Jarun',
+      'Projektant: Arhitektonski studio Modul d.o.o.',
+      'Oznaka projekta: GP-2025-014, mapa 1/4 (arhitektura)',
+    ],
+    assoc: [['project', P_JARUN]],
+  },
+  {
+    file: 'Građevinska dozvola — Rezidencija Jarun.pdf', cat: 'DOZVOLE', at: '2026-02-28T11:05:00Z',
+    lines: [
+      'Klasa: UP/I-361-03/25-01/0042',
+      'Urbroj: 251-13-21/003-25-6',
+      'Izdaje: Grad Zagreb, Gradski ured za graditeljstvo',
+      'Datum izvršnosti: 28.02.2025.',
+      'Odobrava se građenje stambene građevine na k.c. 3412/1, k.o. Jarun.',
+    ],
+    assoc: [['project', P_JARUN], ['phase', PH_J1]],
+  },
+  {
+    file: 'Lokacijska dozvola — Kvart Črnomerec.pdf', cat: 'DOZVOLE', at: '2026-06-18T13:40:00Z',
+    lines: [
+      'Klasa: UP/I-350-05/26-01/0117',
+      'Izdaje: Grad Zagreb, Gradski ured za prostorno uređenje',
+      'Obuhvat: k.c. 981/2, 981/3, k.o. Črnomerec',
+      'Planirana GBP: 14.200 m2',
+    ],
+    assoc: [['project', P_CRNOMEREC]],
+  },
+  {
+    file: 'Glavni projekt — Vila Marjan.pdf', cat: 'GLAVNI_PROJEKT', at: '2026-08-14T08:10:00Z',
+    lines: [
+      'Investitor: AD Projekt Marjan d.o.o., OIB 45678901234',
+      'Građevina: stambena vila, 3 etaze, 5 stambenih jedinica',
+      'Lokacija: Split — Marjan',
+      'Oznaka projekta: GP-2025-031',
+    ],
+    assoc: [['project', P_MARJAN]],
+  },
+  {
+    file: 'Građevinski dnevnik — Jarun, lipanj 2026.pdf', cat: 'GRADEVINSKI_DNEVNIK', at: '2026-07-01T16:30:00Z',
+    lines: [
+      'Gradilište: Rezidencija Jarun, Zagreb',
+      'Izvoditelj: Tehnogradnja d.o.o.',
+      'Nadzorni inzenjer: Tomislav Klarić, Geo-Nadzor d.o.o.',
+      'Razdoblje: 01.06.2026. — 30.06.2026.',
+      'Radovi: armiranje i betoniranje ploce 4. kata, zidanje 3. kata.',
+      'Prosjecan broj radnika: 18.',
+    ],
+    assoc: [['project', P_JARUN], ['phase', PH_J2], ['subcontractor', S_TEHNO]],
+  },
+  {
+    file: '3. privremena situacija — Tehnogradnja.pdf', cat: 'SITUACIJE', at: '2026-07-03T10:15:00Z',
+    lines: [
+      'Ugovor: grubi građevinski radovi — Rezidencija Jarun',
+      'Izvoditelj: Tehnogradnja d.o.o., OIB 12345678901',
+      'Razdoblje: 01.06.2026. — 30.06.2026.',
+      'Vrijednost situacije: 412.500,00 €',
+      'Kumulativno izvršeno: 1.890.000,00 €',
+      'Ovjerio nadzorni inzenjer: Tomislav Klarić',
+    ],
+    assoc: [['project', P_JARUN], ['contract', CT_TEHNO_J], ['subcontractor', S_TEHNO]],
+  },
+  {
+    file: '2. privremena situacija — Elektro-Instal.pdf', cat: 'SITUACIJE', at: '2026-07-09T14:02:00Z',
+    lines: [
+      'Ugovor: elektroinstalaterski radovi — Rezidencija Jarun',
+      'Izvoditelj: Elektro-Instal d.o.o.',
+      'Razdoblje: 01.06.2026. — 30.06.2026.',
+      'Vrijednost situacije: 148.200,00 €',
+      'Napomena: razvod na 4. katu prenesen u sljedeću situaciju.',
+    ],
+    assoc: [['project', P_JARUN], ['contract', CT_ELEKTRO_J], ['subcontractor', S_ELEKTRO]],
+  },
+  {
+    file: 'Izjava o svojstvima — beton C30-37.pdf', cat: 'ATESTI', at: '2026-05-21T07:45:00Z',
+    lines: [
+      'Proizvod: beton razreda tlacne cvrstoce C30/37',
+      'Norma: HRN EN 206:2021',
+      'Proizvođac: Betonara Zagreb d.o.o.',
+      'Ugrađeno: ploca 3. i 4. kata, lamela A.',
+    ],
+    assoc: [['project', P_JARUN], ['subcontractor', S_TEHNO]],
+  },
+  {
+    file: 'Zapisnik o primopredaji radova — Trešnjevka.pdf', cat: 'ZAPISNICI', at: '2026-01-15T12:00:00Z',
+    lines: [
+      'Građevina: Stambena zgrada Trešnjevka, Zagreb',
+      'Datum primopredaje: 30.11.2025.',
+      'Utvrđeni nedostaci: 4, svi otklonjeni do 20.12.2025.',
+      'Jamstveni rok: 24 mjeseca od datuma primopredaje.',
+    ],
+    assoc: [['project', P_TRESNJEVKA], ['phase', PH_T2]],
+  },
+  {
+    file: 'Ugovor o izvođenju radova — Tehnogradnja.pdf', cat: 'UGOVORI_PODIZVODACI', at: '2026-03-04T09:00:00Z',
+    lines: [
+      'Narucšitelj: AD Projekt Jarun d.o.o.',
+      'Izvoditelj: Tehnogradnja d.o.o.',
+      'Predmet: grubi građevinski radovi — Rezidencija Jarun',
+      'Ugovorena vrijednost: 3.300.000,00 € (bez PDV-a)',
+      'Rok dovršetka: 30.09.2026.',
+      'Ugovorna kazna: 0,5 promila dnevno, najviše 5% vrijednosti.',
+    ],
+    assoc: [['subcontractor', S_TEHNO], ['contract', CT_TEHNO_J], ['project', P_JARUN]],
+  },
+  {
+    file: 'Kupoprodajni ugovor — k.c. 1247-3 Vrbovec.pdf', cat: 'KUPOPRODAJNI_UGOVORI', at: '2026-04-22T10:30:00Z',
+    lines: [
+      'Prodavatelj: OPG Vrbovec (zastupan po Geo-Nadzor d.o.o.)',
+      'Kupac: Adriatic Development d.o.o.',
+      'Predmet: k.c. 1247/3, k.o. Vrbovec, površine 8.400 m2',
+      'Kupoprodajna cijena: 268.000,00 €',
+      'Zemljišnoknjizni prijenos: proveden 09.05.2026.',
+    ],
+    assoc: [['subcontractor', S_GEO], ['company', C_PARENT]],
+  },
+  {
+    file: 'Ugovor o kupoprodaji — stan A-201.pdf', cat: 'PRODAJNI_UGOVORI', at: '2026-01-21T15:20:00Z',
+    lines: [
+      'Prodavatelj: AD Projekt Jarun d.o.o.',
+      'Predmet: stan A-201, 55,00 m2, 2. kat, lamela A',
+      'Kupoprodajna cijena: 189.750,00 €',
+      'Nacin plaćanja: stambeni kredit',
+      'Rok useljenja: 30.06.2027.',
+    ],
+    assoc: [['unit', aptIds['JA3']], ['customer', custIds[2]], ['project', P_JARUN]],
+  },
+  {
+    file: 'Ugovor o kupoprodaji — stan B-102.pdf', cat: 'PRODAJNI_UGOVORI', at: '2026-06-02T11:10:00Z',
+    lines: [
+      'Prodavatelj: AD Projekt Jarun d.o.o.',
+      'Predmet: stan B-102, 63,50 m2, 1. kat, lamela B',
+      'Kupoprodajna cijena: 206.375,00 €',
+      'Nacin plaćanja: obrocno, 36 rata',
+    ],
+    assoc: [['unit', aptIds['JB2']], ['customer', custIds[8]], ['project', P_JARUN]],
+  },
+  {
+    file: 'Ponuda — penthouse A-601.pdf', cat: 'PONUDE', at: '2026-09-02T09:55:00Z',
+    lines: [
+      'Predmet ponude: penthouse A-601, 110,50 m2, 6. kat',
+      'Cijena: 430.950,00 € (3.900,00 €/m2)',
+      'Uključeno: garazno mjesto G-12 i spremiste R-07',
+      'Ponuda vrijedi 15 dana od datuma izdavanja.',
+    ],
+    assoc: [['unit', aptIds['JA11']], ['project', P_JARUN]],
+  },
+  {
+    file: 'Ugovor o kreditu — Zagrebačka banka (Jarun).pdf', cat: 'KREDITNA_DOKUMENTACIJA', at: '2026-03-10T13:25:00Z',
+    lines: [
+      'Kreditor: Zagrebačka banka d.d.',
+      'Korisnik kredita: AD Projekt Jarun d.o.o.',
+      'Namjena: financiranje izgradnje — Rezidencija Jarun',
+      'Odobreni iznos: 5.200.000,00 €',
+      'Kamatna stopa: 4,10% godišnje',
+      'Instrument osiguranja: hipoteka na k.c. 3412/1, k.o. Jarun.',
+    ],
+    assoc: [['credit', K_JARUN], ['project', P_JARUN], ['company', C_JARUN]],
+  },
+  // The two email imports below are what the sort-document pipeline produces:
+  // source = 'email_import', a content_hash for retry dedup, and a description
+  // that carries Claude's classification reasoning.
+  {
+    file: 'Izvod br. 118 — ZABA, srpanj 2026.pdf', cat: 'BANKOVNI_IZVODI', at: '2026-08-01T06:12:00Z',
+    source: 'email_import',
+    desc: 'Automatski klasificirano: bankovni izvod. Prepoznat IBAN HR1223600001101234565 → Adriatic Development d.o.o. (Zagrebačka banka). Pouzdanost 0,94.',
+    lines: [
+      'Zagrebačka banka d.d. — izvod po transakcijskom racunu',
+      'IBAN: HR1223600001101234565',
+      'Vlasnik racuna: Adriatic Development d.o.o.',
+      'Izvod broj: 118, za razdoblje 01.07.2026. — 31.07.2026.',
+      'Pocetno stanje: 1.412.880,44 €',
+      'Završno stanje: 1.268.310,02 €',
+    ],
+    assoc: [['company', C_PARENT]],
+  },
+  {
+    file: 'Ulazni račun 2026-0431 — Termo-Vod.pdf', cat: 'ULAZNI_RACUNI', at: '2026-07-22T07:38:00Z',
+    source: 'email_import',
+    desc: 'Automatski klasificirano: ulazni račun izvoditelja instalacija. Prepoznat dobavljac Termo-Vod d.o.o. i poziv na ugovor za projekt Rezidencija Jarun. Pouzdanost 0,88.',
+    lines: [
+      'Izdavatelj: Termo-Vod d.o.o., OIB 45102938475',
+      'Primatelj: AD Projekt Jarun d.o.o., OIB 34567890123',
+      'Račun broj: 2026-0431, datum izdavanja 20.07.2026.',
+      'Osnovica 25%: 96.000,00 € — PDV: 24.000,00 €',
+      'Ukupno za plaćanje: 120.000,00 €',
+      'Dospijeće: 19.08.2026.',
+    ],
+    assoc: [['subcontractor', S_TERMO], ['project', P_JARUN], ['contract', CT_TERMO_J]],
+  },
+]
+
+const docRows = [], docAssocRows = []
+for (const d of DOCS) {
+  const up = await putPdf(d.file, d.file.replace(/\.pdf$/, ''), d.lines)
+  const id = uid()
+  const source = d.source ?? 'app_upload'
+  docRows.push({
+    id, file_path: up.path, file_name: d.file, file_size: up.size, mime_type: 'application/pdf',
+    category_id: catId[d.cat] ?? null, source, description: d.desc ?? null,
+    uploaded_by: authId, uploaded_at: d.at,
+    content_hash: source === 'email_import' ? up.hash : null,
+  })
+  for (const [entity_type, entity_id] of d.assoc) {
+    docAssocRows.push({ id: uid(), document_id: id, entity_type, entity_id })
+  }
+}
+console.log(`  + storage documents: ${docRows.length} PDF(s) uploaded`)
+await ins('documents', docRows)
+await ins('document_associations', docAssocRows)
+
+// ---------- 12. CHAT ----------
+
+// chat_* and calendar_* reference public.users(id) — NOT auth_user_id, which is
+// what tasks and documents use. Getting this wrong inserts cleanly and then shows
+// every message as coming from an unknown sender.
+const supervisionUser = supervisionUsers[0] ?? director
+const accountingUser = users.find((u) => u.role === 'Accounting') ?? director
+
+const convRows = [], partRows = [], msgRows = []
+
+/** Build a conversation, skipping a 1:1 that would collapse onto a single user. */
+function conversation({ name = null, isGroup = false, members, messages }) {
+  const unique = [...new Map(members.map((m) => [m.user.id, m])).values()]
+  if (!isGroup && unique.length < 2) {
+    // Happens only when a role user is missing and both sides fell back to the
+    // director. Silently seeding a self-chat would be worse than seeding nothing.
+    console.log('  ! skipped a 1:1 conversation — both sides resolved to the same user')
+    return
+  }
+  const convId = uid()
+  convRows.push({ id: convId, name, is_group: isGroup, created_by: unique[0].user.id, created_at: messages[0].at })
+  for (const m of unique) {
+    partRows.push({
+      id: uid(), conversation_id: convId, user_id: m.user.id,
+      joined_at: messages[0].at, last_read_at: m.readAt ?? NOW.toISOString(),
+    })
+  }
+  for (const msg of messages) {
+    msgRows.push({ id: uid(), conversation_id: convId, sender_id: msg.from.id, content: msg.text, created_at: msg.at })
+  }
+}
+
+// Director leaves both threads with one unread message, so the header badge shows
+// a "2" on stage instead of an empty circle.
+const DIRECTOR_READ_AT = hoursAgo(5)
+
+conversation({
+  members: [{ user: director, readAt: DIRECTOR_READ_AT }, { user: supervisionUser }],
+  messages: [
+    { from: supervisionUser, at: daysAgo(2, 8, 42), text: 'Tehnogradnja je predala 3. situaciju. Iznos 412.500 € — provjerio sam kolicine na gradilistu, sve prolazi.' },
+    { from: director, at: daysAgo(2, 9, 5), text: 'Je li nadzor već ovjerio?' },
+    { from: supervisionUser, at: daysAgo(2, 9, 11), text: 'Jest, Klarić je ovjerio jucer. Šaljem u knjigovodstvo danas.' },
+    { from: director, at: daysAgo(2, 9, 15), text: 'U redu. Samo pazi da ide na fazu 2, ne na fazu 3 — prošli put je završilo na krivoj fazi.' },
+    { from: supervisionUser, at: daysAgo(1, 7, 50), text: 'Proknjizeno na fazu 2. Elektro-Instal kasni s razvodom na 4. katu, javit ću novi termin.' },
+  ],
+})
+
+conversation({
+  members: [{ user: director, readAt: DIRECTOR_READ_AT }, { user: salesUser }],
+  messages: [
+    { from: salesUser, at: daysAgo(1, 14, 20), text: 'Imamo dva ozbiljna upita za penthouse A-601. Jedan trazi popust od 4%.' },
+    { from: director, at: daysAgo(1, 14, 31), text: 'Koliko je trenutna cijena?' },
+    { from: salesUser, at: daysAgo(1, 14, 33), text: '430.950 €. S popustom od 4% pali bismo na 413.712 €.' },
+    { from: salesUser, at: hoursAgo(3), text: 'Da pripremim ponudu s popustom ili drzimo cijenu još mjesec dana?' },
+  ],
+})
+
+conversation({
+  name: 'Rezidencija Jarun — koordinacija',
+  isGroup: true,
+  members: [
+    { user: director, readAt: DIRECTOR_READ_AT },
+    { user: supervisionUser }, { user: salesUser }, { user: accountingUser },
+  ],
+  messages: [
+    { from: director, at: daysAgo(5, 8, 0), text: 'Podsjetnik: koordinacija je utorkom u 9h u kontejneru nadzora na gradilistu.' },
+    { from: supervisionUser, at: daysAgo(4, 11, 24), text: 'Ploca 4. kata je završena. Krovomont dolazi na izmjeru sljedeći tjedan.' },
+    { from: accountingUser, at: daysAgo(1, 16, 5), text: 'Situacija Alu-Mont je plaćena, izvod je sjeo jutros. Ostaje još Termo-Vod, dospijeva 19.08.' },
+    { from: salesUser, at: hoursAgo(2), text: 'Dva stana u lameli B prelaze iz rezervacije u ugovor ovaj tjedan — B-202 i B-301.' },
+  ],
+})
+
+await ins('chat_conversations', convRows)
+await ins('chat_participants', partRows)
+await ins('chat_messages', msgRows)
+
+// ---------- 13. CALENDAR ----------
+
+// Anchored to the real current week: a demo calendar has to open on something.
+const WEEK_MONDAY = (() => {
+  const d = new Date(NOW)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)) // 0 = Monday
+  return d
+})()
+/** An instant in the current week, by offset from Monday. Used to align the series. */
+const slot = (dayOffset, h, m = 0) => {
+  const d = new Date(WEEK_MONDAY)
+  d.setDate(d.getDate() + dayOffset)
+  d.setHours(h, m, 0, 0)
+  return d.toISOString()
+}
+/** An instant N days from today — one-off events, always still ahead of the demo. */
+const inDays = (n, h, m = 0) => {
+  const d = new Date(NOW)
+  d.setDate(d.getDate() + n)
+  d.setHours(h, m, 0, 0)
+  return d.toISOString()
+}
+
+const E_KOORD = uid(), E_HBOR = uid(), E_ROK = uid(), E_PREZ = uid(), E_OSIG = uid(), E_UPRAVA = uid()
+
+// Weekly series anchored to a Tuesday two weeks back, so the calendar has history
+// as well as future occurrences. FREQ=WEEKLY with no BYDAY repeats on the DTSTART
+// weekday, which keeps the rule correct whatever day the seeder runs on.
+await ins('calendar_events', [
+  {
+    id: E_KOORD, title: 'Koordinacija gradilišta — Rezidencija Jarun', created_by: director.id,
+    description: 'Tjedni pregled napretka radova, situacija i zastoja.',
+    location: 'Gradilište Jarun — kontejner nadzora',
+    start_at: slot(-13, 9), end_at: slot(-13, 10, 30), event_type: 'meeting',
+    project_id: P_JARUN, recurrence: 'FREQ=WEEKLY;INTERVAL=1', reminder_offsets: [15, 60], busy: true,
+  },
+  {
+    id: E_HBOR, title: 'Sastanak s HBOR-om — Kvart Črnomerec', created_by: director.id,
+    description: 'Prezentacija projektne dokumentacije i dinamike povlacenja kredita.',
+    location: 'HBOR, Strojarska cesta 1, Zagreb',
+    start_at: inDays(3, 11), end_at: inDays(3, 12, 30), event_type: 'meeting',
+    project_id: P_CRNOMEREC, reminder_offsets: [60, 1440], busy: true,
+  },
+  {
+    id: E_ROK, title: 'Rok: dokumentacija za tehnicki pregled — Zgrada A', created_by: director.id,
+    description: 'Atesti, izjave izvoditelja i geodetski snimak izvedenog stanja.',
+    location: '', start_at: inDays(5, 0), end_at: inDays(6, 0), event_type: 'deadline',
+    project_id: P_JARUN, all_day: true, reminder_offsets: [1440], busy: false,
+  },
+  {
+    id: E_PREZ, title: 'Prezentacija projekta investitorima', created_by: salesUser.id,
+    description: 'Pregled prodajnih rezultata lamele A i plana za lamelu B.',
+    location: 'Ured — velika dvorana',
+    start_at: inDays(7, 14), end_at: inDays(7, 16), event_type: 'meeting',
+    project_id: P_JARUN, reminder_offsets: [30], busy: true,
+  },
+  {
+    id: E_OSIG, title: 'Produziti policu osiguranja gradilišta — Marjan', created_by: director.id,
+    description: 'Polica istjece krajem mjeseca, kontakt: Croatia osiguranje.',
+    location: '', start_at: inDays(9, 9), end_at: inDays(9, 9, 30), event_type: 'reminder',
+    project_id: P_MARJAN, reminder_offsets: [1440], busy: false,
+  },
+  {
+    id: E_UPRAVA, title: 'Priprema materijala za upravu', created_by: director.id,
+    description: 'Konsolidirani pregled po projektima za kvartalni sastanak.',
+    location: '', start_at: inDays(1, 16), end_at: inDays(1, 18), event_type: 'personal',
+    is_private: true, reminder_offsets: [], busy: true,
+  },
+])
+
+/** Dedupe on (event_id, user_id) — the table is unique on that pair. */
+const participantsFor = (eventId, entries) =>
+  [...new Map(entries.map((e) => [e.user.id, e])).values()].map((e) => ({
+    id: uid(), event_id: eventId, user_id: e.user.id, response: e.response,
+    acknowledged_at: e.response === 'pending' ? null : NOW.toISOString(),
+  }))
+
+await ins('calendar_event_participants', [
+  ...participantsFor(E_KOORD, [
+    { user: director, response: 'accepted' },
+    { user: supervisionUser, response: 'accepted' },
+    { user: salesUser, response: 'accepted' },
+  ]),
+  ...participantsFor(E_HBOR, [
+    { user: director, response: 'accepted' },
+    { user: accountingUser, response: 'pending' },
+  ]),
+  ...participantsFor(E_ROK, [{ user: director, response: 'accepted' }, { user: supervisionUser, response: 'accepted' }]),
+  // Director is left 'pending' here so the invitation badge in the header is non-zero
+  // when the demo is driven from the Director account.
+  ...participantsFor(E_PREZ, [
+    { user: salesUser, response: 'accepted' },
+    { user: director, response: 'pending' },
+    { user: accountingUser, response: 'pending' },
+  ]),
+  ...participantsFor(E_OSIG, [{ user: director, response: 'accepted' }]),
+  ...participantsFor(E_UPRAVA, [{ user: director, response: 'accepted' }]),
+])
+
+// Next week's coordination is pushed two hours later — demonstrates a per-occurrence
+// override without touching the series.
+await ins('calendar_event_exceptions', [
+  {
+    id: uid(), event_id: E_KOORD, original_start_at: slot(8, 9),
+    override_start_at: slot(8, 11), override_end_at: slot(8, 12, 30),
+    override_title: 'Koordinacija gradilišta — pomaknuto zbog betoniranja', is_cancelled: false,
+  },
+])
+
+// ...and supervision declines only the week after that, which is the occurrence-scope
+// RSVP shadowing the series-scope 'accepted' above.
+if (supervisionUser.id !== director.id) {
+  await ins('calendar_occurrence_responses', [
+    {
+      id: uid(), event_id: E_KOORD, user_id: supervisionUser.id,
+      original_start_at: slot(15, 9), response: 'declined', acknowledged_at: NOW.toISOString(),
+    },
+  ])
+}
+
 // ---------- summary ----------
 
 // Recompute phase budget_used from active/draft contracts (mirrors recalculate_all_phase_budgets;
@@ -757,7 +1364,7 @@ for (const [phaseId, used] of Object.entries(usedByPhase)) {
 console.log(`  ~ recalculated budget_used for ${Object.keys(usedByPhase).length} phases`)
 
 console.log('\nDone. Verifying counts…')
-const tables = ['projects', 'project_phases', 'project_milestones', 'subcontractors', 'contracts', 'subcontractor_milestones', 'work_logs', 'buildings', 'apartments', 'garages', 'repositories', 'customers', 'sales', 'accounting_companies', 'company_bank_accounts', 'banks', 'bank_credits', 'credit_allocations', 'accounting_invoices', 'accounting_payments', 'invoice_categories', 'monthly_budgets', 'retail_projects', 'retail_contracts', 'retail_sales', 'tasks']
+const tables = ['projects', 'project_phases', 'project_milestones', 'subcontractors', 'contracts', 'subcontractor_milestones', 'work_logs', 'buildings', 'apartments', 'garages', 'repositories', 'customers', 'sales', 'accounting_companies', 'company_bank_accounts', 'banks', 'bank_credits', 'credit_allocations', 'accounting_invoices', 'accounting_payments', 'invoice_categories', 'monthly_budgets', 'retail_projects', 'retail_contracts', 'retail_sales', 'tasks', 'document_categories', 'documents', 'document_associations', 'chat_conversations', 'chat_messages', 'calendar_events', 'calendar_event_participants']
 for (const t of tables) {
   const { count, error } = await db.from(t).select('*', { count: 'exact', head: true })
   console.log(`  ${t}: ${error ? 'ERR ' + error.message : count}`)

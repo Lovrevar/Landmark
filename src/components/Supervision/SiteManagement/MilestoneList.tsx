@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Edit2, Trash2, Calendar, X } from 'lucide-react'
-import { format } from 'date-fns'
 import { SubcontractorMilestone } from '../../../lib/supabase'
 import { MilestoneFormModal } from './modals/MilestoneFormModal'
 import {
@@ -12,6 +11,8 @@ import {
   deleteMilestone,
   getMilestoneStatsForContract
 } from './services/siteService'
+import { formatEuro, formatDate } from '../../../utils/formatters'
+import { MILESTONE_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import { MilestoneStats, MilestoneFormData } from './types'
 import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
@@ -21,7 +22,14 @@ interface MilestoneListProps {
   subcontractorName: string
   projectName: string
   phaseName: string
+  /**
+   * The contract's gross value (`contracts.contract_amount`, which a trigger keeps equal to
+   * `total_amount`). Milestone amounts are a percentage of it, so they are gross too — which is
+   * why "paid" below is gross payments rather than the net base of the linked invoices.
+   */
   contractCost: number
+  /** False hides the paid column, the paid tile and the payment-derived status. */
+  canManagePayments: boolean
   onClose: () => void
 }
 
@@ -31,9 +39,10 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   projectName,
   phaseName,
   contractCost,
+  canManagePayments,
   onClose
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const toast = useToast()
   const [milestones, setMilestones] = useState<SubcontractorMilestone[]>([])
   const [stats, setStats] = useState<MilestoneStats | null>(null)
@@ -142,7 +151,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -151,7 +160,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               {projectName} • {phaseName} • {subcontractorName}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {t('supervision.site_management.milestone_list.contract_base')}: €{contractCost.toLocaleString('hr-HR')}
+              {t('supervision.site_management.milestone_list.contract_gross')}: {formatEuro(contractCost)}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -165,17 +174,19 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
               variant="ghost"
               size="icon-md"
               icon={X}
+              title={t('common.close')}
+              aria-label={t('common.close')}
               onClick={onClose}
             />
           </div>
         </div>
 
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className={`grid grid-cols-2 gap-3 ${canManagePayments ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
             <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
               <p className="text-xs text-gray-600 dark:text-gray-400">{t('supervision.site_management.milestone_list.total_allocated')}</p>
               <p className="text-lg font-bold text-gray-900 dark:text-white">{stats.total_percentage.toFixed(2)}%</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">€{stats.total_amount.toLocaleString('hr-HR')}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{formatEuro(stats.total_amount)}</p>
             </div>
             <div className={`p-3 rounded-lg ${stats.remaining_percentage === 0 ? 'bg-green-50 dark:bg-green-900/20' : 'bg-orange-50 dark:bg-orange-900/20'}`}>
               <p className={`text-xs ${stats.remaining_percentage === 0 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
@@ -185,23 +196,27 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                 {stats.remaining_percentage.toFixed(2)}%
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                €{((contractCost * stats.remaining_percentage) / 100).toLocaleString('hr-HR')}
+                {formatEuro((contractCost * stats.remaining_percentage) / 100)}
               </p>
             </div>
             <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
               <p className="text-xs text-blue-600 dark:text-blue-400">{t('supervision.site_management.milestone_list.milestones')}</p>
               <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{milestones.length}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {stats.paid_count} {t('status.paid')}, {stats.pending_count} {t('status.pending')}
-              </p>
+              {canManagePayments && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {stats.paid_count} {t('status.paid')}, {stats.pending_count} {t('status.pending')}
+                </p>
+              )}
             </div>
-            <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
-              <p className="text-xs text-teal-600 dark:text-teal-400">{t('common.total_paid')}</p>
-              <p className="text-lg font-bold text-teal-900 dark:text-teal-300">€{stats.total_paid.toLocaleString('hr-HR')}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {contractCost > 0 ? ((stats.total_paid / contractCost) * 100).toFixed(1) : 0}% {t('supervision.site_management.milestone_list.of_contract')}
-              </p>
-            </div>
+            {canManagePayments && (
+              <div className="bg-teal-50 dark:bg-teal-900/20 p-3 rounded-lg">
+                <p className="text-xs text-teal-600 dark:text-teal-400">{t('common.total_paid')}</p>
+                <p className="text-lg font-bold text-teal-900 dark:text-teal-300">{formatEuro(stats.total_paid)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {contractCost > 0 ? ((stats.total_paid / contractCost) * 100).toFixed(1) : 0}% {t('supervision.site_management.milestone_list.of_contract')}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -223,14 +238,24 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.description')}</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('supervision.site_management.milestone_list.col_percentage')}</th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.amount')}</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.paid')}</th>
+                  {canManagePayments && (
+                    <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.paid')}</th>
+                  )}
                   <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('supervision.site_management.milestone_list.col_due_date')}</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.status')}</th>
+                  {/* Every value this column can take — pending / completed / paid — is set by
+                      the DB trigger from payments against the milestone, so it is a payment fact. */}
+                  {canManagePayments && (
+                    <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.status')}</th>
+                  )}
                   <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-200">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {milestones.map((milestone) => {
+                  // Both sides gross: the amount is a percentage of the contract's gross value
+                  // and `paid_amount` is the sum of the linked invoices' gross payments. It used
+                  // to be their net `base_amount`, so at 25% VAT a fully paid milestone read
+                  // "80% Djelomično" and could never reach "Plaćeno".
                   const amount = calculateAmount(milestone.percentage)
                   const paidAmount = milestone.paid_amount || 0
                   const isFullyPaid = paidAmount >= amount
@@ -255,36 +280,42 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                       </td>
                       <td data-label={t('common.amount')} className="py-3 px-4 text-right">
                         <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                          €{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatEuro(amount)}
                         </div>
                       </td>
-                      <td data-label={t('common.paid')} className="py-3 px-4 text-right">
-                        <div className="space-y-1">
-                          <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                            €{paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </div>
-                          {isPartiallyPaid && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {paymentPercentage.toFixed(1)}% {t('status.paid')}
+                      {canManagePayments && (
+                        <td data-label={t('common.paid')} className="py-3 px-4 text-right">
+                          <div className="space-y-1">
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {formatEuro(paidAmount)}
                             </div>
-                          )}
-                        </div>
-                      </td>
+                            {isPartiallyPaid && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {paymentPercentage.toFixed(1)}% {t('status.paid')}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      )}
                       <td data-label={t('supervision.site_management.milestone_list.col_due_date')} className="py-3 px-4">
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {milestone.due_date ? format(new Date(milestone.due_date), 'MMM dd, yyyy') : '-'}
+                          {milestone.due_date ? formatDate(milestone.due_date, i18n.language) : '-'}
                         </div>
                       </td>
-                      <td data-label={t('common.status')} className="py-3 px-4 text-center">
-                        <Badge variant={
-                          isFullyPaid ? 'green' :
-                          isPartiallyPaid ? 'yellow' :
-                          milestone.status === 'completed' ? 'blue' :
-                          'gray'
-                        } size="sm">
-                          {isFullyPaid ? t('status.paid') : isPartiallyPaid ? t('status.partial') : milestone.status.charAt(0).toUpperCase() + milestone.status.slice(1)}
-                        </Badge>
-                      </td>
+                      {canManagePayments && (
+                        <td data-label={t('common.status')} className="py-3 px-4 text-center">
+                          {/* Payment state first — it is computed from the money actually
+                              received and outranks the stored column, whose `completed` only
+                              means "some money landed". Otherwise the shared vocabulary. */}
+                          <Badge variant={
+                            isFullyPaid ? 'green' :
+                            isPartiallyPaid ? 'yellow' :
+                            statusVariant(MILESTONE_STATUS, milestone.status)
+                          } size="sm">
+                            {isFullyPaid ? t('status.paid') : isPartiallyPaid ? t('status.partial') : statusLabel(MILESTONE_STATUS, milestone.status, t)}
+                          </Badge>
+                        </td>
+                      )}
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-center space-x-2">
                           <Button
@@ -312,12 +343,14 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
                     {stats?.total_percentage.toFixed(2)}%
                   </td>
                   <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">
-                    €{stats?.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatEuro(stats?.total_amount)}
                   </td>
-                  <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">
-                    €{stats?.total_paid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td colSpan={3}></td>
+                  {canManagePayments && (
+                    <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">
+                      {formatEuro(stats?.total_paid)}
+                    </td>
+                  )}
+                  <td colSpan={canManagePayments ? 3 : 2}></td>
                 </tr>
               </tfoot>
             </table>

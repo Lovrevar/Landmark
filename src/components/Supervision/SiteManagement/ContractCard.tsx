@@ -1,10 +1,13 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Calendar, DollarSign, FileText, Trash2 } from 'lucide-react'
-import { format } from 'date-fns'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
+import { daysFromToday } from '../../../utils/dateOnly'
 import { ProjectWithPhases } from './types'
 import { Button, Badge } from '../../ui'
+import { isFullySettled } from './utils/contractTree'
+import { contractVariance } from '../../../utils/contractVariance'
+import { formatEuro, formatDate } from '../../../utils/formatters'
 
 interface ContractCardProps {
   subcontractor: Subcontractor
@@ -16,11 +19,17 @@ interface ContractCardProps {
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
+  /**
+   * False hides everything on this card that is derived from payments: the paid, remaining and
+   * variance rows, the status badge, the card's tint, and the Invoices button. The deadline keeps
+   * its red warning, falling back to "past due" on the date alone, which discloses no amount.
+   */
+  canManagePayments: boolean
 }
 
 /**
- * One contract, rendered as a card. Lifted verbatim out of PhaseCard when the tree gained a
- * third nesting level; the markup and the money it displays are unchanged.
+ * One contract, rendered as a card. Lifted out of PhaseCard when the tree gained a third nesting
+ * level.
  */
 export const ContractCard: React.FC<ContractCardProps> = ({
   subcontractor,
@@ -31,24 +40,39 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   onEditSubcontractor,
   onOpenSubDetails,
   onDeleteSubcontractor,
-  onManageMilestones
+  onManageMilestones,
+  canManagePayments
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const hasValidContract = subcontractor.has_contract !== false && subcontractor.cost > 0
   // One definition of paid across the app: contracts.budget_realized (see 20260910120000).
   const actualPaid = subcontractor.budget_realized || 0
-  const isOverdue = subcontractor.deadline ? new Date(subcontractor.deadline) < new Date() && actualPaid < subcontractor.cost : false
+  // `daysFromToday` compares calendar days in local time, so a contract due today is not
+  // overdue. `new Date('YYYY-MM-DD')` parsed as UTC midnight and made it overdue from 01:00.
+  // A missing deadline yields NaN, which is not < 0 — never overdue.
+  const isPastDue = daysFromToday(subcontractor.deadline) < 0
+  const isOverdue = isPastDue && actualPaid < subcontractor.cost
 
-  const subVariance = hasValidContract ? actualPaid - subcontractor.cost : 0
+  // Site Management lists only draft and active contracts, so "settled" here can only mean paid
+  // in full, and a saving never shows: the variance row appears only for an overrun.
+  const variance = hasValidContract
+    ? contractVariance({ contracted: subcontractor.cost, paid: actualPaid, settled: isFullySettled(subcontractor) })
+    : { kind: 'none' as const }
+  const isOverrun = variance.kind === 'overrun'
   const isPaid = hasValidContract && actualPaid >= subcontractor.cost
   const remainingToPay = hasValidContract ? Math.max(0, subcontractor.cost - actualPaid) : 0
+
+  // Every tint and badge below is a payment fact. Without payment rights the card keeps its
+  // neutral ground rather than a colour a reader could decode back into an amount.
+  const showPaymentState = canManagePayments
 
   return (
     <div key={subcontractor.id} className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
       !hasValidContract ? 'border-yellow-200 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20' :
-      subVariance > 0 ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' :
-      isPaid && subVariance === 0 ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' :
+      !showPaymentState ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50' :
+      isOverrun ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' :
+      isPaid ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' :
       actualPaid > 0 ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30' :
       'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
     }`}>
@@ -65,15 +89,15 @@ export const ContractCard: React.FC<ContractCardProps> = ({
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{subcontractor.contact}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{subcontractor.job_description}</p>
         </div>
-        {hasValidContract && (
+        {hasValidContract && showPaymentState && (
           <Badge variant={
-            subVariance > 0 ? 'red' :
-            isPaid && subVariance === 0 ? 'green' :
+            isOverrun ? 'red' :
+            isPaid ? 'green' :
             actualPaid > 0 ? 'blue' :
             'gray'
           } size="sm">
-            {subVariance > 0 ? t('status.over_budget') :
-             isPaid && subVariance === 0 ? t('status.paid') :
+            {isOverrun ? t('status.over_budget') :
+             isPaid ? t('status.paid') :
              actualPaid > 0 ? t('status.partial') : t('status.unpaid')}
           </Badge>
         )}
@@ -83,8 +107,13 @@ export const ContractCard: React.FC<ContractCardProps> = ({
         {subcontractor.deadline && (
           <div className="flex items-center justify-between">
             <span className="text-gray-600 dark:text-gray-400">{t('supervision.contract_fields.deadline')}:</span>
-            <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
-              {format(new Date(subcontractor.deadline), 'MMM dd, yyyy')}
+            {/* Red means "past due and not paid in full" — but a site manager, who sees no payment
+                figures, still needs the deadline warning, so for them it falls back to the date
+                alone. Both readings are "this one is late"; neither discloses an amount. */}
+            <span className={`font-medium ${
+              (showPaymentState ? isOverdue : isPastDue) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'
+            }`}>
+              {formatDate(subcontractor.deadline, i18n.language)}
             </span>
           </div>
         )}
@@ -92,41 +121,47 @@ export const ContractCard: React.FC<ContractCardProps> = ({
           <>
             <div className="flex items-center justify-between">
               <span className="text-gray-600 dark:text-gray-400">{t('common.contract')}:</span>
-              <span className="font-medium text-gray-900 dark:text-white">€{subcontractor.cost.toLocaleString('hr-HR')}</span>
+              <span className="font-medium text-gray-900 dark:text-white">{formatEuro(subcontractor.cost)}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600 dark:text-gray-400">{t('common.paid')}:</span>
-              <span className="font-medium text-teal-600">€{actualPaid.toLocaleString('hr-HR')}</span>
-            </div>
-            {remainingToPay > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">{t('common.remaining')}:</span>
-                <span className="font-medium text-orange-600">€{remainingToPay.toLocaleString('hr-HR')}</span>
-              </div>
+            {showPaymentState && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">{t('common.paid')}:</span>
+                  <span className="font-medium text-teal-600 dark:text-teal-400">{formatEuro(actualPaid)}</span>
+                </div>
+                {remainingToPay > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">{t('common.remaining')}:</span>
+                    <span className="font-medium text-orange-600 dark:text-orange-400">{formatEuro(remainingToPay)}</span>
+                  </div>
+                )}
+                {variance.kind !== 'none' && (
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span className="text-gray-600 dark:text-gray-400 font-medium">
+                      {variance.kind === 'overrun' ? t('common.contract_overrun') : t('common.contract_saving')}:
+                    </span>
+                    <span className={`font-bold ${variance.kind === 'overrun' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                      {formatEuro(variance.amount)}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-              <span className="text-gray-600 dark:text-gray-400 font-medium">{t('supervision.subcontractor_details.gain_loss')}:</span>
-              <span className={`font-bold ${
-                subVariance > 0 ? 'text-red-600' :
-                subVariance < 0 ? 'text-green-600' :
-                'text-gray-900 dark:text-white'
-              }`}>
-                {subVariance > 0 ? '-' : subVariance < 0 ? '+' : ''}€{Math.abs(subVariance).toLocaleString('hr-HR')}
-              </span>
-            </div>
           </>
-        ) : (
+        ) : showPaymentState ? (
+          /* An uncontracted row has nothing but payment figures: what was paid, and what
+             invoices say is still owed — which is the invoice total minus what was paid. */
           <>
             <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
               <span className="text-gray-600 dark:text-gray-400 font-medium">{t('supervision.subcontractor_details.total_paid')}:</span>
-              <span className="font-bold text-green-600"> €{actualPaid.toLocaleString('hr-HR')}</span>
+              <span className="font-bold text-green-600 dark:text-green-400">{formatEuro(actualPaid)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-600 dark:text-gray-400 font-medium">{t('supervision.site_management.phase_card.total_owed')}:</span>
-              <span className="font-bold text-orange-600">€{(subcontractor.invoice_total_owed || 0).toLocaleString('hr-HR')}</span>
+              <span className="font-bold text-orange-600 dark:text-orange-400">{formatEuro(subcontractor.invoice_total_owed || 0)}</span>
             </div>
           </>
-        )}
+        ) : null}
       </div>
 
       <div className="space-y-2">
@@ -141,7 +176,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
             {t('common.payments')}
           </Button>
         )}
-        {onOpenInvoices && (
+        {onOpenInvoices && canManagePayments && (
           <Button
             variant="primary"
             size="sm"

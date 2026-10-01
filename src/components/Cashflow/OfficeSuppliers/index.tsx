@@ -1,16 +1,20 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Building2, Plus, Edit, Trash2, Mail, Phone, MapPin, FileText, Calendar } from 'lucide-react'
-import { format } from 'date-fns'
 import { useOfficeSuppliers } from './hooks/useOfficeSuppliers'
 import OfficeSupplierFormModal from './forms/OfficeSupplierFormModal'
-import { PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
+import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
+import { formatEuro, formatEuropean, formatDate } from '../../../utils/formatters'
+import { toErrorMessage } from '../../../lib/errorMessage'
 
 const OfficeSuppliers: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     suppliers,
     loading,
+    error,
+    refetch,
+    dismissError,
     searchTerm,
     setSearchTerm,
     showModal,
@@ -53,6 +57,16 @@ const OfficeSuppliers: React.FC = () => {
         }
       />
 
+      {error && suppliers.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {!(error && suppliers.length === 0) && (
       <StatGrid columns={4}>
         <StatCard
           label={t('office_suppliers.stats.total')}
@@ -70,18 +84,19 @@ const OfficeSuppliers: React.FC = () => {
 
         <StatCard
           label={t('office_suppliers.stats.total_paid')}
-          value={`€${suppliers.reduce((sum, s) => sum + s.paid_amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={formatEuro(suppliers.reduce((sum, s) => sum + s.paid_amount, 0))}
           icon={Building2}
           color="green"
         />
 
         <StatCard
           label={t('office_suppliers.stats.remaining')}
-          value={`€${suppliers.reduce((sum, s) => sum + s.remaining_amount, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={formatEuro(suppliers.reduce((sum, s) => sum + s.remaining_amount, 0))}
           icon={Building2}
           color="yellow"
         />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <SearchInput
@@ -92,7 +107,11 @@ const OfficeSuppliers: React.FC = () => {
         />
       </div>
 
-      {filteredSuppliers.length === 0 ? (
+      {error && suppliers.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <ErrorState onRetry={() => void refetch()} />
+        </div>
+      ) : filteredSuppliers.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <EmptyState
             icon={Building2}
@@ -138,13 +157,13 @@ const OfficeSuppliers: React.FC = () => {
               <div className="space-y-2 mb-4">
                 {supplier.tax_id && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 dark:text-gray-400">OIB:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('common.oib')}:</span>
                     <span className="font-medium text-gray-900 dark:text-white">{supplier.tax_id}</span>
                   </div>
                 )}
                 {supplier.vat_id && (
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 dark:text-gray-400">PDV ID:</span>
+                    <span className="text-gray-600 dark:text-gray-400">{t('common.vat_id')}:</span>
                     <span className="font-medium text-gray-900 dark:text-white">{supplier.vat_id}</span>
                   </div>
                 )}
@@ -152,17 +171,22 @@ const OfficeSuppliers: React.FC = () => {
                   <span className="text-gray-600 dark:text-gray-400">{t('office_suppliers.card.invoices')}</span>
                   <span className="font-medium text-gray-900 dark:text-white">{supplier.total_invoices}</span>
                 </div>
+                {/* Gross, paid and remaining are all s PDV, so total − paid = remaining on screen. */}
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">{t('office_suppliers.card.total_no_vat')}</span>
-                  <span className="font-bold text-gray-900 dark:text-white">€{supplier.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('office_suppliers.card.total')}</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{formatEuro(supplier.gross_amount)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 dark:text-gray-500">{t('office_suppliers.card.base')}</span>
+                  <span className="text-gray-500 dark:text-gray-400">{formatEuro(supplier.total_amount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">{t('office_suppliers.card.paid')}</span>
-                  <span className="font-medium text-green-600">€{supplier.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-medium text-green-600">{formatEuro(supplier.paid_amount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600 dark:text-gray-400">{t('office_suppliers.card.remaining')}</span>
-                  <span className="font-medium text-orange-600">€{supplier.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-medium text-orange-600">{formatEuro(supplier.remaining_amount)}</span>
                 </div>
               </div>
 
@@ -208,7 +232,7 @@ const OfficeSuppliers: React.FC = () => {
           <>
             <Modal.Header
               title={t('office_suppliers.invoices_modal.title', { name: selectedSupplier.name })}
-              subtitle={t('office_suppliers.invoices_modal.subtitle', { count: supplierInvoices.length, paid: selectedSupplier.paid_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), remaining: selectedSupplier.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) })}
+              subtitle={t('office_suppliers.invoices_modal.subtitle', { count: supplierInvoices.length, paid: formatEuropean(selectedSupplier.paid_amount), remaining: formatEuropean(selectedSupplier.remaining_amount) })}
               onClose={handleCloseInvoicesModal}
             />
 
@@ -245,29 +269,29 @@ const OfficeSuppliers: React.FC = () => {
                         <Table.Td label={t('office_suppliers.invoices_modal.table.issue_date')} className="text-gray-600 dark:text-gray-400">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
-                            {format(new Date(invoice.issue_date), 'dd.MM.yyyy')}
+                            {formatDate(invoice.issue_date, i18n.language)}
                           </div>
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.due_date')} className="text-gray-600 dark:text-gray-400">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
-                            {format(new Date(invoice.due_date), 'dd.MM.yyyy')}
+                            {formatDate(invoice.due_date, i18n.language)}
                           </div>
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.description')} className="text-gray-600 dark:text-gray-400 max-w-xs truncate">
                           {invoice.description || '-'}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.base')} className="text-right">
-                          €{parseFloat(invoice.base_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatEuro(parseFloat(invoice.base_amount))}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.total')} className="text-right font-medium">
-                          €{parseFloat(invoice.total_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatEuro(parseFloat(invoice.total_amount))}
                         </Table.Td>
-                        <Table.Td label={t('office_suppliers.invoices_modal.table.paid')} className="text-right text-green-600">
-                          €{parseFloat(invoice.paid_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.paid')} className="text-right text-green-600 dark:text-green-400">
+                          {formatEuro(parseFloat(invoice.paid_amount))}
                         </Table.Td>
-                        <Table.Td label={t('office_suppliers.invoices_modal.table.remaining')} className="text-right text-orange-600">
-                          €{parseFloat(invoice.remaining_amount).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <Table.Td label={t('office_suppliers.invoices_modal.table.remaining')} className="text-right text-orange-600 dark:text-orange-400">
+                          {formatEuro(parseFloat(invoice.remaining_amount))}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.status')} className="text-center">
                           <Badge

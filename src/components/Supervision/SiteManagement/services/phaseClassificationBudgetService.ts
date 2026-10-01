@@ -41,11 +41,16 @@ export async function fetchPhaseClassificationBudgets(phaseIds?: string[]): Prom
  * the sum of their classifications, so this is the figure that actually limits a new contract.
  * `allocated === 0` means no sub-allocation has been set, in which case there is nothing to
  * enforce and the caller should fall back to the phase-level check alone.
+ *
+ * Pass `excludeContractId` when checking an edit: that contract's current amount is left out of
+ * `used` (otherwise re-saving it would count it twice) and returned as `excludedAmount` — 0 when
+ * the contract is not currently committed to this (phase, classification) pair.
  */
 export async function fetchClassificationBudgetStatus(
   phaseId: string,
-  classificationId: number
-): Promise<{ allocated: number; used: number }> {
+  classificationId: number,
+  excludeContractId?: string
+): Promise<{ allocated: number; used: number; excludedAmount: number }> {
   const [budgetRow, contracts] = await Promise.all([
     supabase
       .from('phase_classification_budgets')
@@ -55,7 +60,7 @@ export async function fetchClassificationBudgetStatus(
       .maybeSingle(),
     supabase
       .from('contracts')
-      .select('contract_amount')
+      .select('id, contract_amount')
       .eq('phase_id', phaseId)
       .eq('classification_id', classificationId)
       .in('status', ['draft', 'active'])
@@ -64,12 +69,15 @@ export async function fetchClassificationBudgetStatus(
   if (budgetRow.error) throw budgetRow.error
   if (contracts.error) throw contracts.error
 
-  const used = (contracts.data || []).reduce(
-    (sum, c) => sum + parseFloat(String(c.contract_amount ?? 0)),
-    0
-  )
+  let used = 0
+  let excludedAmount = 0
+  for (const c of contracts.data || []) {
+    const amount = parseFloat(String(c.contract_amount ?? 0))
+    if (excludeContractId && c.id === excludeContractId) excludedAmount += amount
+    else used += amount
+  }
 
-  return { allocated: budgetRow.data?.budget_allocated ?? 0, used }
+  return { allocated: budgetRow.data?.budget_allocated ?? 0, used, excludedAmount }
 }
 
 /**

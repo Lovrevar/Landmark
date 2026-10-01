@@ -20,7 +20,7 @@ Pure functions only — the deterministic calculation and formatting helpers tha
 
 | Target | File | Covers |
 |---|---|---|
-| Formatters | [`src/utils/formatters.test.ts`](../src/utils/formatters.test.ts) | `formatFileSize`, `formatEuropean` (hr-HR locale, U+2212 minus), `formatEuro` |
+| Formatters | [`src/utils/formatters.test.ts`](../src/utils/formatters.test.ts) | `formatFileSize`, `formatEuropean` (hr-HR locale, U+2212 minus), `formatEuro`, `formatEuroRounded` (ragged-decimal cure), `formatEuroCompact` (M/K thresholds, never €0.0M), and the nullish/NaN → dash contract on all four |
 | VAT calculations | [`src/utils/vatCalculations.test.ts`](../src/utils/vatCalculations.test.ts) | `CROATIAN_VAT_RATES`, `calculateVatBreakdown` — the 4-slot multi-VAT engine (25/13/0/5%), null-safe, total = sum of subtotals invariant |
 | Sales price utils | [`src/components/Sales/utils/priceUtils.test.ts`](../src/components/Sales/utils/priceUtils.test.ts) | `calculateAdjustedPriceRange` — increase/decrease with clamp-to-zero |
 | Credit calculations | [`src/components/Funding/Investors/utils/creditCalculations.test.ts`](../src/components/Funding/Investors/utils/creditCalculations.test.ts) | annuity payments, equity cashflow, money multiple, payment schedules, risk levels, badge variants |
@@ -230,6 +230,10 @@ Each action group starts with an italic line listing any preconditions. Example:
 - [`test/seed-tasks.sql`](./test/seed-tasks.sql) — ~25 representative tasks (overdue, today, upcoming, done, private, no-due-date) plus a few comments. Safe to re-run — uses `ON CONFLICT DO NOTHING` on titles. Picks the first 3 users + first 2 projects from the target DB, so run it against a DB that has them.
 - [`test/seed-calendar.sql`](./test/seed-calendar.sql) — ~15 representative events (past/today/tomorrow/later, meeting/personal/deadline/reminder, private, all-day multi-day, two recurring masters with exceptions + a per-occurrence RSVP override). Re-runnable — every seeded event description starts with `[calendar-seed]` and the script deletes rows with that marker before inserting (cascades wipe participants/exceptions/occurrence_responses).
 - [`test/reset.sh`](./test/reset.sh) — destructive local reset helper; read the script before running.
+- [`../scripts/seed-demo-data.mjs`](../scripts/seed-demo-data.mjs) — **the whole-database demo dataset**, for showcasing the app rather than testing it. Paired with [`../scripts/seed-demo-users.mjs`](../scripts/seed-demo-users.mjs), which provisions the five demo logins it depends on; the full deployment runbook is [`DEMO_ENVIRONMENT.md`](./DEMO_ENVIRONMENT.md). Run with `node --env-file=.env scripts/seed-demo-data.mjs`. Refuses to run unless `VITE_SUPABASE_URL` points at the dev/test project (`EXPECTED_PROJECT`), because it **wipes every business table** first; users, `document_categories` and the cost-classification lookup survive. The `E2E Anchor Project` is re-created **only when the target is LandmarkDev**, so the Playwright suite keeps its fixture without that row showing up in a demo. Seeds a coherent Croatian dataset across General, Supervision, Sales, Cashflow, Funding, Retail, Tasks, Documents, Chat and Calendar, and leaves derived values (invoice status, contract realizacija, account balances) to the DB triggers.
+  - **Documents** are real generated PDFs uploaded to the `documents` Storage bucket, so a document opens instead of 404-ing. The bucket is emptied on each run — otherwise every reseed orphans the previous run's objects. Two rows carry `source = 'email_import'` with a `content_hash` and a Claude-style classification note, mirroring the [email pipeline](./EMAIL_DOCUMENT_SORTING.md).
+  - **Chat and Calendar are anchored to the real current week**, unlike the fixed 2026 dates everywhere else — a demo calendar that opens on an empty month is worse than one whose dates drift. It leaves the Director with 2 unread messages and 1 pending invitation so the header badges are non-zero.
+  - It **wipes `calendar_events`**, so it and [`test/seed-calendar.sql`](./test/seed-calendar.sql) overwrite each other. Run the demo seeder first if you want both.
 
 ---
 
@@ -245,3 +249,4 @@ Each action group starts with an italic line listing any preconditions. Example:
 8. [Collaboration](./test/08-collaboration.md) — Calendar, Chat, Tasks
 9. [Cross-cutting](./test/09-cross-cutting.md) — permissions matrix, Activity Log verification sweep, i18n sweep, release smoke list
 10. [Appendix: format conventions recap](./test/10-appendix.md)
+11. [Pre-merge check: the UI audit batches](./test/11-pre-merge-ui-audit.md) — release-specific, not a module section. Everything the UI-audit work changed that no person has clicked through yet: the Supervision payment gate, the one "overdue" rule, the corrected money figures on the Retail/Sales/Director dashboards and the credit pages, failed-load behaviour, and the three migrations that must reach prod with the merge

@@ -19,15 +19,20 @@ export function useBankData() {
   const [banks, setBanks] = useState<BankWithCredits[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await fetchFundingBanksData()
       setBanks(data.banks)
       setCompanies(data.companies)
-    } catch (error) {
-      console.error('Error fetching banks data:', error)
+    } catch (err) {
+      console.error('Error fetching banks data:', err)
+      // An empty card grid here reads as "no investors and no credit facilities", which is a
+      // statement about the company's funding, not about the network.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
@@ -39,7 +44,7 @@ export function useBankData() {
 
   const addBank = async (newBank: BankFormPayload, onDone: () => void) => {
     if (!newBank.name.trim()) {
-      toast.warning('Please enter bank name')
+      toast.warning(t('funding.investors.error_bank_name_required'))
       return
     }
     try {
@@ -48,7 +53,7 @@ export function useBankData() {
       await fetchData()
     } catch (error) {
       console.error('Error adding bank:', error)
-      toast.error('Error adding bank. Please try again.')
+      toast.error(t('funding.investors.error_add_bank'))
     }
   }
 
@@ -64,7 +69,7 @@ export function useBankData() {
       await fetchData()
     } catch (error) {
       console.error('Error updating bank:', error)
-      toast.error('Error updating bank.')
+      toast.error(t('funding.investors.error_update_bank'))
     }
   }
 
@@ -112,7 +117,9 @@ export function useBankData() {
     banks,
     companies,
     loading,
+    error,
     fetchData,
+    refetch: fetchData,
     addBank,
     updateBank: handleUpdateBank,
     deleteBank: handleDeleteBank,

@@ -60,8 +60,8 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const [useExistingSubcontractor, setUseExistingSubcontractor] = useState(false)
   const [hasContract, setHasContract] = useState(true)
   const [formData, setFormData] = useState<SubcontractorFormData>(DEFAULT_FORM_DATA)
-  const { contractTypes, loading: loadingContractTypes, load: loadContractTypes } = useContractTypes()
-  const { classifications, loading: loadingClassifications, load: loadClassifications } = useCostClassifications()
+  const { contractTypes, loading: loadingContractTypes, error: contractTypesError, load: loadContractTypes } = useContractTypes()
+  const { classifications, loading: loadingClassifications, error: classificationsError, load: loadClassifications } = useCostClassifications()
   const { vatAmount, totalAmount } = useVATCalculation(formData.base_amount, formData.vat_rate)
   const [banks, setBanks] = useState<Funder[]>([])
   const [loadingFunders, setLoadingFunders] = useState(false)
@@ -200,6 +200,23 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
         {fieldErrors._form && (
           <Alert variant="error" className="mb-2">{fieldErrors._form}</Alert>
+        )}
+
+        {/* Both dropdowns are required to save. Left unsaid, an empty list reads as "nothing is
+            set up" and the form then refuses to submit for a reason nobody can see. */}
+        {(contractTypesError || classificationsError) && (
+          <Alert variant="error" className="mb-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{t('common.load_error_description')}</span>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => { loadContractTypes(); loadClassifications() }}
+              >
+                {t('common.retry')}
+              </Button>
+            </div>
+          </Alert>
         )}
 
         <FormField

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { MilestoneFormData } from '../types'
 import { validateMilestonePercentagesForContract } from '../services/siteService'
 import { Modal, FormField, Input, Textarea, Button } from '../../../ui'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface MilestoneFormModalProps {
   visible: boolean
@@ -100,9 +101,11 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
 
   return (
     <Modal show={true} onClose={onClose} size="lg">
+      {/* The subtitle said "(Base)" — hardcoded English and, worse, wrong: `contractCost` is
+          the contract's gross value, which a trigger keeps equal to `total_amount`. */}
       <Modal.Header
         title={editingMilestone ? t('supervision.milestone_form.title_edit') : t('supervision.milestone_form.title_add')}
-        subtitle={`${projectName} • ${phaseName} • ${subcontractorName} | ${t('common.contract')} (Base): €${contractCost.toLocaleString('hr-HR')} • ${t('supervision.milestone_form.available')} ${remainingPercentage.toFixed(2)}%`}
+        subtitle={`${projectName} • ${phaseName} • ${subcontractorName} | ${t('supervision.site_management.milestone_list.contract_gross')}: ${formatEuro(contractCost)} • ${t('supervision.milestone_form.available')} ${remainingPercentage.toFixed(2)}%`}
         onClose={onClose}
       />
 
@@ -144,12 +147,12 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
               />
             </FormField>
 
-            <FormField
+            <FormField group
               label={t('supervision.milestone_form.calculated_amount')}
-              helperText={`${formData.percentage}% ${t('supervision.milestone_form.of')} €${contractCost.toLocaleString('hr-HR')}`}
+              helperText={`${formData.percentage}% ${t('supervision.milestone_form.of')} ${formatEuro(contractCost)}`}
             >
               <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white font-semibold">
-                €{calculateAmount().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatEuro(calculateAmount())}
               </div>
             </FormField>
           </div>

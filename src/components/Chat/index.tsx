@@ -18,6 +18,10 @@ const ChatPage: React.FC = () => {
     loadingConversations,
     loadingMessages,
     sendingMessage,
+    conversationsError,
+    messagesError,
+    retryConversations,
+    retryMessages,
     selectConversation,
     sendMessage,
     createConversation,
@@ -56,6 +60,8 @@ const ChatPage: React.FC = () => {
           activeConversationId={activeConversationId}
           currentUserId={user.id}
           loading={loadingConversations}
+          loadFailed={!!conversationsError && conversations.length === 0}
+          onRetry={retryConversations}
           onSelect={handleSelectConversation}
           onNewConversation={() => setShowNewModal(true)}
         />
@@ -71,6 +77,8 @@ const ChatPage: React.FC = () => {
           messages={messages}
           currentUserId={user.id}
           loading={loadingMessages}
+          loadFailed={!!messagesError}
+          onRetry={retryMessages}
           sending={sendingMessage}
           onSendMessage={sendMessage}
           onBack={handleBack}

@@ -158,27 +158,49 @@ export interface ComprehensiveReport {
     count: number
   }>
   cash_flow: Array<{
-    month: string
+    /**
+     * The month's first day as `'YYYY-MM-DD'`. Both the screen and the PDF format it themselves —
+     * `formatMonthYear` for a table row, `formatMonthShort` for a chart axis. It replaced an
+     * English `'MMM yyyy'` label the service used to build, which is why a Croatian executive
+     * report used to carry English month names into a document sent to a bank.
+     */
+    month_key: string
     inflow: number
     outflow: number
     net: number
   }>
   projects: ProjectData[]
-  risks: Array<{
-    type: string
-    count: number
-    description: string
-  }>
+  risks: ReportRisk[]
   insights: {
     top_projects: Array<{ name: string; revenue: number; sales_rate: number }>
-    recommendations: string[]
+    /**
+     * i18n keys under `reports.general.recs.*`, translated at the render site. The service has
+     * no translator and must not decide the user's language.
+     */
+    recommendation_keys: string[]
   }
+}
+
+/** The risks the general report can raise. One key per `reports.general.risks.*` block. */
+export type RiskKind = 'slow_sales'
+
+/**
+ * A risk finding, as a key plus the numbers that go into its sentence.
+ *
+ * The service used to build `'SLOW SALES'` and `'N project(s) with sales rate below 40%'` as
+ * English strings and the page rendered them verbatim, so a Croatian executive report carried
+ * English prose. `kind` + `count` is the shape `dashboards/utils/directorAlerts.ts` settled on.
+ */
+export interface ReportRisk {
+  kind: RiskKind
+  count: number
 }
 
 // ── Sales Report ─────────────────────────────────────────────────────────────
 
 export interface SalesData {
-  month: string
+  /** The month's first day as `'YYYY-MM-DD'`, for `formatMonthYear`. Both readers format it. */
+  month_key: string
   sales: number
   revenue: number
   units_sold: number

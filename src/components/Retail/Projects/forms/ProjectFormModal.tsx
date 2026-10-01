@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailLandPlot } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, ConfirmDialog, Form } from '../../../ui'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface ProjectFormModalProps {
   onClose: () => void
@@ -182,8 +183,8 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                           <div>{t('retail_land_plots.detail.owner')}: {selectedPlot.owner_first_name} {selectedPlot.owner_last_name}</div>
                           <div>{t('retail_land_plots.detail.total_area')}: {selectedPlot.total_area_m2} m²</div>
                           <div>{t('retail_land_plots.detail.purchased_area')}: {selectedPlot.purchased_area_m2} m²</div>
-                          <div>{t('retail_land_plots.detail.price_per_m2')}: €{selectedPlot.price_per_m2.toFixed(2)}</div>
-                          <div>{t('retail_land_plots.detail.total_price')}: €{selectedPlot.total_price.toFixed(2)}</div>
+                          <div>{t('retail_land_plots.detail.price_per_m2')}: {formatEuro(selectedPlot.price_per_m2)}</div>
+                          <div>{t('retail_land_plots.detail.total_price')}: {formatEuro(selectedPlot.total_price)}</div>
                         </div>
                       </div>
                     )}

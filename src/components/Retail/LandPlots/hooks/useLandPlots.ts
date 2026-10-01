@@ -25,6 +25,8 @@ export function useLandPlots() {
   const [stats, setStats] = useState<LandPlotStats>({ total_plots: 0, total_invested: 0, total_area: 0, paid_count: 0 })
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  // Total invested and total area are money/area claims; zeros from a failed load are lies.
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -42,6 +44,7 @@ export function useLandPlots() {
   const loadData = useCallback(async () => {
     if (hasLoadedRef.current) setRefreshing(true)
     else setLoading(true)
+    setError(null)
     try {
       const [pageResult, statsResult] = await Promise.all([
         fetchLandPlotsWithProjects(currentPage, LAND_PLOTS_PAGE_SIZE, debouncedSearchTerm),
@@ -51,8 +54,9 @@ export function useLandPlots() {
       setTotalCount(pageResult.totalCount)
       setStats(statsResult)
       hasLoadedRef.current = true
-    } catch (error) {
-      console.error('Error fetching land plots:', error)
+    } catch (err) {
+      console.error('Error fetching land plots:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
       toast.error('Greška pri učitavanju zemljišta')
     } finally {
       setLoading(false)
@@ -79,17 +83,20 @@ export function useLandPlots() {
     setDeleting(true)
     try {
       await deleteLandPlot(pendingDeleteId)
+      // Closed only on success, so a refused delete does not look like a done one.
+      setPendingDeleteId(null)
       await loadData()
     } catch (error) {
       console.error('Error deleting land plot:', error)
       toast.error('Greška pri brisanju zemljišta')
     } finally {
       setDeleting(false)
-      setPendingDeleteId(null)
     }
   }
 
   const cancelDelete = () => setPendingDeleteId(null)
+
+  const dismissError = useCallback(() => setError(null), [])
 
   const loadPlotDetails = async (plot: LandPlotWithProject): Promise<LandPlotWithSales> => {
     const sales = await fetchLandPlotSales(plot.id)
@@ -99,6 +106,9 @@ export function useLandPlots() {
   return {
     loading,
     refreshing,
+    error,
+    dismissError,
+    refetch: loadData,
     plots,
     totalCount,
     pageSize: LAND_PLOTS_PAGE_SIZE,

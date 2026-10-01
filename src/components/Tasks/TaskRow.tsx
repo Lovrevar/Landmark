@@ -2,9 +2,10 @@ import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Paperclip, MessageSquare, Trash2, Lock, Square, CheckSquare } from 'lucide-react'
 import AvatarStack from '../ui/AvatarStack'
-import TaskColorChip from './components/TaskColorChip'
+import { COLOR_STYLES, isTaskColor } from './taskColor'
 import { relativeLabel } from '../Calendar/utils/relativeLabel'
 import { isChecklist, subtaskProgress } from './subtasks'
+import { hasUnreadAssignment } from './unread'
 import type { Task } from '../../types/tasks'
 
 interface Props {
@@ -54,13 +55,19 @@ const TaskRow: React.FC<Props> = ({
     [task.assignees],
   )
 
-  const hasUnread = !!(task.assignees || []).find(
-    a => a.assignee_id === currentUserId && a.acknowledged_at == null,
-  )
+  const hasUnread = hasUnreadAssignment(task, currentUserId)
   const attachmentCount = task.attachments?.length || 0
   const commentCount = task.comment_count || 0
 
   const CheckIcon = done ? CheckSquare : Square
+
+  // The colour label tints the whole card. The overdue red left border overrides only the left
+  // edge and stays the deadline-driven "is this late" signal. It needs its own `dark:` copy:
+  // with darkMode 'class', `.dark .dark:border-*` outranks a bare `border-l-red-500`.
+  const color = isTaskColor(task.color) ? task.color : null
+  const surface = color
+    ? COLOR_STYLES[color].card
+    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
 
   return (
     <div
@@ -73,7 +80,7 @@ const TaskRow: React.FC<Props> = ({
           onClick(task)
         }
       }}
-      className={`group relative flex items-center gap-3 pl-4 pr-4 py-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-sm transition-shadow cursor-pointer ${overdue ? 'border-l-4 border-l-red-500' : ''}`}
+      className={`group relative flex items-center gap-3 pl-4 pr-4 py-3.5 border ${surface} rounded-lg hover:shadow-sm transition-shadow cursor-pointer ${overdue ? 'border-l-4 border-l-red-500 dark:border-l-red-500' : ''}`}
     >
       <button
         type="button"
@@ -119,11 +126,10 @@ const TaskRow: React.FC<Props> = ({
           {task.is_private && (
             <Lock className="w-4 h-4 text-gray-400" />
           )}
+          {/* The tint carries the colour visually; keep its name for screen readers. */}
+          {color && <span className="sr-only">{t(`tasks.colors.${color}`)}</span>}
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-          {/* The colour label sits beside the deadline but never replaces it: the red left
-              border above is the "is this late" signal and stays deadline-driven. */}
-          <TaskColorChip color={task.color} />
           {relative && (
             // No "Overdue," prefix: relativeLabel already words a past deadline as
             // "3 d ago", and the red says the rest.

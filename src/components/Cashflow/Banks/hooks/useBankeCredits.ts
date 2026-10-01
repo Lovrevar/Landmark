@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { toLoadError } from '../../services/loadError'
 import {
   fetchBankeCreditsData,
   type BankeBank,
@@ -15,9 +16,11 @@ const useBankeCredits = () => {
   const [allocations, setAllocations] = useState<Map<string, BankeCreditAllocation[]>>(new Map())
   const [disbursedAmounts, setDisbursedAmounts] = useState<Map<string, number>>(new Map())
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchAll = async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await fetchBankeCreditsData()
       setBanks(data.banks)
@@ -26,6 +29,7 @@ const useBankeCredits = () => {
       setDisbursedAmounts(data.disbursedAmounts)
     } catch (error) {
       console.error('Error fetching cashflow banks data:', error)
+      setError(toLoadError(error))
     } finally {
       setLoading(false)
     }
@@ -38,7 +42,11 @@ const useBankeCredits = () => {
   const creditsByBank = (bankId: string) =>
     credits.filter((c) => c.bank_id === bankId)
 
-  return { banks, credits, allocations, disbursedAmounts, loading, creditsByBank, refetch: fetchAll }
+  return {
+    banks, credits, allocations, disbursedAmounts, loading, error, creditsByBank,
+    dismissError: () => setError(null),
+    refetch: fetchAll,
+  }
 }
 
 export default useBankeCredits

@@ -11,7 +11,15 @@ export interface OfficeSupplier {
 
 export interface OfficeSupplierWithStats extends OfficeSupplier {
   total_invoices: number
+  /**
+   * Σ `accounting_invoices.base_amount` — the NET (bez PDV) figure, i.e. "Osnovica".
+   *
+   * Kept net on purpose, but it does NOT reconcile with `paid_amount` / `remaining_amount`,
+   * which are gross. Anything that subtracts must use `gross_amount`.
+   */
   total_amount: number
+  /** Σ `accounting_invoices.total_amount` — GROSS (s PDV). `gross_amount − paid_amount = remaining_amount`. */
+  gross_amount: number
   paid_amount: number
   remaining_amount: number
 }

@@ -12,7 +12,38 @@ export interface PlacedSegment {
 
 export interface MonthLayout {
   segmentsByWeek: PlacedSegment[][]       // length = 6
-  slotsByDay: Map<string, number>          // day key (toDateString) → max slot used
+  /**
+   * Day key (toDateString) → the slots of the segments covering that day. Slots are stable
+   * across the week row, so a day can have gaps: an event can sit in slot 2 on a day where
+   * slots 0 and 1 are empty. Feed it to `cellRows` rather than counting it.
+   */
+  eventSlotsByDay: Map<string, number[]>
+}
+
+export interface CellRows {
+  /** The row each of the day's first tasks takes, in order. Its length is how many are shown. */
+  taskRows: number[]
+  /** Events in a slot past the last row, plus tasks with no free row: the "+N more" count. */
+  hiddenCount: number
+}
+
+/**
+ * How one month cell spends its rows. Events keep the week-stable slots `computeMonthLayout`
+ * gave them; tasks take the rows the events leave free on that day, top down; whatever does not
+ * fit is counted into "+N more".
+ *
+ * Events and tasks share `maxRows`, the number of rows the cell has room for above its "+N more"
+ * line. Giving tasks their own rows below the events is what used to push the third and later
+ * pills past the cell's bottom edge into the next week.
+ */
+export function cellRows(eventSlots: readonly number[], taskCount: number, maxRows: number): CellRows {
+  const taken = new Set(eventSlots)
+  const taskRows: number[] = []
+  for (let row = 0; row < maxRows && taskRows.length < taskCount; row++) {
+    if (!taken.has(row)) taskRows.push(row)
+  }
+  const hiddenEvents = eventSlots.filter(slot => slot >= maxRows).length
+  return { taskRows, hiddenCount: hiddenEvents + (taskCount - taskRows.length) }
 }
 
 function daysBetween(a: Date, b: Date): number {
@@ -104,18 +135,18 @@ export function computeMonthLayout(
     }
   }
 
-  // Per-day slot counts (for +N more calculation)
-  const slotsByDay = new Map<string, number>()
+  // Per-day slots, for placing task pills and counting "+N more"
+  const eventSlotsByDay = new Map<string, number[]>()
   segmentsByWeek.forEach((segs, row) => {
     for (let col = 0; col < 7; col++) {
       const dayIdx = row * 7 + col
       const d = new Date(gridStartDay)
       d.setDate(gridStartDay.getDate() + dayIdx)
       const key = d.toDateString()
-      const used = segs.filter(s => s.startCol <= col && s.endCol >= col)
-      slotsByDay.set(key, used.length)
+      const slots = segs.filter(s => s.startCol <= col && s.endCol >= col).map(s => s.slot)
+      eventSlotsByDay.set(key, slots)
     }
   })
 
-  return { segmentsByWeek, slotsByDay }
+  return { segmentsByWeek, eventSlotsByDay }
 }

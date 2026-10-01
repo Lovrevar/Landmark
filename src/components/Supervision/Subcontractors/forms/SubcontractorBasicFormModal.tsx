@@ -29,7 +29,11 @@ export const SubcontractorBasicFormModal: React.FC<Props> = ({
       setFormData(initialData)
       setFieldErrors({})
     }
-  }, [visible, initialData])
+    // Reset only on open (or when switching which record is edited). Keying on
+    // initialData would wipe typed input whenever the parent re-renders — e.g. when
+    // the error toast below updates ToastContext.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, editingId])
 
   const handleSave = async () => {
     const errors: Record<string, string> = {}

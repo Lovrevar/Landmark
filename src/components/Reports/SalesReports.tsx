@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCachedData } from '../../lib/useCachedData'
+import { useAsyncExport } from '../../hooks/useAsyncExport'
 import type { Project } from '../../lib/supabase'
 import {
   TrendingUp,
-  DollarSign,
+  Euro,
   Home,
   Users,
   Download,
   Activity
 } from 'lucide-react'
 import { format, subMonths } from 'date-fns'
-import { PageHeader, StatGrid, LoadingSpinner, Button, Badge, Select, FormField, Input, Table, StatCard } from '../ui'
+import { PageHeader, StatGrid, LoadingSpinner, Button, Badge, Select, FormField, Input, Table, StatCard, ErrorState } from '../ui'
 import {
   fetchProjects,
   generateProjectReport,
@@ -19,11 +20,11 @@ import {
 } from './services/salesReportService'
 import { generateSalesReportPDF } from './pdf/salesReportPdf'
 import type { ProjectSalesReport, CustomerReport } from './types'
-import { useToast } from '../../contexts/ToastContext'
+import { formatEuro, formatEuroCompact, formatDate, formatMonthYear } from '../../utils/formatters'
+import { PROJECT_STATUS, statusLabel, statusVariant } from '../../utils/statusDisplay'
 
 const SalesReports: React.FC = () => {
-  const toast = useToast()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [reportType, setReportType] = useState<'project' | 'customer'>('project')
@@ -33,19 +34,36 @@ const SalesReports: React.FC = () => {
   })
   const [loading, setLoading] = useState(true)
 
-  const { data: projectReport, loading: loadingProjectReport } = useCachedData<ProjectSalesReport>(
+  const {
+    data: projectReport,
+    loading: loadingProjectReport,
+    error: projectReportError,
+    refetch: refetchProjectReport
+  } = useCachedData<ProjectSalesReport>(
     `report:sales:project:${selectedProject}:${dateRange.start}:${dateRange.end}`,
     () => generateProjectReport(selectedProject, projects, dateRange),
     { enabled: reportType === 'project' && !!selectedProject && projects.length > 0 }
   )
 
-  const { data: customerReport, loading: loadingCustomerReport } = useCachedData<CustomerReport>(
+  const {
+    data: customerReport,
+    loading: loadingCustomerReport,
+    error: customerReportError,
+    refetch: refetchCustomerReport
+  } = useCachedData<CustomerReport>(
     `report:sales:customer:${dateRange.start}:${dateRange.end}`,
     () => generateCustomerReport(dateRange),
     { enabled: reportType === 'customer' }
   )
 
   const generatingReport = reportType === 'project' ? loadingProjectReport : loadingCustomerReport
+
+  // Both report types are rendered by the same page, so the error belongs to whichever one the
+  // user is looking at. Without this the page simply showed nothing below the filters — the
+  // configuration panel stayed, and a failed report looked like a report not requested yet.
+  const reportError = reportType === 'project' ? projectReportError : customerReportError
+  const currentReport = reportType === 'project' ? projectReport : customerReport
+  const retryReport = reportType === 'project' ? refetchProjectReport : refetchCustomerReport
 
   useEffect(() => {
     loadProjects()
@@ -64,15 +82,17 @@ const SalesReports: React.FC = () => {
     }
   }
 
-  const handleGeneratePDF = async () => {
+  // One export path for the whole app: `useAsyncExport` owns the try/catch, the console line and
+  // the toast, so a font that failed to load surfaces as a message instead of a silent no-op.
+  const { exporting, run: runExportPDF } = useAsyncExport(
+    () => generateSalesReportPDF(reportType, projectReport, customerReport, dateRange),
+    'reports.sales.pdf_error'
+  )
+
+  const handleGeneratePDF = () => {
     if (reportType === 'project' && !projectReport) return
     if (reportType === 'customer' && !customerReport) return
-    try {
-      await generateSalesReportPDF(reportType, projectReport, customerReport, dateRange)
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      toast.error(t('reports.sales.pdf_error'))
-    }
+    runExportPDF()
   }
 
   if (loading) {
@@ -86,7 +106,7 @@ const SalesReports: React.FC = () => {
         description={t('reports.sales.description')}
         actions={
           (projectReport || customerReport) ? (
-            <Button icon={Download} onClick={handleGeneratePDF}>
+            <Button icon={Download} onClick={handleGeneratePDF} disabled={exporting}>
               {t('reports.sales.export_report')}
             </Button>
           ) : undefined
@@ -145,18 +165,18 @@ const SalesReports: React.FC = () => {
         <LoadingSpinner message={t('reports.sales.generating')} />
       )}
 
+      {!generatingReport && reportError && !currentReport && (
+        <ErrorState onRetry={retryReport} />
+      )}
+
       {/* Project Report */}
       {reportType === 'project' && projectReport && !generatingReport && (
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('reports.sales.project_overview')}</h2>
-              <Badge variant={
-                projectReport.project.status === 'Completed' ? 'green'
-                  : projectReport.project.status === 'In Progress' ? 'blue'
-                  : 'gray'
-              }>
-                {projectReport.project.status}
+              <Badge variant={statusVariant(PROJECT_STATUS, projectReport.project.status)}>
+                {statusLabel(PROJECT_STATUS, projectReport.project.status, t)}
               </Badge>
             </div>
 
@@ -165,8 +185,8 @@ const SalesReports: React.FC = () => {
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{projectReport.project.name}</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.location')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.project.location}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium text-gray-900 dark:text-white">{format(new Date(projectReport.project.start_date), 'MMM dd, yyyy')}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">${projectReport.project.budget.toLocaleString('hr-HR')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium text-gray-900 dark:text-white">{formatDate(projectReport.project.start_date, i18n.language)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">{formatEuro(projectReport.project.budget)}</span></div>
                 </div>
               </div>
 
@@ -174,8 +194,8 @@ const SalesReports: React.FC = () => {
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('reports.sales.sales_performance')}</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.sales_rate_label')}</span><span className="font-bold text-green-600">{projectReport.sales_rate.toFixed(1)}%</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.total_revenue')}</span><span className="font-bold text-blue-600">${projectReport.total_revenue.toLocaleString('hr-HR')}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.average_price')}</span><span className="font-medium text-gray-900 dark:text-white">${projectReport.average_price.toLocaleString('hr-HR')}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.total_revenue')}</span><span className="font-bold text-blue-600">{formatEuro(projectReport.total_revenue)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.average_price')}</span><span className="font-medium text-gray-900 dark:text-white">{formatEuro(projectReport.average_price)}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.units_sold_label')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.sold_units} / {projectReport.total_units}</span></div>
                 </div>
               </div>
@@ -185,7 +205,7 @@ const SalesReports: React.FC = () => {
           <StatGrid columns={4}>
             <StatCard label={t('reports.sales.total_units_stat')} value={projectReport.total_units} icon={Home} color="blue" />
             <StatCard label={t('reports.sales.units_sold_stat')} value={projectReport.sold_units} icon={TrendingUp} color="green" />
-            <StatCard label={t('reports.sales.total_revenue_stat')} value={`$${(projectReport.total_revenue / 1000000).toFixed(1)}M`} icon={DollarSign} color="teal" />
+            <StatCard label={t('reports.sales.total_revenue_stat')} value={formatEuroCompact(projectReport.total_revenue)} icon={Euro} color="teal" />
             <StatCard label={t('reports.sales.sales_rate_stat')} value={`${projectReport.sales_rate.toFixed(1)}%`} icon={Activity} color="orange" />
           </StatGrid>
 
@@ -247,7 +267,7 @@ const SalesReports: React.FC = () => {
               <Table.Body>
                 {projectReport.monthly_sales.map((month, index) => (
                   <Table.Tr key={index}>
-                    <Table.Td label={t('reports.sales.month_col')} className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
+                    <Table.Td label={t('reports.sales.month_col')} className="font-medium text-gray-900 dark:text-white">{formatMonthYear(month.month_key, i18n.language)}</Table.Td>
                     <Table.Td label={t('reports.sales.units_sold_col')}>{month.units_sold}</Table.Td>
                     <Table.Td label={t('reports.sales.revenue_col')}>€{month.revenue.toLocaleString('hr-HR')}</Table.Td>
                     <Table.Td label={t('reports.sales.avg_price_col')}>€{month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString('hr-HR') : '0'}</Table.Td>
@@ -263,9 +283,12 @@ const SalesReports: React.FC = () => {
               <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                 <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('reports.sales.performance_highlights')}</h3>
                 <ul className="space-y-2 text-blue-800 dark:text-blue-200">
-                  <li>• {projectReport.sales_rate > 70 ? t('reports.sales.excellent') : projectReport.sales_rate > 50 ? t('reports.sales.good') : t('reports.sales.needs_improvement')} sales performance at {projectReport.sales_rate.toFixed(1)}%</li>
-                  <li>• Generated €{projectReport.total_revenue.toLocaleString('hr-HR')} in total revenue</li>
-                  <li>• Average unit price of €{projectReport.average_price.toLocaleString('hr-HR')}</li>
+                  <li>• {t('reports.sales.highlight_performance', {
+                    rating: projectReport.sales_rate > 70 ? t('reports.sales.excellent') : projectReport.sales_rate > 50 ? t('reports.sales.good') : t('reports.sales.needs_improvement'),
+                    rate: projectReport.sales_rate.toFixed(1)
+                  })}</li>
+                  <li>• {t('reports.sales.highlight_revenue', { amount: formatEuro(projectReport.total_revenue) })}</li>
+                  <li>• {t('reports.sales.highlight_avg_price', { amount: formatEuro(projectReport.average_price) })}</li>
                   <li>• {t('reports.sales.units_available', { count: projectReport.available_units })}</li>
                 </ul>
               </div>
@@ -290,8 +313,8 @@ const SalesReports: React.FC = () => {
           <StatGrid columns={4}>
             <StatCard label={t('reports.sales.total_customers_stat')} value={customerReport.total_customers} icon={Users} color="blue" />
             <StatCard label={t('reports.sales.buyers_stat')} value={customerReport.buyers} icon={TrendingUp} color="green" />
-            <StatCard label={t('reports.sales.total_revenue_stat')} value={`$${(customerReport.total_revenue / 1000000).toFixed(1)}M`} icon={DollarSign} color="teal" />
-            <StatCard label={t('reports.sales.avg_purchase_stat')} value={`$${customerReport.average_purchase.toLocaleString()}`} icon={Activity} color="orange" />
+            <StatCard label={t('reports.sales.total_revenue_stat')} value={formatEuroCompact(customerReport.total_revenue)} icon={Euro} color="teal" />
+            <StatCard label={t('reports.sales.avg_purchase_stat')} value={formatEuro(customerReport.average_purchase)} icon={Activity} color="orange" />
           </StatGrid>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -343,18 +366,18 @@ const SalesReports: React.FC = () => {
               <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                 <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">{t('reports.sales.customer_highlights')}</h3>
                 <ul className="space-y-2 text-blue-800 dark:text-blue-200">
-                  <li>• {customerReport.total_customers} total customers in database</li>
-                  <li>• {customerReport.buyers} successful conversions to buyers</li>
-                  <li>• {customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0'}% conversion rate</li>
-                  <li>• ${customerReport.average_purchase.toLocaleString()} average purchase value</li>
+                  <li>• {t('reports.sales.highlight_total_customers', { count: customerReport.total_customers })}</li>
+                  <li>• {t('reports.sales.highlight_conversions', { count: customerReport.buyers })}</li>
+                  <li>• {t('reports.sales.highlight_conversion_rate', { rate: customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0' })}</li>
+                  <li>• {t('reports.sales.highlight_avg_purchase', { amount: formatEuro(customerReport.average_purchase) })}</li>
                 </ul>
               </div>
 
               <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                 <h3 className="font-semibold text-green-900 dark:text-green-300 mb-3">{t('reports.sales.sales_opportunities')}</h3>
                 <ul className="space-y-2 text-green-800 dark:text-green-300">
-                  <li>• {customerReport.interested} interested customers to nurture</li>
-                  <li>• {customerReport.leads} new leads to follow up</li>
+                  <li>• {t('reports.sales.opportunity_interested', { count: customerReport.interested })}</li>
+                  <li>• {t('reports.sales.opportunity_leads', { count: customerReport.leads })}</li>
                   <li>• {t('reports.sales.focus_converting')}</li>
                   <li>• {t('reports.sales.targeted_campaigns')}</li>
                 </ul>

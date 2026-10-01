@@ -61,11 +61,11 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
     e.preventDefault()
     if (!apartment) return
     const errors: Record<string, string> = {}
-    if (!formData.number) errors.number = 'Apartment number is required'
-    if (!formData.floor && formData.floor !== 0) errors.floor = 'Floor is required'
-    if (!formData.size_m2) errors.size_m2 = 'Saleable area is required'
-    if (!formData.price) errors.price = 'Price is required'
-    if (!formData.status) errors.status = 'Status is required'
+    if (!formData.number) errors.number = t('apartments.form.errors.number')
+    if (!formData.floor && formData.floor !== 0) errors.floor = t('apartments.form.errors.floor')
+    if (!formData.size_m2) errors.size_m2 = t('apartments.form.errors.saleable_area')
+    if (!formData.price) errors.price = t('apartments.form.errors.price')
+    if (!formData.status) errors.status = t('apartments.form.errors.status')
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
     onSubmit(apartment.id, { ...formData, ...contractFieldsToPayload(contractFields) })

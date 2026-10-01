@@ -136,6 +136,24 @@ export function useAiChatStore(): AiChatStore {
     }
   }, [])
 
+  // Appends an inline error bubble — the module's single, Croatian-only way of telling the
+  // user something failed (see lib/labels.ts). The code selects the wording from
+  // ERROR_LABELS_HR; the marker lives in the client tree and is gone on the next reload.
+  const pushError = useCallback((code: string, fallback: string) => {
+    const errId = genId()
+    setMessages((prev) => [
+      ...prev,
+      {
+        kind: 'error',
+        id: errId,
+        rowId: errId,
+        code,
+        message: errorLabel(code, fallback),
+        createdAt: new Date().toISOString(),
+      },
+    ])
+  }, [])
+
   const fetchSessions = useCallback(async () => {
     if (!user) return
     try {
@@ -144,11 +162,13 @@ export function useAiChatStore(): AiChatStore {
       setSessions(data)
       setSessionsLoaded(true)
     } catch (err) {
+      // Without this the dropdown just showed "Novi razgovor" and no history at all.
       console.error('[useAiChatStore] listSessions failed:', err)
+      pushError('sessions_load_failed', 'Greška pri učitavanju popisa razgovora.')
     } finally {
       setLoadingSessions(false)
     }
-  }, [user])
+  }, [user, pushError])
 
   const open = useCallback(() => {
     if (!user) return
@@ -211,9 +231,12 @@ export function useAiChatStore(): AiChatStore {
     const target = pendingAttachmentsRef.current.find((p) => p.id === id)
     setPendingAttachments((prev) => prev.filter((p) => p.id !== id))
     if (target?.status === 'uploaded' && target.meta) {
-      await deleteAiAttachment(target.meta.storage_path)
+      // The chip is gone from the tray either way — it will not be sent. What the user is
+      // told about is the upload that stayed behind in storage.
+      const removed = await deleteAiAttachment(target.meta.storage_path)
+      if (!removed) pushError('attachment_remove_failed', 'Uklanjanje priloga nije uspjelo.')
     }
-  }, [])
+  }, [pushError])
 
   const newConversation = useCallback(() => {
     if (!user) return
@@ -713,10 +736,13 @@ export function useAiChatStore(): AiChatStore {
           severity: 'medium',
         })
       } catch (err) {
+        // The dropdown had already been closed by the caller, so without this the old
+        // title simply reappeared with no explanation.
         console.error('[useAiChatStore] renameSession failed:', err)
+        pushError('rename_failed', 'Preimenovanje razgovora nije uspjelo.')
       }
     },
-    [],
+    [pushError],
   )
 
   const deleteSession = useCallback(
@@ -746,10 +772,13 @@ export function useAiChatStore(): AiChatStore {
           severity: 'high',
         })
       } catch (err) {
+        // The confirm dialog closes on its own; the session staying in the list was the
+        // only hint that the delete had not happened.
         console.error('[useAiChatStore] deleteSession failed:', err)
+        pushError('delete_failed', 'Brisanje razgovora nije uspjelo.')
       }
     },
-    [sessions, clearPendingAttachments],
+    [sessions, clearPendingAttachments, pushError],
   )
 
   // User-initiated stop. Two things have to happen:

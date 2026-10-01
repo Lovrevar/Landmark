@@ -4,7 +4,7 @@ import { useSubcontractorManagement } from './useSubcontractorManagement'
 import { useSubcontractorComments } from './useSubcontractorComments'
 
 export const useSiteData = () => {
-  const { projects, loading, refreshing, existingSubcontractors, fetchProjects } = useSiteProjectData()
+  const { projects, loading, refreshing, error, existingSubcontractors, fetchProjects } = useSiteProjectData()
   const phases = useProjectPhases(fetchProjects)
   const subcontractors = useSubcontractorManagement(fetchProjects)
   const comments = useSubcontractorComments()
@@ -13,8 +13,10 @@ export const useSiteData = () => {
     projects,
     loading,
     refreshing,
+    error,
     existingSubcontractors,
     fetchProjects,
+    refetch: fetchProjects,
     ...phases,
     ...subcontractors,
     ...comments

@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next'
+import { isCroatian } from '../../utils/locale'
 
 export function LanguageSwitcher() {
   const { i18n } = useTranslation()
-  const isHr = i18n.language === 'hr' || i18n.language.startsWith('hr-')
+  const isHr = isCroatian(i18n.language)
 
   return (
     <button

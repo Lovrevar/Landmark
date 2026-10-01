@@ -301,7 +301,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
           disabled={submitting}
         />
 
-        <FormField
+        <FormField group
           label={t('documents.upload_modal.category_label')}
           required
           error={errors.category}

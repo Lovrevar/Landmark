@@ -95,7 +95,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
 
             {/* Read-only: the TIC is the only writer of planned budget. A project without a
                 TIC has no plan yet, and saying so is more honest than a typed placeholder. */}
-            <FormField
+            <FormField group
               label={t('general_projects.form_budget_eur')}
               helperText={t('general_projects.budget_from_tic_hint')}
             >

@@ -4875,6 +4875,8 @@ export type Database = {
           p_limit?: number
           p_offset?: number
           p_search_term?: string
+          p_sort_dir?: string
+          p_sort_field?: string
           p_status?: string
         }
         Returns: {

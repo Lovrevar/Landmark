@@ -26,7 +26,7 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
   onBudgetChange
 }) => {
   const { t } = useTranslation()
-  const monthNames = t('cashflow_calendar.months', { returnObjects: true }) as string[]
+  const monthNames = t('common.months', { returnObjects: true }) as string[]
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newYear = parseInt(e.target.value)

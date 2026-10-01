@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import {
   Download,
   RefreshCw,
@@ -12,61 +12,55 @@ import {
   BarChart3,
   Home
 } from 'lucide-react'
-import { format } from 'date-fns'
-import { LoadingSpinner, Button, Badge, EmptyState, Table } from '../ui'
+import { LoadingSpinner, Button, Badge, EmptyState, ErrorState, Table } from '../ui'
 import ProjectCategoryBadge from '../Common/ProjectCategoryBadge'
 import { generateGeneralReportPDF } from './pdf/generalReportPdf'
 import { useGeneralReportData } from './hooks/useGeneralReportData'
-import { useToast } from '../../contexts/ToastContext'
+import { useAsyncExport } from '../../hooks/useAsyncExport'
 import { useTranslation } from 'react-i18next'
+import { formatEuroCompact, formatEuroRounded, formatDateTime, formatMonthYear } from '../../utils/formatters'
+import { PROJECT_STATUS, RISK_LEVEL, statusLabel, statusVariant } from '../../utils/statusDisplay'
+import { exportT, EXPORT_LANGUAGE } from '../../utils/exportLanguage'
 
 const GeneralReports: React.FC = () => {
-  const toast = useToast()
-  const { t } = useTranslation()
-  const { report, loading, fetchedAt, refetch } = useGeneralReportData()
-  const [generatingPDF, setGeneratingPDF] = useState(false)
+  const { t, i18n } = useTranslation()
+  const { report, loading, error, fetchedAt, refetch } = useGeneralReportData()
 
-  const handleGeneratePDF = async () => {
-    if (!report) return
-    setGeneratingPDF(true)
-    try {
-      await generateGeneralReportPDF(report)
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      toast.error(t('reports.general.pdf_error'))
-    } finally {
-      setGeneratingPDF(false)
-    }
+  // The hand-rolled try/catch/toast this replaced was the same eleven lines as every other export
+  // site. The export itself is Croatian whatever the UI language — it goes to a bank, not to
+  // whoever clicked the button — so it gets `exportT()` rather than the page's own `t`.
+  const { exporting: generatingPDF, run: runExportPdf } = useAsyncExport(
+    generateGeneralReportPDF,
+    'reports.general.pdf_error'
+  )
+  const handleGeneratePDF = () => {
+    if (report) runExportPdf(report, exportT(), EXPORT_LANGUAGE)
   }
 
-  if (loading && !report) {
-    return (
-      <LoadingSpinner size="lg" message={t('reports.general.loading')} className="min-h-screen" />
-    )
-  }
-
-  if (!report) {
-    return <EmptyState icon={FileText} title={t('reports.general.no_data')} />
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}</h1>
-            <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
-            <p className="text-sm opacity-90">{t('reports.general.generated')} {format(fetchedAt ? new Date(fetchedAt) : new Date(), 'MMMM dd, yyyy HH:mm')}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              icon={RefreshCw}
-              onClick={refetch}
-              loading={loading}
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-semibold"
-            >
-              {t('common.refresh')}
-            </Button>
+  // Hoisted out of the report body so it stays mounted when the load fails: the user keeps the
+  // refresh affordance and the page identity instead of dropping to a bare error card. The
+  // "generated at" line and the PDF export only appear with a report behind them — exporting
+  // a report nobody could load would produce a PDF full of zeros.
+  const header = (
+    <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}</h1>
+          <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
+          {fetchedAt && (
+            <p className="text-sm opacity-90">{t('reports.general.generated')} {formatDateTime(new Date(fetchedAt), i18n.language)}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            icon={RefreshCw}
+            onClick={refetch}
+            loading={loading}
+            className="bg-white/10 hover:bg-white/20 text-white border border-white/30 font-semibold"
+          >
+            {t('common.refresh')}
+          </Button>
+          {report && (
             <Button
               icon={Download}
               onClick={handleGeneratePDF}
@@ -75,9 +69,34 @@ const GeneralReports: React.FC = () => {
             >
               {t('reports.general.export_pdf')}
             </Button>
-          </div>
+          )}
         </div>
       </div>
+    </div>
+  )
+
+  if (loading && !report) {
+    return (
+      <LoadingSpinner size="lg" message={t('reports.general.loading')} className="min-h-screen" />
+    )
+  }
+
+  // A failed fetch and an empty portfolio are different answers. "No data available" next to a
+  // dead connection is the bug this page had: it told a Director there was nothing to report.
+  if (!report) {
+    return (
+      <div className="space-y-6">
+        {header}
+        {error
+          ? <ErrorState onRetry={refetch} />
+          : <EmptyState icon={FileText} title={t('reports.general.no_data')} />}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {header}
 
       <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/30 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center mb-4">
@@ -85,11 +104,33 @@ const GeneralReports: React.FC = () => {
           <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-100">{t('reports.general.exec_summary')}</h2>
         </div>
         <div className="space-y-2 text-gray-800 dark:text-gray-100">
-          <p>• Portfolio: {report.executive_summary.total_projects} projects ({report.executive_summary.active_projects} active, {report.executive_summary.completed_projects} completed)</p>
-          <p>• Financial: €{(report.executive_summary.total_revenue / 1000000).toFixed(1)}M revenue, €{(report.executive_summary.total_expenses / 1000000).toFixed(1)}M expenses, €{(report.executive_summary.total_profit / 1000000).toFixed(1)}M profit ({report.executive_summary.profit_margin.toFixed(1)}% margin)</p>
-          <p>• Capital Structure: €{(report.funding_structure.total_equity / 1000000).toFixed(1)}M equity, €{(report.funding_structure.total_debt / 1000000).toFixed(1)}M debt, {report.funding_structure.debt_equity_ratio.toFixed(2)} D/E ratio</p>
-          <p>• Sales: {report.sales_performance.units_sold}/{report.sales_performance.total_units} units sold ({report.kpis.sales_rate.toFixed(1)}%), {report.sales_performance.total_sales} transactions</p>
-          <p>• Construction: {report.construction_status.total_contracts} contracts, {report.construction_status.total_subcontractors} subcontractors, {report.construction_status.work_logs_7days} work logs recorded</p>
+          <p>• {t('reports.general.summary_portfolio', {
+            total: report.executive_summary.total_projects,
+            active: report.executive_summary.active_projects,
+            completed: report.executive_summary.completed_projects
+          })}</p>
+          <p>• {t('reports.general.summary_financial', {
+            revenue: formatEuroCompact(report.executive_summary.total_revenue),
+            expenses: formatEuroCompact(report.executive_summary.total_expenses),
+            profit: formatEuroCompact(report.executive_summary.total_profit),
+            margin: report.executive_summary.profit_margin.toFixed(1)
+          })}</p>
+          <p>• {t('reports.general.summary_capital', {
+            equity: formatEuroCompact(report.funding_structure.total_equity),
+            debt: formatEuroCompact(report.funding_structure.total_debt),
+            ratio: report.funding_structure.debt_equity_ratio.toFixed(2)
+          })}</p>
+          <p>• {t('reports.general.summary_sales', {
+            sold: report.sales_performance.units_sold,
+            total: report.sales_performance.total_units,
+            rate: report.kpis.sales_rate.toFixed(1),
+            transactions: report.sales_performance.total_sales
+          })}</p>
+          <p>• {t('reports.general.summary_construction', {
+            contracts: report.construction_status.total_contracts,
+            subcontractors: report.construction_status.total_subcontractors,
+            logs: report.construction_status.work_logs_7days
+          })}</p>
         </div>
       </div>
 
@@ -97,15 +138,15 @@ const GeneralReports: React.FC = () => {
         <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-6">{t('reports.general.kpi_title')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 p-6 rounded-xl text-center border border-blue-200 dark:border-blue-700">
-            <p className="text-3xl font-bold text-blue-600">€{(report.kpis.portfolio_value / 1000000).toFixed(1)}M</p>
+            <p className="text-3xl font-bold text-blue-600">{formatEuroCompact(report.kpis.portfolio_value)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.portfolio_value')}</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 p-6 rounded-xl text-center border border-green-200 dark:border-green-700">
-            <p className="text-3xl font-bold text-green-600">€{(report.kpis.total_revenue / 1000000).toFixed(1)}M</p>
+            <p className="text-3xl font-bold text-green-600">{formatEuroCompact(report.kpis.total_revenue)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.total_revenue')}</p>
           </div>
           <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 p-6 rounded-xl text-center border border-teal-200 dark:border-teal-700">
-            <p className="text-3xl font-bold text-teal-600">€{(report.kpis.net_profit / 1000000).toFixed(1)}M</p>
+            <p className="text-3xl font-bold text-teal-600">{formatEuroCompact(report.kpis.net_profit)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.net_profit')}</p>
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10 p-6 rounded-xl text-center border border-orange-200 dark:border-orange-700">
@@ -141,8 +182,8 @@ const GeneralReports: React.FC = () => {
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.units_sold_label')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.sales_performance.units_sold} ({((report.sales_performance.units_sold / report.sales_performance.total_units) * 100).toFixed(1)}%)</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.available_label')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.sales_performance.available_units}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.reserved_label')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.sales_performance.reserved_units}</p></div>
-          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.total_revenue_label')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">€{report.sales_performance.total_revenue.toLocaleString()}</p></div>
-          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.avg_sale_price_label')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">€{report.sales_performance.avg_sale_price.toLocaleString()}</p></div>
+          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.total_revenue_label')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{formatEuroRounded(report.sales_performance.total_revenue)}</p></div>
+          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.avg_sale_price_label')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{formatEuroRounded(report.sales_performance.avg_sale_price)}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.total_sales_label')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.sales_performance.total_sales}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.buyers_label')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.sales_performance.buyers}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.active_leads_label')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.sales_performance.active_leads}</p></div>
@@ -158,16 +199,16 @@ const GeneralReports: React.FC = () => {
           </div>
           <div className="space-y-3 text-sm">
             {[
-              [t('reports.general.total_equity'), `€${report.funding_structure.total_equity.toLocaleString()}`],
-              [t('reports.general.total_debt'), `€${report.funding_structure.total_debt.toLocaleString()}`],
+              [t('reports.general.total_equity'), formatEuroRounded(report.funding_structure.total_equity)],
+              [t('reports.general.total_debt'), formatEuroRounded(report.funding_structure.total_debt)],
               [t('reports.general.de_ratio_label'), report.funding_structure.debt_equity_ratio.toFixed(2)],
-              [t('reports.general.total_credit_lines'), `€${report.funding_structure.total_credit_lines.toLocaleString()}`],
-              [t('reports.general.available_credit'), `€${report.funding_structure.available_credit.toLocaleString()}`],
+              [t('reports.general.total_credit_lines'), formatEuroRounded(report.funding_structure.total_credit_lines)],
+              [t('reports.general.available_credit'), formatEuroRounded(report.funding_structure.available_credit)],
               [t('reports.general.active_funders'), report.funding_structure.active_investors.toString()],
               [t('reports.general.active_banks'), report.funding_structure.active_banks.toString()],
               [t('reports.general.bank_credits'), report.funding_structure.bank_credits.toString()],
               [t('reports.general.avg_interest'), `${report.funding_structure.avg_interest_rate.toFixed(2)}%`],
-              [t('reports.general.monthly_debt_service'), `€${report.funding_structure.monthly_debt_service.toLocaleString()}`]
+              [t('reports.general.monthly_debt_service'), formatEuroRounded(report.funding_structure.monthly_debt_service)]
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between">
                 <span className="font-bold text-gray-700 dark:text-gray-200">{label}</span>
@@ -187,8 +228,8 @@ const GeneralReports: React.FC = () => {
               [t('reports.general.total_contracts'), report.construction_status.total_contracts.toString()],
               [t('reports.general.active_contracts'), report.construction_status.active_contracts.toString()],
               [t('reports.general.completed_contracts'), report.construction_status.completed_contracts.toString()],
-              [t('reports.general.contract_value'), `€${report.construction_status.contract_value.toLocaleString()}`],
-              [t('reports.general.budget_realized'), `€${report.construction_status.budget_realized.toLocaleString()}`],
+              [t('reports.general.contract_value'), formatEuroRounded(report.construction_status.contract_value)],
+              [t('reports.general.budget_realized'), formatEuroRounded(report.construction_status.budget_realized)],
               [t('reports.general.budget_utilization'), `${report.construction_status.budget_utilization.toFixed(1)}%`],
               [t('reports.general.total_subcontractors'), report.construction_status.total_subcontractors.toString()],
               [t('reports.general.total_phases'), report.construction_status.total_phases.toString()],
@@ -213,10 +254,10 @@ const GeneralReports: React.FC = () => {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.total_invoices')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.accounting_overview.total_invoices}</p></div>
-          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.total_invoice_value')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">€{(report.accounting_overview.total_invoice_value / 1000000).toFixed(2)}M</p></div>
-          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.paid_invoices')}</p><p className="text-xl font-bold text-green-600">{report.accounting_overview.paid_invoices} (€{(report.accounting_overview.paid_value / 1000000).toFixed(2)}M)</p></div>
-          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.pending_invoices')}</p><p className="text-xl font-bold text-yellow-600">{report.accounting_overview.pending_invoices} (€{(report.accounting_overview.pending_value / 1000000).toFixed(2)}M)</p></div>
-          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.overdue_invoices')}</p><p className="text-xl font-bold text-red-600">{report.accounting_overview.overdue_invoices} (€{(report.accounting_overview.overdue_value / 1000000).toFixed(2)}M)</p></div>
+          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.total_invoice_value')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{formatEuroCompact(report.accounting_overview.total_invoice_value)}</p></div>
+          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.paid_invoices')}</p><p className="text-xl font-bold text-green-600">{report.accounting_overview.paid_invoices} ({formatEuroCompact(report.accounting_overview.paid_value)})</p></div>
+          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.pending_invoices')}</p><p className="text-xl font-bold text-yellow-600">{report.accounting_overview.pending_invoices} ({formatEuroCompact(report.accounting_overview.pending_value)})</p></div>
+          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.overdue_invoices')}</p><p className="text-xl font-bold text-red-600">{report.accounting_overview.overdue_invoices} ({formatEuroCompact(report.accounting_overview.overdue_value)})</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.payment_completion')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.accounting_overview.payment_completion_rate.toFixed(1)}%</p></div>
         </div>
       </div>
@@ -231,8 +272,8 @@ const GeneralReports: React.FC = () => {
             {[
               [t('reports.general.total_office_suppliers'), report.office_expenses.total_office_suppliers.toString()],
               [t('reports.general.total_office_invoices'), report.office_expenses.total_office_invoices.toString()],
-              [t('reports.general.total_office_spent'), `€${report.office_expenses.total_office_spent.toLocaleString()}`],
-              [t('reports.general.avg_office_invoice'), `€${report.office_expenses.avg_office_invoice.toLocaleString()}`]
+              [t('reports.general.total_office_spent'), formatEuroRounded(report.office_expenses.total_office_spent)],
+              [t('reports.general.avg_office_invoice'), formatEuroRounded(report.office_expenses.avg_office_invoice)]
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between">
                 <span className="font-bold text-gray-700 dark:text-gray-200">{label}</span>
@@ -250,13 +291,13 @@ const GeneralReports: React.FC = () => {
           <div className="space-y-3 text-sm">
             {([
               [t('reports.general.total_investments_label'), report.company_credits.total_credits.toString(), false],
-              [t('reports.general.total_investment_value'), `€${report.company_credits.total_credit_value.toLocaleString()}`, false],
-              [t('reports.general.available_inv'), `€${report.company_credits.credits_available.toLocaleString()}`, true],
-              [t('reports.general.used_inv'), `€${report.company_credits.credits_used.toLocaleString()}`, false],
+              [t('reports.general.total_investment_value'), formatEuroRounded(report.company_credits.total_credit_value), false],
+              [t('reports.general.available_inv'), formatEuroRounded(report.company_credits.credits_available), true],
+              [t('reports.general.used_inv'), formatEuroRounded(report.company_credits.credits_used), false],
               [t('reports.general.cesija_payments'), report.company_credits.cesija_payments.toString(), false],
-              [t('reports.general.cesija_value'), `€${report.company_credits.cesija_value.toLocaleString()}`, false],
+              [t('reports.general.cesija_value'), formatEuroRounded(report.company_credits.cesija_value), false],
               [t('reports.general.investment_allocations'), report.company_credits.total_allocations.toString(), false],
-              [t('reports.general.total_allocated'), `€${report.company_credits.allocated_amount.toLocaleString()}`, false]
+              [t('reports.general.total_allocated'), formatEuroRounded(report.company_credits.allocated_amount), false]
             ] as [string, string, boolean][]).map(([label, value, isGreen], i) => (
               <div key={i} className="flex justify-between">
                 <span className="font-bold text-gray-700 dark:text-gray-200">{label}</span>
@@ -275,7 +316,7 @@ const GeneralReports: React.FC = () => {
           </div>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between"><span className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.total_bank_accounts')}</span><span className="font-bold text-gray-900 dark:text-white">{report.bank_accounts.total_accounts}</span></div>
-            <div className="flex justify-between"><span className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.total_balance')}</span><span className={`font-bold ${report.bank_accounts.total_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>€{report.bank_accounts.total_balance.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.total_balance')}</span><span className={`font-bold ${report.bank_accounts.total_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatEuroRounded(report.bank_accounts.total_balance)}</span></div>
             <div className="flex justify-between"><span className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.positive_accounts')}</span><span className="font-bold text-green-600">{report.bank_accounts.positive_balance_accounts}</span></div>
             <div className="flex justify-between"><span className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.negative_accounts')}</span><span className="font-bold text-red-600">{report.bank_accounts.negative_balance_accounts}</span></div>
           </div>
@@ -315,8 +356,8 @@ const GeneralReports: React.FC = () => {
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.active_retail_projects')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.active_retail_projects}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.land_plots')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.total_land_plots}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.retail_contracts')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.total_retail_contracts}</p></div>
-          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.contract_value_retail')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">€{report.retail_portfolio.retail_contract_value.toLocaleString()}</p></div>
-          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.budget_realized_retail')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">€{report.retail_portfolio.retail_budget_realized.toLocaleString()}</p></div>
+          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.contract_value_retail')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{formatEuroRounded(report.retail_portfolio.retail_contract_value)}</p></div>
+          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.budget_realized_retail')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{formatEuroRounded(report.retail_portfolio.retail_budget_realized)}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.retail_phases')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.retail_phases}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.completed_retail_phases')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.completed_retail_phases}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.retail_customers')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.total_retail_customers}</p></div>
@@ -358,11 +399,11 @@ const GeneralReports: React.FC = () => {
           <Table.Body>
             {report.cash_flow.map((month, index) => (
               <Table.Tr key={index}>
-                <Table.Td label={t('reports.general.month_col')} className="font-medium text-gray-900 dark:text-white">{month.month}</Table.Td>
-                <Table.Td label={t('reports.general.inflow_col')}>€{(month.inflow / 1000).toFixed(0)}K</Table.Td>
-                <Table.Td label={t('reports.general.outflow_col')}>€{(month.outflow / 1000).toFixed(0)}K</Table.Td>
-                <Table.Td label={t('reports.general.net_col')} className={`font-bold ${month.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  €{(month.net / 1000).toFixed(0)}K
+                <Table.Td label={t('reports.general.month_col')} className="font-medium text-gray-900 dark:text-white">{formatMonthYear(month.month_key, i18n.language)}</Table.Td>
+                <Table.Td label={t('reports.general.inflow_col')}>{formatEuroCompact(month.inflow)}</Table.Td>
+                <Table.Td label={t('reports.general.outflow_col')}>{formatEuroCompact(month.outflow)}</Table.Td>
+                <Table.Td label={t('reports.general.net_col')} className={`font-bold ${month.net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {formatEuroCompact(month.net)}
                 </Table.Td>
               </Table.Tr>
             ))}
@@ -371,9 +412,9 @@ const GeneralReports: React.FC = () => {
         <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
           <p className="font-bold text-gray-900 dark:text-white">{t('reports.general.six_month_totals')}</p>
           <p className="text-sm text-gray-700 dark:text-gray-200">
-            {t('reports.general.inflow_col')}: €{(report.cash_flow.reduce((sum, m) => sum + m.inflow, 0) / 1000000).toFixed(2)}M |
-            {t('reports.general.outflow_col')}: €{(report.cash_flow.reduce((sum, m) => sum + m.outflow, 0) / 1000000).toFixed(2)}M |
-            {t('reports.general.net_col')}: €{(report.cash_flow.reduce((sum, m) => sum + m.net, 0) / 1000000).toFixed(2)}M
+            {t('reports.general.inflow_col')}: {formatEuroCompact(report.cash_flow.reduce((sum, m) => sum + m.inflow, 0))} |
+            {t('reports.general.outflow_col')}: {formatEuroCompact(report.cash_flow.reduce((sum, m) => sum + m.outflow, 0))} |
+            {t('reports.general.net_col')}: {formatEuroCompact(report.cash_flow.reduce((sum, m) => sum + m.net, 0))}
           </p>
         </div>
       </div>
@@ -391,22 +432,22 @@ const GeneralReports: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <ProjectCategoryBadge category={project.category} size="md" />
-                    <Badge variant={project.risk_level === 'High' ? 'red' : project.risk_level === 'Medium' ? 'yellow' : 'green'}>
-                      {t('reports.general.risk')} {project.risk_level}
+                    <Badge variant={statusVariant(RISK_LEVEL, project.risk_level)}>
+                      {t('reports.general.risk')} {statusLabel(RISK_LEVEL, project.risk_level, t)}
                     </Badge>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.status_label')}</p><p className="font-bold text-gray-900 dark:text-white">{project.status}</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.status_label')}</p><p className="font-bold text-gray-900 dark:text-white">{statusLabel(PROJECT_STATUS, project.status, t)}</p></div>
                   <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.budget_label')}</p>{project.has_budget
-                    ? <p className="font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString()}</p>
+                    ? <p className="font-bold text-gray-900 dark:text-white">{formatEuroRounded(project.budget)}</p>
                     : <p className="font-bold text-orange-600 dark:text-orange-400">{t('general_projects.budget_not_set')}</p>}</div>
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.revenue_label')}</p><p className="font-bold text-green-600">€{project.revenue.toLocaleString()}</p></div>
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.expenses_label')}</p><p className="font-bold text-red-600">€{project.expenses.toLocaleString()}</p></div>
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.units_label')}</p><p className="font-bold text-gray-900 dark:text-white">{project.units_sold}/{project.total_units} sold ({project.sales_rate.toFixed(1)}%)</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.revenue_label')}</p><p className="font-bold text-green-600">{formatEuroRounded(project.revenue)}</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.expenses_label')}</p><p className="font-bold text-red-600">{formatEuroRounded(project.expenses)}</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.units_label')}</p><p className="font-bold text-gray-900 dark:text-white">{t('reports.general.units_value', { sold: project.units_sold, total: project.total_units, rate: project.sales_rate.toFixed(1) })}</p></div>
                   <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.contracts_label')}</p><p className="font-bold text-gray-900 dark:text-white">{project.contracts}</p></div>
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.phases_label')}</p><p className="font-bold text-gray-900 dark:text-white">{project.phases_done}/{project.total_phases} done</p></div>
-                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.funding_label')}</p><p className="font-bold text-gray-900 dark:text-white">€{project.equity.toLocaleString()} equity, €{project.debt.toLocaleString()} debt</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.phases_label')}</p><p className="font-bold text-gray-900 dark:text-white">{t('reports.general.phases_value', { done: project.phases_done, total: project.total_phases })}</p></div>
+                  <div><p className="text-gray-600 dark:text-gray-400">{t('reports.general.funding_label')}</p><p className="font-bold text-gray-900 dark:text-white">{t('reports.general.funding_value', { equity: formatEuroRounded(project.equity), debt: formatEuroRounded(project.debt) })}</p></div>
                 </div>
               </div>
             ))}
@@ -424,7 +465,10 @@ const GeneralReports: React.FC = () => {
             {report.risks.map((risk, index) => (
               <li key={index} className="flex items-start">
                 <span className="text-red-600 mr-2">•</span>
-                <span className="text-gray-800 dark:text-gray-100"><strong>{risk.type}:</strong> {risk.description}</span>
+                <span className="text-gray-800 dark:text-gray-100">
+                  <strong>{t(`reports.general.risks.${risk.kind}.type`)}:</strong>{' '}
+                  {t(`reports.general.risks.${risk.kind}.description`, { count: risk.count })}
+                </span>
               </li>
             ))}
           </ul>
@@ -443,7 +487,7 @@ const GeneralReports: React.FC = () => {
             {report.insights.top_projects.map((project, index) => (
               <li key={index} className="flex items-start">
                 <span className="text-green-600 mr-2">-</span>
-                <span className="text-gray-800 dark:text-gray-100">{project.name}: €{(project.revenue / 1000000).toFixed(1)}M revenue, {project.sales_rate.toFixed(1)}% sales rate</span>
+                <span className="text-gray-800 dark:text-gray-100">{t('reports.general.top_project_line', { name: project.name, revenue: formatEuroCompact(project.revenue), rate: project.sales_rate.toFixed(1) })}</span>
               </li>
             ))}
           </ul>
@@ -452,10 +496,10 @@ const GeneralReports: React.FC = () => {
         <div>
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">{t('reports.general.recommendations')}</h3>
           <ul className="space-y-2">
-            {report.insights.recommendations.map((rec, index) => (
-              <li key={index} className="flex items-start">
+            {report.insights.recommendation_keys.map((key) => (
+              <li key={key} className="flex items-start">
                 <span className="text-green-600 mr-2">•</span>
-                <span className="text-gray-800 dark:text-gray-100">{rec}</span>
+                <span className="text-gray-800 dark:text-gray-100">{t(key)}</span>
               </li>
             ))}
           </ul>

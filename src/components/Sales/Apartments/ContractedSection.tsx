@@ -123,7 +123,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
       {open && (
         <div className="p-4 space-y-4 bg-white dark:bg-gray-800 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Datum potpisa predugovora">
+            <FormField label={t('apartments.contracted.presale_date')}>
               <Input
                 type="date"
                 value={value.datum_potpisa_predugovora}
@@ -145,7 +145,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
 
           {value.contract_payment_type && (
             <div className="space-y-3 border-t border-gray-100 dark:border-gray-700 pt-3">
-              <FormField label="Kapara 10% (EUR)">
+              <FormField label={t('apartments.contracted.kapara')}>
                 <Input
                   type="number"
                   value={value.kapara_10_posto ?? ''}
@@ -159,7 +159,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
               {value.contract_payment_type === 'installments' && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField label="1. rata AB konstrukcija 30% (EUR)">
+                    <FormField label={t('apartments.contracted.rate1')}>
                       <Input
                         type="number"
                         value={value.rata_1_ab_konstrukcija_30 ?? ''}
@@ -169,7 +169,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
                         min="0"
                       />
                     </FormField>
-                    <FormField label="2. rata postava stolarije 20% (EUR)">
+                    <FormField label={t('apartments.contracted.rate2')}>
                       <Input
                         type="number"
                         value={value.rata_2_postava_stolarije_20 ?? ''}
@@ -181,7 +181,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
                     </FormField>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField label="3. rata obrtnički radovi 20% (EUR)">
+                    <FormField label={t('apartments.contracted.rate3')}>
                       <Input
                         type="number"
                         value={value.rata_3_obrtnicki_radovi_20 ?? ''}
@@ -191,7 +191,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
                         min="0"
                       />
                     </FormField>
-                    <FormField label="4. rata uporabna 20% (EUR)">
+                    <FormField label={t('apartments.contracted.rate4')}>
                       <Input
                         type="number"
                         value={value.rata_4_uporabna_20 ?? ''}
@@ -206,7 +206,7 @@ export const ContractedSection: React.FC<ContractedSectionProps> = ({ value, onC
               )}
 
               {value.contract_payment_type === 'credit' && (
-                <FormField label="Kredit etažiranje 90% (EUR)">
+                <FormField label={t('apartments.contracted.credit_amount')}>
                   <Input
                     type="number"
                     value={value.kredit_etaziranje_90 ?? ''}

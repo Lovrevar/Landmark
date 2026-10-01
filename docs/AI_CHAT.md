@@ -272,7 +272,7 @@ Editing a message creates a new sibling branch under the same `parent_id`. By de
 
 Three places can produce orphan storage objects (uploaded bytes without a DB row):
 
-- **User cancels mid-upload** — `removePendingAttachment` cleans up the object if the upload had already succeeded.
+- **User cancels mid-upload** — `removePendingAttachment` cleans up the object if the upload had already succeeded. The chip leaves the tray either way (it will not be sent); what the user is told about is an object that stayed behind.
 - **Send fails after uploads succeeded** — `sendMessage`'s catch block iterates the in-call uploaded paths and best-effort-deletes them.
 - **Server-side attachment insert fails after user row succeeds** — `handleChat` deletes the user row and best-effort-removes the storage objects before returning 500.
 
@@ -491,6 +491,26 @@ Plus [src/types/aiChat.ts](../src/types/aiChat.ts) for the event taxonomy and th
 `AiChatProvider` ([src/components/AiChat/AiChatProvider.tsx](../src/components/AiChat/AiChatProvider.tsx)) is mounted in [src/App.tsx](../src/App.tsx) wrapping `<AppContent />`, which means it sits ABOVE `<Router>` in the tree. This is deliberate: the app's routing uses Pattern B (each route renders its own `<ProtectedRoute><Layout>...</Layout></ProtectedRoute>` tuple), so `Layout` unmounts on every route change. Anything stored inside a Layout-mounted component would die on navigation; the chat panel, message history, and active stream reader would all reset.
 
 `useAiChatStore` ([src/components/AiChat/hooks/useAiChatStore.ts](../src/components/AiChat/hooks/useAiChatStore.ts)) is called exactly once, by the provider. It is NOT exported for use by consumers. Consumers call `useAiChat()` from `AiChatProvider.tsx` to get the Context value. Calling `useAiChatStore` directly anywhere else would create a second copy of the entire chat state.
+
+### How the store reports a failure
+
+The module is Croatian-only by design and has no `useToast`; its one mechanism for telling the
+user something failed is an inline `kind: 'error'` row appended to the message list, worded from
+`ERROR_LABELS_HR` in [lib/labels.ts](../src/components/AiChat/lib/labels.ts). The private
+`pushError(code, fallback)` helper in the store is what does it — **extend the label map, do not
+introduce a second mechanism.**
+
+Four paths that previously failed with only a `console.error` now go through it:
+
+| Path | Code |
+|---|---|
+| `fetchSessions` (the history dropdown came back empty) | `sessions_load_failed` |
+| `renameSession` (the old title just reappeared) | `rename_failed` |
+| `deleteSession` (the confirm dialog closed either way) | `delete_failed` |
+| `removePendingAttachment`, when the storage object survives | `attachment_remove_failed` |
+
+`deleteAiAttachment` now returns `boolean` rather than `void` for the last of these; every other
+caller is best-effort orphan cleanup and ignores the result.
 
 ### RenderMessage normalisation
 

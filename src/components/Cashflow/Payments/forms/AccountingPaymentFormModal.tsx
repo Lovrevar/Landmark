@@ -3,8 +3,12 @@ import { useTranslation } from 'react-i18next'
 import DateInput from '../../../Common/DateInput'
 import { Payment, Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation, PaymentFormData } from '../types'
 import { Modal, Button, Select, Input, Textarea, FormField, Form } from '../../../ui'
-import { formatCurrency } from '../../../Common/CurrencyInput'
+import CurrencyInput, { formatCurrency } from '../../../Common/CurrencyInput'
 import { CesijaPaymentFields } from '../../components/CesijaPaymentFields'
+import { PaymentMethodField } from '../../components/PaymentMethodField'
+import { snapPaymentMethod } from '../../services/paymentHelpers'
+import { getInvoiceTypeLabelKey } from '../../services/invoiceHelpers'
+import { PaymentInvoiceSummary, PartialPaymentAlert } from './PaymentInvoiceSummary'
 
 interface AccountingPaymentFormModalProps {
   showModal: boolean
@@ -36,19 +40,30 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
   onSubmit
 }) => {
   const { t } = useTranslation()
+  // Shared with the invoice filters, so every type — including INCOMING_BANK_EXPENSES — has a label.
   const getInvoiceTypeLabel = (type: string) => {
-    const typeMap: Record<string, string> = {
-      'INCOMING_SUPPLIER': t('payments.detail.type_incoming_supplier'),
-      'INCOMING_INVESTMENT': t('payments.detail.type_incoming_investment'),
-      'OUTGOING_SUPPLIER': t('payments.detail.type_outgoing_supplier'),
-      'OUTGOING_SALES': t('payments.detail.type_outgoing_sales'),
-      'INCOMING_OFFICE': t('payments.detail.type_incoming_office'),
-      'OUTGOING_OFFICE': t('payments.detail.type_outgoing_office'),
-      'INCOMING_BANK': t('payments.detail.type_incoming_bank'),
-      'OUTGOING_BANK': t('payments.detail.type_outgoing_bank')
-    }
-    return typeMap[type] || type
+    const key = getInvoiceTypeLabelKey(type)
+    return key ? t(key) : type
   }
+
+  const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
+  // remaining_amount already has the edited payment subtracted, so it may cover that much again.
+  const payableAmount = selectedInvoice
+    ? selectedInvoice.remaining_amount + (editingPayment?.amount ?? 0)
+    : 0
+  const invoiceBankAccounts = selectedInvoice
+    ? companyBankAccounts.filter(acc => acc.company_id === selectedInvoice.company_id)
+    : []
+  const invoiceCredits = selectedInvoice
+    ? companyCredits.filter(credit => credit.company_id === selectedInvoice.company_id && !credit.disbursed_to_account)
+    : []
+
+  // Every change to the source or cesija goes through here, so the method can never be left on
+  // one the new source does not allow (e.g. Gotovina recorded as a wire).
+  const changeForm = (data: PaymentFormData) => setFormData({
+    ...data,
+    payment_method: snapPaymentMethod(data.payment_method, data.payment_source_type, data.is_cesija)
+  })
 
   const getInvoiceEntityName = (invoice: Invoice) => {
     if (invoice.subcontractors?.name) return invoice.subcontractors.name
@@ -63,7 +78,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
     const companyName = invoice.companies?.name || ''
     const entityName = getInvoiceEntityName(invoice)
     const typeLabel = getInvoiceTypeLabel(invoice.invoice_type)
-    const remaining = `€${invoice.remaining_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    const remaining = `€${formatCurrency(invoice.remaining_amount)}`
 
     const parts = [invoice.invoice_number]
     if (typeLabel) parts.push(typeLabel)
@@ -83,19 +98,21 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
 
       <Form onSubmit={onSubmit} className="overflow-y-auto flex-1 flex flex-col">
         <Modal.Body>
+          {selectedInvoice && <PaymentInvoiceSummary invoice={selectedInvoice} />}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField label={t('payments.form.invoice_label')} required className="md:col-span-2">
               <Select
                 value={formData.invoice_id}
                 onChange={(e) => {
-                  const selectedInvoice = invoices.find(inv => inv.id === e.target.value)
+                  const pickedInvoice = invoices.find(inv => inv.id === e.target.value)
                   setFormData({
                     ...formData,
                     invoice_id: e.target.value,
                     company_bank_account_id: '',
                     credit_id: '',
                     credit_allocation_id: '',
-                    amount: selectedInvoice ? selectedInvoice.remaining_amount : 0
+                    amount: pickedInvoice ? pickedInvoice.remaining_amount : 0
                   })
                 }}
                 disabled={!!editingPayment}
@@ -114,7 +131,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                 <FormField label={t('payments.form.source_label')} required className="md:col-span-2">
                   <Select
                     value={formData.payment_source_type}
-                    onChange={(e) => setFormData({
+                    onChange={(e) => changeForm({
                       ...formData,
                       payment_source_type: e.target.value as 'bank_account' | 'credit' | 'kompenzacija' | 'gotovina',
                       company_bank_account_id: '',
@@ -133,30 +150,18 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     label={t('payments.form.bank_account_label')}
                     required
                     className="md:col-span-2"
-                    error={
-                      formData.invoice_id && companyBankAccounts.filter(acc => {
-                        const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
-                        return selectedInvoice && acc.company_id === selectedInvoice.company_id
-                      }).length === 0
-                        ? t('payments.form.no_bank_accounts_error')
-                        : undefined
-                    }
+                    error={invoiceBankAccounts.length === 0 ? t('payments.form.no_bank_accounts_error') : undefined}
                   >
                     <Select
                       value={formData.company_bank_account_id}
                       onChange={(e) => setFormData({ ...formData, company_bank_account_id: e.target.value })}
                     >
                       <option value="">{t('payments.form.select_bank_account')}</option>
-                      {companyBankAccounts
-                        .filter(acc => {
-                          const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
-                          return selectedInvoice && acc.company_id === selectedInvoice.company_id
-                        })
-                        .map(account => (
-                          <option key={account.id} value={account.id}>
-                            {account.bank_name} ({t('payments.form.balance_label')}€{account.current_balance.toLocaleString('hr-HR')})
-                          </option>
-                        ))}
+                      {invoiceBankAccounts.map(account => (
+                        <option key={account.id} value={account.id}>
+                          {account.bank_name} {account.account_number ? `- ${account.account_number}` : ''} ({t('payments.form.balance_label')}€{formatCurrency(account.current_balance)})
+                        </option>
+                      ))}
                     </Select>
                   </FormField>
                 )}
@@ -166,16 +171,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     label={t('payments.form.credit_label')}
                     required
                     className="md:col-span-2"
-                    error={
-                      formData.invoice_id && companyCredits.filter(credit => {
-                        const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
-                        return selectedInvoice &&
-                          credit.company_id === selectedInvoice.company_id &&
-                          !credit.disbursed_to_account
-                      }).length === 0
-                        ? t('payments.form.no_credits_error')
-                        : undefined
-                    }
+                    error={invoiceCredits.length === 0 ? t('payments.form.no_credits_error') : undefined}
                   >
                     <Select
                       value={formData.credit_id}
@@ -186,21 +182,14 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       }}
                     >
                       <option value="">{t('payments.form.select_credit')}</option>
-                      {companyCredits
-                        .filter(credit => {
-                          const selectedInvoice = invoices.find(inv => inv.id === formData.invoice_id)
-                          return selectedInvoice &&
-                            credit.company_id === selectedInvoice.company_id &&
-                            !credit.disbursed_to_account
-                        })
-                        .map(credit => {
-                          const available = credit.amount - credit.used_amount
-                          return (
-                            <option key={credit.id} value={credit.id}>
-                              {credit.credit_name} ({t('payments.form.credit_available')}€{available.toLocaleString('hr-HR')})
-                            </option>
-                          )
-                        })}
+                      {invoiceCredits.map(credit => {
+                        const available = credit.amount - credit.used_amount
+                        return (
+                          <option key={credit.id} value={credit.id}>
+                            {credit.credit_name} ({t('payments.form.credit_available')}€{formatCurrency(available)})
+                          </option>
+                        )
+                      })}
                     </Select>
                   </FormField>
                 )}
@@ -237,7 +226,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                   <input
                     type="checkbox"
                     checked={formData.is_cesija}
-                    onChange={(e) => setFormData({
+                    onChange={(e) => changeForm({
                       ...formData,
                       is_cesija: e.target.checked,
                       payment_source_type: e.target.checked ? 'bank_account' : formData.payment_source_type,
@@ -267,7 +256,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
               companyBankAccounts={companyBankAccounts}
               companyCredits={companyCredits}
               creditAllocations={creditAllocations}
-              onFormChange={(data) => setFormData({ ...formData, ...data } as PaymentFormData)}
+              onFormChange={(data) => changeForm({ ...formData, ...data } as PaymentFormData)}
               onCreditChange={onCreditChange}
             />
 
@@ -279,28 +268,27 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
               />
             </FormField>
 
-            <FormField label={t('payments.form.amount_label')} required>
-              <Input
-                type="number"
+            <FormField
+              label={t('payments.form.amount_label')}
+              required
+              helperText={selectedInvoice
+                ? t('payments.form.max_amount_helper', { amount: formatCurrency(payableAmount) })
+                : undefined}
+            >
+              <CurrencyInput
                 value={formData.amount}
-                onChange={(e) => {
-                  const parsed = parseFloat(e.target.value)
-                  setFormData({ ...formData, amount: Number.isFinite(parsed) ? parsed : 0 })
-                }}
+                onChange={(value) => setFormData({ ...formData, amount: value })}
+                placeholder="0,00"
+                min={0.01}
               />
             </FormField>
 
-            <FormField label={t('payments.form.method_label')} required>
-              <Select
-                value={formData.payment_method}
-                onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as 'WIRE' | 'CASH' | 'CHECK' | 'CARD' })}
-              >
-                <option value="WIRE">{t('payments.method_wire')}</option>
-                <option value="CASH">{t('payments.method_cash')}</option>
-                <option value="CHECK">{t('payments.method_check')}</option>
-                <option value="CARD">{t('payments.method_card')}</option>
-              </Select>
-            </FormField>
+            <PaymentMethodField
+              value={formData.payment_method}
+              source={formData.payment_source_type}
+              isCesija={formData.is_cesija}
+              onChange={(method) => setFormData({ ...formData, payment_method: method })}
+            />
 
             <FormField label={t('payments.form.reference_label')}>
               <Input
@@ -320,6 +308,8 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
               placeholder={t('invoices.form.additional_notes')}
             />
           </FormField>
+
+          {selectedInvoice && <PartialPaymentAlert amount={formData.amount} payableAmount={payableAmount} />}
         </Modal.Body>
         <Modal.Footer sticky>
           <Button variant="secondary" type="button" onClick={onClose}>

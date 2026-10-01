@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { Search, X } from 'lucide-react'
 import FilterChip from '../../ui/FilterChip'
-import SearchableSelect from '../../ui/SearchableSelect'
-import type { EventType, TaskUser } from '../../../types/tasks'
+import SearchableSelect, { type SearchableOption } from '../../ui/SearchableSelect'
+import type { TaskUser } from '../../../types/tasks'
 import type { ProjectOption } from '../services/calendarService'
+import { EVENT_TYPES, EVENT_TYPE_COLORS } from '../utils/eventTypeColors'
 
 interface Props {
   activeTypes: string[]
@@ -16,15 +17,10 @@ interface Props {
   onChangeParticipants: (ids: string[]) => void
   search: string
   onChangeSearch: (s: string) => void
-}
-
-const TYPES: EventType[] = ['meeting', 'personal', 'deadline', 'reminder']
-
-const typeDot: Record<EventType, string> = {
-  meeting: 'bg-blue-500',
-  personal: 'bg-gray-400',
-  deadline: 'bg-red-500',
-  reminder: 'bg-amber-500',
+  /** `projects` is empty because the fetch failed, not because there are none. */
+  projectsLoadFailed?: boolean
+  /** `users` is empty because the fetch failed, not because there are none. */
+  usersLoadFailed?: boolean
 }
 
 export default function CalendarFilterBar({
@@ -38,13 +34,27 @@ export default function CalendarFilterBar({
   onChangeParticipants,
   search,
   onChangeSearch,
+  projectsLoadFailed = false,
+  usersLoadFailed = false,
 }: Props) {
   const { t } = useTranslation()
 
-  const projectOptions = projects.map(p => ({ value: p.id, label: p.name }))
-  const userOptions = users.map(u => ({ value: u.id, label: u.username, sublabel: u.role }))
-
   const selectedParticipantId = activeParticipantIds[0] || null
+
+  // Both filters persist per user, so a failed option list would leave the grid filtered while
+  // the control read "any project" / "any participant" — the filter would be invisible and
+  // impossible to clear. Keep the saved value as a nameless option instead; it still clears.
+  const unnamed = (value: string) => ({ value, label: t('common.option_name_unavailable') })
+
+  const projectOptions: SearchableOption[] = projects.map(p => ({ value: p.id, label: p.name }))
+  if (projectsLoadFailed && activeProjectId && !projectOptions.some(o => o.value === activeProjectId)) {
+    projectOptions.push(unnamed(activeProjectId))
+  }
+
+  const userOptions: SearchableOption[] = users.map(u => ({ value: u.id, label: u.username, sublabel: u.role }))
+  if (usersLoadFailed && selectedParticipantId && !userOptions.some(o => o.value === selectedParticipantId)) {
+    userOptions.push(unnamed(selectedParticipantId))
+  }
 
   const hasActiveFilters =
     activeTypes.length > 0 ||
@@ -62,12 +72,12 @@ export default function CalendarFilterBar({
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-4">
       <div className="flex flex-wrap items-center gap-2">
-        {TYPES.map(type => (
+        {EVENT_TYPES.map(type => (
           <FilterChip
             key={type}
             active={activeTypes.includes(type)}
             onClick={() => onToggleType(type)}
-            dotColor={typeDot[type]}
+            dotColor={EVENT_TYPE_COLORS[type].dot}
             size="sm"
           >
             {t(`calendar.event_type.${type}`)}

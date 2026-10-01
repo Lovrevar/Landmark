@@ -5,7 +5,10 @@ export interface BankWithCredits extends Bank {
   total_credits: number
   active_credits: number
   credit_utilization: number
-  credit_utilized: number
+  /** Σ `bank_credits.amount` — the facilities approved by this bank, not the amount drawn. */
+  credit_total: number
+  /** Σ `bank_credits.used_amount` — what has actually been drawn. */
+  credit_used: number
   outstanding_debt: number
   available_funds: number
 }

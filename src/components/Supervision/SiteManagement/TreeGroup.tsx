@@ -23,6 +23,8 @@ interface TreeGroupProps {
   onOpenSubDetails: (subcontractor: Subcontractor) => void
   onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
+  /** False drops the "Paid" column from every row of this subtree. */
+  canManagePayments: boolean
 }
 
 const money = formatEuroRounded
@@ -66,6 +68,7 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
   onToggleNode,
   onEditClassificationBudget,
   onAddSubcontractor,
+  canManagePayments,
   ...cardHandlers
 }) => {
   const { t } = useTranslation()
@@ -153,13 +156,15 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
           <Metric label={t('supervision.site_management.phase_card.cost')} muted={isEmpty}>
             {isEmpty ? '—' : money(node.rollup.contracted)}
           </Metric>
-          <Metric
-            label={t('common.paid')}
-            muted={isEmpty}
-            valueClassName={isEmpty ? undefined : 'text-teal-600 dark:text-teal-400'}
-          >
-            {isEmpty ? '—' : money(node.rollup.paid)}
-          </Metric>
+          {canManagePayments && (
+            <Metric
+              label={t('common.paid')}
+              muted={isEmpty}
+              valueClassName={isEmpty ? undefined : 'text-teal-600 dark:text-teal-400'}
+            >
+              {isEmpty ? '—' : money(node.rollup.paid)}
+            </Metric>
+          )}
 
           {/* Fixed width whether or not the buttons exist, so rows without them keep the grid. */}
           <div className="flex items-center justify-end w-[72px] flex-shrink-0">
@@ -197,6 +202,7 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
                 subcontractor={subcontractor as unknown as Subcontractor}
                 phase={phase ?? project.phases[0]}
                 project={project}
+                canManagePayments={canManagePayments}
                 {...cardHandlers}
               />
             ))}
@@ -218,6 +224,7 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
                 onToggleNode={onToggleNode}
                 onEditClassificationBudget={onEditClassificationBudget}
                 onAddSubcontractor={onAddSubcontractor}
+                canManagePayments={canManagePayments}
                 {...cardHandlers}
               />
             ))}

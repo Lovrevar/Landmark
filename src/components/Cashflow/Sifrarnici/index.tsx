@@ -2,11 +2,13 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BookMarked, Building2, Landmark, Users } from 'lucide-react'
 import {
-  Badge, Button, Card, EmptyState, LoadingSpinner, PageHeader,
+  Alert, Badge, Button, Card, EmptyState, ErrorState, LoadingSpinner, PageHeader,
   SearchInput, Select, Table, Tabs,
 } from '../../ui'
 // Not re-exported from ui/index.ts.
 import ToggleSwitch from '../../ui/ToggleSwitch'
+import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { useSifrarnici } from './hooks/useSifrarnici'
 import {
   ACCOUNT_ROLES, PARTNER_ENTITY_KINDS, VAT_ROLES,
@@ -23,6 +25,10 @@ import {
 export default function Sifrarnici() {
   const { t } = useTranslation()
   const s = useSifrarnici()
+
+  // With nothing loaded, each tab's empty state claims the reference data has not been
+  // imported yet — a very different thing from "the query failed".
+  const nothingLoaded = s.accounts.length === 0 && s.costCenters.length === 0 && s.partners.length === 0
 
   const tabs: { id: SifrarnikTab; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'accounts', label: t('sifrarnici.tab_accounts'), icon: <BookMarked className="w-4 h-4" />, count: s.unmappedCounts.accounts || undefined },
@@ -55,13 +61,28 @@ export default function Sifrarnici() {
           </label>
         </div>
 
-        {s.error && (
-          <p className="text-sm text-red-600 dark:text-red-400 pb-3">{s.error}</p>
+        {s.error && nothingLoaded && (
+          <div className="pb-3">
+            <ErrorState onRetry={() => void s.reload()} compact />
+          </div>
+        )}
+
+        {s.error && !nothingLoaded && (
+          <div className="pb-3">
+            <Alert variant="error" title={t('common.load_error_title')} onDismiss={s.dismissError}>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="flex-1">{toErrorMessage(s.error, t('common.load_error_description'))}</span>
+                <Button size="sm" variant="secondary" onClick={() => void s.reload()}>
+                  {t('common.retry')}
+                </Button>
+              </div>
+            </Alert>
+          </div>
         )}
 
         {s.loading ? (
           <LoadingSpinner />
-        ) : s.activeTab === 'accounts' ? (
+        ) : s.error && nothingLoaded ? null : s.activeTab === 'accounts' ? (
           <AccountsTab s={s} />
         ) : s.activeTab === 'cost_centers' ? (
           <CostCentersTab s={s} />
@@ -81,6 +102,7 @@ type S = ReturnType<typeof useSifrarnici>
 
 function AccountsTab({ s }: { s: S }) {
   const { t } = useTranslation()
+  const toast = useToast()
   const [saving, setSaving] = useState<string | null>(null)
 
   if (s.accounts.length === 0) {
@@ -113,8 +135,25 @@ function AccountsTab({ s }: { s: S }) {
     setSaving(code)
     try {
       await s.saveAccount(next)
+      // Without this the only sign of a failed save was the select snapping back to its old
+      // value, which looks identical to a save that worked on a value the server normalised.
+      toast.success(t('sifrarnici.toast.save_success'))
     } catch (e) {
       console.error('Failed to save account mapping:', e)
+      toast.error(toErrorMessage(e, t('sifrarnici.toast.save_error')))
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const clear = async (code: string) => {
+    setSaving(code)
+    try {
+      await s.clearAccount(code)
+      toast.success(t('sifrarnici.toast.clear_success'))
+    } catch (e) {
+      console.error('Failed to clear account mapping:', e)
+      toast.error(toErrorMessage(e, t('sifrarnici.toast.clear_error')))
     } finally {
       setSaving(null)
     }
@@ -191,7 +230,7 @@ function AccountsTab({ s }: { s: S }) {
               <Table.Td>
                 {a.mapping && (
                   <Button variant="ghost" size="sm" disabled={busy}
-                    onClick={() => void s.clearAccount(a.account_code)}>
+                    onClick={() => void clear(a.account_code)}>
                     {t('common.clear')}
                   </Button>
                 )}
@@ -210,6 +249,7 @@ function AccountsTab({ s }: { s: S }) {
 
 function CostCentersTab({ s }: { s: S }) {
   const { t } = useTranslation()
+  const toast = useToast()
 
   if (s.costCenters.length === 0) {
     return (
@@ -232,8 +272,20 @@ function CostCentersTab({ s }: { s: S }) {
         retail_project_id: kind === 'r' ? id : null,
         notes: null,
       })
+      toast.success(t('sifrarnici.toast.save_success'))
     } catch (e) {
       console.error('Failed to save cost centre mapping:', e)
+      toast.error(toErrorMessage(e, t('sifrarnici.toast.save_error')))
+    }
+  }
+
+  const clear = async (code: string) => {
+    try {
+      await s.clearCostCenter(code)
+      toast.success(t('sifrarnici.toast.clear_success'))
+    } catch (e) {
+      console.error('Failed to clear cost centre mapping:', e)
+      toast.error(toErrorMessage(e, t('sifrarnici.toast.clear_error')))
     }
   }
 
@@ -270,7 +322,7 @@ function CostCentersTab({ s }: { s: S }) {
               </Table.Td>
               <Table.Td>
                 {c.mapping && (
-                  <Button variant="ghost" size="sm" onClick={() => void s.clearCostCenter(c.code)}>
+                  <Button variant="ghost" size="sm" onClick={() => void clear(c.code)}>
                     {t('common.clear')}
                   </Button>
                 )}
@@ -289,9 +341,39 @@ function CostCentersTab({ s }: { s: S }) {
 
 function PartnersTab({ s }: { s: S }) {
   const { t } = useTranslation()
+  const toast = useToast()
   // A kind chosen but not yet paired with an entity cannot be saved —
   // erp.partner_map.entity_id is NOT NULL — so it is held here until it can be.
   const [pendingKind, setPendingKind] = useState<Record<number, PartnerEntityKind>>({})
+
+  const loadTargets = async (kind: PartnerEntityKind) => {
+    try {
+      await s.ensurePartnerTargets(kind)
+    } catch (e) {
+      console.error('Failed to load partner targets:', e)
+      toast.error(toErrorMessage(e, t('sifrarnici.toast.targets_error')))
+    }
+  }
+
+  const save = async (mapping: Parameters<S['savePartner']>[0]) => {
+    try {
+      await s.savePartner(mapping)
+      toast.success(t('sifrarnici.toast.save_success'))
+    } catch (e) {
+      console.error('Failed to save partner mapping:', e)
+      toast.error(toErrorMessage(e, t('sifrarnici.toast.save_error')))
+    }
+  }
+
+  const clear = async (komId: number) => {
+    try {
+      await s.clearPartner(komId)
+      toast.success(t('sifrarnici.toast.clear_success'))
+    } catch (e) {
+      console.error('Failed to clear partner mapping:', e)
+      toast.error(toErrorMessage(e, t('sifrarnici.toast.clear_error')))
+    }
+  }
 
   if (s.partners.length === 0) {
     return (
@@ -335,7 +417,7 @@ function PartnersTab({ s }: { s: S }) {
                   onChange={e => {
                     const k = e.target.value as PartnerEntityKind
                     setPendingKind(prev => ({ ...prev, [p.kom_id]: k }))
-                    if (k) void s.ensurePartnerTargets(k)
+                    if (k) void loadTargets(k)
                   }}
                 >
                   <option value="">{t('sifrarnici.pick_kind')}</option>
@@ -351,7 +433,7 @@ function PartnersTab({ s }: { s: S }) {
                     value={p.mapping?.entity_id ?? ''}
                     onChange={e => {
                       if (!e.target.value) return
-                      void s.savePartner({
+                      void save({
                         kom_id: p.kom_id,
                         entity_kind: kind as PartnerEntityKind,
                         entity_id: e.target.value,
@@ -377,7 +459,7 @@ function PartnersTab({ s }: { s: S }) {
                         delete next[p.kom_id]
                         return next
                       })
-                      if (p.mapping) void s.clearPartner(p.kom_id)
+                      if (p.mapping) void clear(p.kom_id)
                     }}
                   >
                     {t('common.clear')}

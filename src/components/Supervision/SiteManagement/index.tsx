@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { LoadingSpinner, Modal, ConfirmDialog } from '../../ui'
+import { LoadingSpinner, Modal, ConfirmDialog, Alert, Button } from '../../ui'
 import { useAuth } from '../../../contexts/AuthContext'
+import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { ProjectPhase, Subcontractor, WirePayment } from '../../../lib/supabase'
 import { ProjectWithPhases, PhaseFormInput, EditPhaseFormData, SubcontractorFormData, CommentWithUser, SiteGrouping } from './types'
 import { useSiteData } from './hooks/useSiteData'
@@ -28,10 +30,12 @@ const GROUPING_STORAGE_KEY = 'cognilion.site_management_grouping'
 const SiteManagement: React.FC = () => {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const toast = useToast()
   const {
     projects,
     loading,
     refreshing,
+    error,
     existingSubcontractors,
     fetchProjects,
     createProjectPhases,
@@ -100,6 +104,7 @@ const SiteManagement: React.FC = () => {
   const [showEditPaymentModal, setShowEditPaymentModal] = useState(false)
   const [selectedSubcontractor, setSelectedSubcontractor] = useState<Subcontractor | null>(null)
   const [subcontractorComments, setSubcontractorComments] = useState<CommentWithUser[]>([])
+  const [commentsError, setCommentsError] = useState<Error | null>(null)
   const [newComment, setNewComment] = useState('')
   const [commentType, setCommentType] = useState<'completed' | 'issue' | 'general'>('general')
   const [showMilestoneManagement, setShowMilestoneManagement] = useState(false)
@@ -124,7 +129,7 @@ const SiteManagement: React.FC = () => {
   })
   const [budgetsModalPhase, setBudgetsModalPhase] = useState<ProjectPhase | null>(null)
   const [showManageClassifications, setShowManageClassifications] = useState(false)
-  const { classifications, load: loadClassifications } = useCostClassifications()
+  const { classifications, error: classificationsError, load: loadClassifications } = useCostClassifications()
 
   useEffect(() => { loadClassifications() }, [loadClassifications])
 
@@ -146,8 +151,8 @@ const SiteManagement: React.FC = () => {
     })
   }
 
-  const handleCreatePhases = async (phases: PhaseFormInput[]) => {
-    if (!selectedProject) return
+  const handleCreatePhases = async (phases: PhaseFormInput[]): Promise<boolean> => {
+    if (!selectedProject) return false
 
     if (isPhaseSetupEditMode) {
       const success = await updateProjectPhases(selectedProject.id, phases)
@@ -155,12 +160,14 @@ const SiteManagement: React.FC = () => {
         setShowPhaseSetup(false)
         setIsPhaseSetupEditMode(false)
       }
-    } else {
-      const success = await createProjectPhases(selectedProject.id, phases)
-      if (success) {
-        setShowPhaseSetup(false)
-      }
+      return success
     }
+
+    const success = await createProjectPhases(selectedProject.id, phases)
+    if (success) {
+      setShowPhaseSetup(false)
+    }
+    return success
   }
 
   const handleUpdatePhase = async (updates: EditPhaseFormData) => {
@@ -208,12 +215,13 @@ const SiteManagement: React.FC = () => {
     setSelectedPhase(null)
   }
 
-  const handleUpdateSubcontractor = async (updatedSubcontractor: Subcontractor) => {
-    const success = await updateSubcontractor(updatedSubcontractor)
+  const handleUpdateSubcontractor = async (updatedSubcontractor: Subcontractor, pendingFiles: File[]): Promise<boolean> => {
+    const success = await updateSubcontractor(updatedSubcontractor, pendingFiles)
     if (success) {
       setShowEditModal(false)
       setEditingSubcontractor(null)
     }
+    return success
   }
 
   const handleDeleteSubcontractor = async (subcontractorId: string) => {
@@ -224,9 +232,24 @@ const SiteManagement: React.FC = () => {
   const resolveContractId = (sub: Subcontractor) =>
     (sub as Subcontractor & { contract_id?: string }).contract_id || sub.id
 
+  /**
+   * `null` means the read failed, as opposed to `[]` meaning this contract has no wire payments.
+   * The history modal is never opened on a `null`, so it cannot claim a contract was never paid.
+   */
+  const loadWirePayments = async (contractId: string): Promise<WirePayment[] | null> => {
+    try {
+      return await fetchWirePayments(contractId)
+    } catch (err) {
+      console.error('Error fetching wire payments:', err)
+      toast.error(toErrorMessage(err, t('supervision.payment_history.load_failed')))
+      return null
+    }
+  }
+
   const openPaymentHistory = async (subcontractor: Subcontractor) => {
+    const payments = await loadWirePayments(resolveContractId(subcontractor))
+    if (!payments) return
     setSelectedSubcontractorForPayment(subcontractor)
-    const payments = await fetchWirePayments(resolveContractId(subcontractor))
     setWirePayments(payments)
     setShowPaymentHistory(true)
   }
@@ -250,8 +273,8 @@ const SiteManagement: React.FC = () => {
     if (success) {
       setShowEditPaymentModal(false)
       setEditingPayment(null)
-      const payments = await fetchWirePayments(resolveContractId(selectedSubcontractorForPayment))
-      setWirePayments(payments)
+      const payments = await loadWirePayments(resolveContractId(selectedSubcontractorForPayment))
+      if (payments) setWirePayments(payments)
 
       const updatedProject = projects.find(p => p.id === selectedProject?.id)
       if (updatedProject) {
@@ -267,8 +290,8 @@ const SiteManagement: React.FC = () => {
     if (!selectedSubcontractorForPayment) return
     const success = await deleteWirePayment(paymentId, amount, selectedSubcontractorForPayment)
     if (success) {
-      const payments = await fetchWirePayments(resolveContractId(selectedSubcontractorForPayment))
-      setWirePayments(payments)
+      const payments = await loadWirePayments(resolveContractId(selectedSubcontractorForPayment))
+      if (payments) setWirePayments(payments)
 
       const updatedProject = projects.find(p => p.id === selectedProject?.id)
       if (updatedProject) {
@@ -280,10 +303,22 @@ const SiteManagement: React.FC = () => {
     }
   }
 
+  /** Reads the comment thread, recording a failure instead of leaving the list looking empty. */
+  const loadComments = async (subcontractorId: string) => {
+    try {
+      setSubcontractorComments(await fetchSubcontractorComments(subcontractorId))
+      setCommentsError(null)
+    } catch (err) {
+      console.error('Error fetching comments:', err)
+      setCommentsError(err instanceof Error ? err : new Error(String(err)))
+    }
+  }
+
   const openSubcontractorDetails = async (subcontractor: Subcontractor) => {
     setSelectedSubcontractor(subcontractor)
-    const comments = await fetchSubcontractorComments(subcontractor.id)
-    setSubcontractorComments(comments)
+    setSubcontractorComments([])
+    setCommentsError(null)
+    await loadComments(subcontractor.id)
   }
 
   const handleAddComment = async () => {
@@ -296,8 +331,7 @@ const SiteManagement: React.FC = () => {
     )
     if (success) {
       setNewComment('')
-      const comments = await fetchSubcontractorComments(selectedSubcontractor.id)
-      setSubcontractorComments(comments)
+      await loadComments(selectedSubcontractor.id)
     }
   }
 
@@ -312,7 +346,7 @@ const SiteManagement: React.FC = () => {
   }
 
   if (loading && projects.length === 0) {
-    return <LoadingSpinner message="Loading site management..." />
+    return <LoadingSpinner message={t('supervision.site_management.loading')} />
   }
 
   const userCanManagePayments = canManagePayments(user)
@@ -320,6 +354,17 @@ const SiteManagement: React.FC = () => {
   if (selectedProject) {
     return (
       <div>
+        {/* The classification tree, the badges and the per-classification budgets are all built
+            from this list, so an empty one is a wrong screen, not a bare one. */}
+        {classificationsError && (
+          <Alert variant="error" className="mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{t('common.load_error_description')}</span>
+              <Button size="sm" variant="secondary" onClick={loadClassifications}>{t('common.retry')}</Button>
+            </div>
+          </Alert>
+        )}
+
         <ProjectDetail
           project={selectedProject}
           onBack={() => navigate('/site-management')}
@@ -338,7 +383,9 @@ const SiteManagement: React.FC = () => {
             setShowSubcontractorForm(true)
           }}
           onOpenPaymentHistory={userCanManagePayments ? openPaymentHistory : undefined}
-          onOpenInvoices={openInvoices}
+          // Invoices carry paid_amount and remaining_amount, so this entry point is gated the
+          // same way the payment history already is — InvoicesModal then has no way in.
+          onOpenInvoices={userCanManagePayments ? openInvoices : undefined}
           onEditSubcontractor={(sub) => {
             setEditingSubcontractor(sub)
             setShowEditModal(true)
@@ -429,6 +476,7 @@ const SiteManagement: React.FC = () => {
           subcontractor={editingSubcontractor}
           onChange={setEditingSubcontractor}
           onSubmit={handleUpdateSubcontractor}
+          canManagePayments={userCanManagePayments}
         />
 
         <PaymentHistoryModal
@@ -474,10 +522,14 @@ const SiteManagement: React.FC = () => {
           onClose={() => {
             setSelectedSubcontractor(null)
             setSubcontractorComments([])
+            setCommentsError(null)
             setNewComment('')
           }}
           subcontractor={selectedSubcontractor}
+          canManagePayments={userCanManagePayments}
           comments={subcontractorComments}
+          commentsError={commentsError}
+          onRetryComments={selectedSubcontractor ? () => loadComments(selectedSubcontractor.id) : undefined}
           newComment={newComment}
           commentType={commentType}
           onCommentChange={setNewComment}
@@ -498,15 +550,21 @@ const SiteManagement: React.FC = () => {
         />
 
         {showMilestoneManagement && milestoneContext && (
-          <Modal show={true} onClose={closeMilestoneManagement} size="full">
-            <MilestoneList
-              contractId={milestoneContext.subcontractor.contract_id || milestoneContext.subcontractor.id}
-              subcontractorName={milestoneContext.subcontractor.name}
-              projectName={milestoneContext.project.name}
-              phaseName={milestoneContext.phase.phase_name}
-              contractCost={milestoneContext.subcontractor.cost}
-              onClose={closeMilestoneManagement}
-            />
+          <Modal show={true} onClose={closeMilestoneManagement} size="full" ariaLabel={t('supervision.site_management.milestone_list.title')}>
+            {/* Modal.Body is the only part of Modal that scrolls, so a long milestone table
+                rendered as a direct child simply overflowed the viewport. noPadding because
+                MilestoneList draws its own. */}
+            <Modal.Body noPadding>
+              <MilestoneList
+                contractId={milestoneContext.subcontractor.contract_id || milestoneContext.subcontractor.id}
+                subcontractorName={milestoneContext.subcontractor.name}
+                projectName={milestoneContext.project.name}
+                phaseName={milestoneContext.phase.phase_name}
+                contractCost={milestoneContext.subcontractor.cost}
+                canManagePayments={userCanManagePayments}
+                onClose={closeMilestoneManagement}
+              />
+            </Modal.Body>
           </Modal>
         )}
 
@@ -539,9 +597,11 @@ const SiteManagement: React.FC = () => {
   return (
     <ProjectsGrid
       projects={filteredProjects}
+      canManagePayments={userCanManagePayments}
       onSelectProject={(project) => navigate(`/site-management/${project.id}`)}
       onRefresh={fetchProjects}
       isRefreshing={refreshing}
+      error={error}
       emptyStateVariant={isSupervisionRole(user) ? 'no_assignments' : 'no_projects'}
     />
   )

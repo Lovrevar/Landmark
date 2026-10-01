@@ -7,6 +7,7 @@ import {
   TreeNode
 } from '../types'
 import { ProjectPhase } from '../../../../lib/supabase'
+import { rollupContracts as rollupRows } from '../../../../utils/contractRollup'
 
 /**
  * Grouping and money math for the Site Management contract tree.
@@ -14,7 +15,13 @@ import { ProjectPhase } from '../../../../lib/supabase'
  * Pure on purpose: this file carries the logic that used to be inline in PhaseCard, where it
  * could not be tested at all. Both views ("by phase" and "by classification") are the same tree
  * built with the top two dimensions swapped, so correctness here covers both.
+ *
+ * The arithmetic itself now lives in `utils/contractRollup`, shared with Retail's phase card,
+ * which shows the same four figures over a different table. What stays here is the mapping from
+ * this module's row shape onto it.
  */
+
+export { remainingBudget } from '../../../../utils/contractRollup'
 
 // ---------------------------------------------------------------------------- keys
 
@@ -32,40 +39,21 @@ export const nodeKey = (path: Array<{ dimension: GroupDimension; id: string | nu
 // ------------------------------------------------------------------------- rollups
 
 /**
- * Reproduces the split the phase card has always used: a row counts as "contracted" only when
- * it has a contract AND a non-zero amount. Everything else — including a contract row with a
- * zero amount — is treated as uncontracted, where the amount owed comes from invoices rather
- * than from a contract value.
+ * Site Management's contracts, rolled up by the shared rules in `utils/contractRollup`.
+ *
+ * `budget_realized` is the app's single figure for money paid on a contract — a trigger-kept
+ * cache of sum(accounting_payments.amount), repaired and sealed by migration 20260910120000.
+ * Summing the invoices' `paid_amount` gives the same number by construction; this needs no
+ * second query. `invoice_total_owed` has no equivalent, since payments cannot say what is still
+ * outstanding.
  */
 export function rollupContracts(contracts: SubcontractorWithPhase[]): GroupRollup {
-  let contracted = 0
-  let paid = 0
-  let unpaid = 0
-  let unpaidWithoutContract = 0
-
-  for (const sub of contracts) {
-    const cost = sub.cost ?? 0
-    const isContracted = sub.has_contract !== false && cost > 0
-    // `budget_realized` is the app's single figure for money paid on a contract — a trigger-kept
-    // cache of sum(accounting_payments.amount), repaired and sealed by migration 20260910120000.
-    // Summing the invoices' `paid_amount` gives the same number by construction; this needs no
-    // second query. `invoice_total_owed` below has no equivalent, since payments cannot say what
-    // is still outstanding.
-    const subPaid = sub.budget_realized || 0
-
-    paid += subPaid
-
-    if (isContracted) {
-      contracted += cost
-      unpaid += Math.max(0, cost - subPaid)
-    } else {
-      const owed = sub.invoice_total_owed || 0
-      unpaid += owed
-      unpaidWithoutContract += owed
-    }
-  }
-
-  return { contracted, paid, unpaid, unpaidWithoutContract, count: contracts.length }
+  return rollupRows(contracts.map(sub => ({
+    hasContract: sub.has_contract,
+    cost: sub.cost ?? 0,
+    paid: sub.budget_realized || 0,
+    owed: sub.invoice_total_owed || 0
+  })))
 }
 
 /**
@@ -79,10 +67,6 @@ export const isFullySettled = (sub: SubcontractorWithPhase): boolean =>
   sub.has_contract
     ? sub.budget_realized >= sub.cost && sub.cost > 0
     : (sub.invoice_total_owed ?? 0) === 0 && (sub.budget_realized ?? 0) > 0
-
-/** Budget headroom, matching the phase card's "remaining" tile. */
-export const remainingBudget = (budget: number, rollup: GroupRollup): number =>
-  budget - rollup.contracted - rollup.unpaidWithoutContract
 
 /**
  * Whether a contract of `cost` would overrun what is left of a phase's plan.

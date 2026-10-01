@@ -10,6 +10,7 @@ import { Alert, Button, Modal, FormField, Input, Select, Textarea, Form } from '
 import { createBankInvoice } from '../../Invoices/services/invoiceService'
 import { checkDuplicateInvoiceNumber, isInvoiceNumberDuplicateError } from '../../Invoices/services/invoiceValidation'
 import { useToast } from '../../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../../lib/errorMessage'
 
 const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, onSuccess }) => {
   const { t } = useTranslation()
@@ -38,16 +39,20 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
     description: ''
   })
 
-  const { banks, credits, creditAllocations, myCompanies, invoiceCategories, fetchMyCompanies } = useBankInvoiceData(formData.bank_id, formData.bank_credit_id || undefined)
+  const { banks, credits, creditAllocations, myCompanies, invoiceCategories, error: dataError, dismissError, fetchMyCompanies } = useBankInvoiceData(formData.bank_id, formData.bank_credit_id || undefined)
 
   useEffect(() => {
     const initializeCompany = async () => {
-      const companies = await fetchMyCompanies()
-      if (companies && companies.length > 0) {
-        setFormData(prev => ({ ...prev, company_id: companies[0].id }))
+      try {
+        const companies = await fetchMyCompanies()
+        if (companies && companies.length > 0) {
+          setFormData(prev => ({ ...prev, company_id: companies[0].id }))
+        }
+      } catch {
+        // Already logged and surfaced through the hook's `error`, which renders below.
       }
     }
-    initializeCompany()
+    void initializeCompany()
   }, [fetchMyCompanies])
 
   useEffect(() => {
@@ -130,7 +135,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
       if (isInvoiceNumberDuplicateError(error)) {
         setFieldErrors({ invoice_number: t('invoices.form.error_invoice_number_duplicate') })
       } else {
-        toast.error(t('banks.invoice_form.error_create') + ': ' + (error instanceof Error ? error.message : String(error)))
+        toast.error(toErrorMessage(error, t('banks.invoice_form.error_create')))
       }
     } finally {
       setLoading(false)
@@ -145,6 +150,12 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
 
       <Modal.Body>
         <Form onSubmit={handleSubmit} className="space-y-6">
+          {dataError && (
+            <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+              {toErrorMessage(dataError, t('banks.invoice_form.error_load_form'))}
+            </Alert>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField label={t('banks.invoice_form.type')} required>
               <Select
@@ -250,7 +261,7 @@ const BankInvoiceFormModal: React.FC<BankInvoiceFormModalProps> = ({ onClose, on
               />
             </FormField>
 
-            <FormField label="IBAN">
+            <FormField label={t('banks.form.iban')}>
               <Input
                 type="text"
                 value={formData.iban}

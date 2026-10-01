@@ -9,11 +9,13 @@ import {
   fetchSupplierInvoices
 } from '../services/officeSupplierService'
 import { useToast } from '../../../../contexts/ToastContext'
+import { toLoadError } from '../../services/loadError'
 
 export const useOfficeSuppliers = () => {
   const toast = useToast()
   const [suppliers, setSuppliers] = useState<OfficeSupplierWithStats[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingSupplier, setEditingSupplier] = useState<OfficeSupplier | null>(null)
@@ -36,12 +38,14 @@ export const useOfficeSuppliers = () => {
   }, [])
 
   const fetchData = async () => {
+    setLoading(true)
+    setError(null)
     try {
-      setLoading(true)
       const data = await fetchSuppliersWithStats()
       setSuppliers(data)
     } catch (error) {
       console.error('Error fetching office suppliers:', error)
+      setError(toLoadError(error))
     } finally {
       setLoading(false)
     }
@@ -152,6 +156,9 @@ export const useOfficeSuppliers = () => {
   return {
     suppliers,
     loading,
+    error,
+    refetch: fetchData,
+    dismissError: () => setError(null),
     searchTerm,
     setSearchTerm,
     showModal,

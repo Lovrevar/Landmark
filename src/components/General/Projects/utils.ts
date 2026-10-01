@@ -1,5 +1,6 @@
-import { Clock, TrendingUp, CheckCircle, Pause, AlertTriangle } from 'lucide-react'
-import { differenceInDays, parseISO, isPast } from 'date-fns'
+import { Clock, CheckCircle, AlertTriangle } from 'lucide-react'
+import { daysFromToday } from '../../../utils/dateOnly'
+import type { StatusVariant } from '../../../utils/statusDisplay'
 import type { Milestone } from './types'
 import { RESIDENTIAL_HR_TEMPLATE } from './data/milestoneTemplates'
 
@@ -41,63 +42,60 @@ export function computePhaseStatuses(buckets: PhaseBucket[]): PhaseStatus[] {
     key: b.key,
     total: b.items.length,
     completed: b.items.filter(m => m.completed).length,
-    overdue: b.items.filter(m => !m.completed && m.due_date && isPast(parseISO(m.due_date))).length
+    // Whole local days: a milestone due today is not yet overdue, and `isPast(parseISO(...))`
+    // made it overdue from the moment the clock passed UTC midnight.
+    overdue: b.items.filter(m => !m.completed && daysFromToday(m.due_date) < 0).length
   }))
 }
 
-export const getStatusConfig = (status: string) => {
-  const configs = {
-    'Planning': { icon: Clock, label: 'Planning' },
-    'In Progress': { icon: TrendingUp, label: 'In Progress' },
-    'Completed': { icon: CheckCircle, label: 'Completed' },
-    'On Hold': { icon: Pause, label: 'On Hold' }
-  }
-  return configs[status as keyof typeof configs] || configs['Planning']
+// `getStatusConfig` lived here and returned `{ icon, label }` with the label as an English
+// literal ('In Progress'), which rendered untranslated in a Croatian UI. Its only caller,
+// ProjectCard, used the label and never the icon, so both are gone: the label and the badge
+// colour now come from `PROJECT_STATUS` in `src/utils/statusDisplay.ts`, the one place every
+// screen reads a project status from.
+
+/**
+ * A milestone's derived state: done, past its due date, or still running.
+ *
+ * Computed, not stored — `general_project_milestones` only has the `completed` boolean. Returns an
+ * i18n key and a badge variant rather than the English literals ('Completed' / 'Overdue' /
+ * 'In Progress') it used to, which both rendered raw and were string-compared by the caller to
+ * pick a colour.
+ */
+export interface MilestoneStatusDisplay {
+  icon: typeof CheckCircle
+  color: string
+  bg: string
+  border: string
+  labelKey: string
+  variant: StatusVariant
+  lineColor: string
 }
 
-export const getDaysInfo = (startDate: string, endDate: string | null) => {
-  const start = parseISO(startDate)
-  const today = new Date()
-
-  if (endDate && parseISO(endDate) < today) {
-    return { text: 'Completed', color: 'text-green-600' }
-  }
-
-  const daysElapsed = differenceInDays(today, start)
-  if (endDate) {
-    const daysRemaining = differenceInDays(parseISO(endDate), today)
-    return {
-      text: daysRemaining > 0 ? `${daysRemaining} days left` : 'Overdue',
-      color: daysRemaining > 0 ? 'text-gray-600' : 'text-red-600'
-    }
-  }
-
-  return { text: `${daysElapsed} days elapsed`, color: 'text-gray-600' }
-}
-
-export const getMilestoneStatus = (milestone: Milestone) => {
+export const getMilestoneStatus = (milestone: Milestone): MilestoneStatusDisplay => {
   if (milestone.completed) {
     return {
       icon: CheckCircle,
       color: 'text-green-600',
       bg: 'bg-green-100',
       border: 'border-green-300',
-      label: 'Completed',
+      labelKey: 'status.completed',
+      variant: 'green',
       lineColor: 'bg-green-300'
     }
   }
 
-  if (milestone.due_date) {
-    const dueDate = parseISO(milestone.due_date)
-    if (isPast(dueDate)) {
-      return {
-        icon: AlertTriangle,
-        color: 'text-red-600',
-        bg: 'bg-red-100',
-        border: 'border-red-300',
-        label: 'Overdue',
-        lineColor: 'bg-red-300'
-      }
+  // Overdue from the day *after* the due date, in local time — not from UTC midnight on it.
+  // A milestone with no due date yields NaN, which is not < 0, so it is never overdue.
+  if (daysFromToday(milestone.due_date) < 0) {
+    return {
+      icon: AlertTriangle,
+      color: 'text-red-600',
+      bg: 'bg-red-100',
+      border: 'border-red-300',
+      labelKey: 'status.overdue',
+      variant: 'red',
+      lineColor: 'bg-red-300'
     }
   }
 
@@ -106,7 +104,8 @@ export const getMilestoneStatus = (milestone: Milestone) => {
     color: 'text-blue-600',
     bg: 'bg-blue-100',
     border: 'border-blue-300',
-    label: 'In Progress',
+    labelKey: 'status.in_progress',
+    variant: 'blue',
     lineColor: 'bg-blue-300'
   }
 }

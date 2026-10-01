@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import type { Company } from './types'
 import { SearchInput, Select, Button } from '../../ui'
+import { INVOICE_CATEGORIES_BY_DIRECTION } from '../services/invoiceHelpers'
 
 interface InvoiceFiltersProps {
   searchTerm: string
@@ -55,11 +56,9 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
           onChange={(e) => onCategoryChange(e.target.value)}
         >
           <option value="ALL">{t('invoices.filters.all_types')}</option>
-          <option value="SUPPLIER">{t('invoice_type.ulazni_dob')}</option>
-          <option value="OFFICE">{t('invoice_type.ulazni_ured')}</option>
-          <option value="INVESTMENT">{t('invoice_type.ulazni_inv')}</option>
-          <option value="BANK">{t('invoice_type.ulazni_banka')}</option>
-          <option value="SALES">{t('invoice_type.izlazni_prod')}</option>
+          {INVOICE_CATEGORIES_BY_DIRECTION[filterDirection].map(category => (
+            <option key={category.value} value={category.value}>{t(category.labelKey)}</option>
+          ))}
         </Select>
 
         <Select
@@ -77,7 +76,7 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
           value={filterCompany}
           onChange={(e) => onCompanyChange(e.target.value)}
         >
-          <option value="ALL">{t('invoices.filters.all_suppliers')}</option>
+          <option value="ALL">{t('invoices.filters.all_companies')}</option>
           {companies.map(company => (
             <option key={company.id} value={company.id}>{company.name}</option>
           ))}
@@ -94,7 +93,7 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
                   : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
               }`}
             >
-              Ulazni
+              {t('invoices.filters.incoming')}
             </button>
             <button
               type="button"
@@ -105,7 +104,7 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
                   : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
               }`}
             >
-              Izlazni
+              {t('invoices.filters.outgoing')}
             </button>
           </div>
 

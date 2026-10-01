@@ -33,10 +33,12 @@ Three tables: `chat_conversations`, `chat_participants` (junction with `last_rea
 - `useChat()` — owns conversations list, active conversation state, messages, and Supabase Realtime subscription on `chat_messages` INSERT (channel `chat-messages-realtime`)
 - On every realtime payload: enriches the message with sender data, appends to messages if it belongs to the active conversation, increments unread on the conversation, and re-sorts conversations by recency
 - Polls active-conversation messages every 3 s as a safety net for missed realtime events
-- Auto-marks the active conversation as read when messages from others arrive, dispatches `chat:marked-read`
+- Auto-marks the active conversation as read when messages from others arrive, dispatches `chat:marked-read`. That write goes through one `markConversationRead` helper; it is bookkeeping, so a failure is logged rather than shown (it only leaves the badge stale) — but it is logged, not swallowed by an empty `.catch(() => {})` as before
 - Dispatches `chat:unread-update` with the new total whenever conversations change
 - **Calls:** chatService.ts
-- **Returns:** conversations, activeConversation, activeConversationId, messages, loadingConversations, loadingMessages, sendingMessage, selectConversation, sendMessage, createConversation, refreshConversations
+- **Returns:** conversations, activeConversation, activeConversationId, messages, loadingConversations, loadingMessages, sendingMessage, conversationsError, messagesError, retryConversations, retryMessages, selectConversation, sendMessage, createConversation, refreshConversations
+- Two independent errors, because the two loads fail independently: a conversation list that could not be read must not render as "no conversations yet", and an unread thread must not render as "no messages"
+- `createConversation` still returns `null` on failure — that is how the modal learns to stay open — and now also toasts `chat.create_failed`. **Chat had no `useToast` anywhere before this**; the hook is where it was introduced
 - **Mounted in:** [Chat/index.tsx](../src/components/Chat/index.tsx) only
 
 ### hooks/useChatNotifications.ts
@@ -60,12 +62,14 @@ Three tables: `chat_conversations`, `chat_participants` (junction with `last_rea
 
 ### ConversationList.tsx
 - Sidebar list of conversations with last-message preview, unread badge, and search
-- Shows relative time ("now") for messages within 60 s, otherwise locale-aware short time/date
+- Takes `loadFailed` + `onRetry`; when the list could not be read it shows a compact `ErrorState` instead of the "no conversations" message
+- Shows relative time ("now") for messages within 60 s, otherwise a short date in the app's locale via `intlLocale(i18n.language)`. The `m` / `h` / `d` suffixes inside the first week are deliberately unit abbreviations, not translated words
 
 ### MessagePanel.tsx
 - Header with conversation name + participant count, message thread, and composer (textarea + file attach + send)
 - For groups, the participant count is a toggle (and an `AvatarStack` of members sits on the right) that opens [GroupMembersPanel](../src/components/Chat/GroupMembersPanel.tsx); the panel closes on conversation switch
 - Surfaces the `FILE_TOO_LARGE` sentinel error from `uploadChatFile` with an i18n'd toast
+- Takes `loadFailed` + `onRetry`; a thread that failed to load shows a compact `ErrorState` with retry rather than an empty conversation
 
 ### GroupMembersPanel.tsx
 - Dropdown listing every participant of a group conversation (avatar initial, username, role), current user pinned first and marked `(You)`, the rest alphabetical
@@ -75,9 +79,12 @@ Three tables: `chat_conversations`, `chat_participants` (junction with `last_rea
 ### MessageBubble.tsx
 - Single message bubble with sender, timestamp, and optional file attachment preview
 - Renders date separators ("Today" / "Yesterday" / locale date) between message clusters
+- Both the bubble's clock and the separator's date take their locale from `intlLocale(i18n.language)` ([`utils/locale.ts`](../src/utils/locale.ts)). The clock passed `[]` to `toLocaleTimeString`, which means *the browser's* locale, so an English browser printed "2:30 PM" under a Croatian date separator; the separator tested `i18n.language === 'hr'`, which is false for the `'hr-HR'` the detector returns
 
 ### NewConversationModal.tsx
 - Picker for creating a new 1:1 or group conversation; multi-select user list with optional group name
+- **Closes only when `onCreate` returns an id.** It used to close unconditionally, so a failed create looked exactly like a started conversation
+- A failed user fetch shows a compact `ErrorState` with retry; an empty list would otherwise read as "there is nobody to message"
 
 ---
 

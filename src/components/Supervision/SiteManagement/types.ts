@@ -1,4 +1,5 @@
 import { Project, Subcontractor, ProjectPhase, WirePayment, SubcontractorMilestone, CostClassification, PhaseClassificationBudget } from '../../../lib/supabase'
+import type { ContractRollup } from '../../../utils/contractRollup'
 
 export interface ProjectWithPhases extends Project {
   phases: ProjectPhase[]
@@ -114,14 +115,8 @@ export const VIEW_DIMENSIONS: Record<SiteGrouping, GroupDimension[]> = {
 }
 
 /** Money rolled up over a set of contracts. Same shape at every level of the tree. */
-export interface GroupRollup {
-  contracted: number
-  paid: number
-  unpaid: number
-  /** Owed on rows that have no contract; kept separate because the budget tiles subtract it. */
-  unpaidWithoutContract: number
-  count: number
-}
+/** The shared tile arithmetic's result — see `utils/contractRollup`, which Retail uses too. */
+export type GroupRollup = ContractRollup
 
 export interface TreeNode {
   /** Full path key, e.g. `phase:<uuid>|cls:12|type:3`. Unique per view. */

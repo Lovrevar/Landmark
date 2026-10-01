@@ -4,7 +4,7 @@ import {
   RefreshCw,
   BarChart3,
   TrendingUp,
-  DollarSign,
+  Euro,
   Briefcase
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -15,16 +15,17 @@ import { CostAnalysis } from '../Reports/CostAnalysis'
 import { generateRetailReportPdf } from '../Reports/pdf/retailReportPdf'
 import { fetchRetailReportData } from '../Reports/services/retailReportService'
 import type { RetailReportData } from '../Reports/retailReportTypes'
-import { LoadingSpinner, PageHeader, Button, Tabs, EmptyState } from '../ui'
+import { LoadingSpinner, PageHeader, Button, Tabs, EmptyState, ErrorState } from '../ui'
 import { useAsyncExport } from '../../hooks/useAsyncExport'
 import { useCachedData } from '../../lib/useCachedData'
+import { formatEuroRounded } from '../../utils/formatters'
 
 type TabId = 'overview' | 'projects' | 'sales' | 'costs'
 
 const RetailReports: React.FC = () => {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<TabId>('overview')
-  const { data, loading, refetch } = useCachedData<RetailReportData>(
+  const { data, loading, error, refetch } = useCachedData<RetailReportData>(
     'report:retail',
     fetchRetailReportData
   )
@@ -33,30 +34,38 @@ const RetailReports: React.FC = () => {
     { id: 'overview', label: t('reports.retail.tab_overview'), icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'projects', label: t('reports.retail.tab_projects'), icon: <Briefcase className="w-4 h-4" /> },
     { id: 'sales', label: t('reports.retail.tab_sales'), icon: <TrendingUp className="w-4 h-4" /> },
-    { id: 'costs', label: t('reports.retail.tab_costs'), icon: <DollarSign className="w-4 h-4" /> }
+    { id: 'costs', label: t('reports.retail.tab_costs'), icon: <Euro className="w-4 h-4" /> }
   ], [t])
 
-  const { exporting, run: runExportPdf } = useAsyncExport(generateRetailReportPdf)
+  const { exporting, run: runExportPdf } = useAsyncExport(generateRetailReportPdf, 'common.export_error')
   const handleExportPdf = () => { if (data) runExportPdf(data) }
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('hr-HR', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
+  // The four tab panels below take this as a prop. It used to be a local `Intl` formatter with
+  // `style: 'currency'`, which puts the symbol last ("1.235 €"); the shared helper puts it first
+  // ("€1.235") as the rest of the app does. Same rounding: whole euros, Croatian grouping.
+  const formatCurrency = formatEuroRounded
 
   if (loading && !data) {
     return <LoadingSpinner message={t('reports.retail.loading')} />
   }
 
+  // This used to read "Error loading data" off `!data` alone, which meant a genuinely empty
+  // retail portfolio was reported as a failure — and, the other way round, left no way to tell
+  // the two apart. The error state is now gated on an actual error; the header and its refresh
+  // stay mounted either way.
   if (!data) {
     return (
-      <EmptyState
-        title={t('reports.retail.error')}
-        action={<Button onClick={refetch}>{t('reports.retail.retry')}</Button>}
-      />
+      <div className="space-y-6">
+        <PageHeader
+          title={t('reports.retail.title')}
+          actions={
+            <Button variant="secondary" icon={RefreshCw} onClick={refetch} loading={loading}>{t('common.refresh')}</Button>
+          }
+        />
+        {error
+          ? <ErrorState onRetry={refetch} />
+          : <EmptyState title={t('common.no_data')} />}
+      </div>
     )
   }
 

@@ -1,10 +1,18 @@
 import { supabase, BankCreditPayment } from '../../../../lib/supabase'
+import { paymentDirection, type PaymentDirection } from '../../../Cashflow/services/invoiceHelpers'
 
 export interface BankPaymentWithDetails extends BankCreditPayment {
-  bank_name?: string
+  bank_name?: string | null
   credit_type?: string
-  project_name?: string
-  payment_type: 'bank'
+  credit_seniority?: string | null
+  project_name?: string | null
+  invoice_type: string
+  /**
+   * Money into the company (a drawdown, OUTGOING_BANK) or out of it (a repayment, INCOMING_BANK,
+   * or credit fees, INCOMING_BANK_EXPENSES). Every row here used to render as the same green
+   * "Bank" payment and sum into one total, so a €500k drawdown and its repayment read as €1M.
+   */
+  direction: PaymentDirection | null
 }
 
 export async function fetchBankPayments(): Promise<BankPaymentWithDetails[]> {
@@ -13,9 +21,11 @@ export async function fetchBankPayments(): Promise<BankPaymentWithDetails[]> {
     .select(`
       *,
       invoice:accounting_invoices!inner(
+        invoice_type,
         bank_credit_id,
         bank_credits(
           credit_type,
+          credit_seniority,
           project_id,
           bank_id,
           banks(name)
@@ -41,10 +51,14 @@ export async function fetchBankPayments(): Promise<BankPaymentWithDetails[]> {
 
     return {
       ...payment,
-      bank_name: bankCredit?.banks?.name || 'Unknown Bank',
+      // Left null rather than filled with an English placeholder; the table and the CSV
+      // decide what an unlinked payment reads as.
+      bank_name: bankCredit?.banks?.name || null,
       credit_type: bankCredit?.credit_type || 'N/A',
-      project_name: project?.name || 'No Project',
-      payment_type: 'bank' as const,
+      credit_seniority: bankCredit?.credit_seniority ?? null,
+      project_name: project?.name || null,
+      invoice_type: payment.invoice?.invoice_type ?? '',
+      direction: paymentDirection(payment.invoice?.invoice_type),
       created_at: payment.created_at,
       notes: payment.description,
     }

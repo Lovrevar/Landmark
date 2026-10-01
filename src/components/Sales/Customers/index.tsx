@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Mail } from 'lucide-react'
-import { PageHeader, SearchInput, Button, ConfirmDialog, Select } from '../../ui'
+import { PageHeader, SearchInput, Button, ConfirmDialog, Select, Alert } from '../../ui'
 import { CustomerCategory } from './types'
 import { useCustomerData } from './hooks/useCustomerData'
 import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import { CategoryTabs } from './CategoryTabs'
 import { CustomerGrid } from './CustomerGrid'
 import { CustomerFormModal } from './forms/CustomerFormModal'
@@ -30,10 +31,17 @@ const CustomersManagement: React.FC = () => {
     counts,
     projects,
     loading,
+    error,
+    refetch,
+    dismissError,
     saveCustomer,
     deleteCustomer,
     updateLastContact
   } = useCustomerData(activeCategory)
+
+  // Nothing came back and the request failed: the grid must say so rather than render its
+  // "no customers" empty state.
+  const loadFailed = !!error && customers.length === 0
 
   // A customer's project comes from two places: interested/lead customers carry
   // `interested_project_id`, while buyers are linked through the apartments they
@@ -60,12 +68,35 @@ const CustomersManagement: React.FC = () => {
     })
   }
 
+  // Only customers on screen count as selected. `selectedIds` can still hold the id of a
+  // customer that has since been deleted, so its size is not a reliable count.
+  const selectedCustomers = filteredCustomers.filter(c => selectedIds.has(c.id))
+
   const handleSelectAll = () => {
-    if (selectedIds.size === filteredCustomers.length) {
+    if (filteredCustomers.length > 0 && selectedCustomers.length === filteredCustomers.length) {
       setSelectedIds(new Set())
     } else {
       setSelectedIds(new Set(filteredCustomers.map(c => c.id)))
     }
+  }
+
+  // A filter change drops the selection, so the email export can never reach customers the
+  // user can no longer see.
+  const clearSelection = () => setSelectedIds(new Set())
+
+  const handleCategoryChange = (category: CustomerCategory | null) => {
+    setActiveCategory(category)
+    clearSelection()
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    clearSelection()
+  }
+
+  const handleProjectFilterChange = (projectId: string) => {
+    setProjectFilter(projectId)
+    clearSelection()
   }
 
   const handleAddCustomer = () => {
@@ -92,11 +123,22 @@ const CustomersManagement: React.FC = () => {
     setDeletingCustomer(true)
     try {
       await deleteCustomer(pendingDeleteCustomerId)
-    } catch {
-      toast.error('Error deleting customer')
+      setPendingDeleteCustomerId(null)
+    } catch (err) {
+      // The dialog stays open on failure, so the user can see what it refers to and retry.
+      toast.error(toErrorMessage(err, t('customers.errors.delete_failed')))
     } finally {
       setDeletingCustomer(false)
-      setPendingDeleteCustomerId(null)
+    }
+  }
+
+  // `updateLastContact` rejects (the hook rethrows); the card's button used to drop that
+  // promise on the floor, leaving an unhandled rejection and a date that never moved.
+  const handleUpdateContact = async (id: string) => {
+    try {
+      await updateLastContact(id)
+    } catch (err) {
+      toast.error(toErrorMessage(err, t('customers.errors.update_contact_failed')))
     }
   }
 
@@ -111,16 +153,14 @@ const CustomersManagement: React.FC = () => {
   }
 
   const handleExportEmails = () => {
-    const targets = selectedIds.size > 0
-      ? filteredCustomers.filter(c => selectedIds.has(c.id))
-      : filteredCustomers
+    const targets = selectedCustomers.length > 0 ? selectedCustomers : filteredCustomers
 
     const emails = targets
       .map(c => c.email)
       .filter(email => email && email.trim() !== '')
 
     if (emails.length === 0) {
-      toast.warning('No email addresses found for the selected customers.')
+      toast.warning(t('customers.no_emails'))
       return
     }
 
@@ -136,9 +176,9 @@ const CustomersManagement: React.FC = () => {
         actions={
           <>
             <Button variant="success" icon={Mail} onClick={handleExportEmails}>
-              {selectedIds.size > 0
-                ? `Email Selected (${selectedIds.size})`
-                : `Email All (${filteredCustomers.filter(c => c.email).length})`}
+              {selectedCustomers.length > 0
+                ? t('customers.email_selected', { count: selectedCustomers.length })
+                : t('customers.email_all', { count: filteredCustomers.filter(c => c.email).length })}
             </Button>
             <Button variant="primary" icon={Plus} onClick={handleAddCustomer}>
               {t('customers.add')}
@@ -150,7 +190,8 @@ const CustomersManagement: React.FC = () => {
       <CategoryTabs
         activeCategory={activeCategory}
         counts={counts}
-        onCategoryChange={setActiveCategory}
+        countsUnknown={loadFailed}
+        onCategoryChange={handleCategoryChange}
       />
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
@@ -158,15 +199,15 @@ const CustomersManagement: React.FC = () => {
           <div className="flex-1">
             <SearchInput
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onClear={() => setSearchTerm('')}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onClear={() => handleSearchChange('')}
               placeholder={t('customers.search')}
             />
           </div>
           <div className="w-full sm:w-64">
             <Select
               value={projectFilter}
-              onChange={(e) => setProjectFilter(e.target.value)}
+              onChange={(e) => handleProjectFilterChange(e.target.value)}
             >
               <option value="">{t('common.all_projects')}</option>
               {projects.map((project) => (
@@ -177,18 +218,29 @@ const CustomersManagement: React.FC = () => {
         </div>
       </div>
 
+      {error && !loadFailed && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void refetch() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
+      )}
+
       <CustomerGrid
         customers={filteredCustomers}
         projects={projects}
         activeCategory={activeCategory}
-        loading={loading}
+        loading={loading && customers.length === 0}
+        loadFailed={loadFailed}
+        onRetry={() => { void refetch() }}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
         onSelectAll={handleSelectAll}
         onViewDetails={handleViewDetails}
         onEdit={handleEditCustomer}
         onDelete={handleDeleteCustomer}
-        onUpdateContact={updateLastContact}
+        onUpdateContact={(id) => { void handleUpdateContact(id) }}
       />
 
       <CustomerFormModal

@@ -1,17 +1,21 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { InvoiceWithDetails, InvoiceStats } from '../services/supervisionInvoiceService'
 import {
   fetchSupervisionInvoices,
   calculateInvoiceStats,
   toggleInvoiceApproval,
-  exportInvoicesCSV,
+  exportSupervisionInvoicesExcel,
 } from '../services/supervisionInvoiceService'
+import { useAsyncExport } from '../../../../hooks/useAsyncExport'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export function useSupervisionInvoices() {
   const toast = useToast()
+  const { t } = useTranslation()
   const [invoices, setInvoices] = useState<InvoiceWithDetails[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [filterApproved, setFilterApproved] = useState<'all' | 'approved' | 'not_approved'>('all')
@@ -24,17 +28,20 @@ export function useSupervisionInvoices() {
 
   const loadInvoices = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await fetchSupervisionInvoices()
       setInvoices(data)
       setStats(calculateInvoiceStats(data))
     } catch (err) {
       console.error('Error fetching invoices:', err)
-      toast.error('Failed to load invoices')
+      // Neither the rows nor the stats are replaced with zeros: the screen renders the failure
+      // instead, so "€0 invoiced" is never shown for a register that simply did not load.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
   useEffect(() => { loadInvoices() }, [loadInvoices])
 
@@ -79,14 +86,20 @@ export function useSupervisionInvoices() {
       )
     } catch (err) {
       console.error('Error updating invoice approval:', err)
-      toast.error('Failed to update invoice approval status')
+      toast.error(t('supervision.invoices.errors.approval_failed'))
     }
   }
 
-  const handleExportCSV = () => exportInvoicesCSV(filteredInvoices)
+  // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
+  const { exporting, run: runExportExcel } = useAsyncExport(exportSupervisionInvoicesExcel, 'common.export_error')
+  const handleExportExcel = () => void runExportExcel(filteredInvoices)
 
   return {
     loading,
+    error,
+    /** False when nothing has loaded, so the caller can tell a failed load from an empty register. */
+    hasData: invoices.length > 0,
+    refetch: loadInvoices,
     stats,
     filteredInvoices,
     paginatedInvoices,
@@ -103,6 +116,7 @@ export function useSupervisionInvoices() {
     dateRange,
     setDateRange,
     handleApprove,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   }
 }

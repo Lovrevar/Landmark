@@ -11,10 +11,11 @@ import { useListPreferences } from '../../../hooks/useListPreferences'
 import { formatEuropean } from '../../../utils/formatters'
 import { SupplierSummary } from './types'
 import {
-  PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, Badge,
+  Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, Badge,
   ConfirmDialog, Table, FilterBar, FilterChip, ListViewToggle, SortDropdown,
 } from '../../ui'
 import type { ListViewMode } from '../../ui'
+import { toErrorMessage } from '../../../lib/errorMessage'
 
 type StatusFilter = 'all' | 'active' | 'paid' | 'outstanding' | 'no_contracts'
 type SourceFilter = 'all' | 'site' | 'retail'
@@ -35,6 +36,9 @@ const AccountingSuppliers: React.FC = () => {
   const {
     suppliers,
     loading,
+    error,
+    refetch,
+    dismissError,
     showAddModal,
     showDetailsModal,
     selectedSupplier,
@@ -144,12 +148,25 @@ const AccountingSuppliers: React.FC = () => {
         }
       />
 
+      {error && suppliers.length > 0 && (
+        <Alert variant="error" title={t('common.load_error_title')} onDismiss={dismissError}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="flex-1">{toErrorMessage(error, t('common.load_error_description'))}</span>
+            <Button size="sm" variant="secondary" onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {!(error && suppliers.length === 0) && (
       <StatGrid columns={4}>
         <StatCard label={t('suppliers.stats.total_count')} value={suppliers.length} icon={Users} />
         <StatCard label={t('suppliers.stats.total_contracts')} value={suppliers.reduce((sum, s) => sum + s.total_contracts, 0)} icon={Briefcase} color="gray" />
         <StatCard label={t('suppliers.stats.total_paid')} value={`€${formatEuropean(suppliers.reduce((sum, s) => sum + s.total_paid, 0))}`} icon={DollarSign} color="green" />
         <StatCard label={t('suppliers.stats.total_remaining')} value={`€${formatEuropean(suppliers.reduce((sum, s) => sum + s.total_remaining, 0))}`} icon={TrendingUp} color="yellow" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 space-y-3">
         <SearchInput
@@ -205,7 +222,11 @@ const AccountingSuppliers: React.FC = () => {
         </FilterBar>
       </div>
 
-      {filteredSuppliers.length === 0 ? (
+      {error && suppliers.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <ErrorState onRetry={() => void refetch()} />
+        </div>
+      ) : filteredSuppliers.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
           <EmptyState
             icon={Users}
@@ -253,8 +274,8 @@ const AccountingSuppliers: React.FC = () => {
                 <Table.Td label={t('suppliers.stats.total_contracts')}>{supplier.total_contracts}</Table.Td>
                 <Table.Td label={t('suppliers.invoices_label')}>{supplier.total_invoices}</Table.Td>
                 <Table.Td label={t('common.value')} className="text-right font-semibold">€{formatEuropean(supplier.total_contract_value)}</Table.Td>
-                <Table.Td label={t('common.total_paid')} className="text-right text-green-600">€{formatEuropean(supplier.total_paid)}</Table.Td>
-                <Table.Td label={t('common.remaining')} className="text-right text-orange-600">€{formatEuropean(supplier.total_remaining)}</Table.Td>
+                <Table.Td label={t('common.total_paid')} className="text-right text-green-600 dark:text-green-400">€{formatEuropean(supplier.total_paid)}</Table.Td>
+                <Table.Td label={t('common.remaining')} className="text-right text-orange-600 dark:text-orange-400">€{formatEuropean(supplier.total_remaining)}</Table.Td>
                 <Table.Td sticky className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="inline-flex items-center gap-1">
                     {supplier.source === 'site' && (

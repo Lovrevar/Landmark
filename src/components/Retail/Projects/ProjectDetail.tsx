@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, MapPin, RefreshCw, Link, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Button, Badge, LoadingSpinner, EmptyState, ConfirmDialog } from '../../ui'
+import { Button, Badge, LoadingSpinner, EmptyState, ErrorState, ConfirmDialog } from '../../ui'
 import { formatCurrency, getStatusBadgeVariant } from '../utils'
+import { PROJECT_STATUS, statusLabel } from '../../../utils/statusDisplay'
 import { PhaseCard } from './PhaseCard'
 import { ProjectStatistics } from './ProjectStatistics'
 import { MilestoneList } from './MilestoneList'
@@ -15,6 +16,8 @@ import { RetailInvoicesModal } from './modals/RetailInvoicesModal'
 import { retailProjectService } from './services/retailProjectService'
 import { useProjectDetail } from './hooks/useProjectDetail'
 import { useToast } from '../../../contexts/ToastContext'
+import { useEscapeKey } from '../../../hooks/useEscapeKey'
+import { useFocusTrap } from '../../../hooks/useFocusTrap'
 import type { RetailProjectWithPhases, RetailProjectPhase, RetailContract } from '../../../types/retail'
 
 interface ProjectDetailProps {
@@ -26,7 +29,7 @@ interface ProjectDetailProps {
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialProject, onBack, onRefresh }) => {
   const { t } = useTranslation()
   const toast = useToast()
-  const { project: hookProject, contractsMap: phaseContracts, loading, refetch: loadProjectDetails } = useProjectDetail(initialProject.id)
+  const { project: hookProject, contractsMap: phaseContracts, loading, error, refetch: loadProjectDetails } = useProjectDetail(initialProject.id)
   const project = hookProject ?? initialProject
   const [refreshing, setRefreshing] = useState(false)
   const [showContractModal, setShowContractModal] = useState(false)
@@ -84,13 +87,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     setDeletingPhase(true)
     try {
       await retailProjectService.deletePhase(pendingDeletePhase.id)
+      // Closed only on success: a `finally` dismissed the dialog even when the delete was
+      // refused, which read as a completed delete.
+      setPendingDeletePhase(null)
       await handleRefresh()
     } catch (error) {
       console.error('Error deleting phase:', error)
       toast.error(t('retail_projects.error_delete_phase'))
     } finally {
       setDeletingPhase(false)
-      setPendingDeletePhase(null)
     }
   }
 
@@ -131,13 +136,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     setDeletingContract(true)
     try {
       await retailProjectService.deleteContract(pendingDeleteContractId)
+      setPendingDeleteContractId(null)
       await handleRefresh()
     } catch (error) {
       console.error('Error deleting contract:', error)
       toast.error(t('retail_projects.error_delete_contract'))
     } finally {
       setDeletingContract(false)
-      setPendingDeleteContractId(null)
     }
   }
 
@@ -171,17 +176,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
     setMilestoneContext(null)
   }
 
-  useEffect(() => {
-    if (!showMilestoneManagement || !milestoneContext) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) {
-        e.preventDefault()
-        closeMilestoneManagement()
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [showMilestoneManagement, milestoneContext])
+  const milestoneOverlayRef = useRef<HTMLDivElement>(null)
+  useEscapeKey(showMilestoneManagement && !!milestoneContext, closeMilestoneManagement)
+  useFocusTrap(milestoneOverlayRef, showMilestoneManagement && !!milestoneContext)
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -204,7 +201,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
             </div>
           </div>
           <Badge variant={getStatusBadgeVariant(project.status)} size="md">
-            {project.status}
+            {statusLabel(PROJECT_STATUS, project.status, t)}
           </Badge>
         </div>
 
@@ -270,7 +267,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
         )}
       </div>
 
-      {!loading && (
+      {/* The statistics are summed from the contracts this load returns; with none of them
+          loaded they would report the project as having no contracted value. */}
+      {!loading && !error && (
         <ProjectStatistics
           project={project}
           allContracts={Object.values(phaseContracts).flat()}
@@ -279,6 +278,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
 
       {loading ? (
         <LoadingSpinner message={t('retail_projects.loading_details')} />
+      ) : error ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <ErrorState compact onRetry={() => { void loadProjectDetails() }} />
+        </div>
       ) : (
         <div className="space-y-6">
           {project.phases.length === 0 ? (
@@ -347,7 +350,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
 
       {showMilestoneManagement && milestoneContext && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="max-w-6xl w-full my-8">
+          <div
+            ref={milestoneOverlayRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('retail_projects.milestones.title')}
+            tabIndex={-1}
+            className="max-w-6xl w-full my-8 outline-none"
+          >
             <MilestoneList
               contractId={milestoneContext.contract.id}
               supplierName={

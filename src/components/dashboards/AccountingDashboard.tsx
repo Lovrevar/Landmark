@@ -1,7 +1,7 @@
 import React from 'react'
 import { LoadingSpinner } from '../ui'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
+import { formatMonthYear } from '../../utils/formatters'
 import { useCachedData } from '../../lib/useCachedData'
 import type { VATStats, CashFlowStats, TopCompany, MonthlyData, MonthlyBudget } from './types/accountingDashboardTypes'
 import * as accountingService from './services/accountingDashboardService'
@@ -24,7 +24,7 @@ const defaultCashFlow: CashFlowStats = {
 }
 
 const AccountingDashboard: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data, loading, error, refetch } = useCachedData('dashboard:accounting', async () => {
     const [vat, cashFlow, companies, trends, budget] = await Promise.all([
       accountingService.fetchVATStats(),
@@ -59,7 +59,7 @@ const AccountingDashboard: React.FC = () => {
         </div>
         <div className="sm:text-right">
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('dashboards.accounting.current_period')}</p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-white">{format(new Date(), 'MMMM yyyy')}</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatMonthYear(new Date(), i18n.language)}</p>
         </div>
       </div>
 

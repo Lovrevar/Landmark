@@ -166,9 +166,12 @@ client and the `send-push` edge function rely on — when both FK columns form t
 surrogate `id` was kept as UNIQUE because Cognilion deletes assignee rows by id. Do not
 "tidy" either of them.
 
-`acknowledged_at` is Cognilion's unread-badge bookkeeping (cleared when a user opens
-`/tasks`). It is invisible to your app but **must survive a reassignment** — which is why the
-update RPC diffs the assignee set instead of wipe-and-reinsert.
+`acknowledged_at` is Cognilion's unread-badge bookkeeping: `NULL` on a new assignment, stamped
+when that assignee opens the task in Cognilion (or presses "mark all as read" on its Tasks page).
+Until 2026-09 merely visiting `/tasks` stamped every row at once; it no longer does. Your app is
+unaffected either way — it never reads or writes the column — but the column **must survive a
+reassignment**, which is why the update RPC diffs the assignee set instead of wipe-and-reinsert.
+Your inserts should leave it `NULL` (the default), so a task you assign shows as new in Cognilion.
 
 ---
 

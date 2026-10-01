@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   MapPin,
@@ -12,18 +12,35 @@ import {
   Briefcase,
   CircleDot,
   Circle,
+  Edit2,
 } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ConfirmDialog from '../ui/ConfirmDialog'
-import type { EventResponse, EventType } from '../../types/tasks'
+import type { CalendarEvent, EventResponse, NewEventInput } from '../../types/tasks'
 import type { ExpandedOccurrence } from './utils/recurrence'
 import { useAuth } from '../../contexts/AuthContext'
-import { createException, respondToOccurrence } from './services/calendarService'
+import { useToast } from '../../contexts/ToastContext'
+import {
+  createException,
+  respondToOccurrence,
+  updateEventWithParticipants,
+} from './services/calendarService'
 import type { ProjectOption } from './services/calendarService'
+import NewEventModal from './NewEventModal'
+import { EVENT_TYPE_COLORS } from './utils/eventTypeColors'
+import { intlLocale } from '../../utils/locale'
 
 interface Props {
   occurrence: ExpandedOccurrence | null
+  /**
+   * The stored event behind `occurrence`, which is what the edit form loads. An occurrence with
+   * a title override carries a copy of the event under that title, and saving the copy would
+   * rename the whole series. Falls back to `occurrence.event` when not given.
+   */
+  sourceEvent?: CalendarEvent | null
   projects?: ProjectOption[]
+  /** `projects` is empty because the fetch failed, not because there are none. */
+  projectsLoadFailed?: boolean
   onClose: () => void
   onRespond: (
     participantId: string,
@@ -32,21 +49,17 @@ interface Props {
     eventTitle?: string,
   ) => Promise<void>
   onDelete: (eventId: string, eventTitle?: string) => Promise<void>
-  onChanged: () => void
-}
-
-const typeColor: Record<EventType, string> = {
-  meeting: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  personal: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  deadline: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-  reminder: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  /** Refetch after a change. Awaited after an edit, so the detail re-opens on fresh data. */
+  onChanged: () => void | Promise<void>
 }
 
 type DeleteScope = 'single' | 'series'
 
 const EventDetailModal: React.FC<Props> = ({
   occurrence,
+  sourceEvent,
   projects,
+  projectsLoadFailed = false,
   onClose,
   onRespond,
   onDelete,
@@ -54,19 +67,42 @@ const EventDetailModal: React.FC<Props> = ({
 }) => {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
+  const toast = useToast()
   const [confirmScope, setConfirmScope] = useState<DeleteScope | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [responding, setResponding] = useState(false)
-  const dateLocale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const [editing, setEditing] = useState(false)
+  const dateLocale = intlLocale(i18n.language)
 
   const event = occurrence?.event ?? null
 
   const projectName = useMemo(() => {
     if (!event?.project_id || !projects) return null
-    return projects.find(p => p.id === event.project_id)?.name ?? null
-  }, [event?.project_id, projects])
+    const name = projects.find(p => p.id === event.project_id)?.name
+    if (name) return name
+    // The event has a project but the list could not be fetched. Dropping the row entirely
+    // reads as "not linked to a project", which is the opposite of what is stored.
+    return projectsLoadFailed ? t('common.option_name_unavailable') : null
+  }, [event?.project_id, projects, projectsLoadFailed, t])
+
+  // Closing the detail (or the occurrence disappearing) ends any edit in progress.
+  useEffect(() => {
+    if (!occurrence) setEditing(false)
+  }, [occurrence])
+
+  // Swapping between the detail and the edit form flips two Modal scroll locks in one commit,
+  // and whichever Modal's effect runs last decides whether the page behind can scroll. This
+  // effect belongs to the parent of both, so it runs after them and keeps the lock on.
+  const open = !!occurrence
+  useEffect(() => {
+    if (open) document.body.style.overflow = 'hidden'
+    // Only the swap needs correcting; opening and closing are handled by Modal itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing])
 
   if (!occurrence || !event) return null
+
+  const editSource = sourceEvent && sourceEvent.id === event.id ? sourceEvent : event
 
   const me = event.participants?.find(p => p.user_id === user?.id)
   const isCreator = event.created_by === user?.id
@@ -84,6 +120,9 @@ const EventDetailModal: React.FC<Props> = ({
       await respondToOccurrence(event.id, user.id, originalStartIso, response, event.title)
       onChanged()
       onClose()
+    } catch (e) {
+      console.error('Failed to respond to calendar occurrence', e)
+      toast.error(t('calendar.detail.respond_failed'))
     } finally {
       setResponding(false)
     }
@@ -96,6 +135,9 @@ const EventDetailModal: React.FC<Props> = ({
       await onRespond(me.id, response, event.id, event.title)
       onChanged()
       onClose()
+    } catch (e) {
+      console.error('Failed to respond to calendar event', e)
+      toast.error(t('calendar.detail.respond_failed'))
     } finally {
       setResponding(false)
     }
@@ -122,9 +164,19 @@ const EventDetailModal: React.FC<Props> = ({
       setConfirmScope(null)
       onChanged()
       onClose()
+    } catch (e) {
+      console.error('Failed to delete calendar event', e)
+      setConfirmScope(null)
+      toast.error(t('calendar.detail.delete_failed'))
     } finally {
       setDeleting(false)
     }
+  }
+
+  // Errors propagate to the form, which shows them inline and stays open.
+  const saveEdit = async (input: NewEventInput) => {
+    await updateEventWithParticipants(editSource.id, input, editSource)
+    await onChanged()
   }
 
   const reminderLabel = (minutes: number): string => {
@@ -154,11 +206,17 @@ const EventDetailModal: React.FC<Props> = ({
 
   return (
     <>
-      <Modal show={!!occurrence} onClose={onClose} size="md">
+      <NewEventModal
+        show={editing}
+        event={editSource}
+        onSave={saveEdit}
+        onClose={() => setEditing(false)}
+      />
+      <Modal show={!!occurrence && !editing} onClose={onClose} size="md">
         <Modal.Header title={event.title} onClose={onClose} />
         <Modal.Body>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`px-2 py-1 text-xs rounded ${typeColor[event.event_type]}`}>
+            <span className={`px-2 py-1 text-xs rounded ${EVENT_TYPE_COLORS[event.event_type].badge}`}>
               {t(`calendar.event_type.${event.event_type}`)}
             </span>
             {event.is_private && (
@@ -296,7 +354,14 @@ const EventDetailModal: React.FC<Props> = ({
         </Modal.Body>
         <Modal.Footer>
           {isCreator && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-1 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              >
+                <Edit2 className="w-4 h-4" /> {t('common.edit')}
+              </button>
               {isRecurring && (
                 <button
                   onClick={() => setConfirmScope('single')}

@@ -1,20 +1,38 @@
-import { format } from 'date-fns'
+import type { TFunction } from 'i18next'
 import type { Project, BankCredit, FinancialSummary } from '../../types/investment'
-import { formatEuropean } from '../../utils/formatters'
+import { formatDate, formatDateTime } from '../../utils/formatters'
+import { pdfMoney } from '../Reports/pdf/pdfText'
+import { loadUnicodeFont, PDF_FONT_FAMILY } from '../../utils/pdfFont'
+import { exportT, EXPORT_LANGUAGE } from '../../utils/exportLanguage'
+import { exportFileName } from '../../utils/downloadFile'
+import { PROJECT_STATUS, statusLabel } from '../../utils/statusDisplay'
+import { logActivity } from '../../lib/activityLog'
+import { utilisationToneRgb, getCreditTypeLabelKey } from '../Funding/Investors/utils/creditCalculations'
 import { yieldToUI } from '../../utils/yieldToUI'
 
-const addHeader = (doc: import('jspdf').jsPDF, yPos: number) => {
+/**
+ * A label with exactly one colon: some of these keys carry their own ("Datum početka:") because
+ * the screen draws them that way, and some do not ("Iskorišteno").
+ */
+const rowLabel = (t: TFunction, key: string): string => `${t(key).replace(/\s*:\s*$/, '')}:`
+
+const addHeader = (doc: import('jspdf').jsPDF, yPos: number, t: TFunction) => {
   doc.setFillColor(15, 23, 42)
   doc.rect(0, 0, 210, yPos, 'F')
 
   doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
+  doc.setFont(PDF_FONT_FAMILY, 'bold')
   doc.setFontSize(24)
-  doc.text('INVESTMENT DASHBOARD REPORT', 105, yPos / 2 - 5, { align: 'center' })
+  doc.text(t('dashboards.investment.pdf_title'), 105, yPos / 2 - 5, { align: 'center' })
 
   doc.setFontSize(12)
-  doc.setFont('helvetica', 'normal')
-  doc.text(`Generated: ${format(new Date(), 'MMMM dd, yyyy HH:mm')}`, 105, yPos / 2 + 5, { align: 'center' })
+  doc.setFont(PDF_FONT_FAMILY, 'normal')
+  doc.text(
+    `${rowLabel(t, 'reports.general.generated')} ${formatDateTime(new Date(), EXPORT_LANGUAGE)}`,
+    105,
+    yPos / 2 + 5,
+    { align: 'center' }
+  )
 
   doc.setTextColor(0, 0, 0)
   return yPos + 10
@@ -24,7 +42,7 @@ const addSectionTitle = (doc: import('jspdf').jsPDF, title: string, yPos: number
   doc.setFillColor(241, 245, 249)
   doc.rect(14, yPos - 2, 182, 10, 'F')
 
-  doc.setFont('helvetica', 'bold')
+  doc.setFont(PDF_FONT_FAMILY, 'bold')
   doc.setFontSize(14)
   doc.setTextColor(30, 58, 138)
   doc.text(title, 20, yPos + 5)
@@ -33,7 +51,7 @@ const addSectionTitle = (doc: import('jspdf').jsPDF, title: string, yPos: number
   return yPos + 15
 }
 
-const drawDonutChart = (doc: import('jspdf').jsPDF, x: number, y: number, outerRadius: number, innerRadius: number, data: { label: string, value: number, color: number[] }[]) => {
+const drawDonutChart = (doc: import('jspdf').jsPDF, x: number, y: number, outerRadius: number, innerRadius: number, data: { label: string, value: number, color: number[] }[], t: TFunction) => {
   const total = data.reduce((sum, item) => sum + item.value, 0)
 
   if (total === 0) return
@@ -85,7 +103,7 @@ const drawDonutChart = (doc: import('jspdf').jsPDF, x: number, y: number, outerR
     const labelY = y + labelRadius * Math.sin(midAngle) + 1
 
     if (Number(percentage) > 5) {
-      doc.setFont('helvetica', 'bold')
+      doc.setFont(PDF_FONT_FAMILY, 'bold')
       doc.setFontSize(9)
       doc.setTextColor(255, 255, 255)
       doc.text(`${percentage}%`, labelX, labelY, { align: 'center' })
@@ -112,12 +130,12 @@ const drawDonutChart = (doc: import('jspdf').jsPDF, x: number, y: number, outerR
     currentAngle += sliceAngle
   })
 
-  doc.setFont('helvetica', 'bold')
+  doc.setFont(PDF_FONT_FAMILY, 'bold')
   doc.setFontSize(11)
   doc.setTextColor(30, 30, 30)
-  doc.text('Total', x, y - 1, { align: 'center' })
+  doc.text(t('common.total'), x, y - 1, { align: 'center' })
   doc.setFontSize(9)
-  doc.text(`€${formatEuropean(total)}`, x, y + 4, { align: 'center' })
+  doc.text(pdfMoney(total), x, y + 4, { align: 'center' })
 
   let legendY = y - (data.length * 5.5)
   const legendX = x + outerRadius + 15
@@ -126,15 +144,15 @@ const drawDonutChart = (doc: import('jspdf').jsPDF, x: number, y: number, outerR
     doc.setFillColor(item.color[0], item.color[1], item.color[2])
     doc.roundedRect(legendX, legendY - 2.5, 5, 5, 1, 1, 'F')
 
-    doc.setFont('helvetica', 'bold')
+    doc.setFont(PDF_FONT_FAMILY, 'bold')
     doc.setFontSize(9)
     doc.setTextColor(30, 30, 30)
     doc.text(item.label, legendX + 8, legendY + 1.5)
 
-    doc.setFont('helvetica', 'normal')
+    doc.setFont(PDF_FONT_FAMILY, 'normal')
     doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
-    doc.text(`€${formatEuropean(item.value)} (${((item.value / total) * 100).toFixed(1)}%)`, legendX + 8, legendY + 6)
+    doc.text(`${pdfMoney(item.value)} (${((item.value / total) * 100).toFixed(1)}%)`, legendX + 8, legendY + 6)
 
     legendY += 11
   })
@@ -162,16 +180,16 @@ const drawBarChart = (doc: import('jspdf').jsPDF, x: number, y: number, width: n
     doc.setFillColor(...color)
     doc.rect(x, barY, barWidth, barHeight, 'F')
 
-    doc.setFont('helvetica', 'normal')
+    doc.setFont(PDF_FONT_FAMILY, 'normal')
     doc.setFontSize(7)
     doc.setTextColor(30, 30, 30)
 
     const labelText = item.label.length > 20 ? item.label.substring(0, 18) + '...' : item.label
     doc.text(labelText, x - 2, barY + barHeight / 2 + 0.8, { align: 'right' })
 
-    doc.setFont('helvetica', 'bold')
+    doc.setFont(PDF_FONT_FAMILY, 'bold')
     doc.setFontSize(7)
-    const valueText = `€${formatEuropean(item.value)}`
+    const valueText = pdfMoney(item.value)
     if (barWidth > 25) {
       doc.setTextColor(255, 255, 255)
       doc.text(valueText, x + barWidth - 2, barY + barHeight / 2 + 0.8, { align: 'right' })
@@ -192,15 +210,30 @@ export const generateInvestmentReportPDF = async (
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF()
 
-  let yPos = addHeader(doc, 40)
+  // No fallback: a built-in WinAnsi face cannot spell a Croatian company or project name, and one
+  // unmapped character turns the whole line into noise. A failure reaches `useAsyncExport`.
+  await loadUnicodeFont(doc)
 
-  yPos = addSectionTitle(doc, 'EXECUTIVE SUMMARY', yPos)
+  // Exports are Croatian whatever the UI language is (docs/REPORTS.md).
+  const t = exportT()
+
+  /** A credit's own name, or its company and type — never the raw `line_of_credit` enum. */
+  const creditLabel = (credit: BankCredit): string => {
+    if (credit.credit_name) return credit.credit_name
+    const company = credit.company?.name || t('funding.investments.unnamed_credit')
+    const typeKey = getCreditTypeLabelKey(credit.credit_type, credit.credit_seniority)
+    return typeKey ? `${company} - ${t(typeKey)}` : company
+  }
+
+  let yPos = addHeader(doc, 40, t)
+
+  yPos = addSectionTitle(doc, t('reports.general.exec_summary'), yPos)
 
   const statBoxes: Array<{ label: string; value: number; color: [number, number, number] }> = [
-    { label: 'Portfolio Value', value: financialSummary.total_portfolio_value, color: [59, 130, 246] },
-    { label: 'Outstanding Debt', value: financialSummary.total_debt, color: [239, 68, 68] },
-    { label: 'Available Investments', value: financialSummary.available_credit, color: [34, 197, 94] },
-    { label: 'Used Credit', value: financialSummary.total_used_credit, color: [168, 85, 247] }
+    { label: t('dashboards.investment.portfolio_value'), value: financialSummary.total_portfolio_value, color: [59, 130, 246] },
+    { label: t('dashboards.investment.outstanding_debt'), value: financialSummary.total_debt, color: [239, 68, 68] },
+    { label: t('dashboards.investment.available_investments'), value: financialSummary.available_credit, color: [34, 197, 94] },
+    { label: t('dashboards.investment.used'), value: financialSummary.total_used_credit, color: [168, 85, 247] }
   ]
 
   const boxWidth = 42
@@ -211,14 +244,14 @@ export const generateInvestmentReportPDF = async (
     doc.setFillColor(...box.color)
     doc.roundedRect(boxX, yPos, boxWidth, boxHeight, 2, 2, 'F')
 
-    doc.setFont('helvetica', 'normal')
+    doc.setFont(PDF_FONT_FAMILY, 'normal')
     doc.setFontSize(9)
     doc.setTextColor(255, 255, 255)
     doc.text(box.label, boxX + boxWidth / 2, yPos + 6, { align: 'center' })
 
-    doc.setFont('helvetica', 'bold')
+    doc.setFont(PDF_FONT_FAMILY, 'bold')
     doc.setFontSize(14)
-    doc.text(`€${formatEuropean(box.value)}`, boxX + boxWidth / 2, yPos + 15, { align: 'center' })
+    doc.text(pdfMoney(box.value), boxX + boxWidth / 2, yPos + 15, { align: 'center' })
 
     boxX += boxWidth + 5
   })
@@ -229,21 +262,21 @@ export const generateInvestmentReportPDF = async (
     ? (financialSummary.total_used_credit / financialSummary.total_credit_lines) * 100
     : 0
 
-  doc.setFont('helvetica', 'bold')
+  doc.setFont(PDF_FONT_FAMILY, 'bold')
   doc.setFontSize(11)
   doc.setTextColor(30, 30, 30)
-  doc.text(`Investment Utilization Rate: ${utilizationRate.toFixed(1)}%`, 20, yPos)
+  doc.text(`${rowLabel(t, 'dashboards.investment.investment_utilization')} ${utilizationRate.toFixed(1)}%`, 20, yPos)
 
   doc.setFillColor(226, 232, 240)
   doc.roundedRect(20, yPos + 3, 170, 6, 1, 1, 'F')
 
-  const progressColor: [number, number, number] = utilizationRate >= 90 ? [239, 68, 68] : utilizationRate >= 70 ? [249, 115, 22] : [59, 130, 246]
+  const progressColor = utilisationToneRgb(utilizationRate)
   doc.setFillColor(...progressColor)
   doc.roundedRect(20, yPos + 3, (170 * Math.min(utilizationRate, 100)) / 100, 6, 1, 1, 'F')
 
   yPos += 15
 
-  yPos = addSectionTitle(doc, 'KEY METRICS', yPos)
+  yPos = addSectionTitle(doc, t('reports.general.kpi_title'), yPos)
 
   const activeCredits = bankCredits.filter(c => c.status === 'active').length
   const highUtilizationCredits = bankCredits.filter(c => {
@@ -251,15 +284,18 @@ export const generateInvestmentReportPDF = async (
     return util >= 80
   }).length
 
-  const insights = []
-  insights.push(`Total Investment Lines: €${formatEuropean(financialSummary.total_credit_lines)}`)
-  insights.push(`Active Investments: ${activeCredits} of ${bankCredits.length}`)
-  insights.push(`Average Interest Rate: ${financialSummary.weighted_avg_interest.toFixed(2)}%`)
+  const insights: string[] = []
+  insights.push(`${rowLabel(t, 'dashboards.investment.total_investment_lines')} ${pdfMoney(financialSummary.total_credit_lines)}`)
+  insights.push(`${rowLabel(t, 'dashboards.investment.active_investments')} ${activeCredits} / ${bankCredits.length}`)
+  insights.push(`${rowLabel(t, 'dashboards.investment.avg_interest_rate')} ${financialSummary.weighted_avg_interest.toFixed(2)}%`)
   if (financialSummary.upcoming_maturities > 0) {
-    insights.push(`⚠ ${financialSummary.upcoming_maturities} investment(s) maturing within 90 days`)
+    // This line used to open with a `⚠`, which WinAnsi has no mapping for — so the single most
+    // prominent warning in the report rendered as noise every time it fired. The embedded font
+    // could draw the glyph now, but the screens word this warning rather than draw it.
+    insights.push(`${t('common.warning')}: ${t('dashboards.investment.investments_maturing', { count: financialSummary.upcoming_maturities })}`)
   }
-if (highUtilizationCredits > 0) {
-    insights.push(`${highUtilizationCredits} investment(s) with high utilization (>80%)`)
+  if (highUtilizationCredits > 0) {
+    insights.push(t('dashboards.investment.high_utilization', { count: highUtilizationCredits }))
   }
 
   const insightBoxHeight = insights.length * 6 + 8
@@ -268,7 +304,7 @@ if (highUtilizationCredits > 0) {
   doc.setLineWidth(0.5)
   doc.roundedRect(20, yPos, 170, insightBoxHeight, 2, 2, 'FD')
 
-  doc.setFont('helvetica', 'normal')
+  doc.setFont(PDF_FONT_FAMILY, 'normal')
   doc.setFontSize(9)
   doc.setTextColor(30, 58, 138)
 
@@ -280,7 +316,7 @@ if (highUtilizationCredits > 0) {
 
   yPos += 15
 
-  yPos = addSectionTitle(doc, 'INVESTMENT DISTRIBUTION BY PROJECT', yPos)
+  yPos = addSectionTitle(doc, t('dashboards.investment.pdf_distribution_by_project'), yPos)
 
   const projectAllocations = new Map<string, number>()
 
@@ -291,7 +327,7 @@ if (highUtilizationCredits > 0) {
 
   // Distribute every credit's full face amount on a single, consistent basis:
   // each allocation's slice goes to its project, and any unallocated remainder
-  // (amount − Σ allocated) is bucketed as "Unallocated" — so the donut always
+  // (amount − Σ allocated) is bucketed as "Nealocirano" — so the donut always
   // sums to the total facility value rather than mixing allocated slices for
   // some credits with full amounts for others.
   bankCredits.forEach(credit => {
@@ -305,7 +341,7 @@ if (highUtilizationCredits > 0) {
       allocated += slice
     })
     const remainder = amount - allocated
-    if (remainder > 0) addToProject(credit.project?.name || 'Unallocated', remainder)
+    if (remainder > 0) addToProject(credit.project?.name || t('funding.unallocated'), remainder)
   })
 
   const colors = [
@@ -336,7 +372,7 @@ if (highUtilizationCredits > 0) {
     const outerRadius = 20
     const innerRadius = 12
 
-    drawDonutChart(doc, chartCenterX, chartCenterY, outerRadius, innerRadius, donutData)
+    drawDonutChart(doc, chartCenterX, chartCenterY, outerRadius, innerRadius, donutData, t)
     yPos += 70
   } else {
     yPos += 10
@@ -348,12 +384,11 @@ if (highUtilizationCredits > 0) {
     if (credit.credit_allocations && credit.credit_allocations.length > 0) {
       credit.credit_allocations.forEach(allocation => {
         const projectName = allocation.project?.name || 'OPEX'
-        const creditLabel = `${credit.credit_name || credit.company?.name || 'Credit'} - ${projectName}`
         const utilPercent = allocation.allocated_amount > 0 ? (allocation.used_amount / allocation.allocated_amount) * 100 : 0
         const color: [number, number, number] = utilPercent >= 90 ? [239, 68, 68] : utilPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
 
         allAllocations.push({
-          label: creditLabel,
+          label: `${creditLabel(credit)} - ${projectName}`,
           value: allocation.allocated_amount,
           max: allocation.allocated_amount,
           color
@@ -363,7 +398,7 @@ if (highUtilizationCredits > 0) {
       const utilPercent = credit.amount > 0 ? (credit.used_amount / credit.amount) * 100 : 0
       const color: [number, number, number] = utilPercent >= 90 ? [239, 68, 68] : utilPercent >= 70 ? [249, 115, 22] : [59, 130, 246]
       allAllocations.push({
-        label: credit.credit_name || `${credit.company?.name || 'Credit'}`,
+        label: creditLabel(credit),
         value: credit.amount,
         max: credit.amount,
         color
@@ -389,7 +424,7 @@ if (highUtilizationCredits > 0) {
       }
 
       if (chunkIndex === 0 || yPos === 20) {
-        yPos = addSectionTitle(doc, 'INVESTMENT ALLOCATIONS BY PROJECT', yPos)
+        yPos = addSectionTitle(doc, t('dashboards.investment.pdf_allocations_by_project'), yPos)
       }
 
       drawBarChart(doc, 70, yPos, 120, currentChartHeight, chunk)
@@ -407,7 +442,7 @@ if (highUtilizationCredits > 0) {
     yPos = 20
   }
 
-  yPos = addSectionTitle(doc, 'ACTIVE INVESTMENTS DETAILS', yPos)
+  yPos = addSectionTitle(doc, t('dashboards.investment.pdf_credit_details'), yPos)
 
   const sortedCredits = [...bankCredits].sort((a, b) => Number(b.amount) - Number(a.amount))
   for (let creditIdx = 0; creditIdx < sortedCredits.length; creditIdx++) {
@@ -430,65 +465,68 @@ if (highUtilizationCredits > 0) {
     doc.setFillColor(...bgColor)
     doc.roundedRect(20, yPos, 170, boxHeight, 2, 2, 'F')
 
-    doc.setFont('helvetica', 'bold')
+    doc.setFont(PDF_FONT_FAMILY, 'bold')
     doc.setFontSize(10)
     doc.setTextColor(30, 30, 30)
-    doc.text(credit.credit_name || `${credit.company?.name || 'Credit'} - ${credit.credit_type.replace(/_/g, ' ')}`, 23, yPos + 5)
+    doc.text(creditLabel(credit), 23, yPos + 5)
 
-    doc.setFont('helvetica', 'bold')
+    doc.setFont(PDF_FONT_FAMILY, 'bold')
     doc.setFontSize(8)
     doc.setTextColor(60, 60, 60)
 
     const detailY = yPos + 11
 
-    doc.text(`Amount: €${formatEuropean(credit.amount)}`, 23, detailY)
-    doc.text(`Used: €${formatEuropean(credit.used_amount)}`, 70, detailY)
-    doc.text(`Available: €${formatEuropean(credit.amount - credit.used_amount)}`, 117, detailY)
+    // `amount − used_amount` goes negative on an over-utilised credit, which is an expected state
+    // (the utilisation bar below clamps at 100%). `pdfMoney` swaps hr-HR's U+2212 for an ASCII
+    // hyphen, without which this whole line used to render as mojibake.
+    doc.text(`${rowLabel(t, 'common.amount')} ${pdfMoney(credit.amount)}`, 23, detailY)
+    doc.text(`${rowLabel(t, 'dashboards.investment.used')} ${pdfMoney(credit.used_amount)}`, 70, detailY)
+    doc.text(`${rowLabel(t, 'dashboards.investment.available_investments')} ${pdfMoney(credit.amount - credit.used_amount)}`, 117, detailY)
 
-    doc.text(`Outstanding: €${formatEuropean(credit.outstanding_balance)}`, 23, detailY + 5)
-    doc.text(`Repaid: €${formatEuropean(credit.repaid_amount)}`, 70, detailY + 5)
-    doc.text(`Interest: ${Number(credit.interest_rate).toFixed(2)}%`, 117, detailY + 5)
+    doc.text(`${rowLabel(t, 'dashboards.investment.outstanding')} ${pdfMoney(credit.outstanding_balance)}`, 23, detailY + 5)
+    doc.text(`${rowLabel(t, 'dashboards.investment.repaid')} ${pdfMoney(credit.repaid_amount)}`, 70, detailY + 5)
+    doc.text(`${rowLabel(t, 'dashboards.investment.interest_rate')} ${Number(credit.interest_rate).toFixed(2)}%`, 117, detailY + 5)
 
-    doc.setFont('helvetica', 'normal')
+    doc.setFont(PDF_FONT_FAMILY, 'normal')
     doc.setFontSize(7)
     doc.setTextColor(100, 100, 100)
-    doc.text(`Start: ${format(new Date(credit.start_date), 'MMM dd, yyyy')}`, 23, detailY + 10)
+    doc.text(`${rowLabel(t, 'dashboards.investment.start_date')} ${formatDate(credit.start_date, EXPORT_LANGUAGE)}`, 23, detailY + 10)
 
     if (credit.maturity_date) {
-      doc.text(`Maturity: ${format(new Date(credit.maturity_date), 'MMM dd, yyyy')}`, 70, detailY + 10)
+      doc.text(`${rowLabel(t, 'dashboards.investment.maturity_date')} ${formatDate(credit.maturity_date, EXPORT_LANGUAGE)}`, 70, detailY + 10)
     }
 
     if (credit.usage_expiration_date) {
-      doc.text(`Usage Expires: ${format(new Date(credit.usage_expiration_date), 'MMM dd, yyyy')}`, 117, detailY + 10)
+      doc.text(`${rowLabel(t, 'dashboards.investment.usage_expires')} ${formatDate(credit.usage_expiration_date, EXPORT_LANGUAGE)}`, 117, detailY + 10)
     }
 
     let currentY = detailY + 15
 
     if (hasAllocations) {
-      doc.setFont('helvetica', 'bold')
+      doc.setFont(PDF_FONT_FAMILY, 'bold')
       doc.setFontSize(8)
       doc.setTextColor(30, 58, 138)
-      doc.text('Allocations:', 23, currentY)
+      doc.text(rowLabel(t, 'dashboards.investment.pdf_allocations'), 23, currentY)
       currentY += 5
 
       credit.credit_allocations!.forEach(allocation => {
         const projectName = allocation.project?.name || 'OPEX'
         const allocPercent = allocation.allocated_amount > 0 ? (allocation.allocated_amount / credit.amount) * 100 : 0
 
-        doc.setFont('helvetica', 'normal')
+        doc.setFont(PDF_FONT_FAMILY, 'normal')
         doc.setFontSize(7)
         doc.setTextColor(60, 60, 60)
-        doc.text(`• ${projectName}: €${formatEuropean(allocation.allocated_amount)} (${allocPercent.toFixed(1)}%)`, 26, currentY)
+        doc.text(`• ${projectName}: ${pdfMoney(allocation.allocated_amount)} (${allocPercent.toFixed(1)}%)`, 26, currentY)
 
         currentY += 5
       })
     }
 
-    doc.setFont('helvetica', 'bold')
+    doc.setFont(PDF_FONT_FAMILY, 'bold')
     doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
     const utilizationY = boxHeight - 8
-    doc.text('Utilization:', 23, yPos + utilizationY)
+    doc.text(rowLabel(t, 'dashboards.investment.utilization'), 23, yPos + utilizationY)
     doc.text(`${utilizationPercent.toFixed(1)}%`, 187, yPos + utilizationY, { align: 'right' })
 
     const barStartX = 45
@@ -511,14 +549,14 @@ if (highUtilizationCredits > 0) {
   }
 
   if (projects.length > 0) {
-    yPos = addSectionTitle(doc, 'PORTFOLIO PROJECTS', yPos)
+    yPos = addSectionTitle(doc, t('dashboards.investment.pdf_portfolio_projects'), yPos)
 
-    doc.setFont('helvetica', 'normal')
+    doc.setFont(PDF_FONT_FAMILY, 'normal')
     doc.setFontSize(9)
     doc.setTextColor(60, 60, 60)
-    doc.text(`Total Projects: ${projects.length}`, 20, yPos)
+    doc.text(`${rowLabel(t, 'dashboards.investment.pdf_total_projects')} ${projects.length}`, 20, yPos)
     yPos += 5
-    doc.text(`Total Portfolio Value: €${formatEuropean(financialSummary.total_portfolio_value)}`, 20, yPos)
+    doc.text(`${rowLabel(t, 'dashboards.investment.portfolio_value')} ${pdfMoney(financialSummary.total_portfolio_value)}`, 20, yPos)
     yPos += 10
 
     projects.slice(0, 15).forEach(project => {
@@ -527,24 +565,30 @@ if (highUtilizationCredits > 0) {
         yPos = 20
       }
 
-      doc.setFont('helvetica', 'bold')
+      doc.setFont(PDF_FONT_FAMILY, 'bold')
       doc.setFontSize(9)
       doc.setTextColor(30, 30, 30)
       doc.text(`• ${project.name}`, 23, yPos)
 
-      doc.setFont('helvetica', 'normal')
+      doc.setFont(PDF_FONT_FAMILY, 'normal')
       doc.setFontSize(8)
       doc.setTextColor(100, 100, 100)
-      doc.text(`${project.location} | Budget: €${formatEuropean(project.budget)} | ${project.status}`, 27, yPos + 4)
+      doc.text(
+        `${project.location} | ${rowLabel(t, 'common.budget')} ${pdfMoney(project.budget)} | ${statusLabel(PROJECT_STATUS, project.status, t)}`,
+        27,
+        yPos + 4
+      )
 
       yPos += 9
     })
 
     if (projects.length > 15) {
-      doc.setFont('helvetica', 'italic')
+      // Not 'italic': `pdfFont` registers normal and bold only, and jsPDF answers an unregistered
+      // style by silently falling back to a WinAnsi standard face — which is the whole bug.
+      doc.setFont(PDF_FONT_FAMILY, 'normal')
       doc.setFontSize(8)
       doc.setTextColor(100, 100, 100)
-      doc.text(`... and ${projects.length - 15} more projects`, 23, yPos)
+      doc.text(t('dashboards.investment.pdf_more_projects', { count: projects.length - 15 }), 23, yPos)
       yPos += 5
     }
   }
@@ -552,13 +596,24 @@ if (highUtilizationCredits > 0) {
   const totalPages = doc.internal.pages.length - 1
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i)
-    doc.setFont('helvetica', 'normal')
+    doc.setFont(PDF_FONT_FAMILY, 'normal')
     doc.setFontSize(8)
     doc.setTextColor(150, 150, 150)
-    doc.text(`Page ${i} of ${totalPages}`, 105, 280, { align: 'center' })
-    doc.text(`Cogni Real Estate Management System`, 20, 280)
-    doc.text(format(new Date(), 'MMM dd, yyyy'), 190, 280, { align: 'right' })
+    doc.text(t('pagination.page_info', { current: i, total: totalPages }), 105, 280, { align: 'center' })
+    doc.text('Cogni Real Estate Management System', 20, 280)
+    doc.text(formatDate(new Date(), EXPORT_LANGUAGE), 190, 280, { align: 'right' })
   }
 
-  doc.save(`Investment_Dashboard_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`)
+  doc.save(exportFileName('izvjestaj-investicije', 'pdf'))
+
+  logActivity({
+    action: 'export.investment_pdf',
+    entity: 'report',
+    metadata: {
+      severity: 'low',
+      format: 'pdf',
+      row_count: bankCredits.length,
+      project_count: projects.length,
+    },
+  })
 }

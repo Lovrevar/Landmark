@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { addDays, format, parseISO } from 'date-fns'
 import { Modal, Button, FormField, Input, Alert, Select } from '../../../ui'
 import SegmentedControl from '../../../ui/SegmentedControl'
+import { formatDate } from '../../../../utils/formatters'
 import {
   RESIDENTIAL_HR_TEMPLATE,
   type ConstructionPhaseId,
@@ -30,7 +31,7 @@ interface SelectedItem {
 const itemKey = (phaseId: ConstructionPhaseId, index: number) => `${phaseId}::${index}`
 
 function MilestoneTemplateModal({ show, onClose, projectStartDate, onSubmit }: Props) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const template: MilestoneTemplate = RESIDENTIAL_HR_TEMPLATE
 
   const [scope, setScope] = useState<Scope>('all')
@@ -91,10 +92,10 @@ function MilestoneTemplateModal({ show, onClose, projectStartDate, onSubmit }: P
     const minOffset = Math.min(...offsets)
     const maxOffset = Math.max(...offsets)
     return {
-      min: format(addDays(start, minOffset), 'd. MMM yyyy.'),
-      max: format(addDays(start, maxOffset), 'd. MMM yyyy.')
+      min: formatDate(addDays(start, minOffset), i18n.language),
+      max: formatDate(addDays(start, maxOffset), i18n.language)
     }
-  }, [dateStrategy, startDateInput, selectedItems, startDateValid])
+  }, [dateStrategy, startDateInput, selectedItems, startDateValid, i18n.language])
 
   const togglePicked = (phaseId: ConstructionPhaseId, index: number) => {
     setPickedItems(prev => {
@@ -157,13 +158,13 @@ function MilestoneTemplateModal({ show, onClose, projectStartDate, onSubmit }: P
         onClose={onClose}
       />
       <Modal.Body>
-        <FormField label={t('general_projects.milestone_template.template_label')}>
+        <FormField group label={t('general_projects.milestone_template.template_label')}>
           <div className="text-sm text-gray-700 dark:text-gray-200 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-md">
             {t(template.labelKey)}
           </div>
         </FormField>
 
-        <FormField label={t('general_projects.milestone_template.scope_label')}>
+        <FormField group label={t('general_projects.milestone_template.scope_label')}>
           <SegmentedControl<Scope> value={scope} onChange={setScope} options={scopeOptions} />
         </FormField>
 
@@ -227,7 +228,7 @@ function MilestoneTemplateModal({ show, onClose, projectStartDate, onSubmit }: P
           </div>
         )}
 
-        <FormField label={t('general_projects.milestone_template.date_label')}>
+        <FormField group label={t('general_projects.milestone_template.date_label')}>
           <SegmentedControl<DateStrategy> value={dateStrategy} onChange={setDateStrategy} options={dateOptions} />
         </FormField>
 

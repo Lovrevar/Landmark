@@ -2,7 +2,7 @@ import React, { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Upload } from 'lucide-react'
 import {
-  Alert, Badge, Button, Card, EmptyState, LoadingSpinner,
+  Alert, Badge, Button, Card, EmptyState, ErrorState, LoadingSpinner,
   PageHeader, Select, Table,
 } from '../../ui'
 import { formatEuropean } from '../../../utils/formatters'
@@ -88,6 +88,10 @@ export default function ErpImport() {
         </h2>
         {s.loading ? (
           <LoadingSpinner />
+        ) : s.error && s.runs.length === 0 ? (
+          /* "Nothing has been imported yet" is the wrong thing to say when the run log itself
+             failed to load — an operator would upload the same file twice. */
+          <ErrorState onRetry={() => void s.reload()} />
         ) : s.runs.length === 0 ? (
           <EmptyState
             icon={Upload}

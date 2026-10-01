@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { ChevronDown, ChevronUp, ArrowUpDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Table, Badge } from '../ui'
+import { PROJECT_STATUS, statusLabel, statusVariant } from '../../utils/statusDisplay'
 import type { ProjectReportData } from './retailReportTypes'
 
 interface Props {
@@ -63,13 +64,6 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
     </Table.Th>
   )
 
-  const statusBadgeVariants: Record<string, 'gray' | 'blue' | 'green' | 'orange'> = {
-    'Planning': 'gray',
-    'In Progress': 'blue',
-    'Completed': 'green',
-    'On Hold': 'orange'
-  }
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="p-5 border-b border-gray-200 dark:border-gray-700">
@@ -104,8 +98,8 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
                   </div>
                 </Table.Td>
                 <Table.Td className="py-3">
-                  <Badge variant={statusBadgeVariants[project.status] || 'gray'} size="sm">
-                    {project.status}
+                  <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="sm">
+                    {statusLabel(PROJECT_STATUS, project.status, t)}
                   </Badge>
                 </Table.Td>
                 <Table.Td className="py-3 text-gray-700 dark:text-gray-200">{formatCurrency(project.land_cost)}</Table.Td>

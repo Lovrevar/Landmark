@@ -1,14 +1,19 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, Pagination } from '../../ui'
+import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Pagination } from '../../ui'
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
-import { format } from 'date-fns'
 import { useSupervisionInvoices } from './hooks/useSupervisionInvoices'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel, getInvoiceCategoryLabel } from '../../Cashflow/services/invoiceHelpers'
+import { formatDate } from '../../../utils/formatters'
 
 const InvoicesManagement: React.FC = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const [errorDismissed, setErrorDismissed] = React.useState(false)
   const {
     loading,
+    error,
+    hasData,
+    refetch,
     stats,
     filteredInvoices,
     paginatedInvoices,
@@ -25,12 +30,17 @@ const InvoicesManagement: React.FC = () => {
     dateRange,
     setDateRange,
     handleApprove,
-    handleExportCSV,
+    exporting,
+    handleExportExcel,
   } = useSupervisionInvoices()
 
-  if (loading) {
+  if (loading && !hasData) {
     return <LoadingSpinner message={t('supervision.invoices.loading')} />
   }
+
+  // Nothing loaded and the load failed: the stat cards would read €0 across the board, which is
+  // the same thing they say for a register with no invoices in it.
+  const failedWithNothing = !!error && !hasData
 
   return (
     <div className="p-6 space-y-6">
@@ -39,12 +49,25 @@ const InvoicesManagement: React.FC = () => {
         description={t('supervision.invoices.subtitle')}
       />
 
+      {error && !errorDismissed && !failedWithNothing && (
+        <Alert variant="error" onDismiss={() => setErrorDismissed(true)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>{t('common.load_error_description')}</span>
+            <Button size="sm" variant="secondary" onClick={refetch} loading={loading}>{t('common.retry')}</Button>
+          </div>
+        </Alert>
+      )}
+
+      {/* Withheld rather than zeroed when the read failed; the filter bar below stays mounted so
+          the user keeps their filters across a retry. */}
+      {!failedWithNothing && (
       <StatGrid columns={4} className="mb-8">
         <StatCard label={t('common.total_invoices')} value={stats.totalInvoices} icon={FileText} color="blue" />
         <StatCard label={t('common.total_amount')} value={`€${stats.totalAmount.toLocaleString('hr-HR')}`} icon={FileText} color="green" />
         <StatCard label={t('common.this_month')} value={stats.invoicesThisMonth} subtitle={t('common.invoices')} icon={Calendar} />
         <StatCard label={t('common.month_amount')} value={`€${stats.amountThisMonth.toLocaleString('hr-HR')}`} icon={TrendingUp} color="teal" />
       </StatGrid>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -69,8 +92,8 @@ const InvoicesManagement: React.FC = () => {
             <option value="not_approved">{t('supervision.invoices.filter.not_approved')}</option>
           </Select>
 
-          <Button variant="success" icon={Download} onClick={handleExportCSV} fullWidth>
-            {t('common.export_csv')}
+          <Button variant="success" icon={Download} onClick={handleExportExcel} loading={exporting} fullWidth>
+            {t('common.export_excel')}
           </Button>
         </div>
 
@@ -92,7 +115,9 @@ const InvoicesManagement: React.FC = () => {
         </div>
       </div>
 
-      {filteredInvoices.length === 0 ? (
+      {failedWithNothing ? (
+        <ErrorState onRetry={refetch} />
+      ) : filteredInvoices.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title={t('supervision.invoices.no_found')}
@@ -131,11 +156,13 @@ const InvoicesManagement: React.FC = () => {
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.invoice_number}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <Badge variant={invoice.invoice_category === 'SUPERVISION' ? 'blue' : 'gray'} size="sm">
-                      {invoice.invoice_category}
+                    {/* Every row is grey: the old blue branch tested for 'SUPERVISION', which
+                        accounting_invoices_invoice_category_check has never allowed. */}
+                    <Badge variant="gray" size="sm">
+                      {getInvoiceCategoryLabel(invoice.invoice_category, t)}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{format(new Date(invoice.issue_date), 'dd.MM.yyyy')}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{formatDate(invoice.issue_date, i18n.language)}</td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{invoice.supplier_name}</td>
                   <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{invoice.project_name}</td>
                   <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{invoice.phase_name}</td>
@@ -149,12 +176,8 @@ const InvoicesManagement: React.FC = () => {
                     €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <Badge variant={
-                      invoice.status === 'PAID' ? 'green'
-                        : invoice.status === 'PARTIALLY_PAID' ? 'yellow'
-                        : 'red'
-                    }>
-                      {invoice.status}
+                    <Badge variant={getInvoiceStatusVariant(invoice.status)}>
+                      {getInvoiceStatusLabel(invoice.status, t)}
                     </Badge>
                   </td>
                 </tr>

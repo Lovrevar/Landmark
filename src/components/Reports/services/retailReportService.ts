@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase'
+import { daysFromToday } from '../../../utils/dateOnly'
 import type {
   RetailReportData,
   ProjectReportData,
@@ -20,15 +21,7 @@ const emptyPhase = (): PhaseReportData => ({
 const num = (val: unknown): number => parseFloat(String(val || 0)) || 0
 
 export async function fetchRetailReportData(): Promise<RetailReportData> {
-  const [
-    { data: projects },
-    { data: phases },
-    { data: contracts },
-    { data: plots },
-    { data: customers },
-    { data: suppliers },
-    { data: invoices }
-  ] = await Promise.all([
+  const responses = await Promise.all([
     supabase.from('retail_projects').select('*').order('name'),
     supabase.from('retail_project_phases').select('*'),
     supabase.from('retail_contracts').select(`
@@ -43,6 +36,23 @@ export async function fetchRetailReportData(): Promise<RetailReportData> {
       .select('id, status, total_amount, paid_amount, remaining_amount, due_date, retail_contract_id, retail_customer_id')
       .or('retail_contract_id.not.is.null,retail_customer_id.not.is.null')
   ])
+
+  // supabase-js resolves a failed query as `{ data: null, error }` instead of rejecting, and each
+  // read below falls back to `[]`. Unchecked, a dropped request rendered as a retail portfolio of
+  // zeros — indistinguishable from a company that owns no land. Fail the report instead, so the
+  // page can say so and offer a retry.
+  const failed = responses.find(response => response.error !== null)
+  if (failed?.error) throw new Error(failed.error.message)
+
+  const [
+    { data: projects },
+    { data: phases },
+    { data: contracts },
+    { data: plots },
+    { data: customers },
+    { data: suppliers },
+    { data: invoices }
+  ] = responses
 
   const allProjects = projects || []
   const allPhases = phases || []
@@ -279,8 +289,6 @@ function buildSupplierTypeSummary(suppliers: SupplierReportData[]): SupplierType
 }
 
 function buildInvoiceSummary(invoices: AnyRow[]): InvoiceSummary {
-  const today = new Date()
-
   return invoices.reduce((acc, inv) => {
     acc.total += 1
     acc.total_amount += num(inv.total_amount)
@@ -289,7 +297,9 @@ function buildInvoiceSummary(invoices: AnyRow[]): InvoiceSummary {
 
     if (inv.status === 'PAID') {
       acc.paid += 1
-    } else if (inv.due_date && new Date(inv.due_date as string) < today) {
+    } else if (inv.due_date && daysFromToday(inv.due_date as string) < 0) {
+      // Not `new Date(ymd) < new Date()`: that parses the date-only column as UTC midnight,
+      // which made an invoice overdue from 01:00 on its own due day.
       acc.overdue += 1
       acc.overdue_amount += num(inv.remaining_amount)
     } else {

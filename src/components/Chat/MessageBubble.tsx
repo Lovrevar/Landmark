@@ -2,6 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Download, FileText, FileSpreadsheet, Image as ImageIcon, File } from 'lucide-react'
 import type { ChatMessage } from '../../types/chat'
+import { intlLocale } from '../../utils/locale'
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -9,9 +10,14 @@ interface MessageBubbleProps {
   showSender: boolean
 }
 
-function formatTime(dateStr: string): string {
+/**
+ * `locale` is the app's, not the browser's: this passed `[]` to `toLocaleTimeString`, which means
+ * "whatever the browser is set to", so a Croatian UI could print an English clock beside the
+ * date separator right above it, which has always formatted in the app's language.
+ */
+function formatTime(dateStr: string, locale: string): string {
   const d = new Date(dateStr)
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 }
 
 function formatDateSeparator(
@@ -52,7 +58,7 @@ function isImageFile(mimeType: string | null | undefined): boolean {
 
 export function DateSeparator({ date }: { date: string }) {
   const { t, i18n } = useTranslation()
-  const locale = i18n.language === 'hr' ? 'hr-HR' : 'en-US'
+  const locale = intlLocale(i18n.language)
   return (
     <div className="flex items-center gap-3 my-4">
       <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
@@ -131,7 +137,7 @@ function FileAttachment({
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn, showSender }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const hasFile = !!message.file_url
   const hasText = !!message.content?.trim()
 
@@ -161,7 +167,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn, showSende
               isOwn ? 'text-blue-200' : 'text-gray-400 dark:text-gray-500'
             } text-right`}
           >
-            {formatTime(message.created_at)}
+            {formatTime(message.created_at, intlLocale(i18n.language))}
           </p>
         </div>
       </div>

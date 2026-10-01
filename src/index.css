@@ -123,14 +123,29 @@ input[type="number"] {
   }
   .responsive-table tbody tr {
     display: block;
-    border: 1px solid rgb(229 231 235);
     border-radius: 0.5rem;
     padding: 0.25rem 0.75rem;
+  }
+  /*
+   * Card colours sit in :where() so they carry zero specificity. As plain selectors they
+   * outranked any utility class on the row, so on phones an overdue invoice lost its red tint
+   * and a selected row its highlight. The dark rule follows the light one, so it still wins
+   * between the two.
+   */
+  :where(.responsive-table tbody tr) {
+    border: 1px solid rgb(229 231 235);
     background: #fff;
   }
-  .dark .responsive-table tbody tr {
+  :where(.dark .responsive-table tbody tr) {
     border-color: rgb(55 65 81);
     background: rgb(31 41 55);
+  }
+  /* A sticky actions cell is opaque on desktop (it scrolls over other columns). In a card it
+     would paint a white block over the row's tint. The .dark copy is needed: the cell's
+     `dark:bg-gray-800` (.dark .x) outranks the light-only rule. */
+  .responsive-table tbody td.sticky,
+  .dark .responsive-table tbody td.sticky {
+    background: transparent;
   }
   .responsive-table tbody td {
     display: flex;

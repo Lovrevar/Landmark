@@ -6,6 +6,12 @@ import type { ComprehensiveReport } from '../types'
 interface UseGeneralReportDataResult {
   report: ComprehensiveReport | null
   loading: boolean
+  /**
+   * The failure from the last fetch, or null. The page must tell a failed load apart from an
+   * empty portfolio: this report drives an executive PDF, and a dropped query rendered as
+   * "€0 revenue" reads as a business fact rather than as a missing answer.
+   */
+  error: Error | null
   /** Epoch ms of when the currently-shown report was generated, or null. */
   fetchedAt: number | null
   /** Force a fresh fetch, bypassing the cache. */
@@ -13,7 +19,7 @@ interface UseGeneralReportDataResult {
 }
 
 export function useGeneralReportData(): UseGeneralReportDataResult {
-  const { data, loading, fetchedAt, refetch } = useCachedData<ComprehensiveReport>(
+  const { data, loading, error, fetchedAt, refetch } = useCachedData<ComprehensiveReport>(
     'report:general',
     () => {
       const dateRange = {
@@ -24,5 +30,5 @@ export function useGeneralReportData(): UseGeneralReportDataResult {
     }
   )
 
-  return { report: data, loading, fetchedAt, refetch }
+  return { report: data, loading, error, fetchedAt, refetch }
 }

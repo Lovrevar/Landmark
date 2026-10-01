@@ -6,7 +6,10 @@ import {
   calculateMoneyMultiple,
   parseCreditTypeAndSeniority,
   getCreditRiskLevel,
+  utilisationTone,
+  utilisationToneRgb,
   getCreditTypeBadgeVariant,
+  getCreditTypeLabelKey,
   calculatePaymentSchedule,
 } from './creditCalculations'
 
@@ -100,24 +103,24 @@ describe('calculateEquityCashflow', () => {
     payment_schedule: 'yearly' as const,
   }
 
-  it('returns sentinel string when required fields are missing', () => {
-    expect(calculateEquityCashflow({ ...baseEquity, amount: 0 })).toBe('Enter amount, dates, and IRR to calculate')
-    expect(calculateEquityCashflow({ ...baseEquity, investment_date: '' })).toBe('Enter amount, dates, and IRR to calculate')
-    expect(calculateEquityCashflow({ ...baseEquity, maturity_date: '' })).toBe('Enter amount, dates, and IRR to calculate')
-    expect(calculateEquityCashflow({ ...baseEquity, expected_return: 0 })).toBe('Enter amount, dates, and IRR to calculate')
+  // The reason is reported as a status, not as an English sentence — the modal supplies the
+  // words, so a Croatian user no longer reads "Enter amount, dates, and IRR to calculate".
+  it('reports incomplete when required fields are missing', () => {
+    expect(calculateEquityCashflow({ ...baseEquity, amount: 0 })).toEqual({ status: 'incomplete' })
+    expect(calculateEquityCashflow({ ...baseEquity, investment_date: '' })).toEqual({ status: 'incomplete' })
+    expect(calculateEquityCashflow({ ...baseEquity, maturity_date: '' })).toEqual({ status: 'incomplete' })
+    expect(calculateEquityCashflow({ ...baseEquity, expected_return: 0 })).toEqual({ status: 'incomplete' })
   })
 
-  it('returns "Invalid date range" when maturity is before investment', () => {
-    expect(calculateEquityCashflow({ ...baseEquity, maturity_date: '2025-01-01' })).toBe('Invalid date range')
+  it('reports invalid_range when maturity is before investment', () => {
+    expect(calculateEquityCashflow({ ...baseEquity, maturity_date: '2025-01-01' })).toEqual({ status: 'invalid_range' })
   })
 
   it('returns a localized number string for valid inputs', () => {
     const result = calculateEquityCashflow(baseEquity)
-    // Should be a parse-able formatted integer — not a sentinel
-    expect(result).not.toContain('Enter')
-    expect(result).not.toContain('Invalid')
+    expect(result.status).toBe('ok')
     // Strip locale separators and parse
-    const numeric = Number(result.replace(/[^\d.-]/g, ''))
+    const numeric = Number((result as { value: string }).value.replace(/[^\d.-]/g, ''))
     expect(numeric).toBeGreaterThan(0)
   })
 })
@@ -130,24 +133,24 @@ describe('calculateMoneyMultiple', () => {
     maturity_date: '2036-01-01', // 10 years
   }
 
-  it('returns sentinel when inputs are incomplete', () => {
-    expect(calculateMoneyMultiple({ ...baseEquity, amount: 0 })).toBe('Enter amount, dates, and IRR to calculate')
-    expect(calculateMoneyMultiple({ ...baseEquity, expected_return: 0 })).toBe('Enter amount, dates, and IRR to calculate')
+  it('reports incomplete when inputs are incomplete', () => {
+    expect(calculateMoneyMultiple({ ...baseEquity, amount: 0 })).toEqual({ status: 'incomplete' })
+    expect(calculateMoneyMultiple({ ...baseEquity, expected_return: 0 })).toEqual({ status: 'incomplete' })
   })
 
-  it('returns "Invalid date range" for maturity before investment', () => {
-    expect(calculateMoneyMultiple({ ...baseEquity, maturity_date: '2020-01-01' })).toBe('Invalid date range')
+  it('reports invalid_range for maturity before investment', () => {
+    expect(calculateMoneyMultiple({ ...baseEquity, maturity_date: '2020-01-01' })).toEqual({ status: 'invalid_range' })
   })
 
   it('computes (1 + rate)^years — 10% over 10y ≈ 2.59x', () => {
     // (1.10)^10 = 2.5937...
-    expect(calculateMoneyMultiple(baseEquity)).toBe('2.59x (259%)')
+    expect(calculateMoneyMultiple(baseEquity)).toEqual({ status: 'ok', value: '2.59x (259%)' })
   })
 
   it('computes 0% return as 1.00x', () => {
     // expected_return must be truthy to pass the guard, so use a tiny positive value.
     const result = calculateMoneyMultiple({ ...baseEquity, expected_return: 0.0001 })
-    expect(result.startsWith('1.00x')).toBe(true)
+    expect((result as { value: string }).value.startsWith('1.00x')).toBe(true)
   })
 
   it('computes 5% over 1 year ≈ 1.05x', () => {
@@ -156,7 +159,7 @@ describe('calculateMoneyMultiple', () => {
       expected_return: 5,
       maturity_date: '2027-01-01',
     })
-    expect(result).toBe('1.05x (105%)')
+    expect(result).toEqual({ status: 'ok', value: '1.05x (105%)' })
   })
 })
 
@@ -181,26 +184,74 @@ describe('parseCreditTypeAndSeniority', () => {
 })
 
 describe('getCreditRiskLevel', () => {
+  // `level` is a `RISK_LEVEL` key, not a label: the badge wording comes from statusDisplay, the
+  // bands stay where they are (looser than `utilisationTone`'s, deliberately).
   it('returns High above 80', () => {
-    expect(getCreditRiskLevel(81).label).toBe('High')
-    expect(getCreditRiskLevel(100).label).toBe('High')
+    expect(getCreditRiskLevel(81).level).toBe('High')
+    expect(getCreditRiskLevel(100).level).toBe('High')
   })
 
   it('returns Medium for >60 and ≤80 (boundary at 60 is Low, at 80 is Medium)', () => {
-    expect(getCreditRiskLevel(61).label).toBe('Medium')
-    expect(getCreditRiskLevel(80).label).toBe('Medium')
+    expect(getCreditRiskLevel(61).level).toBe('Medium')
+    expect(getCreditRiskLevel(80).level).toBe('Medium')
   })
 
   it('returns Low at and below 60', () => {
-    expect(getCreditRiskLevel(60).label).toBe('Low')
-    expect(getCreditRiskLevel(0).label).toBe('Low')
-    expect(getCreditRiskLevel(-10).label).toBe('Low')
+    expect(getCreditRiskLevel(60).level).toBe('Low')
+    expect(getCreditRiskLevel(0).level).toBe('Low')
+    expect(getCreditRiskLevel(-10).level).toBe('Low')
   })
 
   it('returns matching tailwind className per tier', () => {
     expect(getCreditRiskLevel(90).className).toBe('text-red-600')
     expect(getCreditRiskLevel(70).className).toBe('text-orange-600')
     expect(getCreditRiskLevel(10).className).toBe('text-green-600')
+  })
+})
+
+describe('utilisationTone', () => {
+  it('is red at and above 90', () => {
+    expect(utilisationTone(90).bar).toBe('bg-red-600 dark:bg-red-500')
+    expect(utilisationTone(150).text).toBe('text-red-600 dark:text-red-400')
+  })
+
+  it('is orange from 70 up to but not including 90', () => {
+    expect(utilisationTone(70).bar).toBe('bg-orange-600 dark:bg-orange-500')
+    expect(utilisationTone(89.9).text).toBe('text-orange-600 dark:text-orange-400')
+  })
+
+  it('is green below 70, including 0 and negatives', () => {
+    expect(utilisationTone(69.9).bar).toBe('bg-green-600 dark:bg-green-500')
+    expect(utilisationTone(0).text).toBe('text-green-600 dark:text-green-400')
+    expect(utilisationTone(-5).bar).toBe('bg-green-600 dark:bg-green-500')
+  })
+
+  it('falls back to green for NaN rather than throwing or rendering nothing', () => {
+    expect(utilisationTone(Number.NaN).bar).toBe('bg-green-600 dark:bg-green-500')
+  })
+
+  it('pairs every colour with a dark variant', () => {
+    for (const percent of [0, 70, 90]) {
+      const tone = utilisationTone(percent)
+      expect(tone.text).toContain('dark:')
+      expect(tone.bar).toContain('dark:')
+    }
+  })
+
+  it('text and bar always agree on the tier', () => {
+    for (const percent of [0, 50, 69.99, 70, 85, 89.99, 90, 100]) {
+      const tone = utilisationTone(percent)
+      // 'text-red-600 …' → 'red', 'bg-red-600 …' → 'red'
+      expect(tone.text.split('-')[1]).toBe(tone.bar.split('-')[1])
+    }
+  })
+})
+
+describe('utilisationToneRgb', () => {
+  it('uses the same thresholds as the class-based scale', () => {
+    expect(utilisationToneRgb(90)).toEqual([239, 68, 68])
+    expect(utilisationToneRgb(70)).toEqual([249, 115, 22])
+    expect(utilisationToneRgb(69.9)).toEqual([34, 197, 94])
   })
 })
 
@@ -214,6 +265,26 @@ describe('getCreditTypeBadgeVariant', () => {
   it('defaults unknown types to gray', () => {
     expect(getCreditTypeBadgeVariant('unknown')).toBe('gray')
     expect(getCreditTypeBadgeVariant('')).toBe('gray')
+  })
+})
+
+describe('getCreditTypeLabelKey', () => {
+  it('maps every stored credit_type to an existing label key', () => {
+    expect(getCreditTypeLabelKey('term_loan')).toBe('banks.credit_form.term_loan')
+    expect(getCreditTypeLabelKey('construction_loan')).toBe('banks.credit_form.construction_loan')
+    expect(getCreditTypeLabelKey('bridge_loan')).toBe('banks.credit_form.bridge_loan')
+    expect(getCreditTypeLabelKey('equity')).toBe('funding.equity')
+  })
+
+  it('labels a line of credit by seniority, senior when unknown', () => {
+    expect(getCreditTypeLabelKey('line_of_credit', 'junior')).toBe('banks.credit_form.loc_junior')
+    expect(getCreditTypeLabelKey('line_of_credit', 'senior')).toBe('banks.credit_form.loc_senior')
+    expect(getCreditTypeLabelKey('line_of_credit', null)).toBe('banks.credit_form.loc_senior')
+  })
+
+  it('returns null for anything else', () => {
+    expect(getCreditTypeLabelKey('N/A')).toBeNull()
+    expect(getCreditTypeLabelKey(undefined)).toBeNull()
   })
 })
 
@@ -271,15 +342,15 @@ describe('calculatePaymentSchedule', () => {
     expect(yearly!.totalPrincipalPayments).toBeLessThanOrEqual(10)
   })
 
-  it('exposes the human-readable frequency labels', () => {
+  it('passes the stored repayment type through, for the renderer to translate', () => {
     const result = calculatePaymentSchedule(baseParams)
-    expect(result!.principalFrequency).toBe('month')
-    expect(result!.interestFrequency).toBe('month')
+    expect(result!.principalFrequency).toBe('monthly')
+    expect(result!.interestFrequency).toBe('monthly')
 
     const quarterly = calculatePaymentSchedule({
       ...baseParams,
       principal_repayment_type: 'quarterly',
     })
-    expect(quarterly!.principalFrequency).toBe('quarter')
+    expect(quarterly!.principalFrequency).toBe('quarterly')
   })
 })

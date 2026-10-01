@@ -195,13 +195,20 @@ export async function uploadAiAttachment(
 // send failure and to undo a pending-attachment removal in the UI.
 // Errors are swallowed to a console.warn — callers should treat this as
 // fire-and-forget cleanup.
-export async function deleteAiAttachment(storagePath: string): Promise<void> {
+/**
+ * Removes one stored object. Returns false instead of throwing: most callers are
+ * best-effort orphan cleanup where a failure is nothing the user can act on, but the
+ * pending-tray remove does tell the user, so the outcome has to be reportable.
+ */
+export async function deleteAiAttachment(storagePath: string): Promise<boolean> {
   const { error } = await supabase.storage
     .from(AI_CHAT_BUCKET)
     .remove([storagePath])
   if (error) {
     console.warn('[aiAttachmentsService] delete failed:', storagePath, error)
+    return false
   }
+  return true
 }
 
 // Issue a short-lived signed URL for a stored object. Used by the message

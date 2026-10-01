@@ -44,17 +44,21 @@ export async function fetchFundingBanksData(): Promise<FundingBanksData> {
     const bankCredits = (creditsData || []).filter(credit => credit.bank_id === bank.id)
     const total_credits = bankCredits.length
     const active_credits = bankCredits.filter(credit => credit.status === 'active').length
-    const credit_utilized = bankCredits.reduce((sum, credit) => sum + Number(credit.amount || 0), 0)
+    // The facility total (Σ credit.amount), not the amount drawn — it used to be called
+    // `credit_utilized` and rendered under "Iskorišten kredit", which made every investor
+    // look fully drawn. It is also the denominator of `credit_utilization` below.
+    const credit_total = bankCredits.reduce((sum, credit) => sum + Number(credit.amount || 0), 0)
+    const credit_used = bankCredits.reduce((sum, credit) => sum + Number(credit.used_amount || 0), 0)
     const outstanding_debt = bankCredits.reduce((sum, credit) => sum + Number(credit.outstanding_balance || 0), 0)
-    const available_funds = bank.total_credit_limit - credit_utilized
-    const total_used = bankCredits.reduce((sum, credit) => sum + Number(credit.used_amount || 0), 0)
-    const credit_utilization = credit_utilized > 0
-      ? (total_used / credit_utilized) * 100
+    const available_funds = bank.total_credit_limit - credit_total
+    const credit_utilization = credit_total > 0
+      ? (credit_used / credit_total) * 100
       : 0
 
     return {
       ...bank,
-      credit_utilized,
+      credit_total,
+      credit_used,
       outstanding_debt,
       available_funds,
       credits: bankCredits,

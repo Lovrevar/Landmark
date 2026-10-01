@@ -1,4 +1,5 @@
 import React from 'react'
+import { useFormFieldControl } from './FormField'
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   compact?: boolean
@@ -18,7 +19,19 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({
     className,
   ].filter(Boolean).join(' ')
 
-  return <textarea ref={ref} className={baseClasses} rows={rows} {...props} />
+  const field = useFormFieldControl()
+  // Inside a FormField, take its id (so the <label> points here) and its error/helper wiring.
+  // Anything passed explicitly still wins.
+  const a11y = field
+    ? {
+        id: props.id ?? field.controlId,
+        'aria-describedby': props['aria-describedby'] ?? field.describedBy,
+        'aria-invalid': props['aria-invalid'] ?? (field.invalid || undefined),
+        'aria-required': props['aria-required'] ?? (field.required || undefined),
+      }
+    : {}
+
+  return <textarea ref={ref} className={baseClasses} rows={rows} {...props} {...a11y} />
 })
 
 Textarea.displayName = 'Textarea'

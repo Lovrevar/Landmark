@@ -26,7 +26,7 @@ export const getDefaultInvoiceFormData = () => ({
 })
 
 export const getDefaultPaymentFormData = () => ({
-  payment_source_type: 'bank_account' as 'bank_account' | 'credit',
+  payment_source_type: 'bank_account' as 'bank_account' | 'credit' | 'kompenzacija' | 'gotovina',
   company_bank_account_id: '',
   credit_id: '',
   credit_allocation_id: '',

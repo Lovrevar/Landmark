@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../contexts/AuthContext'
+import { useToast } from '../../../contexts/ToastContext'
+import { toErrorMessage } from '../../../lib/errorMessage'
 import type { ChatConversation, ChatMessage } from '../../../types/chat'
 import {
   fetchConversations,
@@ -16,12 +19,18 @@ const POLL_INTERVAL_MS = 3000
 
 export function useChat() {
   const { user } = useAuth()
+  const toast = useToast()
+  const { t } = useTranslation()
   const [conversations, setConversations] = useState<ChatConversation[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loadingConversations, setLoadingConversations] = useState(true)
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [sendingMessage, setSendingMessage] = useState(false)
+  // Two independent loads, two errors: a conversation list that could not be read must not
+  // render as "no conversations yet", and neither must an unread thread as "no messages".
+  const [conversationsError, setConversationsError] = useState<Error | null>(null)
+  const [messagesError, setMessagesError] = useState<Error | null>(null)
   const activeConvRef = useRef<string | null>(null)
   const messagesRef = useRef<ChatMessage[]>([])
 
@@ -37,10 +46,12 @@ export function useChat() {
     if (!user) return
     try {
       setLoadingConversations(true)
+      setConversationsError(null)
       const data = await fetchConversations()
       setConversations(data)
     } catch (err) {
       console.error('Failed to load conversations:', err)
+      setConversationsError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoadingConversations(false)
     }
@@ -59,6 +70,7 @@ export function useChat() {
     if (!user) return
     try {
       setLoadingMessages(true)
+      setMessagesError(null)
       const data = await fetchMessages(conversationId)
       setMessages(data)
       await markAsRead(conversationId, user.id)
@@ -70,6 +82,8 @@ export function useChat() {
       )
     } catch (err) {
       console.error('Failed to load messages:', err)
+      setMessages([])
+      setMessagesError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoadingMessages(false)
     }
@@ -79,6 +93,23 @@ export function useChat() {
     setActiveConversationId(conversationId)
     loadMessages(conversationId)
   }, [loadMessages])
+
+  /** Retries whichever load the panel is currently showing as failed. */
+  const retryMessages = useCallback(() => {
+    if (activeConvRef.current) void loadMessages(activeConvRef.current)
+  }, [loadMessages])
+
+  // Read receipts are bookkeeping: a failure only leaves the badge stale, so it is logged
+  // rather than put in front of the user. It gets its own helper so nothing in a handler
+  // swallows a rejection with an empty `.catch(() => {})`.
+  const markConversationRead = useCallback(async (conversationId: string, userId: string) => {
+    try {
+      await markAsRead(conversationId, userId)
+      dispatchChatRead()
+    } catch (err) {
+      console.error('Failed to mark conversation as read:', err)
+    }
+  }, [])
 
   const mergeNewMessages = useCallback((
     incoming: ChatMessage[],
@@ -99,11 +130,9 @@ export function useChat() {
     })
 
     if (hasNewFromOthers) {
-      markAsRead(conversationId, user.id)
-        .then(() => dispatchChatRead())
-        .catch(() => {})
+      void markConversationRead(conversationId, user.id)
     }
-  }, [user])
+  }, [user, markConversationRead])
 
   useEffect(() => {
     if (!user) return
@@ -134,9 +163,7 @@ export function useChat() {
             })
 
             if (newMsg.sender_id !== user.id) {
-              markAsRead(newMsg.conversation_id, user.id)
-                .then(() => dispatchChatRead())
-                .catch(() => {})
+              void markConversationRead(newMsg.conversation_id, user.id)
             }
           }
 
@@ -166,7 +193,7 @@ export function useChat() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user])
+  }, [user, markConversationRead])
 
   useEffect(() => {
     if (!user || !activeConversationId) return
@@ -254,10 +281,12 @@ export function useChat() {
       selectConversation(convId)
       return convId
     } catch (err) {
+      // Returning null is how the modal learns to stay open; the toast is what the user sees.
       console.error('Failed to create conversation:', err)
+      toast.error(toErrorMessage(err, t('chat.create_failed')))
       return null
     }
-  }, [user, loadConversations, selectConversation])
+  }, [user, loadConversations, selectConversation, toast, t])
 
   const activeConversation = conversations.find(c => c.id === activeConversationId) || null
 
@@ -269,6 +298,10 @@ export function useChat() {
     loadingConversations,
     loadingMessages,
     sendingMessage,
+    conversationsError,
+    messagesError,
+    retryConversations: loadConversations,
+    retryMessages,
     selectConversation,
     sendMessage: handleSendMessage,
     createConversation: handleCreateConversation,

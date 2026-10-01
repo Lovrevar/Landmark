@@ -44,6 +44,7 @@ The password gate predates the role-based RLS. Layering RLS-level cashflow enfor
 - The `'admin'` fallback default for `VITE_CASHFLOW_PASSWORD` was removed in step 1.5.1 of the AI chat plan; the modal now fails closed when the env var is unset.
 - The AI chat (v1) does NOT layer additional cashflow enforcement on top of role — it inherits the same role-gated posture as the rest of the app, intentionally and visibly. See [docs/AI_CHAT.md §2 / Security posture](./AI_CHAT.md).
 - **(2026-05-26)** The five previously blanket-open tables (`accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`) are now role-gated by [supabase/migrations/20260526084700_tighten_cashflow_rls.sql](../supabase/migrations/20260526084700_tighten_cashflow_rls.sql), with scoped exceptions for the Sales apartment-payment workflow and broad SELECT retained on `accounting_companies` (names + OIB are public reference data). The SECURITY DEFINER `get_invoice_statistics` RPC now rejects non-`Director`/`Accounting` callers up front ([supabase/migrations/20260526084701_get_invoice_statistics_role_check.sql](../supabase/migrations/20260526084701_get_invoice_statistics_role_check.sql)).
+- **(2026-09-16)** Its sibling `get_filtered_invoices` — also SECURITY DEFINER, and the RPC behind the Cashflow invoice list — had no role check, so any authenticated user (e.g. Sales) could page through every invoice past the `accounting_invoices` RLS. It now raises `insufficient_privilege` for anyone but `Director`/`Accounting`. The same migration revokes EXECUTE from `public`/`anon`/`authenticated` on five SECURITY DEFINER finance functions the app never calls (`get_apartment_payments`, `check_subcontractor_budget_integrity`, `fix_subcontractor_budget_integrity`, `recalculate_bank_credit_fields`, `recalculate_contract_budget_realized`); the triggers that use the two `recalculate_*` functions are themselves SECURITY DEFINER and keep working, and `service_role` / the SQL editor keep access ([supabase/migrations/20260916100000_lock_down_finance_definer_functions.sql](../supabase/migrations/20260916100000_lock_down_finance_definer_functions.sql)). Found during the September UI audit. **Rule for new RPCs:** a SECURITY DEFINER function either checks the caller's role itself or has EXECUTE revoked from `authenticated`.
 
 ### Update (2026-05-26): partial remediation, item stays open
 
@@ -172,3 +173,74 @@ The root cause of this false positive is that `supabase/full_schema.sql` (commit
 - [supabase/functions/_shared/auth.ts](../supabase/functions/_shared/auth.ts) (uses service client for the same lookup, independently unaffected)
 - `supabase/full_schema.sql` lines 11641-11643, 11668-11670, 11731-11733 (the **stale dump** where the phantom bug appeared — file removed 2026-05-29)
 - Discovered during AI chat plan, Phase 3.1 schema reconnaissance (May 2026); verified resolved 2026-05-29
+
+---
+
+## SEC-004: The Supervision payment gate is screen-only; `contracts` is world-readable
+
+**Status:** Open
+**Severity:** Low
+**Filed:** 2026-09-21
+**Affected components:** [src/utils/permissions.ts](../src/utils/permissions.ts) (`canManagePayments`), all of `src/components/Supervision/SiteManagement/`, [src/components/Common/Layout.tsx](../src/components/Common/Layout.tsx) (the Supervision role menu), `public.contracts` and `public.accounting_invoices` RLS
+
+### Summary
+
+Site Management now hides every payment-derived figure from users for whom
+`canManagePayments(user)` is false (Supervision and Sales) — paid and unpaid tiles, the paid
+column, the utilisation bar, card tints and status badges, the paid-based overdue badge, the
+milestone paid column and status, and the entry points to the payment-history and invoice
+modals. The Supervision role's navigation no longer offers `/payments` or `/invoices`.
+
+**None of this is a data boundary.** It changes what the screen draws, not what the user's JWT
+can read. A Supervision user with browser devtools can recover every hidden figure with a single
+supabase-js call. The restriction is a "do not put this in front of people who do not need it"
+measure, taken with eyes open, exactly like the Cashflow password modal in SEC-001.
+
+### Evidence
+
+- `contracts` is readable by **any** authenticated user:
+  ```sql
+  CREATE POLICY "Authenticated users can read contracts" ON public.contracts
+    FOR SELECT TO authenticated USING (true);
+  ```
+  ([supabase/migrations/00000000000000_baseline_schema.sql](../supabase/migrations/00000000000000_baseline_schema.sql) line 7827). `contracts.budget_realized` is the app's single definition of money paid on a contract — a trigger-kept cache of `sum(accounting_payments.amount)` (migration `20260910120000`). Every paid figure Site Management hides is one `select budget_realized from contracts` away, as are the derived unpaid, remaining and overdue signals.
+- `accounting_invoices` carries `paid_amount` and `remaining_amount` as ordinary columns, and the policy **"Supervision can view invoices for managed projects"** (baseline line 9123) grants Supervision SELECT on the invoices of the projects they are assigned to. So the invoice-side paid figures are readable too, even though the Invoices screen and modal are no longer reachable from the menu or the contract cards.
+- `subcontractor_milestones.status` is set from payments by the `update_milestone_status_on_payment` trigger (baseline lines 1999-2045), so the hidden milestone status is likewise derivable from a readable table.
+
+### The inverse gap: `Investment` has the flag but not the rows
+
+`canManagePayments` returns true for `Director`, `Accounting` **and** `Investment`
+([permissions.ts:3-6](../src/utils/permissions.ts)), but `20260526084700_tighten_cashflow_rls.sql`
+gates `accounting_payments` to Director/Accounting only. An Investment user therefore gets the
+full paid UI — tiles, columns, the payment-history button — over rows RLS will not return.
+`contracts.budget_realized` still resolves (see above), so the tiles show figures; the payment
+*history* modal is the part that comes back empty and will read as "this contract was never
+paid". Either `canManagePayments` should drop `Investment`, or the RLS should include it. This
+needs a product decision about what the Investment role is for, which is why it is recorded here
+rather than fixed.
+
+### Threat model
+
+- **Out of scope:** anyone without a valid JWT — the tables are not exposed to `anon`.
+- **In scope:** an internal Supervision or Sales user deliberately reading data the UI declines to show them. This is a least-privilege gap, not an exposure to outsiders. The realistic everyday benefit of the screen-level gate is the opposite direction: supervisors' screens during site visits and screen-shares no longer carry the company's payment position.
+
+### Mitigations in place
+
+- The UI gate defaults to **closed**: `ProjectDetail`'s `canManagePayments` prop defaults to `false`, so a component added later that forgets to pass it hides the figures rather than showing them.
+- The gate covers derived signals, not just the raw numbers, so a reader cannot reconstruct paid from what is left (e.g. the unpaid tile is hidden because unpaid = contracted − paid). The "remaining budget" tile stays because `remainingBudget` is `budget − contracted − unpaidWithoutContract` and never reads `paid`.
+
+### Proposed fix
+
+1. Replace `contracts`' blanket `USING (true)` SELECT policy with a project-scoped one (Supervision sees the contracts of their `project_managers` rows; Director/Accounting/Investment see all), keeping `budget_realized` behind it.
+2. Decide whether `Investment` should have payment rights, then make `canManagePayments` and the `accounting_payments` policy agree.
+3. Consider a `security_invoker` view that exposes contracts without `budget_realized` for roles that should not see it, if (1) proves too disruptive to the many screens that read `contracts`.
+
+### Why it isn't fixed yet
+
+A migration here touches the most widely read table in the app — `contracts` is joined by Site Management, General, Funding, Reports and the AI chat tool handlers — and a scoping mistake fails *closed*, silently emptying screens for the role that needs them most. The screen-level change ships first and on its own; the policy work is a separate, tested piece with its own verification pass. No migration was written as part of this batch.
+
+### Cross-references
+
+- [docs/SUPERVISION.md](./SUPERVISION.md) — "The payment gate" section lists exactly what is hidden and what stays
+- [supabase/migrations/20260526084700_tighten_cashflow_rls.sql](../supabase/migrations/20260526084700_tighten_cashflow_rls.sql) (why `/payments` showed Supervision an empty page)
+- SEC-001 above — the same "UI gate over role-only RLS" shape, one layer up

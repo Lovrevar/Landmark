@@ -1,60 +1,51 @@
 import { useState, useCallback } from 'react'
-import { useToast } from '../../../../contexts/ToastContext'
+import { format } from 'date-fns'
+import { monthKey } from '../../../../utils/dateOnly'
 import { fetchBankPayments, type BankPaymentWithDetails } from '../services/bankPaymentsService'
+import { paymentTotalsByDirection, EMPTY_PAYMENT_TOTALS, type PaymentTotals } from '../../../Cashflow/services/paymentTotals'
 
 type CombinedPayment = BankPaymentWithDetails
 
 interface PaymentsStats {
-  totalPayments: number
-  totalAmount: number
-  paymentsThisMonth: number
-  amountThisMonth: number
-  bankPayments: number
+  /** Split by direction: drawdowns in, repayments and fees out. Never one summed amount. */
+  all: PaymentTotals
+  thisMonth: PaymentTotals
 }
 
 const calculateStats = (paymentsData: CombinedPayment[]): PaymentsStats => {
-  const now = new Date()
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-  const totalAmount = paymentsData.reduce((sum, p) => sum + Number(p.amount), 0)
-  const paymentsThisMonth = paymentsData.filter(p => new Date(p.payment_date || p.created_at) >= firstDayOfMonth)
-  const amountThisMonth = paymentsThisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
-  const bankPayments = paymentsData.length
+  // Same calendar month, compared as 'YYYY-MM' strings: a `>= first of the month` test also
+  // counted future-dated payments, and `new Date('YYYY-MM-DD')` parses as UTC midnight.
+  const currentMonth = format(new Date(), 'yyyy-MM')
+  const paymentsThisMonth = paymentsData.filter(p => monthKey(p.payment_date || p.created_at) === currentMonth)
 
   return {
-    totalPayments: paymentsData.length,
-    totalAmount,
-    paymentsThisMonth: paymentsThisMonth.length,
-    amountThisMonth,
-    bankPayments
+    all: paymentTotalsByDirection(paymentsData),
+    thisMonth: paymentTotalsByDirection(paymentsThisMonth),
   }
 }
 
 export function usePaymentsData() {
-  const toast = useToast()
   const [payments, setPayments] = useState<CombinedPayment[]>([])
-  const [stats, setStats] = useState<PaymentsStats>({
-    totalPayments: 0,
-    totalAmount: 0,
-    paymentsThisMonth: 0,
-    amountThisMonth: 0,
-    bankPayments: 0
-  })
+  const [stats, setStats] = useState<PaymentsStats>({ all: EMPTY_PAYMENT_TOTALS, thisMonth: EMPTY_PAYMENT_TOTALS })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
   const refetch = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const enrichedBankPayments = await fetchBankPayments()
       setPayments(enrichedBankPayments)
       setStats(calculateStats(enrichedBankPayments))
-    } catch (error) {
-      console.error('Error fetching payments:', error)
-      toast.error('Failed to load payments')
+    } catch (err) {
+      console.error('Error fetching payments:', err)
+      // The stats are left alone rather than recomputed from nothing: "€0 paid this month" is a
+      // figure the screen would stand behind, and a failed read cannot.
+      setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
-  return { payments, stats, loading, refetch }
+  return { payments, stats, loading, error, refetch }
 }

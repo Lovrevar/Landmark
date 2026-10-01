@@ -1,10 +1,10 @@
 import React from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Badge, LoadingSpinner } from '../../ui'
-import { format } from 'date-fns'
+import { Badge, LoadingSpinner, ErrorState } from '../../ui'
+import { formatDate } from '../../../utils/formatters'
 import { useLazySection } from './hooks/useLazySection'
-import { INVOICE_STATUS_CONFIG } from './constants'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 import { fetchCreditInvoices } from './services/creditService'
 
 const COLOR_CLASSES = {
@@ -36,12 +36,12 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
   icon: Icon,
   showAllocation = false,
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const colors = COLOR_CLASSES[accentColor]
 
   const fetcher = () => fetchCreditInvoices(creditId, invoiceType, showAllocation)
 
-  const { expanded, loading, fetched, items: invoices, toggle } = useLazySection(fetcher)
+  const { expanded, loading, fetched, error, items: invoices, toggle, retry } = useLazySection(fetcher)
 
   const totalPayment = invoices.reduce((sum, inv) => sum + (inv.payment_amount || 0), 0)
   const totalAmount  = invoices.reduce((sum, inv) => sum + inv.total_amount, 0)
@@ -83,6 +83,8 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
             <div className="p-4">
               <LoadingSpinner message={t('funding.credit_invoice_section.loading')} />
             </div>
+          ) : error ? (
+            <ErrorState compact onRetry={retry} />
           ) : invoices.length === 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400 px-4 py-3">
               {emptyMessage}
@@ -125,7 +127,6 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {invoices.map((inv) => {
-                    const statusCfg = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, variant: 'gray' as const }
                     return (
                       <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <td className="px-4 py-2.5 font-medium text-gray-900 dark:text-white">
@@ -149,11 +150,11 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
                           </td>
                         )}
                         <td className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
-                          {format(new Date(inv.issue_date), 'dd.MM.yyyy')}
+                          {formatDate(inv.issue_date, i18n.language)}
                         </td>
                         <td className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
                           {inv.payment_date
-                            ? format(new Date(inv.payment_date), 'dd.MM.yyyy')
+                            ? formatDate(inv.payment_date, i18n.language)
                             : '-'}
                         </td>
                         <td className={`px-4 py-2.5 text-right font-semibold ${colors.bold}`}>
@@ -165,8 +166,8 @@ const CreditInvoiceSection: React.FC<CreditInvoiceSectionProps> = ({
                           €{inv.total_amount.toLocaleString('hr-HR')}
                         </td>
                         <td className="px-4 py-2.5 text-center">
-                          <Badge variant={statusCfg.variant}>
-                            {statusCfg.label}
+                          <Badge variant={getInvoiceStatusVariant(inv.status)}>
+                            {getInvoiceStatusLabel(inv.status, t)}
                           </Badge>
                         </td>
                       </tr>

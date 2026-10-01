@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FileText, Trash2, ExternalLink, Loader2, AlertCircle } from 'lucide-react'
-import { format } from 'date-fns'
 import {
   fetchDocumentsByEntity,
   getDocumentSignedUrl,
   deleteDocument,
 } from '../../Documents/services/documentService'
 import type { DocumentWithRelations } from '../../Documents/types'
-import { formatFileSize } from '../../../utils/formatters'
+import { formatFileSize, formatDateTime } from '../../../utils/formatters'
 import { useToast } from '../../../contexts/ToastContext'
 import { ConfirmDialog } from '../../ui'
 
@@ -23,7 +22,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
   contractId,
   readOnly = false
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const toast = useToast()
   const [documents, setDocuments] = useState<DocumentWithRelations[]>([])
   const [loading, setLoading] = useState(true)
@@ -122,7 +121,7 @@ export const ContractDocumentViewer: React.FC<ContractDocumentViewerProps> = ({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{doc.file_name}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {formatFileSize(doc.file_size)} &middot; {format(new Date(doc.uploaded_at), 'dd.MM.yyyy HH:mm')}
+              {formatFileSize(doc.file_size)} &middot; {formatDateTime(new Date(doc.uploaded_at), i18n.language)}
             </p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">

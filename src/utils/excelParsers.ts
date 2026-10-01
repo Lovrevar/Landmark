@@ -1,7 +1,13 @@
 /**
  * Parses a number value from an Excel cell, supporting European format (e.g., "3.000,00").
+ *
+ * A cell Excel already stores as a number comes through as a JS number and is returned as is.
+ * Only text goes through the European conversion, which treats every dot as a thousands
+ * separator: run 12.5 through it and it becomes 125, which is how decimal sizes and prices
+ * used to be inflated by the apartment and garage imports.
  */
 export const parseNumber = (value: unknown): number => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
   if (value === null || value === undefined || value === '') return 0
   const str = String(value).replace(/\./g, '').replace(',', '.')
   return parseFloat(str) || 0
