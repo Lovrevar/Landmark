@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase'
+import { fetchAllRows } from '../../../lib/fetchAllRows'
 import { format, startOfMonth, endOfMonth, startOfYear, subMonths } from 'date-fns'
 import { monthKey } from '../../../utils/dateOnly'
 import type { VATStats, CashFlowStats, TopCompany, MonthlyData, MonthlyBudget } from '../types/accountingDashboardTypes'
@@ -131,21 +132,27 @@ export async function fetchTopCompanies(): Promise<TopCompany[]> {
 
   // Single grouped query for invoice counts (year-scoped to match the card's
   // "{year}" heading) instead of one count round-trip per company.
-  const [paymentsResult, invoiceCountsResult] = await Promise.all([
-    supabase
+  // Paged and error-checked: a year of payments easily passes PostgREST's 1000-row page, and a
+  // failed read must not rank companies on partial figures.
+  const [yearPayments, invoiceCounts] = await Promise.all([
+    fetchAllRows((from, to) => supabase
       .from('accounting_payments')
-      .select('amount, payment_date, accounting_invoices!inner(invoice_type, company_id)')
+      .select('id, amount, payment_date, accounting_invoices!inner(invoice_type, company_id)')
       .in('accounting_invoices.company_id', companyIds)
-      .gte('payment_date', yearStart),
-    supabase
+      .gte('payment_date', yearStart)
+      .order('id')
+      .range(from, to)),
+    fetchAllRows((from, to) => supabase
       .from('accounting_invoices')
-      .select('company_id')
+      .select('id, company_id')
       .in('company_id', companyIds)
       .gte('issue_date', yearStart)
+      .order('id')
+      .range(from, to))
   ])
 
   const paymentsByCompany = new Map<string, { incoming: number; outgoing: number }>()
-  for (const payment of paymentsResult.data || []) {
+  for (const payment of yearPayments) {
     const companyId = (payment.accounting_invoices as unknown as { company_id: string; invoice_type: string }).company_id
     const invoiceType = (payment.accounting_invoices as unknown as { company_id: string; invoice_type: string }).invoice_type
     if (!paymentsByCompany.has(companyId)) {
@@ -158,7 +165,7 @@ export async function fetchTopCompanies(): Promise<TopCompany[]> {
   }
 
   const invoiceCountsByCompany = new Map<string, number>()
-  for (const row of invoiceCountsResult.data || []) {
+  for (const row of invoiceCounts) {
     invoiceCountsByCompany.set(row.company_id, (invoiceCountsByCompany.get(row.company_id) || 0) + 1)
   }
 

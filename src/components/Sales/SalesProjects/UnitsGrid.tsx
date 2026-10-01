@@ -355,9 +355,12 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                           {t('sales_projects.unit_detail.available')}
                         </Button>
                       )}
-                      <Button size="sm" variant="success" onClick={() => onSellUnit(unit as unknown as (Apartment | Garage | Repository), activeUnitType)}>
-                        {t('sales_projects.unit_detail.sell')}
-                      </Button>
+                      {/* Garages and storage units are sold with their apartment's package. */}
+                      {activeUnitType === 'apartment' && (
+                        <Button size="sm" variant="success" onClick={() => onSellUnit(unit as unknown as (Apartment | Garage | Repository), activeUnitType)}>
+                          {t('sales_projects.unit_detail.sell')}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

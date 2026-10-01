@@ -4,6 +4,26 @@
 
 Cognilion is a full-lifecycle real estate and construction project management platform for Croatian development companies. It covers land acquisition, construction, sales, accounting, and financial reporting. Built on React 18 + TypeScript + Vite frontend with Supabase (PostgreSQL) backend.
 
+## Commands
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Vite dev server |
+| `npm run typecheck` | `tsc --noEmit -p tsconfig.app.json` |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest unit tests (`src/**/*.test.ts`, no `.env` needed) |
+| `npm run test:functions` | Deno tests for the edge functions (needs `deno`) |
+| `npm run test:e2e` | Playwright; refuses to run unless `VITE_SUPABASE_URL` equals `E2E_ALLOWED_SUPABASE_URL` — see [`docs/TESTING.md`](./docs/TESTING.md) |
+| `npm run build` | Production build |
+| `npm run kb:build` | Rebuilds the AI assistant's help index from `help-kb/*.md` |
+| `npm run db:types` | Regenerates the database types (see Data Layer) |
+
+Before calling work done: `npm run typecheck`, `npm test` and `npm run lint` on the changed files.
+
+## Git Workflow
+
+Feature and fix branches are created from `development` and merged back into `development`.
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -25,7 +45,7 @@ Cognilion is a full-lifecycle real estate and construction project management pl
 
 **6 switchable profiles** (user can switch mid-session): `General`, `Supervision`, `Sales`, `Funding`, `Cashflow` (password-protected), `Retail`
 
-Each profile renders a different navigation menu and dashboard. Profile ≠ role.
+Each profile renders a different navigation menu and dashboard. Profile ≠ role: the role decides what the database lets a user do (RLS), the profile only what they look at. The `Supervision` role gets a fixed three-item menu whatever profile is selected.
 
 ## Application Modules
 
@@ -42,9 +62,9 @@ Each profile renders a different navigation menu and dashboard. Profile ≠ role
 | Tasks | `src/components/Tasks/` | Org-wide task list, comments, attachments; schema shared with a mobile app |
 | Calendar | `src/components/Calendar/` | Events, RSVP, recurrence, per-user task overlay |
 | Chat | `src/components/Chat/` | 1:1 and group conversations, attachments, realtime unread badge |
-| AI Chat | `src/components/AiChat/` | Floating Claude assistant (SSE streaming, tool calling, document generation) |
+| AI Chat | `src/components/AiChat/` | Floating Claude assistant (SSE events, tool calling, document generation) |
 | Documents | `src/components/Documents/` | Document browser and category tree; auto-classified emailed documents |
-| Auth | `src/components/Auth/` | Login form (email/password + Microsoft Entra ID) |
+| Auth | `src/components/Auth/` | Login form (email/password + Microsoft Entra ID), password reset |
 | Common | `src/components/Common/` | Layout, profile switcher, language switcher, shared inputs |
 
 ## Key Domain Concepts
@@ -54,10 +74,10 @@ These are business-specific — do not simplify or generalize them:
 - **Multi-VAT invoices** — a single invoice can have up to 4 different VAT rates (Croatian accounting requirement)
 - **Cesija (Assignment of debt)** — third-party payments where company A pays on behalf of company B; a legally specific Croatian concept
 - **Kompenzacija (Compensation)** — mutual debt offset between two parties
-- **Cashflow profile** — gated by Director/Accounting role at the database level (RLS policies on `accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`, plus role-gated `get_invoice_statistics` RPC). A `VITE_CASHFLOW_PASSWORD` UX speedbump exists in the React UI to reduce accidental data exposure during screen-shares, but it is **not a security boundary** — the bundled JS ships the password, and RLS is the real enforcement
-- **Unit types** — `stan` (apartment), `garaža` (garage), `repozitorij` (storage unit); these are linked to each other
+- **Cashflow profile** — gated by Director/Accounting role at the database level (RLS policies on `accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`, plus the role-checked `get_invoice_statistics` and `get_filtered_invoices` RPCs). A `VITE_CASHFLOW_PASSWORD` UX speedbump exists in the React UI to reduce accidental data exposure during screen-shares, but it is **not a security boundary** — the bundled JS ships the password, and RLS is the real enforcement
+- **Unit types** — `stan` (apartment), `garaža` (garage), `repozitorij` (storage unit); garages and storage units are linked to an apartment and sold with it as a package
 - **Credit allocation** — bank credit lines can be allocated across multiple projects/contracts
-- **TIC** — Troškovna Informatička Struktura, a cost breakdown structure for investment projects
+- **TIC** — Troškovna Informatička Struktura, a cost breakdown structure for investment projects. **It is the only writer of planned budget**: a trigger derives `projects.budget`, phase budgets and per-classification budgets from it. A project without a TIC shows "budget not set", never €0
 
 ## ERP Integration (⏸️ on hold)
 
@@ -65,7 +85,8 @@ These are business-specific — do not simplify or generalize them:
 > `ERP_INTEGRATION_ENABLED` in `src/lib/featureFlags.ts`, the migrations are parked in
 > `supabase/parked-migrations/erp/` (never apply them from there), and `import-erp` is not
 > deployed anywhere. Resume only via the checklist in
-> [`docs/erp-integration/PROGRESS.md`](./docs/erp-integration/PROGRESS.md) → "On hold".
+> [`docs/erp-integration/PROGRESS.md`](./docs/erp-integration/PROGRESS.md) → "On hold", and fix
+> ERP-1 to ERP-5 in [`KNOWN_ISSUES.md`](./docs/erp-integration/KNOWN_ISSUES.md) first.
 
 The financial section is being rewritten so that **4D Wand** — the ERP the company adopted —
 becomes the source of truth for invoices, payments and bank balances. Cognilion stops
@@ -77,39 +98,62 @@ changing is *who writes* those two tables.
   phase 4 (historical re-import) is next. **Phase 5 removes the in-app creation UI and locks
   writes to the service role** — do not build new invoice/payment authoring UI without
   checking the plan first
-- Lives in the `erp` Postgres schema, surfaced through `security_invoker` views in `public`
-  (`erp` is not exposed via PostgREST). UI at `/sifrarnici` (mappings) and `/erp-import`
+- Lives in the `erp` Postgres schema, surfaced through `security_invoker` views in `public`;
+  the parked migrations also expose `erp` to PostgREST (decision D13). UI at `/sifrarnici`
+  (mappings) and `/erp-import`
 - Ingestion is the `import-erp` edge function; `npm run erp:smoke` exercises the chain
 - Read [`docs/erp-integration/`](./docs/erp-integration/README.md) before touching invoices,
   payments, or bank balances
 
 ## Data Layer
 
-- 340+ Supabase migrations (347 as of 2026-09-14) — never execute migration files without being explicitly asked
+- 350+ Supabase migrations (a 2026-05-15 baseline plus later ones) — write new migration files
+  freely, but **never execute or apply migrations without being explicitly asked**
 - All tables use RLS (Row Level Security) — always respect existing policies
 - Never bypass auth context when writing queries
+- **Check which project the Supabase CLI is linked to** before `db:types`, `db push` or anything
+  else that uses the link: it may be left on the demo project, and the production ref is not
+  recorded in the repo. The demo setup is in [`docs/DEMO_ENVIRONMENT.md`](./docs/DEMO_ENVIRONMENT.md)
 - `npm run db:types` regenerates `src/types/database.ts` from the linked project
   (both the `public` and `erp` schemas) and mirrors it into `supabase/functions/_shared/`.
   While the ERP integration is on hold no project has the `erp` schema, so regenerating
   drops the ERP types that `import-erp` needs — restore them from git afterwards
 
-## Architecture Pattern
+## Architecture and Conventions
 
 ```
 UI Component → Custom Hook → Service Layer → Supabase → Database
 ```
+
+- **Services throw** on failure — never return `[]` or `0` in place of an error. Loader hooks
+  return `error` and `refetch`
+- **A failed load is not an empty result.** Show `ErrorState` (or stale rows with an `Alert`),
+  and render failed figures as `—`, never as zeros
+- **RLS refuses an UPDATE or DELETE silently** — PostgREST reports success with zero rows. A write
+  that must hit a row chains `.select('id')` and passes the result to `assertRowsAffected`
+  (`src/lib/dbErrors.ts`); hide actions the user's role cannot perform (`src/utils/permissions.ts`)
+- **PostgREST returns at most 1000 rows per request, without saying so.** Any list that can grow
+  past that pages through `fetchAllRows` (`src/lib/fetchAllRows.ts`) with a stable order
+- **Dates:** parse SQL `date` columns with `src/utils/dateOnly.ts` (`parseLocalDate`,
+  `daysFromToday`), never `new Date('yyyy-mm-dd')`, which is UTC and shifts the day in Croatia
+- **Money and dates on screen** go through `src/utils/formatters.ts` (`formatEuro`, `formatDate`, …)
+- **PDF and Excel exports are always Croatian** (`exportT()` in `src/utils/exportLanguage.ts`)
+- **Confirmations use `ConfirmDialog`**, never `window.confirm`
+
+Module conventions, cross-module rules and per-file notes are in
+[`docs/CODEBASE_INDEX.md`](./docs/CODEBASE_INDEX.md) and [`docs/CORE.md`](./docs/CORE.md).
 
 ## Shared UI Library
 
 There is a shared component library at `src/components/ui/` with 30 components. Check it before
 creating any new UI primitive — the full list with props is in [`docs/UI.md`](./docs/UI.md).
 
-**Five are not in the barrel file** and must be imported by path: `AvatarStack`,
-`MarkdownView`, `SearchableSelect`, `ToggleSwitch`, and `Toast` (which you never import
-directly — use `useToast()` from `src/contexts/ToastContext`). Everything else comes from
-`src/components/ui`.
+**Six are not in the barrel file** and must be imported by path: `AvatarStack`,
+`InlineLoadError`, `MarkdownView`, `SearchableSelect`, `ToggleSwitch`, and `Toast` (which you
+never import directly — use `useToast()` from `src/contexts/ToastContext`). Everything else
+comes from `src/components/ui`.
 
-### Rules for i18n work
+## i18n
 
 1. **Always ask before translating ambiguous strings** — do not guess or auto-translate;
    batch questions by component and wait for confirmation
@@ -119,10 +163,15 @@ directly — use `useToast()` from `src/contexts/ToastContext`). Everything else
 4. After any i18n change, re-scan the affected components for missed hardcoded strings
 5. The language switcher respects the user's stored preference; browser locale is the fallback
 
+## AI Assistant Help Articles
+
+The AI assistant answers "how do I…" questions from `help-kb/*.md`. When you change what a screen
+shows or does, update its article and run `npm run kb:build` — stale articles make the assistant
+give wrong answers.
 
 ## Activity Log
 
-Every mutation (create, update, delete, bulk, import, export) must be logged via `logActivity()` from `src/lib/activityLog.ts`. This is a fire-and-forget call that never blocks the user's operation.
+Every mutation (create, update, delete, bulk, import, export) must be logged via `logActivity()` from `src/lib/activityLog.ts`. This is a fire-and-forget call that never blocks the user's operation. It also clears the dashboard/report cache (`useCachedData`), so logged mutations are what keep dashboards fresh.
 
 ### Rules for new features
 
@@ -139,11 +188,15 @@ Full documentation: [`docs/ACTIVITY_LOG.md`](./docs/ACTIVITY_LOG.md)
 
 ## Reference Implementations
 
-- `src/components/Sales/` — well-organised feature module
+- `src/components/Sales/` — folder layout of a feature module (`index.tsx`, `types.ts`,
+  `components/`, `forms/`, `modals/`, `hooks/`, `services/`). Copy the structure; for data
+  handling follow the conventions above
 
 ## Codebase Index
+
 Full module map with per-file descriptions: [`docs/CODEBASE_INDEX.md`](./docs/CODEBASE_INDEX.md).
 When working in a specific module, read the relevant file in `docs/` (e.g. `docs/SALES.md`, `docs/FUNDING.md`) before making changes.
+Known defects and the decisions still open are tracked in [`docs/DEFECT_BACKLOG.md`](./docs/DEFECT_BACKLOG.md).
 
 The `tasks` tables are **shared with a standalone mobile task app** that points at the same
 production database. This repo owns that schema. Before changing any `task*` table, RPC or
@@ -154,68 +207,13 @@ After creating new files or doing major updates, update the relevant docs.
 
 ## graphify
 
-This project has a graphify knowledge graph at `graphify-out/`. It indexes **code only**
-(~1970 nodes over ~560 files) — docs and SQL are not in it, so doc or migration edits never
-require a rebuild.
+A code-only knowledge graph lives in `graphify-out/` (docs and SQL are not in it). Git hooks
+rebuild it after every commit and branch switch; to query uncommitted changes, run
+`python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`
+from the repo root.
 
-Rules:
-- After modifying code files in this session, run
-  `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`
-  to keep it current. Takes about 5 seconds
-- `.graphifyignore` at the repo root controls what gets indexed. graphify does **not** read
-  `.gitignore`, so anything gitignored that still contains parseable source has to be listed there
-- Use it to find *where* something lives and which files import which. Verify anything it claims
-  about relationships against the code before acting on it
-
-### The one edge type worth trusting
-
-`imports_from` edges between two files whose names are **unique in the repo** are accurate — all 898
-such edges checked out against the source (September 2026). That subset is what module-coupling or
-fan-in questions should be answered from. Everything else below is unreliable in a specific way.
-
-Read direction from `_src` / `_tgt`, **not** `source` / `target`: the graph is serialised undirected,
-and `source`/`target` are swapped on about a fifth of edges.
-
-### What this graph cannot tell you
-
-Extraction is pure AST with no model in the loop (`0 input · 0 output` tokens), and node IDs are
-built from **filename stem + symbol name with no path**. The consequences, all load-bearing:
-
-- **Cross-file `calls` edges are all false.** Only 4 of ~360 `calls` edges cross a file boundary
-  and every one comes from a merged same-named symbol — these are exactly the report's *"Surprising
-  Connections"* (e.g. `Tasks/index.tsx`'s `confirmDelete()` → `refreshCounts()` in
-  `Documents/index.tsx`, a string `Tasks/index.tsx` does not contain). Call edges describe
-  **within-file** structure only; treat that report section as noise
-- **Same-named files collide into one node, and the merged node becomes a fake hub.** The two most
-  connected nodes in the graph are artifacts: `index` (358 edges — all 46 `index.ts(x)` files
-  folded onto `supabase/functions/send-push/index.ts`) and `types` (156 edges — 22 `types.ts`
-  files folded onto `Supervision/Subcontractors/types.ts`). They are what the report's Community 0
-  and 1 are built around. The losing files get no file node — 45 `src/components` files are
-  absent this way — so **a file's absence from the graph means nothing**
-- **Collisions also misroute imports.** e2e specs importing `./support/auth` show as importing
-  `supabase/functions/_shared/auth.ts`; frontend imports of `types/database` land on the
-  `_shared/database.ts` mirror
-- **Barrel imports vanish.** `src/components/ui/index.ts` lost its collision, so the ~180
-  `from '../ui'` imports are not edges. Fan-in for shared UI components is badly undercounted
-- **Edge functions have no internal import edges.** Deno specifiers carry the extension
-  (`'../_shared/cors.ts'`), which the resolver does not match; `supabase/functions/*` look
-  mutually isolated when they are not
-- **No inbound import ≠ dead code.** Of 45 `src` file nodes with zero inbound imports, only 7 were
-  actually unreferenced — the rest were tests or reached through barrels, lazy `import()` or a
-  collided name. Before deleting anything, grep every exported symbol, not just the file path
-
-The *God Nodes* list ranks **symbol** nodes only (file nodes are excluded), by raw edge count, so it
-surfaces short common helper names rather than core abstractions — `str()`, a local coercion helper
-in `import-erp/feeds.ts`, currently tops it. The real shared core by fan-in is `lib/supabase.ts`,
-`contexts/ToastContext.tsx`, `lib/activityLog.ts`, `contexts/AuthContext.tsx`, `types/tasks.ts`.
-Community cohesion scores of 0.01–0.05 mean the clustering found little structure there; they are
-not a signal that a module needs splitting.
-
-None of this is configurable — `path.stem` is hardcoded in graphify's extractor. Do not patch
-`site-packages` to work around it.
-
-### Stale files in graphify-out/
-
-Only `graph.json`, `GRAPH_REPORT.md` and `cache/` are refreshed by the rebuild command above.
-`graph.html`, `manifest.json` and `cost.json` are left at whatever the last full `graphify` run
-produced (currently April 2026, 369 files) — **do not read them as current**.
+Use it to find *where* something lives. Trust only `imports_from` edges between files whose names
+are unique in the repo, reading direction from `_src`/`_tgt`. Cross-file `calls` edges are false,
+same-named files are merged into one fake hub, barrel and Deno imports are missing — so **a file's
+absence or lack of importers proves nothing**; grep before deleting anything. Details and the
+evidence: [`docs/GRAPHIFY.md`](./docs/GRAPHIFY.md).

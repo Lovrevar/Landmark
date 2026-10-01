@@ -95,8 +95,10 @@ export async function fetchApartmentListPage(params: ApartmentListParams): Promi
       : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
     supabase
       .from('accounting_payments')
-      .select('amount, invoice:accounting_invoices!inner(apartment_id)')
-      .in('invoice.apartment_id', apartmentIds),
+      .select('amount, invoice:accounting_invoices!inner(apartment_id, invoice_type)')
+      .in('invoice.apartment_id', apartmentIds)
+      // Buyer payments only — the same basis as Sales Projects, the Sales dashboard and Sales Payments.
+      .eq('invoice.invoice_type', 'OUTGOING_SALES'),
     supabase
       .from('apartment_garages')
       .select('apartment_id, garage:garages(id, number, size_m2, price, status)')

@@ -15,7 +15,7 @@ interface InvoiceTableProps {
   onSort: (field: 'due_date' | 'invoice_number') => void
   onView: (invoice: Invoice) => void
   onEdit: (invoice: Invoice) => void
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
   onPayment: (invoice: Invoice) => void
   getTypeColor: (type: string) => string
   getTypeLabel: (type: string) => string
@@ -252,13 +252,15 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                     onClick={() => onEdit(invoice)}
                     title="Uredi"
                   />
-                  <Button
-                    variant="ghost-danger"
-                    size="icon-sm"
-                    icon={Trash2}
-                    onClick={() => onDelete(invoice.id)}
-                    title="Obriši"
-                  />
+                  {onDelete && (
+                    <Button
+                      variant="ghost-danger"
+                      size="icon-sm"
+                      icon={Trash2}
+                      onClick={() => onDelete(invoice.id)}
+                      title="Obriši"
+                    />
+                  )}
                 </div>
               </Table.Td>
             </Table.Tr>

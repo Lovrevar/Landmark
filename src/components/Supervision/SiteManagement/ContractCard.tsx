@@ -17,7 +17,7 @@ interface ContractCardProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor: (subcontractorId: string) => void
+  onDeleteSubcontractor?: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /**
    * False hides everything on this card that is derived from payments: the paid, remaining and
@@ -213,15 +213,18 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               onClick={() => onManageMilestones(subcontractor, phase, project)}
             />
           )}
-          <Button
-            variant="danger"
-            size="sm"
-            icon={Trash2}
-            fullWidth
-            onClick={() => onDeleteSubcontractor(subcontractor.id)}
-          >
-            {t('common.delete')}
-          </Button>
+          {/* Undefined for roles RLS does not let delete contracts (Director only). */}
+          {onDeleteSubcontractor && (
+            <Button
+              variant="danger"
+              size="sm"
+              icon={Trash2}
+              fullWidth
+              onClick={() => onDeleteSubcontractor(subcontractor.id)}
+            >
+              {t('common.delete')}
+            </Button>
+          )}
         </div>
       </div>
     </div>

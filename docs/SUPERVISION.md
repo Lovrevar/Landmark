@@ -213,7 +213,7 @@ so a client write would survive only until the next one.
 - `updateSubcontractor(contractId, updates)` — updates contract-specific fields plus the linked subcontractor's name/contact; recalculates old/new phase budgets when the phase changes
 - `deleteSubcontractor(contractId)` — deletes a contract (removes the subcontractor from a phase)
 - `getSubcontractorDetails(contractId)` — returns the contract's cost and phase_id
-- `fetchSubcontractorComments(subcontractorId)` — fetches comments/notes joined with the author user
+- `fetchSubcontractorComments(subcontractorId)` — fetches comments/notes joined with the author user. `subcontractorId` is the **company** id: Site Management rows are contracts, so `index.tsx` passes `row.subcontractor_id` (`companyIdOf`), never `row.id`. The insert policy requires `user_id` to be the caller's own `public.users.id`
 - `createSubcontractorComment(data)` — adds a comment (type: completed, issue, general)
 - `insertSubcontractorRecord(data)` — inserts a base subcontractor registry entry
 - `updateSubcontractorRecord(id, data)` — updates a base subcontractor registry entry
@@ -521,7 +521,7 @@ Standalone subcontractor registry with aggregated contract and payment summaries
 #### Services
 
 ### services/subcontractorService.ts
-- `fetchSubcontractorsWithSummary()` — fetches subcontractors, their contracts (with phase/project relations), and SUBCONTRACTOR-category invoices; aggregates per subcontractor into a `Map<id, SubcontractorSummary>` with contract counts, total value, paid, and remaining
+- `fetchSubcontractorsWithSummary()` — fetches subcontractors, their contracts (with phase/project relations), and SUBCONTRACTOR-category invoices; aggregates per subcontractor into a `Map<id, SubcontractorSummary>` with contract counts, total value, paid, and remaining. All three reads go through `fetchAllRows` (`src/lib/fetchAllRows.ts`), so the register is not cut at PostgREST's 1000-row page
 - `deleteSubcontractor(id)` — deletes a base subcontractor record
 - **Depends on:** supabase client, logActivity
 
@@ -571,7 +571,7 @@ Invoices raised by subcontractors for work completed on site. Supports approval 
 #### Services
 
 ### services/supervisionInvoiceService.ts
-- `fetchSupervisionInvoices()` — fetches accounting invoices with subcontractor, project, and contract relations; phase name now comes from the nested `contract.phase` join (no separate phases query)
+- `fetchSupervisionInvoices()` — fetches accounting invoices with subcontractor, project, and contract relations; phase name now comes from the nested `contract.phase` join (no separate phases query). Filtered to `invoice_category = 'SUBCONTRACTOR'` with a project, paged through `fetchAllRows`
 - `calculateInvoiceStats(invoices)` — aggregates monthly and total invoice statistics
 - `toggleInvoiceApproval(invoiceId, currentApproved)` — flips the approval flag on an invoice; logs `invoice.approve`
 - `exportSupervisionInvoicesExcel(invoices)` — async; writes a real `.xlsx` (one `Računi` sheet) through `src/lib/xlsxExport.ts` and logs `export.supervision_invoices_excel`
@@ -602,7 +602,7 @@ Payments made to subcontractors against their invoices, including cesija and ban
 #### Services
 
 ### services/supervisionPaymentService.ts
-- `fetchSupervisionPayments()` — fetches accounting payments joined with invoices (filtered to INCOMING_SUPPLIER), subcontractors, projects, contracts, cesija company, and paid-by bank/investor
+- `fetchSupervisionPayments()` — fetches accounting payments joined `!inner` with invoices (INCOMING_SUPPLIER, SUBCONTRACTOR, with a project, so the database filters them), plus subcontractors, projects, contracts, cesija company, and paid-by bank/investor, all paged through `fetchAllRows`. The phase comes from the invoice's own `contract_id`; there is no fallback to another contract of the same supplier (it showed other projects' phases)
 - `calculatePaymentStats(payments)` — aggregates total and monthly payment statistics
 - `exportSupervisionPaymentsExcel(payments)` — async; writes a real `.xlsx` (one `Plaćanja` sheet) through `src/lib/xlsxExport.ts` and logs `export.supervision_payments_excel`
 - `buildSupervisionPaymentsSheet(payments, t)` — pure AOA builder, exported for `supervisionPaymentService.test.ts`
@@ -646,7 +646,7 @@ Daily or weekly on-site work log entries. Supports cascading project → phase �
 - `fetchProjects()` — fetches projects for the log form selector
 - `fetchPhasesByProject(projectId)` — fetches phases for a selected project
 - `fetchContractsByPhase(phaseId)` — fetches contracts for a selected phase
-- `fetchWorkLogs()` — fetches all work log records with nested contract/subcontractor/project/phase relations
+- `fetchWorkLogs()` — fetches all work log records with nested contract/subcontractor/project/phase relations, paged through `fetchAllRows`
 - `createWorkLog(data, subcontractorId, userId)` — inserts a new work log; logs `work_log.create`
 - `updateWorkLog(id, data, subcontractorId)` — updates a work log; logs `work_log.update`
 - `deleteWorkLog(id)` — removes a work log; logs `work_log.delete`

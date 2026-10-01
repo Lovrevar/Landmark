@@ -37,9 +37,11 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const { t, i18n } = useTranslation()
   // Editing a project is Director-only at the RLS level; hide the entry point
   // for everyone else instead of letting the save fail with a 403.
-  const { user } = useAuth()
+  const { user, hasProjectAccess } = useAuth()
   const canManageProjects = user?.role === 'Director'
   const { id } = useParams<{ id: string }>()
+  // Mirrors the project_milestones write policy: Directors, and Supervision on assigned projects.
+  const canManageMilestones = !!id && hasProjectAccess(id)
   const navigate = useNavigate()
   const [project, setProject] = useState<ProjectDisplay | null>(null)
   const [milestones, setMilestones] = useState<Milestone[]>([])
@@ -450,28 +452,32 @@ const ProjectDetailsEnhanced: React.FC = () => {
                         : t('general_projects.milestone_template.expand_all')}
                     </button>
                   )}
-                  <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
-                    {t('general_projects.use_template')}
-                  </Button>
-                  <Button
-                    icon={Plus}
-                    onClick={() => {
-                      // While editing, Add switches the open form back to add mode instead of closing it.
-                      if (editingMilestone) {
-                        setEditingMilestone(null)
-                        setNewMilestone({ name: '', due_date: '', completed: false })
-                        setShowMilestoneForm(true)
-                      } else {
-                        setShowMilestoneForm(!showMilestoneForm)
-                      }
-                    }}
-                  >
-                    {t('general_projects.add_milestone')}
-                  </Button>
+                  {canManageMilestones && (
+                    <>
+                      <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
+                        {t('general_projects.use_template')}
+                      </Button>
+                      <Button
+                        icon={Plus}
+                        onClick={() => {
+                          // While editing, Add switches the open form back to add mode instead of closing it.
+                          if (editingMilestone) {
+                            setEditingMilestone(null)
+                            setNewMilestone({ name: '', due_date: '', completed: false })
+                            setShowMilestoneForm(true)
+                          } else {
+                            setShowMilestoneForm(!showMilestoneForm)
+                          }
+                        }}
+                      >
+                        {t('general_projects.add_milestone')}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {showMilestoneForm && (
+              {canManageMilestones && showMilestoneForm && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                   <h4 className="font-medium text-gray-900 dark:text-white mb-4">
                     {editingMilestone ? t('general_projects.milestone_edit') : t('general_projects.new_milestone')}
@@ -513,7 +519,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   icon={Target}
                   title={t('general_projects.milestones_empty_title')}
                   description={t('general_projects.milestones_empty_desc')}
-                  action={
+                  action={canManageMilestones ? (
                     <div className="flex items-center gap-2">
                       <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
                         {t('general_projects.use_template')}
@@ -522,15 +528,15 @@ const ProjectDetailsEnhanced: React.FC = () => {
                         {t('general_projects.add_first_milestone')}
                       </Button>
                     </div>
-                  }
+                  ) : undefined}
                 />
               ) : (
                 <MilestoneTimeline
                   milestones={milestones}
-                  onToggleComplete={handleToggleMilestone}
-                  onEdit={handleEditMilestone}
-                  onDelete={handleDeleteMilestone}
-                  editable={true}
+                  onToggleComplete={canManageMilestones ? handleToggleMilestone : undefined}
+                  onEdit={canManageMilestones ? handleEditMilestone : undefined}
+                  onDelete={canManageMilestones ? handleDeleteMilestone : undefined}
+                  editable={canManageMilestones}
                   groupByPhase
                   isPhaseExpanded={phaseCollapse.isExpanded}
                   onTogglePhase={phaseCollapse.toggle}

@@ -31,21 +31,24 @@ export async function fetchProjectBudgetData(projectId: string): Promise<Project
     .single()
   if (projectError) throw projectError
 
+  // Every read below is checked: a failure must show the error state, not "no budget data".
   // The screen's headline card is labelled "TIC / Ukupni investicijski trošak" but has always
   // rendered projects.budget, never touching tic_cost_structures. Read the real thing.
-  const { data: ticData } = await supabase
+  const { data: ticData, error: ticError } = await supabase
     .from('tic_cost_structures')
     .select('line_items')
     .eq('project_id', projectId)
     .maybeSingle()
+  if (ticError) throw ticError
 
-  const { data: phasesData } = await supabase
+  const { data: phasesData, error: phasesError } = await supabase
     .from('project_phases')
     .select('*')
     .eq('project_id', projectId)
     .order('phase_number', { ascending: true })
+  if (phasesError) throw phasesError
 
-  const { data: contractsData } = await supabase
+  const { data: contractsData, error: contractsError } = await supabase
     .from('contracts')
     .select(`
       *,
@@ -54,16 +57,18 @@ export async function fetchProjectBudgetData(projectId: string): Promise<Project
     `)
     .eq('project_id', projectId)
     .in('status', ['draft', 'active', 'completed'])
+  if (contractsError) throw contractsError
 
   const contracts = (contractsData || []) as unknown as ContractWithDetails[]
   const contractIds = contracts.map(c => c.id)
 
   let milestones: MilestoneProgress[] = []
   if (contractIds.length > 0) {
-    const { data: milestonesData } = await supabase
+    const { data: milestonesData, error: milestonesError } = await supabase
       .from('subcontractor_milestones')
       .select('contract_id, percentage, status')
       .in('contract_id', contractIds)
+    if (milestonesError) throw milestonesError
     milestones = (milestonesData || []) as unknown as MilestoneProgress[]
   }
 

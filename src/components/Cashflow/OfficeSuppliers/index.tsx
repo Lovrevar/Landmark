@@ -6,9 +6,14 @@ import OfficeSupplierFormModal from './forms/OfficeSupplierFormModal'
 import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
 import { formatEuro, formatEuropean, formatDate } from '../../../utils/formatters'
 import { toErrorMessage } from '../../../lib/errorMessage'
+import { useAuth } from '../../../contexts/AuthContext'
+import { isDirectorRole } from '../../../utils/permissions'
 
 const OfficeSuppliers: React.FC = () => {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
+  // Deleting office suppliers is Director-only under RLS.
+  const canDelete = isDirectorRole(user)
   const {
     suppliers,
     loading,
@@ -202,16 +207,18 @@ const OfficeSuppliers: React.FC = () => {
                 >
                   {t('office_suppliers.card.edit')}
                 </Button>
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleDelete(supplier.id)
-                  }}
-                  variant="outline-danger"
-                  size="icon-md"
-                  icon={Trash2}
-                  title={t('office_suppliers.card.delete')}
-                />
+                {canDelete && (
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDelete(supplier.id)
+                    }}
+                    variant="outline-danger"
+                    size="icon-md"
+                    icon={Trash2}
+                    title={t('office_suppliers.card.delete')}
+                  />
+                )}
               </div>
             </div>
           ))}
