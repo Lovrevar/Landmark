@@ -15,27 +15,6 @@ export const fetchProjectPhases = async () => {
   return phasesData || []
 }
 
-export const recalculatePhaseBudget = async (phaseId: string) => {
-  const { data: phaseContracts, error: subError } = await supabase
-    .from('contracts')
-    .select('contract_amount')
-    .eq('phase_id', phaseId)
-    .in('status', ['draft', 'active'])
-
-  if (subError) throw subError
-
-  const budgetUsed = (phaseContracts || []).reduce((sum, contract) => sum + parseFloat(contract.contract_amount || 0), 0)
-
-  const { error: updateError } = await supabase
-    .from('project_phases')
-    .update({ budget_used: budgetUsed })
-    .eq('id', phaseId)
-
-  if (updateError) throw updateError
-
-  return budgetUsed
-}
-
 export const recalculateAllPhaseBudgets = async () => {
   // Set-based recalc in Postgres (see recalculate_all_phase_budgets RPC migration).
   // The previous client-side read of all active/draft contracts was silently capped at

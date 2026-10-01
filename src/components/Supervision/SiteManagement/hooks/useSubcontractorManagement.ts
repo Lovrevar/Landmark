@@ -81,9 +81,6 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         })
         newContractId = newContract.id
         newSubcontractorId = data.existing_subcontractor_id
-        if (hasContract) {
-          await siteService.recalculatePhaseBudget(phase.id)
-        }
       } else {
         if (!data.name?.trim() || !data.contact?.trim()) {
           throw new Error('Naziv tvrtke i kontakt su obavezni')
@@ -118,9 +115,6 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         })
         newContractId = newContract.id
         newSubcontractorId = newSubcontractor.id
-        if (hasContract) {
-          await siteService.recalculatePhaseBudget(phase.id)
-        }
       }
 
       if (newSubcontractorId && pendingFiles && pendingFiles.length > 0 && hasContract) {
@@ -132,7 +126,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         }
       }
 
-      await siteService.recalculatePhaseBudget(phase.id)
+      // project_phases.budget_used is kept by the trg_sync_phase_budget_used trigger on contracts.
       await fetchProjects()
     } catch (error: unknown) {
       console.error('Error adding subcontractor:', error)
@@ -150,7 +144,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
 
   const updateSubcontractor = async (subcontractor: Subcontractor, pendingFiles: File[] = []) => {
     try {
-      const subData = subcontractor as Subcontractor & { base_amount?: number; vat_rate?: number; vat_amount?: number; total_amount?: number; phase_id?: string; contract_type_id?: number | null; classification_id?: number | null; has_contract?: boolean; subcontractor_id?: string; contract_id?: string }
+      const subData = subcontractor as Subcontractor & { base_amount?: number; vat_rate?: number; vat_amount?: number; total_amount?: number; phase_id?: string; contract_type_id?: number | null; classification_id?: number | null; has_contract?: boolean; subcontractor_id?: string; contract_id?: string; contract_status?: string | null }
 
       // Same classification gate as the add path. The contract's own current amount is excluded
       // from `used`, and an edit that does not raise what this contract commits to the bucket is
@@ -186,7 +180,8 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         phase_id: subData.phase_id,
         contract_type_id: subData.contract_type_id,
         classification_id: subData.classification_id ?? null,
-        has_contract: subData.has_contract
+        has_contract: subData.has_contract,
+        status: subData.contract_status ?? undefined
       })
 
       // Files picked in the edit modal but not uploaded with its own Upload button. Same as the
@@ -221,11 +216,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
     if (!pendingDeleteSubcontractor) return false
     setDeletingSubcontractor(true)
     try {
-      const subcontractor = await siteService.getSubcontractorDetails(pendingDeleteSubcontractor)
       await siteService.deleteSubcontractor(pendingDeleteSubcontractor)
-      if (subcontractor.phase_id) {
-        await siteService.recalculatePhaseBudget(subcontractor.phase_id)
-      }
       await fetchProjects()
       return true
     } catch (error) {

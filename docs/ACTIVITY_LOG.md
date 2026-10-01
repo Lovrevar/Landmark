@@ -374,7 +374,7 @@ is the *user* action that triggered or corrected a run.
 
 These writes are deliberately exempt from `logActivity()` — do not "fix" them without reconsidering the rationale:
 
-- **Derived-value recalculations** — system-computed aggregates rewritten from source data, not user actions; logging them would flood the log: `recalculateBankAccountBalance` (companyService), `recalculatePhaseBudget` / `recalculateAllPhaseBudgets` (phaseService), `updateContractBudgetRealized` (siteContractService)
+- **Derived-value recalculations** — system-computed aggregates rewritten from source data, not user actions; logging them would flood the log: `recalculateBankAccountBalance` (companyService), `recalculateAllPhaseBudgets` (phaseService), `updateContractBudgetRealized` (siteContractService)
 - **Chat traffic** — `chat_messages` inserts, `chat_participants.last_read_at` updates, chat/AI-chat file attachments; conversation create/delete *are* logged
 - **AI session housekeeping** — session *creation* and cancel flags (`aiChatService`). A session row is created implicitly on the first message, so logging it would just duplicate chat traffic. Renames (`ai_session.update`) and deletes (`ai_session.delete`) *are* logged
 - **Storage rollbacks** — `.remove()` calls that clean up after a failed upload

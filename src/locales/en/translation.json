@@ -2390,6 +2390,9 @@
       },
       "phases": "Phases",
       "setup_phases": "Setup Phases",
+      "hide_closed_contracts": "Hide completed and terminated",
+      "show_closed_contracts": "Show completed and terminated",
+      "closed_contracts_hidden": "Completed and terminated contracts hidden: {{count}}",
       "edit_phases": "Edit Phases",
       "phase_setup": {
         "title_create": "Setup Project Phases",

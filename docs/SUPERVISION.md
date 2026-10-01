@@ -95,6 +95,28 @@ then `ProjectSummaryBanner`, then the contract tree.
   `invoice_total_owed` still comes from invoices — payments cannot say what is *still* outstanding.
   (This bullet used to say "invoice-derived"; it was describing an older implementation.)
 
+#### Contract status (completed and terminated contracts)
+
+Decided 2026-10-01 (DEFECT_BACKLOG SUP-4). `EditSubcontractorModal` has a **Status** select —
+active, completed, terminated (draft is offered only while the contract is still a draft).
+Closed contracts **stay on the site and keep counting**:
+
+- Site Management lists every contract, whatever its status. A completed or terminated
+  `ContractCard` carries a gray / red status badge and is never "past deadline".
+- What a contract commits — to group and project totals, `project_phases.budget_used`, the
+  classification budget gate, Budget Control, the supplier and project summaries — is one rule,
+  `committedAmount` in `src/utils/contractRollup.ts`: draft, active and completed commit
+  `contract_amount`; **terminated commits only what was paid** (`budget_realized`), releasing the
+  unpaid remainder. The database side is `contract_committed_amount()` (migration
+  `20261001100200`), used by the `trg_sync_phase_budget_used` trigger, which now also fires on
+  `budget_realized`. Keep the two the same.
+- A **Hide completed and terminated** button in the project header (shown only when the project has
+  a closed contract) hides their cards. It hides at render time only (`HideClosedContractsContext`
+  in `hideClosedContracts.ts`, read by the leaf `TreeGroup`), so every total still includes them,
+  and a group with hidden cards says how many.
+- `project_phases.budget_used` is maintained by that trigger alone; the client-side
+  `recalculatePhaseBudget` calls after add / edit / delete were removed.
+
 #### The payment gate
 
 `canManagePayments(user)` (`src/utils/permissions.ts`) is true for **Director**, **Accounting**
@@ -160,7 +182,7 @@ Each site keeps its own "done" criterion: `ContractCard` and `useSiteProjectData
 
 ### services/siteService.ts (barrel)
 - `fetchAllProjects()` — fetches all site projects ordered by start date
-- `fetchSubcontractorsWithPhases()` — fetches active/draft contracts joined with subcontractor, phase, and contract-type details; returns a flat list keyed by contract
+- `fetchSubcontractorsWithPhases()` — fetches every contract (any status; `contract_status` on each row) joined with subcontractor, phase, and contract-type details; returns a flat list keyed by contract
 - Re-exports everything from phaseService, siteContractService, siteSubcontractorService, milestoneService, siteFundingService, and wirePaymentService
 - **Depends on:** supabase client; the six entity service files below
 
@@ -175,12 +197,11 @@ Each site keeps its own "done" criterion: `ContractCard` and `useSiteProjectData
 Read-only by design — `sync_project_from_tic()` owns this table and rebuilds it on every TIC save,
 so a client write would survive only until the next one.
 - `fetchPhaseClassificationBudgets(phaseIds?)` — per-(phase, classification) sub-allocations
-- `fetchClassificationBudgetStatus(phaseId, classificationId, excludeContractId?)` — allocated vs committed (draft/active contracts); the binding limit when adding or editing a contract, since the phase budget is the sum of its classifications. With `excludeContractId` that contract is left out of `used` and its current amount in the bucket comes back as `excludedAmount` (0 when it is not in the bucket)
+- `fetchClassificationBudgetStatus(phaseId, classificationId, excludeContractId?)` — allocated vs committed (every contract, by `committedAmount`); the binding limit when adding or editing a contract, since the phase budget is the sum of its classifications. With `excludeContractId` that contract is left out of `used` and its current amount in the bucket comes back as `excludedAmount` (0 when it is not in the bucket)
 - `fetchTICClassificationTotals(projectId)` — the project's TIC plan per classification, for the read-only comparison in `PhaseClassificationBudgetsModal`
 
 ### services/phaseService.ts
 - `fetchProjectPhases()` — fetches all phases ordered by project then phase number
-- `recalculatePhaseBudget(phaseId)` — recomputes budget_used for a phase from active/draft contract amounts
 - `recalculateAllPhaseBudgets()` — recomputes budget_used for every phase across all projects via the `recalculate_all_phase_budgets()` Postgres RPC (set-based, avoids the 1000-row client cap)
 - `createPhases(projectId, phases)` — bulk-creates phases for a project. **Writes no budget**: the column default of 0 stands until a TIC plans the phase
 - `updateProjectPhases(projectId, phases)` — syncs a project's phase set (insert/update/delete and renumber); name, dates and ordering only. Existing phases missing from `phases` are deleted; if any of them still has contracts or work logs it deletes nothing and throws `PhaseHasDependentsError` (`phases: { name, contracts, workLogs }[]`) so the caller can word the refusal in the user's language
@@ -212,7 +233,6 @@ so a client write would survive only until the next one.
 - `linkSubcontractorToPhase(subcontractorId, phaseId, cost, deadline, jobDescription)` — assigns a subcontractor to a phase
 - `updateSubcontractor(contractId, updates)` — updates contract-specific fields plus the linked subcontractor's name/contact; recalculates old/new phase budgets when the phase changes
 - `deleteSubcontractor(contractId)` — deletes a contract (removes the subcontractor from a phase)
-- `getSubcontractorDetails(contractId)` — returns the contract's cost and phase_id
 - `fetchSubcontractorComments(subcontractorId)` — fetches comments/notes joined with the author user. `subcontractorId` is the **company** id: Site Management rows are contracts, so `index.tsx` passes `row.subcontractor_id` (`companyIdOf`), never `row.id`. The insert policy requires `user_id` to be the caller's own `public.users.id`
 - `createSubcontractorComment(data)` — adds a comment (type: completed, issue, general)
 - `insertSubcontractorRecord(data)` — inserts a base subcontractor registry entry
@@ -220,7 +240,7 @@ so a client write would survive only until the next one.
 - `fetchInvoiceStatsForContracts(contractIds)` — batch fetch of paid/owed totals per contract, returned as a Map
 - `fetchSubcontractorInvoiceStats(subcontractorId, contractId?)` — paid/owed totals for one subcontractor or one contract
 - `uploadSubcontractorDocuments(subcontractorId, contractId, files)` — uploads documents via the central document service under the `IZVODACI` category, associating them with the subcontractor, contract, project, and phase
-- **Depends on:** supabase client, logActivity, Documents `documentService.uploadDocument`, `recalculatePhaseBudget` (phaseService)
+- **Depends on:** supabase client, logActivity, Documents `documentService.uploadDocument`
 
 ### services/milestoneService.ts
 - `fetchMilestonesByContract(contractId)` — fetches milestones for a contract with `paid_amount` summed from the linked invoices' **`paid_amount`** (gross money received). See "Milestones are gross" below; it used to sum their net `base_amount`, paid or not
@@ -277,7 +297,7 @@ so a client write would survive only until the next one.
 - `useSubcontractorManagement(fetchProjects)` — manages subcontractor add/edit/delete with document upload, phase budget recalculation, and unique contract number generation; payment create/update/delete now warn that those moved to the Accounting module
 - `updateSubcontractor(subcontractor, pendingFiles = [])` — after a successful update, uploads `pendingFiles` via `uploadSubcontractorDocuments` (only when `has_contract`), mirroring the add path; a failed upload only warns with `supervision.edit_subcontractor.document_upload_failed`. Other failures toast `supervision.edit_subcontractor.errors.update_failed`
 - `updateSubcontractor` passes `classification_id` through and applies the same classification budget gate as the add path (for contracts with `has_contract` and a classification). The contract's own amount is excluded from `used`, and an edit that does not raise what the contract commits to the bucket is never refused, so an already over-allocated bucket still lets you fix names or dates. A refusal toasts `supervision.subcontractor_form.errors.exceeds_classification_budget` and returns `false`, keeping the modal open
-- **Calls:** siteService barrel → siteContractService (`createContract`, `generateUniqueContractNumber`), siteSubcontractorService (`createSubcontractorWithReturn`, `updateSubcontractor`, `deleteSubcontractor`, `getSubcontractorDetails`, `uploadSubcontractorDocuments`), phaseService (`getPhaseInfo`, `updatePhase`, `recalculatePhaseBudget`), wirePaymentService (`fetchWirePayments`)
+- **Calls:** siteService barrel → siteContractService (`createContract`, `generateUniqueContractNumber`), siteSubcontractorService (`createSubcontractorWithReturn`, `updateSubcontractor`, `deleteSubcontractor`, `uploadSubcontractorDocuments`), phaseService (`getPhaseInfo`, `updatePhase`), wirePaymentService (`fetchWirePayments`)
 - `fetchWirePayments` **rejects** on failure (it used to `return []`). `SiteManagement/index.tsx` wraps it in `loadWirePayments`, which toasts `supervision.payment_history.load_failed` and returns `null`; the payment-history modal is not opened on a `null`, so a failed read can never show a paid contract as having no payments
 - **Returns:** addSubcontractorToPhase, updateSubcontractor, deleteSubcontractor, pendingDeleteSubcontractor, confirmDeleteSubcontractor, cancelDeleteSubcontractor, deletingSubcontractor, addPaymentToSubcontractor, fetchWirePayments, updateWirePayment, deleteWirePayment
 
@@ -327,6 +347,7 @@ so a client write would survive only until the next one.
 ### ProjectDetail.tsx
 - Single project detail view: credit allocations section, phase cards, and project summary stats
 - The header shows the project-category badge beside the status badge
+- Owns the hide-closed-contracts toggle and provides it through `HideClosedContractsContext`
 - **Uses services:** siteFundingService (fetchCreditAllocations, via siteService barrel)
 - **Uses components:** ProjectCategoryBadge, PhaseCard
 
@@ -359,12 +380,13 @@ phase to a user goes through it.
 
 ### TreeGroup.tsx
 - One collapsible level of the contract tree, rendered recursively and dimension-agnostic, so the same component draws a classification inside a phase and a phase inside a classification
+- A leaf drops completed / terminated contract cards when `useHideClosedContracts()` is true, with a "hidden: N" line; its totals are unchanged
 
 ### ContractCard.tsx
 - A single contract card, lifted out of PhaseCard when the tree gained a third level
 - Money renders through `formatEuro`
 - The old "Dobit/Gubitak" row (paid − contracted, sign inverted, so an unpaid €200.000 contract read as a €200.000 gain) is gone. The card now shows a variance from [`contractVariance`](../src/utils/contractVariance.ts) with `settled` = `isFullySettled(sub)`, and only when there is one: a red "Prekoračenje" row when paid exceeds the contract, a green "Ušteda" row for a contract settled below its value. An open contract still being paid shows no row — "Preostalo" already says what it owes
-- Because this screen lists only `draft`/`active` contracts, settled can only mean paid in full, so in practice the row appears only for an overrun. The status badge and card tint use the same variance, so a badge never says "over budget" when the row does not
+- Settled means paid in full (`isFullySettled`), so in practice the row appears only for an overrun — completing a contract does not by itself produce a "Ušteda" row. A terminated contract shows nothing remaining to pay. The status badge and card tint use the same variance, so a badge never says "over budget" when the row does not
 
 ### MilestoneList.tsx
 - Milestone management panel: add/edit/delete milestones, stats summary, and details per milestone
@@ -430,6 +452,7 @@ the orchestrator does the writes and re-fetches.
 - On open it resets every field, including those `loadContractFormData` fills (phases, contract type, classification, base amount, VAT rate) plus picked files and field errors, so nothing from the previously edited contract lingers. The load is guarded by a request-id ref, so a slow response for an earlier contract is dropped
 - A load failure shows an error `Alert` (`supervision.edit_subcontractor.errors.load_failed`). Save is disabled while the contract data loads, after a load failure, and while the Upload button is running — otherwise it would write the reset placeholders over the real amounts
 - Save returns the `onSubmit` promise (button loading state) and passes the picked-but-not-uploaded files, which `useSubcontractorManagement.updateSubcontractor` uploads after the update. The separate Upload button still uploads without saving
+- A **Status** select (active / completed / terminated; draft only while the contract is a draft) saves `contracts.status` through `siteSubcontractorService.updateSubcontractor`. See "Contract status" above
 - Footer is Cancel + Save changes only. The "Mark as completed" button, which had no handler, was removed on 2026-09-15
 - Distinct from `Subcontractors/forms/SubcontractorBasicFormModal.tsx`, which edits the base record from the subcontractor register
 

@@ -1,4 +1,4 @@
-import { isContracted, rollupContracts, type ContractRollupRow } from '../../../../utils/contractRollup'
+import { committedAmount, isContracted, rollupContracts, type ContractRollupRow } from '../../../../utils/contractRollup'
 import type { ContractWithDetails } from '../types'
 
 /**
@@ -17,6 +17,7 @@ const toRollupRow = (c: ContractWithDetails): ContractRollupRow => ({
   hasContract: c.has_contract,
   cost: Number(c.contract_amount || 0),
   paid: Number(c.budget_realized || 0),
+  status: c.status,
 })
 
 /** Whether the row has an agreed amount for "remaining" to be measured against. */
@@ -29,7 +30,9 @@ export const hasContractAmount = (c: ContractWithDetails): boolean => isContract
  */
 export const contractRemaining = (c: ContractWithDetails): number | null => {
   const row = toRollupRow(c)
-  return isContracted(row) ? row.cost - row.paid : null
+  if (!isContracted(row)) return null
+  // A terminated contract owes nothing more: what was not paid is released.
+  return committedAmount(row) - row.paid
 }
 
 export interface SubcontractorsSummary {

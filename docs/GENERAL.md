@@ -200,7 +200,7 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 
 ### services/budgetControlService.ts
 - `fetchProjectsList()` — fetches all projects (ordered by name) for the selector
-- `fetchProjectBudgetData(projectId)` — parallel-ish fetch of the project row, `project_phases`, draft/active/completed `contracts` (with subcontractor + phase joins), and the contracts' `subcontractor_milestones` (`contract_id`, `percentage`, `status`); returns `ProjectBudgetData` (`{ project, phases, contracts, milestones }`)
+- `fetchProjectBudgetData(projectId)` — parallel-ish fetch of the project row, `project_phases`, every `contracts` row (terminated ones mapped to their paid amount via `committedAmount`) (with subcontractor + phase joins), and the contracts' `subcontractor_milestones` (`contract_id`, `percentage`, `status`); returns `ProjectBudgetData` (`{ project, phases, contracts, milestones }`)
 - **Exports types:** `ProjectBudgetData`; reuses `MilestoneProgress` from `src/utils/evm.ts`
 - **Depends on:** supabase client
 

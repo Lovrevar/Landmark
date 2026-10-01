@@ -275,7 +275,13 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - **What happens:** older rows silently disappear once a table passes 1000 rows.
 
 ### SUP-4 · Medium · Contract status and subcontractor completion never change
-- **Status:** Partly fixed on `fix/defect-backlog` (fix(supervision)): the dashboard card now counts crews with a `work_finished` log this week. **Open decision:** contract status transitions. Site Management lists only draft/active contracts, so completing a contract would drop it from every phase total; decide how completed contracts should appear before adding a status control
+- **Status:** Fixed. On `fix/defect-backlog`: the dashboard card counts crews with a
+  `work_finished` log this week. On `fix/backlog-batch-2` (fix(supervision)), per the 2026-10-01
+  decision "stays visible, still counts": the edit form sets Aktivan / Završen / Raskinut;
+  Site Management, the classification gate, Budget Control, supplier and project summaries read
+  every status; a terminated contract commits only what was paid (`committedAmount` /
+  `contract_committed_amount`, migration `20261001100200`); a header button hides closed cards
+  without changing totals. See [SUPERVISION.md](./SUPERVISION.md) → "Contract status"
 - New contracts are always `active` and nothing moves them to `completed` or `terminated`.
   `subcontractors.completed_at` is never written, so the dashboard's "completed this week" is
   always 0.

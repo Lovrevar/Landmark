@@ -775,7 +775,7 @@ plaćeni stupci milestoneova. Iznosi ugovora, rokovi i budžeti ostaju vidljivi.
 `status` (`Planning`, `In Progress`, `Completed`, `On Hold`), `category`.
 
 **`project_phases`** — `project_id` (CASCADE), `phase_number` (jedinstven u projektu),
-`phase_name`, `budget_allocated` (iz TIC-a), `budget_used` (Σ iznosa aktivnih ugovora faze),
+`phase_name`, `budget_allocated` (iz TIC-a), `budget_used` (Σ preuzetih iznosa ugovora faze, v. 8.7 „Status ugovora”),
 `start_date`, `end_date`, `status` (`planning`, `active`, `completed`, `on_hold`).
 
 **`cost_classifications`** — `code`, `name` (jedinstven), `description`, `sort_order`,
@@ -853,7 +853,8 @@ vremenska linija (završeno / kasni / danas / „još N dana", narančasto unuta
 
 **Zaglavlje:** naziv, lokacija, budžet s oznakom „✓ iz TIC-a" ili „⚠ budžet nije postavljen",
 alocirano po fazama, kategorija i status; prekidač grupiranja **Po fazi / Po klasifikaciji**
-(pamti se); „Upravljanje klasifikacijama troška"; „Postavi faze" / „Uredi faze".
+(pamti se); „Sakrij završene i raskinute" (samo ako projekt ima takav ugovor);
+„Upravljanje klasifikacijama troška"; „Postavi faze" / „Uredi faze".
 
 **Alocirana sredstva:** kartice namjena kredita za projekt (kredit, firma, alocirano,
 iskorišteno, dostupno, kamata, traka iskorištenosti — narančasto od 80 %, crveno od 100 %).
@@ -873,8 +874,15 @@ iskorišteno, dostupno, kamata, traka iskorištenosti — narančasto od 80 %, c
 
 Uvijek se prikazuju sve faze i svi budžeti (faza, klasifikacija), i kad nemaju ugovora.
 
+**Status ugovora:** Nacrt, Aktivan, Završen, Raskinut (mijenja se u uređivanju ugovora). Završeni i
+raskinuti ugovori ostaju u stablu s oznakom statusa (sivo / crveno), ne prikazuju se kao
+zakašnjeli i nastavljaju se brojati u svim zbrojevima. **Preuzeti iznos** ugovora
+(`committedAmount`, u bazi `contract_committed_amount`): za nacrt, aktivan i završen ugovor iznos
+ugovora; za **raskinut** samo plaćeni iznos — neplaćeni ostatak se oslobađa. Gumb „Sakrij završene i
+raskinute" skriva samo njihove kartice (skupina navodi koliko ih je skriveno); zbrojevi ostaju isti.
+
 **Formule sažimanja** (`rollupContracts`):
-- ugovor s ugovorom (`has_contract` i iznos > 0): `ugovoreno += iznos`,
+- ugovor s ugovorom (`has_contract` i iznos > 0): `ugovoreno += preuzeti iznos`,
   `neplaćeno += max(0, iznos − plaćeno)`;
 - redak bez ugovora: `neplaćeno += dugovanje po računima` (i `neplaćeno bez ugovora`);
 - `plaćeno` = Σ plaćenog svih redaka;
@@ -896,8 +904,9 @@ fazama), Ugovoreno, Plaćeno*, Neplaćeno*, Preostalo.
 
 **Kartica ugovora:**
 - naziv podizvođača, oznaka **„BEZ UGOVORA"**, kontakt, opis posla;
+- status ugovora (Završen / Raskinut) kad nije aktivan;
 - status plaćenosti*: Prekoračenje / Plaćeno / Djelomično / Neplaćeno (i boja ruba);
-- rok (crveno ako kasni), iznos ugovora (bruto);
+- rok (crveno ako kasni; nikad za završen ili raskinut ugovor), iznos ugovora (bruto);
 - plaćeno*, preostalo za platiti*, **odstupanje**: prekoračenje (plaćeno > ugovoreno) ili
   ušteda (potpuno plaćeno, a plaćeno < ugovoreno);
 - za dobavljače bez ugovora: plaćeno ukupno i ukupno dugovanje;
@@ -931,16 +940,16 @@ Podnaslov: „faza • Raspoloživi budžet X €" (`budžet faze − budget_use
 
 **Kontrole budžeta:**
 1. **budžet klasifikacije:** ako je za (fazu, klasifikaciju) postavljen budžet, iznos ugovora
-   ne smije premašiti `budžet − Σ aktivnih ugovora` — „Iznos ugovora premašuje raspoloživi
+   ne smije premašiti `budžet − Σ preuzetih iznosa ugovora` — „Iznos ugovora premašuje raspoloživi
    budžet klasifikacije troška";
 2. **budžet faze:** ako faza ima budžet, iznos ne smije premašiti `budžet faze − budget_used`
    — „Iznos ugovora premašuje raspoloživi budžet faze".
 
-Broj ugovora dodjeljuje se automatski (`CNT-GGGG-nnnn-…`, do 3 pokušaja pri sudaru). Nakon
-spremanja preračunava se `budget_used` faze.
+Broj ugovora dodjeljuje se automatski (`CNT-GGGG-nnnn-…`, do 3 pokušaja pri sudaru).
+`budget_used` faze održava okidač `trg_sync_phase_budget_used` pri svakoj promjeni ugovora.
 
 **Uređivanje ugovora:** naziv i kontakt podizvođača, faza (unutar projekta), ima li ugovor,
-klasifikacija, kategorija, opis, osnovica i PDV, rok; prikaz plaćenog, preostalog i
+**status** (Aktivan, Završen, Raskinut; Nacrt samo dok je ugovor nacrt), klasifikacija, kategorija, opis, osnovica i PDV, rok; prikaz plaćenog, preostalog i
 **napretka** `min(100, plaćeno / ukupno × 100)` („izračunato iz plaćanja"); dokumenti.
 Povećanje iznosa provjerava se prema budžetu klasifikacije.
 

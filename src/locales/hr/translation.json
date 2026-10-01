@@ -2397,6 +2397,9 @@
       },
       "phases": "Faze",
       "setup_phases": "Postavi faze",
+      "hide_closed_contracts": "Sakrij završene i raskinute",
+      "show_closed_contracts": "Prikaži završene i raskinute",
+      "closed_contracts_hidden": "Skriveno završenih i raskinutih ugovora: {{count}}",
       "edit_phases": "Uredi faze",
       "phase_setup": {
         "title_create": "Postavi faze projekta",

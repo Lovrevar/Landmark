@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Building2, Settings, CreditCard, Layers, Tags } from 'lucide-react'
+import { ArrowLeft, Building2, Settings, CreditCard, Layers, Tags, Eye, EyeOff } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases, SubcontractorWithPhase, SiteGrouping, VIEW_DIMENSIONS, CostClassification } from './types'
 import { PhaseCard } from './PhaseCard'
@@ -12,6 +12,8 @@ import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statu
 import { TICBudgetBadge } from './TICBudgetBadge'
 import { ProjectSummaryBanner } from './ProjectSummaryBanner'
 import { TreeGroup } from './TreeGroup'
+import { HideClosedContractsContext } from './hideClosedContracts'
+import { isClosedContract } from '../../../utils/contractRollup'
 import { fetchCreditAllocations, type CreditAllocation } from './services/siteService'
 import { Button, Badge, EmptyState } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
@@ -111,6 +113,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     ),
     [project.subcontractors, treeContext]
   )
+  const [hideClosed, setHideClosed] = useState(false)
+  const hasClosedContracts = project.subcontractors.some(sub => isClosedContract(sub.contract_status))
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [, setLoadingCredits] = useState(false)
 
@@ -123,6 +127,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   }, [project.id])
 
   return (
+    <HideClosedContractsContext.Provider value={hideClosed}>
     <div>
       <div className="mb-6">
         <div className="mb-3">
@@ -184,6 +189,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   {t('supervision.site_management.grouping.by_classification')}
                 </button>
               </div>
+            )}
+            {hasClosedContracts && (
+              <Button
+                variant="secondary"
+                onClick={() => setHideClosed(h => !h)}
+                icon={hideClosed ? Eye : EyeOff}
+              >
+                {hideClosed
+                  ? t('supervision.site_management.show_closed_contracts')
+                  : t('supervision.site_management.hide_closed_contracts')}
+              </Button>
             )}
             <Button variant="secondary" onClick={onManageClassifications} icon={Tags}>
               {t('supervision.cost_classification.manage_title')}
@@ -401,5 +417,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       )}
 
     </div>
+    </HideClosedContractsContext.Provider>
   )
 }
