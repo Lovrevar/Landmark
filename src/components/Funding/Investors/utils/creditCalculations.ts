@@ -1,4 +1,5 @@
 import type { EquityFormData } from '../types'
+import { parseLocalDate } from '../../../../utils/dateOnly'
 
 export function getPaymentFrequency(type: string): number {
   switch (type) {
@@ -15,36 +16,6 @@ function getMaturityYears(startDate: string, maturityDate: string | null): numbe
   const start    = new Date(startDate)
   const maturity = new Date(maturityDate)
   return (maturity.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-}
-
-export function calculateAnnuityPayment(params: {
-  amount: number
-  interest_rate: number
-  grace_period: number   // in months
-  start_date: string
-  maturity_date: string | null
-  repayment_type: 'monthly' | 'yearly'
-}): number {
-  const principal        = params.amount
-  const annualRate       = params.interest_rate / 100
-  const gracePeriodYears = params.grace_period / 12   // grace_period is in months
-  const maturityYears    = getMaturityYears(params.start_date, params.maturity_date)
-  const repaymentYears   = Math.max(0.1, maturityYears - gracePeriodYears)
-
-  if (annualRate === 0) {
-    return params.repayment_type === 'yearly'
-      ? principal / repaymentYears
-      : principal / (repaymentYears * 12)
-  }
-
-  if (params.repayment_type === 'yearly') {
-    const r = annualRate
-    return (principal * r * Math.pow(1 + r, repaymentYears)) / (Math.pow(1 + r, repaymentYears) - 1)
-  } else {
-    const r = annualRate / 12
-    const n = repaymentYears * 12
-    return (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
-  }
 }
 
 /**
@@ -206,38 +177,102 @@ export interface PaymentScheduleResult {
    */
   principalFrequency: string
   interestFrequency: string
+  /** Interest of the first and the last interest payment: it falls as principal is repaid. */
+  firstInterestPayment: number
+  lastInterestPayment: number
+  totalInterest: number
+  /**
+   * Monthly-equivalent debt service when principal repayment starts — the largest it gets.
+   * Stored as `bank_credits.monthly_payment` and summed as "monthly debt service" on the
+   * Director dashboard and the general report.
+   */
+  monthlyDebtService: number
 }
 
+const STEP_MONTHS: Record<string, number> = { monthly: 1, quarterly: 3, biyearly: 6, yearly: 12 }
+
+/** Months between two payments of the given frequency (monthly when unknown). */
+const stepMonths = (frequency: string): number => STEP_MONTHS[frequency] ?? 1
+
+/** Whole calendar months from `from` to `to` (a month counts once its day-of-month is reached). */
+export function wholeMonthsBetween(from: Date, to: Date): number {
+  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth())
+  if (to.getDate() < from.getDate()) months -= 1
+  return months
+}
+
+/**
+ * The company's repayment model (decided 2026-10-01, DEFECT_BACKLOG FUND-5): **equal principal
+ * instalments** at the principal frequency, starting after the grace period, and **interest on
+ * the outstanding balance** at the interest frequency, charged from the start date — the grace
+ * period defers principal, not interest. Instalments therefore fall over time.
+ *
+ * Simulated month by month: interest accrues on the balance at the start of each month and is
+ * paid at every interest date; principal is repaid at every principal date, the last one clearing
+ * whatever is left. Null without a start date, maturity date and amount, or when the grace period
+ * reaches the maturity date.
+ */
 export function calculatePaymentSchedule(params: PaymentScheduleParams): PaymentScheduleResult | null {
   if (!params.start_date || !params.maturity_date || !params.amount) return null
 
-  const startDate        = new Date(params.start_date)
-  const endDate          = new Date(params.maturity_date)
-  const gracePeriodMonths = params.grace_period || 0
+  const startDate = parseLocalDate(params.start_date)
+  const endDate = parseLocalDate(params.maturity_date)
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return null
+  const graceMonths = Math.max(0, params.grace_period || 0)
 
   const paymentStartDate = new Date(startDate)
-  paymentStartDate.setMonth(paymentStartDate.getMonth() + gracePeriodMonths)
+  paymentStartDate.setMonth(paymentStartDate.getMonth() + graceMonths)
   if (paymentStartDate >= endDate) return null
 
-  const totalYears = (endDate.getTime() - paymentStartDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+  const totalMonths = Math.max(1, wholeMonthsBetween(startDate, endDate))
+  const principalMonths = Math.max(1, totalMonths - graceMonths)
+  const principalStep = stepMonths(params.principal_repayment_type)
+  const interestStep = stepMonths(params.interest_repayment_type)
 
-  const principalFreq = getPaymentFrequency(params.principal_repayment_type)
-  const interestFreq  = getPaymentFrequency(params.interest_repayment_type)
-
-  const totalPrincipalPayments = Math.max(1, Math.floor(totalYears * principalFreq))
-  const totalInterestPayments  = Math.max(1, Math.floor(totalYears * interestFreq))
-
+  const totalPrincipalPayments = Math.max(1, Math.ceil(principalMonths / principalStep))
   const principalPerPayment = params.amount / totalPrincipalPayments
-  const annualInterest      = params.amount * (params.interest_rate / 100)
-  const interestPerPayment  = annualInterest / interestFreq
+  const monthlyRate = (params.interest_rate || 0) / 100 / 12
 
+  let balance = params.amount
+  let accrued = 0
+  let principalPaid = 0
+  const interestPayments: number[] = []
+  for (let month = 1; month <= totalMonths; month++) {
+    accrued += balance * monthlyRate
+    const repaymentMonth = month - graceMonths
+    const isLastMonth = month === totalMonths
+    if (repaymentMonth >= 1 && (repaymentMonth % principalStep === 0 || isLastMonth) && principalPaid < totalPrincipalPayments) {
+      principalPaid += 1
+      balance = principalPaid === totalPrincipalPayments || isLastMonth ? 0 : balance - principalPerPayment
+    }
+    if (month % interestStep === 0 || isLastMonth) {
+      interestPayments.push(accrued)
+      accrued = 0
+    }
+  }
+
+  const firstInterestPayment = interestPayments[0] ?? 0
   return {
     principalPerPayment,
-    interestPerPayment,
+    interestPerPayment: firstInterestPayment,
+    firstInterestPayment,
+    lastInterestPayment: interestPayments[interestPayments.length - 1] ?? 0,
+    totalInterest: interestPayments.reduce((sum, x) => sum + x, 0),
     totalPrincipalPayments,
-    totalInterestPayments,
+    totalInterestPayments: interestPayments.length,
     paymentStartDate,
     principalFrequency: params.principal_repayment_type,
-    interestFrequency:  params.interest_repayment_type,
+    interestFrequency: params.interest_repayment_type,
+    monthlyDebtService: principalPerPayment / principalStep + params.amount * monthlyRate,
   }
+}
+
+/**
+ * `bank_credits.monthly_payment`: the monthly-equivalent debt service at the start of principal
+ * repayment under the repayment model above. 0 without a maturity date — there is no schedule to
+ * derive it from (it used to assume ten years).
+ */
+export function calculateMonthlyDebtService(params: Omit<PaymentScheduleParams, 'maturity_date'> & { maturity_date: string | null }): number {
+  if (!params.maturity_date) return 0
+  return calculatePaymentSchedule({ ...params, maturity_date: params.maturity_date })?.monthlyDebtService ?? 0
 }

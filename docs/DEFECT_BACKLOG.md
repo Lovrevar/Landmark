@@ -431,7 +431,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### FUND-5 · Medium · Two repayment models disagree
 - **ERP:** Actual repayments come from the ERP; the model only drives the plan and the "monthly debt service" figures on the Director dashboard and general report.
-- **Status:** Open — **needs a finance decision**: which repayment model do the company's credits follow — an annuity (what `monthly_payment` stores), or linear principal with interest per the chosen frequency, and is interest charged on the full amount (what the preview shows) or on the outstanding balance? Then both the stored figure and the preview use it
+- **Status:** Fixed on `fix/backlog-batch-2` (decided 2026-10-01: equal principal instalments, interest on the outstanding balance). One model in `creditCalculations.ts` for the stored figure, the preview and the Banks service; migration `20261001100100` restates existing credits
 - The stored `monthly_payment` is an annuity (monthly by default, 10 years when no maturity is set),
   while the schedule preview uses linear principal plus flat interest on the full amount. No
   schedule is persisted.

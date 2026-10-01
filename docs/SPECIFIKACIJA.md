@@ -1939,9 +1939,9 @@ računi u računovodstvu (izvor: 4D Wand; ručni unos kroz obrazac bankovnog ra�
 | `interest_rate` | kamatna stopa % godišnje (kod equityja očekivani IRR) |
 | `start_date`, `maturity_date`, `usage_expiration_date` | početak, dospijeće, kraj razdoblja korištenja |
 | `grace_period` | poček u mjesecima |
-| `repayment_type` | `monthly` / `yearly` (za anuitet) |
+| `repayment_type` | oznaka uz `monthly_payment`; od 1. 10. 2026. uvijek `monthly` |
 | `principal_repayment_type`, `interest_repayment_type` | `monthly`, `quarterly`, `biyearly`, `yearly` |
-| `monthly_payment` | izračunati anuitet |
+| `monthly_payment` | mjesečni ekvivalent servisa duga na početku otplate (vidi niže) |
 | `used_amount`, `repaid_amount`, `outstanding_balance` | **održava baza** (vidi 12.4) |
 | `status` | `active`, `paid`, `defaulted` |
 | `purpose` | namjena |
@@ -2038,18 +2038,21 @@ otplate glavnice (zadano godišnje) i kamata (zadano mjesečno), datum početka,
 kraja korištenja, namjena, **isplata na račun** (odabir žiro računa firme sa stanjem).
 Obavezno: investitor, naziv, iznos, datum početka.
 
-**Anuitet** (`monthly_payment`):
-- razdoblje = (dospijeće − početak) u godinama (bez dospijeća: 10 godina);
-- razdoblje otplate = max(0,1, razdoblje − poček/12);
-- godišnje: `P · r(1+r)^n / ((1+r)^n − 1)`, *r* = godišnja stopa, *n* = godine;
-- mjesečno: *r* = godišnja stopa / 12, *n* = godine × 12;
-- uz stopu 0: glavnica / broj rata.
+**Model otplate:** glavnica se vraća u **jednakim ratama** prema učestalosti otplate glavnice,
+počevši nakon počeka; **kamata se obračunava na preostali dug** prema učestalosti otplate kamata,
+od datuma početka (poček odgađa glavnicu, ne kamatu). Rate zato padaju tijekom otplate.
+- broj rata glavnice = cijeli mjeseci od početka otplate do dospijeća ÷ mjeseci između rata
+  (zaokruženo naviše); zadnja rata zatvara ostatak;
+- kamata se obračunava mjesečno na stanje duga i plaća na svaki datum plaćanja kamata.
 
-**Pregled plana otplate** (uživo u obrascu): otplata počinje nakon počeka; broj rata glavnice
-i kamata prema učestalosti (mjesečno 12, tromjesečno 4, polugodišnje 2, godišnje 1 po
-godini); glavnica po rati = iznos / broj rata; kamata po rati = iznos × stopa / učestalost.
-Prikaz: „Glavnica" i „Kamata" po rati uz opis učestalosti („Svaki mjesec", „Svako
-tromjesečje", „Svakih 6 mjeseci", „Svake godine").
+**Mjesečni servis duga** (`monthly_payment`) = glavnica po rati ÷ mjeseci između rata + iznos ×
+stopa ÷ 12 — mjesečni ekvivalent na početku otplate glavnice (najveći iznos); 0 bez datuma
+dospijeća. Zbraja se kao „mjesečni servis duga" na direktorskom dashboardu i u općem izvještaju.
+
+**Pregled plana otplate** (uživo u obrascu): glavnica po rati i broj rata, prva kamata i iznos na
+koji pada do kraja, broj plaćanja kamata i ukupna kamata, datum početka otplate glavnice te
+napomena da se kamata plaća i tijekom počeka. Učestalost se prikazuje opisno („Svaki mjesec",
+„Svako tromjesečje", „Svakih 6 mjeseci", „Svake godine").
 
 **Obrazac dioničkog kapitala:** investitor, firma, iznos, očekivani IRR %, plan isplate
 (godišnje/mjesečno), pregled novčanog toka, **multiplikator** `(1 + IRR)^godine`, datum

@@ -196,9 +196,9 @@ Bank and investor registry. Manages credit facilities and equity investments per
 - **Returns:** showBankForm, setShowBankForm, editingBank, newBank, setNewBank, handleEditBank, resetBankForm
 
 ### useCreditForm.ts
-- `useCreditForm(onSaved)` — manages credit facility add/edit form state, lazy-loads company bank accounts, computes the annuity payment, and persists create/update/delete with confirmation state
+- `useCreditForm(onSaved)` — manages credit facility add/edit form state, lazy-loads company bank accounts, computes the monthly debt service (`calculateMonthlyDebtService`, stored as `monthly_payment` with `repayment_type = 'monthly'`), and persists create/update/delete with confirmation state
 - **Calls:** creditService.ts (Investors)
-- **Uses utils:** creditCalculations (calculateAnnuityPayment, parseCreditTypeAndSeniority)
+- **Uses utils:** creditCalculations (calculateMonthlyDebtService, parseCreditTypeAndSeniority)
 - **Returns:** showCreditForm, setShowCreditForm, editingCredit, newCredit, setNewCredit, companyBankAccounts, loadingAccounts, handleEditCredit, resetCreditForm, addCredit, handleDeleteCredit, confirmDeleteCredit, cancelDeleteCredit, pendingDeleteId, pendingDeleteInvoiceCount, deleting
 
 ### useEquityForm.ts
@@ -290,13 +290,23 @@ The module's pure-maths layer, and the most heavily unit-tested file in the code
 (42 tests in `creditCalculations.test.ts`). No Supabase, no React — extract new financial
 maths here rather than inlining it in a hook.
 
-- `calculateAnnuityPayment({...})` — standard annuity instalment
-- `calculatePaymentSchedule(params)` → `PaymentScheduleResult | null` — the full schedule
-  driving `PaymentSchedulePreview`. Its `principalFrequency` / `interestFrequency` are the
+- **The repayment model** (decided 2026-10-01, DEFECT_BACKLOG FUND-5): equal principal
+  instalments at the principal frequency, starting after the grace period; interest on the
+  outstanding balance at the interest frequency, from the start date (a grace period defers
+  principal, not interest)
+- `calculatePaymentSchedule(params)` → `PaymentScheduleResult | null` — simulates that model
+  month by month: principal per payment, first and last interest payment, total interest, payment
+  counts, principal start date and `monthlyDebtService`. Drives `PaymentSchedulePreview` and the
+  dormant Cashflow ▸ Banks credit form. Its `principalFrequency` / `interestFrequency` are the
   **stored repayment type** (`monthly` / `quarterly` / …), not a label: they were English nouns
   that `banks.credit_form.every_frequency` interpolated into "Svakih month". Croatian needs a
   whole phrase per frequency, so the preview picks one from
   `banks.credit_form.frequency_every.*`
+- `calculateMonthlyDebtService(params)` — what `monthly_payment` stores: principal per payment ÷
+  months between principal payments + amount × rate ÷ 12, i.e. the monthly-equivalent debt service
+  when principal repayment starts (the highest it gets). 0 without a maturity date. Migration
+  `20261001100100` restated existing credits with the same formula
+- `wholeMonthsBetween(from, to)` — whole calendar months, the period arithmetic for the schedule
 - `calculateEquityCashflow(equity)` / `calculateMoneyMultiple(equity)` — equity return maths.
   Both return an `EquityPreview` (`{ status: 'ok', value }` / `{ status: 'incomplete' }` /
   `{ status: 'invalid_range' }`), **not** a display string. They used to return the reason as an
@@ -728,6 +738,5 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 - **New allocation limit** is the figure the modal shows: credit amount − existing allocations −
   direct drawdowns (`useCreditManagement.handleCreateAllocation`).
 - **Credit status** is editable in the credit form (see above).
-- **Open (FUND-5):** the stored `monthly_payment` (annuity) and the schedule preview (linear
-  principal + flat interest on the full amount) still disagree; which model the company uses has to
-  be decided first.
+- **Repayment model (FUND-5, decided 2026-10-01):** the stored `monthly_payment`, the form preview
+  and the Cashflow ▸ Banks service all use one model — see `creditCalculations.ts` above.
