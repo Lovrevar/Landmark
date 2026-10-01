@@ -4795,19 +4795,6 @@
       "busy_label": "Zauzeto",
       "free_label": "Slobodno",
       "busy_description": "Drugima se prikazuje kao zauzeto u kalendaru",
-      "reminders": {
-        "label": "Podsjetnici",
-        "add": "+ Dodaj podsjetnik",
-        "remove": "Ukloni",
-        "none": "Bez podsjetnika"
-      },
-      "reminder": {
-        "at_time": "U trenutku događaja",
-        "minutes": "{{count}} min prije",
-        "hours": "{{count}} h prije",
-        "days": "{{count}} d prije",
-        "weeks": "{{count}} tj. prije"
-      },
       "recurrence": {
         "label": "Ponavljanje",
         "preset": {
@@ -4854,7 +4841,6 @@
       "delete_confirm_title": "Obrisati događaj?",
       "delete_confirm_message": "Ova radnja se ne može poništiti.",
       "recurring": "Ponavljajući",
-      "reminders": "Podsjetnici",
       "delete_single": "Obriši ovu pojavu",
       "delete_series": "Obriši cijeli niz",
       "delete_single_title": "Obrisati ovu pojavu?",

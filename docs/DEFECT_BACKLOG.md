@@ -547,7 +547,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ## 8. Tasks, calendar, chat, documents and AI assistant
 
 ### COLLAB-1 · Medium · Calendar reminders are never delivered
-- **Status:** Open — **needs a product decision**: `config.toml` marks the dispatcher "DISABLED — not in use". Either turn reminders on (shared-secret auth per SEC-A9, a pg_cron job like `deadline-reminders`, skip declined invitees, mount the toast listener in Layout) or remove the reminder field from the event form so nothing promises them
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(calendar)), per the 2026-10-01 decision "remove the field": the event form no longer offers reminders and the detail modal no longer lists them. The backend stays switched off; turning reminders on later still needs shared-secret auth (SEC-A9), a pg_cron job like `deadline-reminders`, skipping declined invitees, the toast listener in Layout, and the field back — see [CALENDAR.md](./CALENDAR.md) → "Reminders (parked)"
 - `dispatch-calendar-reminders` is `enabled = false` in `config.toml` and has no schedule; the toast
   listener is mounted only on `/calendar`. Users can still set reminder offsets, which are stored
   and ignored. It would also notify invitees who declined. See SEC-A9 before enabling.

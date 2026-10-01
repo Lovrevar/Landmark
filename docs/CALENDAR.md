@@ -4,7 +4,7 @@
 
 ## Overview
 
-Personal and shared scheduling with four views (Day / Week / Month / Agenda), RSVP responses at both the series and single-occurrence scope, RFC-5545 RRULE recurrence with per-occurrence exceptions, reminder toasts delivered via Supabase realtime, a **team busy-hours summary** in the sidebar, a per-user "Show tasks" toggle that merges task due-dates into the calendar, and a global header badge counting invitations that await your response.
+Personal and shared scheduling with four views (Day / Week / Month / Agenda), RSVP responses at both the series and single-occurrence scope, RFC-5545 RRULE recurrence with per-occurrence exceptions, a **team busy-hours summary** in the sidebar, a per-user "Show tasks" toggle that merges task due-dates into the calendar, and a global header badge counting invitations that await your response.
 
 > **There is no busy-block overlay.** No view draws another user's busy blocks; the enabled teams only feed the sidebar's total-hours card. An actual overlay is deferred — it needs the RPC to expand recurrence, which needs a migration.
 
@@ -14,7 +14,7 @@ Personal and shared scheduling with four views (Day / Week / Month / Agenda), RS
 
 Five tables:
 
-- `calendar_events` — master record. Recurrence rule stored on the event as an RFC-5545 `RRULE` string in `recurrence`; reminder offsets (minutes before start) in `reminder_offsets int[]`; `busy` flag controls whether the event blocks team-calendar slots. Event types: `meeting`, `personal`, `deadline`, `reminder`. `is_private` events are only visible to the creator.
+- `calendar_events` — master record. Recurrence rule stored on the event as an RFC-5545 `RRULE` string in `recurrence`; reminder offsets (minutes before start) in `reminder_offsets int[]` (no longer set from the UI — see "Reminders (parked)" below); `busy` flag controls whether the event blocks team-calendar slots. Event types: `meeting`, `personal`, `deadline`, `reminder`. `is_private` events are only visible to the creator.
 - `calendar_event_participants` — junction rows with `response` (`pending` | `accepted` | `declined`) and `acknowledged_at`. This is the **series-scope** RSVP.
 - `calendar_event_exceptions` — per-occurrence overrides keyed by `(event_id, original_start_at)`. Stores `override_start_at`, `override_end_at`, `override_title`, or `is_cancelled`.
 - `calendar_occurrence_responses` — per-occurrence RSVP keyed by `(event_id, user_id, original_start_at)`. If present, shadows the series-scope response for that single occurrence.
@@ -144,12 +144,22 @@ the geometry lives here once.
 - **overlappingLayout.ts** — flows overlapping events into side-by-side columns
 - **useClickToCreate.ts** — drag-select a time range to open `NewEventModal` pre-filled
 
+### Reminders (parked)
+
+Removed from the UI on 2026-10-01 (DEFECT_BACKLOG COLLAB-1): nothing delivers them, so the event
+form no longer offers reminder offsets and the detail modal no longer lists them. The backend is
+left in place, switched off: the `reminder_offsets` column, the `dispatch-calendar-reminders`
+edge function (`enabled = false` in `config.toml`, no schedule), `calendar_notifications` /
+`calendar_reminder_sends`, and `useCalendarReminderToasts` (mounted only on `/calendar`). To turn
+reminders on, the backlog entry lists what is missing: shared-secret auth (SEC-A9), a pg_cron
+schedule, skipping invitees who declined, mounting the toast listener in `Layout`, and the form
+field back.
+
 ### Modals
 
 #### NewEventModal.tsx
 - Its two option lists (users, projects) report their failures instead of falling back to `[]`. A failed **user** list disables the participant picker and shows `calendar.modal.participants_load_error` — the chips are derived from that list, so they used to vanish while their ids were still saved and still written back. A failed **project** list disables the project select and shows `common.projects_load_error`; the event's stored project stays selected under the label `common.option_name_unavailable` rather than falling back to the "link to a project (optional)" placeholder
-- Form for creating an event (title, description, location, start/end, type, private toggle, project link, participants picker, recurrence picker, reminder chip list)
-- Reminder presets: `[0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080]` minutes (at time → 1 week before)
+- Form for creating an event (title, description, location, start/end, type, private toggle, project link, participants picker, recurrence picker). There is no reminder field: create saves `reminder_offsets: []` and an edit passes the stored offsets back unchanged
 - **Create mode** calls the parent's `onCreate(input)`, which delegates to `createEvent`
 - **Edit mode** (`event` + `onSave`): prefilled from the stored event, titled "Edit event", saves with "Save Changes". The form resets only when it opens or is pointed at another event — not when a realtime refresh hands it a new object for the same row
 - For a **recurring series** the date, times and repeat rule are read-only: the rule is shown as text (`describeRecurrence`) with the note `calendar.modal.series_timing_readonly`. Exceptions and per-occurrence RSVPs are keyed by each occurrence's rule-derived start, so moving the series would orphan them. A one-off event can change its date and time and gain a rule

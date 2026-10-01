@@ -4770,19 +4770,6 @@
       "busy_label": "Busy",
       "free_label": "Free",
       "busy_description": "Shows on your calendar as busy to others",
-      "reminders": {
-        "label": "Reminders",
-        "add": "+ Add reminder",
-        "remove": "Remove",
-        "none": "No reminders"
-      },
-      "reminder": {
-        "at_time": "At time of event",
-        "minutes": "{{count}} min before",
-        "hours": "{{count}} h before",
-        "days": "{{count}} d before",
-        "weeks": "{{count}} wk before"
-      },
       "recurrence": {
         "label": "Repeat",
         "preset": {
@@ -4829,7 +4816,6 @@
       "delete_confirm_title": "Delete event?",
       "delete_confirm_message": "This action cannot be undone.",
       "recurring": "Recurring",
-      "reminders": "Reminders",
       "delete_single": "Delete this occurrence",
       "delete_series": "Delete series",
       "delete_single_title": "Delete this occurrence?",

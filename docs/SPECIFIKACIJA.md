@@ -2907,9 +2907,8 @@ prikaz ukupno zauzetih sati tima.
 - **Filtri:** vrste događaja, projekt, sudionici, pretraga.
 - **Novi/uredi događaj:** naslov, opis, lokacija, početak/kraj, vrsta, privatno,
   zauzeto/slobodno, projekt, sudionici, ponavljanje (nijedno, dnevno, tjedno, mjesečno,
-  godišnje, prilagođeno; kraj: nikad, na datum, nakon N ponavljanja) i podsjetnici (0, 5, 10,
-  15, 30, 60, 120 min, 1 dan, 2 dana, 1 tjedan). Kod ponavljajuće serije datum, vrijeme i
-  pravilo nakon kreiranja su samo za čitanje.
+  godišnje, prilagođeno; kraj: nikad, na datum, nakon N ponavljanja). Kod ponavljajuće serije
+  datum, vrijeme i pravilo nakon kreiranja su samo za čitanje.
 - **Detalji događaja:** pozvani odgovaraju prihvaćam/odbijam za pojedino ponavljanje ili za
   cijelu seriju; autor uređuje ili briše — kod serije može obrisati jedno ponavljanje ili
   cijelu seriju.
@@ -2923,10 +2922,10 @@ prikaz ukupno zauzetih sati tima.
 - **Brojač u zaglavlju:** pozivi na čekanju u sljedećih 30 dana.
 - Ponavljanja se razvijaju u pregledniku (`rrule`); promjene stižu uživo.
 
-**Podsjetnici:** vremena podsjetnika spremaju se uz događaj. Edge funkcija
-`dispatch-calendar-reminders` pregledava događaje u sljedećih 48 h, razvija ponavljanja i
-upisuje obavijesti kad nastupi trenutak podsjetnika; funkcija je trenutno isključena u
-`config.toml` i nije zakazana, pa se podsjetnici kalendara ne isporučuju.
+**Podsjetnici (isključeni):** obrazac događaja nema polje za podsjetnike. Pozadina postoji, ali je
+isključena: stupac `reminder_offsets`, edge funkcija `dispatch-calendar-reminders` (pregledava
+događaje u sljedećih 48 h, razvija ponavljanja i upisuje obavijesti; isključena u `config.toml` i
+nije zakazana) te tablice `calendar_notifications` / `calendar_reminder_sends`.
 
 Dnevnik aktivnosti: `calendar_event.create`, `calendar_event.update`,
 `calendar_event.respond`, `calendar_event.delete`, `calendar_event.exception_create`,
