@@ -269,7 +269,8 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
                 <li>Columns 16-18: storage data (optional)</li>
                 <li>Column 20 (T): datum potpisa predugovora (optional)</li>
                 <li>Column 21 (U): kapara 10% (optional)</li>
-                <li>Columns 22-25 (V-Y): installment dates or credit date (optional)</li>
+                <li>Columns 22-25 (V-Y): instalment amounts — rata 1 (30%), rata 2-4 (20% each) (optional)</li>
+                <li>Column 26 (Z): credit amount, kredit etažiranje 90% (optional)</li>
                 <li>Numbers can use European format with commas (e.g., "3.000,00")</li>
                 <li>Dates can use DD.MM.YYYY format</li>
               </ul>

@@ -1849,6 +1849,7 @@
     "budget_from_tic_hint": "Budget comes from the project's TIC."
   },
   "sales_projects": {
+    "default_building_name": "Building {{n}}",
     "title": "Projects",
     "subtitle": "Manage projects and buildings",
     "add_building": "Add Building",

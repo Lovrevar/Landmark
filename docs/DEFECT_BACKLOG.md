@@ -256,8 +256,10 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - Nothing updates or deletes `sales` rows; a reverted sale still counts in dashboards and reports.
 
 ### SALES-11 · Low · Bulk-created buildings get hard-coded English names ("Building N")
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(sales)): names come from `sales_projects.default_building_name` ("Zgrada {{n}}")
 
 ### SALES-12 · Low · Import help text is wrong about columns V–Y
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(sales)): help lists V–Y as instalment amounts and Z as the credit amount
 - The help says they hold dates; the code parses them as EUR amounts, so a date string becomes a
   number such as 1022026.
 

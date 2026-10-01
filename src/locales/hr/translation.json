@@ -1854,6 +1854,7 @@
     "budget_from_tic_hint": "Budžet se preuzima iz TIC-a projekta."
   },
   "sales_projects": {
+    "default_building_name": "Zgrada {{n}}",
     "title": "Projekti",
     "subtitle": "Upravljanje projektima i zgradama",
     "add_building": "Dodaj zgradu",

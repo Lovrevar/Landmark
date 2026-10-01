@@ -25,6 +25,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `fetchSales()` — fetches all sale records
 - `fetchActualTotalPaidByApartment(apartmentId)` — computes total paid for an apartment
 - `createBuilding(data)`, `deleteBuilding(id)` — building CRUD
+- `createBulkBuildings(projectId, quantity, nameFor)` — creates `quantity` buildings named by `nameFor(i)`; the screen passes `sales_projects.default_building_name` ("Zgrada {{n}}" / "Building {{n}}"), so names are stored in the creator's language rather than hard-coded English
 - `createUnit(data)`, `bulkCreateUnits(data)`, `deleteUnit(id)` — unit CRUD
 - `updateUnitStatus(id, status)` — updates a unit's availability status
 - `bulkUpdateUnitPrice(ids, unitType, adjustmentType, value)` — adjusts price per m² for selected units. Sold units are never repriced: they are excluded from the fetch and each update re-checks `status <> 'Sold'`. The `apartment.bulk_price_update` log `count` is the number of rows actually updated, not the number of ids passed. The current per-m² value comes from `effectivePricePerM2` (`Sales/utils/priceUtils.ts`), which falls back to price ÷ size when the stored value is 0; the `trg_sync_price_per_m2` trigger (migration `20260930100200`) keeps `price_per_m2 = round(price / size_m2, 2)` on apartments, garages and repositories whenever price or size is written, so every create, edit and import path stays consistent
@@ -137,6 +138,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 ### modals/ExcelImportApartmentsModal.tsx
 - 3-step apartment bulk import (file upload → preview → results)
+- The format help says what the parser does: V–Y (columns 22–25) are instalment **amounts** (rata 1–4) and Z is the credit amount; it used to call them dates
 - Collects a per-row error (validation reason or the write error) for every skipped/failed row and logs one run summary via `logApartmentImportSummary`
 - **Uses services:** apartmentImportService
 - **Uses Ui:** Modal, Button, useToast
