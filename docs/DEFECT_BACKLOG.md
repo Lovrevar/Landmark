@@ -211,6 +211,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - **Fix direction:** move the sequence into one RPC.
 
 ### SALES-6 · Medium · "Paid" and "total" are computed five different ways
+- **ERP:** If buyer payments come from the ERP (ERP open question Q14), the paid basis already matches; only the package-total denominator remains.
 - **Status:** Partly fixed on `fix/defect-backlog` (fix(sales)): every apartment-level screen now counts payments on the apartment's `OUTGOING_SALES` invoices (Customers keeps a per-customer view on purpose); `sales.total_paid`/`remaining_amount` are documented as a sale-time snapshot. The package-total denominator (list price vs `sale_price`) is still per screen
 - **Where:** Sales Projects cards, Apartments page, Customers, Sales dashboard, Sales Payments; `sales.total_paid` / `remaining_amount` are written once and never updated.
 - **What happens:** the same apartment can show different paid, total and remaining figures on
@@ -339,6 +340,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   matches; there is no UI either.
 
 ### CASH-6 · Medium · Cesija from a credit decreases the allocation's usage
+- **ERP:** ERP cesija payments never set `cesija_credit_*`, so the sign only affects cesija entered in the app. After phase 5 it matters for historical rows only: fix the sign once confirmed, then run drift check 2 from migration `20260917100000`.
 - **Status:** Open — **needs an accounting decision**: should a cesija paid from a credit allocation add to or subtract from that allocation's `used_amount`? The code subtracts while the credit's own `used_amount` adds; migration `20260917100000` kept the sign deliberately, with no recorded reason
 - **Check:** Runtime check needed.
 - `update_credit_allocation_used_amount()` subtracts the amount for `cesija_credit_allocation_id`,
@@ -346,6 +348,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   signs is likely wrong.
 
 ### CASH-7 · Medium · Income and expense are classified four different ways
+- **ERP:** The ERP resolver reads `INCOMING` as a received bill (a payable), so `INCOMING_INVESTMENT` is money out when paid — what the balance trigger and payments list already do. Recommended: cash-flow screens use the prefix rule (`OUTGOING_*` in, `INCOMING_*` out); the company income/expense view leaves out the bank-credit types (`*_BANK`, `INCOMING_BANK_EXPENSES`), which are neither revenue nor expense. Confirm with accounting before changing.
 - **Status:** Open — **needs a product decision**: which screens mean cash flow (the balance trigger's rule: `OUTGOING_*` in, `INCOMING_*` out) and which mean revenue/expense (company statistics)? In particular, is `INCOMING_INVESTMENT` money in (dashboard, general report) or out (balance trigger, payments list)?
 - `company_statistics`, the Accounting dashboard, `paymentDirection()` and the General report
   cash-flow table disagree on `INCOMING_INVESTMENT`, `OUTGOING_SUPPLIER`, `OUTGOING_BANK` and the
@@ -355,12 +358,15 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ### CASH-8 · Low · Payment calendar omits `INCOMING_BANK_EXPENSES` from expense bills
 
 ### CASH-9 · Low · Loans have no sanity checks
+- **ERP:** Gains weight: once the ERP feeds bank movements, an intercompany transfer arrives as ERP payments and is also a `company_loans` row, so it would count twice in the derived balance. See "ERP outlook" below.
 - No check that the source and target differ, or that the source has the balance.
 
 ### CASH-10 · Low · Two lookup failures leave dropdowns silently empty
+- **ERP:** Moot after phase 5: the invoice form loses these dropdowns.
 - Bank-account and credit lookups in `invoiceService.fetchData` only log errors.
 
 ### CASH-11 · Low · Kompenzacija has no link to its counter-invoice
+- **ERP:** Becomes ERP work: `kompenzacija_reference` is staged by the importer but not stored on the payment.
 - The two sides are entered as independent payments; nothing checks they match. Design gap rather
   than a bug.
 
@@ -368,6 +374,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - `accounting_invoices.company_id` is `NOT NULL` with `ON DELETE SET NULL`.
 
 ### CASH-13 · Low · `company_bank_accounts.account_number` is never captured
+- **ERP:** Becomes an ERP prerequisite (ERP-5): BANK payments and the `bank_balances` feed are matched by IBAN. With bank accounts moving to the ERP, create or match `company_bank_accounts` from the feed rather than adding an IBAN field to the form.
 - No UI writes it. It also blocks ERP payment resolution (ERP-5).
 
 ### CASH-14 · Low · VAT rates are fixed per slot
@@ -375,6 +382,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   Intended, but undocumented outside the trigger.
 
 ### CASH-15 · Low · Dead code
+- **ERP:** Moot after phase 5: the bank invoice and credit forms are removed.
 - `BankCreditFormModal` in Cashflow/Banks is rendered but has no entry point.
 
 ### CASH-16 · High · Saving a company resets every bank account's balance
@@ -415,6 +423,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   depend on manual database edits.
 
 ### FUND-5 · Medium · Two repayment models disagree
+- **ERP:** Actual repayments come from the ERP; the model only drives the plan and the "monthly debt service" figures on the Director dashboard and general report.
 - **Status:** Open — **needs a finance decision**: which repayment model do the company's credits follow — an annuity (what `monthly_payment` stores), or linear principal with interest per the chosen frequency, and is interest charged on the full amount (what the preview shows) or on the outstanding balance? Then both the stored figure and the preview use it
 - The stored `monthly_payment` is an annuity (monthly by default, 10 years when no maturity is set),
   while the schedule preview uses linear principal plus flat interest on the full amount. No
@@ -427,6 +436,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - `percentage_stake`, `notes` and custom schedules are shown but not stored.
 
 ### FUND-8 · Low · `recalculate_bank_credit_fields` ignores `disbursed_to_account`
+- **ERP:** Gains weight with the ERP: see "ERP outlook" (disbursed credits counted twice).
 - It can overwrite the `used_amount = amount` set by the disbursement trigger.
 
 ### FUND-9 · Low · Funding payments register filters oddly
@@ -617,6 +627,38 @@ is picked up again.
 
 ### ERP-12 · Low · Phase 3 replaces `calculate_invoice_amounts()` wholesale
 - Already step 2 of the resume checklist; listed so it is not missed.
+
+---
+
+## ERP outlook (added 2026-10-01)
+
+Phase 5 of the 4D Wand integration removes in-app invoice and payment creation and takes bank
+balances from the ERP. How that affects this backlog:
+
+**Fixes on `fix/defect-backlog` that phase 5 makes redundant** — correct now, remove with phase 5:
+- `reset_company_bank_account_balance` and the balance fields on the company form (CASH-1, CASH-16):
+  the ERP balance becomes authoritative and the trigger-derived balance only a drift check.
+- The invoice-edit approval fix (CASH-3) and the hidden invoice delete (SEC-A7): the forms go and
+  writes are locked to the service role.
+
+Everything else on the branch stays useful. No new migration on the branch overlaps a parked ERP
+migration; the only shared object is `calculate_invoice_amounts()`, which the branch does not touch
+(already step 2 of the resume checklist).
+
+**New design questions for the ERP resume:**
+1. **Double counting in the derived balance.** A drawdown imported from the ERP is a payment on an
+   `OUTGOING_BANK` invoice into the account, while a credit flagged `disbursed_to_account` also adds
+   its full amount (CASH-2 made that term permanent). Intercompany transfers are both ERP payments
+   and `company_loans` rows (CASH-9). Decide which in-app money records survive once the ERP is the
+   source of truth — most likely `disbursed_to_account` becomes informational and `company_loans`
+   stops moving balances.
+2. **Bank accounts from the ERP.** Payments and balances are matched by IBAN, which no screen
+   captures (CASH-13, ERP-5). Create or match `company_bank_accounts` from the `bank_balances`
+   feed instead of maintaining them by hand.
+
+**Open items, re-assessed:** CASH-7 and FUND-5 still need a decision and still matter after phase 5;
+CASH-6 shrinks to historical data; SALES-6, SUP-4, COLLAB-1 and COLLAB-4 are unaffected (see each
+entry's **ERP** line).
 
 ---
 
