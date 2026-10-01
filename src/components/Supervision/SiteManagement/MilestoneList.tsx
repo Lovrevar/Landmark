@@ -14,7 +14,7 @@ import {
 import { formatEuro, formatDate } from '../../../utils/formatters'
 import { MILESTONE_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import { MilestoneStats, MilestoneFormData } from './types'
-import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog } from '../../ui'
+import { Button, Badge, EmptyState, LoadingSpinner, ConfirmDialog, Alert } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
 
 interface MilestoneListProps {
@@ -49,12 +49,15 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState<SubcontractorMilestone | null>(null)
   const [loading, setLoading] = useState(true)
+  // A failed load used to show an empty list and zero stats (SUP-8).
+  const [loadFailed, setLoadFailed] = useState(false)
   const [pendingDeleteMilestoneId, setPendingDeleteMilestoneId] = useState<string | null>(null)
   const [deletingMilestone, setDeletingMilestone] = useState(false)
 
   const loadMilestones = useCallback(async () => {
     try {
       setLoading(true)
+      setLoadFailed(false)
       const data = await fetchMilestonesByContract(contractId)
       setMilestones(data)
 
@@ -62,6 +65,7 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
       setStats(statsData)
     } catch (error) {
       console.error('Error loading milestones:', error)
+      setLoadFailed(true)
     } finally {
       setLoading(false)
     }
@@ -146,6 +150,19 @@ export const MilestoneList: React.FC<MilestoneListProps> = ({
     return (
       <div className="p-8 text-center">
         <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  if (loadFailed) {
+    return (
+      <div className="p-4">
+        <Alert variant="error" title={t('common.load_error_title')}>
+          {t('common.load_error_description')}{' '}
+          <button type="button" onClick={() => { void loadMilestones() }} className="underline font-medium">
+            {t('common.retry')}
+          </button>
+        </Alert>
       </div>
     )
   }

@@ -284,10 +284,8 @@ export const fetchInvoiceStatsForContracts = async (contractIds: string[]) => {
       .in('contract_id', contractIds)
       .range(from, from + PAGE_SIZE - 1)
 
-    if (error) {
-      console.error('Error fetching batch invoice stats:', error)
-      return map
-    }
+    // Thrown, not swallowed: an empty map read as "nothing owed" on every contract (SUP-8).
+    if (error) throw error
 
     for (const inv of data || []) {
       const cid = inv.contract_id as string | null

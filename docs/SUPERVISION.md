@@ -212,6 +212,7 @@ Read-only by design — `sync_project_from_tic()` owns this table and rebuilds i
 so a client write would survive only until the next one.
 - `fetchPhaseClassificationBudgets(phaseIds?)` — per-(phase, classification) sub-allocations
 - `fetchClassificationBudgetStatus(phaseId, classificationId, excludeContractId?)` — allocated vs committed (every contract, by `committedAmount`); the binding limit when adding or editing a contract, since the phase budget is the sum of its classifications. With `excludeContractId` that contract is left out of `used` and its current amount in the bucket comes back as `excludedAmount` (0 when it is not in the bucket)
+- `fetchPhaseBudgetStatus(phaseId, excludeContractId?)` — the same check for the whole phase (`project_phases.budget_allocated` against every contract's `committedAmount`), used by the edit path
 - `fetchTICClassificationTotals(projectId)` — the project's TIC plan per classification, for the read-only comparison in `PhaseClassificationBudgetsModal`
 
 ### services/phaseService.ts
@@ -251,9 +252,9 @@ so a client write would survive only until the next one.
 - `createSubcontractorComment(data)` — adds a comment (type: completed, issue, general)
 - `insertSubcontractorRecord(data)` — inserts a base subcontractor registry entry
 - `updateSubcontractorRecord(id, data)` — updates a base subcontractor registry entry
-- `fetchInvoiceStatsForContracts(contractIds)` — batch fetch of paid/owed totals per contract, returned as a Map
+- `fetchInvoiceStatsForContracts(contractIds)` — batch fetch of paid/owed totals per contract, returned as a Map. Throws on a failed read (it used to return an empty map, which showed nothing owed on every contract)
 - `fetchSubcontractorInvoiceStats(subcontractorId, contractId?)` — paid/owed totals for one subcontractor or one contract
-- `uploadSubcontractorDocuments(subcontractorId, contractId, files)` — uploads documents via the central document service under the `IZVODACI` category, associating them with the subcontractor, contract, project, and phase
+- `uploadSubcontractorDocuments(subcontractorId, contractId, files)` — uploads documents via the central document service under the `IZVODACI` category, associating them with the subcontractor, contract, project, and phase. Migration `20261001100300` seeds that category where it is missing (fresh environments); it throws if the row is absent
 - **Depends on:** supabase client, logActivity, Documents `documentService.uploadDocument`
 
 ### services/milestoneService.ts
@@ -309,7 +310,7 @@ so a client write would survive only until the next one.
 
 ### hooks/useSubcontractorManagement.ts
 - `useSubcontractorManagement(fetchProjects)` — manages subcontractor add/edit/delete with document upload, phase budget recalculation, and unique contract number generation; payment create/update/delete now warn that those moved to the Accounting module
-- `updateSubcontractor(subcontractor, pendingFiles = [])` — after a successful update, uploads `pendingFiles` via `uploadSubcontractorDocuments` (only when `has_contract`), mirroring the add path; a failed upload only warns with `supervision.edit_subcontractor.document_upload_failed`. Other failures toast `supervision.edit_subcontractor.errors.update_failed`
+- `updateSubcontractor(subcontractor, pendingFiles = [])` — checks the new commitment (`committedAmount`, so a terminated contract counts only what was paid) against both the classification budget and the phase budget (`fetchPhaseBudgetStatus`), refusing only an edit that raises it; switching "has contract" off zeroes the amounts as the add path does. After a successful update, uploads `pendingFiles` via `uploadSubcontractorDocuments` (only when `has_contract`), mirroring the add path; a failed upload only warns with `supervision.edit_subcontractor.document_upload_failed`. Other failures toast `supervision.edit_subcontractor.errors.update_failed`
 - `updateSubcontractor` passes `classification_id` through and applies the same classification budget gate as the add path (for contracts with `has_contract` and a classification). The contract's own amount is excluded from `used`, and an edit that does not raise what the contract commits to the bucket is never refused, so an already over-allocated bucket still lets you fix names or dates. A refusal toasts `supervision.subcontractor_form.errors.exceeds_classification_budget` and returns `false`, keeping the modal open
 - **Calls:** siteService barrel → siteContractService (`createContract`, `generateUniqueContractNumber`), siteSubcontractorService (`createSubcontractorWithReturn`, `updateSubcontractor`, `deleteSubcontractor`, `uploadSubcontractorDocuments`), phaseService (`getPhaseInfo`, `updatePhase`), wirePaymentService (`fetchWirePayments`)
 - `fetchWirePayments` **rejects** on failure (it used to `return []`). `SiteManagement/index.tsx` wraps it in `loadWirePayments`, which toasts `supervision.payment_history.load_failed` and returns `null`; the payment-history modal is not opened on a `null`, so a failed read can never show a paid contract as having no payments
@@ -346,6 +347,8 @@ so a client write would survive only until the next one.
 
 ### forms/SubcontractorFormModal.tsx
 - Complex form for adding a subcontractor to a phase: toggle between new entry and existing subcontractor, contract fields, document upload, and financing source selection
+- `classificationId` prop: opened from a classification row's "+", that classification is preselected. The by-classification view still has no "+" of its own
+- The project header shows credit allocations; a failed load there shows an inline error with retry instead of hiding the section (`ProjectDetail`)
 - **Uses hooks:** useContractTypes, useVATCalculation
 - **Uses components:** ContractFormFields, ContractTypeFormModal, ContractDocumentUpload
 - **Uses services:** siteFundingService (fetchProjectFunders, via siteService barrel)
@@ -404,6 +407,7 @@ phase to a user goes through it.
 
 ### MilestoneList.tsx
 - Milestone management panel: add/edit/delete milestones, stats summary, and details per milestone
+- A failed load shows an error `Alert` with retry instead of an empty list and zero stats
 - Rendered inside `Modal.Body noPadding` from `index.tsx` — `Modal.Body` is the only part of `Modal` that scrolls, so as a direct child a long milestone table simply overflowed the viewport. It draws its own header and close button (the close button carries an `aria-label`), which is why the body takes no padding
 - Money is rendered with `formatEuro`, not a hand-rolled `toLocaleString('hr-HR')`
 - Paid column, total-paid tile, paid/pending counts and the Status column are gated on `canManagePayments` (see "The payment gate")
@@ -496,6 +500,7 @@ the orchestrator does the writes and re-fetches.
 
 #### InvoicesModal.tsx
 - Invoices attached to one subcontractor
+- A failed load shows an error `Alert` with retry instead of "no invoices"
 - Props: `isOpen` (**not** `visible` — the odd one out), `onClose`, `subcontractor`
 
 Both of these modals label and colour invoice status through the shared `getInvoiceStatusVariant` /

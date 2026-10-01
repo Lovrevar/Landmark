@@ -18,6 +18,8 @@ interface SubcontractorFormModalProps {
   visible: boolean
   onClose: () => void
   phase: ProjectPhase | null
+  /** Preselected when the form is opened from a classification row's "+". */
+  classificationId?: number | null
   existingSubcontractors: Subcontractor[]
   onSubmit: (data: SubcontractorFormData, useExisting: boolean, pendingFiles: File[]) => Promise<void>
   projectId: string
@@ -52,6 +54,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   visible,
   onClose,
   phase,
+  classificationId = null,
   existingSubcontractors,
   onSubmit,
   projectId
@@ -99,7 +102,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
   useEffect(() => {
     if (visible) {
-      setFormData({ ...DEFAULT_FORM_DATA, phase_id: phase?.id || '' })
+      setFormData({ ...DEFAULT_FORM_DATA, phase_id: phase?.id || '', classification_id: classificationId })
       setHasContract(true)
       setUseExistingSubcontractor(false)
       setPendingFiles([])

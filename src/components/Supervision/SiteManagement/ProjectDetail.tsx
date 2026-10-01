@@ -16,6 +16,7 @@ import { HideClosedContractsContext } from './hideClosedContracts'
 import { isClosedContract } from '../../../utils/contractRollup'
 import { fetchCreditAllocations, type CreditAllocation } from './services/siteService'
 import { Button, Badge, EmptyState } from '../../ui'
+import InlineLoadError from '../../ui/InlineLoadError'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 
 interface ProjectDetailProps {
@@ -117,14 +118,24 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
   const hasClosedContracts = project.subcontractors.some(sub => isClosedContract(sub.contract_status))
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [, setLoadingCredits] = useState(false)
+  // A failed load used to hide the section, which reads as "no credit is allocated" (SUP-8).
+  const [creditsLoadFailed, setCreditsLoadFailed] = useState(false)
 
-  useEffect(() => {
+  const loadCreditAllocations = React.useCallback(() => {
     setLoadingCredits(true)
+    setCreditsLoadFailed(false)
     fetchCreditAllocations(project.id)
       .then(setCreditAllocations)
-      .catch(err => console.error('Error fetching project credit allocations:', err))
+      .catch(err => {
+        console.error('Error fetching project credit allocations:', err)
+        setCreditsLoadFailed(true)
+      })
       .finally(() => setLoadingCredits(false))
   }, [project.id])
+
+  useEffect(() => {
+    loadCreditAllocations()
+  }, [loadCreditAllocations])
 
   return (
     <HideClosedContractsContext.Provider value={hideClosed}>
@@ -226,6 +237,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       </div>
 
       {/* Project Credits Section */}
+      {creditsLoadFailed && (
+        <InlineLoadError
+          className="mb-6"
+          message={t('supervision.site_management.project_detail.allocations_load_error')}
+          onRetry={loadCreditAllocations}
+        />
+      )}
       {creditAllocations.length > 0 && (
         <div className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/30 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
           <div className="flex items-center mb-4">

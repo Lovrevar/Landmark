@@ -2479,6 +2479,7 @@
         "total_subcontractors": "Total Subcontractors",
         "contract_total": "Contract Total",
         "allocated_funds": "Allocated Funds",
+        "allocations_load_error": "The project's credit allocations could not be loaded",
         "allocated_label": "Allocated",
         "allocation_usage": "Allocation Usage",
         "credit_used": "Credit Used",
@@ -2516,7 +2517,7 @@
         "uncategorized": "Uncategorized",
         "phase_label": "Phase",
         "forecasted_budget": "Forecasted Budget",
-        "contracted_amount": "Contracted Amount (Base)",
+        "contracted_amount": "Contracted Amount (Gross)",
         "paid_out": "Paid Out",
         "unpaid_contracts": "Unpaid Contracts",
         "budget_utilization": "Budget Utilization (Paid vs Allocated)",
@@ -2664,7 +2665,8 @@
         "select_subcontractor": "Please select a subcontractor",
         "add_error": "Error adding subcontractor.",
         "select_classification": "Select a cost classification",
-        "exceeds_classification_budget": "Contract amount exceeds the available cost classification budget"
+        "exceeds_classification_budget": "Contract amount exceeds the available cost classification budget",
+        "exceeds_phase_budget": "Contract amount exceeds the available phase budget"
       },
       "cost_classification": "Cost classification",
       "cost_classification_help": "Which cost line this contract belongs to. Independent of the contract category below.",

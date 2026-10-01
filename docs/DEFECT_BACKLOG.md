@@ -295,22 +295,27 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   always 0.
 
 ### SUP-5 · Low · "+" on a classification row ignores the classification
+- **Status:** Partly fixed on `fix/backlog-batch-2` (fix(supervision)): the "+" on a classification row now preselects it. Open: the by-classification view still has no add or budget buttons
 - The form does not preselect it; the by-classification view has no add or budget buttons at all.
 
 ### SUP-6 · Low · Edit path skips the phase budget cap
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(supervision)): the edit path checks the phase cap (`fetchPhaseBudgetStatus`) and zeroes amounts when "has contract" is switched off
 - Switching "has contract" off on edit keeps the amounts, while the add path zeroes them.
 
 ### SUP-7 · Low · Financing is stored on the company, not the contract
 - `financed_by_*` is set only when creating a new subcontractor, and only banks are offered.
 
 ### SUP-8 · Low · Some failed loads show zeros
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(supervision)): `fetchInvoiceStatsForContracts` throws; InvoicesModal, MilestoneList and the credit allocations show load errors with retry
 - `fetchInvoiceStatsForContracts` returns a zero map on error; `InvoicesModal`, `MilestoneList`
   and the Project Detail credit allocations only log errors to the console.
 
 ### SUP-9 · Low · Phase card label says "net" for a gross figure
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(supervision)): label reads "Ugovoreni iznos (bruto)"
 - `phase_card.contracted_amount` reads "Ugovoreni iznos (osnova)" but shows the gross amount.
 
 ### SUP-10 · Low · Required document category `IZVODACI` is not seeded
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(supervision)): migration `20261001100300` inserts IZVODACI when the code is free (no-op where it exists). The demo seed script creates `UGOVORI_PODIZVODACI` instead, which is why demo uploads failed
 - Contract document uploads throw on a fresh environment until the category row is added by hand.
 
 ### SUP-11 · Low · Dead code

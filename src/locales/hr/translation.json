@@ -2486,6 +2486,7 @@
         "total_subcontractors": "Ukupno podugovaratelja",
         "contract_total": "Ukupno ugovoreno",
         "allocated_funds": "Alocirani fondovi",
+        "allocations_load_error": "Namjene kredita za projekt nije moguće učitati",
         "allocated_label": "Alocirano",
         "allocation_usage": "Korištenje alokacije",
         "credit_used": "Korišteni kredit",
@@ -2523,7 +2524,7 @@
         "uncategorized": "Nekategorizirano",
         "phase_label": "Faza",
         "forecasted_budget": "Predviđeni budžet",
-        "contracted_amount": "Ugovoreni iznos (osnova)",
+        "contracted_amount": "Ugovoreni iznos (bruto)",
         "paid_out": "Isplaćeno",
         "unpaid_contracts": "Neplaćeni ugovori",
         "budget_utilization": "Iskorištenost budžeta (Plaćeno vs Alocirano)",
@@ -2671,7 +2672,8 @@
         "select_subcontractor": "Odaberite podugovaratelja",
         "add_error": "Greška pri dodavanju podugovaratelja.",
         "select_classification": "Odaberite klasifikaciju troška",
-        "exceeds_classification_budget": "Iznos ugovora premašuje raspoloživi budžet klasifikacije troška"
+        "exceeds_classification_budget": "Iznos ugovora premašuje raspoloživi budžet klasifikacije troška",
+        "exceeds_phase_budget": "Iznos ugovora premašuje raspoloživi budžet faze"
       },
       "cost_classification": "Klasifikacija troška",
       "cost_classification_help": "U koju stavku troškovnika ovaj ugovor spada. Neovisno o kategoriji ugovora ispod.",
