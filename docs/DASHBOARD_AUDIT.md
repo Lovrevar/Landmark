@@ -13,7 +13,7 @@ A persistent, in-repo record of misleading-data, calculation, and correctness fi
 These were confirmed with the product owner and govern the fixes below:
 
 1. **Sales scope** — the Sales dashboard MUST include all three unit types (`apartments` + `garages` + `repositories`), matching the Sales module's own aggregation. Apartment-only is not acceptable. (DASH-301, DASH-302)
-2. **Accounting financing flow** — `INCOMING_INVESTMENT` (investor capital + bank drawdowns) is **incoming cash**, consistent with `src/components/Cashflow/Calendar/hooks/useCalendar.ts`. (DASH-201)
+2. **Accounting financing flow** — `INCOMING_INVESTMENT` (investor capital + bank drawdowns) is **incoming cash**, consistent with `src/components/Cashflow/Calendar/hooks/useCalendar.ts`. (DASH-201) — **Superseded 2026-10-01:** it is money out, matching the bank-balance trigger, the payments list and the ERP importer (DEFECT_BACKLOG CASH-7).
 3. **Retail revenue** — "Revenue" is **net of VAT** (`base_amount`), not VAT-inclusive `total_amount`. (DASH-505)
 
 ---

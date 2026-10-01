@@ -28,7 +28,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 | Area | High | Medium | Low |
 |---|---|---|---|
-| Security and access | 2 | 5 | 3 |
+| Security and access | 2 | 6 | 3 |
 | Auth and platform | 0 | 2 | 3 |
 | Sales | 2 | 5 | 5 |
 | Supervision | 1 | 3 | 7 |
@@ -136,6 +136,12 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ### SEC-A10 · Low · Investment role can manage payments in the UI but reads none
 - **Check:** Code reading. **Status:** Open. Already tracked as SEC-004; listed here for
   completeness.
+
+### SEC-A11 · Medium · `company_statistics` bypassed RLS
+- **Check:** Runtime check needed (found 2026-10-01). **Status:** Fixed on `fix/backlog-batch-2` (migration `20261001100000`)
+- **Where:** the `company_statistics` view in the baseline schema was a plain view, which Postgres runs as its owner.
+- **What happened:** RLS on `accounting_invoices`, `company_bank_accounts` and `bank_credits` did not apply through it, so any role able to select from the view — with Supabase's default grants, every signed-in user and possibly `anon` — could read every company's bank balances and income/expense totals.
+- **Fix:** `security_invoker = on`.
 
 ---
 
@@ -349,13 +355,14 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### CASH-7 · Medium · Income and expense are classified four different ways
 - **ERP:** The ERP resolver reads `INCOMING` as a received bill (a payable), so `INCOMING_INVESTMENT` is money out when paid — what the balance trigger and payments list already do. Recommended: cash-flow screens use the prefix rule (`OUTGOING_*` in, `INCOMING_*` out); the company income/expense view leaves out the bank-credit types (`*_BANK`, `INCOMING_BANK_EXPENSES`), which are neither revenue nor expense. Confirm with accounting before changing.
-- **Status:** Open — **needs a product decision**: which screens mean cash flow (the balance trigger's rule: `OUTGOING_*` in, `INCOMING_*` out) and which mean revenue/expense (company statistics)? In particular, is `INCOMING_INVESTMENT` money in (dashboard, general report) or out (balance trigger, payments list)?
+- **Status:** Fixed on `fix/backlog-batch-2` (decided 2026-10-01: `INCOMING_INVESTMENT` is money out). Every cash-direction figure uses `paymentDirection()`; `company_statistics` counts issued invoices as income, paid bills as expense and leaves the bank-credit types out (migration `20261001100000`)
 - `company_statistics`, the Accounting dashboard, `paymentDirection()` and the General report
   cash-flow table disagree on `INCOMING_INVESTMENT`, `OUTGOING_SUPPLIER`, `OUTGOING_BANK` and the
   bank types. The dashboard service comment claiming it matches the calendar convention is wrong.
 - **Fix direction:** one shared direction map used by SQL views and the client.
 
 ### CASH-8 · Low · Payment calendar omits `INCOMING_BANK_EXPENSES` from expense bills
+- **Status:** Fixed on `fix/backlog-batch-2` (with CASH-7): the calendar uses `paymentDirection()`, so credit fees are bills; bank types get labels
 
 ### CASH-9 · Low · Loans have no sanity checks
 - **ERP:** Gains weight: once the ERP feeds bank movements, an intercompany transfer arrives as ERP payments and is also a `company_loans` row, so it would count twice in the derived balance. See "ERP outlook" below.

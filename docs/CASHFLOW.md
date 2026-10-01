@@ -928,9 +928,10 @@ Shared utilities used across multiple Cashflow sub-modules.
   of that type is paid: `OUTGOING_*` (we issued it — a sale, a credit drawdown) is money **in**,
   `INCOMING_*` (we received it — a supplier bill, a repayment, credit fees) is money **out**. Same
   sign convention as the bank-balance trigger. Used by both payment screens (Cashflow → Payments
-  and Funding → Payments) for the amount colour, the stat cards and the footer totals. Note that it puts
-  `INCOMING_INVESTMENT` on the OUT side, as the trigger does, whereas the accounting dashboard and
-  `getTypeColor` treat it as incoming cash
+  and Funding → Payments) for the amount colour, the stat cards and the footer totals. Since 2026-10-01
+  (DEFECT_BACKLOG CASH-7) it is the **only** cash-direction rule: `getTypeColor`, the Accounting
+  dashboard, the general report's cash flow and the payment calendar all use it, and
+  `INCOMING_INVESTMENT` is money out everywhere
 - `getTypeColor(type)` — returns CSS class for invoice type badge
 - `getTypeLabel(type)` — returns Croatian label for invoice type
 - `INVOICE_CATEGORIES_BY_DIRECTION` — per direction, the categories that exist (`${direction}_${value}` is always one of the nine `accounting_invoices_invoice_type_check` values) with their `invoice_type.*` label key. Unit-tested in `invoiceHelpers.test.ts` against the CHECK list
@@ -1055,3 +1056,13 @@ rows dated on or after `balance_reset_at`. The payment trigger, the `company_loa
 all call it; no other code computes a balance. Before this, credit disbursements were added with
 `+=` and erased by the next recompute, and the loan trigger and the Companies screen each carried
 their own copy of the formula.
+
+## Company income and expense (`company_statistics`)
+
+Since migration `20261001100000` (DEFECT_BACKLOG CASH-7, SEC-A11) the view runs with the caller's
+rights (`security_invoker`), so RLS applies, and classifies:
+
+- **Income** — invoices the company issued: `OUTGOING_SALES`, `OUTGOING_OFFICE`, `OUTGOING_SUPPLIER`.
+- **Expense** — bills it pays: `INCOMING_SUPPLIER`, `INCOMING_OFFICE` (plus cesija it paid for others).
+- **Neither** — the bank-credit invoices, treated as financing: `INCOMING_INVESTMENT`,
+  `INCOMING_BANK`, `INCOMING_BANK_EXPENSES`, `OUTGOING_BANK`.

@@ -149,7 +149,11 @@ from the `bank_balances` feed (company by OIB, account by IBAN) instead of addin
 IBAN field to the company form; the form's balance fields go in phase 5 anyway.
 *Owner: us.*
 
-### Q19 — Is `INCOMING_INVESTMENT` money in or money out? 🟡
+### ✅ Q19 — Is `INCOMING_INVESTMENT` money in or money out?
+**Answered 2026-10-01: money out.** Implemented on `fix/backlog-batch-2` — every cash figure uses
+`paymentDirection()`, and `company_statistics` leaves the bank-credit types out of income and
+expense. The importer's mapping needs no change.
+
 The resolver reads `INCOMING` as a received bill, so an `INCOMING_INVESTMENT` from an
 investor partner is a payable — money out when paid. The balance trigger and the
 payments list agree; the Accounting dashboard and the general report count it as

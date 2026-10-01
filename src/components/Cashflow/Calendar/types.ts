@@ -1,7 +1,7 @@
 export interface Invoice {
   id: string
   invoice_number: string
-  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'OUTGOING_BANK'
+  invoice_type: 'INCOMING_SUPPLIER' | 'INCOMING_INVESTMENT' | 'OUTGOING_SUPPLIER' | 'OUTGOING_SALES' | 'INCOMING_OFFICE' | 'OUTGOING_OFFICE' | 'INCOMING_BANK' | 'INCOMING_BANK_EXPENSES' | 'OUTGOING_BANK'
   supplier_id: string | null
   customer_id: string | null
   office_supplier_id: string | null

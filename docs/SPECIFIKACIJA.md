@@ -1567,9 +1567,12 @@ prikazuju se u oba smjera, s nazivom druge firme.
 ### 10.9 Moje firme (`/accounting-companies`)
 
 Podaci iz pogleda `company_statistics` po firmi: ukupno stanje računa i broj računa, dostupni
-krediti (Σ iznos − iskorišteno), **prihodi** (vrste `INCOMING_INVESTMENT`, `OUTGOING_SALES`,
-`OUTGOING_OFFICE`: broj, ukupno, plaćeno, preostalo) i **rashodi** (ostale vrste, s plaćenim
-uključujući cesije koje je firma platila za druge). Dobit = plaćeni prihodi − plaćeni rashodi.
+krediti (Σ iznos − iskorišteno), **prihodi** (računi koje je firma izdala: `OUTGOING_SALES`,
+`OUTGOING_OFFICE`, `OUTGOING_SUPPLIER` — broj, ukupno, plaćeno, preostalo) i **rashodi** (računi koje
+plaća: `INCOMING_SUPPLIER`, `INCOMING_OFFICE`, s plaćenim uključujući cesije koje je firma platila za
+druge). Bankovni i investicijski računi (`INCOMING_INVESTMENT`, `INCOMING_BANK`,
+`INCOMING_BANK_EXPENSES`, `OUTGOING_BANK`) su financiranje i ne ulaze ni u prihode ni u rashode.
+Dobit = plaćeni prihodi − plaćeni rashodi. Pogled poštuje RLS pozivatelja.
 
 - **Statistika:** broj firmi, ukupno stanje, ukupni prihod, dobit/gubitak.
 - **Pretraga** po nazivu ili OIB-u.
@@ -2269,9 +2272,10 @@ prodaje** (prodani / svi stanovi).
 „Računovodstvena nadzorna ploča" za tekuće razdoblje.
 
 **Smjer novca po vrsti računa:**
-- priljev: `OUTGOING_SUPPLIER`, `OUTGOING_SALES`, `OUTGOING_OFFICE`, `OUTGOING_BANK`,
-  `INCOMING_INVESTMENT`;
-- odljev: `INCOMING_SUPPLIER`, `INCOMING_OFFICE`, `INCOMING_BANK`, `INCOMING_BANK_EXPENSES`.
+- priljev: svi izlazni računi (`OUTGOING_*`);
+- odljev: svi ulazni računi (`INCOMING_*`), uključujući `INCOMING_INVESTMENT`.
+
+Isto pravilo koriste stanja žiro računa, popisi plaćanja, opći izvještaj i kalendar dospijeća.
 
 **PDV** (plaćeni računi od 1. siječnja):
 - *naplaćeni PDV* = PDV svih izlaznih računa (+ tekući mjesec);
@@ -2418,9 +2422,8 @@ prikazuje djelomično nego nudi ponovni pokušaj.
 9. **Žiro računi** — broj, ukupno stanje, računi s pozitivnim i negativnim stanjem.
 10. **Zgrade i jedinice** — zgrade, stanovi po statusu, garaže, spremišta.
 11. **Vrste ugovora** — broj ugovora po kategoriji.
-12. **Novčani tok po mjesecima** — priljev (uplate kupaca, uredski i dobavljački izlazni
-    računi, investicije), odljev (ulazni računi dobavljača i uredski), neto, s ukupnim
-    retkom.
+12. **Novčani tok po mjesecima** — priljev (plaćanja svih izlaznih računa), odljev (plaćanja
+    svih ulaznih računa, uključujući otplate i troškove kredita), neto, s ukupnim retkom.
 13. **Projekti** — po projektu: vrsta, status, **razina rizika**, budžet (TIC ili „Budžet nije
     postavljen"), prihod (stanovi s garažama i spremištima), rashodi, prodane jedinice,
     ugovori, faze, kapital i dug.

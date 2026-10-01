@@ -75,12 +75,8 @@ export const getInvoiceCategoryLabel = (category: string | null | undefined, t: 
   return key ? t(key) : (category || NO_VALUE)
 }
 
-export const getTypeColor = (type: string): string => {
-  if (type === 'INCOMING_SUPPLIER' || type === 'INCOMING_OFFICE' || type === 'INCOMING_BANK' || type === 'INCOMING_BANK_EXPENSES') {
-    return 'text-red-600'
-  }
-  return 'text-green-600'
-}
+export const getTypeColor = (type: string): string =>
+  paymentDirection(type) === 'OUT' ? 'text-red-600' : 'text-green-600'
 
 /**
  * Which way money moves when an invoice of this type is paid, from the company's side. The prefix
@@ -88,8 +84,9 @@ export const getTypeColor = (type: string): string => {
  * a loan repayment, credit fees) is money OUT; an OUTGOING_* invoice (one we issued — a sale, a
  * credit drawdown booked as OUTGOING_BANK) is money IN. Same sign convention as the bank-balance
  * trigger in 20260917100000_payment_update_balance_triggers.sql. Null for a type with neither prefix.
- * Caveat: INCOMING_INVESTMENT is OUT here (and in the trigger) but counted as cash IN by the
- * accounting dashboard and `getTypeColor` — settle that before using this for those screens.
+ * INCOMING_INVESTMENT is a received bill we pay, so it is OUT (decided 2026-10-01, DEFECT_BACKLOG
+ * CASH-7; the ERP importer reads `INCOMING` the same way). Every cash-direction figure — dashboards,
+ * reports, the payment calendar, the balance trigger — uses this one rule.
  */
 export type PaymentDirection = 'IN' | 'OUT'
 
