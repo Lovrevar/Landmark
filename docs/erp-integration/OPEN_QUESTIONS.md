@@ -111,11 +111,59 @@ the same money is recorded in two places and will drift.
 **Not yet decided**, and it materially changes the scope of the Sales work.
 Needs settling before phase 3. *Owner: us.*
 
+*Update 2026-09-30 (`fix/defect-backlog`):* the Sales payments screen is already
+read-only — buyer payments are entered in Cashflow — and every apartment-level
+screen now reads "paid" as the payments on the apartment's `OUTGOING_SALES`
+invoices. `sales.total_paid` / `remaining_amount` are documented as a snapshot at
+sale time. So if payments come from the ERP, Sales needs no further change beyond
+someone linking the imported invoices to the apartment (`apartment_id` stays
+manual).
+
 ### Q15 — Export cadence? 🟡
 Drives the staleness-alarm threshold and how fresh dashboards actually are.
 
 ### Q16 — How far back does the historical import go? 🟡
 Determines the phase 4 cutover window.
+
+### Q17 — Which in-app money records survive once the ERP feeds bank movements? 🟡
+The derived bank balance (and, until phase 6, the only balance) would count some
+money twice:
+- A credit flagged **"disbursed to account"** adds its full amount to the account
+  (`recalc_company_bank_account_balance`). If the ERP books the drawdown as a payment
+  on an `OUTGOING_BANK` invoice into the same account, it counts twice.
+- An **intercompany transfer** (`company_loans`, Cashflow ▸ Pozajmice) moves both
+  accounts. The same transfer arrives from the ERP as bank payments.
+
+Likely answer: `disbursed_to_account` keeps setting the credit's own used/outstanding
+figures but stops moving the balance, and `company_loans` becomes a record of the
+loan that no longer moves balances — both once ERP payments are flowing. Needs
+confirming with accounting how 4D Wand books drawdowns and transfers.
+Found in the September audit (KNOWN_ISSUES.md §2; DEFECT_BACKLOG CASH-9, FUND-8).
+*Owner: us + accounting.*
+
+### Q18 — Bank accounts: created by hand or from the ERP? 🟡
+BANK payments and the `bank_balances` feed are matched by IBAN, and no screen
+captures `company_bank_accounts.account_number` (KNOWN_ISSUES ERP-5). Since bank
+account management moves to the ERP, the proposal is to create or match accounts
+from the `bank_balances` feed (company by OIB, account by IBAN) instead of adding an
+IBAN field to the company form; the form's balance fields go in phase 5 anyway.
+*Owner: us.*
+
+### Q19 — Is `INCOMING_INVESTMENT` money in or money out? 🟡
+The resolver reads `INCOMING` as a received bill, so an `INCOMING_INVESTMENT` from an
+investor partner is a payable — money out when paid. The balance trigger and the
+payments list agree; the Accounting dashboard and the general report count it as
+money in, and `company_statistics` counts it as income. Proposal: cash-flow screens
+use the prefix rule (`OUTGOING_*` in, `INCOMING_*` out) and the income/expense view
+leaves out the bank-credit types. Confirm with accounting what an investment invoice
+represents before changing (DEFECT_BACKLOG CASH-7). *Owner: us + accounting.*
+
+### Q20 — Where do overhead costs go? 🟢
+Every invoice line needs a cost centre mapped to exactly one project (KNOWN_ISSUES
+ERP-9). Office rent, accounting fees and other company-level costs have no project.
+Options: allow a cost centre to map to "no project" (the invoice imports with
+`project_id` null), or keep a per-company overhead project. The first matches how
+the in-app office invoices work today. *Owner: us.*
 
 ---
 

@@ -579,7 +579,10 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ## 9. ERP integration (on hold — fix before resuming)
 
 These only matter once the checklist in [erp-integration/PROGRESS.md](./erp-integration/PROGRESS.md)
-is picked up again.
+is picked up again. They are tracked in more detail, with fix directions and the order to fix them
+in, in [erp-integration/KNOWN_ISSUES.md](./erp-integration/KNOWN_ISSUES.md); the design questions
+from the "ERP outlook" section below are Q17–Q20 in
+[erp-integration/OPEN_QUESTIONS.md](./erp-integration/OPEN_QUESTIONS.md).
 
 ### ERP-1 · High · Promoting a bank invoice fails the whole run
 - **Check:** Confirmed.
