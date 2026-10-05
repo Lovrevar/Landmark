@@ -7,36 +7,33 @@
 -- raised "expenses paid" and lowered "Dobit/Gubitak" by €600k while the same card's
 -- bank balance rose by €600k.
 --
--- Decision (October 2026): financing is neither income nor expense. The view's
--- lists now follow both dimensions of src/utils/invoiceCashDirection.ts:
+-- Decisions (October 2026): financing is neither income nor expense, and financing
+-- means principal only. What a credit costs — fees and interest — is an operating
+-- cost. The view's lists follow both dimensions of src/utils/invoiceCashDirection.ts:
 --
 --   income   = operating, money in    OUTGOING_SALES, OUTGOING_OFFICE, OUTGOING_SUPPLIER
---   expense  = operating, money out   INCOMING_SUPPLIER, INCOMING_OFFICE, INCOMING_INVESTMENT
---   financing received (new column)   OUTGOING_BANK                    — paid amount
---   financing repaid   (new column)   INCOMING_BANK, INCOMING_BANK_EXPENSES — paid amount
+--   expense  = operating, money out   INCOMING_SUPPLIER, INCOMING_OFFICE,
+--                                     INCOMING_INVESTMENT, INCOMING_BANK_EXPENSES
+--   financing received (new column)   OUTGOING_BANK   — paid amount of drawdowns
+--   financing repaid   (new column)   INCOMING_BANK   — paid amount of repayments
 --
 -- "Promet" and "Dobit/Gubitak" on the Companies screen keep their meaning: turnover
--- and result from operations. Credit drawdowns, repayments and credit fees leave
--- both and are shown on a separate line.
---
--- total_financing_repaid includes credit fees as well as repayments of principal.
--- Whether credit fees should instead count as a cost in "Dobit/Gubitak" is being
--- confirmed with accounting (docs/ACCOUNTING_REVIEW_CASH7.md); if so, only the two
--- lists below change.
+-- and result from operations. Credit drawdowns and repayments leave both and are
+-- shown on a separate line; credit fees stay in expense, where they already were.
 --
 -- The two new columns are appended, and nothing else about the view changes, so
 -- CREATE OR REPLACE keeps its grants and dependants. Produces the same final view
 -- with or without 20261005110000, but they are meant to run in order.
 --
 -- WHAT MOVES IN PRODUCTION (measured read-only on 2026-10-05; three of 14
--- companies have bank-type invoices, 55 in all):
+-- companies have drawdowns, one of them a repayment — 15 invoices in all):
 --
---   all companies      expense invoiced  17.180.426,61 → 11.979.079,35
---                      expense paid       8.756.047,84 →  3.966.188,43
---                      expense unpaid     8.582.696,77 →  8.171.208,92
+--   all companies      expense invoiced  17.180.426,61 → 12.212.717,81
+--                      expense paid       8.756.047,84 →  4.133.339,04
+--                      expense unpaid     8.582.696,77 →  8.237.696,77
 --                      income (all four)  unchanged
 --                      financing received            — →  4.522.708,80
---                      financing repaid              — →    267.150,61
+--                      financing repaid              — →    100.000,00
 --
 -- src/utils/invoiceCashDirection.test.ts reads this file and fails if any list
 -- differs from the client map's direction and category.
@@ -74,22 +71,22 @@ CREATE OR REPLACE VIEW public.company_statistics AS
         END), (0)::numeric) AS total_income_unpaid,
     count(DISTINCT
         CASE
-            WHEN (inv.invoice_type = ANY (ARRAY['INCOMING_SUPPLIER'::text, 'INCOMING_OFFICE'::text, 'INCOMING_INVESTMENT'::text])) THEN inv.id
+            WHEN (inv.invoice_type = ANY (ARRAY['INCOMING_SUPPLIER'::text, 'INCOMING_OFFICE'::text, 'INCOMING_INVESTMENT'::text, 'INCOMING_BANK_EXPENSES'::text])) THEN inv.id
             ELSE NULL::uuid
         END) AS total_expense_invoices,
     COALESCE(sum(
         CASE
-            WHEN (inv.invoice_type = ANY (ARRAY['INCOMING_SUPPLIER'::text, 'INCOMING_OFFICE'::text, 'INCOMING_INVESTMENT'::text])) THEN inv.total_amount
+            WHEN (inv.invoice_type = ANY (ARRAY['INCOMING_SUPPLIER'::text, 'INCOMING_OFFICE'::text, 'INCOMING_INVESTMENT'::text, 'INCOMING_BANK_EXPENSES'::text])) THEN inv.total_amount
             ELSE (0)::numeric
         END), (0)::numeric) AS total_expense_amount,
     (COALESCE(sum(
         CASE
-            WHEN (inv.invoice_type = ANY (ARRAY['INCOMING_SUPPLIER'::text, 'INCOMING_OFFICE'::text, 'INCOMING_INVESTMENT'::text])) THEN inv.paid_amount
+            WHEN (inv.invoice_type = ANY (ARRAY['INCOMING_SUPPLIER'::text, 'INCOMING_OFFICE'::text, 'INCOMING_INVESTMENT'::text, 'INCOMING_BANK_EXPENSES'::text])) THEN inv.paid_amount
             ELSE (0)::numeric
         END), (0)::numeric) + COALESCE(cesija_stats.cesija_paid, (0)::numeric)) AS total_expense_paid,
     COALESCE(sum(
         CASE
-            WHEN (inv.invoice_type = ANY (ARRAY['INCOMING_SUPPLIER'::text, 'INCOMING_OFFICE'::text, 'INCOMING_INVESTMENT'::text])) THEN inv.remaining_amount
+            WHEN (inv.invoice_type = ANY (ARRAY['INCOMING_SUPPLIER'::text, 'INCOMING_OFFICE'::text, 'INCOMING_INVESTMENT'::text, 'INCOMING_BANK_EXPENSES'::text])) THEN inv.remaining_amount
             ELSE (0)::numeric
         END), (0)::numeric) AS total_expense_unpaid,
     COALESCE(sum(
@@ -99,7 +96,7 @@ CREATE OR REPLACE VIEW public.company_statistics AS
         END), (0)::numeric) AS total_financing_received,
     COALESCE(sum(
         CASE
-            WHEN (inv.invoice_type = ANY (ARRAY['INCOMING_BANK'::text, 'INCOMING_BANK_EXPENSES'::text])) THEN inv.paid_amount
+            WHEN (inv.invoice_type = ANY (ARRAY['INCOMING_BANK'::text])) THEN inv.paid_amount
             ELSE (0)::numeric
         END), (0)::numeric) AS total_financing_repaid
    FROM ((((public.accounting_companies c

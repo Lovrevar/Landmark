@@ -129,8 +129,9 @@ export async function fetchGeneralReportData(
   // The cash-flow table is cash: every payment, on the side the shared direction map puts it —
   // the same rule as the bank balance. It used to count ULAZNI (INV) as inflow, and to leave
   // credit drawdowns, repayments and credit fees out altogether, so its net could not be
-  // reconciled with the accounts. Those three are now counted under "financing", apart from
-  // operations, so a drawdown does not read as a good month's trading.
+  // reconciled with the accounts. Drawdowns and repayments of principal are now counted under
+  // "financing", apart from operations, so a drawdown does not read as a good month's trading;
+  // credit fees are an operating cost.
   const invoiceTypeById = new Map(accountingInvoicesArray.map(inv => [inv.id, inv.invoice_type]))
   const inflowPaymentsArray = accountingPaymentsArray.filter(p => isCashIn(invoiceTypeById.get(p.invoice_id)))
   const outflowPaymentsArray = accountingPaymentsArray.filter(p => isCashOut(invoiceTypeById.get(p.invoice_id)))
@@ -167,8 +168,8 @@ export async function fetchGeneralReportData(
     .reduce((sum, a) => sum + (a.price || 0), 0)
 
   const totalExpenses = accountingPaymentsArray
-    // Expenses are costs, not all cash out: supplier, office and financier bills (see
-    // COST_INVOICE_TYPES). Loan repayments and credit fees are not project expenses.
+    // Expenses are costs: every operating invoice the company pays, credit fees included (see
+    // COST_INVOICE_TYPES). Repaying principal moves cash but is not an expense.
     .filter(p => isCostInvoiceType(invoiceTypeById.get(p.invoice_id)))
     .reduce((sum, p) => sum + (p.amount || 0), 0)
   const totalProfit = totalRevenue - totalExpenses

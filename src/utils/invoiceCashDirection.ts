@@ -24,14 +24,14 @@ export type CashDirection = 'IN' | 'OUT'
 /**
  * Whether a payment belongs to running the business or to financing it.
  *
- * Financing is the credit itself: drawn down (OUTGOING_BANK, money in), repaid (INCOMING_BANK)
- * and what it costs (INCOMING_BANK_EXPENSES). Direction alone is not enough to report on: a
- * €600k drawdown is money in, but it is not turnover, and a cash-flow table that mixes it with
- * operations shows it as a good month. Left out altogether, the table cannot be reconciled with
- * the bank balance. So financing is counted — on its own lines, never inside income or expense.
+ * Financing is principal only: a credit drawn down (OUTGOING_BANK, money in) and repaid
+ * (INCOMING_BANK, money out). Direction alone is not enough to report on: a €600k drawdown is
+ * money in, but it is not turnover, and a cash-flow table that mixes it with operations shows it
+ * as a good month. Left out altogether, the table cannot be reconciled with the bank balance. So
+ * financing is counted — on its own lines, never inside income or expense.
  *
- * ULAZNI (INV) is operating: it is a cost invoice (see COST_INVOICE_TYPES), not a movement of
- * the credit.
+ * What a credit *costs* is not financing. Credit fees and interest (INCOMING_BANK_EXPENSES) are an
+ * operating cost, like ULAZNI (INV) — decided with accounting, October 2026.
  */
 export type CashCategory = 'operating' | 'financing'
 
@@ -49,7 +49,7 @@ export const INVOICE_CASH_MAP: Readonly<Record<string, InvoiceCashRule>> = {
   INCOMING_OFFICE: { direction: 'OUT', category: 'operating' },
   INCOMING_INVESTMENT: { direction: 'OUT', category: 'operating' },
   INCOMING_BANK: { direction: 'OUT', category: 'financing' },
-  INCOMING_BANK_EXPENSES: { direction: 'OUT', category: 'financing' },
+  INCOMING_BANK_EXPENSES: { direction: 'OUT', category: 'operating' },
   OUTGOING_SUPPLIER: { direction: 'IN', category: 'operating' },
   OUTGOING_OFFICE: { direction: 'IN', category: 'operating' },
   OUTGOING_SALES: { direction: 'IN', category: 'operating' },
@@ -80,19 +80,20 @@ export const isCashIn = (invoiceType: string | null | undefined): boolean => inv
 export const isCashOut = (invoiceType: string | null | undefined): boolean => invoiceCashDirection(invoiceType) === 'OUT'
 
 /**
- * Invoices that are a *cost* of doing business, for profit and expense figures: what suppliers,
- * the office and financiers bill the company.
+ * Invoices that are a *cost* of doing business, for profit and expense figures: every operating
+ * invoice the company pays — suppliers, the office, financiers' bills (ULAZNI (INV)) and what
+ * credit costs (fees and interest).
  *
- * Narrower than "money out" on purpose. Repaying a loan (INCOMING_BANK) moves cash but is not an
- * expense, and credit fees (INCOMING_BANK_EXPENSES) are reported with the credit, not with
- * project costs — neither was counted before and neither is now. ULAZNI (INV) used to be left out
- * too, which meant it lowered the bank balance while appearing in no expense total anywhere.
+ * Derived from the map, not listed: "cost" and "operating money out" are the same set by
+ * decision, and a second list is how the screens came to disagree in the first place. The one
+ * money-out type that is not a cost is the repayment of principal (INCOMING_BANK): it moves cash
+ * but only returns what was borrowed.
  */
-export const COST_INVOICE_TYPES: ReadonlySet<string> = new Set([
-  'INCOMING_SUPPLIER',
-  'INCOMING_OFFICE',
-  'INCOMING_INVESTMENT',
-])
+export const COST_INVOICE_TYPES: ReadonlySet<string> = new Set(
+  Object.entries(INVOICE_CASH_MAP)
+    .filter(([, rule]) => rule.direction === 'OUT' && rule.category === 'operating')
+    .map(([type]) => type),
+)
 
 export const isCostInvoiceType = (invoiceType: string | null | undefined): boolean =>
   !!invoiceType && COST_INVOICE_TYPES.has(invoiceType)
@@ -114,7 +115,7 @@ export const carriesOutputVat = isCashIn
 export const invoiceCashCategory = (invoiceType: string | null | undefined): CashCategory =>
   (invoiceType && INVOICE_CASH_MAP[invoiceType]?.category) || 'operating'
 
-/** The types filed under financing: credit drawdown, repayment, credit fees. */
+/** The types filed under financing: credit drawdown and repayment of principal. */
 export const FINANCING_INVOICE_TYPES: ReadonlySet<string> = new Set(
   Object.entries(INVOICE_CASH_MAP).filter(([, rule]) => rule.category === 'financing').map(([type]) => type),
 )

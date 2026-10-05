@@ -31,7 +31,7 @@ Frontmatter the page uses:
 
 | Key | Use |
 |---|---|
-| `id`, `title`, `keywords` | identity and search (title > keywords > body; every query word must match; diacritics ignored) |
+| `id`, `title`, `keywords` | identity and search (title > keywords > body; a word that *starts* with the query outranks one that only contains it, so "račun" lists invoice articles before "Kontrola proračuna"; every query word must match; diacritics ignored) |
 | `routes` | route patterns as in `App.tsx` (`/projects/:id`) — which pages the "?" link appears on |
 | `roles` | who the article is written for. Empty = everyone. For the assistant this is only a down-rank; on the Help page it is half of the filter (below) |
 | `assistant_only: true` | keeps an article off the Help page but in the assistant's index — for notes about stored values a user never sees (`term-status-casing`) |
@@ -104,7 +104,7 @@ from activity_logs where entity = 'help' group by 1, 2, 3, 4 order by count(*) d
 | `hintId` | Screen | Article |
 |---|---|---|
 | `budget_control.cpi` / `.spi` / `.eac` / `.vac` | General → Budget Control, EVM cards | `term-evm` |
-| `invoices.type` | Cashflow → Invoices, Type column header (legend built from `ALL_INVOICE_TYPES`) | `term-invoice-types` |
+| `invoices.type` | Cashflow → Invoices: Type column header on desktop, beside the type filter below `md` where the table has no header row (`InvoiceTypeHint.tsx`, legend built from `ALL_INVOICE_TYPES`) | `term-invoice-types` |
 | `payments.source`, `payments.cesija` | both payment forms (`Cashflow/components/PaymentHints.tsx`) | `term-kompenzacija`, `term-cesija` |
 | `tic.phases`, `tic.row_mismatch` | Funding → TIC, Investment tab | `tic` |
 | `funding.allocations` | Funding → Investments, allocations heading | `funding-investments` |

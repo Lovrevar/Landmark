@@ -139,6 +139,11 @@ describe('searchArticles', () => {
     expect(searchArticles([tic, racuni], 'RACUNI').map(a => a.id)).toEqual(['racuni'])
   })
 
+  it('ranks a word that starts with the query above one that only contains it', () => {
+    const budget = article({ id: 'budget', title: 'Kontrola proračuna (EVM)' })
+    expect(searchArticles([budget, racuni], 'racun').map(a => a.id)).toEqual(['racuni', 'budget'])
+  })
+
   it('requires every word and ranks a keyword hit above a body hit', () => {
     expect(searchArticles([racuni, tic], 'budzet').map(a => a.id)).toEqual(['tic', 'racuni'])
     expect(searchArticles([racuni, tic], 'budzet excela').map(a => a.id)).toEqual(['tic'])

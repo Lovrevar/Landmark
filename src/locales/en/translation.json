@@ -4269,9 +4269,9 @@
         "project_performance": "Project Performance Overview"
       },
       "cash_flow_operating": "Operating activities",
-      "cash_flow_operating_note": "Receipts from customers, and payments to suppliers, the office and financiers.",
+      "cash_flow_operating_note": "Receipts from customers, and payments to suppliers, the office and financiers, including credit costs.",
       "cash_flow_financing": "Financing activities",
-      "cash_flow_financing_note": "Credit drawdowns (inflow), and credit repayments and credit costs (outflow).",
+      "cash_flow_financing_note": "Credit principal: drawdowns (inflow) and repayments (outflow).",
       "cash_flow_total": "Total cash flow"
     },
     "sales": {

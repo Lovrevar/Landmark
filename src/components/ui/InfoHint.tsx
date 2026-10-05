@@ -31,6 +31,8 @@ interface InfoHintProps {
   icon?: LucideIcon
   /** Colour classes for the trigger. Defaults to a quiet grey that turns blue on hover. */
   className?: string
+  /** Width of the popover. Widen it for a legend or a small table; the default suits a sentence. */
+  widthClassName?: string
 }
 
 /**
@@ -43,7 +45,7 @@ interface InfoHintProps {
  */
 const DEFAULT_TONE = 'text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400'
 
-export default function InfoHint({ hintId, label, children, articleId, icon: Icon = HelpCircle, className = DEFAULT_TONE }: InfoHintProps) {
+export default function InfoHint({ hintId, label, children, articleId, icon: Icon = HelpCircle, className = DEFAULT_TONE, widthClassName = 'w-72' }: InfoHintProps) {
   const { t } = useTranslation()
   const location = useLocation()
   const [open, setOpen] = useState(false)
@@ -96,7 +98,7 @@ export default function InfoHint({ hintId, label, children, articleId, icon: Ico
             aria-labelledby={headingId}
             tabIndex={-1}
             style={floatingStyles}
-            className="z-[70] w-72 max-w-[calc(100vw-1rem)] rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 shadow-lg text-left text-sm font-normal normal-case tracking-normal text-gray-700 dark:text-gray-200 focus:outline-none"
+            className={`z-[70] ${widthClassName} max-w-[calc(100vw-1rem)] rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 shadow-lg text-left text-sm font-normal normal-case tracking-normal text-gray-700 dark:text-gray-200 focus:outline-none`}
             {...getFloatingProps()}
           >
             <p id={headingId} className="font-semibold text-gray-900 dark:text-white mb-1">{label}</p>

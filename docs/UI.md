@@ -100,7 +100,7 @@ Shared primitive component library. Always check here before building new UI —
 
 ### InfoHint.tsx
 - A "?" beside a label that opens a short explanation **on click** — so it works on touch and with a keyboard, which a native `title` tooltip does not. Use it instead of `title=` whenever the text is an explanation rather than a button name
-- Props: `hintId` (stable name, logged on open), `label` (accessible name + popover heading), `children` (one or two sentences), `articleId?` (adds a "more" link to `/help/<id>`, opened in a new tab), `icon?` (replaces the "?", e.g. `AlertTriangle` for a flagged value), `className?` (trigger colour)
+- Props: `hintId` (stable name, logged on open), `label` (accessible name + popover heading), `children` (one or two sentences), `articleId?` (adds a "more" link to `/help/<id>`, opened in a new tab), `icon?` (replaces the "?", e.g. `AlertTriangle` for a flagged value), `className?` (trigger colour), `widthClassName?` (popover width, default `w-72`; widen it for a legend — it is always capped at the viewport)
 - Positioned with `@floating-ui/react` and portalled, so tables and modal bodies cannot clip it. Escape and focus use the app's own layer stacks: inside a modal, Escape closes the hint only
 - Keep the content short and put the durable explanation in a `help-kb` article — see [HELP.md](./HELP.md)
 
@@ -145,6 +145,7 @@ Shared primitive component library. Always check here before building new UI —
 - Page title bar with optional description and an action slot
 - Props: `title`, `description?`, `subtitle?`, `icon?` (ElementType), `actions?` (ReactNode), `className?`
 - **Help link:** shows a "?" after the title when `help-kb` has an article whose `routes` match the current page and whose `roles` include the user's. It opens `/help?page=<pathname>` in a new tab and logs `help.page_link_click`. Needs no prop; it requires the router and auth context every page already has
+- **Layout from `sm` up:** the title block keeps at least 14rem and the actions wrap beside it, right-aligned. (Until October 2026 the actions never shrank, so a page with five buttons squeezed its title and description into a ~90px column.) A page with many actions now shows them on two or three rows
 - **Mobile-responsive:** title block and actions stack vertically on phones and sit on one row from `sm` up; actions wrap when they overflow
 - Note: `subtitle` and `icon` are accepted by the prop type but not currently rendered by the component — only `title`, `description`, and `actions` are displayed
 

@@ -176,9 +176,9 @@ export interface ComprehensiveReport {
     inflow: number
     outflow: number
     net: number
-    /** Running the business: customers, suppliers, office, financier bills. */
+    /** Running the business: customers, suppliers, office, financier bills, credit fees. */
     operating: CashFlowAmounts
-    /** The credits themselves: drawdowns in, repayments and credit fees out. */
+    /** Credit principal: drawdowns in, repayments out. */
     financing: CashFlowAmounts
   }>
   projects: ProjectData[]

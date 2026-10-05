@@ -932,7 +932,7 @@ Shared utilities used across multiple Cashflow sub-modules.
   `invoiceCashDirection` from `src/utils/invoiceCashDirection.ts` — the one map every screen, the
   dashboards, the General report and the SQL balance function agree with (CASH-7: ULAZNI (INV) is
   money out everywhere)
-- **Companies cards** (`company_statistics`, from migration `20261005120000`): income and expense are *operating* types only; credit drawdowns, and repayments with credit fees, come back as `total_financing_received` / `total_financing_repaid` and are shown as one extra line on the card. `fetchCompaniesWithStats` maps them to `financing_received` / `financing_repaid`, `null` against a database that does not have the columns yet, in which case the line is not drawn
+- **Companies cards** (`company_statistics`, from migration `20261005120000`): income and expense are *operating* types only (credit fees are an operating expense); credit drawdowns and repayments of principal come back as `total_financing_received` / `total_financing_repaid` and are shown as one extra line on the card. `fetchCompaniesWithStats` maps them to `financing_received` / `financing_repaid`, `null` against a database that does not have the columns yet, in which case the line is not drawn
 - `getTypeColor(type)` — red for an invoice we pay, green for one we are paid on, read from the same map
 - **The shared invoice-type labels** — two forms of one vocabulary, both translated:
   - `getInvoiceTypeLabel(type, t)` → the short code (`invoice_type.*`, "ULAZNI (DOB)") for dense tables

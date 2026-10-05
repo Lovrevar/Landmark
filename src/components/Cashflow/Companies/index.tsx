@@ -153,13 +153,13 @@ const AccountingCompanies: React.FC = () => {
                       €{company.profit.toLocaleString('hr-HR')}
                     </span>
                   </div>
-                  {/* Credits drawn, and repaid with their fees, sit outside turnover and result.
+                  {/* Credit principal — drawn and repaid — sits outside turnover and result.
                       Shown only for a company that has any, and only once the view reports them. */}
                   {company.financing_received !== null && company.financing_repaid !== null &&
                     (company.financing_received !== 0 || company.financing_repaid !== 0) && (
-                    <div className="flex justify-between text-sm mt-1">
+                    <div className="flex justify-between gap-2 text-sm mt-1">
                       <span className="text-gray-600 dark:text-gray-400">{t('companies.card.financing_label')}</span>
-                      <span className="font-medium text-gray-900 dark:text-white">
+                      <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                         €{company.financing_received.toLocaleString('hr-HR')} / €{company.financing_repaid.toLocaleString('hr-HR')}
                       </span>
                     </div>

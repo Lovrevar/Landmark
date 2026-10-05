@@ -741,8 +741,8 @@ export async function generateGeneralReportPDF(
   pdf.text(t('reports.general.cash_flow'), margin, yPosition)
   yPosition += 10
 
-  // Two tables with the same columns: operations, then financing (credit drawdowns, repayments
-  // and credit fees). Their sum is the total cash flow the charts above plot.
+  // Two tables with the same columns: operations, then financing (credit principal drawn and
+  // repaid). Their sum is the total cash flow the charts above plot.
   const sumRows = (rows: readonly CashFlowAmounts[]) => rows.reduce(
     (total, row) => ({ inflow: total.inflow + row.inflow, outflow: total.outflow + row.outflow, net: total.net + row.net }),
     { inflow: 0, outflow: 0, net: 0 },
@@ -755,7 +755,7 @@ export async function generateGeneralReportPDF(
 
   for (const activity of ['operating', 'financing'] as const) {
     const rows = report.cash_flow.map(month => month[activity])
-    checkPageBreak(30 + rows.length * 5)
+    checkPageBreak(33 + rows.length * 5)
 
     pdf.setFontSize(11)
     pdf.setFont(fontFamily, 'bold')
@@ -776,7 +776,8 @@ export async function generateGeneralReportPDF(
     pdf.text(t('reports.general.inflow_col'), margin + 50, yPosition + 5)
     pdf.text(t('reports.general.outflow_col'), margin + 90, yPosition + 5)
     pdf.text(t('reports.general.net_col'), margin + 130, yPosition + 5)
-    yPosition += 10
+    // 13, not 10: at 10 the first row's text sat on the lower edge of the header band.
+    yPosition += 13
 
     pdf.setFont(fontFamily, 'normal')
     rows.forEach((amounts, index) => {

@@ -40,7 +40,7 @@ frontend or any group of migrations separately.
 | 5 | `20260930100400_funding_rename_and_tic_writes` | Drops a trigger that made renaming an investor fail; TIC can be saved by Director, Accounting and Investment only; the budget sync runs with owner rights | Renaming an investor works. Accounting and Investment can save a TIC; Sales no longer can |
 | 6 | `20261005100000_activity_log_exclude_prefix` | Adds an optional "exclude this action prefix" parameter to `get_activity_logs` (the function is dropped and recreated) | Activity Log hides help-usage events by default and shows a checkbox to include them |
 | 7 | `20261005110000_company_statistics_incoming_investment_expense` | `company_statistics`: ULAZNI (INV) moves from income to expense | Nothing today — production has no such invoices |
-| 8 | `20261005120000_company_statistics_operating_only` | `company_statistics`: income and expense count operating invoices only; credit drawdowns, repayments and credit fees leave both and are reported in two new columns | Companies cards change — section 4 |
+| 8 | `20261005120000_company_statistics_operating_only` | `company_statistics`: income and expense count operating invoices only; credit drawdowns and repayments of principal leave both and are reported in two new columns. Credit fees stay in expense | Companies cards change — section 4 |
 
 ## 3. Which migrations depend on which frontend
 
@@ -74,16 +74,18 @@ Credit fees are now counted. They were left out of both monthly sums.
 - **"NETO"** drops by the paid amount in each affected month, and **"Razlika od budžeta"** moves
   with it, because the monthly budget is compared with incoming paid.
 
-### General report, cash-flow section — as soon as the frontend is deployed
+### General report — as soon as the frontend is deployed
 
-The table is now two tables, **Poslovne aktivnosti** and **Financijske aktivnosti**, plus a total.
-Credit drawdowns, repayments and credit fees used to be absent; they are now under financing.
+**Cash-flow section.** The table is now two tables, **Poslovne aktivnosti** and **Financijske
+aktivnosti**, plus a total. Credit drawdowns, repayments and credit fees used to be absent.
+Drawdowns and repayments are now under financing; credit fees are an operating outflow.
 
 | All payments to date | Before | After |
 |---|---|---|
-| Operating inflow / outflow | €125.000,00 / €3.807.870,43 | unchanged |
+| Operating inflow | €125.000,00 | unchanged |
+| Operating outflow | €3.807.870,43 | €3.975.021,04 (credit fees added) |
 | Financing inflow (drawdowns) | not shown | €4.522.708,80 |
-| Financing outflow (repayments, fees) | not shown | €267.150,61 |
+| Financing outflow (repayments) | not shown | €100.000,00 |
 | Net | −€3.682.870,43 | +€572.687,76 |
 
 A report covers a date range, so a given report shows only its months. In 2026 so far there is one
@@ -91,24 +93,34 @@ financing payment, a €100.000,00 drawdown. The latest payment in production is
 so a report for April–September 2026 is empty before and after. The two charts above the table
 plot the total net and move accordingly.
 
+**Expenses and profit.** Credit fees now count as a cost. Total expenses paid to date rise from
+€3.807.870,43 to €3.975.021,04 (+€167.150,61), and profit and margin fall by the same amount.
+Per-project expenses do not change: none of the 40 credit-fee invoices is tied to a project.
+
+### Director dashboard — as soon as the frontend is deployed
+
+Same change, same amount: portfolio expenses +€167.150,61, profit lower by that much. Per-project
+costs and margins do not change.
+
 ### Companies screen — with migration 8
 
 **"Promet" and "Dobit/Gubitak" now mean operations only.** Until now the cards counted every
-bank-type invoice as an expense — credit fees, repayments, and also credit *drawdowns*, which are
-money received. All three leave income and expense. Companies that have any get a new line under
-"Dobit/Gubitak": **"Financiranje (primljeno / vraćeno)"**; "vraćeno" is repayments plus credit fees.
+bank-type invoice as an expense — including credit *drawdowns*, which are money received, and
+repayments of principal. Those two leave income and expense. Credit fees stay in expense: they
+are a cost. Companies with credits get a new line under "Dobit/Gubitak":
+**"Financiranje (primljeno / otplaćeno)"**.
 
 Income figures ("Izdano", "Promet", "Neplaćeno (prihod)") do not change for any company. Three of
-the 14 companies have bank-type invoices (55 in total) and change as follows:
+the 14 companies have drawdowns (14 invoices), one of them also a repayment:
 
 | | B-Mark d.o.o. | Bio4you d.o.o. | Landmark group d.o.o. |
 |---|---|---|---|
-| Expense invoices | 36 → 27 | 34 → 18 | 557 → 527 |
-| Expense paid ("Plaćeno") | €1.560.929,93 → €806.851,36 | €686.416,60 → €0,00 | €6.315.569,32 → €2.966.205,08 |
-| Neplaćeno (rashod) | €40.742,87 → €14.704,52 | €20.288,15 → €8.082,66 | €7.727.913,12 → €7.354.669,11 |
-| Dobit/Gubitak | −€1.560.929,93 → −€806.851,36 | −€686.416,60 → €0,00 | −€6.315.569,32 → −€2.966.205,08 |
+| Expense invoices | 36 → 34 | 34 → 33 | 557 → 545 |
+| Expense paid ("Plaćeno") | €1.560.929,93 → €810.929,93 | €686.416,60 → €86.416,60 | €6.315.569,32 → €3.042.860,52 |
+| Neplaćeno (rashod) | €40.742,87 (unchanged) | €20.288,15 (unchanged) | €7.727.913,12 → €7.382.913,12 |
+| Dobit/Gubitak | −€1.560.929,93 → −€810.929,93 | −€686.416,60 → −€86.416,60 | −€6.315.569,32 → −€3.042.860,52 |
 | Financiranje, primljeno | €750.000,00 | €600.000,00 | €3.172.708,80 |
-| Financiranje, vraćeno | €4.078,57 | €86.416,60 | €176.655,44 |
+| Financiranje, otplaćeno | €0,00 | €0,00 | €100.000,00 |
 
 All 14 companies together (the stat cards at the top of the screen):
 
@@ -116,16 +128,16 @@ All 14 companies together (the stat cards at the top of the screen):
 |---|---|---|
 | Ukupan promet (income invoiced) | €127.813,76 | unchanged |
 | Income paid | €125.000,00 | unchanged |
-| Expense invoiced | €17.180.426,61 | €11.979.079,35 |
-| Expense paid | €8.756.047,84 | €3.966.188,43 |
-| Expense unpaid | €8.582.696,77 | €8.171.208,92 |
-| Dobit/Gubitak | −€8.631.047,84 | −€3.841.188,43 |
-| Financing received / repaid | not shown | €4.522.708,80 / €267.150,61 |
+| Expense invoices | 824 | 809 |
+| Expense invoiced | €17.180.426,61 | €12.212.717,81 |
+| Expense paid | €8.756.047,84 | €4.133.339,04 |
+| Expense unpaid | €8.582.696,77 | €8.237.696,77 |
+| Dobit/Gubitak | −€8.631.047,84 | −€4.008.339,04 |
+| Financing received / repaid | not shown | €4.522.708,80 / €100.000,00 |
 
-What to tell users: the loss shown on these cards shrinks because loans drawn were being counted
-as costs. Nothing was paid or received; the drawdowns and what the credits cost are now on their
-own line. **Still open with accounting:** whether credit fees (€167.150,61 paid to date) should
-count in "Dobit/Gubitak". If yes, the total above becomes −€4.008.339,04.
+What to tell users: the loss shown on these cards shrinks by €4.622.708,80 because loans drawn
+(€4.522.708,80) and one repayment of principal (€100.000,00) were being counted as costs. Nothing
+was paid or received; credit principal is now on its own line.
 
 ### Bank balances — after migration 4, gradually
 
@@ -138,10 +150,13 @@ may already have been lost, and correct them on the Companies screen.
 
 - ULAZNI (INV): production has no invoices of this type, so the Accounting dashboard, Director
   dashboard, General report expenses, VAT card and invoice colours show the same figures as before.
-- What counts as a **cost** on the Director dashboard and in General report expenses is unchanged
-  and still being confirmed with accounting: supplier, office and ULAZNI (INV) invoices. Credit
-  fees and repayments are not costs (CASH-7, open; summary for the accountant in
-  [ACCOUNTING_REVIEW_CASH7.md](./ACCOUNTING_REVIEW_CASH7.md)).
+- ULAZNI (INV) aside, the Accounting dashboard's cash figures and VAT card do not move: it already
+  had credit fees, drawdowns and repayments on the right sides.
+- Per-project costs and margins anywhere.
+
+**Decided with accounting, nothing open:** a cost is every operating invoice the company pays —
+supplier, office, ULAZNI (INV) and credit fees. Repaying principal is not a cost. Summary for the
+accountant: [ACCOUNTING_REVIEW_CASH7.md](./ACCOUNTING_REVIEW_CASH7.md).
 
 ## 5. Other visible changes to mention
 
@@ -165,7 +180,7 @@ may already have been lost, and correct them on the Companies screen.
 - [ ] Companies: open a company, reset a balance, confirm it holds after a payment is added.
 - [ ] Companies cards for B-Mark, Bio4you and Landmark group match the table in section 4, including the Financiranje line; a company with no credits shows no such line.
 - [ ] Cashflow calendar, November 2025: seven credit-fee invoices are in "Ulazni računi (plaćeno)".
-- [ ] General report for 2025: the financing table shows drawdowns and fees; totals add up.
+- [ ] General report for 2025: the financing table shows drawdowns and the repayment, credit fees are in the operating table; the three total lines add up.
 - [ ] Activity Log: help events hidden; the checkbox shows them.
 - [ ] Sign in as a Sales user: no Cashflow in the profile list; the "?" on Budget Control opens its guide.
 - [ ] Ask the assistant "što je cesija" and confirm it answers from the article.

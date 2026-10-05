@@ -32,9 +32,9 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 | Auth and platform | 0 | 2 | 3 |
 | Sales | 2 | 5 | 5 |
 | Supervision | 1 | 3 | 7 |
-| Cashflow | 3 | 5 | 8 |
-| Funding and TIC | 1 | 4 | 10 |
-| Projects, dashboards, reports | 0 | 4 | 10 |
+| Cashflow | 3 | 5 | 11 |
+| Funding and TIC | 1 | 4 | 11 |
+| Projects, dashboards, reports | 0 | 4 | 12 |
 | Tasks, calendar, chat, documents, AI | 0 | 4 | 5 |
 | ERP integration (on hold) | 3 | 6 | 3 |
 | Documentation drift | — | — | see last section |
@@ -350,7 +350,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### CASH-7 · Medium · Income and expense are classified four different ways
 - **ERP:** The ERP resolver reads `INCOMING` as a received bill (a payable), so `INCOMING_INVESTMENT` is money out when paid — what the balance trigger and payments list already do. Recommended: cash-flow screens use the prefix rule (`OUTGOING_*` in, `INCOMING_*` out); the company income/expense view leaves out the bank-credit types (`*_BANK`, `INCOMING_BANK_EXPENSES`), which are neither revenue nor expense. Confirm with accounting before changing.
-- **Status:** Resolved 2026-10-05 on `feat/user-guidance-phase-1`. **Decision: ULAZNI (INV)
+- **Status:** Fully resolved 2026-10-05 on `feat/user-guidance-phase-1`; pending release (three migrations written, none applied). **Decision: ULAZNI (INV)
   (`INCOMING_INVESTMENT`) is always money out** — a bill received from a financier. One map,
   `src/utils/invoiceCashDirection.ts`, now defines the cash direction of every invoice type
   (`INCOMING_*` out, `OUTGOING_*` in, no exceptions) and is read by the Accounting dashboard, the
@@ -363,33 +363,36 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   if SQL and client drift apart. Production held **no** rows of this type when checked, so no
   existing figure moved.
 - **General report cash-flow table:** uses the shared map for every type and is split into
-  **operating** and **financing** (`invoiceCashCategory`): credit drawdowns (`OUTGOING_BANK`) are
-  financing inflow, repayments and credit fees (`INCOMING_BANK`, `INCOMING_BANK_EXPENSES`)
-  financing outflow. Before, all three were left out and the table could not be reconciled with
-  the bank balance.
+  **operating** and **financing** (`invoiceCashCategory`): drawdowns are financing inflow,
+  repayments financing outflow, credit fees operating outflow. Before, all three were left out
+  and the table could not be reconciled with the bank balance.
 - **Second dimension: category.** Each type in `invoiceCashDirection.ts` is also `operating` or
-  `financing` (`INVOICE_CASH_MAP`, `invoiceCashCategory`). Financing is the three bank types.
-  **Decision: financing is neither income nor expense.**
+  `financing` (`INVOICE_CASH_MAP`, `invoiceCashCategory`). **Decisions: financing is neither
+  income nor expense, and financing means principal only** — drawdowns (`OUTGOING_BANK`) and
+  repayments (`INCOMING_BANK`). **Credit fees (`INCOMING_BANK_EXPENSES`) are an operating cost**,
+  confirmed with accounting. `COST_INVOICE_TYPES` is derived from the map: every operating
+  money-out type.
 - **The two remaining disagreements, fixed the same day:**
-  - `company_statistics` counted every bank type as an expense — including drawdowns, which are
-    money in. Migration `20261005120000_company_statistics_operating_only` (**written, not
-    applied**) limits income and expense to operating types and adds
-    `total_financing_received` / `total_financing_repaid`. "Promet" and "Dobit/Gubitak" keep
-    their labels and meaning; the Companies card gains a line "Financiranje (primljeno /
-    vraćeno)". In production (three companies, 55 bank-type invoices): expense paid
-    €8.756.047,84 → €3.966.188,43, income unchanged, financing €4.522.708,80 received and
-    €267.150,61 repaid.
-  - The Cashflow Calendar left credit fees (`INCOMING_BANK_EXPENSES`) out of both monthly sums
-    (also CASH-8). It now takes both sides from the map. In production: 40 invoices over 15
-    due-months; "Ulazni plaćeni" rises by €161.767,05 in total and "Ulazni neplaćeni" by
-    €66.487,85.
-- **Open — are credit fees a cost?** Today `COST_INVOICE_TYPES` is supplier, office and ULAZNI
-  (INV) invoices, and credit fees sit under financing: they are in no expense total, not in
-  "Dobit/Gubitak" on the Companies cards, and not in the Director dashboard or General report
-  expenses. Production has €167.150,61 of paid credit fees. **Being confirmed with accounting
-  ([ACCOUNTING_REVIEW_CASH7.md](./ACCOUNTING_REVIEW_CASH7.md)); do not change
-  `COST_INVOICE_TYPES` or the view's lists until then.** If the answer is yes, the change is the
-  category of `INCOMING_BANK_EXPENSES` in the map plus the two lists in the view.
+  - `company_statistics` counted drawdowns and repayments as expenses. Migration
+    `20261005120000_company_statistics_operating_only` (**written, not applied**) limits income
+    and expense to operating types and adds `total_financing_received` /
+    `total_financing_repaid`. "Promet" and "Dobit/Gubitak" keep their labels and meaning; the
+    Companies card gains a line "Financiranje (primljeno / otplaćeno)". In production (three
+    companies; 14 drawdowns, 1 repayment): expense paid €8.756.047,84 → €4.133.339,04, income
+    unchanged, financing €4.522.708,80 received and €100.000,00 repaid.
+  - The Cashflow Calendar left credit fees out of both monthly sums (also CASH-8). It now takes
+    both sides from the map. In production: 40 invoices over 15 due-months; "Ulazni plaćeni"
+    rises by €161.767,05 in total and "Ulazni neplaćeni" by €66.487,85.
+- **Credit fees as a cost — where the figure moves.** They stay in the Companies cards' expense
+  (they were there before, beside the drawdowns that should not have been). They are *new* in the
+  Director dashboard's and General report's total expenses: €3.807.870,43 → €3.975.021,04 paid to
+  date in production (+€167.150,61). Per-project costs do not move — none of the 40 credit-fee
+  invoices carries a project or a contract. In the General report cash-flow table they are
+  operating outflow.
+- **Nothing is open.** Every invoice type has one direction and one category, read from one map
+  by every screen and matched by the SQL (`invoiceCashDirection.test.ts`). Figures and the
+  accountant's summary: [ACCOUNTING_REVIEW_CASH7.md](./ACCOUNTING_REVIEW_CASH7.md),
+  [DEPLOY_GUIDANCE_PHASE_1.md](./DEPLOY_GUIDANCE_PHASE_1.md).
 - `company_statistics`, the Accounting dashboard, `paymentDirection()` and the General report
   cash-flow table disagree on `INCOMING_INVESTMENT`, `OUTGOING_SUPPLIER`, `OUTGOING_BANK` and the
   bank types. The dashboard service comment claiming it matches the calendar convention is wrong.
@@ -431,6 +434,22 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - **Where:** `updateCompany` in [companyService.ts](../src/components/Cashflow/Companies/services/companyService.ts); the edit form is pre-filled from `fetchBankAccountsForCompany` with each account's `initial_balance` and reset date.
 - **What happened:** every save sent a balance reset for every account. An account with no reset date got one dated today, so all earlier payments and loans dropped out of its balance — a plain rename was enough. Existed before this branch; the branch first carried it into the reset RPC.
 - **Fix:** only accounts whose balance or date differs from the stored values are reset. Accounts already hit by this show `balance_reset_at` on the day the company was last edited; check them with the query at the end of migration `20260930100300`.
+
+
+### CASH-17 · Low · Companies stat cards clip their amounts on a phone
+- **Check:** Seen in the guidance visual check, 2026-10-05, 390px ([screenshots/guidance-phase-1/README.md](./screenshots/guidance-phase-1/README.md), finding 9). **Status:** Open
+- **Where:** the four stat cards at the top of [Companies/index.tsx](../src/components/Cashflow/Companies/index.tsx), in a two-column grid below `sm`.
+- "€1.287.631,05" and "€−7.088.981,45" run past the right edge of their cards; the minus also wraps away from the number.
+- **Fix direction:** one column below `sm`, or the compact formatter, or let the value shrink (`text-lg` + `break-words`).
+
+### CASH-18 · Low · Companies cards show ragged decimals
+- **Check:** Seen in the same check (finding 12). **Status:** Open — being fixed on `fix/budget-diff-and-decimals`
+- **Where:** every amount on the Companies cards and in `CompanyDetailsModal` is `€{value.toLocaleString('hr-HR')}`, so €2.715.147,70 prints as "€2.715.147,7" and whole amounts print with no decimals. Part of the money-formatting sweep in [UI_AUDIT.md](./UI_AUDIT.md) §4.1 that has not reached this screen.
+- **Note for the merge:** the "Financiranje (primljeno / otplaćeno)" line added on `feat/user-guidance-phase-1` uses the same pattern and must move to the shared formatter when the two branches meet.
+
+### CASH-19 · Low · Calendar "Razlika od budžeta" shows an overrun as a positive amount
+- **Check:** Seen in the same check (finding 13). **Status:** Open — being fixed on `fix/budget-diff-and-decimals`
+- **Where:** the monthly summary in [Calendar/index.tsx](../src/components/Cashflow/Calendar/index.tsx): budget €450.000, paid €2.141.590, shown as "€1.691.590 (Preko budžeta - loše)". Only the colour and the suffix say it is an overrun.
 
 ---
 
@@ -509,6 +528,13 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ### FUND-15 · Low · Investment role sees credits but no money movements
 - Drawdown, repayment and fee sections come back empty for that role (related to SEC-004).
 
+
+### FUND-16 · Low · TIC page scrolls sideways
+- **Check:** Seen in the guidance visual check, 2026-10-05 ([screenshots/guidance-phase-1/README.md](./screenshots/guidance-phase-1/README.md), finding 8). **Status:** Open
+- **Where:** [TIC/components/InvestmentTable.tsx](../src/components/Funding/TIC/components/InvestmentTable.tsx) inside [TIC/index.tsx](../src/components/Funding/TIC/index.tsx).
+- At 390px the whole page is 973px wide (1262px with phase columns); at 1440px it overflows once two phase columns exist (1530px). The header, tabs and buttons scroll away with the table.
+- **Fix direction:** the table should scroll inside its card (`overflow-x-auto` on a wrapper with `min-w-0` up the flex chain), not widen the document.
+
 ---
 
 ## 7. Projects, dashboards and reports
@@ -569,6 +595,18 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ### GEN-14 · Low · Credit types rendered raw
 - Project details financing tab and Investment dashboard use `replace(/_/g, ' ')` instead of the
   label map.
+
+
+### GEN-15 · Low · General report PDF: trend chart filled black, labels touch the next heading
+- **Check:** Seen in the guidance visual check, 2026-10-05 ([screenshots/guidance-phase-1/README.md](./screenshots/guidance-phase-1/README.md), finding 10). **Status:** Open
+- **Where:** `drawLineChart(…, { fillArea: true })` on the cash-flow trend page of [generalReportPdf.ts](../src/components/Reports/pdf/generalReportPdf.ts).
+- The area under the line renders almost black instead of a light tint (the fill has no opacity in the PDF), and the chart's month labels sit directly on the "ANALIZA NOVČANOG TOKA" heading below it.
+- **Fix direction:** a light solid fill colour instead of relying on alpha; a few more millimetres after the chart.
+
+### GEN-16 · Low · Company name is hardcoded
+- **Check:** Seen in the same check, on the demo instance (finding 11). **Status:** Open
+- "LANDMARK GROUP" in the General report's on-screen header and in every PDF page footer; "Financijski pregled svih firmi pod Landmarkom" under Cashflow → Moje firme. Both appear for whatever organisation the instance belongs to, including LandmarkDemo ("Adriatic Development").
+- **Fix direction:** one configurable organisation name (env or a settings row) used by both, and by the other report generators that print it.
 
 ---
 

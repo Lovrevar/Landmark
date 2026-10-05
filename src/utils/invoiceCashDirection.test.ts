@@ -53,13 +53,24 @@ describe('the direction map', () => {
 })
 
 describe('costs and VAT', () => {
-  it('counts supplier, office and financier bills as costs, and nothing else', () => {
-    expect([...COST_INVOICE_TYPES].sort()).toEqual(['INCOMING_INVESTMENT', 'INCOMING_OFFICE', 'INCOMING_SUPPLIER'])
+  it('counts every operating invoice the company pays as a cost — credit fees included', () => {
+    expect([...COST_INVOICE_TYPES].sort()).toEqual([
+      'INCOMING_BANK_EXPENSES', 'INCOMING_INVESTMENT', 'INCOMING_OFFICE', 'INCOMING_SUPPLIER',
+    ])
     expect(isCostInvoiceType('INCOMING_INVESTMENT')).toBe(true)
-    // Cash moves, but a repayment is not an expense and credit fees are reported with the credit.
+    expect(isCostInvoiceType('INCOMING_BANK_EXPENSES')).toBe(true)
+    // The one money-out type that is not a cost: repaying principal only returns what was borrowed.
     expect(isCostInvoiceType('INCOMING_BANK')).toBe(false)
-    expect(isCostInvoiceType('INCOMING_BANK_EXPENSES')).toBe(false)
     expect(isCostInvoiceType('OUTGOING_SALES')).toBe(false)
+    expect(isCostInvoiceType('OUTGOING_BANK')).toBe(false)
+  })
+
+  it('a cost is exactly an operating money-out type — the set is derived, not listed', () => {
+    expect([...COST_INVOICE_TYPES].sort()).toEqual(invoiceTypesFor('OUT', 'operating').sort())
+    for (const type of DB_INVOICE_TYPES) {
+      expect(isCostInvoiceType(type), type)
+        .toBe(invoiceCashDirection(type) === 'OUT' && invoiceCashCategory(type) === 'operating')
+    }
   })
 
   it('every cost is money out', () => {
@@ -172,6 +183,8 @@ describe('the database agrees', () => {
     for (const { column, types } of columns.slice(0, 8)) {
       for (const type of types) expect(invoiceCashCategory(type), `${column} ${type}`).toBe('operating')
     }
+    // …and the view's expense is the client's definition of a cost.
+    expect(columns[6].types).toEqual([...COST_INVOICE_TYPES].sort())
     // …and between the four groups every invoice type is counted exactly once.
     const counted = [
       ...expected('total_income_paid'), ...expected('total_expense_paid'),
@@ -197,25 +210,49 @@ describe('operating and financing', () => {
     }
   })
 
-  it('files the three bank types under financing and everything else under operating', () => {
-    expect([...FINANCING_INVOICE_TYPES].sort()).toEqual(['INCOMING_BANK', 'INCOMING_BANK_EXPENSES', 'OUTGOING_BANK'])
-    for (const type of DB_INVOICE_TYPES) {
-      expect(invoiceCashCategory(type), type).toBe(type.includes('_BANK') ? 'financing' : 'operating')
-    }
+  it('files only credit principal under financing: the drawdown and the repayment', () => {
+    expect([...FINANCING_INVOICE_TYPES].sort()).toEqual(['INCOMING_BANK', 'OUTGOING_BANK'])
+    expect(invoiceCashCategory('OUTGOING_BANK')).toBe('financing')
+    expect(invoiceCashCategory('INCOMING_BANK')).toBe('financing')
+    // What the credit costs is an operating cost, by decision.
+    expect(invoiceCashCategory('INCOMING_BANK_EXPENSES')).toBe('operating')
     expect(invoiceCashCategory('INCOMING_INVESTMENT')).toBe('operating')
     expect(invoiceCashCategory('SOMETHING_ELSE')).toBe('operating')
     expect(invoiceCashCategory(null)).toBe('operating')
   })
 
-  it('keeps the direction inside financing: a drawdown is in, a repayment and credit fees are out', () => {
-    expect(invoiceTypesFor('IN', 'financing')).toEqual(['OUTGOING_BANK'])
-    expect(invoiceTypesFor('OUT', 'financing').sort()).toEqual(['INCOMING_BANK', 'INCOMING_BANK_EXPENSES'])
-    expect(invoiceTypesFor('IN', 'operating').sort()).toEqual(['OUTGOING_OFFICE', 'OUTGOING_SALES', 'OUTGOING_SUPPLIER'])
-    expect(invoiceTypesFor('OUT', 'operating').sort()).toEqual(['INCOMING_INVESTMENT', 'INCOMING_OFFICE', 'INCOMING_SUPPLIER'])
+  it('splits the nine types into four cells, each type in exactly one', () => {
+    const cells = {
+      operatingIn: invoiceTypesFor('IN', 'operating').sort(),
+      operatingOut: invoiceTypesFor('OUT', 'operating').sort(),
+      financingIn: invoiceTypesFor('IN', 'financing').sort(),
+      financingOut: invoiceTypesFor('OUT', 'financing').sort(),
+    }
+    expect(cells).toEqual({
+      operatingIn: ['OUTGOING_OFFICE', 'OUTGOING_SALES', 'OUTGOING_SUPPLIER'],
+      operatingOut: ['INCOMING_BANK_EXPENSES', 'INCOMING_INVESTMENT', 'INCOMING_OFFICE', 'INCOMING_SUPPLIER'],
+      financingIn: ['OUTGOING_BANK'],
+      financingOut: ['INCOMING_BANK'],
+    })
+    expect(Object.values(cells).flat().sort()).toEqual([...DB_INVOICE_TYPES].sort())
   })
 
-  it('today every operating money-out type is a cost — the open question is whether credit fees join them', () => {
-    expect(invoiceTypesFor('OUT', 'operating').sort()).toEqual([...COST_INVOICE_TYPES].sort())
+  it('every place that computes a cost asks the map, and none names a type', () => {
+    const uses: [string, number][] = [
+      // Director dashboard: contract costs, uncontracted project costs, portfolio expenses.
+      ['src/components/dashboards/services/directorService.ts', 3],
+      // General report: total expenses and per-project expenses.
+      ['src/components/Reports/services/generalReportService.ts', 2],
+    ]
+    for (const [file, calls] of uses) {
+      const source = read(file)
+      expect((source.match(/isCostInvoiceType\(/g) || []).length, file).toBe(calls)
+      expect(source, file).not.toMatch(/'(INCOMING|OUTGOING)_[A-Z_]+'/)
+    }
+    // The Companies cards take their expense figures from the view, checked against the map above.
+    const companies = read('src/components/Cashflow/Companies/services/companyService.ts')
+    expect(companies).toContain('profit: stats.total_income_paid - stats.total_expense_paid')
+    expect(companies).not.toMatch(/'(INCOMING|OUTGOING)_[A-Z_]+'/)
   })
 
   it('is what the General report splits its cash-flow table by, with no list of its own', () => {

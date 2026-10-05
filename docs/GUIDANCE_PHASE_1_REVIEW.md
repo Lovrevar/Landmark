@@ -429,17 +429,29 @@ Shown: General → Izvještaji, section **ANALIZA NOVČANOG TOKA**, on screen an
 
 Article edit: `help-kb/general-reports.md` — "Analiza novčanog toka" in the list of sections now reads "Analiza novčanog toka (odvojeno **Poslovne aktivnosti** i **Financijske aktivnosti** — isplate, otplate i troškovi kredita — te **Ukupni novčani tok**)".
 
-### 8.8 Fifth round (2026-10-05): financing line on the Companies cards
+### 8.8 Fifth and sixth rounds (2026-10-05): financing line, and credit fees as a cost
 
-The note that closed 8.7 about the Companies labels no longer applies: "Promet" and "Dobit/Gubitak" keep their wording and now cover operations only.
+The note that closed 8.7 about the Companies labels no longer applies: "Promet" and "Dobit/Gubitak" keep their wording and cover operations only.
 
-Shown: Cashflow → Firme, on a company's card under "Dobit/Gubitak" — only for a company that has credit drawdowns or repayments, and only once migration `20261005120000` is applied. Example: "Financiranje (primljeno / vraćeno): €750.000 / €4.078,57".
+**New string.** Shown: Cashflow → Firme, on a company's card under "Dobit/Gubitak" — only for a company that has credit drawdowns or repayments, and only once migration `20261005120000` is applied. Example: "Financiranje (primljeno / otplaćeno): €750.000 / €0".
 
 | Key | Hrvatski | English |
 |---|---|---|
-| `companies.card.financing_label` | Financiranje (primljeno / vraćeno): | Financing (received / repaid): |
+| `companies.card.financing_label` | Financiranje (primljeno / otplaćeno): | Financing (received / repaid): |
 
-One thing to check in the wording: the second figure is repayments of principal **plus credit fees**. In production it is €267.150,61, of which €100.000,00 is a repayment and €167.150,61 is fees, so "vraćeno" understates what it holds. "primljeno / plaćeno" would be exact. Left as you specified.
+The Croatian wording changed in the sixth round from "primljeno / vraćeno" to "primljeno / otplaćeno": with credit fees now a cost, the second figure is repayments of principal only, so the earlier concern about the label understating its content is gone. English is unchanged.
 
-Article edit: `help-kb/cashflow-companies.md` — one sentence added after the description of the card: "Promet i dobit/gubitak odnose se samo na poslovanje; isplate kredita te otplate i troškovi kredita nisu u njima, nego su — za firme koje ih imaju — prikazani u zasebnom retku **Financiranje (primljeno / vraćeno)**."
+**Changed strings** (the notes under the two General report cash-flow headings from 8.7), because credit fees moved from financing to operating:
+
+| Key | | Before | After |
+|---|---|---|---|
+| `reports.general.cash_flow_operating_note` | HR | Naplata od kupaca te plaćanja dobavljačima, uredu i financijerima. | Naplata od kupaca te plaćanja dobavljačima, uredu i financijerima, uključujući troškove kredita. |
+| | EN | Receipts from customers, and payments to suppliers, the office and financiers. | Receipts from customers, and payments to suppliers, the office and financiers, including credit costs. |
+| `reports.general.cash_flow_financing_note` | HR | Isplate kredita (priljev) te otplate i troškovi kredita (odljev). | Glavnica kredita: isplate (priljev) i otplate (odljev). |
+| | EN | Credit drawdowns (inflow), and credit repayments and credit costs (outflow). | Credit principal: drawdowns (inflow) and repayments (outflow). |
+
+**Article edits** (for screens that changed):
+
+- `help-kb/cashflow-companies.md`, after the description of the card: "Promet i dobit/gubitak odnose se samo na poslovanje; isplate i otplate kredita nisu u njima, nego su — za firme koje ih imaju — prikazane u zasebnom retku **Financiranje (primljeno / otplaćeno)**. Troškovi kredita (kamate i naknade) jesu trošak i ulaze u dobit/gubitak."
+- `help-kb/general-reports.md`: the section list now reads "Analiza novčanog toka (odvojeno **Poslovne aktivnosti** i **Financijske aktivnosti** — isplate i otplate kredita — te **Ukupni novčani tok**)".
 

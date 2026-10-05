@@ -79,7 +79,7 @@ export interface CompanyStats {
   total_expense_paid: number
   total_expense_unpaid: number
   /**
-   * Paid on credit drawdowns, and on repayments plus credit fees. Neither is part of income,
+   * Paid on credit drawdowns, and on repayments of principal. Neither is part of income,
    * expense, `revenue` or `profit`. `null` while the database view predates the two columns
    * (migration 20261005120000) — the card then shows no financing line rather than zeros.
    */

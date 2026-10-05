@@ -423,9 +423,11 @@ const GeneralReports: React.FC = () => {
             ['reports.general.cash_flow_total', report.cash_flow],
           ] as const).map(([labelKey, rows]) => (
             <p key={labelKey} className={`text-sm text-gray-700 dark:text-gray-200 ${labelKey.endsWith('_total') ? 'font-semibold' : ''}`}>
-              {t(labelKey)}: {t('reports.general.inflow_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.inflow, 0))} |{' '}
-              {t('reports.general.outflow_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.outflow, 0))} |{' '}
-              {t('reports.general.net_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.net, 0))}
+              {t(labelKey)}:{' '}
+              {/* Each figure stays with its label: a narrow screen used to break "€" from "−3,0M". */}
+              <span className="whitespace-nowrap">{t('reports.general.inflow_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.inflow, 0))}</span> |{' '}
+              <span className="whitespace-nowrap">{t('reports.general.outflow_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.outflow, 0))}</span> |{' '}
+              <span className="whitespace-nowrap">{t('reports.general.net_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.net, 0))}</span>
             </p>
           ))}
         </div>

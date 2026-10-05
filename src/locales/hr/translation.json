@@ -1040,7 +1040,7 @@
       "profit_loss_label": "Dobit/Gubitak:",
       "unpaid_income": "Neplaćeno (prihod):",
       "unpaid_expense": "Neplaćeno (rashod):",
-      "financing_label": "Financiranje (primljeno / vraćeno):"
+      "financing_label": "Financiranje (primljeno / otplaćeno):"
     },
     "table": {
       "name": "Naziv",
@@ -4289,9 +4289,9 @@
         "project_performance": "Pregled uspješnosti projekata"
       },
       "cash_flow_operating": "Poslovne aktivnosti",
-      "cash_flow_operating_note": "Naplata od kupaca te plaćanja dobavljačima, uredu i financijerima.",
+      "cash_flow_operating_note": "Naplata od kupaca te plaćanja dobavljačima, uredu i financijerima, uključujući troškove kredita.",
       "cash_flow_financing": "Financijske aktivnosti",
-      "cash_flow_financing_note": "Isplate kredita (priljev) te otplate i troškovi kredita (odljev).",
+      "cash_flow_financing_note": "Glavnica kredita: isplate (priljev) i otplate (odljev).",
       "cash_flow_total": "Ukupni novčani tok"
     },
     "sales": {

@@ -131,9 +131,14 @@ export const foldText = (value: string): string =>
     .replace(/Đ/g, 'D')
     .toLowerCase()
 
+/** Whether some word of `text` begins with `prefix` ("racun" starts "racuni", not "proracuna"). */
+const startsAWord = (text: string, prefix: string): boolean =>
+  text.split(/[^a-z0-9]+/).some(word => word.startsWith(prefix))
+
 /**
- * Articles containing every word of the query, best match first. A word found in the title
- * outranks one in the keywords, which outranks one in the body. An empty query returns the
+ * Articles containing every word of the query, best match first. A title outranks keywords, which
+ * outrank the body; and a word that *begins* with the query outranks one that merely contains it,
+ * so "račun" lists the invoice articles before "Kontrola proračuna". An empty query returns the
  * articles unchanged.
  */
 export function searchArticles(articles: HelpArticle[], query: string): HelpArticle[] {
@@ -147,8 +152,10 @@ export function searchArticles(articles: HelpArticle[], query: string): HelpArti
     const body = foldText(article.body)
     let score = 0
     for (const word of words) {
-      if (title.includes(word)) score += 5
-      else if (keywords.includes(word)) score += 3
+      if (startsAWord(title, word)) score += 8
+      else if (startsAWord(keywords, word)) score += 5
+      else if (title.includes(word)) score += 3
+      else if (keywords.includes(word)) score += 2
       else if (body.includes(word)) score += 1
       else {
         score = -1

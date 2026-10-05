@@ -3,11 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { formatDate } from '../../../utils/formatters'
 import { FileText, Edit, Trash2, DollarSign, Eye, Check, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { formatCurrency } from '../../Common/CurrencyInput'
-import { Table, Button, EmptyState, Badge, InfoHint } from '../../ui'
-import {
-  ALL_INVOICE_TYPES, getTypeColor, getInvoiceTypeLabel, getInvoiceTypeLongLabel,
-  getInvoiceStatusVariant, getInvoiceStatusLabel,
-} from '../services/invoiceHelpers'
+import { Table, Button, EmptyState, Badge } from '../../ui'
+import { getTypeColor, getInvoiceTypeLabel, getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
+import { InvoiceTypeHint } from './InvoiceTypeHint'
 import type { Invoice } from './types'
 
 interface InvoiceTableProps {
@@ -49,19 +47,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
             <Table.Th>
               <span className="inline-flex items-center gap-1">
                 {t('invoices.table.type')}
-                {/* The legend is built from the same vocabulary that prints the codes below. */}
-                <InfoHint hintId="invoices.type" label={t('invoices.hints.type_title')} articleId="term-invoice-types">
-                  <p>{t('invoices.hints.type_intro')}</p>
-                  <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
-                    {ALL_INVOICE_TYPES.map(type => (
-                      <React.Fragment key={type}>
-                        <dt className="font-semibold whitespace-nowrap">{getInvoiceTypeLabel(type, t)}</dt>
-                        <dd>{getInvoiceTypeLongLabel(type, t)}</dd>
-                      </React.Fragment>
-                    ))}
-                  </dl>
-                  <p>{t('invoices.hints.type_colour')}</p>
-                </InfoHint>
+                <InvoiceTypeHint />
               </span>
             </Table.Th>
           )}
