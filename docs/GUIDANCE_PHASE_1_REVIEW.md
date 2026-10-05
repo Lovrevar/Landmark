@@ -415,3 +415,19 @@ What this settles in sections 6 and 7:
 - **Root cause 2 in 6.1 no longer holds.** The Cashflow profile is now offered only to Director and Accounting, so the proposed replacements in `role-cannot-see-cashflow` and `cashflow-unlock` that describe other roles entering the password should instead say: "Profil **Cashflow** u dropdownu profila vide samo uloge Director i Accounting." Not applied.
 - **`supervision-payments` and `supervision-invoices`** no longer list Supervision in `roles` (frontmatter only, no text change), so that role no longer sees them on `/help`. The assistant index is rebuilt.
 
+### 8.7 Fourth round (2026-10-05): General report cash flow split
+
+Shown: General → Izvještaji, section **ANALIZA NOVČANOG TOKA**, on screen and in the PDF (the PDF is always Croatian). Two tables replace the single one, each with a heading and a one-line note; the totals box has one line per heading plus the total.
+
+| Key | Hrvatski | English |
+|---|---|---|
+| `reports.general.cash_flow_operating` | Poslovne aktivnosti | Operating activities |
+| `reports.general.cash_flow_operating_note` | Naplata od kupaca te plaćanja dobavljačima, uredu i financijerima. | Receipts from customers, and payments to suppliers, the office and financiers. |
+| `reports.general.cash_flow_financing` | Financijske aktivnosti | Financing activities |
+| `reports.general.cash_flow_financing_note` | Isplate kredita (priljev) te otplate i troškovi kredita (odljev). | Credit drawdowns (inflow), and credit repayments and credit costs (outflow). |
+| `reports.general.cash_flow_total` | Ukupni novčani tok | Total cash flow |
+
+Article edit: `help-kb/general-reports.md` — "Analiza novčanog toka" in the list of sections now reads "Analiza novčanog toka (odvojeno **Poslovne aktivnosti** i **Financijske aktivnosti** — isplate, otplate i troškovi kredita — te **Ukupni novčani tok**)".
+
+Not changed, but now inaccurate once migration `20261005120000` is applied: the Companies screen's labels `companies.card.revenue_label`, `companies.card.profit_loss_label`, `companies.stats.total_revenue`, `companies.stats.profit_loss`, `companies.stats.profit` / `loss`. They will show cash in and net cash, including credit drawdowns. Say if you want them reworded; see the deploy checklist.
+

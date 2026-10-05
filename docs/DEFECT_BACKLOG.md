@@ -362,15 +362,28 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   `invoiceCashDirection.test.ts` reads the bank-balance function and the view migration and fails
   if SQL and client drift apart. Production held **no** rows of this type when checked, so no
   existing figure moved.
-- **Knock-on, deliberate:** the General report cash-flow table now uses the shared map for *every*
-  type, so credit drawdowns (`OUTGOING_BANK`) appear as inflow and repayments and credit fees
-  (`INCOMING_BANK`, `INCOMING_BANK_EXPENSES`) as outflow. Before, it left all three out and could
-  not be reconciled with the bank balance.
-- **Still open, split out — not covered by the decision:**
-  - `company_statistics` lists `OUTGOING_SUPPLIER` and `OUTGOING_BANK` under *expense*, although
-    both are money in. Whether that view means revenue/expense or cash flow is undecided.
-  - The Cashflow Calendar's monthly sums leave `INCOMING_BANK_EXPENSES` out of both sides. What it
-    does count agrees with the map.
+- **General report cash-flow table:** uses the shared map for every type and is split into
+  **operating** and **financing** (`invoiceCashActivity`): credit drawdowns (`OUTGOING_BANK`) are
+  financing inflow, repayments and credit fees (`INCOMING_BANK`, `INCOMING_BANK_EXPENSES`)
+  financing outflow. Before, all three were left out and the table could not be reconciled with
+  the bank balance.
+- **The two remaining disagreements, fixed the same day:**
+  - `company_statistics` listed `OUTGOING_SUPPLIER` and `OUTGOING_BANK` under expense. Migration
+    `20261005120000` (**written, not applied**) makes its income list every `OUTGOING_*` type and
+    its expense list every `INCOMING_*` type. In production that moves the 14 drawdown invoices
+    (€4.867.708,80 invoiced, €4.522.708,80 paid) from expense to income; `OUTGOING_SUPPLIER` has
+    no rows. **The Companies screen still labels these columns "Promet" and "Dobit/Gubitak"**,
+    which after the migration are cash in and net cash — see the open item below.
+  - The Cashflow Calendar left credit fees (`INCOMING_BANK_EXPENSES`) out of both monthly sums.
+    It now takes both sides from the map. In production: 40 invoices over 15 due-months;
+    "Ulazni plaćeni" rises by €161.767,05 in total and "Ulazni neplaćeni" by €66.487,85.
+- **Open — what counts as a cost.** `COST_INVOICE_TYPES` is supplier, office and ULAZNI (INV)
+  invoices. Credit fees and loan repayments move cash but are *not* counted as costs in the
+  Director dashboard or General report expenses, as before. **Being confirmed with accounting;
+  do not change `COST_INVOICE_TYPES` until then.**
+- **Open — Companies card labels.** With `company_statistics` on cash direction, "Promet" and
+  "Dobit/Gubitak" on the Companies cards include credit drawdowns. Either relabel them (cash in /
+  net cash flow) or give the view a separate revenue definition. Not decided.
 - `company_statistics`, the Accounting dashboard, `paymentDirection()` and the General report
   cash-flow table disagree on `INCOMING_INVESTMENT`, `OUTGOING_SUPPLIER`, `OUTGOING_BANK` and the
   bank types. The dashboard service comment claiming it matches the calendar convention is wrong.

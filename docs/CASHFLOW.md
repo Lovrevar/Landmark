@@ -272,7 +272,7 @@ Monthly calendar view showing scheduled invoice payments and due dates. Supports
 #### Hooks
 
 ### useCalendar.ts
-- `useCalendar()` — manages calendar navigation, date selection, daily invoice display, and budget state
+- `useCalendar()` — manages calendar navigation, date selection, daily invoice display, and budget state. The month's incoming/outgoing sums take their sides from `utils/invoiceCashDirection.ts` (every `INCOMING_*` is paid by us, every `OUTGOING_*` paid to us); the two type lists it used to keep left credit fees out of both
 - A failed invoice load clears `invoices` and sets `error`; the page then replaces the whole
   calendar (grid, stat cards and the net figure are all derived from it) with `ErrorState`, and
   shows an `Alert` when only the budgets failed

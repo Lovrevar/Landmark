@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  COST_INVOICE_TYPES, INVOICE_CASH_DIRECTION, carriesInputVat, carriesOutputVat,
-  invoiceCashDirection, isCashIn, isCashOut, isCostInvoiceType,
+  COST_INVOICE_TYPES, FINANCING_INVOICE_TYPES, INVOICE_CASH_DIRECTION, carriesInputVat, carriesOutputVat,
+  invoiceCashActivity, invoiceCashDirection, isCashIn, isCashOut, isCostInvoiceType,
 } from './invoiceCashDirection'
 import { getTypeColor, paymentDirection } from '../components/Cashflow/services/invoiceHelpers'
 
@@ -98,18 +98,13 @@ describe('screens that read the map', () => {
     }
   })
 
-  it('the Cashflow calendar sums each type it lists on the side the map gives it', () => {
+  it('the Cashflow calendar takes both sides from the map, so no type is left out of its sums', () => {
     const source = read('src/components/Cashflow/Calendar/hooks/useCalendar.ts')
-    const block = (name: string) => {
-      const start = source.indexOf(`const ${name} = monthInvoices.filter`)
-      expect(start, name).toBeGreaterThan(-1)
-      return quoted(source.slice(start, source.indexOf(')\n', start)))
-    }
-    const paidByUs = block('incomingInvoices')
-    const paidToUs = block('outgoingInvoices')
-    expect(paidByUs).toContain('INCOMING_INVESTMENT')
-    for (const type of paidByUs) expect(invoiceCashDirection(type), type).toBe('OUT')
-    for (const type of paidToUs) expect(invoiceCashDirection(type), type).toBe('IN')
+    expect(source).toContain('monthInvoices.filter(inv => isCashOut(inv.invoice_type))')
+    expect(source).toContain('monthInvoices.filter(inv => isCashIn(inv.invoice_type))')
+    // Its old lists named four types a side and missed credit fees.
+    expect(source).not.toMatch(/'(INCOMING|OUTGOING)_[A-Z_]+'/)
+    for (const type of DB_INVOICE_TYPES) expect(isCashIn(type) !== isCashOut(type), type).toBe(true)
   })
 })
 
@@ -152,4 +147,51 @@ describe('the database agrees', () => {
     expect(all).toHaveLength(8)
     expect(all.filter(list => list.includes('INCOMING_INVESTMENT'))).toHaveLength(4)
   })
+
+  it('company_statistics, in its final form, has exactly the map\'s two sides as income and expense', () => {
+    const sql = read('supabase/migrations/20261005120000_company_statistics_cash_direction.sql')
+    const view = sql.slice(sql.indexOf('CREATE OR REPLACE VIEW public.company_statistics'))
+    const lists = [...view.matchAll(/ARRAY\[([^\]]*)\]/g)].map(match => quoted(match[1]).sort())
+    expect(lists).toHaveLength(8)
+    const moneyIn = DB_INVOICE_TYPES.filter(type => isCashIn(type)).sort()
+    const moneyOut = DB_INVOICE_TYPES.filter(type => isCashOut(type)).sort()
+    // The view writes its four income expressions first, then its four expense ones.
+    for (const list of lists.slice(0, 4)) expect(list).toEqual(moneyIn)
+    for (const list of lists.slice(4)) expect(list).toEqual(moneyOut)
+    expect(view.indexOf('total_income_unpaid')).toBeLessThan(view.indexOf('total_expense_invoices'))
+    // No invoice type falls outside both sums.
+    expect([...moneyIn, ...moneyOut].sort()).toEqual([...DB_INVOICE_TYPES].sort())
+  })
+
+  it('the newest company_statistics migration is the one tested above', () => {
+    const files = readdirSync(join(process.cwd(), 'supabase/migrations'))
+      .filter(file => read(`supabase/migrations/${file}`).includes('VIEW public.company_statistics'))
+      .sort()
+    expect(files[files.length - 1]).toBe('20261005120000_company_statistics_cash_direction.sql')
+  })
 })
+
+describe('operating and financing', () => {
+  it('files the three bank types under financing and everything else under operating', () => {
+    expect([...FINANCING_INVOICE_TYPES].sort()).toEqual(['INCOMING_BANK', 'INCOMING_BANK_EXPENSES', 'OUTGOING_BANK'])
+    for (const type of DB_INVOICE_TYPES) {
+      expect(invoiceCashActivity(type), type).toBe(type.includes('_BANK') ? 'financing' : 'operating')
+    }
+    expect(invoiceCashActivity('INCOMING_INVESTMENT')).toBe('operating')
+    expect(invoiceCashActivity(null)).toBe('operating')
+  })
+
+  it('keeps the direction inside financing: a drawdown is in, a repayment and credit fees are out', () => {
+    expect(invoiceCashDirection('OUTGOING_BANK')).toBe('IN')
+    expect(invoiceCashDirection('INCOMING_BANK')).toBe('OUT')
+    expect(invoiceCashDirection('INCOMING_BANK_EXPENSES')).toBe('OUT')
+  })
+
+  it('is what the General report splits its cash-flow table by', () => {
+    const source = read('src/components/Reports/services/generalReportService.ts')
+    expect(source).toContain("amounts('operating')")
+    expect(source).toContain("amounts('financing')")
+    expect(source).toContain('invoiceCashActivity(')
+  })
+})
+

@@ -3,8 +3,8 @@ import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
-import { isCashIn, isCashOut, isCostInvoiceType } from '../../../utils/invoiceCashDirection'
-import type { ComprehensiveReport, ProjectData, ReportRisk } from '../types'
+import { isCashIn, isCashOut, isCostInvoiceType, invoiceCashActivity, type CashActivity } from '../../../utils/invoiceCashDirection'
+import type { CashFlowAmounts, ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -129,7 +129,8 @@ export async function fetchGeneralReportData(
   // The cash-flow table is cash: every payment, on the side the shared direction map puts it —
   // the same rule as the bank balance. It used to count ULAZNI (INV) as inflow, and to leave
   // credit drawdowns, repayments and credit fees out altogether, so its net could not be
-  // reconciled with the accounts.
+  // reconciled with the accounts. Those three are now counted under "financing", apart from
+  // operations, so a drawdown does not read as a good month's trading.
   const invoiceTypeById = new Map(accountingInvoicesArray.map(inv => [inv.id, inv.invoice_type]))
   const inflowPaymentsArray = accountingPaymentsArray.filter(p => isCashIn(invoiceTypeById.get(p.invoice_id)))
   const outflowPaymentsArray = accountingPaymentsArray.filter(p => isCashOut(invoiceTypeById.get(p.invoice_id)))
@@ -234,27 +235,33 @@ export async function fetchGeneralReportData(
   const cashFlow = months.map(month => {
     const monthStart = startOfMonth(month)
     const monthEnd = endOfMonth(month)
+    const inMonth = (p: { payment_date: string }) => {
+      const date = new Date(p.payment_date)
+      return date >= monthStart && date <= monthEnd
+    }
 
-    const monthInflow = inflowPaymentsArray
-      .filter(p => {
-        const date = new Date(p.payment_date)
-        return date >= monthStart && date <= monthEnd
-      })
-      .reduce((sum, p) => sum + p.amount, 0)
+    // Each payment lands in exactly one of four cells: in or out, operating or financing.
+    const amounts = (activity: CashActivity): CashFlowAmounts => {
+      const sum = (payments: typeof inflowPaymentsArray) =>
+        payments
+          .filter(p => inMonth(p) && invoiceCashActivity(invoiceTypeById.get(p.invoice_id)) === activity)
+          .reduce((total, p) => total + p.amount, 0)
+      const inflow = sum(inflowPaymentsArray)
+      const outflow = sum(outflowPaymentsArray)
+      return { inflow, outflow, net: inflow - outflow }
+    }
 
-    const monthOutflow = outflowPaymentsArray
-      .filter(p => {
-        const date = new Date(p.payment_date)
-        return date >= monthStart && date <= monthEnd
-      })
-      .reduce((sum, p) => sum + p.amount, 0)
+    const operating = amounts('operating')
+    const financing = amounts('financing')
 
     return {
       // A machine key, not a label. Both readers format it in the language they are rendering in.
       month_key: format(startOfMonth(month), 'yyyy-MM-dd'),
-      inflow: monthInflow,
-      outflow: monthOutflow,
-      net: monthInflow - monthOutflow
+      inflow: operating.inflow + financing.inflow,
+      outflow: operating.outflow + financing.outflow,
+      net: operating.net + financing.net,
+      operating,
+      financing,
     }
   })
 

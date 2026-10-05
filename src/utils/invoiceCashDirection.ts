@@ -78,3 +78,25 @@ export const carriesInputVat = isCashOut
 
 /** Invoices whose VAT is output VAT: every invoice the company issues. */
 export const carriesOutputVat = isCashIn
+
+/**
+ * Whether a payment belongs to running the business or to financing it.
+ *
+ * Financing is the three bank types: a credit drawn down (OUTGOING_BANK, money in), a credit
+ * repaid (INCOMING_BANK) and what the credit costs (INCOMING_BANK_EXPENSES). A cash-flow table
+ * that mixes them with operations shows a €600k drawdown as a good month; one that leaves them
+ * out cannot be reconciled with the bank balance. So they are counted, on their own lines.
+ *
+ * ULAZNI (INV) is operating: it is a cost invoice (see COST_INVOICE_TYPES), not a movement of
+ * the credit itself.
+ */
+export type CashActivity = 'operating' | 'financing'
+
+export const FINANCING_INVOICE_TYPES: ReadonlySet<string> = new Set([
+  'OUTGOING_BANK',
+  'INCOMING_BANK',
+  'INCOMING_BANK_EXPENSES',
+])
+
+export const invoiceCashActivity = (invoiceType: string | null | undefined): CashActivity =>
+  invoiceType && FINANCING_INVOICE_TYPES.has(invoiceType) ? 'financing' : 'operating'

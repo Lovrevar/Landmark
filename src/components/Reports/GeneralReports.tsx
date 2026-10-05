@@ -387,35 +387,47 @@ const GeneralReports: React.FC = () => {
           <BarChart3 className="w-6 h-6 text-blue-600 mr-2" />
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('reports.general.cash_flow')}</h2>
         </div>
-        <Table>
-          <Table.Head>
-            <Table.Tr>
-              <Table.Th>{t('reports.general.month_col')}</Table.Th>
-              <Table.Th>{t('reports.general.inflow_col')}</Table.Th>
-              <Table.Th>{t('reports.general.outflow_col')}</Table.Th>
-              <Table.Th>{t('reports.general.net_col')}</Table.Th>
-            </Table.Tr>
-          </Table.Head>
-          <Table.Body>
-            {report.cash_flow.map((month, index) => (
-              <Table.Tr key={index}>
-                <Table.Td label={t('reports.general.month_col')} className="font-medium text-gray-900 dark:text-white">{formatMonthYear(month.month_key, i18n.language)}</Table.Td>
-                <Table.Td label={t('reports.general.inflow_col')}>{formatEuroCompact(month.inflow)}</Table.Td>
-                <Table.Td label={t('reports.general.outflow_col')}>{formatEuroCompact(month.outflow)}</Table.Td>
-                <Table.Td label={t('reports.general.net_col')} className={`font-bold ${month.net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatEuroCompact(month.net)}
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Body>
-        </Table>
+        {(['operating', 'financing'] as const).map(activity => (
+          <div key={activity} className="mb-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t(`reports.general.cash_flow_${activity}`)}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t(`reports.general.cash_flow_${activity}_note`)}</p>
+            <Table>
+              <Table.Head>
+                <Table.Tr>
+                  <Table.Th>{t('reports.general.month_col')}</Table.Th>
+                  <Table.Th>{t('reports.general.inflow_col')}</Table.Th>
+                  <Table.Th>{t('reports.general.outflow_col')}</Table.Th>
+                  <Table.Th>{t('reports.general.net_col')}</Table.Th>
+                </Table.Tr>
+              </Table.Head>
+              <Table.Body>
+                {report.cash_flow.map((month, index) => (
+                  <Table.Tr key={index}>
+                    <Table.Td label={t('reports.general.month_col')} className="font-medium text-gray-900 dark:text-white">{formatMonthYear(month.month_key, i18n.language)}</Table.Td>
+                    <Table.Td label={t('reports.general.inflow_col')}>{formatEuroCompact(month[activity].inflow)}</Table.Td>
+                    <Table.Td label={t('reports.general.outflow_col')}>{formatEuroCompact(month[activity].outflow)}</Table.Td>
+                    <Table.Td label={t('reports.general.net_col')} className={`font-bold ${month[activity].net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {formatEuroCompact(month[activity].net)}
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Body>
+            </Table>
+          </div>
+        ))}
         <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
           <p className="font-bold text-gray-900 dark:text-white">{t('reports.general.six_month_totals')}</p>
-          <p className="text-sm text-gray-700 dark:text-gray-200">
-            {t('reports.general.inflow_col')}: {formatEuroCompact(report.cash_flow.reduce((sum, m) => sum + m.inflow, 0))} |
-            {t('reports.general.outflow_col')}: {formatEuroCompact(report.cash_flow.reduce((sum, m) => sum + m.outflow, 0))} |
-            {t('reports.general.net_col')}: {formatEuroCompact(report.cash_flow.reduce((sum, m) => sum + m.net, 0))}
-          </p>
+          {([
+            ['reports.general.cash_flow_operating', report.cash_flow.map(m => m.operating)],
+            ['reports.general.cash_flow_financing', report.cash_flow.map(m => m.financing)],
+            ['reports.general.cash_flow_total', report.cash_flow],
+          ] as const).map(([labelKey, rows]) => (
+            <p key={labelKey} className={`text-sm text-gray-700 dark:text-gray-200 ${labelKey.endsWith('_total') ? 'font-semibold' : ''}`}>
+              {t(labelKey)}: {t('reports.general.inflow_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.inflow, 0))} |{' '}
+              {t('reports.general.outflow_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.outflow, 0))} |{' '}
+              {t('reports.general.net_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.net, 0))}
+            </p>
+          ))}
         </div>
       </div>
 
