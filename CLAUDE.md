@@ -196,7 +196,7 @@ Full documentation: [`docs/ACTIVITY_LOG.md`](./docs/ACTIVITY_LOG.md)
 
 Full module map with per-file descriptions: [`docs/CODEBASE_INDEX.md`](./docs/CODEBASE_INDEX.md).
 When working in a specific module, read the relevant file in `docs/` (e.g. `docs/SALES.md`, `docs/FUNDING.md`) before making changes.
-Known defects and the decisions still open are tracked in [`docs/DEFECT_BACKLOG.md`](./docs/DEFECT_BACKLOG.md).
+Known defects and the decisions still open are tracked in [`docs/backlog/DEFECT_BACKLOG.md`](./docs/backlog/DEFECT_BACKLOG.md).
 
 The `tasks` tables are **shared with a standalone mobile task app** that points at the same
 production database. This repo owns that schema. Before changing any `task*` table, RPC or

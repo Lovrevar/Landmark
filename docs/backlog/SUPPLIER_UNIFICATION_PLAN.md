@@ -8,7 +8,7 @@ The database currently has three structurally-overlapping "vendor/payee" tables:
 (`name`, contact, address, tax id, `notes`, timestamps) with inconsistent shapes
 (`contact` vs `contact_person/_phone/_email`; `oib` vs `tax_id`+`vat_id`), and the
 app already merges them logically at read time in
-[debtService.ts](src/components/Cashflow/DebtStatus/services/debtService.ts) and the
+[debtService.ts](../../src/components/Cashflow/DebtStatus/services/debtService.ts) and the
 Approvals service. `accounting_invoices` carries **three** separate supplier FK
 columns plus a large `check_invoice_entity_type` CHECK to distinguish them.
 
@@ -164,13 +164,13 @@ id/name lookups in supplier-management screens and `debtService` id resolution â
 **Must change (forced by the invoice-FK collapse):**
 1. Invoice write paths â€” stop branching to `retail_supplier_id`/`office_supplier_id`;
    write the single `supplier_id` (category already lives in `invoice_category`):
-   [invoiceService.ts](src/components/Cashflow/Invoices/services/invoiceService.ts),
-   [retailInvoiceFormDataService.ts](src/components/Cashflow/Invoices/services/retailInvoiceFormDataService.ts),
-   [landPurchaseFormDataService.ts](src/components/Cashflow/Invoices/services/landPurchaseFormDataService.ts).
+   [invoiceService.ts](../../src/components/Cashflow/Invoices/services/invoiceService.ts),
+   [retailInvoiceFormDataService.ts](../../src/components/Cashflow/Invoices/services/retailInvoiceFormDataService.ts),
+   [landPurchaseFormDataService.ts](../../src/components/Cashflow/Invoices/services/landPurchaseFormDataService.ts).
 2. PostgREST **embedded selects** that rely on the old invoiceâ†’vendor FK
    (e.g. `.select('*, subcontractors(...)')`, `retail_suppliers(...)`) must embed
    `suppliers(name, category)` instead â€” primarily
-   [approvalsService.ts](src/components/Cashflow/Approvals/services/approvalsService.ts)
+   [approvalsService.ts](../../src/components/Cashflow/Approvals/services/approvalsService.ts)
    and any invoice/report reads embedding these relations. The compat views do **not**
    serve FK-based embedding.
 3. `debtService` can be simplified to read `supplier_id` + join `suppliers` (category
@@ -179,7 +179,7 @@ id/name lookups in supplier-management screens and `debtService` id resolution â
 
 **Types & logging:**
 - Regenerate `src/types/database.ts` from the new schema; update the
-  `Subcontractor` and supplier types in [supabase.ts](src/lib/supabase.ts) (compat
+  `Subcontractor` and supplier types in [supabase.ts](../../src/lib/supabase.ts) (compat
   views keep the same column shapes, so most types stay valid).
 - Activity log: existing `subcontractor.*` / `office_supplier.*` actions still fire
   through the views. Optionally add the missing `retail_supplier.*` actions; no
@@ -201,7 +201,7 @@ id/name lookups in supplier-management screens and `debtService` id resolution â
 4. **Compat views writable:** INSERT/UPDATE/DELETE through each view and confirm rows
    land in `suppliers` + the right extension.
 5. **App E2E:** run the existing money-write / invoice E2E specs (see
-   [docs/TESTING.md](docs/TESTING.md)); manually exercise the Supervision
+   [docs/TESTING.md](../TESTING.md)); manually exercise the Supervision
    subcontractor screen, Retail supplier screen, Cashflow Office-suppliers screen,
    invoice creation for each category, the Approvals list, and the Debt-status report.
 6. Run `npm run build` / typecheck after regenerating `database.ts`.

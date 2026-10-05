@@ -608,9 +608,9 @@ Both windows count `ai_messages` rows where `role='user'` and `ai_sessions.user_
 
 ### Cross-references to the security backlog
 
-- **[SEC-001](./SECURITY_BACKLOG.md#sec-001-cashflow-access-is-role-gated-only-password-modal-is-ui-only)** — Cashflow data access in the rest of the app is gated by role at the RLS layer only; the password modal is UI theatre. The AI chat inherits this posture intentionally. When SEC-001 is resolved (cashflow enforcement moved to a JWT claim plus RLS), the chat will inherit the new enforcement automatically.
-- **[SEC-002](./SECURITY_BACKLOG.md#sec-002-cashflow-profile-remains-selectable-in-the-dropdown-when-misconfigured)** — UX-only follow-up to SEC-001.
-- **[SEC-003](./SECURITY_BACKLOG.md#sec-003-rls-policies-on-project_managers-compare-wrong-uuid-columns)** — RLS policies on `project_managers` use `users.id = auth.uid()` where the correct bridge is `users.auth_user_id = auth.uid()`. The AI chat is unaffected because [supabase/functions/_shared/auth.ts](../supabase/functions/_shared/auth.ts) reads `project_managers` via the service client.
+- **[SEC-001](./backlog/SECURITY_BACKLOG.md#sec-001-cashflow-access-is-role-gated-only-password-modal-is-ui-only)** — Cashflow data access in the rest of the app is gated by role at the RLS layer only; the password modal is UI theatre. The AI chat inherits this posture intentionally. When SEC-001 is resolved (cashflow enforcement moved to a JWT claim plus RLS), the chat will inherit the new enforcement automatically.
+- **[SEC-002](./backlog/SECURITY_BACKLOG.md#sec-002-cashflow-profile-remains-selectable-in-the-dropdown-when-misconfigured)** — UX-only follow-up to SEC-001.
+- **[SEC-003](./backlog/SECURITY_BACKLOG.md#sec-003-rls-policies-on-project_managers-compare-wrong-uuid-columns)** — RLS policies on `project_managers` use `users.id = auth.uid()` where the correct bridge is `users.auth_user_id = auth.uid()`. The AI chat is unaffected because [supabase/functions/_shared/auth.ts](../supabase/functions/_shared/auth.ts) reads `project_managers` via the service client.
 
 ### Why we trust JWTs but re-read role on every request
 
