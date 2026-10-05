@@ -149,7 +149,12 @@ from the `bank_balances` feed (company by OIB, account by IBAN) instead of addin
 IBAN field to the company form; the form's balance fields go in phase 5 anyway.
 *Owner: us.*
 
-### Q19 — Is `INCOMING_INVESTMENT` money in or money out? 🟡
+### Q19 — Is `INCOMING_INVESTMENT` money in or money out? ✅
+**Answered 2026-10-05: always money out.** The app now reads one map
+(`src/utils/invoiceCashDirection.ts`); `company_statistics` follows in migration
+`20261005110000` (not yet applied). The income/expense view's treatment of the
+bank-credit types is still open (DEFECT_BACKLOG CASH-7). Original question:
+
 The resolver reads `INCOMING` as a received bill, so an `INCOMING_INVESTMENT` from an
 investor partner is a payable — money out when paid. The balance trigger and the
 payments list agree; the Accounting dashboard and the general report count it as

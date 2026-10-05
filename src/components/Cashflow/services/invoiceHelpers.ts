@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next'
 import type { Invoice, Project, Contract, Milestone } from '../Invoices/types'
 import { daysFromToday } from '../../../utils/dateOnly'
 import { NO_VALUE } from '../../../utils/formatters'
+import { invoiceCashDirection, type CashDirection } from '../../../utils/invoiceCashDirection'
 
 /**
  * The one invoice-status renderer: Badge variant + i18n label key. Use these rather than a local
@@ -67,29 +68,23 @@ export const getInvoiceCategoryLabel = (category: string | null | undefined, t: 
   return key ? t(key) : (category || NO_VALUE)
 }
 
-export const getTypeColor = (type: string): string => {
-  if (type === 'INCOMING_SUPPLIER' || type === 'INCOMING_OFFICE' || type === 'INCOMING_BANK' || type === 'INCOMING_BANK_EXPENSES') {
-    return 'text-red-600'
-  }
-  return 'text-green-600'
-}
+/**
+ * Colour of an invoice type label: red for an invoice the company pays, green for one it is paid
+ * on. Read from the shared direction map, so the label cannot disagree with the tab the invoice
+ * sits on — ULAZNI (INV) used to be green on the red "Ulazni" tab.
+ */
+export const getTypeColor = (type: string): string =>
+  invoiceCashDirection(type) === 'OUT' ? 'text-red-600' : 'text-green-600'
 
 /**
- * Which way money moves when an invoice of this type is paid, from the company's side. The prefix
- * names the invoice, not the cash: paying an INCOMING_* invoice (a bill we received — a supplier,
- * a loan repayment, credit fees) is money OUT; an OUTGOING_* invoice (one we issued — a sale, a
- * credit drawdown booked as OUTGOING_BANK) is money IN. Same sign convention as the bank-balance
- * trigger in 20260917100000_payment_update_balance_triggers.sql. Null for a type with neither prefix.
- * Caveat: INCOMING_INVESTMENT is OUT here (and in the trigger) but counted as cash IN by the
- * accounting dashboard and `getTypeColor` — settle that before using this for those screens.
+ * Which way money moves when an invoice of this type is paid, from the company's side: `'OUT'`
+ * for every INCOMING_* invoice (a bill received), `'IN'` for every OUTGOING_* one (an invoice
+ * issued, including a credit drawdown booked as OUTGOING_BANK). The rule itself lives in
+ * `utils/invoiceCashDirection.ts`, which every screen and the bank-balance trigger agree with.
  */
-export type PaymentDirection = 'IN' | 'OUT'
+export type PaymentDirection = CashDirection
 
-export const paymentDirection = (invoiceType: string | null | undefined): PaymentDirection | null => {
-  if (invoiceType?.startsWith('OUTGOING_')) return 'IN'
-  if (invoiceType?.startsWith('INCOMING_')) return 'OUT'
-  return null
-}
+export const paymentDirection = invoiceCashDirection
 
 export type InvoiceDirection = 'INCOMING' | 'OUTGOING'
 

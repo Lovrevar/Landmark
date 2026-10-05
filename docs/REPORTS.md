@@ -61,6 +61,7 @@ Two things to know before adding a figure here:
   Zapad's leftover €1.000.000.000 made up 89% of a €1.118M "Portfolio Value" on a page headed
   Executive Report; the same figure is now €63.6M, the sum of the three real cost plans.
 - `fetchGeneralReportData(selectedProject, dateRange)` — aggregates data from 40+ tables into a ComprehensiveReport covering: executive summary, KPIs (portfolio value, sales rate, D/E ratio), sales performance, funding structure, construction status, accounting overview, TIC cost management, risk assessment, and cash flow analysis
+  - Cash-flow table: every payment, split by `invoiceCashDirection` (so it reconciles with the bank balance — credit drawdowns are inflow, repayments, credit fees and ULAZNI (INV) outflow). Expenses and per-project expenses use `isCostInvoiceType`
 - **One failed query fails the whole report.** supabase-js resolves a failure as `{ data: null, error }` rather than rejecting, and every read here falls back to `[]`, so until September 2026 a dropped request produced an executive report of zeros — and exported it to PDF. `throwIfAnyFailed()` checks both `Promise.all` batches (the 27 top-level reads and the garage/repository price lookup) and throws, which `useCachedData` hands the page as an `error`
 - **Depends on:** supabase client
 

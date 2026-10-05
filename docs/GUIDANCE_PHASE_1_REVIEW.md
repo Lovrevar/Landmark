@@ -395,3 +395,23 @@ Shown: General → Dnevnik aktivnosti, checkbox under the filters (Director only
 - **Decision 1 is settled** as you asked: an article is now shown to the roles it lists *and* to any role that can open a page it is tagged to. The rule for "can open" follows the router: Cashflow pages are Director and Accounting, General reports and the Activity Log are Director, and the Supervision role counts only the pages it is offered (its three menu items plus Chat, Tasks, Calendar and Help). An article with no `routes` still goes by its `roles` alone.
 - One consequence to know before you mark section 6: `supervision-payments` and `supervision-invoices` still list Supervision in `roles`, so that role sees those two articles on `/help` although it can no longer reach the pages. Removing Supervision from their `roles` fixes it.
 - The garage import lines (previously noted as left in English) are translated — 8.2.
+
+### 8.6 Third round (2026-10-05): ULAZNI (INV) decision and the Cashflow profile
+
+No new strings. One string changed and one was removed:
+
+**`invoices.hints.type_colour`** — the hint on the Tip column (4.3 above). ULAZNI (INV) is now red like every other incoming type, so the exception is gone.
+
+| | Before | After |
+|---|---|---|
+| HR | Crveno označava račune koje plaćamo, zeleno račune po kojima novac primamo. ULAZNI (INV) prikazuje se zeleno. | Crveno označava račune koje plaćamo (svi ulazni), zeleno račune po kojima novac primamo (svi izlazni). |
+| EN | Red marks invoices we pay, green marks invoices we are paid on. ULAZNI (INV) is shown in green. | Red marks invoices we pay (every incoming one), green marks invoices we are paid on (every outgoing one). |
+
+**Removed: `retail_projects.invoices_modal.type_incoming_investment`** ("Ulazni (Kupac)" / "Incoming (Customer)"). It labelled the retail "Ulazni + Kupac" combination, which is removed from the form. If such a type ever appears in that modal it now reads "Ulazni (Investicije)", the shared label.
+
+What this settles in sections 6 and 7:
+
+- **Decision 2 (ULAZNI (INV)) is settled: always money out.** In 6.2, the `term-invoice-types` row for it can now read: "**ULAZNI (INV)** — račun financijera (banke) koji plaćamo; u obrascu **Ulazni (Investicije)**, veže se uz banku". Not applied.
+- **Root cause 2 in 6.1 no longer holds.** The Cashflow profile is now offered only to Director and Accounting, so the proposed replacements in `role-cannot-see-cashflow` and `cashflow-unlock` that describe other roles entering the password should instead say: "Profil **Cashflow** u dropdownu profila vide samo uloge Director i Accounting." Not applied.
+- **`supervision-payments` and `supervision-invoices`** no longer list Supervision in `roles` (frontmatter only, no text change), so that role no longer sees them on `/help`. The assistant index is rebuilt.
+

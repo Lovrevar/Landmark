@@ -700,7 +700,7 @@
     "hints": {
       "type_title": "Tip računa",
       "type_intro": "Kratica u zagradi govori na što se račun odnosi:",
-      "type_colour": "Crveno označava račune koje plaćamo, zeleno račune po kojima novac primamo. ULAZNI (INV) prikazuje se zeleno."
+      "type_colour": "Crveno označava račune koje plaćamo (svi ulazni), zeleno račune po kojima novac primamo (svi izlazni)."
     }
   },
   "payments": {
@@ -3321,7 +3321,6 @@
       "remaining_label": "Preostalo: €{{amount}}",
       "type_incoming_supplier": "Ulazni (Dobavljač)",
       "type_outgoing_supplier": "Izlazni (Dobavljač)",
-      "type_incoming_investment": "Ulazni (Kupac)",
       "type_outgoing_sales": "Izlazni (Kupac)"
     }
   },

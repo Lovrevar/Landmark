@@ -350,7 +350,27 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### CASH-7 · Medium · Income and expense are classified four different ways
 - **ERP:** The ERP resolver reads `INCOMING` as a received bill (a payable), so `INCOMING_INVESTMENT` is money out when paid — what the balance trigger and payments list already do. Recommended: cash-flow screens use the prefix rule (`OUTGOING_*` in, `INCOMING_*` out); the company income/expense view leaves out the bank-credit types (`*_BANK`, `INCOMING_BANK_EXPENSES`), which are neither revenue nor expense. Confirm with accounting before changing.
-- **Status:** Open — **needs a product decision**: which screens mean cash flow (the balance trigger's rule: `OUTGOING_*` in, `INCOMING_*` out) and which mean revenue/expense (company statistics)? In particular, is `INCOMING_INVESTMENT` money in (dashboard, general report) or out (balance trigger, payments list)?
+- **Status:** Resolved 2026-10-05 on `feat/user-guidance-phase-1`. **Decision: ULAZNI (INV)
+  (`INCOMING_INVESTMENT`) is always money out** — a bill received from a financier. One map,
+  `src/utils/invoiceCashDirection.ts`, now defines the cash direction of every invoice type
+  (`INCOMING_*` out, `OUTGOING_*` in, no exceptions) and is read by the Accounting dashboard, the
+  General report cash-flow table (screen and PDF), the invoice type colour and `paymentDirection()`.
+  The type also counts as a cost in the Director dashboard and General report expenses, and its VAT
+  as input VAT on the dashboard. `company_statistics` moves it from income to expense in migration
+  `20261005110000` (**written, not applied**). The retail "Ulazni + Kupac" form option, which
+  mapped to this type and could never pass `check_invoice_entity_type`, is removed.
+  `invoiceCashDirection.test.ts` reads the bank-balance function and the view migration and fails
+  if SQL and client drift apart. Production held **no** rows of this type when checked, so no
+  existing figure moved.
+- **Knock-on, deliberate:** the General report cash-flow table now uses the shared map for *every*
+  type, so credit drawdowns (`OUTGOING_BANK`) appear as inflow and repayments and credit fees
+  (`INCOMING_BANK`, `INCOMING_BANK_EXPENSES`) as outflow. Before, it left all three out and could
+  not be reconciled with the bank balance.
+- **Still open, split out — not covered by the decision:**
+  - `company_statistics` lists `OUTGOING_SUPPLIER` and `OUTGOING_BANK` under *expense*, although
+    both are money in. Whether that view means revenue/expense or cash flow is undecided.
+  - The Cashflow Calendar's monthly sums leave `INCOMING_BANK_EXPENSES` out of both sides. What it
+    does count agrees with the map.
 - `company_statistics`, the Accounting dashboard, `paymentDirection()` and the General report
   cash-flow table disagree on `INCOMING_INVESTMENT`, `OUTGOING_SUPPLIER`, `OUTGOING_BANK` and the
   bank types. The dashboard service comment claiming it matches the calendar convention is wrong.

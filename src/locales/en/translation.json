@@ -697,7 +697,7 @@
     "hints": {
       "type_title": "Invoice type",
       "type_intro": "The abbreviation in brackets says what the invoice relates to:",
-      "type_colour": "Red marks invoices we pay, green marks invoices we are paid on. ULAZNI (INV) is shown in green."
+      "type_colour": "Red marks invoices we pay (every incoming one), green marks invoices we are paid on (every outgoing one)."
     }
   },
   "payments": {
@@ -3314,7 +3314,6 @@
       "remaining_label": "Remaining: €{{amount}}",
       "type_incoming_supplier": "Incoming (Supplier)",
       "type_outgoing_supplier": "Outgoing (Supplier)",
-      "type_incoming_investment": "Incoming (Customer)",
       "type_outgoing_sales": "Outgoing (Customer)"
     }
   },

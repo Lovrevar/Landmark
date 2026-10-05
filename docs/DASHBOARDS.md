@@ -271,7 +271,7 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 Net figures show their own sign; colour is reinforcement, never the only cue. Net cash flow, the current-month net and a company's net balance render signed. `Math.abs` survives in exactly three money sites, where the **label** carries the direction and a minus would double it: net VAT and current-month net VAT (`to_pay_tax` / `to_receive_tax`), and the monthly budget tile (`budget_remaining` / `budget_overage`). Monthly trends prefix `+` for positives and lets the helper print the minus.
 
 ### Data-integrity conventions (enforced 2026-06-16, see `DASHBOARD_AUDIT.md`)
-- Classify invoices against the real `invoice_type` enum (9 values) — never invented strings. `INCOMING_INVESTMENT` is treated as **incoming cash**.
+- Classify invoices against the real `invoice_type` enum (9 values) — never invented strings. `INCOMING_INVESTMENT` is **money out**, like every `INCOMING_*` type — the direction comes from `src/utils/invoiceCashDirection.ts`, never from a list kept in a dashboard service (CASH-7, decided 2026-10-05; this reverses the June note in `DASHBOARD_AUDIT.md`). Cost figures use `isCostInvoiceType` (supplier, office and financier bills); input VAT is every received invoice.
 - Debt KPIs exclude `credit_type='equity'` and repaid/defaulted credits; "weighted" interest is amount-weighted.
 - Sales counts cover all three unit tables (`apartments`, `garages`, `repositories`); revenue is apartment-only (only apartments are invoiced) and labelled accordingly.
 - Retail figures follow the Retail report, not the invoice table: revenue is the contracted sales

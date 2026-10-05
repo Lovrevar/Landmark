@@ -115,12 +115,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showProfileDropdown])
 
+  // The Cashflow profile is for the two roles its pages and data are for (CashflowRoute in
+  // App.tsx, RLS underneath). The password prompt alone never checked: any role that knew the
+  // password got the profile, its menu and the accounting dashboard shell, then bounced off
+  // every page. Like the prompt, this is what the screen offers, not a security boundary.
+  const canUseCashflowProfile = user?.role === 'Director' || user?.role === 'Accounting'
+
   useEffect(() => {
-    if (currentProfile === 'Cashflow' && !cashflowUnlocked) {
+    if (currentProfile !== 'Cashflow') return
+    if (!canUseCashflowProfile) {
+      // A disallowed role already on Cashflow — a profile remembered from before this check.
+      setCurrentProfile('General')
+      navigate('/')
+      return
+    }
+    if (!cashflowUnlocked) {
       setPendingProfile('Cashflow')
       setShowPasswordModal(true)
     }
-  }, [currentProfile, cashflowUnlocked])
+  }, [currentProfile, cashflowUnlocked, canUseCashflowProfile, setCurrentProfile, navigate])
 
   const getMenuItems = () => {
     // The Supervision *role* short-circuits the profile menus below: whichever profile is
@@ -218,6 +231,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handleProfileChange = (profile: Profile) => {
     // Switching profile lands on the dashboard, so it leaves the current screen just as a menu
     // click does — guarded as one.
+    // Not offered to other roles; refused here as well in case the request comes some other way.
+    if (profile === 'Cashflow' && !canUseCashflowProfile) return
     requestLeave(() => {
       if (profile === 'Cashflow' && !cashflowUnlocked) {
         setPendingProfile(profile)
@@ -264,7 +279,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEscapeKey(showPasswordModal, handlePasswordCancel)
   useFocusTrap(passwordDialogRef, showPasswordModal)
 
-  const profiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
+  const allProfiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
+  const profiles = allProfiles.filter(profile => profile !== 'Cashflow' || canUseCashflowProfile)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

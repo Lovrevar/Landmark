@@ -928,10 +928,11 @@ Shared utilities used across multiple Cashflow sub-modules.
   of that type is paid: `OUTGOING_*` (we issued it — a sale, a credit drawdown) is money **in**,
   `INCOMING_*` (we received it — a supplier bill, a repayment, credit fees) is money **out**. Same
   sign convention as the bank-balance trigger. Used by both payment screens (Cashflow → Payments
-  and Funding → Payments) for the amount colour, the stat cards and the footer totals. Note that it puts
-  `INCOMING_INVESTMENT` on the OUT side, as the trigger does, whereas the accounting dashboard and
-  `getTypeColor` treat it as incoming cash
-- `getTypeColor(type)` — returns CSS class for invoice type badge
+  and Funding → Payments) for the amount colour, the stat cards and the footer totals. It *is*
+  `invoiceCashDirection` from `src/utils/invoiceCashDirection.ts` — the one map every screen, the
+  dashboards, the General report and the SQL balance function agree with (CASH-7: ULAZNI (INV) is
+  money out everywhere)
+- `getTypeColor(type)` — red for an invoice we pay, green for one we are paid on, read from the same map
 - **The shared invoice-type labels** — two forms of one vocabulary, both translated:
   - `getInvoiceTypeLabel(type, t)` → the short code (`invoice_type.*`, "ULAZNI (DOB)") for dense tables
   - `getInvoiceTypeLongLabel(type, t)` → spelled out (`invoice_type_long.*`, "Ulazni (Dobavljač)") for the invoice and payment detail views and the Cashflow Calendar, which each had their own wording before (and the calendar printed the three bank types raw)

@@ -2,30 +2,15 @@ import { supabase } from '../../../lib/supabase'
 import { fetchAllRows } from '../../../lib/fetchAllRows'
 import { format, startOfMonth, endOfMonth, startOfYear, subMonths } from 'date-fns'
 import { monthKey } from '../../../utils/dateOnly'
+import { isCashIn, isCashOut, carriesInputVat, carriesOutputVat } from '../../../utils/invoiceCashDirection'
 import type { VATStats, CashFlowStats, TopCompany, MonthlyData, MonthlyBudget } from '../types/accountingDashboardTypes'
 
-// Cash-flow direction by invoice_type, keyed against the real DB enum
-// (accounting_invoices_invoice_type_check). "Incoming cash" = money the company
-// receives: every OUTGOING_* invoice (issued to customers) plus INCOMING_INVESTMENT
-// (investor capital / bank drawdowns — confirmed as cash IN, matching the Cashflow
-// Calendar convention). "Outgoing cash" = bills the company pays.
-const INCOMING_CASH_TYPES = new Set([
-  'OUTGOING_SUPPLIER',
-  'OUTGOING_SALES',
-  'OUTGOING_OFFICE',
-  'OUTGOING_BANK',
-  'INCOMING_INVESTMENT'
-])
-
-const OUTGOING_CASH_TYPES = new Set([
-  'INCOMING_SUPPLIER',
-  'INCOMING_OFFICE',
-  'INCOMING_BANK',
-  'INCOMING_BANK_EXPENSES'
-])
-
-const isIncomingPaymentType = (invoiceType: string): boolean => INCOMING_CASH_TYPES.has(invoiceType)
-const isOutgoingPaymentType = (invoiceType: string): boolean => OUTGOING_CASH_TYPES.has(invoiceType)
+// Cash direction comes from the shared map (utils/invoiceCashDirection.ts): every OUTGOING_*
+// invoice is money the company receives, every INCOMING_* invoice — ULAZNI (INV) included — a
+// bill it pays. This file used to keep its own two lists, which put INCOMING_INVESTMENT on the
+// receiving side while the bank balance and the payments register subtracted it.
+const isIncomingPaymentType = isCashIn
+const isOutgoingPaymentType = isCashOut
 
 const sumVATAmounts = (invoice: { vat_amount_1?: string | number | null; vat_amount_2?: string | number | null; vat_amount_3?: string | number | null; vat_amount_4?: string | number | null }): number =>
   Number(invoice.vat_amount_1 || 0) +
@@ -46,17 +31,10 @@ export async function fetchVATStats(): Promise<VATStats> {
 
   if (error) throw error
 
-  // Output VAT comes from sales (OUTGOING). Input VAT (pretporez) is only
-  // deductible on taxable purchases — exclude INCOMING_INVESTMENT (financing
-  // carries no input VAT) so Net PDV isn't distorted.
-  const inputVATTypes = new Set([
-    'INCOMING_SUPPLIER',
-    'INCOMING_OFFICE',
-    'INCOMING_BANK',
-    'INCOMING_BANK_EXPENSES'
-  ])
-  const outgoingInvoices = (invoices || []).filter(inv => inv.invoice_type.startsWith('OUTGOING'))
-  const incomingInvoices = (invoices || []).filter(inv => inputVATTypes.has(inv.invoice_type))
+  // Output VAT comes from the invoices the company issues, input VAT (pretporez) from every
+  // invoice it receives — the same split as the payments register's PDV cards.
+  const outgoingInvoices = (invoices || []).filter(inv => carriesOutputVat(inv.invoice_type))
+  const incomingInvoices = (invoices || []).filter(inv => carriesInputVat(inv.invoice_type))
 
   const totalVATCollected = outgoingInvoices.reduce((sum, inv) => sum + sumVATAmounts(inv), 0)
   const totalVATPaid = incomingInvoices.reduce((sum, inv) => sum + sumVATAmounts(inv), 0)

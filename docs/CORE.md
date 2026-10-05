@@ -161,6 +161,11 @@ read "Jan 05, 2026".
 - `appLanguage` falls back to Croatian for an unknown language, mirroring what `fallbackLng: 'hr'`
   does to the strings on the same screen
 
+### invoiceCashDirection.ts
+- `INVOICE_CASH_DIRECTION` / `invoiceCashDirection(type)` → `'IN' | 'OUT' | null` — which way money moves for each of the nine invoice types: every `INCOMING_*` invoice (a bill received) is out, every `OUTGOING_*` one (issued) is in. **The only place this is decided**; do not write a type list in a service
+- `isCashIn` / `isCashOut`; `isCostInvoiceType` (supplier, office and financier bills — narrower than cash out: loan repayments and credit fees are not costs); `carriesInputVat` / `carriesOutputVat`
+- `invoiceCashDirection.test.ts` also reads the SQL (`recalc_company_bank_account_balance`, the `company_statistics` migration) and the calendar hook, and fails if any of them disagrees with the map
+
 ### statusDisplay.ts
 - `PROJECT_STATUS`, `CONTRACT_STATUS`, `RETAIL_CONTRACT_STATUS`, `RETAIL_PHASE_STATUS`,
   `UNIT_STATUS`, `MILESTONE_STATUS`, `RETAIL_MILESTONE_STATUS`, `RISK_LEVEL` — one label key and one

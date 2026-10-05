@@ -3,6 +3,7 @@ import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
+import { isCashIn, isCashOut, isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import type { ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 
 /**
@@ -125,19 +126,13 @@ export async function fetchGeneralReportData(
   const retailCustomersArray = retailCustomers || []
   const retailSuppliersArray = retailSuppliers || []
 
-  const inflowPaymentsArray = accountingPaymentsArray.filter(p => {
-    const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
-    return invoice?.invoice_type === 'OUTGOING_SALES' ||
-           invoice?.invoice_type === 'OUTGOING_OFFICE' ||
-           invoice?.invoice_type === 'OUTGOING_SUPPLIER' ||
-           invoice?.invoice_type === 'INCOMING_INVESTMENT'
-  })
-
-  const outflowPaymentsArray = accountingPaymentsArray.filter(p => {
-    const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
-    return invoice?.invoice_type === 'INCOMING_SUPPLIER' ||
-           invoice?.invoice_type === 'INCOMING_OFFICE'
-  })
+  // The cash-flow table is cash: every payment, on the side the shared direction map puts it —
+  // the same rule as the bank balance. It used to count ULAZNI (INV) as inflow, and to leave
+  // credit drawdowns, repayments and credit fees out altogether, so its net could not be
+  // reconciled with the accounts.
+  const invoiceTypeById = new Map(accountingInvoicesArray.map(inv => [inv.id, inv.invoice_type]))
+  const inflowPaymentsArray = accountingPaymentsArray.filter(p => isCashIn(invoiceTypeById.get(p.invoice_id)))
+  const outflowPaymentsArray = accountingPaymentsArray.filter(p => isCashOut(invoiceTypeById.get(p.invoice_id)))
 
   // Fetch garages and repositories for calculating total revenue
   const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
@@ -171,10 +166,9 @@ export async function fetchGeneralReportData(
     .reduce((sum, a) => sum + (a.price || 0), 0)
 
   const totalExpenses = accountingPaymentsArray
-    .filter(p => {
-      const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
-      return invoice?.invoice_type === 'INCOMING_SUPPLIER' || invoice?.invoice_type === 'INCOMING_OFFICE'
-    })
+    // Expenses are costs, not all cash out: supplier, office and financier bills (see
+    // COST_INVOICE_TYPES). Loan repayments and credit fees are not project expenses.
+    .filter(p => isCostInvoiceType(invoiceTypeById.get(p.invoice_id)))
     .reduce((sum, p) => sum + (p.amount || 0), 0)
   const totalProfit = totalRevenue - totalExpenses
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
@@ -279,8 +273,7 @@ export async function fetchGeneralReportData(
       const projectInvoiceIds = new Set(
         accountingInvoicesArray
           .filter(inv =>
-            inv.project_id === project.id &&
-            (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
+            inv.project_id === project.id && isCostInvoiceType(inv.invoice_type)
           )
           .map(inv => inv.id)
       )
