@@ -2,8 +2,8 @@
 
 Three complementary layers:
 
-1. **Unit suite** — Vitest, runs in-process with no DB, fast feedback. Covers pure functions (formatters, VAT calculations, price/credit math, TIC formatters, tree helpers).
-2. **Automated E2E suite** — Playwright, runs against the dev Supabase project, green suite required before release. Covers critical paths across Auth, Cashflow, Sales, Funding, Retail, Supervision.
+1. **Unit suite** — Vitest, runs in-process with no DB, fast feedback. Covers pure functions across every module (formatters, VAT and credit math, TIC, export rows, calendar recurrence, task rules, dashboard figures…).
+2. **Automated E2E suite** — Playwright, runs against the dev Supabase project, green suite required before release. Covers critical paths across Auth, Cashflow, Sales, Funding, Retail, Supervision and Reports.
 3. **Manual testing cheat sheet** — module-by-module walkable checklists under [./test/](./test/). Source of truth for edge cases, uncommon flows, and UX regressions not yet worth automating.
 
 Run the unit suite for instant feedback on the logic you touched, then E2E to catch the blunt-force regressions, and finally walk the relevant manual sheet for the module you touched.
@@ -18,16 +18,33 @@ Run the unit suite for instant feedback on the logic you touched, then E2E to ca
 
 Pure functions only — the deterministic calculation and formatting helpers that back the financial/UI layers. Component rendering and integration flows are left to the E2E suite.
 
-| Target | File | Covers |
-|---|---|---|
-| Formatters | [`src/utils/formatters.test.ts`](../src/utils/formatters.test.ts) | `formatFileSize`, `formatEuropean` (hr-HR locale, U+2212 minus), `formatEuro`, `formatEuroRounded` (ragged-decimal cure), `formatEuroCompact` (M/K thresholds, never €0.0M), and the nullish/NaN → dash contract on all four |
-| VAT calculations | [`src/utils/vatCalculations.test.ts`](../src/utils/vatCalculations.test.ts) | `CROATIAN_VAT_RATES`, `calculateVatBreakdown` — the 4-slot multi-VAT engine (25/13/0/5%), null-safe, total = sum of subtotals invariant |
-| Sales price utils | [`src/components/Sales/utils/priceUtils.test.ts`](../src/components/Sales/utils/priceUtils.test.ts) | `calculateAdjustedPriceRange` — increase/decrease with clamp-to-zero |
-| Credit calculations | [`src/components/Funding/Investors/utils/creditCalculations.test.ts`](../src/components/Funding/Investors/utils/creditCalculations.test.ts) | annuity payments, equity cashflow, money multiple, payment schedules, risk levels, badge variants |
-| TIC formatters | [`src/components/Funding/TIC/utils/ticFormatters.test.ts`](../src/components/Funding/TIC/utils/ticFormatters.test.ts) | `calculateRowPercentages`, `calculateTotals` (vlastita/kreditna), `formatNumber`, `formatPercentage` |
-| Documents tree helpers | [`src/components/Documents/utils/treeHelpers.test.ts`](../src/components/Documents/utils/treeHelpers.test.ts) | `buildIdMap`, `buildDescendantsMap`, `rollupCounts`, `flattenTree` |
-| EVM | [`src/utils/evm.test.ts`](../src/utils/evm.test.ts) | `calculatePhaseEVM` and `calculateProjectEVM` — PV/EV/AC, CPI/SPI, CV/SV, EAC/VAC, and the phase→project aggregation |
-| Payment payload | [`src/components/Cashflow/Payments/services/paymentPayload.test.ts`](../src/components/Cashflow/Payments/services/paymentPayload.test.ts) | `buildPaymentData` across all five payment methods (bank account, credit, kompenzacija, gotovina, cesija), plus empty-string→null normalisation and passthrough fields |
+66 test files as of 2026-10-01, each beside the code it tests. The first three rows are relative to
+`src/`, the module rows to `src/components/<Module>/`; the `.test.ts` suffix is left off:
+
+| Area | Files |
+|---|---|
+| Shared utils — `utils/` (14) | `formatters`, `vatCalculations` (the 4-slot multi-VAT engine), `dateOnly`, `evm`, `contractRollup`, `contractVariance`, `excelParsers`, `downloadFile`, `i18nGuards`, `locale`, `pdfFont`, `phaseLabel`, `projectTimeline`, `statusDisplay` |
+| Data layer — `lib/` (4) | `dbErrors`, `errorMessage`, `fetchAllRows`, `xlsxExport` |
+| Hooks — `hooks/` (2) | `useEscapeKey`, `useFocusTrap` (the pure layer-stack / focus helpers, no rendering) |
+| Calendar (6) | `utils/`: `eventEdit`, `eventTypeColors`, `monthLayout`, `pendingCount`, `recurrence`, `recurrencePresets` |
+| Cashflow (6) | `DebtStatus/services/debtExport`, `Payments/services/paymentPayload`, `Payments/services/paymentValidation`, `services/invoiceHelpers`, `services/paymentHelpers`, `services/paymentTotals` |
+| Chat (1) | `services/chatAttachmentPath` |
+| Documents (1) | `utils/treeHelpers` |
+| Funding (10) | `Investments/utils/creditUsage`, `Investors/utils/creditCalculations`, `Investors/utils/creditStatus`, `Payments/services/fundingPaymentsExport`, `Projects/utils/weightedInterestRate`, `TIC/services/ticExport`, `TIC/services/ticImport`, `TIC/utils/ticBudget`, `TIC/utils/ticClassificationMap`, `TIC/utils/ticFormatters` |
+| General (1) | `Projects/tabs/subcontractorsSummary` |
+| Reports (1) | `pdf/pdfExportKeys` |
+| Retail (2) | `Invoices/services/retailInvoiceService`, `Sales/services/retailSalesService` |
+| Sales (5) | `Payments/services/salesPaymentsService`, `SalesProjects/bulkPriceResult`, `SalesProjects/importOutcome`, `SalesProjects/unitFilters`, `utils/priceUtils` |
+| Supervision (6) | `Invoices/services/supervisionInvoiceService`, `Payments/services/supervisionPaymentService`, `SiteManagement/utils/classificationNormalization`, `SiteManagement/utils/contractTree`, `SiteManagement/utils/phaseSetup`, `WorkLogs/workLogStatus` |
+| Tasks (4) | `permissions`, `subtasks`, `taskLists`, `unread` |
+| Dashboards (3) | `utils/barScale`, `utils/directorAlerts`, `utils/retailTotals` |
+
+The specs that sit in `services/` test the pure helpers those files export (payment payloads,
+validation, export-sheet builders, TIC workbook parsing), never the Supabase calls.
+
+The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs the six
+`*.test.ts` files under `supabase/functions/` (`_shared/help-score`, `_shared/tools`,
+`import-erp/feeds`, `import-erp/parse`, `sort-document/classifier`, `sort-document/extract`).
 
 ### Configuration ([`vitest.config.ts`](../vitest.config.ts))
 
@@ -99,7 +116,7 @@ The parsing and validation logic has its own Deno unit tests
 
 **Location:** [`e2e/`](../e2e/). Strategy write-up: [`docs/test/e2e-testing-strategy.md`](./test/e2e-testing-strategy.md). Day-to-day commands live in [`e2e/README.md`](../e2e/README.md).
 
-### Current coverage (28 tests)
+### Current coverage (34 tests in 13 specs, as of 2026-10-01)
 
 | Module | Spec | Tests |
 |---|---|---|
@@ -110,9 +127,11 @@ The parsing and validation logic has its own Deno unit tests
 | Cashflow | `cashflow/unlock.spec.ts` | 2 — wrong password keeps modal open with `aria-invalid`; correct password sets the sessionStorage flag and opens `/accounting-invoices` |
 | Funding | `funding/access.spec.ts` | 2 — Investment user reaches `/banks` + `/funding-credits` |
 | Retail | `retail/customers.spec.ts` | 1 — Director creates a retail customer via the form; admin client verifies the row |
-| Sales | `sales/customers.spec.ts` | 1 — Sales user creates a customer via the form; admin client verifies the row |
+| Sales | `sales/customers.spec.ts` | 2 — Sales user creates a customer via the form, admin client verifies the row; the form dialog traps keyboard focus and returns it on Escape |
 | Sales | `sales/complete-sale.spec.ts` | 1 — selling an apartment marks it Sold, records sale + buyer, and sells linked units |
+| Supervision | `supervision/site-management-navigation.spec.ts` | 3 — browser Back and the in-app back button return from an open project to the list; an unknown project id falls back to the list |
 | Supervision | `supervision/work-logs.spec.ts` | 1 — Supervision user reaches `/work-logs` and the E2E anchor project appears in the project select (exercises `project_managers` RLS) |
+| Reports | `reports/load-failure.spec.ts` | 2 — an intercepted failed load shows the error and a retry, never an empty report (retail report, customer report) |
 | Smoke | `smoke.spec.ts` | 5 — every role's authenticated app shell loads |
 
 Total runtime on a warm system: **~1 minute**.

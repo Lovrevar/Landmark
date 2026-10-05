@@ -196,9 +196,9 @@ Bank and investor registry. Manages credit facilities and equity investments per
 - **Returns:** showBankForm, setShowBankForm, editingBank, newBank, setNewBank, handleEditBank, resetBankForm
 
 ### useCreditForm.ts
-- `useCreditForm(onSaved)` — manages credit facility add/edit form state, lazy-loads company bank accounts, computes the annuity payment, and persists create/update/delete with confirmation state
+- `useCreditForm(onSaved)` — manages credit facility add/edit form state, lazy-loads company bank accounts, computes the monthly debt service (`calculateMonthlyDebtService`, stored as `monthly_payment` with `repayment_type = 'monthly'`), and persists create/update/delete with confirmation state
 - **Calls:** creditService.ts (Investors)
-- **Uses utils:** creditCalculations (calculateAnnuityPayment, parseCreditTypeAndSeniority)
+- **Uses utils:** creditCalculations (calculateMonthlyDebtService, parseCreditTypeAndSeniority)
 - **Returns:** showCreditForm, setShowCreditForm, editingCredit, newCredit, setNewCredit, companyBankAccounts, loadingAccounts, handleEditCredit, resetCreditForm, addCredit, handleDeleteCredit, confirmDeleteCredit, cancelDeleteCredit, pendingDeleteId, pendingDeleteInvoiceCount, deleting
 
 ### useEquityForm.ts
@@ -290,13 +290,23 @@ The module's pure-maths layer, and the most heavily unit-tested file in the code
 (42 tests in `creditCalculations.test.ts`). No Supabase, no React — extract new financial
 maths here rather than inlining it in a hook.
 
-- `calculateAnnuityPayment({...})` — standard annuity instalment
-- `calculatePaymentSchedule(params)` → `PaymentScheduleResult | null` — the full schedule
-  driving `PaymentSchedulePreview`. Its `principalFrequency` / `interestFrequency` are the
+- **The repayment model** (decided 2026-10-01, DEFECT_BACKLOG FUND-5): equal principal
+  instalments at the principal frequency, starting after the grace period; interest on the
+  outstanding balance at the interest frequency, from the start date (a grace period defers
+  principal, not interest)
+- `calculatePaymentSchedule(params)` → `PaymentScheduleResult | null` — simulates that model
+  month by month: principal per payment, first and last interest payment, total interest, payment
+  counts, principal start date and `monthlyDebtService`. Drives `PaymentSchedulePreview` and the
+  dormant Cashflow ▸ Banks credit form. Its `principalFrequency` / `interestFrequency` are the
   **stored repayment type** (`monthly` / `quarterly` / …), not a label: they were English nouns
   that `banks.credit_form.every_frequency` interpolated into "Svakih month". Croatian needs a
   whole phrase per frequency, so the preview picks one from
   `banks.credit_form.frequency_every.*`
+- `calculateMonthlyDebtService(params)` — what `monthly_payment` stores: principal per payment ÷
+  months between principal payments + amount × rate ÷ 12, i.e. the monthly-equivalent debt service
+  when principal repayment starts (the highest it gets). 0 without a maturity date. Migration
+  `20261001100100` restated existing credits with the same formula
+- `wholeMonthsBetween(from, to)` — whole calendar months, the period arithmetic for the schedule
 - `calculateEquityCashflow(equity)` / `calculateMoneyMultiple(equity)` — equity return maths.
   Both return an `EquityPreview` (`{ status: 'ok', value }` / `{ status: 'incomplete' }` /
   `{ status: 'invalid_range' }`), **not** a display string. They used to return the reason as an
@@ -321,6 +331,9 @@ maths here rather than inlining it in a hook.
   credit form's `banks.credit_form.*` option labels (a `line_of_credit` picks `loc_senior` /
   `loc_junior` by seniority; `equity` → `funding.equity`); `null` for anything else, where callers
   show the value with every `_` replaced
+- `formatCreditType(t, creditType, seniority?)` — the translated label, or that `_`-spaced fallback.
+  Used wherever a credit type is shown outside Funding too (project financing tab, Investment
+  dashboard), so no screen renders the raw value
 - Exports `PaymentScheduleParams` and `PaymentScheduleResult`
 
 > The tests assert the code's **actual** output, including a known 119-vs-120 off-by-one in the
@@ -343,10 +356,18 @@ Read-only history of accounting payments made against bank credits.
 
 > The payment-notification UI (`PaymentNotifications`, its hook and service) and the bank /
 > investor / subcontractor wire-payment modals were removed on 2026-09-14. Nothing had rendered
-> them since the November 2025 Funding overview rewrite, and migration
-> `20260518110001_deprecate_remaining_unused_tables` had already dropped the `payment_notifications`
-> table and its triggers. One orphan remains in the database: `update_overdue_notifications()`
-> still references that table and would fail if called — nothing calls it.
+> them since the November 2025 Funding overview rewrite. There is no `payment_notifications` table
+> in the database: the 2026-05-15 baseline already has none (only function bodies still name it).
+> Migration `20260518110001_deprecate_remaining_unused_tables` dropped nothing of that table; it
+> dropped the triggers on `project_investments` / `funding_payments` and their functions
+> (`trigger_generate_payment_schedule`, `trigger_update_payment_schedule`,
+> `update_bank_balance_for_investment`, `trigger_mark_notification_completed`), the dead RPCs
+> `generate_payment_schedule`, `get_bank_credit_payments`, `get_investor_payments` and
+> `count_invoices_with_search`, rewrote `get_filtered_invoices` / `get_invoice_statistics` without
+> the `investors` join, and **moved** (not dropped) `investors`, `project_investments` and
+> `funding_payments` to the `deprecated` schema. One orphan remains in the database:
+> `update_overdue_notifications()` still references the missing `payment_notifications` table and
+> would fail if called — nothing calls it.
 
 #### Services
 
@@ -576,7 +597,7 @@ zeroed split reads as "planned at nothing", which is not what "not attributed to
 #### Hooks
 
 ### useTIC.ts
-- `useTIC()` — loads projects and the selected project's line items **and construction sections**, manages edits/investor/date, computes both tabs' totals, applies Excel imports, and saves (create or update)
+- `useTIC()` — selects the first project on load (it used to prefer any project named "…funtana…"); loads projects and the selected project's line items **and construction sections**, manages edits/investor/date, computes both tabs' totals, applies Excel imports, and saves (create or update)
 - **Calls:** ticService.ts
 - **Uses utils:** ticFormatters (calculateTotals, calculateConstructionTotals, toRomanNumeral, toSectionCode)
 - **Returns:** projects, lineItems, constructionSections, investorName, documentDate, selectedProjectId, loading, saving, message, totals, grandTotal, constructionTotals, constructionGrandTotal, `isDirty`, saveTIC, `applyImport`, and the row/section/phase mutators (`addLineItem`, `updateLineItem`, `removeLineItem`, `moveLineItem`, `setLineItemPhases`, `addPhase`, `removePhase`, `addSection`, `updateSection`, `removeSection`, `moveSection`, `addConstructionItem`, `updateConstructionItem`, `removeConstructionItem`, `moveConstructionItem`)
@@ -728,6 +749,5 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 - **New allocation limit** is the figure the modal shows: credit amount − existing allocations −
   direct drawdowns (`useCreditManagement.handleCreateAllocation`).
 - **Credit status** is editable in the credit form (see above).
-- **Open (FUND-5):** the stored `monthly_payment` (annuity) and the schedule preview (linear
-  principal + flat interest on the full amount) still disagree; which model the company uses has to
-  be decided first.
+- **Repayment model (FUND-5, decided 2026-10-01):** the stored `monthly_payment`, the form preview
+  and the Cashflow ▸ Banks service all use one model — see `creditCalculations.ts` above.

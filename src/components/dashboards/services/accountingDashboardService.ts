@@ -2,30 +2,14 @@ import { supabase } from '../../../lib/supabase'
 import { fetchAllRows } from '../../../lib/fetchAllRows'
 import { format, startOfMonth, endOfMonth, startOfYear, subMonths } from 'date-fns'
 import { monthKey } from '../../../utils/dateOnly'
+import { paymentDirection } from '../../Cashflow/services/invoiceHelpers'
 import type { VATStats, CashFlowStats, TopCompany, MonthlyData, MonthlyBudget } from '../types/accountingDashboardTypes'
 
-// Cash-flow direction by invoice_type, keyed against the real DB enum
-// (accounting_invoices_invoice_type_check). "Incoming cash" = money the company
-// receives: every OUTGOING_* invoice (issued to customers) plus INCOMING_INVESTMENT
-// (investor capital / bank drawdowns — confirmed as cash IN, matching the Cashflow
-// Calendar convention). "Outgoing cash" = bills the company pays.
-const INCOMING_CASH_TYPES = new Set([
-  'OUTGOING_SUPPLIER',
-  'OUTGOING_SALES',
-  'OUTGOING_OFFICE',
-  'OUTGOING_BANK',
-  'INCOMING_INVESTMENT'
-])
-
-const OUTGOING_CASH_TYPES = new Set([
-  'INCOMING_SUPPLIER',
-  'INCOMING_OFFICE',
-  'INCOMING_BANK',
-  'INCOMING_BANK_EXPENSES'
-])
-
-const isIncomingPaymentType = (invoiceType: string): boolean => INCOMING_CASH_TYPES.has(invoiceType)
-const isOutgoingPaymentType = (invoiceType: string): boolean => OUTGOING_CASH_TYPES.has(invoiceType)
+// Cash direction comes from the one shared rule (paymentDirection): paying an OUTGOING_* invoice is
+// money in, an INCOMING_* one money out — INCOMING_INVESTMENT included (DEFECT_BACKLOG CASH-7). It
+// used to be counted as money in here while the bank balances counted it as money out.
+const isIncomingPaymentType = (invoiceType: string): boolean => paymentDirection(invoiceType) === 'IN'
+const isOutgoingPaymentType = (invoiceType: string): boolean => paymentDirection(invoiceType) === 'OUT'
 
 const sumVATAmounts = (invoice: { vat_amount_1?: string | number | null; vat_amount_2?: string | number | null; vat_amount_3?: string | number | null; vat_amount_4?: string | number | null }): number =>
   Number(invoice.vat_amount_1 || 0) +

@@ -59,6 +59,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   const [phases, setPhases] = useState<Phase[]>([])
   const [selectedPhaseId, setSelectedPhaseId] = useState('')
   const [hasContract, setHasContract] = useState(true)
+  const [contractStatus, setContractStatus] = useState('active')
   const [loadingPhases, setLoadingPhases] = useState(false)
   const [loadFailed, setLoadFailed] = useState(false)
   // Incremented per load, so a slow response for a previously opened contract cannot land on
@@ -104,6 +105,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
   useEffect(() => {
     if (visible && subcontractor) {
       setHasContract((subcontractor as Subcontractor & { has_contract?: boolean; phase_id?: string }).has_contract !== false)
+      setContractStatus(subcontractor.contract_status || 'active')
       setSelectedPhaseId((subcontractor as Subcontractor & { has_contract?: boolean; phase_id?: string }).phase_id || '')
       setName(subcontractor.name || '')
       setContact(subcontractor.contact || '')
@@ -164,7 +166,8 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
       phase_id: selectedPhaseId,
       contract_type_id: contractTypeId,
       classification_id: classificationId,
-      has_contract: hasContract
+      has_contract: hasContract,
+      contract_status: contractStatus
     } as unknown as Subcontractor
 
     // Returned so the Save button shows its loading state until the save (and upload) finishes.
@@ -246,6 +249,17 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                     </span>
                   </label>
                 </div>
+              </FormField>
+
+              {/* Completed and terminated contracts stay on the site and keep counting; a terminated
+                  one only with what was paid (committedAmount in utils/contractRollup). */}
+              <FormField label={t('common.status')}>
+                <Select value={contractStatus} onChange={(e) => setContractStatus(e.target.value)}>
+                  {contractStatus === 'draft' && <option value="draft">{t('status.draft')}</option>}
+                  <option value="active">{t('status.active')}</option>
+                  <option value="completed">{t('status.completed')}</option>
+                  <option value="terminated">{t('status.terminated')}</option>
+                </Select>
               </FormField>
             </div>
 

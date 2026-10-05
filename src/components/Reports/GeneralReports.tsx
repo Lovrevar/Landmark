@@ -374,7 +374,7 @@ const GeneralReports: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {report.contract_types.map((ct, index) => (
               <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <p className="font-bold text-gray-700 dark:text-gray-200 text-sm">{ct.name}</p>
+                <p className="font-bold text-gray-700 dark:text-gray-200 text-sm">{ct.name || t('common.uncategorized')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{ct.count}</p>
               </div>
             ))}

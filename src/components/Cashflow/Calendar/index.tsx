@@ -8,6 +8,7 @@ import { toErrorMessage } from '../../../lib/errorMessage'
 import { handleSaveBudgets } from './services/calendarService'
 import BudgetModal from './forms/BudgetModal'
 import { Invoice } from './types'
+import { getInvoiceTypeLabelKey } from '../services/invoiceHelpers'
 
 const AccountingCalendar: React.FC = () => {
   const { t } = useTranslation()
@@ -81,7 +82,11 @@ const AccountingCalendar: React.FC = () => {
       case 'OUTGOING_SUPPLIER': return t('cashflow_calendar.invoice_types.outgoing_supplier')
       case 'OUTGOING_SALES': return t('cashflow_calendar.invoice_types.outgoing_sales')
       case 'OUTGOING_OFFICE': return t('cashflow_calendar.invoice_types.outgoing_office')
-      default: return invoice.invoice_type
+      default: {
+        // Bank types (repayments, credit fees, drawdowns) use the shared invoice-type labels.
+        const key = getInvoiceTypeLabelKey(invoice.invoice_type)
+        return key ? t(key) : invoice.invoice_type
+      }
     }
   }
 

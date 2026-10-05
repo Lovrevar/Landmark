@@ -3,7 +3,6 @@ import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { logActivity } from '../../../../lib/activityLog'
 import { uploadDocument } from '../../../Documents/services/documentService'
 import type { AssociationInput } from '../../../Documents/types'
-import { recalculatePhaseBudget } from './phaseService'
 
 export const fetchAllSubcontractors = async () => {
   const { data: allSubcontractorsData, error: subError2 } = await supabase
@@ -109,6 +108,8 @@ export const updateSubcontractor = async (
     contract_type_id?: number | null
     classification_id?: number | null
     has_contract?: boolean
+    /** draft, active, completed or terminated */
+    status?: string
   }
 ) => {
   // First, get the contract to find the subcontractor
@@ -154,6 +155,9 @@ export const updateSubcontractor = async (
   if (updates.has_contract !== undefined) {
     contractUpdateData.has_contract = updates.has_contract
   }
+  if (updates.status !== undefined) {
+    contractUpdateData.status = updates.status
+  }
 
   const { error: contractUpdateError } = await supabase
     .from('contracts')
@@ -181,13 +185,8 @@ export const updateSubcontractor = async (
     throw subError
   }
 
-  // Recalculate budgets for every affected phase: the old phase and the target
-  // phase. A cost-only edit (target == old) still recalcs the current phase once.
-  const phasesToRecalc = new Set<string>()
-  if (contract.phase_id) phasesToRecalc.add(contract.phase_id)
-  const targetPhase = updates.phase_id ?? contract.phase_id
-  if (targetPhase) phasesToRecalc.add(targetPhase)
-  for (const pid of phasesToRecalc) await recalculatePhaseBudget(pid)
+  // project_phases.budget_used of the old and the new phase is recomputed by the
+  // trg_sync_phase_budget_used trigger on contracts.
 
   logActivity({ action: 'subcontractor.update', entity: 'subcontractor', entityId: contract.subcontractor_id, projectId: contract.project_id ?? null, metadata: { severity: 'medium', changed_fields: Object.keys(updates) } })
 }
@@ -209,21 +208,6 @@ export const deleteSubcontractor = async (contractId: string) => {
   assertRowsAffected(data)
 
   logActivity({ action: 'subcontractor.delete', entity: 'subcontractor', entityId: contractId, projectId: contractRow?.project_id ?? null, metadata: { severity: 'high' } })
-}
-
-export const getSubcontractorDetails = async (contractId: string) => {
-  const { data, error } = await supabase
-    .from('contracts')
-    .select('contract_amount, phase_id')
-    .eq('id', contractId)
-    .single()
-
-  if (error) throw error
-
-  return {
-    cost: parseFloat(data.contract_amount || 0),
-    phase_id: data.phase_id
-  }
 }
 
 export const fetchSubcontractorComments = async (subcontractorId: string) => {
@@ -300,10 +284,8 @@ export const fetchInvoiceStatsForContracts = async (contractIds: string[]) => {
       .in('contract_id', contractIds)
       .range(from, from + PAGE_SIZE - 1)
 
-    if (error) {
-      console.error('Error fetching batch invoice stats:', error)
-      return map
-    }
+    // Thrown, not swallowed: an empty map read as "nothing owed" on every contract (SUP-8).
+    if (error) throw error
 
     for (const inv of data || []) {
       const cid = inv.contract_id as string | null

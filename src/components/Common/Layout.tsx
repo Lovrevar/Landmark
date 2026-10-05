@@ -43,7 +43,7 @@ import {
   Menu as MenuIcon,
   X
 } from 'lucide-react'
-import { canViewActivityLog } from '../../utils/permissions'
+import { canUseCashflow, canViewActivityLog, isDirectorRole } from '../../utils/permissions'
 import Input from '../ui/Input'
 import { useChatNotifications } from '../Chat/hooks/useChatNotifications'
 import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
@@ -115,11 +115,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [showProfileDropdown])
 
   useEffect(() => {
+    // A stored Cashflow profile from before the role filter (or a role change) falls back to
+    // General instead of asking for a password the user has no use for.
+    if (currentProfile === 'Cashflow' && !canUseCashflow(user)) {
+      setCurrentProfile('General')
+      return
+    }
     if (currentProfile === 'Cashflow' && !cashflowUnlocked) {
       setPendingProfile('Cashflow')
       setShowPasswordModal(true)
     }
-  }, [currentProfile, cashflowUnlocked])
+  }, [currentProfile, cashflowUnlocked, user, setCurrentProfile])
 
   const getMenuItems = () => {
     // The Supervision *role* short-circuits the profile menus below: whichever profile is
@@ -144,7 +150,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.projects'), icon: FolderKanban, path: '/projects' },
         { name: t('nav.budget_control'), icon: TrendingUp, path: '/budget-control' },
         { name: t('nav.documents'), icon: Files, path: '/documents' },
-        { name: t('nav.reports'), icon: FileText, path: '/general-reports' },
+        // /general-reports is a DirectorRoute; anyone else was bounced back to the dashboard.
+        ...(isDirectorRole(user) ? [{ name: t('nav.reports'), icon: FileText, path: '/general-reports' }] : []),
         ...(canViewActivityLog(user) ? [{ name: t('nav.activity_log'), icon: ScrollText, path: '/activity-log' }] : []),
       ],
       Supervision: [
@@ -263,7 +270,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEscapeKey(showPasswordModal, handlePasswordCancel)
   useFocusTrap(passwordDialogRef, showPasswordModal)
 
-  const profiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
+  const profiles: Profile[] = (['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail'] as Profile[])
+    .filter(profile => profile !== 'Cashflow' || canUseCashflow(user))
+  const profileLabel = (profile: Profile) => t(`profiles.${profile.toLowerCase()}`)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -289,7 +298,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                   >
                     <User className="w-4 h-4" />
-                    <span className="font-medium">{currentProfile}</span>
+                    <span className="font-medium">{profileLabel(currentProfile)}</span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
 
@@ -303,7 +312,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             currentProfile === profile ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'
                           }`}
                         >
-                          <span>{profile}</span>
+                          <span>{profileLabel(profile)}</span>
                           {profile === 'Cashflow' && <Lock className="w-3 h-3" />}
                         </button>
                       ))}
@@ -497,7 +506,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       >
                         <span className="flex items-center gap-2">
                           <User className="w-4 h-4" />
-                          {profile}
+                          {profileLabel(profile)}
                         </span>
                         {profile === 'Cashflow' && <Lock className="w-3 h-3" />}
                       </button>

@@ -271,7 +271,7 @@ kroz zaštitu od nespremljenih izmjena i vodi na `/`. Profil Cashflow označen j
 |---|---|---|
 | Director | svih 6 | sve; Cashflow nakon lozinke |
 | Accounting | svih 6 | Cashflow rute nakon lozinke |
-| Sales, Investment | svih 6 | mogu otvoriti Cashflow dashboard (podaci ograničeni RLS-om), ali sve Cashflow rute ih vraćaju na `/`; `/general-reports` je samo za direktora |
+| Sales, Investment | svi osim Cashflowa | spremljeni profil Cashflow vraća se na General; stavka Izvještaji (`/general-reports`) vidljiva je samo direktoru |
 | Supervision | nijedan (izmjenjivač skriven) | fiksni izbornik s tri stavke; `/` preusmjerava na `/site-management` |
 
 ### 4.3 Lozinka za Cashflow
@@ -279,7 +279,8 @@ kroz zaštitu od nespremljenih izmjena i vodi na `/`. Profil Cashflow označen j
 Ulazak u profil Cashflow traži lozinku iz `VITE_CASHFLOW_PASSWORD`. Točna lozinka postavlja
 `sessionStorage.cashflow_unlocked = 'true'` (vrijedi za karticu, briše se pri odjavi). Ako
 varijabla nije postavljena, dijalog se zatvara bez mogućnosti otključavanja. Ako je spremljeni
-profil Cashflow, a kartica nije otključana, dijalog se otvara automatski.
+profil Cashflow, a kartica nije otključana, dijalog se otvara automatski. Profil Cashflow nude se
+samo ulogama Director i Accounting (`canUseCashflow`), istima koje RLS pušta do financijskih podataka.
 
 Lozinka je **zaštita od slučajnog otkrivanja podataka** (npr. pri dijeljenju ekrana), a ne
 sigurnosna granica: stvarnu zaštitu financijskih podataka provode RLS politike u bazi
@@ -297,7 +298,7 @@ sigurnosna granica: stvarnu zaštitu financijskih podataka provode RLS politike 
 2. Projekti → `/projects`
 3. Kontrola proračuna → `/budget-control`
 4. Dokumenti → `/documents`
-5. Izvještaji → `/general-reports`
+5. Izvještaji → `/general-reports` (samo Director)
 6. Dnevnik aktivnosti → `/activity-log` (samo Director)
 
 **Profil Supervision:**
@@ -489,6 +490,7 @@ baza):
 | `canManageWorkLogs` | Director, Supervision |
 | `canManageProjectPhases` | Director |
 | `canViewActivityLog` | Director |
+| `canUseCashflow` | Director, Accounting (profil Cashflow i `CashflowRoute`) |
 | `getAccessibleProjectIds` | prazan popis (= svi) za uloge s punim pristupom; dodijeljeni projekti za Supervision |
 
 ### 6.5 Pohrana datoteka (Supabase Storage)
@@ -515,7 +517,7 @@ Potpisani URL-ovi vrijede 3600 sekundi.
   vremenu: `x-doc-sort-secret` (sortiranje dokumenata), `x-erp-import-secret` (ERP uvoz),
   `x-reminder-secret` (zakazani podsjetnici).
 
-Otvorene sigurnosne stavke vode se u [`SECURITY_BACKLOG.md`](./SECURITY_BACKLOG.md).
+Otvorene sigurnosne stavke vode se u [`backlog/security.md`](./backlog/security.md).
 
 ---
 
@@ -775,7 +777,7 @@ plaćeni stupci milestoneova. Iznosi ugovora, rokovi i budžeti ostaju vidljivi.
 `status` (`Planning`, `In Progress`, `Completed`, `On Hold`), `category`.
 
 **`project_phases`** — `project_id` (CASCADE), `phase_number` (jedinstven u projektu),
-`phase_name`, `budget_allocated` (iz TIC-a), `budget_used` (Σ iznosa aktivnih ugovora faze),
+`phase_name`, `budget_allocated` (iz TIC-a), `budget_used` (Σ preuzetih iznosa ugovora faze, v. 8.7 „Status ugovora”),
 `start_date`, `end_date`, `status` (`planning`, `active`, `completed`, `on_hold`).
 
 **`cost_classifications`** — `code`, `name` (jedinstven), `description`, `sort_order`,
@@ -853,7 +855,8 @@ vremenska linija (završeno / kasni / danas / „još N dana", narančasto unuta
 
 **Zaglavlje:** naziv, lokacija, budžet s oznakom „✓ iz TIC-a" ili „⚠ budžet nije postavljen",
 alocirano po fazama, kategorija i status; prekidač grupiranja **Po fazi / Po klasifikaciji**
-(pamti se); „Upravljanje klasifikacijama troška"; „Postavi faze" / „Uredi faze".
+(pamti se); „Sakrij završene i raskinute" (samo ako projekt ima takav ugovor);
+„Upravljanje klasifikacijama troška"; „Postavi faze" / „Uredi faze".
 
 **Alocirana sredstva:** kartice namjena kredita za projekt (kredit, firma, alocirano,
 iskorišteno, dostupno, kamata, traka iskorištenosti — narančasto od 80 %, crveno od 100 %).
@@ -873,8 +876,15 @@ iskorišteno, dostupno, kamata, traka iskorištenosti — narančasto od 80 %, c
 
 Uvijek se prikazuju sve faze i svi budžeti (faza, klasifikacija), i kad nemaju ugovora.
 
+**Status ugovora:** Nacrt, Aktivan, Završen, Raskinut (mijenja se u uređivanju ugovora). Završeni i
+raskinuti ugovori ostaju u stablu s oznakom statusa (sivo / crveno), ne prikazuju se kao
+zakašnjeli i nastavljaju se brojati u svim zbrojevima. **Preuzeti iznos** ugovora
+(`committedAmount`, u bazi `contract_committed_amount`): za nacrt, aktivan i završen ugovor iznos
+ugovora; za **raskinut** samo plaćeni iznos — neplaćeni ostatak se oslobađa. Gumb „Sakrij završene i
+raskinute" skriva samo njihove kartice (skupina navodi koliko ih je skriveno); zbrojevi ostaju isti.
+
 **Formule sažimanja** (`rollupContracts`):
-- ugovor s ugovorom (`has_contract` i iznos > 0): `ugovoreno += iznos`,
+- ugovor s ugovorom (`has_contract` i iznos > 0): `ugovoreno += preuzeti iznos`,
   `neplaćeno += max(0, iznos − plaćeno)`;
 - redak bez ugovora: `neplaćeno += dugovanje po računima` (i `neplaćeno bez ugovora`);
 - `plaćeno` = Σ plaćenog svih redaka;
@@ -896,8 +906,9 @@ fazama), Ugovoreno, Plaćeno*, Neplaćeno*, Preostalo.
 
 **Kartica ugovora:**
 - naziv podizvođača, oznaka **„BEZ UGOVORA"**, kontakt, opis posla;
+- status ugovora (Završen / Raskinut) kad nije aktivan;
 - status plaćenosti*: Prekoračenje / Plaćeno / Djelomično / Neplaćeno (i boja ruba);
-- rok (crveno ako kasni), iznos ugovora (bruto);
+- rok (crveno ako kasni; nikad za završen ili raskinut ugovor), iznos ugovora (bruto);
 - plaćeno*, preostalo za platiti*, **odstupanje**: prekoračenje (plaćeno > ugovoreno) ili
   ušteda (potpuno plaćeno, a plaćeno < ugovoreno);
 - za dobavljače bez ugovora: plaćeno ukupno i ukupno dugovanje;
@@ -931,16 +942,16 @@ Podnaslov: „faza • Raspoloživi budžet X €" (`budžet faze − budget_use
 
 **Kontrole budžeta:**
 1. **budžet klasifikacije:** ako je za (fazu, klasifikaciju) postavljen budžet, iznos ugovora
-   ne smije premašiti `budžet − Σ aktivnih ugovora` — „Iznos ugovora premašuje raspoloživi
+   ne smije premašiti `budžet − Σ preuzetih iznosa ugovora` — „Iznos ugovora premašuje raspoloživi
    budžet klasifikacije troška";
 2. **budžet faze:** ako faza ima budžet, iznos ne smije premašiti `budžet faze − budget_used`
    — „Iznos ugovora premašuje raspoloživi budžet faze".
 
-Broj ugovora dodjeljuje se automatski (`CNT-GGGG-nnnn-…`, do 3 pokušaja pri sudaru). Nakon
-spremanja preračunava se `budget_used` faze.
+Broj ugovora dodjeljuje se automatski (`CNT-GGGG-nnnn-…`, do 3 pokušaja pri sudaru).
+`budget_used` faze održava okidač `trg_sync_phase_budget_used` pri svakoj promjeni ugovora.
 
 **Uređivanje ugovora:** naziv i kontakt podizvođača, faza (unutar projekta), ima li ugovor,
-klasifikacija, kategorija, opis, osnovica i PDV, rok; prikaz plaćenog, preostalog i
+**status** (Aktivan, Završen, Raskinut; Nacrt samo dok je ugovor nacrt), klasifikacija, kategorija, opis, osnovica i PDV, rok; prikaz plaćenog, preostalog i
 **napretka** `min(100, plaćeno / ukupno × 100)` („izračunato iz plaćanja"); dokumenti.
 Povećanje iznosa provjerava se prema budžetu klasifikacije.
 
@@ -1567,9 +1578,12 @@ prikazuju se u oba smjera, s nazivom druge firme.
 ### 10.9 Moje firme (`/accounting-companies`)
 
 Podaci iz pogleda `company_statistics` po firmi: ukupno stanje računa i broj računa, dostupni
-krediti (Σ iznos − iskorišteno), **prihodi** (vrste `INCOMING_INVESTMENT`, `OUTGOING_SALES`,
-`OUTGOING_OFFICE`: broj, ukupno, plaćeno, preostalo) i **rashodi** (ostale vrste, s plaćenim
-uključujući cesije koje je firma platila za druge). Dobit = plaćeni prihodi − plaćeni rashodi.
+krediti (Σ iznos − iskorišteno), **prihodi** (računi koje je firma izdala: `OUTGOING_SALES`,
+`OUTGOING_OFFICE`, `OUTGOING_SUPPLIER` — broj, ukupno, plaćeno, preostalo) i **rashodi** (računi koje
+plaća: `INCOMING_SUPPLIER`, `INCOMING_OFFICE`, s plaćenim uključujući cesije koje je firma platila za
+druge). Bankovni i investicijski računi (`INCOMING_INVESTMENT`, `INCOMING_BANK`,
+`INCOMING_BANK_EXPENSES`, `OUTGOING_BANK`) su financiranje i ne ulaze ni u prihode ni u rashode.
+Dobit = plaćeni prihodi − plaćeni rashodi. Pogled poštuje RLS pozivatelja.
 
 - **Statistika:** broj firmi, ukupno stanje, ukupni prihod, dobit/gubitak.
 - **Pretraga** po nazivu ili OIB-u.
@@ -1936,9 +1950,9 @@ računi u računovodstvu (izvor: 4D Wand; ručni unos kroz obrazac bankovnog ra�
 | `interest_rate` | kamatna stopa % godišnje (kod equityja očekivani IRR) |
 | `start_date`, `maturity_date`, `usage_expiration_date` | početak, dospijeće, kraj razdoblja korištenja |
 | `grace_period` | poček u mjesecima |
-| `repayment_type` | `monthly` / `yearly` (za anuitet) |
+| `repayment_type` | oznaka uz `monthly_payment`; od 1. 10. 2026. uvijek `monthly` |
 | `principal_repayment_type`, `interest_repayment_type` | `monthly`, `quarterly`, `biyearly`, `yearly` |
-| `monthly_payment` | izračunati anuitet |
+| `monthly_payment` | mjesečni ekvivalent servisa duga na početku otplate (vidi niže) |
 | `used_amount`, `repaid_amount`, `outstanding_balance` | **održava baza** (vidi 12.4) |
 | `status` | `active`, `paid`, `defaulted` |
 | `purpose` | namjena |
@@ -2035,18 +2049,21 @@ otplate glavnice (zadano godišnje) i kamata (zadano mjesečno), datum početka,
 kraja korištenja, namjena, **isplata na račun** (odabir žiro računa firme sa stanjem).
 Obavezno: investitor, naziv, iznos, datum početka.
 
-**Anuitet** (`monthly_payment`):
-- razdoblje = (dospijeće − početak) u godinama (bez dospijeća: 10 godina);
-- razdoblje otplate = max(0,1, razdoblje − poček/12);
-- godišnje: `P · r(1+r)^n / ((1+r)^n − 1)`, *r* = godišnja stopa, *n* = godine;
-- mjesečno: *r* = godišnja stopa / 12, *n* = godine × 12;
-- uz stopu 0: glavnica / broj rata.
+**Model otplate:** glavnica se vraća u **jednakim ratama** prema učestalosti otplate glavnice,
+počevši nakon počeka; **kamata se obračunava na preostali dug** prema učestalosti otplate kamata,
+od datuma početka (poček odgađa glavnicu, ne kamatu). Rate zato padaju tijekom otplate.
+- broj rata glavnice = cijeli mjeseci od početka otplate do dospijeća ÷ mjeseci između rata
+  (zaokruženo naviše); zadnja rata zatvara ostatak;
+- kamata se obračunava mjesečno na stanje duga i plaća na svaki datum plaćanja kamata.
 
-**Pregled plana otplate** (uživo u obrascu): otplata počinje nakon počeka; broj rata glavnice
-i kamata prema učestalosti (mjesečno 12, tromjesečno 4, polugodišnje 2, godišnje 1 po
-godini); glavnica po rati = iznos / broj rata; kamata po rati = iznos × stopa / učestalost.
-Prikaz: „Glavnica" i „Kamata" po rati uz opis učestalosti („Svaki mjesec", „Svako
-tromjesečje", „Svakih 6 mjeseci", „Svake godine").
+**Mjesečni servis duga** (`monthly_payment`) = glavnica po rati ÷ mjeseci između rata + iznos ×
+stopa ÷ 12 — mjesečni ekvivalent na početku otplate glavnice (najveći iznos); 0 bez datuma
+dospijeća. Zbraja se kao „mjesečni servis duga" na direktorskom dashboardu i u općem izvještaju.
+
+**Pregled plana otplate** (uživo u obrascu): glavnica po rati i broj rata, prva kamata i iznos na
+koji pada do kraja, broj plaćanja kamata i ukupna kamata, datum početka otplate glavnice te
+napomena da se kamata plaća i tijekom počeka. Učestalost se prikazuje opisno („Svaki mjesec",
+„Svako tromjesečje", „Svakih 6 mjeseci", „Svake godine").
 
 **Obrazac dioničkog kapitala:** investitor, firma, iznos, očekivani IRR %, plan isplate
 (godišnje/mjesečno), pregled novčanog toka, **multiplikator** `(1 + IRR)^godine`, datum
@@ -2269,9 +2286,10 @@ prodaje** (prodani / svi stanovi).
 „Računovodstvena nadzorna ploča" za tekuće razdoblje.
 
 **Smjer novca po vrsti računa:**
-- priljev: `OUTGOING_SUPPLIER`, `OUTGOING_SALES`, `OUTGOING_OFFICE`, `OUTGOING_BANK`,
-  `INCOMING_INVESTMENT`;
-- odljev: `INCOMING_SUPPLIER`, `INCOMING_OFFICE`, `INCOMING_BANK`, `INCOMING_BANK_EXPENSES`.
+- priljev: svi izlazni računi (`OUTGOING_*`);
+- odljev: svi ulazni računi (`INCOMING_*`), uključujući `INCOMING_INVESTMENT`.
+
+Isto pravilo koriste stanja žiro računa, popisi plaćanja, opći izvještaj i kalendar dospijeća.
 
 **PDV** (plaćeni računi od 1. siječnja):
 - *naplaćeni PDV* = PDV svih izlaznih računa (+ tekući mjesec);
@@ -2418,9 +2436,8 @@ prikazuje djelomično nego nudi ponovni pokušaj.
 9. **Žiro računi** — broj, ukupno stanje, računi s pozitivnim i negativnim stanjem.
 10. **Zgrade i jedinice** — zgrade, stanovi po statusu, garaže, spremišta.
 11. **Vrste ugovora** — broj ugovora po kategoriji.
-12. **Novčani tok po mjesecima** — priljev (uplate kupaca, uredski i dobavljački izlazni
-    računi, investicije), odljev (ulazni računi dobavljača i uredski), neto, s ukupnim
-    retkom.
+12. **Novčani tok po mjesecima** — priljev (plaćanja svih izlaznih računa), odljev (plaćanja
+    svih ulaznih računa, uključujući otplate i troškove kredita), neto, s ukupnim retkom.
 13. **Projekti** — po projektu: vrsta, status, **razina rizika**, budžet (TIC ili „Budžet nije
     postavljen"), prihod (stanovi s garažama i spremištima), rashodi, prodane jedinice,
     ugovori, faze, kapital i dug.
@@ -2892,9 +2909,8 @@ prikaz ukupno zauzetih sati tima.
 - **Filtri:** vrste događaja, projekt, sudionici, pretraga.
 - **Novi/uredi događaj:** naslov, opis, lokacija, početak/kraj, vrsta, privatno,
   zauzeto/slobodno, projekt, sudionici, ponavljanje (nijedno, dnevno, tjedno, mjesečno,
-  godišnje, prilagođeno; kraj: nikad, na datum, nakon N ponavljanja) i podsjetnici (0, 5, 10,
-  15, 30, 60, 120 min, 1 dan, 2 dana, 1 tjedan). Kod ponavljajuće serije datum, vrijeme i
-  pravilo nakon kreiranja su samo za čitanje.
+  godišnje, prilagođeno; kraj: nikad, na datum, nakon N ponavljanja). Kod ponavljajuće serije
+  datum, vrijeme i pravilo nakon kreiranja su samo za čitanje.
 - **Detalji događaja:** pozvani odgovaraju prihvaćam/odbijam za pojedino ponavljanje ili za
   cijelu seriju; autor uređuje ili briše — kod serije može obrisati jedno ponavljanje ili
   cijelu seriju.
@@ -2908,10 +2924,10 @@ prikaz ukupno zauzetih sati tima.
 - **Brojač u zaglavlju:** pozivi na čekanju u sljedećih 30 dana.
 - Ponavljanja se razvijaju u pregledniku (`rrule`); promjene stižu uživo.
 
-**Podsjetnici:** vremena podsjetnika spremaju se uz događaj. Edge funkcija
-`dispatch-calendar-reminders` pregledava događaje u sljedećih 48 h, razvija ponavljanja i
-upisuje obavijesti kad nastupi trenutak podsjetnika; funkcija je trenutno isključena u
-`config.toml` i nije zakazana, pa se podsjetnici kalendara ne isporučuju.
+**Podsjetnici (isključeni):** obrazac događaja nema polje za podsjetnike. Pozadina postoji, ali je
+isključena: stupac `reminder_offsets`, edge funkcija `dispatch-calendar-reminders` (pregledava
+događaje u sljedećih 48 h, razvija ponavljanja i upisuje obavijesti; isključena u `config.toml` i
+nije zakazana) te tablice `calendar_notifications` / `calendar_reminder_sends`.
 
 Dnevnik aktivnosti: `calendar_event.create`, `calendar_event.update`,
 `calendar_event.respond`, `calendar_event.delete`, `calendar_event.exception_create`,

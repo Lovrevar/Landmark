@@ -3,6 +3,7 @@ import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
+import { paymentDirection } from '../../Cashflow/services/invoiceHelpers'
 import type { ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 
 /**
@@ -125,19 +126,11 @@ export async function fetchGeneralReportData(
   const retailCustomersArray = retailCustomers || []
   const retailSuppliersArray = retailSuppliers || []
 
-  const inflowPaymentsArray = accountingPaymentsArray.filter(p => {
-    const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
-    return invoice?.invoice_type === 'OUTGOING_SALES' ||
-           invoice?.invoice_type === 'OUTGOING_OFFICE' ||
-           invoice?.invoice_type === 'OUTGOING_SUPPLIER' ||
-           invoice?.invoice_type === 'INCOMING_INVESTMENT'
-  })
-
-  const outflowPaymentsArray = accountingPaymentsArray.filter(p => {
-    const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
-    return invoice?.invoice_type === 'INCOMING_SUPPLIER' ||
-           invoice?.invoice_type === 'INCOMING_OFFICE'
-  })
+  // The shared cash-direction rule (CASH-7): every OUTGOING_* payment is inflow, every INCOMING_* one
+  // outflow. Outflow used to leave out bank repayments and fees and inflow counted investment bills.
+  const invoiceTypeById = new Map(accountingInvoicesArray.map(inv => [inv.id, inv.invoice_type]))
+  const inflowPaymentsArray = accountingPaymentsArray.filter(p => paymentDirection(invoiceTypeById.get(p.invoice_id)) === 'IN')
+  const outflowPaymentsArray = accountingPaymentsArray.filter(p => paymentDirection(invoiceTypeById.get(p.invoice_id)) === 'OUT')
 
   // Fetch garages and repositories for calculating total revenue
   const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
@@ -443,7 +436,7 @@ export async function fetchGeneralReportData(
 
   const contractTypeCounts: { [key: string]: number } = {}
   contractsArray.forEach(c => {
-    const typeName = (c as { contract_types?: { name?: string } | null }).contract_types?.name || 'Uncategorized'
+    const typeName = (c as { contract_types?: { name?: string } | null }).contract_types?.name || ''
     contractTypeCounts[typeName] = (contractTypeCounts[typeName] || 0) + 1
   })
   const contractTypesData = Object.entries(contractTypeCounts).map(([name, count]) => ({ name, count }))

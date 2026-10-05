@@ -1,5 +1,7 @@
 {
   "common": {
+    "unknown": "Unknown",
+    "uncategorized": "Uncategorized",
     "contact": "Contact",
     "value": "Value",
     "all_projects": "All projects",
@@ -1005,7 +1007,9 @@
   },
   "companies": {
     "toast": {
-      "accounts_load_error": "The company's bank accounts could not be loaded, so the form was not opened"
+      "accounts_load_error": "The company's bank accounts could not be loaded, so the form was not opened",
+      "delete_error": "The company could not be deleted",
+      "delete_in_use": "The company has invoices or other linked records, so it cannot be deleted"
     },
     "title": "My Companies",
     "subtitle": "Financial overview of all companies under Landmark",
@@ -1138,6 +1142,10 @@
       "biyearly": "Biyearly",
       "yearly": "Yearly",
       "schedule_preview": "Payment Schedule Preview",
+      "interest_falls_to": "falling to {{amount}} at the end (interest on the outstanding balance)",
+      "total_interest_label": "Total interest: {{amount}}",
+      "principal_start_label": "Principal repayment starts:",
+      "interest_during_grace": "interest is paid during the grace period too",
       "principal_payment": "Principal Payment",
       "interest_payment": "Interest Payment",
       "total_payments": "total payments",
@@ -1843,6 +1851,7 @@
     "budget_from_tic_hint": "Budget comes from the project's TIC."
   },
   "sales_projects": {
+    "default_building_name": "Building {{n}}",
     "title": "Projects",
     "subtitle": "Manage projects and buildings",
     "add_building": "Add Building",
@@ -2386,6 +2395,9 @@
       },
       "phases": "Phases",
       "setup_phases": "Setup Phases",
+      "hide_closed_contracts": "Hide completed and terminated",
+      "show_closed_contracts": "Show completed and terminated",
+      "closed_contracts_hidden": "Completed and terminated contracts hidden: {{count}}",
       "edit_phases": "Edit Phases",
       "phase_setup": {
         "title_create": "Setup Project Phases",
@@ -2470,6 +2482,7 @@
         "total_subcontractors": "Total Subcontractors",
         "contract_total": "Contract Total",
         "allocated_funds": "Allocated Funds",
+        "allocations_load_error": "The project's credit allocations could not be loaded",
         "allocated_label": "Allocated",
         "allocation_usage": "Allocation Usage",
         "credit_used": "Credit Used",
@@ -2507,7 +2520,7 @@
         "uncategorized": "Uncategorized",
         "phase_label": "Phase",
         "forecasted_budget": "Forecasted Budget",
-        "contracted_amount": "Contracted Amount (Base)",
+        "contracted_amount": "Contracted Amount (Gross)",
         "paid_out": "Paid Out",
         "unpaid_contracts": "Unpaid Contracts",
         "budget_utilization": "Budget Utilization (Paid vs Allocated)",
@@ -2655,7 +2668,8 @@
         "select_subcontractor": "Please select a subcontractor",
         "add_error": "Error adding subcontractor.",
         "select_classification": "Select a cost classification",
-        "exceeds_classification_budget": "Contract amount exceeds the available cost classification budget"
+        "exceeds_classification_budget": "Contract amount exceeds the available cost classification budget",
+        "exceeds_phase_budget": "Contract amount exceeds the available phase budget"
       },
       "cost_classification": "Cost classification",
       "cost_classification_help": "Which cost line this contract belongs to. Independent of the contract category below.",
@@ -4763,19 +4777,6 @@
       "busy_label": "Busy",
       "free_label": "Free",
       "busy_description": "Shows on your calendar as busy to others",
-      "reminders": {
-        "label": "Reminders",
-        "add": "+ Add reminder",
-        "remove": "Remove",
-        "none": "No reminders"
-      },
-      "reminder": {
-        "at_time": "At time of event",
-        "minutes": "{{count}} min before",
-        "hours": "{{count}} h before",
-        "days": "{{count}} d before",
-        "weeks": "{{count}} wk before"
-      },
       "recurrence": {
         "label": "Repeat",
         "preset": {
@@ -4822,7 +4823,6 @@
       "delete_confirm_title": "Delete event?",
       "delete_confirm_message": "This action cannot be undone.",
       "recurring": "Recurring",
-      "reminders": "Reminders",
       "delete_single": "Delete this occurrence",
       "delete_series": "Delete series",
       "delete_single_title": "Delete this occurrence?",

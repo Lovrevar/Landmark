@@ -1,5 +1,7 @@
 {
   "common": {
+    "unknown": "Nepoznato",
+    "uncategorized": "Bez kategorije",
     "contact": "Kontakt",
     "value": "Vrijednost",
     "all_projects": "Svi projekti",
@@ -1008,7 +1010,9 @@
   },
   "companies": {
     "toast": {
-      "accounts_load_error": "Bankovne račune firme nije moguće učitati pa obrazac nije otvoren"
+      "accounts_load_error": "Bankovne račune firme nije moguće učitati pa obrazac nije otvoren",
+      "delete_error": "Greška prilikom brisanja firme",
+      "delete_in_use": "Firma ima račune ili druge povezane zapise pa se ne može obrisati"
     },
     "title": "Moje firme",
     "subtitle": "Financijski pregled svih firmi pod Landmarkom",
@@ -1141,6 +1145,10 @@
       "biyearly": "Polugodišnje",
       "yearly": "Godišnje",
       "schedule_preview": "Pregled rasporeda plaćanja",
+      "interest_falls_to": "pada do {{amount}} na kraju (kamata na preostali dug)",
+      "total_interest_label": "Ukupna kamata: {{amount}}",
+      "principal_start_label": "Otplata glavnice počinje:",
+      "interest_during_grace": "kamata se plaća i tijekom počeka",
       "principal_payment": "Otplata glavnice",
       "interest_payment": "Otplata kamate",
       "total_payments": "plaćanja ukupno",
@@ -1848,6 +1856,7 @@
     "budget_from_tic_hint": "Budžet se preuzima iz TIC-a projekta."
   },
   "sales_projects": {
+    "default_building_name": "Zgrada {{n}}",
     "title": "Projekti",
     "subtitle": "Upravljanje projektima i zgradama",
     "add_building": "Dodaj zgradu",
@@ -2393,6 +2402,9 @@
       },
       "phases": "Faze",
       "setup_phases": "Postavi faze",
+      "hide_closed_contracts": "Sakrij završene i raskinute",
+      "show_closed_contracts": "Prikaži završene i raskinute",
+      "closed_contracts_hidden": "Skriveno završenih i raskinutih ugovora: {{count}}",
       "edit_phases": "Uredi faze",
       "phase_setup": {
         "title_create": "Postavi faze projekta",
@@ -2477,6 +2489,7 @@
         "total_subcontractors": "Ukupno podugovaratelja",
         "contract_total": "Ukupno ugovoreno",
         "allocated_funds": "Alocirani fondovi",
+        "allocations_load_error": "Namjene kredita za projekt nije moguće učitati",
         "allocated_label": "Alocirano",
         "allocation_usage": "Korištenje alokacije",
         "credit_used": "Korišteni kredit",
@@ -2514,7 +2527,7 @@
         "uncategorized": "Nekategorizirano",
         "phase_label": "Faza",
         "forecasted_budget": "Predviđeni budžet",
-        "contracted_amount": "Ugovoreni iznos (osnova)",
+        "contracted_amount": "Ugovoreni iznos (bruto)",
         "paid_out": "Isplaćeno",
         "unpaid_contracts": "Neplaćeni ugovori",
         "budget_utilization": "Iskorištenost budžeta (Plaćeno vs Alocirano)",
@@ -2662,7 +2675,8 @@
         "select_subcontractor": "Odaberite podugovaratelja",
         "add_error": "Greška pri dodavanju podugovaratelja.",
         "select_classification": "Odaberite klasifikaciju troška",
-        "exceeds_classification_budget": "Iznos ugovora premašuje raspoloživi budžet klasifikacije troška"
+        "exceeds_classification_budget": "Iznos ugovora premašuje raspoloživi budžet klasifikacije troška",
+        "exceeds_phase_budget": "Iznos ugovora premašuje raspoloživi budžet faze"
       },
       "cost_classification": "Klasifikacija troška",
       "cost_classification_help": "U koju stavku troškovnika ovaj ugovor spada. Neovisno o kategoriji ugovora ispod.",
@@ -4788,19 +4802,6 @@
       "busy_label": "Zauzeto",
       "free_label": "Slobodno",
       "busy_description": "Drugima se prikazuje kao zauzeto u kalendaru",
-      "reminders": {
-        "label": "Podsjetnici",
-        "add": "+ Dodaj podsjetnik",
-        "remove": "Ukloni",
-        "none": "Bez podsjetnika"
-      },
-      "reminder": {
-        "at_time": "U trenutku događaja",
-        "minutes": "{{count}} min prije",
-        "hours": "{{count}} h prije",
-        "days": "{{count}} d prije",
-        "weeks": "{{count}} tj. prije"
-      },
       "recurrence": {
         "label": "Ponavljanje",
         "preset": {
@@ -4847,7 +4848,6 @@
       "delete_confirm_title": "Obrisati događaj?",
       "delete_confirm_message": "Ova radnja se ne može poništiti.",
       "recurring": "Ponavljajući",
-      "reminders": "Podsjetnici",
       "delete_single": "Obriši ovu pojavu",
       "delete_series": "Obriši cijeli niz",
       "delete_single_title": "Obrisati ovu pojavu?",

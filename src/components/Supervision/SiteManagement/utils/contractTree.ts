@@ -52,7 +52,8 @@ export function rollupContracts(contracts: SubcontractorWithPhase[]): GroupRollu
     hasContract: sub.has_contract,
     cost: sub.cost ?? 0,
     paid: sub.budget_realized || 0,
-    owed: sub.invoice_total_owed || 0
+    owed: sub.invoice_total_owed || 0,
+    status: sub.contract_status,
   })))
 }
 

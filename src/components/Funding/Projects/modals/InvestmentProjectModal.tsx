@@ -15,6 +15,7 @@ import { formatDate } from '../../../../utils/formatters'
 import { RISK_LEVEL, statusLabelKey } from '../../../../utils/statusDisplay'
 import {
   utilisationTone,
+  formatCreditType,
   getCreditTypeLabelKey,
   getCreditTypeBadgeVariant
 } from '../../Investors/utils/creditCalculations'
@@ -154,7 +155,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                               {allocation.credit?.bank?.name || t('funding.investments.unknown_bank')}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {allocation.credit?.credit_name} • {allocation.credit?.credit_type.replace(/_/g, ' ')} • {allocation.credit?.interest_rate}% APR
+                              {allocation.credit?.credit_name} • {formatCreditType(t, allocation.credit?.credit_type)} • {allocation.credit?.interest_rate}% APR
                             </p>
                           </div>
                           <div className="text-right">
