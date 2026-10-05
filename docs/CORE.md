@@ -163,7 +163,7 @@ read "Jan 05, 2026".
 
 ### invoiceCashDirection.ts
 - `INVOICE_CASH_DIRECTION` / `invoiceCashDirection(type)` → `'IN' | 'OUT' | null` — which way money moves for each of the nine invoice types: every `INCOMING_*` invoice (a bill received) is out, every `OUTGOING_*` one (issued) is in. **The only place this is decided**; do not write a type list in a service
-- `invoiceCashActivity(type)` → `'operating' | 'financing'` (financing = the three bank types: drawdown, repayment, credit fees) — what the General report splits its cash-flow table by
+- `INVOICE_CASH_MAP` — per type, `{ direction, category }`. `invoiceCashCategory(type)` → `'operating' | 'financing'` (financing = the three bank types: drawdown, repayment, credit fees); `invoiceTypesFor(direction, category)` lists one cell of the grid. **Financing is never income or expense**: the General report shows it as its own cash-flow table, `company_statistics` as its own two columns
 - `isCashIn` / `isCashOut`; `isCostInvoiceType` (supplier, office and financier bills — narrower than cash out: loan repayments and credit fees are not costs); `carriesInputVat` / `carriesOutputVat`
 - `invoiceCashDirection.test.ts` also reads the SQL (`recalc_company_bank_account_balance`, the `company_statistics` migration) and the calendar hook, and fails if any of them disagrees with the map
 

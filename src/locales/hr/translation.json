@@ -1039,7 +1039,8 @@
       "revenue_label": "Promet:",
       "profit_loss_label": "Dobit/Gubitak:",
       "unpaid_income": "Neplaćeno (prihod):",
-      "unpaid_expense": "Neplaćeno (rashod):"
+      "unpaid_expense": "Neplaćeno (rashod):",
+      "financing_label": "Financiranje (primljeno / vraćeno):"
     },
     "table": {
       "name": "Naziv",

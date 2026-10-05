@@ -4384,6 +4384,8 @@ export type Database = {
           total_expense_invoices: number | null
           total_expense_paid: number | null
           total_expense_unpaid: number | null
+          total_financing_received: number | null
+          total_financing_repaid: number | null
           total_income_amount: number | null
           total_income_invoices: number | null
           total_income_paid: number | null

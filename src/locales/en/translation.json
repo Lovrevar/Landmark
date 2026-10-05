@@ -1036,7 +1036,8 @@
       "revenue_label": "Revenue:",
       "profit_loss_label": "Profit/Loss:",
       "unpaid_income": "Unpaid (income):",
-      "unpaid_expense": "Unpaid (expense):"
+      "unpaid_expense": "Unpaid (expense):",
+      "financing_label": "Financing (received / repaid):"
     },
     "table": {
       "name": "Name",

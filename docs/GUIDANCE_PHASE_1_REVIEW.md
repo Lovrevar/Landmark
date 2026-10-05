@@ -429,5 +429,17 @@ Shown: General → Izvještaji, section **ANALIZA NOVČANOG TOKA**, on screen an
 
 Article edit: `help-kb/general-reports.md` — "Analiza novčanog toka" in the list of sections now reads "Analiza novčanog toka (odvojeno **Poslovne aktivnosti** i **Financijske aktivnosti** — isplate, otplate i troškovi kredita — te **Ukupni novčani tok**)".
 
-Not changed, but now inaccurate once migration `20261005120000` is applied: the Companies screen's labels `companies.card.revenue_label`, `companies.card.profit_loss_label`, `companies.stats.total_revenue`, `companies.stats.profit_loss`, `companies.stats.profit` / `loss`. They will show cash in and net cash, including credit drawdowns. Say if you want them reworded; see the deploy checklist.
+### 8.8 Fifth round (2026-10-05): financing line on the Companies cards
+
+The note that closed 8.7 about the Companies labels no longer applies: "Promet" and "Dobit/Gubitak" keep their wording and now cover operations only.
+
+Shown: Cashflow → Firme, on a company's card under "Dobit/Gubitak" — only for a company that has credit drawdowns or repayments, and only once migration `20261005120000` is applied. Example: "Financiranje (primljeno / vraćeno): €750.000 / €4.078,57".
+
+| Key | Hrvatski | English |
+|---|---|---|
+| `companies.card.financing_label` | Financiranje (primljeno / vraćeno): | Financing (received / repaid): |
+
+One thing to check in the wording: the second figure is repayments of principal **plus credit fees**. In production it is €267.150,61, of which €100.000,00 is a repayment and €167.150,61 is fees, so "vraćeno" understates what it holds. "primljeno / plaćeno" would be exact. Left as you specified.
+
+Article edit: `help-kb/cashflow-companies.md` — one sentence added after the description of the card: "Promet i dobit/gubitak odnose se samo na poslovanje; isplate kredita te otplate i troškovi kredita nisu u njima, nego su — za firme koje ih imaju — prikazani u zasebnom retku **Financiranje (primljeno / vraćeno)**."
 

@@ -3,7 +3,7 @@ import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
-import { isCashIn, isCashOut, isCostInvoiceType, invoiceCashActivity, type CashActivity } from '../../../utils/invoiceCashDirection'
+import { isCashIn, isCashOut, isCostInvoiceType, invoiceCashCategory, type CashCategory } from '../../../utils/invoiceCashDirection'
 import type { CashFlowAmounts, ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 
 /**
@@ -241,10 +241,10 @@ export async function fetchGeneralReportData(
     }
 
     // Each payment lands in exactly one of four cells: in or out, operating or financing.
-    const amounts = (activity: CashActivity): CashFlowAmounts => {
+    const amounts = (category: CashCategory): CashFlowAmounts => {
       const sum = (payments: typeof inflowPaymentsArray) =>
         payments
-          .filter(p => inMonth(p) && invoiceCashActivity(invoiceTypeById.get(p.invoice_id)) === activity)
+          .filter(p => inMonth(p) && invoiceCashCategory(invoiceTypeById.get(p.invoice_id)) === category)
           .reduce((total, p) => total + p.amount, 0)
       const inflow = sum(inflowPaymentsArray)
       const outflow = sum(outflowPaymentsArray)

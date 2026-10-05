@@ -11,13 +11,23 @@ snapshot.
 
 ## 1. Order of work
 
-1. Merge the branch and build the frontend from it.
-2. Apply the migrations in the order of section 2 (file-name order). `supabase db push` does this;
-   **check which project the CLI is linked to first** — it is normally linked to `LandmarkDev`.
-3. Deploy the frontend straight after the migrations, not hours later (section 3 says why).
+**One release.** This branch merges into `development`, which already carries PR #46 and its five
+September migrations. Everything below ships together, in this order — do not release the
+frontend or any group of migrations separately.
+
+1. Merge `feat/user-guidance-phase-1` into `development`; build the frontend from the result.
+2. Apply all eight migrations in the order of section 2 (file-name order). `supabase db push`
+   does this; **check which project the CLI is linked to first** — it is normally linked to
+   `LandmarkDev`.
+3. Deploy the frontend immediately after the migrations, in the same sitting.
 4. Deploy the `ai-chat` edge function so the assistant gets the rebuilt help index
    (`supabase/functions/_shared/help-kb-index.json`).
-5. Run the checks in section 5.
+5. Run the checks in section 6.
+
+> **Never apply `20260930100000_security_hardening` without its frontend.** It makes the chat
+> attachments bucket private. The frontend currently in production shows public links to that
+> bucket, so every chat image and file stops loading until the new frontend — which signs its
+> links — is live. If the frontend deploy cannot follow within minutes, do not start step 2.
 
 ## 2. Migrations, in order
 
@@ -30,7 +40,7 @@ snapshot.
 | 5 | `20260930100400_funding_rename_and_tic_writes` | Drops a trigger that made renaming an investor fail; TIC can be saved by Director, Accounting and Investment only; the budget sync runs with owner rights | Renaming an investor works. Accounting and Investment can save a TIC; Sales no longer can |
 | 6 | `20261005100000_activity_log_exclude_prefix` | Adds an optional "exclude this action prefix" parameter to `get_activity_logs` (the function is dropped and recreated) | Activity Log hides help-usage events by default and shows a checkbox to include them |
 | 7 | `20261005110000_company_statistics_incoming_investment_expense` | `company_statistics`: ULAZNI (INV) moves from income to expense | Nothing today — production has no such invoices |
-| 8 | `20261005120000_company_statistics_cash_direction` | `company_statistics`: income is every outgoing invoice type, expense every incoming one. Moves credit drawdowns from expense to income | Companies cards change — section 4 |
+| 8 | `20261005120000_company_statistics_operating_only` | `company_statistics`: income and expense count operating invoices only; credit drawdowns, repayments and credit fees leave both and are reported in two new columns | Companies cards change — section 4 |
 
 ## 3. Which migrations depend on which frontend
 
@@ -44,9 +54,9 @@ snapshot.
 | 6 activity log | Fine | Fine: the page falls back to the old call and hides the checkbox |
 | 7, 8 company statistics | Companies cards change (section 4) | Fine: the cards keep the old classification |
 
-So: migrations 2, 5, 6, 7 and 8 are safe on their own at any time. 3 and 4 are safe to apply
-early. Migration 1 must go out together with the frontend. None of the five September migrations
-needs this branch; this branch needs none of them beyond what `development` already needs.
+This table is why the release is one step: the new frontend needs migrations 3 and 4, and
+migration 1 needs the new frontend. It is here for diagnosis if something goes wrong halfway, not
+as permission to split the release.
 
 ## 4. Figures that will move for real data
 
@@ -81,31 +91,41 @@ financing payment, a €100.000,00 drawdown. The latest payment in production is
 so a report for April–September 2026 is empty before and after. The two charts above the table
 plot the total net and move accordingly.
 
-### Companies screen — only after migration 8
+### Companies screen — with migration 8
 
-"Plaćeno" (income and expense tiles), **"Promet"**, **"Dobit/Gubitak"** and the two "Neplaćeno"
-lines change for the three companies that have credit drawdowns:
+**"Promet" and "Dobit/Gubitak" now mean operations only.** Until now the cards counted every
+bank-type invoice as an expense — credit fees, repayments, and also credit *drawdowns*, which are
+money received. All three leave income and expense. Companies that have any get a new line under
+"Dobit/Gubitak": **"Financiranje (primljeno / vraćeno)"**; "vraćeno" is repayments plus credit fees.
 
-| Company | Drawdowns moved from expense to income | Of which paid | Unpaid |
+Income figures ("Izdano", "Promet", "Neplaćeno (prihod)") do not change for any company. Three of
+the 14 companies have bank-type invoices (55 in total) and change as follows:
+
+| | B-Mark d.o.o. | Bio4you d.o.o. | Landmark group d.o.o. |
 |---|---|---|---|
-| B-Mark d.o.o. | €750.000,00 (2 invoices) | €750.000,00 | — |
-| Bio4you d.o.o. | €600.000,00 (1) | €600.000,00 | — |
-| Landmark group d.o.o. | €3.517.708,80 (11) | €3.172.708,80 | €345.000,00 |
+| Expense invoices | 36 → 27 | 34 → 18 | 557 → 527 |
+| Expense paid ("Plaćeno") | €1.560.929,93 → €806.851,36 | €686.416,60 → €0,00 | €6.315.569,32 → €2.966.205,08 |
+| Neplaćeno (rashod) | €40.742,87 → €14.704,52 | €20.288,15 → €8.082,66 | €7.727.913,12 → €7.354.669,11 |
+| Dobit/Gubitak | −€1.560.929,93 → −€806.851,36 | −€686.416,60 → €0,00 | −€6.315.569,32 → −€2.966.205,08 |
+| Financiranje, primljeno | €750.000,00 | €600.000,00 | €3.172.708,80 |
+| Financiranje, vraćeno | €4.078,57 | €86.416,60 | €176.655,44 |
 
-For each: income paid rises and expense paid falls by the "paid" amount, so **"Dobit/Gubitak"
-rises by twice that amount**; "Promet" rises by the invoiced amount; "Neplaćeno (prihod)" rises
-and "Neplaćeno (rashod)" falls by the unpaid amount. Across all 14 companies:
+All 14 companies together (the stat cards at the top of the screen):
 
 | | Before | After |
 |---|---|---|
-| Income invoiced ("Ukupan promet") | €127.813,76 | €4.995.522,56 |
-| Income paid | €125.000,00 | €4.647.708,80 |
-| Expense invoiced | €17.180.426,61 | €12.312.717,81 |
-| Expense paid | €8.756.047,84 | €4.233.339,04 |
+| Ukupan promet (income invoiced) | €127.813,76 | unchanged |
+| Income paid | €125.000,00 | unchanged |
+| Expense invoiced | €17.180.426,61 | €11.979.079,35 |
+| Expense paid | €8.756.047,84 | €3.966.188,43 |
+| Expense unpaid | €8.582.696,77 | €8.171.208,92 |
+| Dobit/Gubitak | −€8.631.047,84 | −€3.841.188,43 |
+| Financing received / repaid | not shown | €4.522.708,80 / €267.150,61 |
 
-**Decide before applying migration 8:** the screen still says "Promet" and "Dobit/Gubitak". After
-the migration those are cash received and net cash, and include loans drawn. Either reword the
-labels first, or hold migration 8 back — 7 can go without it.
+What to tell users: the loss shown on these cards shrinks because loans drawn were being counted
+as costs. Nothing was paid or received; the drawdowns and what the credits cost are now on their
+own line. **Still open with accounting:** whether credit fees (€167.150,61 paid to date) should
+count in "Dobit/Gubitak". If yes, the total above becomes −€4.008.339,04.
 
 ### Bank balances — after migration 4, gradually
 
@@ -118,8 +138,10 @@ may already have been lost, and correct them on the Companies screen.
 
 - ULAZNI (INV): production has no invoices of this type, so the Accounting dashboard, Director
   dashboard, General report expenses, VAT card and invoice colours show the same figures as before.
-- What counts as a **cost** is unchanged and still being confirmed with accounting: supplier,
-  office and ULAZNI (INV) invoices. Credit fees and repayments are not costs (CASH-7, open).
+- What counts as a **cost** on the Director dashboard and in General report expenses is unchanged
+  and still being confirmed with accounting: supplier, office and ULAZNI (INV) invoices. Credit
+  fees and repayments are not costs (CASH-7, open; summary for the accountant in
+  [ACCOUNTING_REVIEW_CASH7.md](./ACCOUNTING_REVIEW_CASH7.md)).
 
 ## 5. Other visible changes to mention
 
@@ -141,7 +163,7 @@ may already have been lost, and correct them on the Companies screen.
 - [ ] Chat: an old image attachment and a new one both display.
 - [ ] Sales: complete a sale on a test apartment, then confirm the unit, the sale and the buyer.
 - [ ] Companies: open a company, reset a balance, confirm it holds after a payment is added.
-- [ ] Companies cards for B-Mark, Bio4you and Landmark group match the table above (after migration 8).
+- [ ] Companies cards for B-Mark, Bio4you and Landmark group match the table in section 4, including the Financiranje line; a company with no credits shows no such line.
 - [ ] Cashflow calendar, November 2025: seven credit-fee invoices are in "Ulazni računi (plaćeno)".
 - [ ] General report for 2025: the financing table shows drawdowns and fees; totals add up.
 - [ ] Activity Log: help events hidden; the checkbox shows them.
