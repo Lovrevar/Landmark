@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { formatDate } from '../../../utils/formatters'
 import { FileText, Edit, Trash2, DollarSign, Eye, Check, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { formatCurrency } from '../../Common/CurrencyInput'
-import { Table, Button, EmptyState } from '../../ui'
+import { Table, Button, EmptyState, Badge, InfoHint } from '../../ui'
+import {
+  ALL_INVOICE_TYPES, getTypeColor, getInvoiceTypeLabel, getInvoiceTypeLongLabel,
+  getInvoiceStatusVariant, getInvoiceStatusLabel,
+} from '../services/invoiceHelpers'
 import type { Invoice } from './types'
 
 interface InvoiceTableProps {
@@ -17,9 +21,6 @@ interface InvoiceTableProps {
   onEdit: (invoice: Invoice) => void
   onDelete?: (id: string) => void
   onPayment: (invoice: Invoice) => void
-  getTypeColor: (type: string) => string
-  getTypeLabel: (type: string) => string
-  getStatusColor: (status: string) => string
   getSupplierCustomerName: (invoice: Invoice) => string
   isOverdue: (dueDate: string, status: string) => boolean
 }
@@ -35,9 +36,6 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   onEdit,
   onDelete,
   onPayment,
-  getTypeColor,
-  getTypeLabel,
-  getStatusColor,
   getSupplierCustomerName,
   isOverdue
 }) => {
@@ -47,7 +45,26 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
       <Table.Head>
         <tr>
           {visibleColumns.approved && <Table.Th>{t('invoices.table.approved')}</Table.Th>}
-          {visibleColumns.type && <Table.Th>{t('invoices.table.type')}</Table.Th>}
+          {visibleColumns.type && (
+            <Table.Th>
+              <span className="inline-flex items-center gap-1">
+                {t('invoices.table.type')}
+                {/* The legend is built from the same vocabulary that prints the codes below. */}
+                <InfoHint hintId="invoices.type" label={t('invoices.hints.type_title')} articleId="term-invoice-types">
+                  <p>{t('invoices.hints.type_intro')}</p>
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+                    {ALL_INVOICE_TYPES.map(type => (
+                      <React.Fragment key={type}>
+                        <dt className="font-semibold whitespace-nowrap">{getInvoiceTypeLabel(type, t)}</dt>
+                        <dd>{getInvoiceTypeLongLabel(type, t)}</dd>
+                      </React.Fragment>
+                    ))}
+                  </dl>
+                  <p>{t('invoices.hints.type_colour')}</p>
+                </InfoHint>
+              </span>
+            </Table.Th>
+          )}
           {visibleColumns.invoice_number && (
             <Table.Th sortable onClick={() => onSort('invoice_number')}>
               <div className="flex items-center gap-1">
@@ -123,7 +140,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               {visibleColumns.type && (
                 <Table.Td label={t('invoices.table.type')}>
                   <span className={`text-xs font-semibold ${getTypeColor(invoice.invoice_type)}`}>
-                    {getTypeLabel(invoice.invoice_type)}
+                    {getInvoiceTypeLabel(invoice.invoice_type, t)}
                   </span>
                 </Table.Td>
               )}
@@ -220,10 +237,9 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               )}
               {visibleColumns.status && (
                 <Table.Td label={t('invoices.table.status')}>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
-                    {invoice.status === 'UNPAID' ? t('common.unpaid') :
-                     invoice.status === 'PARTIALLY_PAID' ? t('common.partial') : t('common.paid')}
-                  </span>
+                  <Badge variant={getInvoiceStatusVariant(invoice.status)}>
+                    {getInvoiceStatusLabel(invoice.status, t)}
+                  </Badge>
                 </Table.Td>
               )}
               <Table.Td sticky>

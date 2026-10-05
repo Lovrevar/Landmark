@@ -13,6 +13,7 @@ Gornja traka prisutna je na svim stranicama i sadrži:
 - **Ikona poruke** (Chat) — preusmjerava na [[chat]]; crveni broj u badge označava nepročitane poruke
 - **Ikona kvačice** (Zadaci) — preusmjerava na [[tasks]]; badge za nove obavijesti
 - **Ikona kalendara** — preusmjerava na [[calendar]]; badge za podsjetnike
+- **Ikona upitnika** (Pomoć) — otvara stranicu **Pomoć** s uputama za stranice, pojmove i uloge. Na stranicama koje imaju svoju uputu, upitnik uz naslov stranice otvara upravo te upute u novoj kartici.
 - **Language Switcher** — promjena jezika (hrvatski / engleski)
 - **Sun/Moon ikona** — prebacivanje između svijetle i tamne teme
 - **Odjava** (LogOut) — gumb s ikonom; završava sesiju

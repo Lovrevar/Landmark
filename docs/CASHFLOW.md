@@ -38,7 +38,7 @@ calls `date-fns` `format` for display any more (the PDF/Excel generators still d
 |---|---|
 | `accounting_invoices.status` | `getInvoiceStatusVariant` / `getInvoiceStatusLabel` (`services/invoiceHelpers.ts`) |
 | `accounting_invoices.invoice_category` | `getInvoiceCategoryLabel` (same file) → `invoice_category.*` |
-| `accounting_invoices.invoice_type` | `getInvoiceTypeLabelKey` → `invoice_type.*` |
+| `accounting_invoices.invoice_type` | `getInvoiceTypeLabel` → `invoice_type.*` (short code); `getInvoiceTypeLongLabel` → `invoice_type_long.*` (spelled out) |
 | `accounting_payments.payment_method` | `getPaymentMethodLabel(method, source, t)` (`services/paymentHelpers.ts`) → `payments.method_*`. Kompenzacija has no method and shows `—` |
 | `contracts.status` | `CONTRACT_STATUS` + `statusVariant`/`statusLabel` (`src/utils/statusDisplay.ts`) |
 
@@ -909,7 +909,6 @@ later phase.
 Shared utilities used across multiple Cashflow sub-modules.
 
 ### invoiceHelpers.ts
-- `getStatusColor(status)` — returns CSS class for invoice status badge
 - **The shared invoice-status renderer** — use it rather than a local switch (the copies had
   drifted: UNPAID yellow on Approvals and red elsewhere, a lowercase `'paid'` check that never
   matched, the raw enum shown as the label):
@@ -921,9 +920,10 @@ Shared utilities used across multiple Cashflow sub-modules.
     a missing one as `—`
   - Used by Approvals, **Customers' invoice cards**, Supervision's `InvoicesModal` and
     `PaymentHistoryModal`, Retail's `RetailInvoicesModal` and `RetailPaymentHistoryModal`, and
-    Funding's `CreditInvoiceSection` and `AllocationRow`. Other invoice screens (the main invoice
-    list via `getStatusColor`, Suppliers, Office Suppliers, Cashflow Calendar, Retail/Supervision
-    invoice lists) still render status their own way
+    Funding's `CreditInvoiceSection` and `AllocationRow`, and — since the guidance work — the
+    main invoice list and detail view, Office Suppliers, the Cashflow Calendar and Retail's
+    invoice list. No screen renders `accounting_invoices.status` its own way any more;
+    `getStatusColor` is gone
 - `paymentDirection(invoiceType)` → `'IN' | 'OUT' | null` — which way cash moves when an invoice
   of that type is paid: `OUTGOING_*` (we issued it — a sale, a credit drawdown) is money **in**,
   `INCOMING_*` (we received it — a supplier bill, a repayment, credit fees) is money **out**. Same
@@ -932,7 +932,11 @@ Shared utilities used across multiple Cashflow sub-modules.
   `INCOMING_INVESTMENT` on the OUT side, as the trigger does, whereas the accounting dashboard and
   `getTypeColor` treat it as incoming cash
 - `getTypeColor(type)` — returns CSS class for invoice type badge
-- `getTypeLabel(type)` — returns Croatian label for invoice type
+- **The shared invoice-type labels** — two forms of one vocabulary, both translated:
+  - `getInvoiceTypeLabel(type, t)` → the short code (`invoice_type.*`, "ULAZNI (DOB)") for dense tables
+  - `getInvoiceTypeLongLabel(type, t)` → spelled out (`invoice_type_long.*`, "Ulazni (Dobavljač)") for the invoice and payment detail views and the Cashflow Calendar, which each had their own wording before (and the calendar printed the three bank types raw)
+  - `ALL_INVOICE_TYPES` — the nine types in legend order; the "?" on the Type column pairs short with long from it, so the legend cannot drift from what the rows print
+  - The hardcoded `getTypeLabel` is gone. Retail's `RetailInvoicesModal` still has its own four labels (a different wording decision, see docs/RETAIL.md)
 - `INVOICE_CATEGORIES_BY_DIRECTION` — per direction, the categories that exist (`${direction}_${value}` is always one of the nine `accounting_invoices_invoice_type_check` values) with their `invoice_type.*` label key. Unit-tested in `invoiceHelpers.test.ts` against the CHECK list
 - `isInvoiceCategoryValidForDirection(direction, category)` / `getInvoiceTypeLabelKey(type)` — lookups on that matrix
 - `getSupplierCustomerName(invoice)` — resolves display name from invoice entity fields
@@ -963,7 +967,7 @@ Shared utilities used across multiple Cashflow sub-modules.
 - `allowedPaymentMethods(source, isCesija)` — bank_account → WIRE/CARD/CHECK, credit → WIRE, gotovina → CASH, kompenzacija → none, cesija (any source) → WIRE; unknown source → all four
 - `snapPaymentMethod(method, source, isCesija)` — keeps the method if allowed, else the first allowed one (`'WIRE'` placeholder for kompenzacija)
 - `getPaymentMethodLabel(method, source?)` — returns Croatian label for payment method; "—" when the source is kompenzacija
-- `getPaymentMethodColor(method, source?)` — returns CSS class for payment method badge (neutral for kompenzacija)
+- `getPaymentMethodVariant(method, source?)` — `Badge` variant for a payment method (grey for kompenzacija). These are categories, not states; the colours only tell the methods apart
 - Unit-tested in `paymentHelpers.test.ts`
 - `columnLabels` — Croatian display names for payment table columns
 - **Depends on:** (none, pure helpers)

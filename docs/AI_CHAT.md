@@ -306,6 +306,11 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 
 #### search_help retrieval
 
+The same articles are shown to users on the in-app Help page (`/help`, see [HELP.md](./HELP.md)),
+which reads the `.md` files directly — so an edit is visible there on the next deploy even if
+`kb:build` was forgotten, and the two can then disagree. An article with `assistant_only: true` in
+its frontmatter stays in this index but is hidden from the Help page.
+
 `search_help` does **not** read `help-kb/*.md` at runtime. It reads
 `supabase/functions/_shared/help-kb-index.json`, a build-time bundle of every entry's title,
 keywords, routes, roles and body. Build it with `npm run kb:build` after any KB edit — a pure file

@@ -48,6 +48,12 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `fetchExistingGarageNumbers(buildingId)` — returns existing garage numbers to detect duplicates
 - **Depends on:** supabase client, xlsx, importOutcome
 
+### services/apartmentImportTemplate.ts
+- `APARTMENT_IMPORT_COLUMNS` — the 26 column headers A–Z in the order the parser reads them by index. The order is the contract; `apartmentImportTemplate.test.ts` pins each header to its index
+- `APARTMENT_IMPORT_FORMAT_KEYS` — the instruction lines shown in step 1 of the modal
+- `downloadApartmentImportTemplate()` — the **Download template** button: an `.xlsx` with a header-only first sheet and a second sheet repeating the instructions in Croatian (the import reads the first sheet only)
+- Fixes SALES-12: the instructions used to say columns V–Y held dates; they are euro amounts, and Z (the loan amount) was not mentioned
+
 ### services/apartmentImportService.ts
 - `importApartmentRow(row, projectId)` — upserts one apartment plus its parking/storage unit and link; logs `apartment.import_excel` per row
 - `logApartmentImportSummary(projectId, summary)` — one `apartment.import_excel_summary` entry per run (severity high, metadata `count` = rows imported, `failed`, `garages_linked`, `storages_linked`). A run whose rows all fail writes no per-row entry, so this is its only trace
@@ -392,10 +398,11 @@ Payment tracking for apartment sales contracts.
   to Croatian Excel), dates as **real date cells** formatted `dd.mm.yyyy.`, `payment_method` is
   translated rather than written raw, and the headers are the screen's own Croatian keys. Dates go
   through `toDateCell`, so a date-only column keeps the day it says rather than the UTC one before it
-- **Deliberately left in English**, pending a wording decision: the 12- and 4-bullet
-  "Expected File Format" lists in the two import modals (they name literal Croatian spreadsheet
-  columns — `zgrada`, `oznaka stana`, `stan m2 prodajno`, `kapara 10%` — which must stay
-  verbatim); the sample identity placeholders in `SaleFormModal` ("John Smith",
+- **Apartment import instructions are translated** (`sales_projects.excel_import.format.*`) and
+  generated from `services/apartmentImportTemplate.ts`; the literal spreadsheet column names
+  (`zgrada`, `oznaka stana`, `kapara 10%`) stay Croatian in both locales
+- **Deliberately left in English**, pending a wording decision: the 4-bullet
+  "Expected File Format" list in the garage import modal; the sample identity placeholders in `SaleFormModal` ("John Smith",
   "john@example.com", "+1 (555) 123-4567", "123 Main St"); and the `e.g., …` placeholders in
   `SingleApartmentModal`, `EditApartmentModal`, `SingleUnitModal`, `SingleBuildingModal`,
   `BulkUnitsModal` and `CustomerFormModal`

@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import * as XLSX from '@e965/xlsx'
-import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
+import { Upload, CheckCircle, AlertCircle, Download } from 'lucide-react'
 import { Modal, Button } from '../../../ui'
 import { parseNumber, parseDate, detectPaymentType } from '../../../../utils/excelParsers'
 import { importApartmentRow, logApartmentImportSummary } from '../services/apartmentImportService'
+import { APARTMENT_IMPORT_FORMAT_KEYS, downloadApartmentImportTemplate } from '../services/apartmentImportTemplate'
 import { useToast } from '../../../../contexts/ToastContext'
 import { importErrorMessage } from '../importOutcome'
 import { ImportOutcomeSummary } from './ImportOutcomeSummary'
@@ -73,6 +74,15 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
+    }
+  }
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadApartmentImportTemplate()
+    } catch (error) {
+      console.error('Error building import template:', error)
+      toast.error(t('sales_projects.excel_import.template_failed'))
     }
   }
 
@@ -254,24 +264,18 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
               )}
             </div>
             <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">{t('sales_projects.excel_import.expected_format')}</h4>
-              {/* The bullets below mix English instructions with the literal Croatian spreadsheet
-                  column headers (zgrada, oznaka stana, stan m2 prodajno…), which must stay
-                  verbatim — they name real cells in the file being uploaded. Left in English
-                  pending a wording decision; see docs/SALES.md. */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <h4 className="font-medium text-blue-900 dark:text-blue-100">{t('sales_projects.excel_import.expected_format')}</h4>
+                <Button variant="secondary" size="sm" icon={Download} onClick={handleDownloadTemplate}>
+                  {t('sales_projects.excel_import.download_template')}
+                </Button>
+              </div>
+              {/* The spreadsheet's own column names (zgrada, oznaka stana, kapara 10%…) stay
+                  Croatian in both languages — they name real cells in the file being uploaded. */}
               <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
-                <li>Headers on row 1, data starts at row 2</li>
-                <li>Column 1 (A): zgrada (building name - must match existing building)</li>
-                <li>Column 4 (D): oznaka stana (apartment number)</li>
-                <li>Column 10 (J): stan m2 prodajno (total saleable area)</li>
-                <li>Column 12 (L): cijena stana (apartment price)</li>
-                <li>Columns 13-15: parking data (optional)</li>
-                <li>Columns 16-18: storage data (optional)</li>
-                <li>Column 20 (T): datum potpisa predugovora (optional)</li>
-                <li>Column 21 (U): kapara 10% (optional)</li>
-                <li>Columns 22-25 (V-Y): installment dates or credit date (optional)</li>
-                <li>Numbers can use European format with commas (e.g., "3.000,00")</li>
-                <li>Dates can use DD.MM.YYYY format</li>
+                {APARTMENT_IMPORT_FORMAT_KEYS.map(key => (
+                  <li key={key}>{t(`sales_projects.excel_import.format.${key}`)}</li>
+                ))}
               </ul>
             </div>
           </div>

@@ -57,6 +57,7 @@ const ActivityLog = lazy(() => import('./components/General/ActivityLog/index'))
 const ChatPage = lazy(() => import('./components/Chat'))
 const TasksPage = lazy(() => import('./components/Tasks'))
 const CalendarPage = lazy(() => import('./components/Calendar'))
+const HelpPage = lazy(() => import('./components/Help'))
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -111,6 +112,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               {user?.role === 'Supervision' ? <Navigate to="/site-management" replace /> : <Dashboard />}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/help/:articleId?"
+          element={
+            <ProtectedRoute>
+              <HelpPage />
             </ProtectedRoute>
           }
         />

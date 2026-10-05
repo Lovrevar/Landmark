@@ -91,11 +91,18 @@ Shared primitive component library. Always check here before building new UI —
 
 ### FormField.tsx
 - Wraps any form input with label, required marker, helper text, and error display
-- Props: `label`, `required?`, `helperText?` (ReactNode), `error?`, `compact?`, `group?`, `children`, `className?`
+- Props: `label`, `required?`, `helperText?` (ReactNode), `hint?` (ReactNode), `error?`, `compact?`, `group?`, `children`, `className?`
+- `hint` — an `InfoHint` shown beside the label (never inside the `<label>`, since it is a button). Use it for a field whose *options* need explaining; a plain sentence about the field still goes in `helperText`
 - **Links the label to its control automatically.** FormField generates an id and provides it through context; `Input`, `Select`, `Textarea` and `SearchableSelect` (and `DateInput` / `CurrencyInput`, which render `Input`) pick it up as their `id`, plus `aria-describedby` (the error, else the helper text), `aria-invalid` and `aria-required`. Clicking the label focuses the field; screen readers and Playwright's `getByLabel` find it by label. Anything passed explicitly on the control wins
 - One control per FormField — two controls would share the id
 - `group` — for a field that is a set of controls or a read-only value (a `SegmentedControl`, a category tree, "budget from TIC"): the label becomes the name of a `role="group"` wrapper instead of pointing at a single input
 - A custom control can join in with `useFormFieldControl()` (exported from `FormField.tsx`), which returns `{ controlId, describedBy, invalid, required }` or null outside a FormField
+
+### InfoHint.tsx
+- A "?" beside a label that opens a short explanation **on click** — so it works on touch and with a keyboard, which a native `title` tooltip does not. Use it instead of `title=` whenever the text is an explanation rather than a button name
+- Props: `hintId` (stable name, logged on open), `label` (accessible name + popover heading), `children` (one or two sentences), `articleId?` (adds a "more" link to `/help/<id>`, opened in a new tab), `icon?` (replaces the "?", e.g. `AlertTriangle` for a flagged value), `className?` (trigger colour)
+- Positioned with `@floating-ui/react` and portalled, so tables and modal bodies cannot clip it. Escape and focus use the app's own layer stacks: inside a modal, Escape closes the hint only
+- Keep the content short and put the durable explanation in a `help-kb` article — see [HELP.md](./HELP.md)
 
 ### InlineLoadError.tsx
 - One line of "this could not be loaded", small enough to sit under a form control or inside a sidebar card. Imported by path (not in the barrel)
@@ -116,7 +123,8 @@ Shared primitive component library. Always check here before building new UI —
 ### MarkdownView.tsx
 - Renders a Markdown string with the app's typography, via `react-markdown` + `remark-gfm` (so tables, strikethrough and task lists work)
 - Props: `content`, `className?`
-- Used by AI chat message bodies and task descriptions. Prefer this over hand-rolling a Markdown renderer
+- Used by AI chat message bodies, task descriptions and the Help page. Prefer this over hand-rolling a Markdown renderer
+- A link whose `href` starts with `/` is an app route and navigates in place (`<Link>`); every other link opens in a new tab
 
 ### Modal.tsx
 - Full-featured modal dialog with portal rendering and body scroll lock
@@ -136,6 +144,7 @@ Shared primitive component library. Always check here before building new UI —
 ### PageHeader.tsx
 - Page title bar with optional description and an action slot
 - Props: `title`, `description?`, `subtitle?`, `icon?` (ElementType), `actions?` (ReactNode), `className?`
+- **Help link:** shows a "?" after the title when `help-kb` has an article whose `routes` match the current page and whose `roles` include the user's. It opens `/help?page=<pathname>` in a new tab and logs `help.page_link_click`. Needs no prop; it requires the router and auth context every page already has
 - **Mobile-responsive:** title block and actions stack vertically on phones and sit on one row from `sm` up; actions wrap when they overflow
 - Note: `subtitle` and `icon` are accepted by the prop type but not currently rendered by the component — only `title`, `description`, and `actions` are displayed
 
