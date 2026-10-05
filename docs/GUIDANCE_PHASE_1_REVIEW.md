@@ -18,6 +18,7 @@ as the project's i18n rules require.
 | 5 | Help articles already edited |
 | 6 | Help article audit: outdated content and proposed corrections (not applied) |
 | 7 | Decisions needed |
+| 8 | Added in the second round: six strings, one article sentence, and what changed in section 7 |
 
 ## 1. New strings
 
@@ -353,3 +354,44 @@ Also stale for root cause 1, outside the 25: `supervision-payments.md` and `supe
 6. **Cesija: "asignacija" or "ustup potraživanja"** (6.2).
 7. **Two on-screen strings the audit found misleading but this phase did not touch:** the Budget Control subtitle ("po fazama") and its no-budget message ("Dodajte faze s dodijeljenim proračunom…").
 8. **Apply the corrections in section 6?** Say which, and they can be made in one pass with `npm run kb:build`.
+
+## 8. Added in the second round (2026-10-05)
+
+Six new strings from the follow-up work. Example of 8.1 as the user sees it: "Redak 7: Stupac V (1. rata AB konstrukcija 30%): upisan je datum, a očekuje se iznos u EUR".
+
+### 8.1 Apartment import: date in an amount column
+
+Shown: Sales projekti → Uvezi iz Excela, step 2 (the row's error line, after "Redak N:")
+
+| Key | Hrvatski | English |
+|---|---|---|
+| `sales_projects.excel_import.error_date_in_amount_column` | Stupac {{column}} ({{name}}): upisan je datum, a očekuje se iznos u EUR | Column {{column}} ({{name}}): holds a date where an amount in EUR is expected |
+
+### 8.2 Garage import instructions
+
+Shown: Sales projekti → tab Garaže → Uvezi garaže iz Excela, step 1 (replaces four hardcoded English lines)
+
+| Key | Hrvatski | English |
+|---|---|---|
+| `sales_projects.excel_import.garage_format.layout` | Zaglavlje je u 1. retku, podaci počinju od 2. retka. | Headers are on row 1 and data starts on row 2. |
+| `sales_projects.excel_import.garage_format.label` | A – parking oznaka (oznaka garaže) | A – parking oznaka (garage label or number) |
+| `sales_projects.excel_import.garage_format.size` | B – parking m2 (površina u m²) | B – parking m2 (size in m²) |
+| `sales_projects.excel_import.garage_format.price` | C – parking cijena (cijena u EUR) | C – parking cijena (price in EUR) |
+
+### 8.3 Activity log: help usage toggle
+
+Shown: General → Dnevnik aktivnosti, checkbox under the filters (Director only)
+
+| Key | Hrvatski | English |
+|---|---|---|
+| `activity_log.show_help_events` | Prikaži i korištenje pomoći | Also show help usage |
+
+### 8.4 Article edit
+
+`help-kb/sales-projects.md`, import section — one sentence added after the U–Z bullet, because the import now behaves this way: "Redak u kojem je u nekom od tih stupaca upisan datum ne uvozi se; u pregledu se navodi redak i stupac."
+
+### 8.5 What changed in section 7
+
+- **Decision 1 is settled** as you asked: an article is now shown to the roles it lists *and* to any role that can open a page it is tagged to. The rule for "can open" follows the router: Cashflow pages are Director and Accounting, General reports and the Activity Log are Director, and the Supervision role counts only the pages it is offered (its three menu items plus Chat, Tasks, Calendar and Help). An article with no `routes` still goes by its `roles` alone.
+- One consequence to know before you mark section 6: `supervision-payments` and `supervision-invoices` still list Supervision in `roles`, so that role sees those two articles on `/help` although it can no longer reach the pages. Removing Supervision from their `roles` fixes it.
+- The garage import lines (previously noted as left in English) are translated — 8.2.

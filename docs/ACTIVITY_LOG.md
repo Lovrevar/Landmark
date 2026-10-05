@@ -364,7 +364,11 @@ is the *user* action that triggered or corrected a run.
 
 ### Help usage (3)
 Not mutations — usage events for the in-app guidance, written through `logHelpEvent`
-(`src/lib/helpEvents.ts`). See [HELP.md](./HELP.md).
+(`src/lib/helpEvents.ts`). See [HELP.md](./HELP.md). The page leaves them out unless the
+"show help usage" checkbox is ticked or the Help category is selected: `fetchActivityLogs` sends
+`p_exclude_action_prefix: 'help'` (migration `20261005100000`). Against a database without that
+parameter PostgREST answers `PGRST202`; the service then repeats the call without it and reports
+`excludeSupported: false`, and the page hides the checkbox rather than pretend to filter.
 
 | Action | Severity | File |
 |---|---|---|

@@ -4806,6 +4806,7 @@ export type Database = {
       get_activity_logs: {
         Args: {
           p_action_prefix?: string
+          p_exclude_action_prefix?: string
           p_date_from?: string
           p_date_to?: string
           p_limit?: number

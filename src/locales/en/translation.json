@@ -2046,6 +2046,13 @@
         "not_imported": "G – zatvorena površina (closed area) and S – ukupna cijena (total price) are not imported.",
         "numbers": "Numbers may use the European format (e.g. \"3.000,00\").",
         "existing": "An apartment that already exists (same building and number) is updated instead of added again; its status is left as it is."
+      },
+      "error_date_in_amount_column": "Column {{column}} ({{name}}): holds a date where an amount in EUR is expected",
+      "garage_format": {
+        "layout": "Headers are on row 1 and data starts on row 2.",
+        "label": "A – parking oznaka (garage label or number)",
+        "size": "B – parking m2 (size in m²)",
+        "price": "C – parking cijena (price in EUR)"
       }
     },
     "filter": {
@@ -5376,7 +5383,8 @@
       "help.view": "Help opened",
       "help.page_link_click": "Page help link clicked",
       "help.hint_open": "Hint opened"
-    }
+    },
+    "show_help_events": "Also show help usage"
   },
   "sifrarnici": {
     "title": "Šifrarnici",

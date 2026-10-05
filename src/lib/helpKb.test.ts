@@ -96,6 +96,15 @@ describe('grouping and role filter', () => {
     expect(isVisibleToRole(article({ roles: ['Director', 'Accounting'] }), 'Sales')).toBe(false)
     expect(isVisibleToRole(article({ roles: ['Director'] }), undefined)).toBe(false)
   })
+
+  it('also shows an article to a role that can open a page it is tagged to', () => {
+    const canOpen = (role: string, route: string) => role === 'Sales' && route === '/budget-control'
+    const guide = article({ roles: ['Director', 'Accounting', 'Investment'], routes: ['/budget-control'] })
+    expect(isVisibleToRole(guide, 'Sales', canOpen)).toBe(true)
+    expect(isVisibleToRole(guide, 'Supervision', canOpen)).toBe(false)
+    // No page to go by: the roles list is all there is.
+    expect(isVisibleToRole(article({ roles: ['Director'], routes: [] }), 'Sales', canOpen)).toBe(false)
+  })
 })
 
 describe('routes', () => {

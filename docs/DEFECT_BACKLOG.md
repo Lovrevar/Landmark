@@ -244,7 +244,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ### SALES-11 · Low · Bulk-created buildings get hard-coded English names ("Building N")
 
 ### SALES-12 · Low · Import help text is wrong about columns V–Y
-- **Status:** Fixed on `feat/user-guidance-phase-1`: the instructions are generated from `apartmentImportTemplate.ts`, say V–Y and Z hold EUR amounts, are translated, and come with a downloadable template. The parser is unchanged — a date typed into V–Y is still read as a number; only the guidance was wrong
+- **Status:** Fixed on `feat/user-guidance-phase-1`: the instructions are generated from `apartmentImportTemplate.ts`, say V–Y and Z hold EUR amounts, are translated, and come with a downloadable template. A date in U–Z — as text or as an Excel date cell — now rejects the row and names the column (`apartmentImportValidation.ts`)
 - The help says they hold dates; the code parses them as EUR amounts, so a date string becomes a
   number such as 1022026.
 

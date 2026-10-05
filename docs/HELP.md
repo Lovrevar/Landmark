@@ -33,8 +33,16 @@ Frontmatter the page uses:
 |---|---|
 | `id`, `title`, `keywords` | identity and search (title > keywords > body; every query word must match; diacritics ignored) |
 | `routes` | route patterns as in `App.tsx` (`/projects/:id`) — which pages the "?" link appears on |
-| `roles` | who sees the article. Empty = everyone. **On the Help page this is a filter**, not the down-rank the assistant applies |
+| `roles` | who the article is written for. Empty = everyone. For the assistant this is only a down-rank; on the Help page it is half of the filter (below) |
 | `assistant_only: true` | keeps an article off the Help page but in the assistant's index — for notes about stored values a user never sees (`term-status-casing`) |
+
+**Who sees an article** (`isVisibleToRole`): the roles it lists, plus any role that can open a page
+it is tagged to. `roles` alone hid the Budget Control guide from a Sales user working on Budget
+Control. "Can open" is `canRoleAccessRoute` in `src/utils/routeAccess.ts` — the router's guards as
+data (Cashflow routes → Director/Accounting; General reports and Activity Log → Director; the
+Supervision role → only the pages it is offered). `routeAccess.test.ts` reads `App.tsx` and
+`Layout.tsx` and fails if the lists drift from the real guards. An article with no `routes` goes
+by `roles` alone.
 
 `[[article-id]]` references become links; one pointing at an article the reader cannot open is
 shown as plain text. Group is derived from the id prefix: `term-`/`terminology-` → terms,
@@ -51,7 +59,7 @@ Articles are Croatian only; the English UI says so above the list.
 - Logs `help.view` once per index visit or article opened
 
 ### hooks/useHelpArticles.ts
-- `useHelpArticles()` → `{ articles, loading, error, refetch }`, already filtered by the user's role
+- `useHelpArticles()` → `{ articles, loading, error, refetch }`, already filtered for the user's role (see above)
 - `useHelpArticleCount(pathname)` → number of articles for a route; 0 while loading or on failure,
   so a page header never shows an error because its help could not be counted
 
@@ -79,7 +87,10 @@ low. No new table or migration.
 | `help.hint_open` | an `InfoHint` is opened | `hint_id`, `page` |
 
 `logActivity` skips the dashboard-cache invalidation for `help.*`, as it does for `export.*` and
-`auth.*`. The events appear in General → Activity Log under the **Help** category (Director only).
+`auth.*`. In General → Activity Log (Director only) they are **hidden by default**: tick "Also show
+help usage", or pick the **Help** category. Hiding needs the `p_exclude_action_prefix` parameter
+added by migration `20261005100000_activity_log_exclude_prefix.sql`; until that is applied the
+page falls back to the old call, shows everything as before and does not offer the checkbox.
 To see what is used:
 
 ```sql

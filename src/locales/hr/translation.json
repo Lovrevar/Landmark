@@ -2052,6 +2052,13 @@
         "not_imported": "G – zatvorena površina i S – ukupna cijena ne uvoze se.",
         "numbers": "Brojevi mogu biti u europskom formatu (npr. „3.000,00”).",
         "existing": "Stan koji već postoji (ista zgrada i oznaka) ažurira se umjesto da se doda ponovno; status mu se ne mijenja."
+      },
+      "error_date_in_amount_column": "Stupac {{column}} ({{name}}): upisan je datum, a očekuje se iznos u EUR",
+      "garage_format": {
+        "layout": "Zaglavlje je u 1. retku, podaci počinju od 2. retka.",
+        "label": "A – parking oznaka (oznaka garaže)",
+        "size": "B – parking m2 (površina u m²)",
+        "price": "C – parking cijena (cijena u EUR)"
       }
     },
     "filter": {
@@ -5402,7 +5409,8 @@
       "help.view": "Otvorena pomoć",
       "help.page_link_click": "Kliknuta pomoć za stranicu",
       "help.hint_open": "Otvoreno objašnjenje"
-    }
+    },
+    "show_help_events": "Prikaži i korištenje pomoći"
   },
   "sifrarnici": {
     "title": "Šifrarnici",

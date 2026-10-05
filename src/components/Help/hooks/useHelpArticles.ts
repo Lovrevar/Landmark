@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { articlesForRoute, isVisibleToRole, type HelpArticle } from '../../../lib/helpKb'
+import { canRoleAccessRoute } from '../../../utils/routeAccess'
 import { loadHelpArticles } from '../services/helpArticles'
 
-/** The help articles the signed-in user's role may read. */
+/** The help articles for the signed-in user: written for their role, or about a page they can open. */
 export function useHelpArticles() {
   const { user } = useAuth()
   const [all, setAll] = useState<HelpArticle[]>([])
@@ -26,7 +27,7 @@ export function useHelpArticles() {
     void refetch()
   }, [refetch])
 
-  const articles = useMemo(() => all.filter(article => isVisibleToRole(article, user?.role)), [all, user?.role])
+  const articles = useMemo(() => all.filter(article => isVisibleToRole(article, user?.role, canRoleAccessRoute)), [all, user?.role])
 
   return { articles, loading, error, refetch }
 }

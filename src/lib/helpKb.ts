@@ -79,10 +79,23 @@ export function helpGroup(article: HelpArticle): HelpGroup {
   return 'pages'
 }
 
-/** An article with no `roles` is for everyone; otherwise only for the roles it names. */
-export function isVisibleToRole(article: HelpArticle, role: string | null | undefined): boolean {
+/**
+ * Whether an article is shown to a role.
+ *
+ * An article with no `roles` is for everyone. Otherwise it is shown to the roles it names, and to
+ * any role that can open a page it is tagged to: `roles` was written as a ranking hint for the
+ * assistant, and used alone as a filter it hid the guide to a page from people working on that
+ * page (a Sales user on Budget Control). `canAccessRoute` is the router's answer for that role —
+ * pass `canRoleAccessRoute` from `utils/routeAccess`.
+ */
+export function isVisibleToRole(
+  article: HelpArticle,
+  role: string | null | undefined,
+  canAccessRoute: (role: string, routePattern: string) => boolean = () => false,
+): boolean {
   if (article.roles.length === 0) return true
-  return !!role && article.roles.includes(role)
+  if (!role) return false
+  return article.roles.includes(role) || article.routes.some(route => canAccessRoute(role, route))
 }
 
 const segments = (path: string): string[] => path.split('/').filter(Boolean)
