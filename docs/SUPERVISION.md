@@ -107,7 +107,7 @@ then `ProjectSummaryBanner`, then the contract tree.
   `budget_realized` sums payments on **every** invoice linked to the contract, whatever its
   category, so a contract with payments on a non-`SUBCONTRACTOR` invoice shows less paid on those
   two screens (and a lower progress %) than here. The dashboard half is GEN-10 in
-  [DEFECT_BACKLOG.md](./backlog/DEFECT_BACKLOG.md)
+  [backlog/projects-dashboards-reports.md](./backlog/projects-dashboards-reports.md)
 
 #### Contract status (completed and terminated contracts)
 
@@ -172,7 +172,7 @@ Accounting user can switch into it and does have the rows.
 
 > This is a **screen-only** restriction, not a data boundary — `contracts` is readable by any
 > authenticated user, so `budget_realized` is one console call away. See
-> [SECURITY_BACKLOG.md](./backlog/SECURITY_BACKLOG.md) SEC-004.
+> [backlog/security.md](./backlog/security.md) SEC-004.
 
 #### One definition of "overdue"
 

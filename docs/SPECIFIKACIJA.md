@@ -517,7 +517,7 @@ Potpisani URL-ovi vrijede 3600 sekundi.
   vremenu: `x-doc-sort-secret` (sortiranje dokumenata), `x-erp-import-secret` (ERP uvoz),
   `x-reminder-secret` (zakazani podsjetnici).
 
-Otvorene sigurnosne stavke vode se u [`SECURITY_BACKLOG.md`](./backlog/SECURITY_BACKLOG.md).
+Otvorene sigurnosne stavke vode se u [`backlog/security.md`](./backlog/security.md).
 
 ---
 

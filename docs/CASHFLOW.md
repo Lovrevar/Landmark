@@ -20,7 +20,7 @@ hand-rolled `toLocaleString`. Two rules the module used to break:
   `formatEuropean` so the symbol isn't doubled.
 
 A sweep of the remaining plain `toLocaleString('hr-HR')` money renders (correct locale, ragged
-decimals) is still outstanding — see `docs/backlog/UI_AUDIT.md`.
+decimals) is still outstanding — see `docs/backlog/ui.md`.
 
 ## Dates, statuses and vocabularies
 
@@ -1041,7 +1041,7 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 - `retailInvoiceTypes.ts` inside `Invoices/` defines types that bridge Cashflow and Retail invoice structures — handle carefully when modifying
 - Multi-VAT support uses separate `base_amount_1–4`, `vat_rate_1–4`, `vat_amount_1–4` fields for up to 4 VAT rates per invoice (Croatian accounting requirement)
 - Cesija is tracked on payments only: `accounting_payments` carries `is_cesija`, `cesija_company_id`, `cesija_bank_account_id`, `cesija_credit_id` and `cesija_credit_allocation_id`; `accounting_invoices` has no cesija columns
-- **Security note.** The Cashflow password modal (`Layout.tsx`) and `CashflowRoute` (`App.tsx`) gate UI navigation only. RLS on cashflow tables enforces role-based access (`Director`, `Accounting`) and does NOT depend on the password flag. A user with one of those roles and a valid Supabase JWT can query cashflow data directly via supabase-js without entering the password. This is a known limitation tracked as **SEC-001** in [`docs/backlog/SECURITY_BACKLOG.md`](./backlog/SECURITY_BACKLOG.md).
+- **Security note.** The Cashflow password modal (`Layout.tsx`) and `CashflowRoute` (`App.tsx`) gate UI navigation only. RLS on cashflow tables enforces role-based access (`Director`, `Accounting`) and does NOT depend on the password flag. A user with one of those roles and a valid Supabase JWT can query cashflow data directly via supabase-js without entering the password. This is a known limitation tracked as **SEC-001** in [`docs/backlog/security.md`](./backlog/security.md).
   - As of migration `20260526084700_tighten_cashflow_rls.sql` (2026-05-26), five tables that previously had blanket `USING (true)` policies (`accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`) are now role-gated, with scoped exceptions for the Sales workflow (sales-related invoices/payments) and broad SELECT on `accounting_companies` (names + OIB are treated as reference data). `bank_credits` SELECT additionally allows `Investment`. The companion migration `20260526084701_get_invoice_statistics_role_check.sql` adds a defense-in-depth role check inside the SECURITY DEFINER `get_invoice_statistics` RPC. Since `20260930100300` that RPC uses exactly the joins and search predicate of `get_filtered_invoices`, so the count above the list matches the rows. These close the blanket-open gap but do NOT couple data access to the password flag, so SEC-001 remains open.
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`
 

@@ -71,7 +71,7 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 
 ### useCachedData.ts
 - `useCachedData(key, fetcher, ttl)` — TTL-cached fetch hook; every dashboard reads through it
-- Returns `{ data, loading, error }`. **Always render the `error` state** — the hook used to swallow fetch failures and leave dashboards showing zeros, which is indistinguishable from "this company genuinely has no revenue" (DASH-003 in [`DASHBOARD_AUDIT.md`](./backlog/DASHBOARD_AUDIT.md)). `DashboardError.tsx` is the shared renderer
+- Returns `{ data, loading, error }`. **Always render the `error` state** — the hook used to swallow fetch failures and leave dashboards showing zeros, which is indistinguishable from "this company genuinely has no revenue" (DASH-003 in [`DASHBOARD_AUDIT.md`](./backlog/archive/DASHBOARD_AUDIT.md)). `DashboardError.tsx` is the shared renderer
 - `invalidateCachedData(predicate?)` — drops matching cache entries after a mutation
 - Lives in `src/lib/`, not `src/hooks/`, despite being a hook
 
@@ -231,7 +231,7 @@ read "Jan 05, 2026".
 ### dateOnly.ts
 - `parseLocalDate(str)` — builds `new Date(y, m-1, d)` so a SQL `date` column is not parsed as UTC midnight
 - `monthKey(str)` — `YYYY-MM` bucket key; `daysFromToday(str)`; `isValidDate(str)`; `startOfTodayLocal()`
-- **Use these for every date-only column.** `new Date('2026-09-01')` parses as UTC and compares wrong against a local `new Date()` — Croatia is UTC+1/+2, so month buckets and overdue detection drift by a day at boundaries. Added during the June 2026 dashboard audit (see [`DASHBOARD_AUDIT.md`](./backlog/DASHBOARD_AUDIT.md) DASH-001)
+- **Use these for every date-only column.** `new Date('2026-09-01')` parses as UTC and compares wrong against a local `new Date()` — Croatia is UTC+1/+2, so month buckets and overdue detection drift by a day at boundaries. Added during the June 2026 dashboard audit (see [`DASHBOARD_AUDIT.md`](./backlog/archive/DASHBOARD_AUDIT.md) DASH-001)
 
 ### pdfFont.ts
 - `loadUnicodeFont(doc)` + `PDF_FONT_FAMILY` — registers the embedded Noto Sans on a jsPDF document. Every generator calls it before drawing

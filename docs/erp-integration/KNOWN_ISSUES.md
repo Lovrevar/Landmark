@@ -2,7 +2,7 @@
 
 Defects and gaps in the merged ERP code (phases 0–3), and how later work on `development`
 interacts with the integration. Found in the September 2026 code audit that produced
-[`docs/backlog/DEFECT_BACKLOG.md`](../backlog/DEFECT_BACKLOG.md) (section 9 there mirrors the first part of this
+[`docs/backlog/archive/DEFECT_BACKLOG.md`](../backlog/archive/DEFECT_BACKLOG.md) (section 9 there mirrors the first part of this
 file; the `ERP-n` ids are the same).
 
 **Fix the ones marked "before resuming" before the parked migrations are applied anywhere** —

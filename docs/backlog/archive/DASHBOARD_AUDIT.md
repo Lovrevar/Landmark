@@ -1,5 +1,7 @@
 # Dashboard Data-Integrity Audit
 
+> **Archived 2026-10-05 — do not update.** This is the record of what was found and how it was fixed. Everything still open was carried over to [../retail.md](../retail.md) (DASH-505, now RETAIL-1) and [../projects-dashboards-reports.md](../projects-dashboards-reports.md) (DASH-605, now GEN-15). Everything else here was fixed in June 2026.
+
 A persistent, in-repo record of misleading-data, calculation, and correctness findings across all six dashboards (`src/components/dashboards/`). Each entry gives a future maintainer enough context to pick the work up cold: what's wrong, why it misleads, and the fix. Filed **2026-06-16** from a full-stack audit (service → types → component → sections), cross-checked against `supabase/migrations/00000000000000_baseline_schema.sql`.
 
 **Status (2026-06-16): the findings below have been FIXED** in a follow-up pass (typecheck/lint/tests/build all green). Cross-cutting infra added: `src/utils/dateOnly.ts` (date-only parsing/bucketing helpers — `parseLocalDate`, `monthKey`, `daysFromToday`, `isValidDate`), an `error` field on `useCachedData`, and a shared `src/components/dashboards/DashboardError.tsx` wired into all six dashboards. Entries are kept for historical context and to document the rationale. A few **Low** items were intentionally deferred (noted inline): Sales hardcoded monthly target (DASH-303, needs a config source), Retail per-customer denominator nuance (DASH-505), Supervision `999` deadline sentinel (DASH-605).

@@ -196,7 +196,6 @@ Full documentation: [`docs/ACTIVITY_LOG.md`](./docs/ACTIVITY_LOG.md)
 
 Full module map with per-file descriptions: [`docs/CODEBASE_INDEX.md`](./docs/CODEBASE_INDEX.md).
 When working in a specific module, read the relevant file in `docs/` (e.g. `docs/SALES.md`, `docs/FUNDING.md`) before making changes.
-Known defects and the decisions still open are tracked in [`docs/backlog/DEFECT_BACKLOG.md`](./docs/backlog/DEFECT_BACKLOG.md).
 
 The `tasks` tables are **shared with a standalone mobile task app** that points at the same
 production database. This repo owns that schema. Before changing any `task*` table, RPC or
@@ -204,6 +203,26 @@ policy, read [`docs/SHARED_SCHEMA.md`](./docs/SHARED_SCHEMA.md) — it records t
 both clients depend on and the assumptions the other app gets wrong. Never run anything in
 `todoMigrations/` against this database.
 After creating new files or doing major updates, update the relevant docs.
+
+## Backlog
+
+Known defects, gaps and open decisions live in [`docs/backlog/`](./docs/backlog/README.md), one
+file per area (`security.md`, `sales.md`, `retail.md`, `supervision.md`, `cashflow.md`,
+`funding.md`, `projects-dashboards-reports.md`, `collaboration.md`, `ui.md`), plus `release.md`
+for fixes that are written but not live. The README there has the ranked list and the entry format.
+
+1. **Before working in a module, read its backlog file** — the bug you are about to hit may be
+   known, decided or waiting on the ERP integration
+2. **Add what you find and do not fix** — a bug, a wrong figure, a missing guard, dead code, a doc
+   that disagrees with the code, or a decision nobody has made. Add an entry to the area file in
+   the same change, with the next free id from the top of that file. Do not leave it only in a
+   chat reply or a code comment
+3. **When you fix an item, close it** — move the entry to `## Resolved` at the bottom of its file
+   with one line saying how and in which commit or migration, and take it out of the ranked list
+4. **Never reuse or renumber an id** — code comments and migrations quote them (`DEFECT_BACKLOG
+   CASH-7`). An id that is not in an area file is in `docs/backlog/archive/DEFECT_BACKLOG.md`
+5. `docs/backlog/archive/` is closed history — do not update it. ERP items go in
+   `docs/erp-integration/KNOWN_ISSUES.md` and `OPEN_QUESTIONS.md`, not here
 
 ## graphify
 
