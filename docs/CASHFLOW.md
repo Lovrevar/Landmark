@@ -38,7 +38,7 @@ calls `date-fns` `format` for display any more (the PDF/Excel generators still d
 |---|---|
 | `accounting_invoices.status` | `getInvoiceStatusVariant` / `getInvoiceStatusLabel` (`services/invoiceHelpers.ts`) |
 | `accounting_invoices.invoice_category` | `getInvoiceCategoryLabel` (same file) → `invoice_category.*` |
-| `accounting_invoices.invoice_type` | `getInvoiceTypeLabel` → `invoice_type.*` (short code); `getInvoiceTypeLongLabel` → `invoice_type_long.*` (spelled out) |
+| `accounting_invoices.invoice_type` | `getInvoiceTypeLabelKey` → `invoice_type.*` |
 | `accounting_payments.payment_method` | `getPaymentMethodLabel(method, source, t)` (`services/paymentHelpers.ts`) → `payments.method_*`. Kompenzacija has no method and shows `—` |
 | `contracts.status` | `CONTRACT_STATUS` + `statusVariant`/`statusLabel` (`src/utils/statusDisplay.ts`) |
 
@@ -272,7 +272,7 @@ Monthly calendar view showing scheduled invoice payments and due dates. Supports
 #### Hooks
 
 ### useCalendar.ts
-- `useCalendar()` — manages calendar navigation, date selection, daily invoice display, and budget state. The month's incoming/outgoing sums take their sides from `utils/invoiceCashDirection.ts` (every `INCOMING_*` is paid by us, every `OUTGOING_*` paid to us); the two type lists it used to keep left credit fees out of both
+- `useCalendar()` — manages calendar navigation, date selection, daily invoice display, and budget state
 - A failed invoice load clears `invoices` and sets `error`; the page then replaces the whole
   calendar (grid, stat cards and the net figure are all derived from it) with `ErrorState`, and
   shows an `Alert` when only the budgets failed
@@ -306,10 +306,11 @@ Legal entity management. Tracks company financial summaries, bank accounts, and 
 ### companyService.ts
 - `fetchCompaniesWithStats()` — fetches companies with aggregated financial stats
 - `fetchBankAccountsForCompany(companyId)` — fetches bank accounts for a company
-- `createCompany(formData)` — inserts a new company record with bank accounts. The entered balance is the opening balance: it is written to both `initial_balance` and `current_balance` with `balance_reset_at` = now (with `initial_balance = 0`, the first payment used to wipe it)
-- `updateCompany(companyId, formData)` — updates the company; each account's balance reset goes through the `reset_company_bank_account_balance` RPC (Director/Accounting), which sets `initial_balance`, `current_balance` and `balance_reset_at` and rebuilds the balance with the one database formula
+- `createCompany(formData)` — inserts a new company record with bank accounts
+- `updateCompany(companyId, formData)` — updates company and bank account records
 - `deleteCompany(companyId)` — removes a company
 - `fetchCompanyDetails(companyId)` — fetches bank accounts, credits, recent invoices, and cesija data
+- `recalculateBankAccountBalance(bankAccountId, resetAt)` — recomputes running balance from all payments, loans, and cesija transactions
 - **Depends on:** supabase client
 
 #### Hooks
@@ -479,7 +480,7 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 
 ### invoiceService.ts
 - `fetchData(filterType, filterStatus, filterCompany, searchTerm, currentPage, pageSize, sortField?, sortDirection?)` — paginated invoice fetch with filters via the `get_filtered_invoices` RPC. Sorting (`'due_date' | 'invoice_number'`, `'asc' | 'desc'`) is done **server-side** so it spans every page; `p_sort_field`/`p_sort_dir` are only sent when a sort is active, so the unsorted list still works against a database without the sort migration (see Notes)
-- `handleSubmit(formData, editingInvoice, isOfficeInvoice)` — creates or updates an invoice. An update leaves `approved` and `created_by` alone (the create payload used to un-approve supplier and sales invoices and replace the author)
+- `handleSubmit(formData, editingInvoice, isOfficeInvoice)` — creates or updates an invoice
 - `handlePaymentSubmit(paymentFormData, invoice)` — records a payment against an invoice. Builds the row with `Payments/services/paymentPayload.ts` `buildPaymentData`, the same builder the Payments page uses
 - `handleDelete(invoiceId)` — deletes an invoice
 - `fetchCreditAllocations(creditId)` — fetches allocations for a credit line
@@ -909,6 +910,7 @@ later phase.
 Shared utilities used across multiple Cashflow sub-modules.
 
 ### invoiceHelpers.ts
+- `getStatusColor(status)` — returns CSS class for invoice status badge
 - **The shared invoice-status renderer** — use it rather than a local switch (the copies had
   drifted: UNPAID yellow on Approvals and red elsewhere, a lowercase `'paid'` check that never
   matched, the raw enum shown as the label):
@@ -920,25 +922,18 @@ Shared utilities used across multiple Cashflow sub-modules.
     a missing one as `—`
   - Used by Approvals, **Customers' invoice cards**, Supervision's `InvoicesModal` and
     `PaymentHistoryModal`, Retail's `RetailInvoicesModal` and `RetailPaymentHistoryModal`, and
-    Funding's `CreditInvoiceSection` and `AllocationRow`, and — since the guidance work — the
-    main invoice list and detail view, Office Suppliers, the Cashflow Calendar and Retail's
-    invoice list. No screen renders `accounting_invoices.status` its own way any more;
-    `getStatusColor` is gone
+    Funding's `CreditInvoiceSection` and `AllocationRow`. Other invoice screens (the main invoice
+    list via `getStatusColor`, Suppliers, Office Suppliers, Cashflow Calendar, Retail/Supervision
+    invoice lists) still render status their own way
 - `paymentDirection(invoiceType)` → `'IN' | 'OUT' | null` — which way cash moves when an invoice
   of that type is paid: `OUTGOING_*` (we issued it — a sale, a credit drawdown) is money **in**,
   `INCOMING_*` (we received it — a supplier bill, a repayment, credit fees) is money **out**. Same
   sign convention as the bank-balance trigger. Used by both payment screens (Cashflow → Payments
-  and Funding → Payments) for the amount colour, the stat cards and the footer totals. It *is*
-  `invoiceCashDirection` from `src/utils/invoiceCashDirection.ts` — the one map every screen, the
-  dashboards, the General report and the SQL balance function agree with (CASH-7: ULAZNI (INV) is
-  money out everywhere)
-- **Companies cards** (`company_statistics`, from migration `20261005120000`): income and expense are *operating* types only (credit fees are an operating expense); credit drawdowns and repayments of principal come back as `total_financing_received` / `total_financing_repaid` and are shown as one extra line on the card. `fetchCompaniesWithStats` maps them to `financing_received` / `financing_repaid`, `null` against a database that does not have the columns yet, in which case the line is not drawn
-- `getTypeColor(type)` — red for an invoice we pay, green for one we are paid on, read from the same map
-- **The shared invoice-type labels** — two forms of one vocabulary, both translated:
-  - `getInvoiceTypeLabel(type, t)` → the short code (`invoice_type.*`, "ULAZNI (DOB)") for dense tables
-  - `getInvoiceTypeLongLabel(type, t)` → spelled out (`invoice_type_long.*`, "Ulazni (Dobavljač)") for the invoice and payment detail views and the Cashflow Calendar, which each had their own wording before (and the calendar printed the three bank types raw)
-  - `ALL_INVOICE_TYPES` — the nine types in legend order; the "?" on the Type column pairs short with long from it, so the legend cannot drift from what the rows print
-  - The hardcoded `getTypeLabel` is gone. Retail's `RetailInvoicesModal` still has its own four labels (a different wording decision, see docs/RETAIL.md)
+  and Funding → Payments) for the amount colour, the stat cards and the footer totals. Note that it puts
+  `INCOMING_INVESTMENT` on the OUT side, as the trigger does, whereas the accounting dashboard and
+  `getTypeColor` treat it as incoming cash
+- `getTypeColor(type)` — returns CSS class for invoice type badge
+- `getTypeLabel(type)` — returns Croatian label for invoice type
 - `INVOICE_CATEGORIES_BY_DIRECTION` — per direction, the categories that exist (`${direction}_${value}` is always one of the nine `accounting_invoices_invoice_type_check` values) with their `invoice_type.*` label key. Unit-tested in `invoiceHelpers.test.ts` against the CHECK list
 - `isInvoiceCategoryValidForDirection(direction, category)` / `getInvoiceTypeLabelKey(type)` — lookups on that matrix
 - `getSupplierCustomerName(invoice)` — resolves display name from invoice entity fields
@@ -969,7 +964,7 @@ Shared utilities used across multiple Cashflow sub-modules.
 - `allowedPaymentMethods(source, isCesija)` — bank_account → WIRE/CARD/CHECK, credit → WIRE, gotovina → CASH, kompenzacija → none, cesija (any source) → WIRE; unknown source → all four
 - `snapPaymentMethod(method, source, isCesija)` — keeps the method if allowed, else the first allowed one (`'WIRE'` placeholder for kompenzacija)
 - `getPaymentMethodLabel(method, source?)` — returns Croatian label for payment method; "—" when the source is kompenzacija
-- `getPaymentMethodVariant(method, source?)` — `Badge` variant for a payment method (grey for kompenzacija). These are categories, not states; the colours only tell the methods apart
+- `getPaymentMethodColor(method, source?)` — returns CSS class for payment method badge (neutral for kompenzacija)
 - Unit-tested in `paymentHelpers.test.ts`
 - `columnLabels` — Croatian display names for payment table columns
 - **Depends on:** (none, pure helpers)
@@ -1047,17 +1042,5 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 - Multi-VAT support uses separate `base_amount_1–4`, `vat_rate_1–4`, `vat_amount_1–4` fields for up to 4 VAT rates per invoice (Croatian accounting requirement)
 - Cesija is tracked with `is_cesija`, `cesija_company_id`, and `cesija_bank_account_id` fields on invoices and payments
 - **Security note.** The Cashflow password modal (`Layout.tsx`) and `CashflowRoute` (`App.tsx`) gate UI navigation only. RLS on cashflow tables enforces role-based access (`Director`, `Accounting`) and does NOT depend on the password flag. A user with one of those roles and a valid Supabase JWT can query cashflow data directly via supabase-js without entering the password. This is a known limitation tracked as **SEC-001** in [`docs/SECURITY_BACKLOG.md`](./SECURITY_BACKLOG.md).
-  - As of migration `20260526084700_tighten_cashflow_rls.sql` (2026-05-26), five tables that previously had blanket `USING (true)` policies (`accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`) are now role-gated, with scoped exceptions for the Sales workflow (sales-related invoices/payments) and broad SELECT on `accounting_companies` (names + OIB are treated as reference data). `bank_credits` SELECT additionally allows `Investment`. The companion migration `20260526084701_get_invoice_statistics_role_check.sql` adds a defense-in-depth role check inside the SECURITY DEFINER `get_invoice_statistics` RPC. Since `20260930100300` that RPC uses exactly the joins and search predicate of `get_filtered_invoices`, so the count above the list matches the rows. These close the blanket-open gap but do NOT couple data access to the password flag, so SEC-001 remains open.
+  - As of migration `20260526084700_tighten_cashflow_rls.sql` (2026-05-26), five tables that previously had blanket `USING (true)` policies (`accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`) are now role-gated, with scoped exceptions for the Sales workflow (sales-related invoices/payments) and broad SELECT on `accounting_companies` (names + OIB are treated as reference data). `bank_credits` SELECT additionally allows `Investment`. The companion migration `20260526084701_get_invoice_statistics_role_check.sql` adds a defense-in-depth role check inside the SECURITY DEFINER `get_invoice_statistics` RPC. These close the blanket-open gap but do NOT couple data access to the password flag, so SEC-001 remains open.
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`
-
-## Bank-account balance formula
-
-One function computes every balance: `recalc_company_bank_account_balance(account)` (migration
-`20260930100300`). `current_balance = initial_balance` plus payments on `OUTGOING_*` invoices,
-minus payments on `INCOMING_*` invoices, minus cesija payments made from the account, minus loans
-out, plus loans in, **plus credits disbursed to the account** (by `start_date`), counting only
-rows dated on or after `balance_reset_at`. The payment trigger, the `company_loans` trigger, the
-`bank_credits` trigger (disbursement on/off, amount, account or date changes) and the reset RPC
-all call it; no other code computes a balance. Before this, credit disbursements were added with
-`+=` and erased by the next recompute, and the loan trigger and the Companies screen each carried
-their own copy of the formula.

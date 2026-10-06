@@ -22,7 +22,7 @@ interface ProjectDetailProps {
   onOpenPhaseSetup: () => void
   onEditPhaseSetup?: () => void
   onEditPhase: (phase: ProjectPhase) => void
-  onDeletePhase?: (phase: ProjectPhase) => void
+  onDeletePhase: (phase: ProjectPhase) => void
   onAddSubcontractor: (phase: ProjectPhase, classificationId?: number | null) => void
   onEditClassificationBudgets: (phase: ProjectPhase) => void
   onEditClassificationBudget: (phaseId: string, classificationId: number) => void
@@ -34,7 +34,7 @@ interface ProjectDetailProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor?: (subcontractorId: string) => void
+  onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /**
    * Whether this user may see money already paid. Defaults to **false**: every figure derived

@@ -14,6 +14,6 @@ Izvještaj sadrži:
 - **Prodajni učinak**
 - **Financijska struktura i financiranje**
 - **Status gradnje i nadzora**
-- dodatne sekcije: Računovodstvo, Uredski troškovi, Investicije, Bankovni računi, Zgrade i jedinice, Retail portfelj, Tipovi ugovora, Analiza novčanog toka (odvojeno **Poslovne aktivnosti** i **Financijske aktivnosti** — isplate i otplate kredita — te **Ukupni novčani tok**)
+- dodatne sekcije: Računovodstvo, Uredski troškovi, Investicije, Bankovni računi, Zgrade i jedinice, Retail portfelj, Tipovi ugovora, Analiza novčanog toka
 
 Stranica nema interaktivne filtre — izvještaj se generira iz svih projekata u sustavu.

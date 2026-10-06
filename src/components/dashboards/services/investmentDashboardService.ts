@@ -14,10 +14,10 @@ export interface InvestmentDashboardData {
 
 export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboardData> {
   const [
-    { data: projectsData, error: projectsError },
-    { data: companiesData, error: companiesError },
-    { data: banksData, error: banksError },
-    { data: creditsData, error: creditsError }
+    { data: projectsData },
+    { data: companiesData },
+    { data: banksData },
+    { data: creditsData }
   ] = await Promise.all([
     supabase.from('projects').select('*').order('start_date', { ascending: false }),
     supabase.from('accounting_companies').select('*').order('name'),
@@ -37,12 +37,6 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
       )
     `).order('created_at', { ascending: false })
   ])
-
-  // A failed read must show the error panel, not a dashboard of zeros.
-  if (projectsError) throw projectsError
-  if (companiesError) throw companiesError
-  if (banksError) throw banksError
-  if (creditsError) throw creditsError
 
   const projects = projectsData || []
   const companies = companiesData || []

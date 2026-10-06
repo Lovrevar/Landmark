@@ -41,8 +41,7 @@ import {
   BookMarked,
   Upload,
   Menu as MenuIcon,
-  X,
-  HelpCircle
+  X
 } from 'lucide-react'
 import { canViewActivityLog } from '../../utils/permissions'
 import Input from '../ui/Input'
@@ -115,25 +114,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showProfileDropdown])
 
-  // The Cashflow profile is for the two roles its pages and data are for (CashflowRoute in
-  // App.tsx, RLS underneath). The password prompt alone never checked: any role that knew the
-  // password got the profile, its menu and the accounting dashboard shell, then bounced off
-  // every page. Like the prompt, this is what the screen offers, not a security boundary.
-  const canUseCashflowProfile = user?.role === 'Director' || user?.role === 'Accounting'
-
   useEffect(() => {
-    if (currentProfile !== 'Cashflow') return
-    if (!canUseCashflowProfile) {
-      // A disallowed role already on Cashflow — a profile remembered from before this check.
-      setCurrentProfile('General')
-      navigate('/')
-      return
-    }
-    if (!cashflowUnlocked) {
+    if (currentProfile === 'Cashflow' && !cashflowUnlocked) {
       setPendingProfile('Cashflow')
       setShowPasswordModal(true)
     }
-  }, [currentProfile, cashflowUnlocked, canUseCashflowProfile, setCurrentProfile, navigate])
+  }, [currentProfile, cashflowUnlocked])
 
   const getMenuItems = () => {
     // The Supervision *role* short-circuits the profile menus below: whichever profile is
@@ -231,8 +217,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handleProfileChange = (profile: Profile) => {
     // Switching profile lands on the dashboard, so it leaves the current screen just as a menu
     // click does — guarded as one.
-    // Not offered to other roles; refused here as well in case the request comes some other way.
-    if (profile === 'Cashflow' && !canUseCashflowProfile) return
     requestLeave(() => {
       if (profile === 'Cashflow' && !cashflowUnlocked) {
         setPendingProfile(profile)
@@ -279,8 +263,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEscapeKey(showPasswordModal, handlePasswordCancel)
   useFocusTrap(passwordDialogRef, showPasswordModal)
 
-  const allProfiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
-  const profiles = allProfiles.filter(profile => profile !== 'Cashflow' || canUseCashflowProfile)
+  const profiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -378,18 +361,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     {eventUnread > 99 ? '99+' : eventUnread}
                   </span>
                 )}
-              </button>
-              <button
-                onClick={() => requestLeave(() => navigate('/help'))}
-                className={`relative p-2 transition-colors duration-200 ${
-                  location.pathname.startsWith('/help')
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                }`}
-                title={t('help.title')}
-                aria-label={t('help.title')}
-              >
-                <HelpCircle className="w-5 h-5" />
               </button>
               <div className="hidden lg:block">
                 <LanguageSwitcher />

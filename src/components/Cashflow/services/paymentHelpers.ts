@@ -78,23 +78,14 @@ export const getPaymentMethodLabel = (
   return key ? t(key) : (method || NO_VALUE)
 }
 
-/**
- * Badge colour for a payment's method. These are categories, not states, so the colours only tell
- * the methods apart; a kompenzacija has no method and stays neutral, like its "—" label.
- */
-export type PaymentMethodVariant = 'blue' | 'green' | 'yellow' | 'purple' | 'gray'
-
-export const getPaymentMethodVariant = (
-  method: string | null | undefined,
-  source?: string | null
-): PaymentMethodVariant => {
-  if (source === 'kompenzacija') return 'gray'
+export const getPaymentMethodColor = (method: string, source?: string | null) => {
+  if (source === 'kompenzacija') return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
   switch (method) {
-    case 'WIRE': return 'blue'
-    case 'CASH': return 'green'
-    case 'CHECK': return 'yellow'
-    case 'CARD': return 'purple'
-    default: return 'gray'
+    case 'WIRE': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+    case 'CASH': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+    case 'CHECK': return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300'
+    case 'CARD': return 'bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300'
+    default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
   }
 }
 

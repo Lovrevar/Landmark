@@ -19,10 +19,6 @@ export function useActivityLog() {
   const [filterProjectId, setFilterProjectId] = useState('ALL')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  // Help usage events are not part of the audit trail proper; hidden unless asked for.
-  const [showHelpEvents, setShowHelpEvents] = useState(false)
-  // Stays true until a read proves the database cannot filter them out (see the query service).
-  const [helpFilterAvailable, setHelpFilterAvailable] = useState(true)
 
   // Reference data for filter dropdowns
   const [users, setUsers] = useState<{ id: string; username: string }[]>([])
@@ -35,13 +31,10 @@ export function useActivityLog() {
     try {
       setLoading(true)
       setError(null)
-      // Picking the Help category is asking for those events, whatever the toggle says.
-      const hideHelp = !showHelpEvents && filterCategory !== 'help'
-      const { logs: data, excludeSupported } = await queryService.fetchActivityLogs(
+      const data = await queryService.fetchActivityLogs(
         {
           userId: filterUserId !== 'ALL' ? filterUserId : null,
           actionPrefix: filterCategory !== 'ALL' ? filterCategory : null,
-          excludeActionPrefix: hideHelp ? 'help' : null,
           severity: filterSeverity !== 'ALL' ? filterSeverity : null,
           searchTerm: debouncedSearchTerm || null,
           dateFrom: dateFrom || null,
@@ -53,7 +46,6 @@ export function useActivityLog() {
       )
 
       setLogs(data)
-      if (hideHelp) setHelpFilterAvailable(excludeSupported)
       setTotalCount(data.length > 0 ? data[0].total_count : 0)
     } catch (err) {
       console.error('Error fetching activity logs:', err)
@@ -73,7 +65,6 @@ export function useActivityLog() {
     dateTo,
     filterProjectId,
     currentPage,
-    showHelpEvents,
   ])
 
   // Debounced search (500ms, same as useInvoices)
@@ -87,7 +78,7 @@ export function useActivityLog() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [filterUserId, filterCategory, filterSeverity, filterProjectId, dateFrom, dateTo, debouncedSearchTerm, showHelpEvents])
+  }, [filterUserId, filterCategory, filterSeverity, filterProjectId, dateFrom, dateTo, debouncedSearchTerm])
 
   // Fetch logs when filters or page change
   useEffect(() => {
@@ -115,7 +106,6 @@ export function useActivityLog() {
     setFilterProjectId('ALL')
     setDateFrom('')
     setDateTo('')
-    setShowHelpEvents(false)
   }
 
   return {
@@ -132,8 +122,6 @@ export function useActivityLog() {
     filterProjectId,
     dateFrom,
     dateTo,
-    showHelpEvents,
-    helpFilterAvailable,
     users,
     projects,
     selectedLog,
@@ -144,7 +132,6 @@ export function useActivityLog() {
     setFilterProjectId,
     setDateFrom,
     setDateTo,
-    setShowHelpEvents,
     setCurrentPage,
     setSelectedLog,
     resetFilters,

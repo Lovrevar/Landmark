@@ -4,7 +4,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { logActivity } from '../lib/activityLog'
-import { setCachedDataOwner } from '../lib/useCachedData'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 // Survives the full-page redirect to Microsoft and back, so the SIGNED_IN
@@ -50,8 +49,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<AuthResult>
   loginWithMicrosoft: () => Promise<AuthResult>
   resetPassword: (email: string) => Promise<AuthResult>
-  /** Sets a new password for the signed-in user (the recovery link signs them in). */
-  updatePassword: (password: string) => Promise<boolean>
   logout: () => Promise<void>
   /** Set when a redirect-based sign-in fails after the OAuth round trip. */
   authError: LoginErrorCode | null
@@ -176,7 +173,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return
       }
 
-      setCachedDataOwner(userData.id)
       setUser(userData)
       setIsAuthenticated(true)
       setAuthError(null)
@@ -211,7 +207,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const userData = await fetchUserData(session.user)
           if (!mounted) return
           if (userData) {
-            setCachedDataOwner(userData.id)
             setUser(userData)
             setIsAuthenticated(true)
           } else {
@@ -233,11 +228,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
 
-      // A reset-password link arrives as PASSWORD_RECOVERY; it carries a normal session.
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'PASSWORD_RECOVERY') {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         handleAuthChange(session?.user || null)
       } else if (event === 'SIGNED_OUT') {
-        setCachedDataOwner(null)
         if (mounted) {
           setUser(null)
           setIsAuthenticated(false)
@@ -282,7 +275,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (data.user) {
         const userData = await fetchUserData(data.user)
         if (userData) {
-          setCachedDataOwner(userData.id)
           setUser(userData)
           setIsAuthenticated(true)
           setCurrentProfile('General')
@@ -352,25 +344,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  const updatePassword = async (password: string): Promise<boolean> => {
-    const { error } = await supabase.auth.updateUser({ password })
-    if (error) {
-      console.error('Password update failed:', error.message)
-      return false
-    }
-    if (user) {
-      logActivity({
-        userId: user.id,
-        userRole: user.role,
-        action: 'auth.password_reset',
-        entity: 'user',
-        entityId: user.id,
-        metadata: { severity: 'medium' },
-      })
-    }
-    return true
-  }
-
   const logout = async () => {
     if (user) {
       await logActivity({
@@ -387,7 +360,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
-      setCachedDataOwner(null)
       setUser(null)
       setIsAuthenticated(false)
       setAuthError(null)
@@ -423,7 +395,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     loginWithMicrosoft,
     resetPassword,
-    updatePassword,
     logout,
     authError,
     clearAuthError,

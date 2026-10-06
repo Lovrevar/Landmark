@@ -35,15 +35,13 @@ export interface ImportRowResult {
 }
 
 export async function importApartmentRow(row: ApartmentRowData, projectId: string): Promise<ImportRowResult> {
-  // A failed lookup must not fall through to an insert that duplicates the apartment.
-  const { data: existingApt, error: lookupError } = await supabase
+  const { data: existingApt } = await supabase
     .from('apartments')
     .select('id')
     .eq('project_id', projectId)
     .eq('building_id', row.building_id)
     .eq('number', row.number)
     .maybeSingle()
-  if (lookupError) throw lookupError
 
   const apartmentData = {
     project_id: projectId,
@@ -53,6 +51,7 @@ export async function importApartmentRow(row: ApartmentRowData, projectId: strin
     size_m2: row.size_m2,
     price: row.price,
     price_per_m2: row.price_per_m2,
+    status: 'Available',
     ulaz: row.entrance || null,
     tip_stana: row.type || null,
     sobnost: row.rooms ? parseInt(String(row.rooms)) || null : null,
@@ -75,27 +74,24 @@ export async function importApartmentRow(row: ApartmentRowData, projectId: strin
     if (error) throw error
     apartmentId = existingApt.id
   } else {
-    // Status only on insert: a re-import must not turn a sold or reserved apartment Available.
-    const { data: newApt, error } = await supabase.from('apartments').insert({ ...apartmentData, status: 'Available' }).select('id').single()
+    const { data: newApt, error } = await supabase.from('apartments').insert(apartmentData).select('id').single()
     if (error) throw error
     apartmentId = newApt.id
   }
 
   let garageCreated = false
   if (row.parking_label && row.parking_m2 && row.parking_price) {
-    const { data: existingGarage, error: existingGarageError } = await supabase
+    const { data: existingGarage } = await supabase
       .from('garages')
       .select('id')
       .eq('building_id', row.building_id)
       .eq('number', row.parking_label)
       .maybeSingle()
-    if (existingGarageError) throw existingGarageError
 
     let garageId: string
     if (existingGarage) {
       garageId = existingGarage.id
-      const { error: garageUpdateError } = await supabase.from('garages').update({ size_m2: row.parking_m2, price: row.parking_price, floor: row.floor }).eq('id', garageId)
-      if (garageUpdateError) throw garageUpdateError
+      await supabase.from('garages').update({ size_m2: row.parking_m2, price: row.parking_price, floor: row.floor }).eq('id', garageId)
     } else {
       const { data: newGarage, error } = await supabase
         .from('garages')
@@ -106,26 +102,23 @@ export async function importApartmentRow(row: ApartmentRowData, projectId: strin
       garageId = newGarage.id
     }
 
-    const { error: garageLinkError } = await supabase.from('apartment_garages').upsert({ apartment_id: apartmentId, garage_id: garageId }, { onConflict: 'apartment_id,garage_id' })
-    if (garageLinkError) throw garageLinkError
+    await supabase.from('apartment_garages').upsert({ apartment_id: apartmentId, garage_id: garageId }, { onConflict: 'apartment_id,garage_id' })
     garageCreated = true
   }
 
   let storageCreated = false
   if (row.storage_label && row.storage_m2 && row.storage_price) {
-    const { data: existingStorage, error: existingStorageError } = await supabase
+    const { data: existingStorage } = await supabase
       .from('repositories')
       .select('id')
       .eq('building_id', row.building_id)
       .eq('number', row.storage_label)
       .maybeSingle()
-    if (existingStorageError) throw existingStorageError
 
     let storageId: string
     if (existingStorage) {
       storageId = existingStorage.id
-      const { error: storageUpdateError } = await supabase.from('repositories').update({ size_m2: row.storage_m2, price: row.storage_price, floor: row.floor }).eq('id', storageId)
-      if (storageUpdateError) throw storageUpdateError
+      await supabase.from('repositories').update({ size_m2: row.storage_m2, price: row.storage_price, floor: row.floor }).eq('id', storageId)
     } else {
       const { data: newStorage, error } = await supabase
         .from('repositories')
@@ -136,8 +129,7 @@ export async function importApartmentRow(row: ApartmentRowData, projectId: strin
       storageId = newStorage.id
     }
 
-    const { error: storageLinkError } = await supabase.from('apartment_repositories').upsert({ apartment_id: apartmentId, repository_id: storageId }, { onConflict: 'apartment_id,repository_id' })
-    if (storageLinkError) throw storageLinkError
+    await supabase.from('apartment_repositories').upsert({ apartment_id: apartmentId, repository_id: storageId }, { onConflict: 'apartment_id,repository_id' })
     storageCreated = true
   }
 

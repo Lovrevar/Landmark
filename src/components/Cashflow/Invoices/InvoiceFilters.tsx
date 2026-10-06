@@ -4,7 +4,6 @@ import { X } from 'lucide-react'
 import type { Company } from './types'
 import { SearchInput, Select, Button } from '../../ui'
 import { INVOICE_CATEGORIES_BY_DIRECTION } from '../services/invoiceHelpers'
-import { InvoiceTypeHint } from './InvoiceTypeHint'
 
 interface InvoiceFiltersProps {
   searchTerm: string
@@ -52,22 +51,15 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
           onClear={() => onSearchChange('')}
         />
 
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <Select
-              value={filterCategory}
-              onChange={(e) => onCategoryChange(e.target.value)}
-            >
-              <option value="ALL">{t('invoices.filters.all_types')}</option>
-              {INVOICE_CATEGORIES_BY_DIRECTION[filterDirection].map(category => (
-                <option key={category.value} value={category.value}>{t(category.labelKey)}</option>
-              ))}
-            </Select>
-          </div>
-          {/* Below md the table is a list of cards with no header row, so the type legend that
-              lives in the Type column header has nowhere to be. It moves here. */}
-          <span className="md:hidden"><InvoiceTypeHint /></span>
-        </div>
+        <Select
+          value={filterCategory}
+          onChange={(e) => onCategoryChange(e.target.value)}
+        >
+          <option value="ALL">{t('invoices.filters.all_types')}</option>
+          {INVOICE_CATEGORIES_BY_DIRECTION[filterDirection].map(category => (
+            <option key={category.value} value={category.value}>{t(category.labelKey)}</option>
+          ))}
+        </Select>
 
         <Select
           value={filterStatus}

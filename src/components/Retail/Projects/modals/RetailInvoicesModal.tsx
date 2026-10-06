@@ -5,7 +5,7 @@ import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
 import { daysFromToday } from '../../../../utils/dateOnly'
 import { Button, Modal, Badge, EmptyState, ErrorState, LoadingSpinner } from '../../../ui'
-import { getInvoiceStatusVariant, getInvoiceStatusLabel, getInvoiceTypeLongLabel } from '../../../Cashflow/services/invoiceHelpers'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
 import { formatDate } from '../../../../utils/formatters'
 
 interface Invoice {
@@ -83,11 +83,12 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
         return t('retail_projects.invoices_modal.type_incoming_supplier')
       case 'OUTGOING_SUPPLIER':
         return t('retail_projects.invoices_modal.type_outgoing_supplier')
+      case 'INCOMING_INVESTMENT':
+        return t('retail_projects.invoices_modal.type_incoming_investment')
       case 'OUTGOING_SALES':
         return t('retail_projects.invoices_modal.type_outgoing_sales')
       default:
-        // Any other type is not a retail one; show it the way Cashflow does rather than raw.
-        return getInvoiceTypeLongLabel(type, t)
+        return type
     }
   }
 

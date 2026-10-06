@@ -20,12 +20,6 @@ export const canManageWorkLogs = (user: User | null): boolean => {
   return user.role === 'Director' || user.role === 'Supervision'
 }
 
-/** Mirrors the accounting_invoices UPDATE policy; other roles would get a silent no-op. */
-export const canApproveInvoices = (user: User | null): boolean => {
-  if (!user) return false
-  return user.role === 'Director' || user.role === 'Accounting'
-}
-
 export const canManageProjectPhases = (user: User | null): boolean => {
   if (!user) return false
   return user.role === 'Director'

@@ -114,18 +114,6 @@ const CreditFormModal: React.FC<CreditFormModalProps> = ({
               placeholder="0"
             />
           </FormField>
-          {editingCredit && (
-            <FormField label={t('common.status')}>
-              <Select
-                value={formData.status}
-                onChange={(e) => onChange({ status: e.target.value as 'active' | 'paid' | 'defaulted' })}
-              >
-                <option value="active">{t('funding.credit_status.active')}</option>
-                <option value="paid">{t('funding.credit_status.paid')}</option>
-                <option value="defaulted">{t('funding.credit_status.defaulted')}</option>
-              </Select>
-            </FormField>
-          )}
           <FormField label={t('banks.credit_form.principal_repayment_label')} helperText={t('banks.credit_form.principal_repayment_helper')}>
             <Select
               value={formData.principal_repayment_type}

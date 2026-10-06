@@ -5,7 +5,6 @@ import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Payment } from './types'
 import { Modal, Button } from '../../ui'
 import { getPaymentMethodLabel } from '../services/paymentHelpers'
-import { getInvoiceTypeLongLabel } from '../services/invoiceHelpers'
 
 interface PaymentDetailViewProps {
   payment: Payment | null
@@ -21,6 +20,28 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
 
   const invoice = payment.accounting_invoices
 
+  const getInvoiceTypeLabel = (type: string) => {
+    switch (type) {
+      case 'INCOMING_SUPPLIER':
+        return t('payments.detail.type_incoming_supplier')
+      case 'OUTGOING_SUPPLIER':
+        return t('payments.detail.type_outgoing_supplier')
+      case 'INCOMING_INVESTMENT':
+        return t('payments.detail.type_incoming_investment')
+      case 'OUTGOING_SALES':
+        return t('payments.detail.type_outgoing_sales')
+      case 'INCOMING_OFFICE':
+        return t('payments.detail.type_incoming_office')
+      case 'OUTGOING_OFFICE':
+        return t('payments.detail.type_outgoing_office')
+      case 'INCOMING_BANK':
+        return t('payments.detail.type_incoming_bank')
+      case 'OUTGOING_BANK':
+        return t('payments.detail.type_outgoing_bank')
+      default:
+        return type
+    }
+  }
 
   const getSupplierCustomerName = () => {
     if (!invoice) return '-'
@@ -117,7 +138,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
                   <div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.invoice_type')}</span>
                     <p className={`text-sm font-semibold ${isExpense ? 'text-red-600' : 'text-green-600'}`}>
-                      {getInvoiceTypeLongLabel(invoice.invoice_type, t)}
+                      {getInvoiceTypeLabel(invoice.invoice_type)}
                     </p>
                   </div>
                   <div>

@@ -16,7 +16,7 @@ interface PhaseCardProps {
   /** Children of this phase, already grouped by buildContractTree. */
   nodes: TreeNode[]
   onEditPhase: (phase: ProjectPhase) => void
-  onDeletePhase?: (phase: ProjectPhase) => void
+  onDeletePhase: (phase: ProjectPhase) => void
   onAddSubcontractor: (phase: ProjectPhase, classificationId?: number | null) => void
   onEditClassificationBudgets: (phase: ProjectPhase) => void
   onEditClassificationBudget: (phaseId: string, classificationId: number) => void
@@ -24,7 +24,7 @@ interface PhaseCardProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor?: (subcontractorId: string) => void
+  onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /** False hides every figure derived from payments: the paid and unpaid tiles and the
    *  utilisation bar, which measures paid against the plan. */
@@ -109,9 +109,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               onClick={() => onEditClassificationBudgets(phase)}
             />
             <Button variant="ghost" size="icon-md" icon={Edit2} onClick={() => onEditPhase(phase)} />
-            {onDeletePhase && (
-              <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => onDeletePhase(phase)} />
-            )}
+            <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => onDeletePhase(phase)} />
             <Button variant="success" icon={Plus} onClick={() => onAddSubcontractor(phase, null)}>
               {t('supervision.subcontractors.add')}
             </Button>

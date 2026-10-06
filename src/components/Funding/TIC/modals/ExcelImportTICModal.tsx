@@ -107,7 +107,6 @@ const ExcelImportTICModal: React.FC<ExcelImportTICModalProps> = ({ show, onClose
                 <li>{t('tic.import.format_sheets')}</li>
                 <li>{t('tic.import.format_header')}</li>
                 <li>{t('tic.import.format_investment')}</li>
-                <li>{t('tic.import.format_phases')}</li>
                 <li>{t('tic.import.format_construction')}</li>
                 <li>{t('tic.import.format_totals')}</li>
               </ul>

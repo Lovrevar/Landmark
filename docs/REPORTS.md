@@ -61,7 +61,6 @@ Two things to know before adding a figure here:
   Zapad's leftover €1.000.000.000 made up 89% of a €1.118M "Portfolio Value" on a page headed
   Executive Report; the same figure is now €63.6M, the sum of the three real cost plans.
 - `fetchGeneralReportData(selectedProject, dateRange)` — aggregates data from 40+ tables into a ComprehensiveReport covering: executive summary, KPIs (portfolio value, sales rate, D/E ratio), sales performance, funding structure, construction status, accounting overview, TIC cost management, risk assessment, and cash flow analysis
-  - Cash-flow table: every payment, split by `invoiceCashDirection` (so it reconciles with the bank balance) and by `invoiceCashCategory` into **operating** and **financing** — credit drawdowns are financing inflow, repayments of principal financing outflow, everything else operating (ULAZNI (INV) and credit fees are operating outflow). Each `cash_flow` month carries `operating`, `financing` and their sum (`inflow` / `outflow` / `net`, which the two charts plot). Screen and PDF render one table per activity plus three total lines. Expenses and per-project expenses use `isCostInvoiceType`
 - **One failed query fails the whole report.** supabase-js resolves a failure as `{ data: null, error }` rather than rejecting, and every read here falls back to `[]`, so until September 2026 a dropped request produced an executive report of zeros — and exported it to PDF. `throwIfAnyFailed()` checks both `Promise.all` batches (the 27 top-level reads and the garage/repository price lookup) and throws, which `useCachedData` hands the page as an `error`
 - **Depends on:** supabase client
 
@@ -90,7 +89,7 @@ Two things to know before adding a figure here:
 ## Hooks
 
 ### hooks/useGeneralReportData.ts
-- `useGeneralReportData()` — fetches ComprehensiveReport data for the last six calendar months (this one included; `subMonths(now, 6)` used to yield seven buckets) on mount with loading state
+- `useGeneralReportData()` — fetches ComprehensiveReport data for the last 6 months on mount with loading state
 - **Calls:** generalReportService
 - **Returns:** report, loading, error, fetchedAt, refetch — `error` was deliberately omitted from
   the result interface until September 2026, which is why the page could only say "No data"
@@ -291,19 +290,3 @@ Screens and exports are both Croatian-first now; they differ only in that an exp
 - The long-running PDF generators (`salesReportPdf`, `retailReportPdf`) call `yieldToUI()` (`src/utils/yieldToUI.ts`) inside their row loops so a large export does not freeze the UI; this does not change report content
 - All report views are internationalised (react-i18next, keys under `reports.*`) and dark-mode aware, and long tables expose per-cell `label` props for the mobile card layout — presentational only, the report data and sections are unchanged
 - **EVM is not surfaced in any report.** The Earned Value Management utility (`src/utils/evm.ts`) is consumed only by the Budget Control feature (`src/components/General/BudgetControl/`)
-
-## General report definitions (September 2026, DEFECT_BACKLOG GEN-1/GEN-2)
-
-The funding and construction figures follow the Director dashboard, so the same number means the
-same thing on both screens:
-
-- **Debt** = Σ `outstanding_balance` of live, non-equity credits (not repaid or defaulted); it was
-  the face value of every credit, equity and repaid ones included.
-- **Equity** = Σ `amount` of `equity` credits; it was Σ credit allocations. ROI and D/E use these.
-- **Average interest** is weighted by facility amount over live debt; it was a plain mean.
-- **Monthly debt service** sums live debt only.
-- **Available credit** = Σ (`amount` − `used_amount`); it read two columns `bank_credits` does not
-  have and was always €0.
-- **Completed milestones** counts `paid` (fully paid) milestones; `completed` is the payment
-  trigger's word for partly paid.
-- **Work logs (7 days)** counts today and the six days before in local days.

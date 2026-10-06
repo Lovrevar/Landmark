@@ -1,6 +1,5 @@
 import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
-import { fetchAllRows } from '../../../../lib/fetchAllRows'
 import type { Contract } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
@@ -55,15 +54,13 @@ type ContractWithPhase = {
 }
 
 export async function fetchSupervisionPayments(): Promise<PaymentWithDetails[]> {
-  // `!inner` makes the invoice filters below restrict the payments themselves; without it every
-  // payment came back (up to PostgREST's row cap) and was filtered here, dropping the oldest.
-  const paymentsData = await fetchAllRows<RawPayment>((from, to) => supabase
+  const { data: paymentsData, error: paymentsError } = await supabase
     .from('accounting_payments')
     .select(`
       *,
-      invoice:accounting_invoices!inner(
+      invoice:accounting_invoices(
         id, invoice_number, invoice_type, invoice_category,
-        supplier_id, project_id, contract_id, milestone_id, total_amount, status
+        supplier_id, project_id, milestone_id, total_amount, status
       ),
       company_bank_account:company_bank_accounts!accounting_payments_company_bank_account_id_fkey(
         id, bank_name,
@@ -79,30 +76,30 @@ export async function fetchSupervisionPayments(): Promise<PaymentWithDetails[]> 
     .eq('invoice.invoice_category', 'SUBCONTRACTOR')
     .not('invoice.project_id', 'is', null)
     .order('payment_date', { ascending: false })
-    .order('id')
-    .range(from, to))
 
-  const [subcontractorsData, contractsData, projectsData] = await Promise.all([
-    fetchAllRows<{ id: string; name: string }>((from, to) =>
-      supabase.from('subcontractors').select('id, name').order('id').range(from, to)),
-    fetchAllRows((from, to) =>
-      supabase.from('contracts')
-        .select('id, contract_number, subcontractor_id, phase_id, project_phases(id, phase_name, phase_number)')
-        .order('id').range(from, to)
-    ).then(rows => rows as unknown as ContractWithPhase[]),
-    fetchAllRows<{ id: string; name: string }>((from, to) =>
-      supabase.from('projects').select('id, name').order('id').range(from, to)),
+  if (paymentsError) throw paymentsError
+
+  const [subcontractorsRes, contractsRawRes, projectsRes] = await Promise.all([
+    supabase.from('subcontractors').select('id, name'),
+    supabase.from('contracts').select('id, contract_number, subcontractor_id, phase_id, project_phases(id, phase_name, phase_number)'),
+    supabase.from('projects').select('id, name'),
   ])
 
-  return paymentsData.map((payment: RawPayment) => {
+  const subcontractorsData = subcontractorsRes.data || []
+  const contractsData = contractsRawRes.data as unknown as ContractWithPhase[] | null
+  const projectsData = projectsRes.data || []
+
+  return (paymentsData || []).map((payment: RawPayment) => {
     const invoice = payment.invoice
     if (!invoice) return null
 
     const subcontractor = subcontractorsData.find(s => s.id === invoice.supplier_id)
     const project = projectsData.find(p => p.id === invoice.project_id)
 
-    // No fallback to "some contract of this supplier": that put another project's phase on the row.
-    const contract = invoice.contract_id ? contractsData.find(c => c.id === invoice.contract_id) : undefined
+    let contract = contractsData?.find(c => c.id === invoice.contract_id)
+    if (!contract) {
+      contract = contractsData?.find(c => c.subcontractor_id === invoice.supplier_id)
+    }
 
     const phaseName = contract?.project_phases?.phase_name || null
     const phaseNumber = contract?.project_phases?.phase_number

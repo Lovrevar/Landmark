@@ -1,5 +1,4 @@
 import { supabase } from './supabase'
-import { invalidateCachedData } from './useCachedData'
 
 interface LogActivityParams {
   userId?: string
@@ -20,10 +19,6 @@ interface LogActivityParams {
  */
 export function logActivity(params: LogActivityParams): Promise<void> {
   const { action, entity, entityId, projectId, metadata = {}, severity } = params
-
-  // Every mutation is logged here, which makes this the one place that knows cached dashboard and
-  // report figures just went stale. Exports, auth events and help usage change no data.
-  if (!action.startsWith('export.') && !action.startsWith('auth.') && !action.startsWith('help.')) invalidateCachedData()
 
   const record: Record<string, unknown> = {
     action,

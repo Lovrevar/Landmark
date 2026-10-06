@@ -17,7 +17,7 @@ export const getCounterpartyColumn = (
 ): InvoiceCounterpartyColumn | null => {
   if (invoiceCategory === 'RETAIL') {
     if (invoiceType === 'INCOMING_SUPPLIER' || invoiceType === 'OUTGOING_SUPPLIER') return 'retail_supplier_id'
-    if (invoiceType === 'OUTGOING_SALES') return 'retail_customer_id'
+    if (invoiceType === 'OUTGOING_SALES' || invoiceType === 'INCOMING_INVESTMENT') return 'retail_customer_id'
     return null
   }
   if (invoiceType === 'INCOMING_SUPPLIER' || invoiceType === 'OUTGOING_SUPPLIER') return 'supplier_id'

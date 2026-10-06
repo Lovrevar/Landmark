@@ -42,6 +42,10 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         invoiceType = 'outgoing'
         entityType = 'supplier'
         entityId = editingInvoice.retail_supplier_id || ''
+      } else if (editingInvoice.invoice_type === 'INCOMING_INVESTMENT') {
+        invoiceType = 'incoming'
+        entityType = 'customer'
+        entityId = editingInvoice.retail_customer_id || ''
       }
 
       let base1 = editingInvoice.base_amount_1 || 0
@@ -220,6 +224,8 @@ export const RetailInvoiceFormModal: React.FC<RetailInvoiceFormModalProps> = ({
         invoiceType = 'OUTGOING_SALES'
       } else if (formData.invoice_type === 'outgoing' && formData.entity_type === 'supplier') {
         invoiceType = 'OUTGOING_SUPPLIER'
+      } else if (formData.invoice_type === 'incoming' && formData.entity_type === 'customer') {
+        invoiceType = 'INCOMING_INVESTMENT'
       } else {
         throw new Error(t('invoices.retail.error_invalid_type'))
       }

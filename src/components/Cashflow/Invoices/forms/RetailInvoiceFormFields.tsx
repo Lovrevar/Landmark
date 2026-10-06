@@ -57,17 +57,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
       <FormField label={t('invoices.retail.type_label')} required>
         <Select
           value={formData.invoice_type}
-          onChange={(e) => {
-            const invoice_type = e.target.value as 'incoming' | 'outgoing'
-            // An incoming retail invoice is always a supplier's. Switching to it with a customer
-            // picked would leave a combination that no longer exists.
-            const dropsCustomer = invoice_type === 'incoming' && formData.entity_type === 'customer'
-            setFormData({
-              ...formData,
-              invoice_type,
-              ...(dropsCustomer ? { entity_type: 'supplier' as const, entity_id: '' } : {}),
-            })
-          }}
+          onChange={(e) => setFormData({ ...formData, invoice_type: e.target.value as 'incoming' | 'outgoing' })}
         >
           <option value="incoming">{t('invoices.retail.type_incoming')}</option>
           <option value="outgoing">{t('invoices.retail.type_outgoing')}</option>
@@ -80,11 +70,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
           onChange={(e) => setFormData({ ...formData, entity_type: e.target.value as 'customer' | 'supplier' })}
         >
           <option value="supplier">{t('invoices.retail.entity_supplier')}</option>
-          {/* "Ulazni + Kupac" is gone: it mapped to ULAZNI (INV) with a retail customer, which
-              the database constraint has always refused, so it could never be saved. */}
-          {formData.invoice_type === 'outgoing' && (
-            <option value="customer">{t('invoices.retail.entity_customer')}</option>
-          )}
+          <option value="customer">{t('invoices.retail.entity_customer')}</option>
         </Select>
       </FormField>
 

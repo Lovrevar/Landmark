@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Minus } from 'lucide-react'
 import { UnitType } from '../types'
 import { Button, Modal, FormField, Input, Alert, Form } from '../../../ui'
-import { calculateAdjustedPriceRange, effectivePricePerM2 } from '../../utils/priceUtils'
+import { calculateAdjustedPriceRange } from '../../utils/priceUtils'
 import { formatEuro } from '../../../../utils/formatters'
 
 interface BulkPriceUpdateModalProps {
@@ -34,8 +34,8 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
 
   const priceRange = useMemo(() => selectedUnits.length > 0
     ? {
-        min: Math.min(...selectedUnits.map(u => effectivePricePerM2(u))),
-        max: Math.max(...selectedUnits.map(u => effectivePricePerM2(u)))
+        min: Math.min(...selectedUnits.map(u => u.price_per_m2 || 0)),
+        max: Math.max(...selectedUnits.map(u => u.price_per_m2 || 0))
       }
     : { min: 0, max: 0 }, [selectedUnits])
 
@@ -50,15 +50,15 @@ export const BulkPriceUpdateModal: React.FC<BulkPriceUpdateModalProps> = ({
 
   const totalNewValue = useMemo(() => selectedUnits.reduce((sum, unit) => {
     const newPricePerM2 = adjustmentType === 'increase'
-      ? effectivePricePerM2(unit) + adjustment
-      : effectivePricePerM2(unit) - adjustment
+      ? (unit.price_per_m2 || 0) + adjustment
+      : (unit.price_per_m2 || 0) - adjustment
     return sum + (unit.size_m2 * Math.max(0, newPricePerM2))
   }, 0), [selectedUnits, adjustmentType, adjustment])
 
   const totalValueChange = totalNewValue - totalCurrentValue
 
   const wouldCreateNegativePrice = adjustmentType === 'decrease' &&
-    selectedUnits.some(unit => effectivePricePerM2(unit) - adjustment < 0)
+    selectedUnits.some(unit => (unit.price_per_m2 || 0) - adjustment < 0)
 
   if (!visible) return null
 

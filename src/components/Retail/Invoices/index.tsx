@@ -4,7 +4,6 @@ import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Bu
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
 import { useRetailInvoices } from './hooks/useRetailInvoices'
 import { formatDate } from '../../../utils/formatters'
-import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 
 const RetailInvoicesManagement: React.FC = () => {
   const { t, i18n } = useTranslation()
@@ -36,6 +35,11 @@ const RetailInvoicesManagement: React.FC = () => {
     INCOMING_INVESTMENT: t('retail_invoices.type.incoming_investment'),
   }), [t])
 
+  const INVOICE_STATUS_LABELS: Record<string, string> = {
+    PAID: t('common.paid'),
+    PARTIALLY_PAID: t('common.partial'),
+    UNPAID: t('common.unpaid'),
+  }
 
   if (loading && !hasData) return <LoadingSpinner message={t('retail_invoices.loading')} />
 
@@ -178,8 +182,12 @@ const RetailInvoicesManagement: React.FC = () => {
                     €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                   </td>
                   <td data-label={t('common.status')} className="px-4 py-3 whitespace-nowrap">
-                    <Badge variant={getInvoiceStatusVariant(invoice.status)}>
-                      {getInvoiceStatusLabel(invoice.status, t)}
+                    <Badge variant={
+                      invoice.status === 'PAID' ? 'green'
+                        : invoice.status === 'PARTIALLY_PAID' ? 'yellow'
+                        : 'red'
+                    }>
+                      {INVOICE_STATUS_LABELS[invoice.status] || invoice.status}
                     </Badge>
                   </td>
                 </tr>

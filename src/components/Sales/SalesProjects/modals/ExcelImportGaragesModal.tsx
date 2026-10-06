@@ -153,12 +153,14 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
             </div>
             <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 rounded-lg p-4">
               <h4 className="font-medium text-orange-900 dark:text-orange-400 mb-2">{t('sales_projects.excel_import.expected_format')}</h4>
-              {/* The spreadsheet's own column names (parking oznaka, parking m2, parking cijena)
-                  stay Croatian in both languages — they name real cells in the uploaded file. */}
+              {/* The bullets name literal Croatian spreadsheet columns (parking oznaka, parking m2,
+                  parking cijena) and must stay verbatim; left in English pending a wording
+                  decision, like the apartments modal. */}
               <ul className="text-sm text-orange-800 dark:text-orange-300 space-y-1 list-disc list-inside">
-                {(['layout', 'label', 'size', 'price'] as const).map(key => (
-                  <li key={key}>{t(`sales_projects.excel_import.garage_format.${key}`)}</li>
-                ))}
+                <li>Header row on row 1</li>
+                <li>Column 1: parking oznaka (garage number/label)</li>
+                <li>Column 2: parking m2 (size in square meters)</li>
+                <li>Column 3: parking cijena (price)</li>
               </ul>
             </div>
             <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">

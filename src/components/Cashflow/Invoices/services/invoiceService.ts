@@ -1,5 +1,4 @@
 import { supabase } from '../../../../lib/supabase'
-import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { logActivity } from '../../../../lib/activityLog'
 import type { Invoice, CreditAllocation, Contract } from '../types'
 import { buildPaymentData } from '../../Payments/services/paymentPayload'
@@ -304,12 +303,9 @@ export const handleSubmit = async (
   }
 
   if (editingInvoice) {
-    // An edit keeps the invoice's approval (set on the Supervision invoices page, and the type
-    // cannot change on edit) and its author; the create payload would reset both.
-    const { approved: _approved, created_by: _createdBy, ...editableFields } = invoiceData
     const { error } = await supabase
       .from('accounting_invoices')
-      .update(editableFields)
+      .update(invoiceData)
       .eq('id', editingInvoice.id)
 
     if (error) throw error
@@ -376,14 +372,12 @@ export const handlePaymentSubmit = async (
 }
 
 export const handleDelete = async (id: string) => {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('accounting_invoices')
     .delete()
     .eq('id', id)
-    .select('id')
 
   if (error) throw error
-  assertRowsAffected(data)
 
   logActivity({
     action: 'invoice.delete',

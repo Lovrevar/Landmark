@@ -15,7 +15,6 @@ export { default as ErrorState } from './ErrorState'
 export { default as ConfirmDialog } from './ConfirmDialog'
 export { default as LoadingSpinner } from './LoadingSpinner'
 export { default as Alert } from './Alert'
-export { default as InfoHint } from './InfoHint'
 
 export { default as Tabs } from './Tabs'
 export { default as SearchInput } from './SearchInput'
