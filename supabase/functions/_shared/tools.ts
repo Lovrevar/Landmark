@@ -549,6 +549,18 @@ export const TOOLS: ToolDefinition[] = [
 
 // Returns the subset of TOOLS the given user is allowed to invoke based on
 // their role. No project-scoping here — that's per-handler logic in 3.2.
-export function selectAvailableTools(ctx: AuthContext): ToolDefinition[] {
+export function selectAvailableTools(ctx: Pick<AuthContext, 'role'>): ToolDefinition[] {
   return TOOLS.filter((t) => t.requiredRoles.includes(ctx.role))
+}
+
+// Looks up a tool by name, but only among the tools this user's role may
+// invoke. The orchestration loop dispatches whatever name the model returned,
+// and selectAvailableTools only controls which tools are *advertised* — so
+// dispatch must re-apply the role gate itself, or a name the model was never
+// given would still run. Returns undefined for unknown and forbidden alike.
+export function findAvailableTool(
+  ctx: Pick<AuthContext, 'role'>,
+  name: string,
+): ToolDefinition | undefined {
+  return selectAvailableTools(ctx).find((t) => t.name === name)
 }

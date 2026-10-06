@@ -1,5 +1,10 @@
 import { supabase } from '../../../../lib/supabase'
-import { logActivity } from '../../../../lib/activityLog'
+import {
+  linkGarageToApartment,
+  linkRepositoryToApartment,
+  unlinkGarageFromApartment,
+  unlinkRepositoryFromApartment,
+} from '../../SalesProjects/services/salesService'
 
 export interface AvailableUnit {
   id: string
@@ -11,7 +16,10 @@ export interface AvailableUnit {
 }
 
 export async function fetchLinkedUnitIds(apartmentId: string): Promise<{ garageIds: string[]; storageIds: string[] }> {
-  const [{ data: linkedGarageData }, { data: linkedStorageData }] = await Promise.all([
+  const [
+    { data: linkedGarageData, error: garageError },
+    { data: linkedStorageData, error: storageError },
+  ] = await Promise.all([
     supabase
       .from('apartment_garages')
       .select('garage_id')
@@ -21,6 +29,9 @@ export async function fetchLinkedUnitIds(apartmentId: string): Promise<{ garageI
       .select('repository_id')
       .eq('apartment_id', apartmentId)
   ])
+  // An empty result from a failed read would make the save below unlink everything.
+  if (garageError) throw garageError
+  if (storageError) throw storageError
 
   return {
     garageIds: linkedGarageData?.map(lg => lg.garage_id) || [],
@@ -29,7 +40,7 @@ export async function fetchLinkedUnitIds(apartmentId: string): Promise<{ garageI
 }
 
 export async function fetchAvailableUnits(buildingId: string): Promise<{ garages: AvailableUnit[]; storages: AvailableUnit[] }> {
-  const [{ data: garagesData }, { data: storagesData }] = await Promise.all([
+  const [{ data: garagesData, error: garagesError }, { data: storagesData, error: storagesError }] = await Promise.all([
     supabase
       .from('garages')
       .select('*')
@@ -42,54 +53,37 @@ export async function fetchAvailableUnits(buildingId: string): Promise<{ garages
       .order('number')
   ])
 
+  if (garagesError) throw garagesError
+  if (storagesError) throw storagesError
+
   return {
     garages: (garagesData || []) as AvailableUnit[],
     storages: (storagesData || []) as AvailableUnit[]
   }
 }
 
+/**
+ * Makes the apartment's linked garages and storage units equal to the given selection.
+ *
+ * Applied as a diff through the same link/unlink operations the Sales Projects screen uses, so
+ * both screens behave alike: a unit linked to a sold apartment becomes Sold with the same buyer,
+ * and an unlinked unit leaves the package and goes back to Available. Each step checks its error;
+ * the previous delete-everything-then-insert could wipe the links on a failed read.
+ */
 export async function saveUnitLinks(
   apartmentId: string,
   garageIds: string[],
   storageIds: string[]
 ): Promise<void> {
-  await supabase
-    .from('apartment_garages')
-    .delete()
-    .eq('apartment_id', apartmentId)
+  const current = await fetchLinkedUnitIds(apartmentId)
 
-  await supabase
-    .from('apartment_repositories')
-    .delete()
-    .eq('apartment_id', apartmentId)
+  const garagesToRemove = current.garageIds.filter(id => !garageIds.includes(id))
+  const garagesToAdd = garageIds.filter(id => !current.garageIds.includes(id))
+  const storagesToRemove = current.storageIds.filter(id => !storageIds.includes(id))
+  const storagesToAdd = storageIds.filter(id => !current.storageIds.includes(id))
 
-  if (garageIds.length > 0) {
-    const garageLinks = garageIds.map(garageId => ({
-      apartment_id: apartmentId,
-      garage_id: garageId
-    }))
-    const { error: garageError } = await supabase
-      .from('apartment_garages')
-      .insert(garageLinks)
-    if (garageError) throw garageError
-  }
-
-  if (storageIds.length > 0) {
-    const storageLinks = storageIds.map(storageId => ({
-      apartment_id: apartmentId,
-      repository_id: storageId
-    }))
-    const { error: storageError } = await supabase
-      .from('apartment_repositories')
-      .insert(storageLinks)
-    if (storageError) throw storageError
-  }
-
-  // single log for the whole replace — counts of 0 record that existing links were cleared
-  logActivity({
-    action: 'apartment.link_units',
-    entity: 'apartment',
-    entityId: apartmentId,
-    metadata: { severity: 'low', garage_count: garageIds.length, repository_count: storageIds.length }
-  })
+  for (const id of garagesToRemove) await unlinkGarageFromApartment(apartmentId, id)
+  for (const id of storagesToRemove) await unlinkRepositoryFromApartment(apartmentId, id)
+  for (const id of garagesToAdd) await linkGarageToApartment(apartmentId, id)
+  for (const id of storagesToAdd) await linkRepositoryToApartment(apartmentId, id)
 }

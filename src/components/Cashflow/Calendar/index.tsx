@@ -7,7 +7,7 @@ import { useToast } from '../../../contexts/ToastContext'
 import { toErrorMessage } from '../../../lib/errorMessage'
 import { handleSaveBudgets } from './services/calendarService'
 import BudgetModal from './forms/BudgetModal'
-import { Invoice } from './types'
+import { getInvoiceTypeLongLabel, getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 const AccountingCalendar: React.FC = () => {
   const { t } = useTranslation()
@@ -73,17 +73,6 @@ const AccountingCalendar: React.FC = () => {
     })
   }
 
-  const getTypeLabel = (invoice: Invoice) => {
-    switch(invoice.invoice_type) {
-      case 'INCOMING_SUPPLIER': return t('cashflow_calendar.invoice_types.incoming_supplier')
-      case 'INCOMING_INVESTMENT': return t('cashflow_calendar.invoice_types.incoming_investment')
-      case 'INCOMING_OFFICE': return t('cashflow_calendar.invoice_types.incoming_office')
-      case 'OUTGOING_SUPPLIER': return t('cashflow_calendar.invoice_types.outgoing_supplier')
-      case 'OUTGOING_SALES': return t('cashflow_calendar.invoice_types.outgoing_sales')
-      case 'OUTGOING_OFFICE': return t('cashflow_calendar.invoice_types.outgoing_office')
-      default: return invoice.invoice_type
-    }
-  }
 
   if (loading) {
     return <LoadingSpinner />
@@ -315,7 +304,7 @@ const AccountingCalendar: React.FC = () => {
                           )}
                         </div>
                       </td>
-                      <td data-label={t('cashflow_calendar.table.type')} className="px-4 py-3 text-xs text-gray-700 dark:text-gray-200">{getTypeLabel(invoice)}</td>
+                      <td data-label={t('cashflow_calendar.table.type')} className="px-4 py-3 text-xs text-gray-700 dark:text-gray-200">{getInvoiceTypeLongLabel(invoice.invoice_type, t)}</td>
                       <td data-label={t('cashflow_calendar.table.supplier_customer')} className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                         {invoice.bank_company?.name || invoice.office_supplier?.name || invoice.supplier?.name || invoice.customer?.name || (invoice as unknown as { retail_supplier?: { name: string } }).retail_supplier?.name || (invoice as unknown as { retail_contracts?: { retail_suppliers?: { name: string } } }).retail_contracts?.retail_suppliers?.name || 'N/A'}
                       </td>
@@ -332,11 +321,8 @@ const AccountingCalendar: React.FC = () => {
                         €{invoice.paid_amount.toLocaleString('hr-HR')}
                       </td>
                       <td data-label={t('cashflow_calendar.table.status')} className="px-4 py-3 text-center">
-                        <Badge
-                          variant={invoice.status === 'PAID' ? 'green' : invoice.status === 'PARTIALLY_PAID' ? 'yellow' : 'red'}
-                          size="sm"
-                        >
-                          {invoice.status === 'PAID' ? t('common.paid') : invoice.status === 'PARTIALLY_PAID' ? t('common.partial') : t('common.unpaid')}
+                        <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
+                          {getInvoiceStatusLabel(invoice.status, t)}
                         </Badge>
                       </td>
                     </tr>

@@ -21,7 +21,7 @@ interface TreeGroupProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor: (subcontractorId: string) => void
+  onDeleteSubcontractor?: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /** False drops the "Paid" column from every row of this subtree. */
   canManagePayments: boolean

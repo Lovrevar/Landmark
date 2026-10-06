@@ -64,7 +64,8 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       principal_repayment_type: credit.principal_repayment_type || 'yearly',
       interest_repayment_type: credit.interest_repayment_type || 'monthly',
       disbursed_to_account: credit.disbursed_to_account || false,
-      disbursed_to_bank_account_id: credit.disbursed_to_bank_account_id || ''
+      disbursed_to_bank_account_id: credit.disbursed_to_bank_account_id || '',
+      status: (credit.status as 'active' | 'paid' | 'defaulted') || 'active'
     })
     setShowCreditForm(true)
   }

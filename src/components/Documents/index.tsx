@@ -7,6 +7,7 @@ import {
 } from '../ui'
 import SearchableSelect, { type SearchableOption } from '../ui/SearchableSelect'
 import { useToast } from '../../contexts/ToastContext'
+import { useAuth } from '../../contexts/AuthContext'
 
 import {
   fetchCategories, fetchCategoryCounts, fetchDocuments, getDocumentSignedUrl, deleteDocument,
@@ -36,6 +37,11 @@ const PAGE_SIZE = 100
 export default function DocumentsPage() {
   const { t } = useTranslation()
   const toast = useToast()
+  const { user } = useAuth()
+  // Mirrors the documents UPDATE/DELETE policy: the uploader, Director or Accounting. This is how an
+  // uncategorised or misfiled email import gets fixed.
+  const canModify = (doc: DocumentWithRelations) =>
+    (!!user && doc.uploaded_by === user.auth_user_id) || user?.role === 'Director' || user?.role === 'Accounting'
 
   const [categoryTree, setCategoryTree] = useState<DocumentCategoryNode[]>([])
   const [categoryById, setCategoryById] = useState<Map<string, DocumentCategory>>(new Map())
@@ -67,6 +73,7 @@ export default function DocumentsPage() {
 
   const [uploadOpen, setUploadOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<DocumentWithRelations | null>(null)
+  const [editingDoc, setEditingDoc] = useState<DocumentWithRelations | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [openingId, setOpeningId] = useState<string | null>(null)
 
@@ -396,7 +403,9 @@ export default function DocumentsPage() {
             creditOptions={creditOptions}
             breadcrumbFor={breadcrumbFor}
             onOpen={handleOpen}
+            onEdit={(doc) => setEditingDoc(doc)}
             onDelete={(doc) => setPendingDelete(doc)}
+            canModify={canModify}
           />
 
           <Pagination
@@ -413,6 +422,13 @@ export default function DocumentsPage() {
         isOpen={uploadOpen}
         onClose={() => setUploadOpen(false)}
         onUploaded={handleUploaded}
+      />
+
+      <DocumentUploadModal
+        isOpen={!!editingDoc}
+        editDocument={editingDoc}
+        onClose={() => setEditingDoc(null)}
+        onSaved={async () => { await Promise.all([refreshList(), refreshCounts()]) }}
       />
 
       <ConfirmDialog

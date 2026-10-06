@@ -52,6 +52,13 @@ export interface ContractWithDetails {
   job_description: string
   contract_amount: number
   budget_realized: number
+  /**
+   * `contracts.has_contract` (boolean, default true). False for a supplier engaged without a
+   * formal contract, whose `contract_amount` is stored as 0 — see `isContracted` in
+   * utils/contractRollup.ts before doing arithmetic on the amount. Already in the row: the query
+   * selects `*`.
+   */
+  has_contract?: boolean
   status: string
   start_date: string | null
   end_date: string | null

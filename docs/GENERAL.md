@@ -46,6 +46,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - **Depends on:** supabase client
 
 ### milestoneService.ts
+- **Who may write:** the `project_milestones` write policy (migration `20260930100000`) allows Directors and Supervision on assigned projects (`user_has_project_access`). `ProjectDetailsEnhanced` mirrors it with `hasProjectAccess(id)` and hides add, template, edit, toggle and delete for everyone else
 - `addMilestone(projectId, data)` — inserts a new milestone for a project (`data` may include an optional `phase`)
 - `updateMilestone(id, data)` — updates an existing milestone (writes `phase` only when provided)
 - `deleteMilestone(id)` — removes a milestone
@@ -176,7 +177,9 @@ exactly what kept regressing.
 - **Uses Ui:** EmptyState, Table
 
 ### tabs/SubcontractorsTab.tsx
-- Subcontractor contracts view: 4 summary StatCards (total contract value, total realized, total remaining, count), search by subcontractor name, phase filter (including an un-phased option) and status filter, plus a fully sortable table (name, phase, contract amount, realized, remaining, status badge, contact). Remaining is derived as `contract_amount - budget_realized`
+- Subcontractor contracts view: 4 summary StatCards (total contract value, total realized, total remaining, count), search by subcontractor name, phase filter (including an un-phased option) and status filter, plus a fully sortable table (name, phase, contract amount, realized, remaining, status badge, contact)
+- **Suppliers without a contract.** A supplier engaged with no formal contract is stored as `has_contract = false` and `contract_amount = 0`, while payments to it still accumulate in `budget_realized`. The tab used to compute `contract_amount − budget_realized` for every row, so these printed a green negative "remaining" (−€2.500 for a supplier paid €2.500 on an invoice) — and the "Total remaining" card, being all contract values minus all payments, took every euro paid to them off the contracts. On Precko Zapad, whose no-contract payments total €1,27 M, that card read **−€289.574**; it now reads €977.139,25
+- Now: a row counts as contracted only with `has_contract` true **and** an amount above zero — `isContracted` in `utils/contractRollup.ts`, the rule the Supervision phase cards already use. Other rows carry a "BEZ UGOVORA" badge and show "—" for contract amount and remaining. The totals come from `rollupContracts` via `summariseContracts` (`tabs/subcontractorsSummary.ts`, tested with the rows that exposed it): remaining is each contract's `cost − paid` floored at 0, so an overpaid contract does not offset another's debt, while "Total realized" still counts every payment. A contracted row's remaining turns red only when that contract is genuinely overpaid, and sorting by remaining puts no-contract rows last in either direction
 - **Props:** contracts, phases, projectId (currently unused — filtering/sort is client-side)
 - **Uses Ui:** Badge, Button, EmptyState, Select, SearchInput, StatCard, StatGrid, Table
 

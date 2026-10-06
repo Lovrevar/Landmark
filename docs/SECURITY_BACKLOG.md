@@ -48,6 +48,8 @@ The password gate predates the role-based RLS. Layering RLS-level cashflow enfor
 
 ### Update (2026-05-26): partial remediation, item stays open
 
+**2026-10-05:** the profile switcher no longer offers Cashflow to roles other than Director and Accounting, refuses the request, and moves a disallowed role already on it back to General (`Layout.tsx`). Before, any role with the password got the profile, its menu and the dashboard shell. This is screen behaviour only and does not change the finding below.
+
 The 2026-05-26 RLS-tightening migrations close the **blanket-`USING (true)`** sub-gap (cross-role exposure of five tables) but do **not** resolve SEC-001 itself. The core limitation — cashflow access is role-gated only, the password modal is UI-only and decoupled from RLS — is unchanged: a `Director`/`Accounting` JWT can still read all cashflow data via supabase-js without entering the password. The Proposed fix below (server-side unlock + JWT claim consumed by RLS) is still required. **Status remains Open.**
 
 ### Proposed fix
