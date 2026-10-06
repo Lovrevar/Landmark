@@ -39,6 +39,7 @@ Supervision users.
 | `cashflow-calendar-*` | Calendar: current month, and July 2026 |
 | `apartment-import-modal-*`, `predlozak-uvoz-stanova-*.xlsx`, `apartment-import-template-xlsx.png` | Import modal, the downloaded template, and its two sheets rendered as tables |
 | `en-*` | The same screens with the UI in English |
+| `pageheader-investitori-desktop`, `pageheader-dobavljaci-desktop`, `pageheader-sales-projekti-buildings-desktop`, `pageheader-sales-projekti-garages-desktop` | The three-button page headers, added 2026-10-06 (see "Page headers with three or more buttons") |
 
 ## Automated checks on every screenshot
 
@@ -99,3 +100,23 @@ inside a modal closes only the hint.
   note), the import instructions and the report headings are translated; article titles are
   Croatian by design.
 - Template: sheet `Stanovi` with 26 headers A–Z, sheet `Upute` with the 11 instruction lines.
+
+## Page headers with three or more buttons (added 2026-10-06)
+
+`PageHeader` was changed during the check (finding 1). Four pages pass it three or more buttons.
+All were looked at at 1440×900 on LandmarkDemo, with the branch as frozen; nothing was changed.
+
+| Page | Buttons | Button rows | Header height | Verdict |
+|---|---|---|---|---|
+| Cashflow → Računi | 6 (Polja + five) | 3 | taller than before | Title and description readable again; the buttons wrap, with "Polja" alone on the first row. Better for the text, worse for height — the one page where the change is visible (`invoices-list-desktop`) |
+| Funding → Investitori | 3 | 1 | 56px | Same as before the change (`pageheader-investitori-desktop`) |
+| Cashflow → Dobavljači | 3 | 1 | 56px | Same as before (`pageheader-dobavljaci-desktop`) |
+| Sales projekti, buildings view | 3 | 1 | 56px | Same as before (`pageheader-sales-projekti-buildings-desktop`) |
+| Sales projekti, units view, Garaže tab | 3 | 1 | 56px | Same as before (`pageheader-sales-projekti-garages-desktop`) |
+
+**None of the three-button pages got worse.** Their buttons fit beside the title on one row, so
+the new wrapping never engages. Only Računi, with six, wraps.
+
+One more pre-existing thing seen on the way: Sales projekti → a project with no buildings
+(Kvart Črnomerec on the demo data) shows an empty page under "Natrag na projekte" — no empty state
+saying there are no buildings yet (`pageheader-sales-projekti-buildings-desktop`).
