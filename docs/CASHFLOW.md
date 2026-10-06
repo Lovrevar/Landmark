@@ -273,6 +273,9 @@ Monthly calendar view showing scheduled invoice payments and due dates. Supports
 
 ### useCalendar.ts
 - `useCalendar()` — manages calendar navigation, date selection, daily invoice display, and budget state. The month's incoming/outgoing sums take their sides from `utils/invoiceCashDirection.ts` (every `INCOMING_*` is paid by us, every `OUTGOING_*` paid to us); the two type lists it used to keep left credit fees out of both
+
+### Calendar/utils/budgetDifference.ts
+- `budgetDifference(budgetAmount, paid)` → `{ difference, overBudget, formatted }`. `difference` is budget − paid in whole cents and keeps its sign, so the "Razlika od budžeta" row shows an overrun as a negative amount (`€−1.691.590,00`) rather than an absolute value with only a suffix to say which way it went. Covered by `budgetDifference.test.ts`
 - A failed invoice load clears `invoices` and sets `error`; the page then replaces the whole
   calendar (grid, stat cards and the net figure are all derived from it) with `ErrorState`, and
   shows an `Alert` when only the budgets failed
@@ -330,6 +333,7 @@ Legal entity management. Tracks company financial summaries, bank accounts, and 
 #### Modals
 
 ### CompanyDetailsModal.tsx
+- Every amount here and on the company cards (`Companies/index.tsx`) goes through `formatEuro`, so it always shows two decimals; `companyMoney.test.ts` fails if an amount is assembled by hand again
 - Read-only view of company bank accounts, credits, and last 100 invoices
 - **Uses Ui:** Modal, Table
 

@@ -9,6 +9,7 @@ import { handleSaveBudgets } from './services/calendarService'
 import BudgetModal from './forms/BudgetModal'
 import { getInvoiceTypeLongLabel, getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 import PageHelpLink from '../../ui/PageHelpLink'
+import { budgetDifference } from './utils/budgetDifference'
 
 const AccountingCalendar: React.FC = () => {
   const { t } = useTranslation()
@@ -139,7 +140,7 @@ const AccountingCalendar: React.FC = () => {
         {(() => {
           const budget = getCurrentMonthBudget()
           if (budget && budget.budget_amount > 0) {
-            const difference = budget.budget_amount - monthStats.incomingPaid
+            const { overBudget, formatted } = budgetDifference(budget.budget_amount, monthStats.incomingPaid)
             return (
               <>
                 <div className="border-t border-gray-300 dark:border-gray-600 my-2"></div>
@@ -149,8 +150,8 @@ const AccountingCalendar: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700 dark:text-gray-200 font-medium">{t('cashflow_calendar.summary.budget_difference')}</span>
-                  <span className={`font-bold ${difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{Math.abs(difference).toLocaleString('hr-HR')} {difference >= 0 ? t('cashflow_calendar.summary.under_budget') : t('cashflow_calendar.summary.over_budget')}
+                  <span className={`font-bold ${overBudget ? 'text-red-600' : 'text-green-600'}`}>
+                    {formatted} {overBudget ? t('cashflow_calendar.summary.over_budget') : t('cashflow_calendar.summary.under_budget')}
                   </span>
                 </div>
               </>
