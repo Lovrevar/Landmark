@@ -32,14 +32,19 @@ const PaymentSchedulePreview: React.FC<PaymentSchedulePreviewProps> = ({ calcula
         </div>
         <div>
           <p className="text-sm text-green-700 dark:text-green-400 mb-1">{t('banks.credit_form.interest_payment')}</p>
-          <p className="text-xl font-bold text-green-900 dark:text-green-300">{formatEuroRounded(calculation.interestPerPayment)}</p>
+          <p className="text-xl font-bold text-green-900 dark:text-green-300">{formatEuroRounded(calculation.firstInterestPayment)}</p>
           <p className="text-xs text-green-600">{everyText(calculation.interestFrequency)}</p>
+          {/* Interest is on the outstanding balance, so it falls as principal is repaid. */}
+          <p className="text-xs text-green-600 mt-1">{t('banks.credit_form.interest_falls_to', { amount: formatEuroRounded(calculation.lastInterestPayment) })}</p>
           <p className="text-xs text-green-600 mt-1">{t('banks.credit_form.total_payments_label', { count: calculation.totalInterestPayments })}</p>
+          <p className="text-xs text-green-600 mt-1">{t('banks.credit_form.total_interest_label', { amount: formatEuroRounded(calculation.totalInterest) })}</p>
         </div>
       </div>
       <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
-        <p className="text-sm text-blue-700 dark:text-blue-300">{t('banks.credit_form.payments_start_label')} <span className="font-semibold">{formatDate(calculation.paymentStartDate, i18n.language)}</span></p>
-        <p className="text-xs text-blue-600 mt-1">{t('banks.credit_form.grace_period_after', { months: gracePeriodMonths })}</p>
+        <p className="text-sm text-blue-700 dark:text-blue-300">{t('banks.credit_form.principal_start_label')} <span className="font-semibold">{formatDate(calculation.paymentStartDate, i18n.language)}</span></p>
+        {gracePeriodMonths > 0 && (
+          <p className="text-xs text-blue-600 mt-1">{t('banks.credit_form.grace_period_after', { months: gracePeriodMonths })} · {t('banks.credit_form.interest_during_grace')}</p>
+        )}
       </div>
     </div>
   )

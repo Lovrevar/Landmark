@@ -10,6 +10,7 @@ import Layout from './components/Common/Layout'
 import PageFallback from './components/Common/PageFallback'
 import AiChatProvider from './components/AiChat/AiChatProvider'
 import { ERP_INTEGRATION_ENABLED } from './lib/featureFlags'
+import { canUseCashflow } from './utils/permissions'
 
 const Dashboard = lazy(() => import('./components/Common/Dashboard'))
 
@@ -81,7 +82,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const CashflowRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth()
   const unlocked = sessionStorage.getItem('cashflow_unlocked') === 'true'
-  const roleAllowed = user?.role === 'Director' || user?.role === 'Accounting'
+  const roleAllowed = canUseCashflow(user)
   if (!unlocked || !roleAllowed) {
     return <Navigate to="/" replace />
   }

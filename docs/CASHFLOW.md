@@ -20,7 +20,7 @@ hand-rolled `toLocaleString`. Two rules the module used to break:
   `formatEuropean` so the symbol isn't doubled.
 
 A sweep of the remaining plain `toLocaleString('hr-HR')` money renders (correct locale, ragged
-decimals) is still outstanding — see `docs/UI_AUDIT.md`.
+decimals) is still outstanding — see `docs/backlog/ui.md`.
 
 ## Dates, statuses and vocabularies
 
@@ -308,7 +308,7 @@ Legal entity management. Tracks company financial summaries, bank accounts, and 
 - `fetchBankAccountsForCompany(companyId)` — fetches bank accounts for a company
 - `createCompany(formData)` — inserts a new company record with bank accounts. The entered balance is the opening balance: it is written to both `initial_balance` and `current_balance` with `balance_reset_at` = now (with `initial_balance = 0`, the first payment used to wipe it)
 - `updateCompany(companyId, formData)` — updates the company; each account's balance reset goes through the `reset_company_bank_account_balance` RPC (Director/Accounting), which sets `initial_balance`, `current_balance` and `balance_reset_at` and rebuilds the balance with the one database formula
-- `deleteCompany(companyId)` — removes a company
+- `deleteCompany(companyId)` — removes a company. A company with invoices cannot be deleted (`accounting_invoices.company_id` is NOT NULL, so its `ON DELETE SET NULL` fails with 23502); `useCompanies` reports that and other references (23503) as `companies.toast.delete_in_use` rather than a generic error
 - `fetchCompanyDetails(companyId)` — fetches bank accounts, credits, recent invoices, and cesija data
 - **Depends on:** supabase client
 
@@ -584,7 +584,7 @@ Core invoicing — the most complex sub-module. Handles standard invoices, retai
 - **Uses Ui:** Table
 
 ### InvoiceDetailView.tsx
-- Full detail modal for a single invoice including payment history
+- Read-only detail modal for a single invoice: number, type, status, approval; issue / due (overdue flag) / created dates; company and counterparty; project and contract; reference number, IBAN and refund when set; the multi-VAT base/PDV breakdown, VAT total, total, paid and remaining amounts; category and description. It lists no individual payments and has no PDF preview
 - **Uses Ui:** Modal
 
 ### services/invoiceValidation.ts
@@ -609,7 +609,7 @@ tested) without Supabase.
 - **Uses Ui:** Button
 
 ### InvoicePreview.tsx
-- Preview panel shown before invoice submission
+- Live VAT-breakdown and totals card (per-rate base, PDV and subtotal) shown inside `BankInvoiceFormModal` while the form is filled in — not a PDF preview. Renders nothing until a VAT base is entered
 - **Uses Ui:** (plain JSX)
 
 ### InvoiceActionButtons.tsx
@@ -930,9 +930,10 @@ Shared utilities used across multiple Cashflow sub-modules.
   sign convention as the bank-balance trigger. Used by both payment screens (Cashflow → Payments
   and Funding → Payments) for the amount colour, the stat cards and the footer totals. It *is*
   `invoiceCashDirection` from `src/utils/invoiceCashDirection.ts` — the one map every screen, the
-  dashboards, the General report and the SQL balance function agree with (CASH-7: ULAZNI (INV) is
-  money out everywhere)
-- **Companies cards** (`company_statistics`, from migration `20261005120000`): income and expense are *operating* types only (credit fees are an operating expense); credit drawdowns and repayments of principal come back as `total_financing_received` / `total_financing_repaid` and are shown as one extra line on the card. `fetchCompaniesWithStats` maps them to `financing_received` / `financing_repaid`, `null` against a database that does not have the columns yet, in which case the line is not drawn
+  dashboards, the General report, the payment calendar and the SQL balance function agree with
+  (DEFECT_BACKLOG CASH-7, decided 2026-10-01 and extended 2026-10-05: ULAZNI (INV) is money out
+  everywhere, and an operating cost)
+- **Companies cards** (`company_statistics`; final definition in migration `20261006100000`, which also keeps the view on `security_invoker` so RLS applies): income and expense are *operating* types only (credit fees are an operating expense); credit drawdowns and repayments of principal come back as `total_financing_received` / `total_financing_repaid` and are shown as one extra line on the card. `fetchCompaniesWithStats` maps them to `financing_received` / `financing_repaid`, `null` against a database that does not have the columns yet, in which case the line is not drawn
 - `getTypeColor(type)` — red for an invoice we pay, green for one we are paid on, read from the same map
 - **The shared invoice-type labels** — two forms of one vocabulary, both translated:
   - `getInvoiceTypeLabel(type, t)` → the short code (`invoice_type.*`, "ULAZNI (DOB)") for dense tables
@@ -1045,8 +1046,8 @@ Project-linked vendor management. Supports linking suppliers to projects/phases,
 - **Invoice list sorting lives in SQL.** Migration `20260915120000_invoice_list_server_sort.sql` replaces the 6-argument `get_filtered_invoices` with an 8-argument version (`p_sort_field text DEFAULT NULL`, `p_sort_dir text DEFAULT 'asc'`). Sort values are whitelisted via `CASE` (unknown values fall back to `issue_date DESC, id`, which also stays as the tie-breaker); `invoice_number` uses the ICU collation `public.natural_numeric` (`und-u-kn-true`) so `INV-2` sorts before `INV-10`; both directions are `NULLS LAST`. **This migration must be applied manually** (dev/e2e project first) — until it is, sorting a column makes the RPC call fail, while the unsorted list keeps working. Security model unchanged: the function is still `SECURITY DEFINER` without a role check (unlike `get_invoice_statistics`)
 - `retailInvoiceTypes.ts` inside `Invoices/` defines types that bridge Cashflow and Retail invoice structures — handle carefully when modifying
 - Multi-VAT support uses separate `base_amount_1–4`, `vat_rate_1–4`, `vat_amount_1–4` fields for up to 4 VAT rates per invoice (Croatian accounting requirement)
-- Cesija is tracked with `is_cesija`, `cesija_company_id`, and `cesija_bank_account_id` fields on invoices and payments
-- **Security note.** The Cashflow password modal (`Layout.tsx`) and `CashflowRoute` (`App.tsx`) gate UI navigation only. RLS on cashflow tables enforces role-based access (`Director`, `Accounting`) and does NOT depend on the password flag. A user with one of those roles and a valid Supabase JWT can query cashflow data directly via supabase-js without entering the password. This is a known limitation tracked as **SEC-001** in [`docs/SECURITY_BACKLOG.md`](./SECURITY_BACKLOG.md).
+- Cesija is tracked on payments only: `accounting_payments` carries `is_cesija`, `cesija_company_id`, `cesija_bank_account_id`, `cesija_credit_id` and `cesija_credit_allocation_id`; `accounting_invoices` has no cesija columns
+- **Security note.** The Cashflow password modal (`Layout.tsx`) and `CashflowRoute` (`App.tsx`) gate UI navigation only. RLS on cashflow tables enforces role-based access (`Director`, `Accounting`) and does NOT depend on the password flag. A user with one of those roles and a valid Supabase JWT can query cashflow data directly via supabase-js without entering the password. This is a known limitation tracked as **SEC-001** in [`docs/backlog/security.md`](./backlog/security.md).
   - As of migration `20260526084700_tighten_cashflow_rls.sql` (2026-05-26), five tables that previously had blanket `USING (true)` policies (`accounting_payments`, `accounting_companies`, `bank_credits`, `company_loans`, `company_bank_accounts`) are now role-gated, with scoped exceptions for the Sales workflow (sales-related invoices/payments) and broad SELECT on `accounting_companies` (names + OIB are treated as reference data). `bank_credits` SELECT additionally allows `Investment`. The companion migration `20260526084701_get_invoice_statistics_role_check.sql` adds a defense-in-depth role check inside the SECURITY DEFINER `get_invoice_statistics` RPC. Since `20260930100300` that RPC uses exactly the joins and search predicate of `get_filtered_invoices`, so the count above the list matches the rows. These close the blanket-open gap but do NOT couple data access to the password flag, so SEC-001 remains open.
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item hook pattern — never use `window.confirm()` or `confirm()`
 
@@ -1061,3 +1062,13 @@ rows dated on or after `balance_reset_at`. The payment trigger, the `company_loa
 all call it; no other code computes a balance. Before this, credit disbursements were added with
 `+=` and erased by the next recompute, and the loan trigger and the Companies screen each carried
 their own copy of the formula.
+
+## Company income and expense (`company_statistics`)
+
+Since migration `20261001100000` (DEFECT_BACKLOG CASH-7, SEC-A11) the view runs with the caller's
+rights (`security_invoker`), so RLS applies, and classifies:
+
+- **Income** — invoices the company issued: `OUTGOING_SALES`, `OUTGOING_OFFICE`, `OUTGOING_SUPPLIER`.
+- **Expense** — bills it pays: `INCOMING_SUPPLIER`, `INCOMING_OFFICE` (plus cesija it paid for others).
+- **Neither** — the bank-credit invoices, treated as financing: `INCOMING_INVESTMENT`,
+  `INCOMING_BANK`, `INCOMING_BANK_EXPENSES`, `OUTGOING_BANK`.

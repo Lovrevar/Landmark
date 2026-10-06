@@ -161,7 +161,7 @@ describe('the database agrees', () => {
   })
 
   it('company_statistics, in its final form, matches the map on direction AND category', () => {
-    const sql = read('supabase/migrations/20261005120000_company_statistics_operating_only.sql')
+    const sql = read('supabase/migrations/20261006100000_company_statistics_final.sql')
     const view = sql.slice(sql.indexOf('CREATE OR REPLACE VIEW public.company_statistics'))
     // Every "<type list> … AS <column>" pair, in the order the view writes them.
     const columns = [...view.matchAll(/ANY \(ARRAY\[([^\]]*)\]\)\) THEN[\s\S]*?AS (total_\w+)/g)]
@@ -197,7 +197,26 @@ describe('the database agrees', () => {
     const files = readdirSync(join(process.cwd(), 'supabase/migrations'))
       .filter(file => read(`supabase/migrations/${file}`).includes('VIEW public.company_statistics'))
       .sort()
-    expect(files[files.length - 1]).toBe('20261005120000_company_statistics_operating_only.sql')
+    expect(files[files.length - 1]).toBe('20261006100000_company_statistics_final.sql')
+  })
+
+  it('the final view runs with the caller\'s rights, so RLS applies to it', () => {
+    // CREATE OR REPLACE VIEW resets a view's options. The last migration to define the view must
+    // therefore set security_invoker itself, after the CREATE — or the RLS fix from
+    // 20261001100000 is silently undone.
+    const sql = read('supabase/migrations/20261006100000_company_statistics_final.sql')
+    const create = sql.indexOf('CREATE OR REPLACE VIEW public.company_statistics')
+    const invoker = sql.indexOf('ALTER VIEW public.company_statistics SET (security_invoker = on)')
+    expect(create).toBeGreaterThan(-1)
+    expect(invoker).toBeGreaterThan(create)
+  })
+
+  it('the earlier view migration steps aside where the newer columns already exist', () => {
+    // Production and LandmarkDev received 20261005* before 20261001100000. Without the guard that
+    // migration fails there ("cannot drop columns from view") and blocks every later one.
+    const sql = read('supabase/migrations/20261001100000_company_statistics_direction.sql')
+    expect(sql).toMatch(/column_name = 'total_financing_received'[\s\S]*RETURN;[\s\S]*EXECUTE \$view\$/)
+    expect(sql).toContain('ALTER VIEW public.company_statistics SET (security_invoker = on)')
   })
 })
 

@@ -109,7 +109,7 @@ export const fetchData = async (
         projects:project_id (name),
         phases:phase_id (phase_name, phase_number)
       `)
-      .in('status', ['draft', 'active'])
+      // Completed and terminated contracts too: a final invoice often arrives after completion.
       .order('contract_number'),
 
     supabase

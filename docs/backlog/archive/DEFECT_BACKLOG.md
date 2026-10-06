@@ -1,7 +1,9 @@
 # Defect Backlog
 
+> **Archived 2026-10-05 — do not update.** This is the record of what was found and how it was fixed. Everything still open was carried over to the area files in [docs/backlog/](../README.md) (`security.md`, `sales.md`, `cashflow.md` and so on). Ids such as `CASH-7` or `SUP-4` quoted in code comments and migrations resolve here when the entry is fixed, and in the area file when it is open.
+
 Defects, gaps and inconsistencies found in a code-level audit of the whole platform except Retail
-(30 September 2026). The audit was done while writing [SPECIFIKACIJA.md](./SPECIFIKACIJA.md): seven
+(30 September 2026). The audit was done while writing [SPECIFIKACIJA.md](../../SPECIFIKACIJA.md): seven
 passes, one per area, each reading the components, services, migrations and edge functions and
 checking the existing docs against them.
 
@@ -28,13 +30,13 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 | Area | High | Medium | Low |
 |---|---|---|---|
-| Security and access | 2 | 5 | 3 |
+| Security and access | 2 | 7 | 3 |
 | Auth and platform | 0 | 2 | 3 |
 | Sales | 2 | 5 | 5 |
 | Supervision | 1 | 3 | 7 |
-| Cashflow | 3 | 5 | 11 |
-| Funding and TIC | 1 | 4 | 11 |
-| Projects, dashboards, reports | 0 | 4 | 12 |
+| Cashflow | 3 | 5 | 8 |
+| Funding and TIC | 1 | 4 | 10 |
+| Projects, dashboards, reports | 0 | 4 | 10 |
 | Tasks, calendar, chat, documents, AI | 0 | 4 | 5 |
 | ERP integration (on hold) | 3 | 6 | 3 |
 | Documentation drift | — | — | see last section |
@@ -45,7 +47,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### SEC-A1 · High · `public.users` is readable without logging in
 - **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(security))
-- **Where:** [baseline_schema.sql:7396](../supabase/migrations/00000000000000_baseline_schema.sql#L7396), policy `"Allow reading users for authentication"`, `FOR SELECT TO anon, authenticated USING (true)`.
+- **Where:** [baseline_schema.sql:7396](../../../supabase/migrations/00000000000000_baseline_schema.sql#L7396), policy `"Allow reading users for authentication"`, `FOR SELECT TO anon, authenticated USING (true)`.
 - **What happens:** anyone holding the anon key (it ships in the JS bundle) can list every user's
   username, email and role.
 - **Fix direction:** drop `anon` from the policy. Check first whether the login form reads `users`
@@ -53,7 +55,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### SEC-A2 · High · Any signed-in user can insert roster rows with any role
 - **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(security))
-- **Where:** [baseline_schema.sql:7361](../supabase/migrations/00000000000000_baseline_schema.sql#L7361), `"Allow authenticated to insert users"`, `WITH CHECK (true)`.
+- **Where:** [baseline_schema.sql:7361](../../../supabase/migrations/00000000000000_baseline_schema.sql#L7361), `"Allow authenticated to insert users"`, `WITH CHECK (true)`.
 - **What happens:** a Sales user can insert a `public.users` row with `role = 'Director'` for an
   email address. SSO provisioning links a Microsoft identity to a pre-created row by email
   (`handle_new_user`, `20260825100000_sso_pre_provisioned_only.sql`), so a pre-created row
@@ -63,7 +65,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### SEC-A3 · Medium · Activity-log rows can be forged
 - **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(security))
-- **Where:** [baseline_schema.sql:7671](../supabase/migrations/00000000000000_baseline_schema.sql#L7671), `activity_logs` INSERT `WITH CHECK (true)`; [src/lib/activityLog.ts](../src/lib/activityLog.ts) sends `user_id` and `user_role` from the client.
+- **Where:** [baseline_schema.sql:7671](../../../supabase/migrations/00000000000000_baseline_schema.sql#L7671), `activity_logs` INSERT `WITH CHECK (true)`; [src/lib/activityLog.ts](../../../src/lib/activityLog.ts) sends `user_id` and `user_role` from the client.
 - **What happens:** any authenticated user can write log rows attributed to another user or role,
   which undermines the audit trail.
 - **Fix direction:** `WITH CHECK (user_id = (SELECT id FROM users WHERE auth_user_id = auth.uid()))`,
@@ -71,7 +73,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### SEC-A4 · Medium · Chat attachments are publicly readable
 - **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(security))
-- **Where:** [20260527100100_restore_other_storage_buckets_and_policies.sql:51](../supabase/migrations/20260527100100_restore_other_storage_buckets_and_policies.sql#L51) (`chat-attachments` is `public = true`); the chat service stores `getPublicUrl`.
+- **Where:** [20260527100100_restore_other_storage_buckets_and_policies.sql:51](../../../supabase/migrations/20260527100100_restore_other_storage_buckets_and_policies.sql#L51) (`chat-attachments` is `public = true`); the chat service stores `getPublicUrl`.
 - **What happens:** anyone with a file URL can download it without authenticating. URLs are
   guessable only with difficulty (`{conversationId}/{timestamp}_{random}.{ext}`), but they leak
   through copy/paste and logs.
@@ -95,7 +97,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### SEC-A6 · Medium · Dashboard cache is shared between users in the same tab
 - **Check:** Code reading. **Status:** Fixed on `fix/defect-backlog` (fix(security))
-- **Where:** [src/lib/useCachedData.ts](../src/lib/useCachedData.ts), a module-level `Map`; nothing calls `invalidateCachedData`.
+- **Where:** [src/lib/useCachedData.ts](../../../src/lib/useCachedData.ts), a module-level `Map`; nothing calls `invalidateCachedData`.
 - **What happens:** after logout and login as another user in the same tab, dashboards and reports
   can show the previous user's (RLS-scoped) figures for up to 5 minutes. Figures are also up to
   5 minutes stale after any mutation.
@@ -116,11 +118,11 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
     phase figure goes stale.
 - **Fix direction:** chain `.select('id')` on mutations and treat zero rows as a permission error;
   hide the actions the role cannot perform (the `canManage*` helpers in
-  [permissions.ts](../src/utils/permissions.ts) exist but are unused).
+  [permissions.ts](../../../src/utils/permissions.ts) exist but are unused).
 
 ### SEC-A8 · Low · Non-finance roles can open the Cashflow dashboard
-- **Check:** Code reading. **Status:** Open
-- **Where:** [Layout.tsx](../src/components/Common/Layout.tsx) profile switcher, [Dashboard.tsx](../src/components/Common/Dashboard.tsx).
+- **Check:** Code reading. **Status:** Fixed on `fix/backlog-batch-2` (fix(platform)): `canUseCashflow` (Director, Accounting) filters the profile list and backs `CashflowRoute`; a stored Cashflow profile falls back to General
+- **Where:** [Layout.tsx](../../../src/components/Common/Layout.tsx) profile switcher, [Dashboard.tsx](../../../src/components/Common/Dashboard.tsx).
 - **What happens:** Sales and Investment users can select the Cashflow profile, enter the password
   and see `AccountingDashboard` at `/` (RLS-limited data). Every `/accounting-*` route still
   redirects them. Related to SEC-001 and SEC-002.
@@ -128,7 +130,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### SEC-A9 · Low · `dispatch-calendar-reminders` has no request authentication
 - **Check:** Code reading. **Status:** Open
-- **Where:** [supabase/functions/dispatch-calendar-reminders/index.ts](../supabase/functions/dispatch-calendar-reminders/index.ts), `verify_jwt = false`, `Deno.serve(async () => …)`.
+- **Where:** [supabase/functions/dispatch-calendar-reminders/index.ts](../../../supabase/functions/dispatch-calendar-reminders/index.ts), `verify_jwt = false`, `Deno.serve(async () => …)`.
 - **What happens:** harmless today because the function is disabled in `config.toml`. Enabling it
   as is would let anyone trigger reminder inserts. See COLLAB-1.
 - **Fix direction:** add a shared-secret header like `send-push` before enabling.
@@ -137,13 +139,25 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - **Check:** Code reading. **Status:** Open. Already tracked as SEC-004; listed here for
   completeness.
 
+### SEC-A11 · Medium · `company_statistics` bypassed RLS
+- **Check:** Runtime check needed (found 2026-10-01). **Status:** Fixed on `fix/backlog-batch-2` (migration `20261001100000`)
+- **Where:** the `company_statistics` view in the baseline schema was a plain view, which Postgres runs as its owner.
+- **What happened:** RLS on `accounting_invoices`, `company_bank_accounts` and `bank_credits` did not apply through it, so any role able to select from the view — with Supabase's default grants, every signed-in user and possibly `anon` — could read every company's bank balances and income/expense totals.
+- **Fix:** `security_invoker = on`.
+
+### SEC-A12 · Medium · Any signed-in user can delete any stored document file
+- **Check:** Confirmed (found 2026-10-01 while fixing AI_CHAT.md). **Status:** Open
+- **Where:** [20260527100000_restore_documents_bucket_and_policies.sql](../../../supabase/migrations/20260527100000_restore_documents_bucket_and_policies.sql) and [20260527100100_restore_other_storage_buckets_and_policies.sql](../../../supabase/migrations/20260527100100_restore_other_storage_buckets_and_policies.sql): the `storage.objects` INSERT / SELECT / DELETE policies on the `documents` and `contract-documents` buckets check only `bucket_id`.
+- **What happens:** `20260930100000` limited deleting a `public.documents` row to its uploader, Director and Accounting, but the file itself can be removed (or overwritten by path) by any signed-in user through the Storage API, leaving a row that points at nothing. Reading every file is also open to every signed-in user, which matches the table's SELECT policy today but has no per-entity check.
+- **Fix direction:** mirror the table rule in the DELETE (and UPDATE) policies on `storage.objects` — owner (`owner_id = auth.uid()`) or `app_user_role() IN ('Director','Accounting')` — the way `can_access_chat_object` does for chat.
+
 ---
 
 ## 2. Auth and platform
 
 ### AUTH-1 · Medium · Password reset cannot be completed
 - **Check:** Code reading. **Status:** Fixed on `fix/defect-backlog` (fix(auth))
-- **Where:** [AuthContext.tsx](../src/contexts/AuthContext.tsx) `resetPassword` redirects to `/reset-password`; [App.tsx](../src/App.tsx) has no such route and nothing handles the `PASSWORD_RECOVERY` event.
+- **Where:** [AuthContext.tsx](../../../src/contexts/AuthContext.tsx) `resetPassword` redirects to `/reset-password`; [App.tsx](../../../src/App.tsx) has no such route and nothing handles the `PASSWORD_RECOVERY` event.
 - **What happens:** the recovery link falls through to `/` and, at best, signs the user in; there is
   no screen to set a new password.
 - **Fix direction:** add a `/reset-password` route that calls `supabase.auth.updateUser({ password })`
@@ -158,13 +172,15 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - **Fix direction:** add a migration that creates the trigger idempotently.
 
 ### AUTH-3 · Low · `npm run e2e:seed` points at a missing script
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(platform)): the `e2e:seed` script entry was removed
 - **Where:** `package.json` → `scripts/seed-e2e.mjs` (does not exist). Remove or restore it.
 
 ### AUTH-4 · Low · Client and SQL disagree on project access
-- **Where:** `hasProjectAccess` in [AuthContext.tsx](../src/contexts/AuthContext.tsx) returns `false` for Accounting, Sales and Investment; SQL `user_has_project_access(user, proj)` grants them all projects. Align one to the other.
+- **Where:** `hasProjectAccess` in [AuthContext.tsx](../../../src/contexts/AuthContext.tsx) returns `false` for Accounting, Sales and Investment; SQL `user_has_project_access(user, proj)` grants them all projects. Align one to the other.
 
 ### AUTH-5 · Low · Profile switcher shows raw English names
-- **Where:** [Layout.tsx](../src/components/Common/Layout.tsx) renders `{profile}` although `profiles.*` i18n keys exist.
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(platform)): the switcher and the header label use `profiles.*`
+- **Where:** [Layout.tsx](../../../src/components/Common/Layout.tsx) renders `{profile}` although `profiles.*` i18n keys exist.
 
 ---
 
@@ -172,7 +188,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### SALES-1 · High · Selling a standalone garage or storage unit always fails
 - **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(sales)): Sell is shown on apartments only; `completeSale` refuses other unit types
-- **Where:** [salesService.ts:592-599](../src/components/Sales/SalesProjects/services/salesService.ts#L592-L599) inserts `garage_id` / `repository_id` into `sales`; the table has neither column and `apartment_id` is `NOT NULL` ([baseline:3939-3941](../supabase/migrations/00000000000000_baseline_schema.sql#L3939-L3941)).
+- **Where:** [salesService.ts:592-599](../../../src/components/Sales/SalesProjects/services/salesService.ts#L592-L599) inserts `garage_id` / `repository_id` into `sales`; the table has neither column and `apartment_id` is `NOT NULL` ([baseline:3939-3941](../../../supabase/migrations/00000000000000_baseline_schema.sql#L3939-L3941)).
 - **What happens:** the "Sell" button on a garage or storage card always shows the error toast. In
   "new customer" mode the customer row (status `buyer`) has already been created and is left
   orphaned.
@@ -182,7 +198,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### SALES-2 · High · Bulk price update wipes prices of units without a price per m²
 - **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(sales)): `effectivePricePerM2` fallback in the service and preview, plus the trigger and backfill in migration `20260930100200`
-- **Where:** [salesService.ts:693](../src/components/Sales/SalesProjects/services/salesService.ts#L693) `const currentPricePerM2 = unit.price_per_m2 || 0`.
+- **Where:** [salesService.ts:693](../../../src/components/Sales/SalesProjects/services/salesService.ts#L693) `const currentPricePerM2 = unit.price_per_m2 || 0`.
 - **What happens:** units with `price_per_m2 = 0` get `price = size × adjustment`, losing the old
   total. That covers every apartment created on the Apartments page (bulk or single), garages
   from the garage Excel import, and parking/storage units created by the apartment import.
@@ -205,7 +221,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### SALES-5 · Medium · The sale flow is not transactional
 - **Status:** Fixed on `fix/defect-backlog` (fix(sales))
-- **Where:** `completeSale` in [salesService.ts](../src/components/Sales/SalesProjects/services/salesService.ts): customer insert, sale insert, unit update, linked-unit updates and customer status update are separate calls.
+- **Where:** `completeSale` in [salesService.ts](../../../src/components/Sales/SalesProjects/services/salesService.ts): customer insert, sale insert, unit update, linked-unit updates and customer status update are separate calls.
 - **What happens:** a failure midway leaves partial state (orphan customer, sale without Sold
   status, and so on).
 - **Fix direction:** move the sequence into one RPC.
@@ -242,9 +258,10 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - Nothing updates or deletes `sales` rows; a reverted sale still counts in dashboards and reports.
 
 ### SALES-11 · Low · Bulk-created buildings get hard-coded English names ("Building N")
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(sales)): names come from `sales_projects.default_building_name` ("Zgrada {{n}}")
 
 ### SALES-12 · Low · Import help text is wrong about columns V–Y
-- **Status:** Fixed on `feat/user-guidance-phase-1`: the instructions are generated from `apartmentImportTemplate.ts`, say V–Y and Z hold EUR amounts, are translated, and come with a downloadable template. A date in U–Z — as text or as an Excel date cell — now rejects the row and names the column (`apartmentImportValidation.ts`)
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(sales)): help lists V–Y as instalment amounts and Z as the credit amount
 - The help says they hold dates; the code parses them as EUR amounts, so a date string becomes a
   number such as 1022026.
 
@@ -254,7 +271,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### SUP-1 · High · Contract comments never load or save
 - **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(supervision))
-- **Where:** [SiteManagement/index.tsx:307-321](../src/components/Supervision/SiteManagement/index.tsx#L307-L321) passes `subcontractor.id`, which in the Site Management tree is the **contract** id; `subcontractor_comments.subcontractor_id` references `subcontractors(id)` ([baseline:7107](../supabase/migrations/00000000000000_baseline_schema.sql#L7107)).
+- **Where:** [SiteManagement/index.tsx:307-321](../../../src/components/Supervision/SiteManagement/index.tsx#L307-L321) passes `subcontractor.id`, which in the Site Management tree is the **contract** id; `subcontractor_comments.subcontractor_id` references `subcontractors(id)` ([baseline:7107](../../../supabase/migrations/00000000000000_baseline_schema.sql#L7107)).
 - **What happens:** reads always return nothing; inserts fail with a foreign-key error ("add
   failed" toast).
 - **Fix direction:** pass `subcontractor.subcontractor_id`. The `subcontractor.comment` log entry
@@ -270,28 +287,39 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - **What happens:** older rows silently disappear once a table passes 1000 rows.
 
 ### SUP-4 · Medium · Contract status and subcontractor completion never change
-- **Status:** Partly fixed on `fix/defect-backlog` (fix(supervision)): the dashboard card now counts crews with a `work_finished` log this week. **Open decision:** contract status transitions. Site Management lists only draft/active contracts, so completing a contract would drop it from every phase total; decide how completed contracts should appear before adding a status control
+- **Status:** Fixed. On `fix/defect-backlog`: the dashboard card counts crews with a
+  `work_finished` log this week. On `fix/backlog-batch-2` (fix(supervision)), per the 2026-10-01
+  decision "stays visible, still counts": the edit form sets Aktivan / Završen / Raskinut;
+  Site Management, the classification gate, Budget Control, supplier and project summaries read
+  every status; a terminated contract commits only what was paid (`committedAmount` /
+  `contract_committed_amount`, migration `20261001100200`); a header button hides closed cards
+  without changing totals. See [SUPERVISION.md](../../SUPERVISION.md) → "Contract status"
 - New contracts are always `active` and nothing moves them to `completed` or `terminated`.
   `subcontractors.completed_at` is never written, so the dashboard's "completed this week" is
   always 0.
 
 ### SUP-5 · Low · "+" on a classification row ignores the classification
+- **Status:** Partly fixed on `fix/backlog-batch-2` (fix(supervision)): the "+" on a classification row now preselects it. Open: the by-classification view still has no add or budget buttons
 - The form does not preselect it; the by-classification view has no add or budget buttons at all.
 
 ### SUP-6 · Low · Edit path skips the phase budget cap
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(supervision)): the edit path checks the phase cap (`fetchPhaseBudgetStatus`) and zeroes amounts when "has contract" is switched off
 - Switching "has contract" off on edit keeps the amounts, while the add path zeroes them.
 
 ### SUP-7 · Low · Financing is stored on the company, not the contract
 - `financed_by_*` is set only when creating a new subcontractor, and only banks are offered.
 
 ### SUP-8 · Low · Some failed loads show zeros
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(supervision)): `fetchInvoiceStatsForContracts` throws; InvoicesModal, MilestoneList and the credit allocations show load errors with retry
 - `fetchInvoiceStatsForContracts` returns a zero map on error; `InvoicesModal`, `MilestoneList`
   and the Project Detail credit allocations only log errors to the console.
 
 ### SUP-9 · Low · Phase card label says "net" for a gross figure
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(supervision)): label reads "Ugovoreni iznos (bruto)"
 - `phase_card.contracted_amount` reads "Ugovoreni iznos (osnova)" but shows the gross amount.
 
 ### SUP-10 · Low · Required document category `IZVODACI` is not seeded
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(supervision)): migration `20261001100300` inserts IZVODACI when the code is free (no-op where it exists). The demo seed script creates `UGOVORI_PODIZVODACI` instead, which is why demo uploads failed
 - Contract document uploads throw on a fresh environment until the category row is added by hand.
 
 ### SUP-11 · Low · Dead code
@@ -350,56 +378,14 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### CASH-7 · Medium · Income and expense are classified four different ways
 - **ERP:** The ERP resolver reads `INCOMING` as a received bill (a payable), so `INCOMING_INVESTMENT` is money out when paid — what the balance trigger and payments list already do. Recommended: cash-flow screens use the prefix rule (`OUTGOING_*` in, `INCOMING_*` out); the company income/expense view leaves out the bank-credit types (`*_BANK`, `INCOMING_BANK_EXPENSES`), which are neither revenue nor expense. Confirm with accounting before changing.
-- **Status:** Fully resolved 2026-10-05 on `feat/user-guidance-phase-1`; pending release (three migrations written, none applied). **Decision: ULAZNI (INV)
-  (`INCOMING_INVESTMENT`) is always money out** — a bill received from a financier. One map,
-  `src/utils/invoiceCashDirection.ts`, now defines the cash direction of every invoice type
-  (`INCOMING_*` out, `OUTGOING_*` in, no exceptions) and is read by the Accounting dashboard, the
-  General report cash-flow table (screen and PDF), the invoice type colour and `paymentDirection()`.
-  The type also counts as a cost in the Director dashboard and General report expenses, and its VAT
-  as input VAT on the dashboard. `company_statistics` moves it from income to expense in migration
-  `20261005110000` (**written, not applied**). The retail "Ulazni + Kupac" form option, which
-  mapped to this type and could never pass `check_invoice_entity_type`, is removed.
-  `invoiceCashDirection.test.ts` reads the bank-balance function and the view migration and fails
-  if SQL and client drift apart. Production held **no** rows of this type when checked, so no
-  existing figure moved.
-- **General report cash-flow table:** uses the shared map for every type and is split into
-  **operating** and **financing** (`invoiceCashCategory`): drawdowns are financing inflow,
-  repayments financing outflow, credit fees operating outflow. Before, all three were left out
-  and the table could not be reconciled with the bank balance.
-- **Second dimension: category.** Each type in `invoiceCashDirection.ts` is also `operating` or
-  `financing` (`INVOICE_CASH_MAP`, `invoiceCashCategory`). **Decisions: financing is neither
-  income nor expense, and financing means principal only** — drawdowns (`OUTGOING_BANK`) and
-  repayments (`INCOMING_BANK`). **Credit fees (`INCOMING_BANK_EXPENSES`) are an operating cost**,
-  confirmed with accounting. `COST_INVOICE_TYPES` is derived from the map: every operating
-  money-out type.
-- **The two remaining disagreements, fixed the same day:**
-  - `company_statistics` counted drawdowns and repayments as expenses. Migration
-    `20261005120000_company_statistics_operating_only` (**written, not applied**) limits income
-    and expense to operating types and adds `total_financing_received` /
-    `total_financing_repaid`. "Promet" and "Dobit/Gubitak" keep their labels and meaning; the
-    Companies card gains a line "Financiranje (primljeno / otplaćeno)". In production (three
-    companies; 14 drawdowns, 1 repayment): expense paid €8.756.047,84 → €4.133.339,04, income
-    unchanged, financing €4.522.708,80 received and €100.000,00 repaid.
-  - The Cashflow Calendar left credit fees out of both monthly sums (also CASH-8). It now takes
-    both sides from the map. In production: 40 invoices over 15 due-months; "Ulazni plaćeni"
-    rises by €161.767,05 in total and "Ulazni neplaćeni" by €66.487,85.
-- **Credit fees as a cost — where the figure moves.** They stay in the Companies cards' expense
-  (they were there before, beside the drawdowns that should not have been). They are *new* in the
-  Director dashboard's and General report's total expenses: €3.807.870,43 → €3.975.021,04 paid to
-  date in production (+€167.150,61). Per-project costs do not move — none of the 40 credit-fee
-  invoices carries a project or a contract. In the General report cash-flow table they are
-  operating outflow.
-- **Nothing is open.** Every invoice type has one direction and one category, read from one map
-  by every screen and matched by the SQL (`invoiceCashDirection.test.ts`). Figures and the
-  accountant's summary: [ACCOUNTING_REVIEW_CASH7.md](./ACCOUNTING_REVIEW_CASH7.md),
-  [DEPLOY_GUIDANCE_PHASE_1.md](./DEPLOY_GUIDANCE_PHASE_1.md).
+- **Status:** Fixed on `fix/backlog-batch-2` (decided 2026-10-01: `INCOMING_INVESTMENT` is money out). Every cash-direction figure uses `paymentDirection()`; `company_statistics` counts issued invoices as income, paid bills as expense and leaves the bank-credit types out (migration `20261001100000`)
 - `company_statistics`, the Accounting dashboard, `paymentDirection()` and the General report
   cash-flow table disagree on `INCOMING_INVESTMENT`, `OUTGOING_SUPPLIER`, `OUTGOING_BANK` and the
   bank types. The dashboard service comment claiming it matches the calendar convention is wrong.
 - **Fix direction:** one shared direction map used by SQL views and the client.
 
 ### CASH-8 · Low · Payment calendar omits `INCOMING_BANK_EXPENSES` from expense bills
-- **Status:** Fixed on `feat/user-guidance-phase-1` with CASH-7: the calendar's sums read `utils/invoiceCashDirection.ts`.
+- **Status:** Fixed on `fix/backlog-batch-2` (with CASH-7): the calendar uses `paymentDirection()`, so credit fees are bills; bank types get labels
 
 ### CASH-9 · Low · Loans have no sanity checks
 - **ERP:** Gains weight: once the ERP feeds bank movements, an intercompany transfer arrives as ERP payments and is also a `company_loans` row, so it would count twice in the derived balance. See "ERP outlook" below.
@@ -415,6 +401,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   than a bug.
 
 ### CASH-12 · Low · Deleting a company with invoices fails with a generic error
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(funding)): the delete says the company has invoices or other linked records
 - `accounting_invoices.company_id` is `NOT NULL` with `ON DELETE SET NULL`.
 
 ### CASH-13 · Low · `company_bank_accounts.account_number` is never captured
@@ -431,25 +418,9 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### CASH-16 · High · Saving a company resets every bank account's balance
 - **Check:** Confirmed (found while re-checking the fix/defect-backlog branch). **Status:** Fixed on `fix/defect-backlog` (fix(cashflow) follow-up)
-- **Where:** `updateCompany` in [companyService.ts](../src/components/Cashflow/Companies/services/companyService.ts); the edit form is pre-filled from `fetchBankAccountsForCompany` with each account's `initial_balance` and reset date.
+- **Where:** `updateCompany` in [companyService.ts](../../../src/components/Cashflow/Companies/services/companyService.ts); the edit form is pre-filled from `fetchBankAccountsForCompany` with each account's `initial_balance` and reset date.
 - **What happened:** every save sent a balance reset for every account. An account with no reset date got one dated today, so all earlier payments and loans dropped out of its balance — a plain rename was enough. Existed before this branch; the branch first carried it into the reset RPC.
 - **Fix:** only accounts whose balance or date differs from the stored values are reset. Accounts already hit by this show `balance_reset_at` on the day the company was last edited; check them with the query at the end of migration `20260930100300`.
-
-
-### CASH-17 · Low · Companies stat cards clip their amounts on a phone
-- **Check:** Seen in the guidance visual check, 2026-10-05, 390px ([screenshots/guidance-phase-1/README.md](./screenshots/guidance-phase-1/README.md), finding 9). **Status:** Open
-- **Where:** the four stat cards at the top of [Companies/index.tsx](../src/components/Cashflow/Companies/index.tsx), in a two-column grid below `sm`.
-- "€1.287.631,05" and "€−7.088.981,45" run past the right edge of their cards; the minus also wraps away from the number.
-- **Fix direction:** one column below `sm`, or the compact formatter, or let the value shrink (`text-lg` + `break-words`).
-
-### CASH-18 · Low · Companies cards show ragged decimals
-- **Check:** Seen in the same check (finding 12). **Status:** Open — being fixed on `fix/budget-diff-and-decimals`
-- **Where:** every amount on the Companies cards and in `CompanyDetailsModal` is `€{value.toLocaleString('hr-HR')}`, so €2.715.147,70 prints as "€2.715.147,7" and whole amounts print with no decimals. Part of the money-formatting sweep in [UI_AUDIT.md](./UI_AUDIT.md) §4.1 that has not reached this screen.
-- **Note for the merge:** the "Financiranje (primljeno / otplaćeno)" line added on `feat/user-guidance-phase-1` uses the same pattern and must move to the shared formatter when the two branches meet.
-
-### CASH-19 · Low · Calendar "Razlika od budžeta" shows an overrun as a positive amount
-- **Check:** Seen in the same check (finding 13). **Status:** Open — being fixed on `fix/budget-diff-and-decimals`
-- **Where:** the monthly summary in [Calendar/index.tsx](../src/components/Cashflow/Calendar/index.tsx): budget €450.000, paid €2.141.590, shown as "€1.691.590 (Preko budžeta - loše)". Only the colour and the suffix say it is an overrun.
 
 ---
 
@@ -484,7 +455,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ### FUND-5 · Medium · Two repayment models disagree
 - **ERP:** Actual repayments come from the ERP; the model only drives the plan and the "monthly debt service" figures on the Director dashboard and general report.
-- **Status:** Open — **needs a finance decision**: which repayment model do the company's credits follow — an annuity (what `monthly_payment` stores), or linear principal with interest per the chosen frequency, and is interest charged on the full amount (what the preview shows) or on the outstanding balance? Then both the stored figure and the preview use it
+- **Status:** Fixed on `fix/backlog-batch-2` (decided 2026-10-01: equal principal instalments, interest on the outstanding balance). One model in `creditCalculations.ts` for the stored figure, the preview and the Banks service; migration `20261001100100` restates existing credits
 - The stored `monthly_payment` is an annuity (monthly by default, 10 years when no maturity is set),
   while the schedule preview uses linear principal plus flat interest on the full amount. No
   schedule is persisted.
@@ -510,6 +481,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   invisible.
 
 ### FUND-11 · Low · Investment dashboard shows zeros on failure
+- **Status:** Fixed. Query errors were already checked (batch 1); on `fix/backlog-batch-2` (fix(funding)) the PDF labels refinancing allocations "Refinanciranje - X" instead of OPEX. `total_equity` / `debt_to_equity_ratio` stay 0 in this service, but the Investment dashboard does not display them
 - No query error is checked; `total_equity` and `debt_to_equity_ratio` are hard-coded to 0; the
   PDF labels refinancing allocations "OPEX".
 
@@ -518,6 +490,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
   allocation's `used_amount` are missing.
 
 ### FUND-13 · Low · TIC odds and ends
+- **Status:** Partly fixed on `fix/backlog-batch-2` (fix(funding)): the "funtana" auto-select is gone. Open: the Excel export drops phases and classifications; messages are hard-coded Croatian
 - A project whose name contains "funtana" is auto-selected (hard-coded); the Excel export drops
   phases and classifications, so a round trip yields an unphased TIC; messages are hard-coded
   Croatian.
@@ -528,20 +501,13 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ### FUND-15 · Low · Investment role sees credits but no money movements
 - Drawdown, repayment and fee sections come back empty for that role (related to SEC-004).
 
-
-### FUND-16 · Low · TIC page scrolls sideways
-- **Check:** Seen in the guidance visual check, 2026-10-05 ([screenshots/guidance-phase-1/README.md](./screenshots/guidance-phase-1/README.md), finding 8). **Status:** Open
-- **Where:** [TIC/components/InvestmentTable.tsx](../src/components/Funding/TIC/components/InvestmentTable.tsx) inside [TIC/index.tsx](../src/components/Funding/TIC/index.tsx).
-- At 390px the whole page is 973px wide (1262px with phase columns); at 1440px it overflows once two phase columns exist (1530px). The header, tabs and buttons scroll away with the table.
-- **Fix direction:** the table should scroll inside its card (`overflow-x-auto` on a wrapper with `min-w-0` up the flex chain), not widen the document.
-
 ---
 
 ## 7. Projects, dashboards and reports
 
 ### GEN-1 · Medium · General report shows available credit as €0
 - **Check:** Confirmed. **Status:** Fixed on `fix/defect-backlog` (fix(reports))
-- **Where:** [generalReportService.ts:476](../src/components/Reports/services/generalReportService.ts#L476) reads `available_balance` and `drawn_amount`, which do not exist on `bank_credits`.
+- **Where:** [generalReportService.ts:476](../../../src/components/Reports/services/generalReportService.ts#L476) reads `available_balance` and `drawn_amount`, which do not exist on `bank_credits`.
 - **Fix direction:** `Σ (amount − used_amount)`, as the "company investments" section already does.
 
 ### GEN-2 · Medium · Other General report formulas are off
@@ -568,6 +534,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - Director dashboard portfolio table, Investment dashboard portfolio value and PDF, Sales report.
 
 ### GEN-6 · Low · Project details "Aktivni ugovori" counts contracts of every status
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(general)): counts draft and active contracts only
 
 ### GEN-7 · Low · Budget Control chart and scope
 - The forecast bar is drawn in red when the forecast is suppressed; contracts without a phase
@@ -585,35 +552,27 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 - Contrary to the rule that `contracts.budget_realized` is the only paid figure.
 
 ### GEN-11 · Low · Projects list hides load failures behind the empty state
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(general)): error Alert with retry
 
 ### GEN-12 · Low · English literals in Croatian UI
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(general)): the cited Sales dashboard and General report literals go through `common.unknown` / `common.uncategorized` (other `N/A` fallbacks in Cashflow remain)
 - "Unknown", "N/A" (Sales dashboard), "Uncategorized" (General report contract types).
 
 ### GEN-13 · Low · Reports menu item shown to non-Directors
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(platform)): the menu item is shown to Directors only
 - `/general-reports` appears in every General-profile menu but only Directors can open it.
 
 ### GEN-14 · Low · Credit types rendered raw
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(general)): `formatCreditType` in creditCalculations.ts
 - Project details financing tab and Investment dashboard use `replace(/_/g, ' ')` instead of the
   label map.
-
-
-### GEN-15 · Low · General report PDF: trend chart filled black, labels touch the next heading
-- **Check:** Seen in the guidance visual check, 2026-10-05 ([screenshots/guidance-phase-1/README.md](./screenshots/guidance-phase-1/README.md), finding 10). **Status:** Open
-- **Where:** `drawLineChart(…, { fillArea: true })` on the cash-flow trend page of [generalReportPdf.ts](../src/components/Reports/pdf/generalReportPdf.ts).
-- The area under the line renders almost black instead of a light tint (the fill has no opacity in the PDF), and the chart's month labels sit directly on the "ANALIZA NOVČANOG TOKA" heading below it.
-- **Fix direction:** a light solid fill colour instead of relying on alpha; a few more millimetres after the chart.
-
-### GEN-16 · Low · Company name is hardcoded
-- **Check:** Seen in the same check, on the demo instance (finding 11). **Status:** Open
-- "LANDMARK GROUP" in the General report's on-screen header and in every PDF page footer; "Financijski pregled svih firmi pod Landmarkom" under Cashflow → Moje firme. Both appear for whatever organisation the instance belongs to, including LandmarkDemo ("Adriatic Development").
-- **Fix direction:** one configurable organisation name (env or a settings row) used by both, and by the other report generators that print it.
 
 ---
 
 ## 8. Tasks, calendar, chat, documents and AI assistant
 
 ### COLLAB-1 · Medium · Calendar reminders are never delivered
-- **Status:** Open — **needs a product decision**: `config.toml` marks the dispatcher "DISABLED — not in use". Either turn reminders on (shared-secret auth per SEC-A9, a pg_cron job like `deadline-reminders`, skip declined invitees, mount the toast listener in Layout) or remove the reminder field from the event form so nothing promises them
+- **Status:** Fixed on `fix/backlog-batch-2` (fix(calendar)), per the 2026-10-01 decision "remove the field": the event form no longer offers reminders and the detail modal no longer lists them. The backend stays switched off; turning reminders on later still needs shared-secret auth (SEC-A9), a pg_cron job like `deadline-reminders`, skipping declined invitees, the toast listener in Layout, and the field back — see [CALENDAR.md](../../CALENDAR.md) → "Reminders (parked)"
 - `dispatch-calendar-reminders` is `enabled = false` in `config.toml` and has no schedule; the toast
   listener is mounted only on `/calendar`. Users can still set reminder offsets, which are stored
   and ignored. It would also notify invitees who declined. See SEC-A9 before enabling.
@@ -639,7 +598,7 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 ### COLLAB-5 · Low · Open questions from the voice analysis
 - OQ-1 (stopping during a tool call breaks the branch), OQ-5 (`tool_result` emitted before it is
   persisted), OQ-6 (`is_fully_paid` true when nothing is invoiced). See
-  [voice/open-questions.md](./voice/open-questions.md).
+  [voice/open-questions.md](../../voice/open-questions.md).
 
 ### COLLAB-6 · Low · Chat loads only the latest 50 messages
 - No "load older"; no message edit or delete; no member management after creation.
@@ -657,15 +616,15 @@ holds accepted items). UI/UX findings are tracked separately in [UI_AUDIT.md](./
 
 ## 9. ERP integration (on hold — fix before resuming)
 
-These only matter once the checklist in [erp-integration/PROGRESS.md](./erp-integration/PROGRESS.md)
+These only matter once the checklist in [erp-integration/PROGRESS.md](../../erp-integration/PROGRESS.md)
 is picked up again. They are tracked in more detail, with fix directions and the order to fix them
-in, in [erp-integration/KNOWN_ISSUES.md](./erp-integration/KNOWN_ISSUES.md); the design questions
+in, in [erp-integration/KNOWN_ISSUES.md](../../erp-integration/KNOWN_ISSUES.md); the design questions
 from the "ERP outlook" section below are Q17–Q20 in
-[erp-integration/OPEN_QUESTIONS.md](./erp-integration/OPEN_QUESTIONS.md).
+[erp-integration/OPEN_QUESTIONS.md](../../erp-integration/OPEN_QUESTIONS.md).
 
 ### ERP-1 · High · Promoting a bank invoice fails the whole run
 - **Check:** Confirmed.
-- **Where:** [20260831160000_erp_phase3_promotion.sql:328](../supabase/parked-migrations/erp/20260831160000_erp_phase3_promotion.sql#L328) writes `invoice_category = 'BANK'`, which is not in `accounting_invoices_invoice_category_check`.
+- **Where:** [20260831160000_erp_phase3_promotion.sql:328](../../../supabase/parked-migrations/erp/20260831160000_erp_phase3_promotion.sql#L328) writes `invoice_category = 'BANK'`, which is not in `accounting_invoices_invoice_category_check`.
 - **Fix direction:** use `BANK_CREDIT`.
 
 ### ERP-2 · High · Negative documents fail the whole run
@@ -749,8 +708,15 @@ entry's **ERP** line).
 Docs that disagree with the code. None of these change behaviour, but people and the AI assistant
 rely on them.
 
-- **Presentation docs** ([PRESENTATION_MODULES.md](./PRESENTATION_MODULES.md),
-  [PRESENTATION_DECK.md](./PRESENTATION_DECK.md)):
+**Status:** Fixed on `fix/backlog-batch-2` (docs), 2026-10-01, item by item against the code. Two
+claims were already out of date and were not applied: the chat attachment bucket is private since
+SEC-A4, and CASHFLOW.md never claimed a PDF preview (the nearest thing, `InvoicePreview.tsx`, is now
+described as the VAT-totals card it is). Left for later: the "138 discrete actions across 11
+categories" total in ACTIVITY_LOG.md is probably stale. Found on the way: SEC-A12. The list below is
+what was wrong.
+
+- **Presentation docs** ([PRESENTATION_MODULES.md](../../PRESENTATION_MODULES.md),
+  [PRESENTATION_DECK.md](../../PRESENTATION_DECK.md)):
   - payment certificates (situacije) are described as a feature; they do not exist (contracts use
     percentage payment milestones);
   - TIC is said to fill actual costs from invoices; it holds only the plan;

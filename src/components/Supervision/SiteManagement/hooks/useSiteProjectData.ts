@@ -3,6 +3,7 @@ import { Subcontractor } from '../../../../lib/supabase'
 import { ProjectWithPhases } from '../types'
 import * as siteService from '../services/siteService'
 import { daysFromToday } from '../../../../utils/dateOnly'
+import { committedAmount, isClosedContract } from '../../../../utils/contractRollup'
 import { ticGrandTotal, phaseTotals } from '../../../Funding/TIC/utils/ticBudget'
 
 export const useSiteProjectData = () => {
@@ -68,14 +69,17 @@ export const useSiteProjectData = () => {
         // NaN for a missing or unparseable date, and NaN < 0 is false. It also compares whole
         // local days, so a contract due today is not yet late.
         const overdue_subcontractors = projectSubcontractors.filter(sub => {
-          return daysFromToday(sub.deadline) < 0 && (sub.budget_realized || 0) < sub.cost
+          return !isClosedContract(sub.contract_status)
+            && daysFromToday(sub.deadline) < 0 && (sub.budget_realized || 0) < sub.cost
         }).length
         const has_phases = projectPhases.length > 0
         const total_budget_allocated = projectPhases.reduce((sum, phase) => sum + phase.budget_allocated, 0)
         const total_contracted = projectSubcontractors.reduce((sum, sub) => {
           const subExt = sub as typeof sub & { has_contract?: boolean; budget_realized?: number }
           const hasContract = subExt.has_contract === true
-          return sum + (hasContract ? (sub.cost || 0) : (subExt.budget_realized || 0))
+          return sum + (hasContract
+            ? committedAmount({ cost: sub.cost || 0, paid: subExt.budget_realized || 0, status: sub.contract_status })
+            : (subExt.budget_realized || 0))
         }, 0)
 
         return {

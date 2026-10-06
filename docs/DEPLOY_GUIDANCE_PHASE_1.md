@@ -2,60 +2,85 @@
 
 **Branch:** `feat/user-guidance-phase-1` · **Written:** 2026-10-05 · **Production figures measured read-only the same day**
 
-Production (`Landmark`) has migrations applied up to `20260917100000`. Eight in the repo are not
-applied there: five from `fix/defect-backlog` (merged to `development` in PR #46) and three from
-this branch. Nothing here has been applied anywhere by this work.
+> ## State on 2026-10-06 — read this first
+>
+> **Eight migrations were pushed to production on 2026-10-06, before the frontend.** `supabase db
+> push` was run from `feat/user-guidance-phase-1` with the CLI linked to production (`Landmark`).
+> Applied there now: the five `20260930…` migrations and `20261005100000`, `…110000`, `…120000`.
+> LandmarkDev has the same eight. LandmarkDemo has none of them.
+>
+> What that means until the new frontend is live:
+>
+> - **Chat attachments do not load in production.** `20260930100000` made the bucket private and
+>   the frontend on `main` still asks for public links. Deploying the new frontend fixes it; so
+>   does making the bucket public again in the meantime (a decision, not done).
+> - Everything else the old frontend does still works: the other changes are additive or tighten
+>   rights the UI already hides.
+>
+> **Not applied anywhere yet**, and needed by the code now on this branch:
+> `20261001100000`–`20261001100300` (from `fix/backlog-batch-2`, PR #48) and
+> `20261006100000_company_statistics_final`. They sort *before* migrations already applied, so a
+> plain `supabase db push` refuses them — it needs `--include-all`. `20261001100000` carries a
+> guard so it does not fail on a database that already has the newer view.
+>
+> `main` also carries a revert of this branch (PR #49 merged by mistake, reverted in PR #51). When
+> `development` is merged to `main`, **revert that revert first**, or Git will leave this
+> branch's changes out.
 
-Re-run the counts before release if time has passed: every "what moves" number below is a
-snapshot.
+Sections 1 to 3 below describe the release as it was planned. Section 2 lists all thirteen
+migrations; the "applied" column says where each one stands today.
 
-## 1. Order of work
+## 1. Order of work from here
 
-**One release.** This branch merges into `development`, which already carries PR #46 and its five
-September migrations. Everything below ships together, in this order — do not release the
-frontend or any group of migrations separately.
-
-1. Merge `feat/user-guidance-phase-1` into `development`; build the frontend from the result.
-2. Apply all eight migrations in the order of section 2 (file-name order). `supabase db push`
-   does this; **check which project the CLI is linked to first** — it is normally linked to
-   `LandmarkDev`.
-3. Deploy the frontend immediately after the migrations, in the same sitting.
-4. Deploy the `ai-chat` edge function so the assistant gets the rebuilt help index
-   (`supabase/functions/_shared/help-kb-index.json`).
+1. Merge `feat/user-guidance-phase-1` into `development` (the conflicts with PR #48 are resolved
+   on the branch). Build the frontend from the result.
+2. With the CLI linked to the target project — **check `supabase/.temp/project-ref` first** — run
+   `supabase db push --include-all`. On production and LandmarkDev that applies the five
+   remaining migrations; on a fresh project, all of them in order.
+3. Deploy the frontend immediately after, in the same sitting.
+4. Deploy the `ai-chat` edge function so the assistant gets the rebuilt help index.
 5. Run the checks in section 6.
 
 > **Never apply `20260930100000_security_hardening` without its frontend.** It makes the chat
-> attachments bucket private. The frontend currently in production shows public links to that
-> bucket, so every chat image and file stops loading until the new frontend — which signs its
-> links — is live. If the frontend deploy cannot follow within minutes, do not start step 2.
+> attachments bucket private. That is what happened to production on 2026-10-06.
 
 ## 2. Migrations, in order
 
-| # | File | What it does | What users see |
+| # | File | What it does | Applied (prod / dev) |
 |---|---|---|---|
-| 1 | `20260930100000_security_hardening` | Removes blanket "any signed-in user" write policies on 18 tables and replaces them with role policies; makes the `chat-attachments` bucket private; stamps the real user on every activity-log row; stops anonymous reads of the user roster; maintains `project_phases.budget_used` by trigger | Actions a role should never have had stop working (the UI already hides most of them). Chat images load through signed links |
-| 2 | `20260930100100_auth_user_created_trigger` | Recreates the `auth.users` → `handle_new_user()` trigger, which production already has but no migration recorded | Nothing |
-| 3 | `20260930100200_sales_price_and_sale_rpc` | Trigger keeping `price_per_m2 = price / size` on apartments, garages and storage units, with a backfill of rows where it was 0; new `complete_apartment_sale()` RPC that records a sale in one transaction | Units that showed €0/m² show a real figure. "Complete sale" is all-or-nothing |
-| 4 | `20260930100300_cashflow_balances_and_stats` | One bank-balance formula that also counts credits disbursed to an account; `reset_company_bank_account_balance()` RPC; backfill of opening balances that only existed in `current_balance`; invoice statistics matching the invoice list; Directors can manage invoice categories | Invoice counts above the list match the rows. A bank balance can change the next time that account is recalculated (see section 4) |
-| 5 | `20260930100400_funding_rename_and_tic_writes` | Drops a trigger that made renaming an investor fail; TIC can be saved by Director, Accounting and Investment only; the budget sync runs with owner rights | Renaming an investor works. Accounting and Investment can save a TIC; Sales no longer can |
-| 6 | `20261005100000_activity_log_exclude_prefix` | Adds an optional "exclude this action prefix" parameter to `get_activity_logs` (the function is dropped and recreated) | Activity Log hides help-usage events by default and shows a checkbox to include them |
-| 7 | `20261005110000_company_statistics_incoming_investment_expense` | `company_statistics`: ULAZNI (INV) moves from income to expense | Nothing today — production has no such invoices |
-| 8 | `20261005120000_company_statistics_operating_only` | `company_statistics`: income and expense count operating invoices only; credit drawdowns and repayments of principal leave both and are reported in two new columns. Credit fees stay in expense | Companies cards change — section 4 |
+| 1 | `20260930100000_security_hardening` | Role policies on 18 tables; chat attachments bucket private; activity-log rows stamped with the real user | yes / yes |
+| 2 | `20260930100100_auth_user_created_trigger` | Recreates a sign-up trigger production already had | yes / yes |
+| 3 | `20260930100200_sales_price_and_sale_rpc` | Price per m² kept in step; one-transaction "complete sale" | yes / yes |
+| 4 | `20260930100300_cashflow_balances_and_stats` | One bank-balance formula; balance-reset function; invoice counts match the list | yes / yes |
+| 5 | `20260930100400_funding_rename_and_tic_writes` | Investor rename fixed; TIC saves for Director, Accounting, Investment | yes / yes |
+| 6 | `20261001100000_company_statistics_direction` | PR #48: view respects RLS (`security_invoker`); its own income/expense lists. Guarded: skips its view definition where the newer one exists | **no / no** |
+| 7 | `20261001100100_credit_monthly_debt_service` | PR #48: `monthly_payment` under the equal-principal repayment model | **no / no** |
+| 8 | `20261001100200_phase_budget_used_contract_status` | PR #48: completed and terminated contracts count against the phase budget | **no / no** |
+| 9 | `20261001100300_seed_izvodaci_document_category` | PR #48: seeds a document category if missing | **no / no** |
+| 10 | `20261005100000_activity_log_exclude_prefix` | Activity Log can hide help-usage events | yes / yes |
+| 11 | `20261005110000_company_statistics_incoming_investment_expense` | ULAZNI (INV) from income to expense | yes / yes |
+| 12 | `20261005120000_company_statistics_operating_only` | Income and expense are operating types only; two financing columns | yes / yes |
+| 13 | `20261006100000_company_statistics_final` | The view's final definition: migration 12's lists and columns **with** migration 6's `security_invoker` | **no / no** |
+
+Right now production and LandmarkDev have the view from migration 12 **without** `security_invoker`
+— as it was before any of this, so no new exposure, but the RLS fix from PR #48 is not in effect
+until 13 is applied.
 
 ## 3. Which migrations depend on which frontend
 
 | Migration | Old frontend + new database | New frontend + old database |
 |---|---|---|
-| 1 security hardening | **Chat attachments break**: the old client shows public URLs of a bucket that is now private | Works, but the gaps stay open |
-| 2 auth trigger | Fine | Fine |
-| 3 sales | Fine | **"Complete sale" fails**: the client calls an RPC that does not exist |
-| 4 cashflow | Fine | **Balance reset on the Companies screen fails** (missing RPC) |
-| 5 funding | Fine | TIC saves keep failing for Accounting and Investment, as today |
-| 6 activity log | Fine | Fine: the page falls back to the old call and hides the checkbox |
-| 7, 8 company statistics | Companies cards change (section 4) | Fine: the cards keep the old classification |
+| `20260930100000` security hardening | **Chat attachments break**: the old client shows public URLs of a bucket that is now private | Works, but the gaps stay open |
+| `20260930100100` auth trigger | Fine | Fine |
+| `20260930100200` sales | Fine | **"Complete sale" fails**: the client calls an RPC that does not exist |
+| `20260930100300` cashflow | Fine | **Balance reset on the Companies screen fails** (missing RPC) |
+| `20260930100400` funding | Fine | TIC saves keep failing for Accounting and Investment, as today |
+| `20261005100000` activity log | Fine | Fine: the page falls back to the old call and hides the checkbox |
+| `20261005110000`, `…120000`, `20261006100000` company statistics | Companies cards change (section 4) | Fine: the cards keep the old classification |
 
-This table is why the release is one step: the new frontend needs migrations 3 and 4, and
-migration 1 needs the new frontend. It is here for diagnosis if something goes wrong halfway, not
+This table is why the release is one step: the new frontend needs the sales and cashflow
+migrations, and the security migration needs the new frontend. The four PR #48 migrations are
+needed by PR #48's own code (repayment model, contract status), which is on `development`. It is here for diagnosis if something goes wrong halfway, not
 as permission to split the release.
 
 ## 4. Figures that will move for real data
@@ -102,7 +127,7 @@ Per-project expenses do not change: none of the 40 credit-fee invoices is tied t
 Same change, same amount: portfolio expenses +€167.150,61, profit lower by that much. Per-project
 costs and margins do not change.
 
-### Companies screen — with migration 8
+### Companies screen — with migrations 11 and 12 (already applied to production)
 
 **"Promet" and "Dobit/Gubitak" now mean operations only.** Until now the cards counted every
 bank-type invoice as an expense — including credit *drawdowns*, which are money received, and
@@ -139,7 +164,7 @@ What to tell users: the loss shown on these cards shrinks by €4.622.708,80 bec
 (€4.522.708,80) and one repayment of principal (€100.000,00) were being counted as costs. Nothing
 was paid or received; credit principal is now on its own line.
 
-### Bank balances — after migration 4, gradually
+### Bank balances — after migration 4 (already applied to production), gradually
 
 The new formula adds credits flagged "disbursed to account". The migration does not recalculate
 every account; a balance changes the next time something is posted to that account. After

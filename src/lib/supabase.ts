@@ -100,6 +100,8 @@ export type Subcontractor = {
   contract_id?: string
   subcontractor_id?: string
   has_contract?: boolean
+  /** `contracts.status` of the contract row: draft, active, completed or terminated. */
+  contract_status?: string | null
   invoice_total_paid?: number
   invoice_total_owed?: number
   contract_type_id?: number | null

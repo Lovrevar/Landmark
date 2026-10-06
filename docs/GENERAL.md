@@ -69,7 +69,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - **Returns:** editingMilestone, setEditingMilestone, handleAddMilestone, handleUpdateMilestone, handleDeleteMilestone, confirmDeleteMilestone, cancelDeleteMilestone, pendingDeleteMilestoneId, deletingMilestone, handleToggleMilestone, handleBulkAddMilestones
 
 ### usePhaseCollapseState.ts
-- `usePhaseCollapseState(projectId, phases, namespace?)` — per-project expand/collapse state for phase-grouped sections, persisted to `localStorage` under `cognilion.<namespace>.<projectId>`. For phases the user has never toggled it derives a smart default (overdue → expanded; fully completed or not-yet-started → collapsed; in-progress mix → expanded). The `namespace` lets multiple groupings on the same project keep independent state (e.g. milestones use the default, `PhasesContractsTab` passes `'phase_contracts_collapse'`)
+- `usePhaseCollapseState(projectId, phases, namespace?)` — per-project expand/collapse state for phase-grouped sections, persisted to `localStorage` under `cognilion.<namespace>.<projectId>`. For phases the user has never toggled it derives a smart default (overdue → expanded; fully completed or not-yet-started → collapsed; in-progress mix → expanded). The `namespace` lets multiple groupings on the same project keep independent state (e.g. milestones use the default, `PhasesContractsTab` passes `'phase_contracts_collapse_v2'`)
 - **Returns (`PhaseCollapseController`):** isExpanded, toggle, expandAll, collapseAll, allExpanded
 - **Depends on:** `PhaseStatus` (utils.ts), localStorage
 
@@ -116,7 +116,7 @@ exactly what kept regressing.
 #### Data
 
 ### data/milestoneTemplates.ts
-- Source-controlled construction milestone templates (no DB table yet). `RESIDENTIAL_HR_TEMPLATE` is the residential build with 4 ordered phases (`kupnja_zemljišta`, `ishođenje_dozvola`, `gradnja`, `uporabna_etažiranje`); each phase carries i18n `labelKey`, a literal Croatian `phaseLabel`, and items with a `name` and an `offsetDays` (days from project/template start used for auto-dating). Phase labels and item names are Croatian domain terms kept as literal strings
+- Source-controlled construction milestone templates (no DB table yet). `RESIDENTIAL_HR_TEMPLATE` is the residential build with 4 ordered phases (ids are ASCII: `kupnja_zemljista`, `ishodjenje_dozvola`, `gradnja`, `uporabna_etaziranje`); each phase carries i18n `labelKey`, a literal Croatian `phaseLabel`, and items with a `name` and an `offsetDays` (days from project/template start used for auto-dating). Phase labels and item names are Croatian domain terms kept as literal strings
 - **Exports:** `RESIDENTIAL_HR_TEMPLATE`, `MILESTONE_TEMPLATES`, types `ConstructionPhaseId`, `MilestoneTemplate`, `MilestoneTemplatePhase`, `MilestoneTemplateItem`
 
 #### Forms
@@ -161,7 +161,7 @@ exactly what kept regressing.
 - Header stat cards (budget/spent, timeline, completion %, contract count); Milestones tab combines an inline add form, the "Use template" action (MilestoneTemplateModal), an expand/collapse-all toggle, and a phase-grouped MilestoneTimeline
 - Milestone edit reuses the inline form: the timeline's Edit action fills it, switches the heading/submit to "Uredi prekretnicu"/Save, and scrolls to and focuses the name field. Cancel (or the header's Add button) returns it to add mode. Saving keeps the milestone's `phase` and reads `completed` from the live list, so a toggle made while the form was open is not reverted. Delete goes through a `ConfirmDialog` (`general_projects.milestone_delete_confirm`)
 - The full-page spinner shows only until this project has loaded (`loading && project?.id !== id`): milestone mutations reload the data, and a spinner then would unmount the form and the delete dialog
-- Computes `phaseStatuses` from milestones (`computePhaseStatuses(buildPhaseBuckets(...))`) and drives both the milestone grouping and `PhasesContractsTab` collapse via `usePhaseCollapseState`
+- Computes `phaseStatuses` from milestones (`computePhaseStatuses(buildPhaseBuckets(...))`) and drives the milestone grouping's collapse via `usePhaseCollapseState`; `PhasesContractsTab` keeps its own collapse state (keyed by phase id)
 - **Uses hooks:** useMilestoneManagement, usePhaseCollapseState
 - **Uses services:** projectDetailsService (fetchProjectDataEnhanced)
 - **Uses components:** ProjectCategoryBadge, MilestoneTimeline, ProjectFormModal, MilestoneTemplateModal, PhasesContractsTab, SubcontractorsTab
@@ -171,8 +171,8 @@ exactly what kept regressing.
 #### Tabs
 
 ### tabs/PhasesContractsTab.tsx
-- Phases & contracts view: collapsible per-phase cards (header shows contract count, summed contract value, and a budget-used progress bar from `budget_used / budget_allocated`); expanded phases list their contracts (subcontractor, job description, contract amount, realized) in a dense table. Buckets contracts by `contract.phase.phase_name`; expand/collapse persists via `usePhaseCollapseState` (namespace `'phase_contracts_collapse'`)
-- **Props:** phases, contracts, projectId
+- Phases & contracts view: collapsible per-phase cards (header shows contract count, summed contract value, and a progress bar of paid / `phase.budget_allocated`, where paid is the sum of the phase's contracts' `budget_realized`; when the project has no TIC plan or the phase has no allocation, the bar is replaced by the paid figure and "budget not set"). Contracts are bucketed by `phase_id` (not `phase_name`, which is not unique), then grouped by cost classification inside the phase (classification `sort_order`, unclassified last), each group with its contracted and paid subtotals and a dense table (subcontractor, job description, contract amount, paid). A single-phase project renders no phase level; contracts whose `phase_id` is null are listed in a separate block. Expand/collapse persists via `usePhaseCollapseState` (namespace `'phase_contracts_collapse_v2'`)
+- **Props:** phases, contracts, projectId, ticTotal
 - **Uses hooks:** usePhaseCollapseState
 - **Uses Ui:** EmptyState, Table
 
@@ -185,6 +185,8 @@ exactly what kept regressing.
 
 ### index.tsx (ProjectsManagement)
 - Project list with search by name/location, a status filter and a project-category filter (Interno / Retail / Stambeno), grid layout, and new project modal
+- A failed load shows an error `Alert` with a retry instead of the "no projects" empty state
+- The project detail's "Aktivni ugovori" figure counts draft and active contracts only (`isClosedContract`), and its financing tab labels credit types through `formatCreditType`
 - **Uses hooks:** (direct fetch via projectService)
 - **Uses services:** projectService
 - **Uses components:** ProjectCard, ProjectFormModal
@@ -200,7 +202,7 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 
 ### services/budgetControlService.ts
 - `fetchProjectsList()` — fetches all projects (ordered by name) for the selector
-- `fetchProjectBudgetData(projectId)` — parallel-ish fetch of the project row, `project_phases`, draft/active/completed `contracts` (with subcontractor + phase joins), and the contracts' `subcontractor_milestones` (`contract_id`, `percentage`, `status`); returns `ProjectBudgetData` (`{ project, phases, contracts, milestones }`)
+- `fetchProjectBudgetData(projectId)` — parallel-ish fetch of the project row, `project_phases`, every `contracts` row (terminated ones mapped to their paid amount via `committedAmount`) (with subcontractor + phase joins), and the contracts' `subcontractor_milestones` (`contract_id`, `percentage`, `status`); returns `ProjectBudgetData` (`{ project, phases, contracts, milestones }`)
 - **Exports types:** `ProjectBudgetData`; reuses `MilestoneProgress` from `src/utils/evm.ts`
 - **Depends on:** supabase client
 

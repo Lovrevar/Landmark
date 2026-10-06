@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Bell, Briefcase, Check, Info, Lock, MapPin, Plus, Repeat, Users, X } from 'lucide-react'
+import { Briefcase, Check, Info, Lock, MapPin, Plus, Repeat, Users } from 'lucide-react'
 import Modal from '../ui/Modal'
 import ToggleSwitch from '../ui/ToggleSwitch'
 import SearchableSelect, { type SearchableOption } from '../ui/SearchableSelect'
@@ -42,16 +42,6 @@ interface Props {
   defaultEndTime?: string
 }
 
-const REMINDER_PRESETS: number[] = [0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080]
-
-function formatReminderOffset(minutes: number, t: (k: string, v?: Record<string, unknown>) => string): string {
-  if (minutes === 0) return t('calendar.modal.reminder.at_time')
-  if (minutes < 60) return t('calendar.modal.reminder.minutes', { count: minutes })
-  if (minutes < 1440) return t('calendar.modal.reminder.hours', { count: minutes / 60 })
-  if (minutes < 10080) return t('calendar.modal.reminder.days', { count: minutes / 1440 })
-  return t('calendar.modal.reminder.weeks', { count: minutes / 10080 })
-}
-
 function formatYmd(date: Date): string {
   const pad = (n: number) => n.toString().padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -88,7 +78,6 @@ const NewEventModal: React.FC<Props> = ({
   const [participants, setParticipants] = useState<string[]>([])
   const [busy, setBusy] = useState(true)
   const [projectId, setProjectId] = useState<string | null>(null)
-  const [reminderOffsets, setReminderOffsets] = useState<number[]>([])
   const [recurrence, setRecurrence] = useState<RecurrenceState>(DEFAULT_RECURRENCE)
   const [users, setUsers] = useState<CalendarUser[]>([])
   const [projects, setProjects] = useState<ProjectOption[]>([])
@@ -147,7 +136,6 @@ const NewEventModal: React.FC<Props> = ({
       )
       setBusy(event.busy)
       setProjectId(event.project_id)
-      setReminderOffsets([...(event.reminder_offsets || [])].sort((a, b) => a - b))
       setRecurrence({ ...DEFAULT_RECURRENCE, endDate: startDate })
       setError(null)
       return
@@ -165,7 +153,6 @@ const NewEventModal: React.FC<Props> = ({
     setParticipants([])
     setBusy(true)
     setProjectId(null)
-    setReminderOffsets([])
     setRecurrence({ ...DEFAULT_RECURRENCE, endDate: nextDate })
     setError(null)
     // Reset only when the modal opens or is pointed at another event. While it is open, a
@@ -191,16 +178,6 @@ const NewEventModal: React.FC<Props> = ({
     () => (event?.recurrence ? describeRecurrence(event.recurrence, t, dateLocale) : ''),
     [event?.recurrence, t, dateLocale],
   )
-
-  const addReminder = (minutes: number) => {
-    if (reminderOffsets.includes(minutes)) return
-    setReminderOffsets(prev => [...prev, minutes].sort((a, b) => a - b))
-  }
-  const removeReminder = (minutes: number) => {
-    setReminderOffsets(prev => prev.filter(x => x !== minutes))
-  }
-
-  const availableReminderPresets = REMINDER_PRESETS.filter(m => !reminderOffsets.includes(m))
 
   const projectOptions = useMemo(() => {
     const options: SearchableOption[] = projects.map(p => ({ value: p.id, label: p.name }))
@@ -256,7 +233,9 @@ const NewEventModal: React.FC<Props> = ({
         participant_ids: isPrivate ? [] : participants,
         project_id: projectId,
         recurrence: rruleString,
-        reminder_offsets: reminderOffsets,
+        // The reminder field was removed (DEFECT_BACKLOG COLLAB-1): nothing delivers reminders.
+        // An edit passes the stored offsets back unchanged so it never rewrites them.
+        reminder_offsets: event?.reminder_offsets ?? [],
         busy,
       }
       if (isEdit) await onSave?.(input)
@@ -515,50 +494,6 @@ const NewEventModal: React.FC<Props> = ({
             )}
             </>
           )}
-        </div>
-
-        <div>
-          <label className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            <Bell className="w-4 h-4" /> {t('calendar.modal.reminders.label')}
-          </label>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {reminderOffsets.map(m => (
-              <span
-                key={m}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200"
-              >
-                {formatReminderOffset(m, t)}
-                <button
-                  type="button"
-                  onClick={() => removeReminder(m)}
-                  className="text-blue-700/70 hover:text-blue-900 dark:text-blue-200/70 dark:hover:text-blue-100"
-                  aria-label={t('calendar.modal.reminders.remove')}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-            {availableReminderPresets.length > 0 && (
-              <select
-                value=""
-                onChange={e => {
-                  const v = parseInt(e.target.value, 10)
-                  if (!Number.isNaN(v)) addReminder(v)
-                }}
-                className="px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
-              >
-                <option value="">{t('calendar.modal.reminders.add')}</option>
-                {availableReminderPresets.map(m => (
-                  <option key={m} value={m}>{formatReminderOffset(m, t)}</option>
-                ))}
-              </select>
-            )}
-            {reminderOffsets.length === 0 && availableReminderPresets.length === 0 && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {t('calendar.modal.reminders.none')}
-              </span>
-            )}
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

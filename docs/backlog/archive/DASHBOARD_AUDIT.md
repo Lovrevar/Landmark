@@ -1,5 +1,7 @@
 # Dashboard Data-Integrity Audit
 
+> **Archived 2026-10-05 — do not update.** This is the record of what was found and how it was fixed. Everything still open was carried over to [../retail.md](../retail.md) (DASH-505, now RETAIL-1) and [../projects-dashboards-reports.md](../projects-dashboards-reports.md) (DASH-605, now GEN-15). Everything else here was fixed in June 2026.
+
 A persistent, in-repo record of misleading-data, calculation, and correctness findings across all six dashboards (`src/components/dashboards/`). Each entry gives a future maintainer enough context to pick the work up cold: what's wrong, why it misleads, and the fix. Filed **2026-06-16** from a full-stack audit (service → types → component → sections), cross-checked against `supabase/migrations/00000000000000_baseline_schema.sql`.
 
 **Status (2026-06-16): the findings below have been FIXED** in a follow-up pass (typecheck/lint/tests/build all green). Cross-cutting infra added: `src/utils/dateOnly.ts` (date-only parsing/bucketing helpers — `parseLocalDate`, `monthKey`, `daysFromToday`, `isValidDate`), an `error` field on `useCachedData`, and a shared `src/components/dashboards/DashboardError.tsx` wired into all six dashboards. Entries are kept for historical context and to document the rationale. A few **Low** items were intentionally deferred (noted inline): Sales hardcoded monthly target (DASH-303, needs a config source), Retail per-customer denominator nuance (DASH-505), Supervision `999` deadline sentinel (DASH-605).
@@ -13,7 +15,7 @@ A persistent, in-repo record of misleading-data, calculation, and correctness fi
 These were confirmed with the product owner and govern the fixes below:
 
 1. **Sales scope** — the Sales dashboard MUST include all three unit types (`apartments` + `garages` + `repositories`), matching the Sales module's own aggregation. Apartment-only is not acceptable. (DASH-301, DASH-302)
-2. **Accounting financing flow** — ~~`INCOMING_INVESTMENT` (investor capital + bank drawdowns) is **incoming cash**, consistent with `src/components/Cashflow/Calendar/hooks/useCalendar.ts`.~~ (DASH-201) **Superseded 2026-10-05 (CASH-7):** the type is always money out. The claim of consistency was also wrong — the calendar has always subtracted it. Bank drawdowns are `OUTGOING_BANK`.
+2. **Accounting financing flow** — `INCOMING_INVESTMENT` (investor capital + bank drawdowns) is **incoming cash**, consistent with `src/components/Cashflow/Calendar/hooks/useCalendar.ts`. (DASH-201) — **Superseded 2026-10-01:** it is money out, matching the bank-balance trigger, the payments list and the ERP importer (DEFECT_BACKLOG CASH-7).
 3. **Retail revenue** — "Revenue" is **net of VAT** (`base_amount`), not VAT-inclusive `total_amount`. (DASH-505)
 
 ---

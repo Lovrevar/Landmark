@@ -29,6 +29,11 @@ export interface CreditAllocation {
   used_amount: number
   description: string | null
   project?: Project
+  allocation_type?: 'project' | 'opex' | 'refinancing'
+  refinancing_entity_type?: 'company' | 'bank' | null
+  refinancing_entity_id?: string | null
+  /** Filled by the Investment dashboard service from its company and bank lists. */
+  refinancing_name?: string | null
 }
 
 export interface BankCredit {
