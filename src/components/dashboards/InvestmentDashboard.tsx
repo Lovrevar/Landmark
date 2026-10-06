@@ -19,6 +19,7 @@ import * as investmentService from './services/investmentDashboardService'
 import DashboardError from './DashboardError'
 import InvestmentSummaryCards from './sections/InvestmentSummaryCards'
 import InvestmentCreditsTable from './sections/InvestmentCreditsTable'
+import { formatCreditType } from '../Funding/Investors/utils/creditCalculations'
 
 const defaultFinancialSummary: FinancialSummary = {
   total_portfolio_value: 0, total_debt: 0, total_equity: 0,
@@ -58,7 +59,8 @@ const InvestmentDashboard: React.FC = () => {
     if (activity.type === 'credit') {
       const params = {
         ...activity.params,
-        company: activity.params.company || t('dashboards.investment.unknown_company')
+        company: activity.params.company || t('dashboards.investment.unknown_company'),
+        creditType: formatCreditType(t, String(activity.params.creditType ?? ''))
       }
       return activity.params.project
         ? t('dashboards.investment.activity.credit.description_with_project', params)

@@ -95,6 +95,8 @@ const SiteManagement: React.FC = () => {
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null)
   const [showSubcontractorForm, setShowSubcontractorForm] = useState(false)
   const [selectedPhase, setSelectedPhase] = useState<ProjectPhase | null>(null)
+  // The classification row whose "+" opened the form, preselected in it (SUP-5).
+  const [selectedClassificationId, setSelectedClassificationId] = useState<number | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingSubcontractor, setEditingSubcontractor] = useState<Subcontractor | null>(null)
   const [selectedSubcontractorForPayment, setSelectedSubcontractorForPayment] = useState<Subcontractor | null>(null)
@@ -384,8 +386,9 @@ const SiteManagement: React.FC = () => {
           }}
           onEditPhase={openEditPhaseModal}
           onDeletePhase={userCanDelete ? handleDeletePhase : undefined}
-          onAddSubcontractor={(phase) => {
+          onAddSubcontractor={(phase, classificationId) => {
             setSelectedPhase(phase)
+            setSelectedClassificationId(classificationId ?? null)
             setShowSubcontractorForm(true)
           }}
           onOpenPaymentHistory={userCanManagePayments ? openPaymentHistory : undefined}
@@ -466,8 +469,10 @@ const SiteManagement: React.FC = () => {
           onClose={() => {
             setShowSubcontractorForm(false)
             setSelectedPhase(null)
+            setSelectedClassificationId(null)
           }}
           phase={selectedPhase}
+          classificationId={selectedClassificationId}
           existingSubcontractors={existingSubcontractors}
           onSubmit={handleAddSubcontractor}
           projectId={selectedProject?.id || ''}

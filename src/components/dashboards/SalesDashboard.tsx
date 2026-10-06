@@ -246,9 +246,9 @@ const SalesDashboard: React.FC = () => {
             {recentSales.slice(0, 5).map((sale) => (
               <div key={sale.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{sale.customer_name}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{sale.customer_name || t('common.unknown')}</p>
                   <p className="text-xs text-gray-600 dark:text-gray-400">
-                    {sale.project_name} - {t('dashboards.sales.unit')} {sale.apartment_number}
+                    {sale.project_name || t('common.unknown')} - {t('dashboards.sales.unit')} {sale.apartment_number || '—'}
                   </p>
                 </div>
                 <div className="text-right ml-4">

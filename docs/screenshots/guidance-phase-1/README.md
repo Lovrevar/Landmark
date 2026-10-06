@@ -67,6 +67,9 @@ inside a modal closes only the hint.
 
 ### Still open — not caused by this branch as far as the code shows
 
+Now tracked in `docs/backlog/`: finding 8 is FUND-16, 9 is CASH-21, 10 is GEN-18, 11 is GEN-19,
+12 is CASH-22 and 13 is CASH-23. The blank Sales project page noted below is SALES-15.
+
 8. **TIC page scrolls sideways.** At 390px the whole page is 973px wide (1262px with phase columns);
    at 1440px it overflows once two phase columns are added (1530px). The table should scroll inside
    its card (`tic-table-mobile`, `tic-row-mismatch-desktop`).
@@ -78,7 +81,7 @@ inside a modal closes only the hint.
 11. **Hardcoded company name.** "LANDMARK GROUP" in the General report header and PDF footer, and
     "…svih firmi pod Landmarkom" under Moje firme, appear on the demo instance too.
 12. **Ragged decimals on the Companies cards** ("€2.715.147,7", "€3.172.708,8"). The new financing
-    line follows the card's existing formatting; the money-formatting sweep in `UI_AUDIT.md` §4.1
+    line follows the card's existing formatting; the money-formatting sweep (UI-1 in `docs/backlog/ui.md`)
     has not reached this screen.
 13. **Calendar "Razlika od budžeta"** shows €1.691.590 "(Preko budžeta - loše)" as a positive
     amount.

@@ -1,9 +1,9 @@
 // AI chat tool catalog.
 //
-// This file defines the 12 tools the assistant can invoke and the role-based
-// filter that selects which tools each user is allowed to use. Each handler
-// is currently a stub that echoes its input back; real handlers move to
-// ./tool-handlers.ts in Phase 3.2.
+// This file defines the 15 tools the assistant can invoke and the role-based
+// filter that selects which tools each user is allowed to use. The handlers
+// themselves live in ./tool-handlers.ts (search_help in ./help-search.ts);
+// each entry here only wires its schema and role gate to its handler.
 //
 // Descriptions are model-facing English: they are the only signal the model
 // uses to choose tools, so they must be specific (what / when / non-obvious
@@ -69,8 +69,7 @@ const FINANCE_PLUS_SUPERVISION: Role[] = ['Director', 'Accounting', 'Supervision
 // ---------------------------------------------------------------------------
 // TOOLS
 // ---------------------------------------------------------------------------
-// Order matches the role-gating table in the spec. Phase 3.2 batches will
-// replace each stub handler with real logic.
+// Order matches the role-gating table in the spec.
 
 export const TOOLS: ToolDefinition[] = [
   {

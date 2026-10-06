@@ -696,7 +696,7 @@ export async function generateGeneralReportPDF(
     yPosition += 8
 
     const contractData = report.contract_types.map((ct, idx) => ({
-      label: ct.name.substring(0, 12),
+      label: (ct.name || t('common.uncategorized')).substring(0, 12),
       value: ct.count,
       color: ['#2563eb', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][idx % 6]
     }))

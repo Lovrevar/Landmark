@@ -139,8 +139,8 @@ Two things to know before adding a figure here:
 - **Depends on:** jsPDF, pdfCharts.ts, pdfText.ts, pdfFont.ts, formatters.ts, statusDisplay.ts
 
 ### pdf/salesReportPdf.ts
-- `generateSalesReportPDF(reportType, projectReport, customerReport, dateRange)` — generates a project sales PDF (overview, units, revenue, monthly trend, apartment details) or customer report PDF (distribution, insights)
-- **Depends on:** jsPDF, pdfCharts.ts
+- `generateSalesReportPDF(reportType, projectReport, customerReport, dateRange)` — generates a project sales PDF (overview, units, revenue, monthly trend, apartment details) or customer report PDF (distribution, insights). It draws no charts — the monthly trend is a table — and does **not** use `pdfCharts.ts` (only `generalReportPdf` does)
+- **Depends on:** jsPDF, pdfFont.ts, pdfText.ts, formatters.ts, statusDisplay.ts, exportLanguage.ts, yieldToUI
 
 ### pdf/retailReportPdf.ts
 - `generateRetailReportPdf(data, t?)` — generates a retail portfolio PDF with project table, customer breakdown, and supplier-by-type analysis. `t` defaults to `exportT()`, so the caller needs no change
@@ -166,9 +166,10 @@ Two things to know before adding a figure here:
 > then unroutes and retries and asserts the report renders.
 
 ### GeneralReports.tsx
-- Full executive dashboard: 9 KPI summary cards, sales performance, funding structure, construction status, accounting overview, TIC costs, company investments, buildings summary, retail portfolio, contract distribution, cash flow analysis, per-project breakdown with project-category and risk badges, risk assessment, and PDF export
+- Full executive dashboard: 9 KPI summary cards, sales performance, funding structure, construction status, accounting overview, company investments, buildings summary, retail portfolio, contract distribution, cash flow analysis, per-project breakdown with project-category and risk badges, risk assessment, and PDF export
 - **Uses hooks:** useGeneralReportData
 - **Uses services:** generalReportPdf (for PDF export)
+- The TIC cost-management block (`report.tic_cost_management`: planned investment, projects with / without a plan) exists **only in the PDF** (`generalReportPdf`); this screen does not render it, and there is no Excel export of the executive report
 - **Uses Ui:** Card, StatGrid, Button, ErrorState, EmptyState, useToast
 - The blue gradient header is hoisted above the loading/error branches so it survives a failed
   load; the "generated at" line and the PDF export button render only with a report behind them,

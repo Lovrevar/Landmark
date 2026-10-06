@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   getPaymentFrequency,
-  calculateAnnuityPayment,
+  calculateMonthlyDebtService,
+  wholeMonthsBetween,
   calculateEquityCashflow,
   calculateMoneyMultiple,
   parseCreditTypeAndSeniority,
@@ -27,69 +28,38 @@ describe('getPaymentFrequency', () => {
   })
 })
 
-describe('calculateAnnuityPayment', () => {
+describe('calculateMonthlyDebtService', () => {
   const baseParams = {
     amount: 120_000,
-    interest_rate: 0,
+    interest_rate: 6,
     grace_period: 0,
     start_date: '2026-01-01',
-    maturity_date: '2036-01-01', // 10 years
-    repayment_type: 'monthly' as const,
+    maturity_date: '2036-01-01' as string | null, // 10 years
+    principal_repayment_type: 'monthly',
+    interest_repayment_type: 'monthly',
   }
 
-  // Note: maturityYears = (ms_diff) / (365.25 days * ms_per_day).
-  // For 2026-01-01 → 2036-01-01 (3652 actual days, includes 2 leap years),
-  // this yields ~9.9986 years — slightly under 10. All payment values below
-  // are anchored to the code's actual output, not the textbook ideal.
-
-  it('zero interest, monthly: payment ≈ principal / (years * 12)', () => {
-    const payment = calculateAnnuityPayment(baseParams)
-    // 120_000 / (9.9986 * 12) ≈ 1000.14
-    expect(payment).toBeGreaterThan(999.5)
-    expect(payment).toBeLessThan(1001)
+  it('is principal per month plus a month of interest on the full amount', () => {
+    // 120 monthly principal payments of 1000, plus 120000 × 6% / 12 = 600 of interest.
+    expect(calculateMonthlyDebtService(baseParams)).toBeCloseTo(1600, 6)
   })
 
-  it('zero interest, yearly: payment ≈ principal / years', () => {
-    const payment = calculateAnnuityPayment({ ...baseParams, repayment_type: 'yearly' })
-    expect(payment).toBeGreaterThan(11_995)
-    expect(payment).toBeLessThan(12_010)
+  it('spreads a yearly principal instalment over its twelve months', () => {
+    // 10 yearly payments of 12000 → 1000 a month, plus 600 of interest.
+    expect(calculateMonthlyDebtService({ ...baseParams, principal_repayment_type: 'yearly' })).toBeCloseTo(1600, 6)
   })
 
-  it('5% interest, monthly: matches standard amortization formula (~1060.77)', () => {
-    const payment = calculateAnnuityPayment({
-      ...baseParams,
-      amount: 100_000,
-      interest_rate: 5,
-    })
-    expect(payment).toBeCloseTo(1060.77, 1)
+  it('is just the principal at 0% interest', () => {
+    expect(calculateMonthlyDebtService({ ...baseParams, interest_rate: 0 })).toBeCloseTo(1000, 6)
   })
 
-  it('5% interest, yearly: matches yearly amortization formula (~12951.83)', () => {
-    const payment = calculateAnnuityPayment({
-      ...baseParams,
-      amount: 100_000,
-      interest_rate: 5,
-      repayment_type: 'yearly',
-    })
-    expect(payment).toBeCloseTo(12_951.83, 1)
+  it('rises with a grace period: the same principal over fewer months', () => {
+    // 12 months of grace → 108 principal payments of 1111.11.
+    expect(calculateMonthlyDebtService({ ...baseParams, grace_period: 12 })).toBeCloseTo(120_000 / 108 + 600, 6)
   })
 
-  it('grace period extends amortization base — higher payment than without grace', () => {
-    const withoutGrace = calculateAnnuityPayment({ ...baseParams, amount: 100_000, interest_rate: 5 })
-    const withGrace    = calculateAnnuityPayment({ ...baseParams, amount: 100_000, interest_rate: 5, grace_period: 12 })
-    // With 12-month grace, payments are spread over 9 years → each payment is higher.
-    expect(withGrace).toBeGreaterThan(withoutGrace)
-  })
-
-  it('defaults to 10-year maturity when maturity_date is null', () => {
-    // getMaturityYears returns exactly 10 in the null-default branch, so this is the
-    // one clean case where the textbook division holds exactly.
-    const payment = calculateAnnuityPayment({
-      ...baseParams,
-      amount: 120_000,
-      maturity_date: null,
-    })
-    expect(payment).toBeCloseTo(120_000 / (10 * 12), 1)
+  it('is 0 without a maturity date — there is no schedule to derive it from', () => {
+    expect(calculateMonthlyDebtService({ ...baseParams, maturity_date: null })).toBe(0)
   })
 })
 
@@ -288,6 +258,14 @@ describe('getCreditTypeLabelKey', () => {
   })
 })
 
+describe('wholeMonthsBetween', () => {
+  it('counts a month once its day is reached', () => {
+    expect(wholeMonthsBetween(new Date(2026, 0, 1), new Date(2036, 0, 1))).toBe(120)
+    expect(wholeMonthsBetween(new Date(2026, 0, 15), new Date(2026, 3, 14))).toBe(2)
+    expect(wholeMonthsBetween(new Date(2026, 0, 15), new Date(2026, 3, 15))).toBe(3)
+  })
+})
+
 describe('calculatePaymentSchedule', () => {
   const baseParams = {
     start_date: '2026-01-01',
@@ -309,37 +287,48 @@ describe('calculatePaymentSchedule', () => {
     expect(calculatePaymentSchedule({ ...baseParams, grace_period: 12 * 11 })).toBeNull()
   })
 
-  // Quirk worth knowing: a clean 10-year loan computes as 119 monthly principal
-  // payments (not 120) because Math.floor(9.9986 * 12) = 119. Per-payment principal
-  // is therefore 120_000 / 119 ≈ 1008.40, not the intuitive 1000. If the business
-  // expects 120 payments, this is a real off-by-one in the code.
-  it('computes monthly principal: 120k / floor(9.9986 * 12) ≈ 1008.40', () => {
-    const result = calculatePaymentSchedule(baseParams)
-    expect(result).not.toBeNull()
-    expect(result!.totalPrincipalPayments).toBe(119)
-    expect(result!.principalPerPayment).toBeCloseTo(120_000 / 119, 1)
+  it('a clean 10-year loan has 120 monthly principal payments of 1000', () => {
+    // The previous year-fraction arithmetic gave 119 (Math.floor(9.9986 × 12)).
+    const result = calculatePaymentSchedule(baseParams)!
+    expect(result.totalPrincipalPayments).toBe(120)
+    expect(result.principalPerPayment).toBeCloseTo(1000, 6)
   })
 
-  it('computes monthly interest from annual rate / 12', () => {
-    const result = calculatePaymentSchedule(baseParams)
-    // annual interest = 120000 * 0.06 = 7200; monthly = 600
-    expect(result!.interestPerPayment).toBeCloseTo(600, 1)
+  it('charges interest on the outstanding balance, so it falls to almost nothing', () => {
+    const result = calculatePaymentSchedule(baseParams)!
+    expect(result.firstInterestPayment).toBeCloseTo(600, 6)          // 120000 × 0.5%
+    expect(result.lastInterestPayment).toBeCloseTo(5, 6)             // 1000 × 0.5%
+    expect(result.interestPerPayment).toBe(result.firstInterestPayment)
+    // Σ over balances 120000, 119000, … 1000 = 0.005 × 1000 × (120·121/2) = 36300.
+    expect(result.totalInterest).toBeCloseTo(36_300, 4)
+    expect(result.totalInterestPayments).toBe(120)
   })
 
-  it('grace period shifts the paymentStartDate forward by N months', () => {
-    const result = calculatePaymentSchedule({ ...baseParams, grace_period: 6 })
-    expect(result).not.toBeNull()
-    expect(result!.paymentStartDate.getFullYear()).toBe(2026)
-    expect(result!.paymentStartDate.getMonth()).toBe(6) // July (0-indexed)
+  it('a grace period defers principal but not interest', () => {
+    const result = calculatePaymentSchedule({ ...baseParams, grace_period: 12 })!
+    expect(result.paymentStartDate.getFullYear()).toBe(2027)
+    expect(result.paymentStartDate.getMonth()).toBe(0)
+    expect(result.totalPrincipalPayments).toBe(108)
+    expect(result.totalInterestPayments).toBe(120)          // interest is paid through the grace year
+    expect(result.firstInterestPayment).toBeCloseTo(600, 6)
   })
 
-  it('different repayment frequencies produce different payment counts', () => {
-    const monthly = calculatePaymentSchedule(baseParams)
-    const yearly  = calculatePaymentSchedule({ ...baseParams, principal_repayment_type: 'yearly' })
-    expect(monthly!.totalPrincipalPayments).toBeGreaterThan(yearly!.totalPrincipalPayments)
-    // 10 years × 1 = ~10 yearly principal payments
-    expect(yearly!.totalPrincipalPayments).toBeGreaterThanOrEqual(9)
-    expect(yearly!.totalPrincipalPayments).toBeLessThanOrEqual(10)
+  it('quarterly interest collects three months of accrual', () => {
+    const result = calculatePaymentSchedule({ ...baseParams, interest_repayment_type: 'quarterly' })!
+    expect(result.totalInterestPayments).toBe(40)
+    // Months 1–3: balances 120000, 119000, 118000 → (357000) × 0.5%.
+    expect(result.firstInterestPayment).toBeCloseTo(1785, 6)
+  })
+
+  it('a term that is not a whole number of periods ends with a final payment that clears the rest', () => {
+    // 10 months, quarterly principal → payments in months 3, 6, 9 and 10.
+    const result = calculatePaymentSchedule({ ...baseParams, maturity_date: '2026-11-01', principal_repayment_type: 'quarterly' })!
+    expect(result.totalPrincipalPayments).toBe(4)
+    expect(result.principalPerPayment).toBeCloseTo(30_000, 6)
+  })
+
+  it('reports the monthly-equivalent debt service it stores', () => {
+    expect(calculatePaymentSchedule(baseParams)!.monthlyDebtService).toBeCloseTo(1600, 6)
   })
 
   it('passes the stored repayment type through, for the renderer to translate', () => {

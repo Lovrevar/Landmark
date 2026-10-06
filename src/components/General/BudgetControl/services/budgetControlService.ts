@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { committedAmount } from '../../../../utils/contractRollup'
 import { ticGrandTotal } from '../../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../../Funding/TIC/utils/ticFormatters'
 import type { Phase, ContractWithDetails, ProjectDisplay } from '../../Projects/types'
@@ -56,10 +57,14 @@ export async function fetchProjectBudgetData(projectId: string): Promise<Project
       phase:project_phases!contracts_phase_id_fkey(phase_name)
     `)
     .eq('project_id', projectId)
-    .in('status', ['draft', 'active', 'completed'])
   if (contractsError) throw contractsError
 
-  const contracts = (contractsData || []) as unknown as ContractWithDetails[]
+  // Every status counts. A terminated contract commits only what was paid on it (committedAmount),
+  // so it enters EVM and the committed total with that amount — and is then 100% complete.
+  const contracts = ((contractsData || []) as unknown as ContractWithDetails[]).map(c =>
+    c.status === 'terminated'
+      ? { ...c, contract_amount: committedAmount({ cost: Number(c.contract_amount) || 0, paid: Number(c.budget_realized) || 0, status: c.status }) }
+      : c)
   const contractIds = contracts.map(c => c.id)
 
   let milestones: MilestoneProgress[] = []

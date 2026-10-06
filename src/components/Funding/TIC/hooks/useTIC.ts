@@ -95,8 +95,8 @@ export function useTIC() {
       setProjects(data)
 
       if (data.length > 0) {
-        const funtanaProject = data.find((p) => p.name.toLowerCase().includes('funtana'))
-        setSelectedProjectId(funtanaProject?.id || data[0].id)
+        // Used to prefer any project with "funtana" in its name, a leftover hard-code (FUND-13).
+        setSelectedProjectId(data[0].id)
       }
     } catch (error) {
       console.error('Error loading projects:', error)

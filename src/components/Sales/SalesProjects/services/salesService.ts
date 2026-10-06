@@ -186,13 +186,14 @@ export const fetchActualTotalPaidByApartment = async (apartmentIds: string[]): P
   return paidMap
 }
 
-export const createBulkBuildings = async (projectId: string, quantity: number) => {
+/** `nameFor(i)` names building i (1-based) — the caller passes the localised "Zgrada {{n}}". */
+export const createBulkBuildings = async (projectId: string, quantity: number, nameFor: (i: number) => string) => {
   const buildingsToCreate = []
   for (let i = 1; i <= quantity; i++) {
     buildingsToCreate.push({
       project_id: projectId,
-      name: `Building ${i}`,
-      description: `Building ${i}`,
+      name: nameFor(i),
+      description: nameFor(i),
       total_floors: 10
     })
   }

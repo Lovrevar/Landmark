@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { committedAmount } from '../../../../utils/contractRollup'
 import { PhaseClassificationBudget } from '../types'
 import {
   totalsByClassification,
@@ -60,10 +61,9 @@ export async function fetchClassificationBudgetStatus(
       .maybeSingle(),
     supabase
       .from('contracts')
-      .select('id, contract_amount')
+      .select('id, contract_amount, budget_realized, status')
       .eq('phase_id', phaseId)
       .eq('classification_id', classificationId)
-      .in('status', ['draft', 'active'])
   ])
 
   if (budgetRow.error) throw budgetRow.error
@@ -72,12 +72,49 @@ export async function fetchClassificationBudgetStatus(
   let used = 0
   let excludedAmount = 0
   for (const c of contracts.data || []) {
-    const amount = parseFloat(String(c.contract_amount ?? 0))
+    // Every status counts; a terminated contract only with what was paid on it.
+    const amount = committedAmount({
+      cost: parseFloat(String(c.contract_amount ?? 0)),
+      paid: parseFloat(String(c.budget_realized ?? 0)),
+      status: c.status,
+    })
     if (excludeContractId && c.id === excludeContractId) excludedAmount += amount
     else used += amount
   }
 
   return { allocated: budgetRow.data?.budget_allocated ?? 0, used, excludedAmount }
+}
+
+/**
+ * The same check one level up: the phase's budget against what every contract in it commits.
+ * Used by the edit path, which (unlike add) used to skip the phase cap. `used` is summed here
+ * rather than read from `budget_used` so the edited contract can be left out of it.
+ */
+export async function fetchPhaseBudgetStatus(
+  phaseId: string,
+  excludeContractId?: string
+): Promise<{ allocated: number; used: number; excludedAmount: number }> {
+  const [phase, contracts] = await Promise.all([
+    supabase.from('project_phases').select('budget_allocated').eq('id', phaseId).maybeSingle(),
+    supabase.from('contracts').select('id, contract_amount, budget_realized, status').eq('phase_id', phaseId)
+  ])
+
+  if (phase.error) throw phase.error
+  if (contracts.error) throw contracts.error
+
+  let used = 0
+  let excludedAmount = 0
+  for (const c of contracts.data || []) {
+    const amount = committedAmount({
+      cost: parseFloat(String(c.contract_amount ?? 0)),
+      paid: parseFloat(String(c.budget_realized ?? 0)),
+      status: c.status,
+    })
+    if (excludeContractId && c.id === excludeContractId) excludedAmount += amount
+    else used += amount
+  }
+
+  return { allocated: phase.data?.budget_allocated ?? 0, used, excludedAmount }
 }
 
 /**

@@ -120,7 +120,7 @@ const SalesProjectsEnhanced: React.FC = () => {
     if (!selectedProject) return
 
     try {
-      await salesService.createBulkBuildings(selectedProject.id, quantity)
+      await salesService.createBulkBuildings(selectedProject.id, quantity, i => t('sales_projects.default_building_name', { n: i }))
       setShowBuildingQuantityForm(false)
       await refetch()
     } catch (error) {
