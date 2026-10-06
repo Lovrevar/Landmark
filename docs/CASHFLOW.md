@@ -273,15 +273,15 @@ Monthly calendar view showing scheduled invoice payments and due dates. Supports
 
 ### useCalendar.ts
 - `useCalendar()` — manages calendar navigation, date selection, daily invoice display, and budget state. The month's incoming/outgoing sums take their sides from `utils/invoiceCashDirection.ts` (every `INCOMING_*` is paid by us, every `OUTGOING_*` paid to us); the two type lists it used to keep left credit fees out of both
-
-### Calendar/utils/budgetDifference.ts
-- `budgetDifference(budgetAmount, paid)` → `{ difference, overBudget, formatted }`. `difference` is budget − paid in whole cents and keeps its sign, so the "Razlika od budžeta" row shows an overrun as a negative amount (`−€1.691.590,00`) rather than an absolute value with only a suffix to say which way it went. Covered by `budgetDifference.test.ts`
-- Every amount on the calendar (summary, invoice table, `BudgetModal` total) goes through `formatEuro`; `calendarMoney.test.ts` guards it
 - A failed invoice load clears `invoices` and sets `error`; the page then replaces the whole
   calendar (grid, stat cards and the net figure are all derived from it) with `ErrorState`, and
   shows an `Alert` when only the budgets failed
 - **Calls:** calendarService.ts
 - **Returns:** currentDate, invoices, loading, error, refetch, selectedDate, selectedInvoices, budgets, showBudgetModal, budgetYear, budgetFormData, getDaysInMonth, getInvoicesForDate, getMonthStats, handlePreviousMonth, handleNextMonth, handleDateClick, handleOpenBudgetModal, getCurrentMonthBudget
+
+### Calendar/utils/budgetDifference.ts
+- `budgetDifference(budgetAmount, paid)` → `{ difference, overBudget, formatted }`. `difference` is budget − paid in whole cents and keeps its sign, so the "Razlika od budžeta" row shows an overrun as a negative amount (`−€1.691.590,00`) rather than an absolute value with only a suffix to say which way it went. Covered by `budgetDifference.test.ts`
+- Every amount on the calendar (summary, invoice table, `BudgetModal` total) goes through `formatEuro`; `calendarMoney.test.ts` guards it
 
 #### Forms
 

@@ -8,7 +8,7 @@ const read = (file: string) => readFileSync(join(process.cwd(), 'src/components/
 // Every amount on the Companies cards and in the company details goes through `formatEuro`, which
 // always prints two decimals. They used to be `value.toLocaleString('hr-HR')` with no options,
 // which drops trailing zeros: €2.715.147,70 read "€2.715.147,7" and €190.000,00 read "€190.000",
-// side by side on the same card (CASH-18).
+// side by side on the same card (CASH-22).
 describe('money on the Companies screens', () => {
   it('formats to exactly two decimals, whatever the value', () => {
     expect(formatEuro(2715147.7)).toBe('€2.715.147,70')

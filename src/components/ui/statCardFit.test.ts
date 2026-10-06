@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 const read = (file: string) => readFileSync(join(process.cwd(), file), 'utf8')
 
-// CASH-17: on a phone, a stat card's amount ran past the edge of its card. The rule for the fix
+// CASH-21: on a phone, a stat card's amount ran past the edge of its card. The rule for the fix
 // is that a money amount may get smaller or wrap, but no digit of it may ever be hidden. These
 // checks pin the three parts of that so a later restyle cannot quietly reintroduce clipping.
 describe('StatCard value fitting', () => {

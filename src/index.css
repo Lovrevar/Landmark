@@ -100,7 +100,7 @@ input[type="number"] {
  *
  * A stat card's value sat in whatever was left beside the icon. In a two-column grid on a phone
  * that is about 90px, and an amount like "€1.287.631,05" simply ran past the card's edge
- * (DEFECT_BACKLOG CASH-17). Three things now happen, in this order, and none of them hides a
+ * (DEFECT_BACKLOG CASH-21). Three things now happen, in this order, and none of them hides a
  * digit of a money amount:
  *
  *   1. On a narrow card the value takes the full width under the label and icon.

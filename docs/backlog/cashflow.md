@@ -94,31 +94,6 @@ that changes it; do not build new authoring UI here without reading
 - `calculate_invoice_amounts()` hard-codes 25 / 13 / 0 / 5 % by slot and ignores `vat_rate_n`.
   Intended; document it in [../CASHFLOW.md](../CASHFLOW.md).
 
-### CASH-21 · Low · Companies stat cards clip their amounts on a phone
-- **Check:** Seen in the guidance visual check at 390px ([../screenshots/guidance-phase-1/README.md](../screenshots/guidance-phase-1/README.md), finding 9).
-- **Where:** the four stat cards at the top of `Cashflow/Companies/index.tsx`; the cause is in the
-  shared `ui/StatCard.tsx`, so every screen with stat cards has it.
-- **What happens:** "€1.287.631,05" runs past the edge of its card in the two-column grid.
-- **Fix direction:** written on `fix/budget-diff-and-decimals` (numbered CASH-17 there, before the
-  ids were reconciled): the value takes the full card width, shrinks with the card and wraps,
-  never truncates. Waiting for that branch to be rebased and merged.
-
-### CASH-22 · Low · Companies cards show ragged decimals
-- **Check:** Seen in the same check (finding 12).
-- **Where:** every amount in `Cashflow/Companies/index.tsx` and `CompanyDetailsModal.tsx` is
-  `€{value.toLocaleString('hr-HR')}`, including the "Financiranje (primljeno / otplaćeno)" line.
-- **What happens:** €2.715.147,70 prints as "€2.715.147,7"; whole amounts print with no decimals.
-- **Fix direction:** written on `fix/budget-diff-and-decimals` (CASH-18 there): `formatEuro`
-  throughout, with a guard test. Part of UI-1 in [ui.md](./ui.md).
-
-### CASH-23 · Low · Calendar "Razlika od budžeta" shows an overrun as a positive amount
-- **Check:** Seen in the same check (finding 13).
-- **Where:** the monthly summary in `Cashflow/Calendar/index.tsx`.
-- **What happens:** budget €450.000, paid €2.141.590, shown as "€1.691.590 (Preko budžeta -
-  loše)"; only the colour and the suffix say it is an overrun.
-- **Fix direction:** written on `fix/budget-diff-and-decimals` (CASH-19 there): the signed
-  difference, with the minus before the euro sign in the shared formatters.
-
 ## Waiting on the ERP integration
 
 These turn into ERP work or disappear in phase 5. Do not fix them in the app.
@@ -154,3 +129,18 @@ These turn into ERP work or disappear in phase 5. Do not fix them in the app.
   `company_statistics` follows in migration `20261006100000`, which supersedes `20261001100000`,
   `20261005110000` and `20261005120000`. Figures: [../ACCOUNTING_REVIEW_CASH7.md](../ACCOUNTING_REVIEW_CASH7.md).
   Earlier history is in [archive/DEFECT_BACKLOG.md](./archive/DEFECT_BACKLOG.md).
+
+### CASH-21 · Low · Companies stat cards clip their amounts on a phone
+- Fixed on `fix/budget-diff-and-decimals` in the shared `StatCard`: on a narrow card the value
+  takes the full width, shrinks with the card and wraps as a last resort, keeping "−€" together;
+  nothing is truncated (`.stat-card` in `index.css`, `statCardFit.test.ts`).
+
+### CASH-22 · Low · Companies cards show ragged decimals
+- Fixed on `fix/budget-diff-and-decimals`: every amount on the cards, the stat cards, the
+  financing line and `CompanyDetailsModal` goes through `formatEuro` (`companyMoney.test.ts`).
+
+### CASH-23 · Low · Calendar "Razlika od budžeta" shows an overrun as a positive amount
+- Fixed on `fix/budget-diff-and-decimals`: the row shows the signed difference
+  (`Calendar/utils/budgetDifference.ts`). With it, `formatEuro`, `formatEuroRounded` and
+  `formatEuroCompact` print the minus before the euro sign ("−€1.234,56") everywhere, and all the
+  calendar's amounts use `formatEuro`.
