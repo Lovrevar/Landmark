@@ -280,6 +280,7 @@ Bank and investor registry. Manages credit facilities and equity investments per
   label in a Croatian UI. An unrecognised value keeps a neutral badge and is shown as-is rather
   than hidden
 - Labels: `funding.credit_status.active | paid | defaulted`
+- The credit form offers the status on **edit** only (a new credit starts `active`); it is the only place a credit becomes repaid or defaulted
 - Kept out of `creditCalculations.ts` on purpose: that file is financial maths, this is display
   mapping. Pure and unit-tested (`creditStatus.test.ts`, 6 tests)
 - Used by `CreditFacilityCard` and, through `Investments/CreditSummary`, by both credit pages
@@ -714,3 +715,19 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 - All service mutations log via `logActivity()` (fire-and-forget)
 - **Failed loads are not empty states.** Investments, Investors and Payments expose `error` + `refetch` and render `ErrorState` (from `src/components/ui`) in the content area with the page header kept mounted; money tiles fed by a failed read are withheld rather than shown as €0. `useTIC` was left as it is: it already reports both load failures through its own on-screen message banner, and `loadClassifications` documents why it tolerates a failure (the classification column falls back to "unmapped", which is visible and recoverable). `Projects/index.tsx` moved onto `useCachedData` (ErrorState + retry, EmptyState for a real empty list) and `useLazySection` gained `error` + `retry`, so `CreditInvoiceSection` shows a compact `ErrorState` instead of caching a failure as "(0)". `AllocationRow.tsx` still fetches inline and is what is left of the deferred in-component set
 - **Deleting a credit facility or an investor detaches invoices first.** `accounting_invoices.bank_credit_id` is the only `ON DELETE RESTRICT` reference to `bank_credits`, so a bare delete fails with Postgres `23503` whenever an invoice is attached (and, for investors, aborts the `bank_credits` cascade). `creditService.detachInvoicesFromCredits()` clears the FK — the invoices are kept, only unlinked — and both delete paths call it before deleting. The confirmation dialog reports the count via `countInvoicesForCredits()`, and the hooks fall back to `isForeignKeyViolation()` from `src/lib/dbErrors.ts` for a readable toast if some other constraint blocks the delete
+
+## September 2026 fixes (DEFECT_BACKLOG FUND-1 to FUND-4)
+
+- **Investor rename** works again: the `trigger_update_bank_in_accounting_companies` trigger, which
+  updated a dropped `accounting_companies.bank_id` column and aborted every rename, is removed
+  (migration `20260930100400`).
+- **TIC writes** are limited to Director, Accounting and Investment; the insert check compares
+  `created_by` with the caller's `public.users.id` (it compared `auth.uid()`, so a first TIC could not
+  be saved). `sync_project_from_tic` runs `SECURITY DEFINER` so the derived budget writes succeed for
+  those roles; direct `EXECUTE` on it is revoked. `updateTIC` fails loudly when RLS refuses the update.
+- **New allocation limit** is the figure the modal shows: credit amount − existing allocations −
+  direct drawdowns (`useCreditManagement.handleCreateAllocation`).
+- **Credit status** is editable in the credit form (see above).
+- **Open (FUND-5):** the stored `monthly_payment` (annuity) and the schedule preview (linear
+  principal + flat interest on the full amount) still disagree; which model the company uses has to
+  be decided first.

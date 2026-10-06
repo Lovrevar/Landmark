@@ -5,9 +5,13 @@ import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, Check
 import { useSupervisionInvoices } from './hooks/useSupervisionInvoices'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel, getInvoiceCategoryLabel } from '../../Cashflow/services/invoiceHelpers'
 import { formatDate } from '../../../utils/formatters'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canApproveInvoices } from '../../../utils/permissions'
 
 const InvoicesManagement: React.FC = () => {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
+  const canApprove = canApproveInvoices(user)
   const [errorDismissed, setErrorDismissed] = React.useState(false)
   const {
     loading,
@@ -150,6 +154,7 @@ const InvoicesManagement: React.FC = () => {
                       size="icon-sm"
                       icon={invoice.approved ? CheckSquare : Square}
                       onClick={() => handleApprove(invoice.id, invoice.approved)}
+                      disabled={!canApprove}
                       title={invoice.approved ? t('supervision.invoices.tooltip_approved') : t('supervision.invoices.tooltip_approve')}
                       className={invoice.approved ? 'text-green-600 hover:text-green-800' : 'text-gray-400 dark:text-gray-500 hover:text-blue-600'}
                     />

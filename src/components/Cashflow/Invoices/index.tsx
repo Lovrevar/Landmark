@@ -2,6 +2,8 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Button, LoadingSpinner, PageHeader, ConfirmDialog, ErrorState } from '../../ui'
 import { toErrorMessage } from '../../../lib/errorMessage'
+import { useAuth } from '../../../contexts/AuthContext'
+import { isDirectorRole } from '../../../utils/permissions'
 import { RetailInvoiceFormModal } from './forms/RetailInvoiceFormModal'
 import BankInvoiceFormModal from '../Banks/forms/BankInvoiceFormModal'
 import { LandPurchaseFormModal } from './forms/LandPurchaseFormModal'
@@ -16,9 +18,6 @@ import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { InvoiceActionButtons } from './InvoiceActionButtons'
 import { InvoicePagination } from './InvoicePagination'
 import {
-  getTypeColor,
-  getTypeLabel,
-  getStatusColor,
   getSupplierCustomerName,
   getCustomerProjects,
   getCustomerApartmentsByProject,
@@ -31,6 +30,7 @@ import {
 
 const AccountingInvoices: React.FC = () => {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const {
     invoices,
     companies,
@@ -247,11 +247,9 @@ const AccountingInvoices: React.FC = () => {
           onSort={handleSort}
           onView={handleViewInvoice}
           onEdit={handleOpenModal}
-          onDelete={handleDelete}
+          // Deleting invoices is Director-only under RLS.
+          onDelete={isDirectorRole(user) ? handleDelete : undefined}
           onPayment={handleOpenPaymentModal}
-          getTypeColor={getTypeColor}
-          getTypeLabel={getTypeLabel}
-          getStatusColor={getStatusColor}
           getSupplierCustomerName={getSupplierCustomerName}
           isOverdue={isOverdue}
         />
@@ -309,9 +307,6 @@ const AccountingInvoices: React.FC = () => {
       <InvoiceDetailView
         invoice={viewingInvoice}
         onClose={handleCloseViewModal}
-        getTypeColor={getTypeColor}
-        getTypeLabel={getTypeLabel}
-        getStatusColor={getStatusColor}
         getSupplierCustomerName={getSupplierCustomerName}
         isOverdue={isOverdue}
       />

@@ -126,7 +126,10 @@ export function useCreditManagement() {
     } else {
       const alreadyAllocated = (allocations.get(selectedCredit.id) || [])
         .reduce((sum, a) => sum + a.allocated_amount, 0)
-      const available = selectedCredit.amount - alreadyAllocated
+      // The same figure the modal shows as "Nealocirano": direct drawdowns (OUTGOING_BANK
+      // invoices without an allocation) have already used part of the credit.
+      const directDrawdowns = disbursedAmounts.get(selectedCredit.id) || 0
+      const available = selectedCredit.amount - alreadyAllocated - directDrawdowns
       if (allocationForm.allocated_amount > available) {
         errors.allocated_amount = `Iznos premašuje raspoloživo (${available.toLocaleString('hr-HR')})`
       }

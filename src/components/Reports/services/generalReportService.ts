@@ -1,9 +1,10 @@
 import { supabase } from '../../../lib/supabase'
 import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
-import type { ComprehensiveReport, ProjectData, ReportRisk } from '../types'
+import { isCashIn, isCashOut, isCostInvoiceType, invoiceCashCategory, type CashCategory } from '../../../utils/invoiceCashDirection'
+import type { CashFlowAmounts, ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -125,19 +126,15 @@ export async function fetchGeneralReportData(
   const retailCustomersArray = retailCustomers || []
   const retailSuppliersArray = retailSuppliers || []
 
-  const inflowPaymentsArray = accountingPaymentsArray.filter(p => {
-    const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
-    return invoice?.invoice_type === 'OUTGOING_SALES' ||
-           invoice?.invoice_type === 'OUTGOING_OFFICE' ||
-           invoice?.invoice_type === 'OUTGOING_SUPPLIER' ||
-           invoice?.invoice_type === 'INCOMING_INVESTMENT'
-  })
-
-  const outflowPaymentsArray = accountingPaymentsArray.filter(p => {
-    const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
-    return invoice?.invoice_type === 'INCOMING_SUPPLIER' ||
-           invoice?.invoice_type === 'INCOMING_OFFICE'
-  })
+  // The cash-flow table is cash: every payment, on the side the shared direction map puts it —
+  // the same rule as the bank balance. It used to count ULAZNI (INV) as inflow, and to leave
+  // credit drawdowns, repayments and credit fees out altogether, so its net could not be
+  // reconciled with the accounts. Drawdowns and repayments of principal are now counted under
+  // "financing", apart from operations, so a drawdown does not read as a good month's trading;
+  // credit fees are an operating cost.
+  const invoiceTypeById = new Map(accountingInvoicesArray.map(inv => [inv.id, inv.invoice_type]))
+  const inflowPaymentsArray = accountingPaymentsArray.filter(p => isCashIn(invoiceTypeById.get(p.invoice_id)))
+  const outflowPaymentsArray = accountingPaymentsArray.filter(p => isCashOut(invoiceTypeById.get(p.invoice_id)))
 
   // Fetch garages and repositories for calculating total revenue
   const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
@@ -171,17 +168,23 @@ export async function fetchGeneralReportData(
     .reduce((sum, a) => sum + (a.price || 0), 0)
 
   const totalExpenses = accountingPaymentsArray
-    .filter(p => {
-      const invoice = accountingInvoicesArray.find(inv => inv.id === p.invoice_id)
-      return invoice?.invoice_type === 'INCOMING_SUPPLIER' || invoice?.invoice_type === 'INCOMING_OFFICE'
-    })
+    // Expenses are costs: every operating invoice the company pays, credit fees included (see
+    // COST_INVOICE_TYPES). Repaying principal moves cash but is not an expense.
+    .filter(p => isCostInvoiceType(invoiceTypeById.get(p.invoice_id)))
     .reduce((sum, p) => sum + (p.amount || 0), 0)
   const totalProfit = totalRevenue - totalExpenses
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
   const portfolioValue = projectsArray.reduce((sum, p) => sum + plannedBudget(p.id), 0)
-  const totalEquity = creditAllocationsArray.reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
-  const totalDebt = bankCreditsArray.reduce((sum, bc) => sum + bc.amount, 0)
+  // Same definitions as the Director dashboard: debt is what is still owed on live, non-equity
+  // credits; equity is the equity facilities. (Equity used to be the credit allocations and debt
+  // the face value of every credit, repaid and equity ones included.)
+  const liveDebtCredits = bankCreditsArray.filter(bc =>
+    bc.credit_type !== 'equity' && bc.status !== 'paid' && bc.status !== 'defaulted')
+  const totalEquity = bankCreditsArray
+    .filter(bc => bc.credit_type === 'equity')
+    .reduce((sum, bc) => sum + (bc.amount || 0), 0)
+  const totalDebt = liveDebtCredits.reduce((sum, bc) => sum + (bc.outstanding_balance || 0), 0)
   const activeFunderIds = new Set(
     creditAllocationsArray
       .map(alloc => bankCreditsArray.find(bc => bc.id === alloc.credit_id)?.bank_id)
@@ -202,21 +205,28 @@ export async function fetchGeneralReportData(
   const interested = customersArray.filter(c => c.status === 'interested').length
   const conversionRate = customersArray.length > 0 ? (buyers / customersArray.length) * 100 : 0
 
-  const avgInterestRate = bankCreditsArray.length > 0
-    ? bankCreditsArray.reduce((sum, bc) => sum + (bc.interest_rate || 0), 0) / bankCreditsArray.length
+  // Weighted by facility size, like the Director dashboard; a small credit no longer moves it as
+  // much as a large one.
+  const liveDebtAmount = liveDebtCredits.reduce((sum, bc) => sum + (bc.amount || 0), 0)
+  const avgInterestRate = liveDebtAmount > 0
+    ? liveDebtCredits.reduce((sum, bc) => sum + (bc.interest_rate || 0) * (bc.amount || 0), 0) / liveDebtAmount
     : 0
-  const monthlyDebtService = bankCreditsArray.reduce((sum, bc) => sum + (bc.monthly_payment || 0), 0)
+  const monthlyDebtService = liveDebtCredits.reduce((sum, bc) => sum + (bc.monthly_payment || 0), 0)
 
   const totalContractValue = contractsArray.reduce((sum, c) => sum + c.contract_amount, 0)
   const budgetRealized = contractsArray.reduce((sum, c) => sum + c.budget_realized, 0)
   const budgetUtilization = totalContractValue > 0 ? (budgetRealized / totalContractValue) * 100 : 0
 
   const completedPhases = projectPhasesArray.filter(p => p.status === 'completed').length
-  const sevenDaysAgo = subMonths(new Date(), 0.25)
-  const recentWorkLogs = workLogsArray.filter(w => new Date(w.date) >= sevenDaysAgo).length
+  // Today and the six days before it, in local days (subMonths(now, 0.25) was not seven days).
+  const recentWorkLogs = workLogsArray.filter(w => {
+    const days = daysFromToday(w.date)
+    return days <= 0 && days >= -6 // NaN (no date) fails both
+  }).length
 
   const totalMilestones = subcontractorMilestonesArray.length
-  const completedMilestones = subcontractorMilestonesArray.filter(m => m.status === 'completed').length
+  // 'completed' is the trigger's word for *partly* paid; a milestone is done when it is 'paid'.
+  const completedMilestones = subcontractorMilestonesArray.filter(m => m.status === 'paid').length
 
   const months = eachMonthOfInterval({
     start: new Date(dateRange.start),
@@ -226,27 +236,33 @@ export async function fetchGeneralReportData(
   const cashFlow = months.map(month => {
     const monthStart = startOfMonth(month)
     const monthEnd = endOfMonth(month)
+    const inMonth = (p: { payment_date: string }) => {
+      const date = new Date(p.payment_date)
+      return date >= monthStart && date <= monthEnd
+    }
 
-    const monthInflow = inflowPaymentsArray
-      .filter(p => {
-        const date = new Date(p.payment_date)
-        return date >= monthStart && date <= monthEnd
-      })
-      .reduce((sum, p) => sum + p.amount, 0)
+    // Each payment lands in exactly one of four cells: in or out, operating or financing.
+    const amounts = (category: CashCategory): CashFlowAmounts => {
+      const sum = (payments: typeof inflowPaymentsArray) =>
+        payments
+          .filter(p => inMonth(p) && invoiceCashCategory(invoiceTypeById.get(p.invoice_id)) === category)
+          .reduce((total, p) => total + p.amount, 0)
+      const inflow = sum(inflowPaymentsArray)
+      const outflow = sum(outflowPaymentsArray)
+      return { inflow, outflow, net: inflow - outflow }
+    }
 
-    const monthOutflow = outflowPaymentsArray
-      .filter(p => {
-        const date = new Date(p.payment_date)
-        return date >= monthStart && date <= monthEnd
-      })
-      .reduce((sum, p) => sum + p.amount, 0)
+    const operating = amounts('operating')
+    const financing = amounts('financing')
 
     return {
       // A machine key, not a label. Both readers format it in the language they are rendering in.
       month_key: format(startOfMonth(month), 'yyyy-MM-dd'),
-      inflow: monthInflow,
-      outflow: monthOutflow,
-      net: monthInflow - monthOutflow
+      inflow: operating.inflow + financing.inflow,
+      outflow: operating.outflow + financing.outflow,
+      net: operating.net + financing.net,
+      operating,
+      financing,
     }
   })
 
@@ -265,8 +281,7 @@ export async function fetchGeneralReportData(
       const projectInvoiceIds = new Set(
         accountingInvoicesArray
           .filter(inv =>
-            inv.project_id === project.id &&
-            (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
+            inv.project_id === project.id && isCostInvoiceType(inv.invoice_type)
           )
           .map(inv => inv.id)
       )
@@ -473,7 +488,8 @@ export async function fetchGeneralReportData(
       total_debt: totalDebt,
       debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
       total_credit_lines: bankCreditsArray.reduce((sum, bc) => sum + (bc.amount || 0), 0),
-      available_credit: bankCreditsArray.reduce((sum, bc) => sum + ((bc.available_balance || 0) - (bc.drawn_amount || 0)), 0),
+      // Undrawn headroom. It read available_balance/drawn_amount, which bank_credits does not have.
+      available_credit: bankCreditsArray.reduce((sum, bc) => sum + ((bc.amount || 0) - (bc.used_amount || 0)), 0),
       active_investors: activeFundersCount,
       active_banks: banksArray.length,
       bank_credits: bankCreditsArray.length,

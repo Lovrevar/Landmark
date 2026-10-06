@@ -1,7 +1,7 @@
 import React from 'react'
 import { CreditCard, ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { PageHeader, LoadingSpinner, Modal, FormField, Input, Select, Textarea, Button, EmptyState, ErrorState, Alert, Form, ConfirmDialog } from '../../ui'
+import { PageHeader, LoadingSpinner, Modal, FormField, Input, Select, Textarea, Button, EmptyState, ErrorState, Alert, Form, ConfirmDialog, InfoHint } from '../../ui'
 import { formatEuro } from '../../../utils/formatters'
 import { CreditBadges, CreditUsageTiles, CreditDetailsGrid } from './CreditSummary'
 import { calculateCreditUsage } from './utils/creditUsage'
@@ -151,7 +151,14 @@ const CreditsManagement: React.FC = () => {
 
                     {creditAllocations.length > 0 && (
                       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-4">{t('banks.index.credit.allocations_heading', { count: creditAllocations.length })}</h4>
+                        <h4 className="flex items-center gap-1.5 font-semibold text-gray-900 dark:text-white mb-4">
+                          {t('banks.index.credit.allocations_heading', { count: creditAllocations.length })}
+                          <InfoHint hintId="funding.allocations" label={t('funding.hints.allocations_title')} articleId="funding-investments">
+                            <p>{t('funding.hints.allocations_purpose')}</p>
+                            <p>{t('funding.hints.allocations_amounts')}</p>
+                            <p>{t('funding.hints.allocations_disbursed')}</p>
+                          </InfoHint>
+                        </h4>
                         <div className="space-y-3">
                           {creditAllocations.map((allocation) => {
                             const allocationKey = `${credit.id}-${allocation.id}`

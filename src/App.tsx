@@ -5,6 +5,7 @@ import { ToastProvider } from './contexts/ToastContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { UnsavedChangesProvider } from './contexts/UnsavedChangesContext'
 import LoginForm from './components/Auth/LoginForm'
+import ResetPasswordForm from './components/Auth/ResetPasswordForm'
 import Layout from './components/Common/Layout'
 import PageFallback from './components/Common/PageFallback'
 import AiChatProvider from './components/AiChat/AiChatProvider'
@@ -56,6 +57,7 @@ const ActivityLog = lazy(() => import('./components/General/ActivityLog/index'))
 const ChatPage = lazy(() => import('./components/Chat'))
 const TasksPage = lazy(() => import('./components/Tasks'))
 const CalendarPage = lazy(() => import('./components/Calendar'))
+const HelpPage = lazy(() => import('./components/Help'))
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
@@ -103,11 +105,21 @@ function AppContent() {
   return (
     <Router>
       <Routes>
+        {/* Outside ProtectedRoute: the recovery link's session is the only credential here. */}
+        <Route path="/reset-password" element={<ResetPasswordForm />} />
         <Route
           path="/"
           element={
             <ProtectedRoute>
               {user?.role === 'Supervision' ? <Navigate to="/site-management" replace /> : <Dashboard />}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/help/:articleId?"
+          element={
+            <ProtectedRoute>
+              <HelpPage />
             </ProtectedRoute>
           }
         />
