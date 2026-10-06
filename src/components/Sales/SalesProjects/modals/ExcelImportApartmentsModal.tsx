@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import * as XLSX from '@e965/xlsx'
-import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
+import { Upload, CheckCircle, AlertCircle, Download } from 'lucide-react'
 import { Modal, Button } from '../../../ui'
 import { parseNumber, parseDate, detectPaymentType } from '../../../../utils/excelParsers'
 import { importApartmentRow, logApartmentImportSummary } from '../services/apartmentImportService'
+import { APARTMENT_IMPORT_FORMAT_KEYS, downloadApartmentImportTemplate } from '../services/apartmentImportTemplate'
+import { amountColumnName, columnLetter, dateCellsInAmountColumns } from '../services/apartmentImportValidation'
 import { useToast } from '../../../../contexts/ToastContext'
 import { importErrorMessage } from '../importOutcome'
 import { ImportOutcomeSummary } from './ImportOutcomeSummary'
@@ -76,24 +78,47 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
     }
   }
 
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadApartmentImportTemplate()
+    } catch (error) {
+      console.error('Error building import template:', error)
+      toast.error(t('sales_projects.excel_import.template_failed'))
+    }
+  }
+
   const parseFile = async () => {
     if (!file) return
 
     try {
       const data = await file.arrayBuffer()
-      const workbook = XLSX.read(data, { type: 'array' })
+      // cellNF keeps each cell's number format, which is the only way to tell an Excel date from
+      // an amount: both arrive as plain numbers.
+      const workbook = XLSX.read(data, { type: 'array', cellNF: true })
       const sheet = workbook.Sheets[workbook.SheetNames[0]]
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
-      const dataRows = rows.slice(1).filter(row => row[3])
+      // Where the parsed rows sit in the sheet, so a cell can be looked up and a row reported by
+      // the number Excel shows — also when the sheet has blank rows above or between the data.
+      const origin = sheet['!ref'] ? XLSX.utils.decode_range(sheet['!ref']).s : { r: 0, c: 0 }
+      const isDateFormatted = (sheetRow: number, columnIndex: number): boolean => {
+        const cell = sheet[XLSX.utils.encode_cell({ r: sheetRow, c: origin.c + columnIndex })]
+        if (!cell) return false
+        return cell.t === 'd' || (cell.t === 'n' && typeof cell.z === 'string' && XLSX.SSF.is_date(cell.z))
+      }
+
+      const dataRows = rows
+        .map((row, index) => ({ row, sheetRow: origin.r + index }))
+        .slice(1)
+        .filter(({ row }) => row[3])
 
       const buildingsMap = new Map()
       selectedProject?.buildings?.forEach((b: { id: string; name: string }) => {
         buildingsMap.set(b.name.toLowerCase().trim(), b.id)
       })
 
-      const parsed: ParsedApartmentRow[] = dataRows.map((row, idx) => {
+      const parsed: ParsedApartmentRow[] = dataRows.map(({ row, sheetRow }) => {
         const errors: string[] = []
         const buildingLabel = String(row[0] || '').trim()
         const apartmentNumber = String(row[3] || '').trim()
@@ -112,8 +137,20 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
           errors.push(t('sales_projects.excel_import.error_building_not_found', { name: buildingLabel }))
         }
 
+        // A date in a money column would otherwise import as an amount (see
+        // apartmentImportValidation.ts). The row is rejected and the column named.
+        for (const columnIndex of dateCellsInAmountColumns(index => ({
+          value: row[index],
+          dateFormatted: isDateFormatted(sheetRow, index),
+        }))) {
+          errors.push(t('sales_projects.excel_import.error_date_in_amount_column', {
+            column: columnLetter(columnIndex),
+            name: amountColumnName(columnIndex),
+          }))
+        }
+
         return {
-          rowIndex: idx + 2,
+          rowIndex: sheetRow + 1,
           building_label: buildingLabel,
           entrance: row[1] || '',
           floor: parseNumber(row[2]),
@@ -254,24 +291,18 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
               )}
             </div>
             <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">{t('sales_projects.excel_import.expected_format')}</h4>
-              {/* The bullets below mix English instructions with the literal Croatian spreadsheet
-                  column headers (zgrada, oznaka stana, stan m2 prodajno…), which must stay
-                  verbatim — they name real cells in the file being uploaded. Left in English
-                  pending a wording decision; see docs/SALES.md. */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <h4 className="font-medium text-blue-900 dark:text-blue-100">{t('sales_projects.excel_import.expected_format')}</h4>
+                <Button variant="secondary" size="sm" icon={Download} onClick={handleDownloadTemplate}>
+                  {t('sales_projects.excel_import.download_template')}
+                </Button>
+              </div>
+              {/* The spreadsheet's own column names (zgrada, oznaka stana, kapara 10%…) stay
+                  Croatian in both languages — they name real cells in the file being uploaded. */}
               <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
-                <li>Headers on row 1, data starts at row 2</li>
-                <li>Column 1 (A): zgrada (building name - must match existing building)</li>
-                <li>Column 4 (D): oznaka stana (apartment number)</li>
-                <li>Column 10 (J): stan m2 prodajno (total saleable area)</li>
-                <li>Column 12 (L): cijena stana (apartment price)</li>
-                <li>Columns 13-15: parking data (optional)</li>
-                <li>Columns 16-18: storage data (optional)</li>
-                <li>Column 20 (T): datum potpisa predugovora (optional)</li>
-                <li>Column 21 (U): kapara 10% (optional)</li>
-                <li>Columns 22-25 (V-Y): installment dates or credit date (optional)</li>
-                <li>Numbers can use European format with commas (e.g., "3.000,00")</li>
-                <li>Dates can use DD.MM.YYYY format</li>
+                {APARTMENT_IMPORT_FORMAT_KEYS.map(key => (
+                  <li key={key}>{t(`sales_projects.excel_import.format.${key}`)}</li>
+                ))}
               </ul>
             </div>
           </div>

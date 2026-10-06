@@ -71,7 +71,7 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 
 ### useCachedData.ts
 - `useCachedData(key, fetcher, ttl)` — TTL-cached fetch hook; every dashboard reads through it
-- Returns `{ data, loading, error }`. **Always render the `error` state** — the hook used to swallow fetch failures and leave dashboards showing zeros, which is indistinguishable from "this company genuinely has no revenue" (DASH-003 in [`DASHBOARD_AUDIT.md`](./DASHBOARD_AUDIT.md)). `DashboardError.tsx` is the shared renderer
+- Returns `{ data, loading, error }`. **Always render the `error` state** — the hook used to swallow fetch failures and leave dashboards showing zeros, which is indistinguishable from "this company genuinely has no revenue" (DASH-003 in [`DASHBOARD_AUDIT.md`](./backlog/archive/DASHBOARD_AUDIT.md)). `DashboardError.tsx` is the shared renderer
 - `invalidateCachedData(predicate?)` — drops matching cache entries after a mutation
 - Lives in `src/lib/`, not `src/hooks/`, despite being a hook
 
@@ -161,6 +161,12 @@ read "Jan 05, 2026".
 - `appLanguage` falls back to Croatian for an unknown language, mirroring what `fallbackLng: 'hr'`
   does to the strings on the same screen
 
+### invoiceCashDirection.ts
+- `INVOICE_CASH_DIRECTION` / `invoiceCashDirection(type)` → `'IN' | 'OUT' | null` — which way money moves for each of the nine invoice types: every `INCOMING_*` invoice (a bill received) is out, every `OUTGOING_*` one (issued) is in. **The only place this is decided**; do not write a type list in a service
+- `INVOICE_CASH_MAP` — per type, `{ direction, category }`. `invoiceCashCategory(type)` → `'operating' | 'financing'`. Financing is credit **principal** only (drawdown, repayment); credit fees are operating. `invoiceTypesFor(direction, category)` lists one cell of the grid. **Financing is never income or expense**: the General report shows it as its own cash-flow table, `company_statistics` as its own two columns
+- `isCashIn` / `isCashOut`; `isCostInvoiceType` / `COST_INVOICE_TYPES` — **derived**: every operating money-out type (supplier, office, ULAZNI (INV), credit fees). The only money-out type that is not a cost is the repayment of principal; `carriesInputVat` / `carriesOutputVat`
+- `invoiceCashDirection.test.ts` also reads the SQL (`recalc_company_bank_account_balance`, the `company_statistics` migration) and the calendar hook, and fails if any of them disagrees with the map
+
 ### statusDisplay.ts
 - `PROJECT_STATUS`, `CONTRACT_STATUS`, `RETAIL_CONTRACT_STATUS`, `RETAIL_PHASE_STATUS`,
   `UNIT_STATUS`, `MILESTONE_STATUS`, `RETAIL_MILESTONE_STATUS`, `RISK_LEVEL` — one label key and one
@@ -206,13 +212,14 @@ read "Jan 05, 2026".
 - `isSupervisionRole(user)` — true if role is Supervision
 - `isDirectorRole(user)` — true if role is Director
 - `canViewActivityLog(user)` — alias for `isDirectorRole`; the activity log is Director-only
+- `canUseCashflow(user)` — Director or Accounting, the roles the finance RLS lets through. The profile switcher offers Cashflow only to them (a stored Cashflow profile falls back to General), and `CashflowRoute` uses the same check
 - `getAccessibleProjectIds(user)` — returns `[]` for roles with full access; returns assigned project IDs for Supervision; returns `[]` for others
 - **Depends on:** AuthContext User type
 
 ### evm.ts
 - `calculatePhaseEVM(plannedBudget, physicalCompletionPct, startDate, endDate, actualCost)` — computes PV, EV, AC, CPI, SPI, CV, SV, EAC, VAC for a single phase using standard EVM formulas
-- `calculateProjectEVM(phases, contracts)` — aggregates phase-level EVM across all phases of a project; derives `physicalCompletionPct` from `budget_realized / contract_amount` per phase; maps `Phase.budget_allocated → plannedBudget`, `Phase.start_date / end_date → planned dates`
-- **Returns:** `EVMMetrics` (`PV`, `EV`, `AC`, `CPI`, `SPI`, `CV`, `SV`, `EAC`, `VAC`)
+- `calculateProjectEVM(phases, contracts, milestones = [])` — aggregates phase-level EVM across all phases of a project; contracts join phases on `phase_id`. A phase's `physicalCompletionPct` is the contract-value-weighted average of each contract's milestone-based completion (sum of the `percentage` of its `subcontractor_milestones` that are completed or paid), falling back to `budget_realized / contract_amount` only for a contract with no milestones; maps `Phase.budget_allocated → plannedBudget`, `Phase.start_date / end_date → planned dates`. EV and AC are accumulated for every phase; PV only for dated ones
+- **Returns:** `EVMMetrics` (`PV`, `EV`, `AC`, `CPI`, `SPI`, `CV`, `SV`, `EAC`, `VAC`, plus `scheduleAvailable` — false when no phase has both dates, so SPI = 1 means "unknown")
 - **Used by:** `BudgetControl/hooks/useBudgetControl.ts`
 - **Depends on:** `Phase`, `ContractWithDetails` from `General/Projects/types.ts`
 
@@ -230,7 +237,7 @@ read "Jan 05, 2026".
 ### dateOnly.ts
 - `parseLocalDate(str)` — builds `new Date(y, m-1, d)` so a SQL `date` column is not parsed as UTC midnight
 - `monthKey(str)` — `YYYY-MM` bucket key; `daysFromToday(str)`; `isValidDate(str)`; `startOfTodayLocal()`
-- **Use these for every date-only column.** `new Date('2026-09-01')` parses as UTC and compares wrong against a local `new Date()` — Croatia is UTC+1/+2, so month buckets and overdue detection drift by a day at boundaries. Added during the June 2026 dashboard audit (see [`DASHBOARD_AUDIT.md`](./DASHBOARD_AUDIT.md) DASH-001)
+- **Use these for every date-only column.** `new Date('2026-09-01')` parses as UTC and compares wrong against a local `new Date()` — Croatia is UTC+1/+2, so month buckets and overdue detection drift by a day at boundaries. Added during the June 2026 dashboard audit (see [`DASHBOARD_AUDIT.md`](./backlog/archive/DASHBOARD_AUDIT.md) DASH-001)
 
 ### pdfFont.ts
 - `loadUnicodeFont(doc)` + `PDF_FONT_FAMILY` — registers the embedded Noto Sans on a jsPDF document. Every generator calls it before drawing

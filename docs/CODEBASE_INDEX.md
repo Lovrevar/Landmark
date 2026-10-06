@@ -18,6 +18,7 @@
 | **UI** | [UI.md](./UI.md) | Primitive component library |
 | **Core** | [CORE.md](./CORE.md) | Contexts, hooks, lib, types, utils |
 | **Activity Log** | [ACTIVITY_LOG.md](./ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
+| **Help** | [HELP.md](./HELP.md) | In-app guidance: `/help` page, the "?" beside page titles, `InfoHint` popovers, usage logging — all reading `help-kb/` |
 | **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 14-tool catalog, fork-and-regenerate edits |
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
 | **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
@@ -29,12 +30,12 @@
 | Doc | File | Description |
 |---|---|---|
 | **ERP Integration** | [erp-integration/](./erp-integration/README.md) | ⏸️ **On hold** — merged but switched off (flag off, migrations parked in `supabase/parked-migrations/erp/`). Rewrite of the financial section: 4D Wand becomes the source of truth for invoices, payments and bank balances; Cognilion stops authoring them and imports/classifies instead. Spec, decision log, progress and open questions |
+| **graphify** | [GRAPHIFY.md](./GRAPHIFY.md) | The code knowledge graph in `graphify-out/`: how it is rebuilt, the one edge type worth trusting, and what it cannot tell you (moved out of CLAUDE.md) |
 | **Testing** | [TESTING.md](./TESTING.md) | Vitest unit tests + Playwright e2e setup and conventions |
-| **Security Backlog** | [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) | Tracked security items and RLS hardening status |
+| **Backlog** | [backlog/](./backlog/README.md) | Everything known to be wrong, missing or undecided, one file per area (release steps, security, sales, retail, supervision, cashflow, funding, projects/dashboards/reports, collaboration, app-wide UI), with a ranked list and the rules for adding and closing items. `backlog/archive/` keeps the four audits (September 2026 defect and UI audits, June 2026 dashboard audit, old security backlog) as closed history; `backlog/plans/` holds the supplier-unification plan |
+| **Specifikacija (HR)** | [SPECIFIKACIJA.md](./SPECIFIKACIJA.md) | Croatian-language, extremely detailed functional + technical spec of the whole platform except Retail (routes, data model, formulas, triggers, permissions, per-module behaviour). Verified against code on 2026-09-30; **frames the 4D Wand ERP integration as live** (a note at the top says it is flagged off) |
 | **Presentation Modules** | [PRESENTATION_MODULES.md](./PRESENTATION_MODULES.md) | Croatian-language module overview + talking points for pitching the platform; ERP sync presented as a built-in product capability |
 | **Presentation Deck** | [PRESENTATION_DECK.md](./PRESENTATION_DECK.md) | Slide-by-slide startup-event deck copy with speaker notes (non-technical users, modularity/integrations, multi-company analytics) |
-| **UI Audit** | [UI_AUDIT.md](./UI_AUDIT.md) | September 2026 app-wide UI/UX review (~130 findings per module: broken behaviour, colour/dark-mode overrides, misleading displays, systemic inconsistencies) with fix status. Section 1 (broken) is fixed; the rest is the open backlog |
-| **Dashboard Audit** | [DASHBOARD_AUDIT.md](./DASHBOARD_AUDIT.md) | Historical record of the June 2026 dashboard data-integrity audit. All findings were fixed; kept for the rationale and the three deferred Low items |
 | **Manual Smoke Testsheet** | [MANUAL_TESTSHEET.md](./MANUAL_TESTSHEET.md) | ~15-minute tick-box pass over the core money loop: invoice → dashboard → payment → account |
 | **Manual test sheets** | [test/](./test/) | Per-module manual test scripts (`01-foundations` … `10-appendix`), the e2e strategy write-up, and seed SQL |
 | **Scratch plans** | [rand/](./rand/) | Superseded/one-off planning docs. Historical — do not treat as current design |

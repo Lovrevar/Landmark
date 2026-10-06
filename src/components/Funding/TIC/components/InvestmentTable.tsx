@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
-import { Button, ConfirmDialog, Input, Select } from '../../../ui'
+import { Button, ConfirmDialog, InfoHint, Input, Select } from '../../../ui'
 import {
   formatNumber,
   formatPercentage,
@@ -182,9 +182,15 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
                       {/* Editing a row's funds after splitting it pulls the two apart. Neither
                           side is corrected automatically — only the author knows which is wrong. */}
                       {hasPhaseSplitMismatch(item) && (
-                        <span title={t('tic.phases.row_mismatch')} aria-label={t('tic.phases.row_mismatch')}>
-                          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                        </span>
+                        <InfoHint
+                          hintId="tic.row_mismatch"
+                          label={t('tic.phases.row_mismatch')}
+                          articleId="tic"
+                          icon={AlertTriangle}
+                          className="text-amber-500 hover:text-amber-600"
+                        >
+                          <p className="font-normal">{t('tic.hints.mismatch_body')}</p>
+                        </InfoHint>
                       )}
                       {formatNumber(rowTotal)}
                     </span>
@@ -275,8 +281,12 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
         <Button variant="secondary" size="sm" icon={Plus} onClick={onAddPhase}>
           {t('tic.phases.add_phase')}
         </Button>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           {phaseNumbers.length === 0 ? t('tic.phases.unphased_hint') : t('tic.phases.edit_hint')}
+          <InfoHint hintId="tic.phases" label={t('tic.hints.phases_title')} articleId="tic">
+            <p>{t('tic.hints.phases_phased')}</p>
+            <p>{t('tic.hints.phases_unphased')}</p>
+          </InfoHint>
         </p>
       </div>
 

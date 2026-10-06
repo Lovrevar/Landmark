@@ -2,6 +2,7 @@ import { supabase, Apartment } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
 import { UnitType, BulkCreateData, SaleFormData, CustomerMode, UnitForSale, SALES_PROJECT_CATEGORIES } from '../types'
 import { summarizeBulkPriceUpdate, type BulkPriceUpdateResult } from '../bulkPriceResult'
+import { effectivePricePerM2 } from '../../utils/priceUtils'
 
 export interface CompleteSalePayload {
   unitForSale: UnitForSale
@@ -13,60 +14,60 @@ export interface CompleteSalePayload {
 export const completeSale = async (payload: CompleteSalePayload): Promise<void> => {
   const { unitForSale, saleData, customerMode, existingCustomers } = payload
 
-  let customerId = saleData.customer_id
+  // Garages and storage units are sold as part of their apartment's package; UnitsGrid offers
+  // "Sell" on apartments only, and the sales table has no column for any other unit.
+  if (unitForSale.type !== 'apartment') {
+    throw new Error('Only apartments can be sold on their own')
+  }
 
+  let newCustomer: { name: string; surname: string; email: string; phone: string; address: string } | null = null
   if (customerMode === 'new') {
     if (!saleData.buyer_name.trim() || !saleData.buyer_email.trim()) {
       throw new Error('Please fill in buyer name and email')
     }
-
     const [firstName, ...lastNameParts] = saleData.buyer_name.trim().split(' ')
-    const lastName = lastNameParts.join(' ') || firstName
-
-    const newCustomer = await createCustomer(
-      firstName,
-      lastName,
-      saleData.buyer_email,
-      saleData.buyer_phone,
-      saleData.buyer_address
-    )
-    customerId = newCustomer.id
+    newCustomer = {
+      name: firstName,
+      surname: lastNameParts.join(' ') || firstName,
+      email: saleData.buyer_email,
+      phone: saleData.buyer_phone,
+      address: saleData.buyer_address,
+    }
   }
-
-  const newSale = await createSale(
-    unitForSale.unit.id,
-    unitForSale.type,
-    customerId,
-    saleData.sale_price,
-    saleData.payment_method,
-    saleData.down_payment,
-    saleData.monthly_payment,
-    saleData.sale_date,
-    saleData.contract_signed,
-    saleData.notes
-  )
-
-  logActivity({ action: 'sale.create', entity: 'sale', entityId: newSale?.id ?? null, metadata: { severity: 'high', entity_name: saleData.buyer_name, sale_price: saleData.sale_price, unit_type: unitForSale.type, unit_id: unitForSale.unit.id } })
 
   const buyerDisplayName = customerMode === 'existing'
     ? saleData.buyer_name || (() => {
-        const found = existingCustomers.find(c => c.id === customerId)
+        const found = existingCustomers.find(c => c.id === saleData.customer_id)
         return found ? `${found.name} ${found.surname}` : ''
       })()
     : saleData.buyer_name
 
-  // Mark the unit (and any linked units) sold before flipping the customer
-  // status — these are the core sale invariants, so they run first and a
-  // failure here surfaces before the more cosmetic status change.
-  await updateUnitAfterSale(unitForSale.unit.id, unitForSale.type, buyerDisplayName)
+  // One transaction: the new customer (if any), the sale row, the apartment and its linked
+  // garages/storage units marked Sold, and the customer's status. A failure leaves nothing behind.
+  const { data, error } = await supabase.rpc('complete_apartment_sale', {
+    p_apartment_id: unitForSale.unit.id,
+    p_customer_id: customerMode === 'existing' ? saleData.customer_id : null,
+    p_new_customer: newCustomer,
+    p_buyer_name: buyerDisplayName,
+    p_sale_price: saleData.sale_price,
+    p_payment_method: saleData.payment_method,
+    p_down_payment: saleData.down_payment,
+    p_monthly_payment: saleData.monthly_payment,
+    p_sale_date: saleData.sale_date,
+    p_contract_signed: saleData.contract_signed,
+    p_notes: saleData.notes,
+  })
+  if (error) throw error
 
-  if (unitForSale.type === 'apartment') {
-    await updateLinkedUnitsAfterSale(unitForSale.unit.id, buyerDisplayName)
-  }
+  const result = data as { sale_id: string; customer_id: string; customer_created: boolean }
 
-  if (customerMode === 'existing' && customerId) {
-    await updateCustomerStatus(customerId, 'buyer')
+  if (result.customer_created) {
+    logActivity({ action: 'customer.create', entity: 'customer', entityId: result.customer_id, metadata: { severity: 'low', entity_name: buyerDisplayName } })
+  } else {
+    logActivity({ action: 'customer.update', entity: 'customer', entityId: result.customer_id, metadata: { severity: 'low', changed_fields: ['status'], status: 'buyer' } })
   }
+  logActivity({ action: 'sale.create', entity: 'sale', entityId: result.sale_id, metadata: { severity: 'high', entity_name: buyerDisplayName, sale_price: saleData.sale_price, unit_type: 'apartment', unit_id: unitForSale.unit.id } })
+  logActivity({ action: 'apartment.update', entity: 'apartment', entityId: unitForSale.unit.id, metadata: { severity: 'low', changed_fields: ['status', 'buyer_name'], status: 'Sold' } })
 }
 
 // Sales lists Stambeno and Retail projects, separated by tabs on the screen.
@@ -158,20 +159,22 @@ export const fetchSales = async () => {
 export const fetchActualTotalPaidByApartment = async (apartmentIds: string[]): Promise<Map<string, number>> => {
   if (apartmentIds.length === 0) return new Map()
 
-  const { data: invoicesData } = await supabase
+  const { data: invoicesData, error: invoicesError } = await supabase
     .from('accounting_invoices')
     .select('id, apartment_id')
     .in('apartment_id', apartmentIds)
     .eq('invoice_type', 'OUTGOING_SALES')
+  if (invoicesError) throw invoicesError
 
   const paidMap = new Map<string, number>()
   if (!invoicesData || invoicesData.length === 0) return paidMap
 
   const invoiceIds = invoicesData.map(inv => inv.id)
-  const { data: paymentsData } = await supabase
+  const { data: paymentsData, error: paymentsError } = await supabase
     .from('accounting_payments')
     .select('invoice_id, amount')
     .in('invoice_id', invoiceIds)
+  if (paymentsError) throw paymentsError
 
   for (const payment of paymentsData || []) {
     const invoice = invoicesData.find(inv => inv.id === payment.invoice_id)
@@ -183,47 +186,14 @@ export const fetchActualTotalPaidByApartment = async (apartmentIds: string[]): P
   return paidMap
 }
 
-export const updateLinkedUnitsAfterSale = async (apartmentId: string, buyerName: string) => {
-  const { data: garageLinks, error: garageLinksError } = await supabase
-    .from('apartment_garages')
-    .select('garage_id')
-    .eq('apartment_id', apartmentId)
-
-  if (garageLinksError) throw garageLinksError
-
-  if (garageLinks && garageLinks.length > 0) {
-    const garageIds = garageLinks.map(l => l.garage_id)
-    const { error: garageUpdateError } = await supabase
-      .from('garages')
-      .update({ status: 'Sold', buyer_name: buyerName })
-      .in('id', garageIds)
-    if (garageUpdateError) throw garageUpdateError
-  }
-
-  const { data: repoLinks, error: repoLinksError } = await supabase
-    .from('apartment_repositories')
-    .select('repository_id')
-    .eq('apartment_id', apartmentId)
-
-  if (repoLinksError) throw repoLinksError
-
-  if (repoLinks && repoLinks.length > 0) {
-    const repoIds = repoLinks.map(l => l.repository_id)
-    const { error: repoUpdateError } = await supabase
-      .from('repositories')
-      .update({ status: 'Sold', buyer_name: buyerName })
-      .in('id', repoIds)
-    if (repoUpdateError) throw repoUpdateError
-  }
-}
-
-export const createBulkBuildings = async (projectId: string, quantity: number) => {
+/** `nameFor(i)` names building i (1-based) — the caller passes the localised "Zgrada {{n}}". */
+export const createBulkBuildings = async (projectId: string, quantity: number, nameFor: (i: number) => string) => {
   const buildingsToCreate = []
   for (let i = 1; i <= quantity; i++) {
     buildingsToCreate.push({
       project_id: projectId,
-      name: `Building ${i}`,
-      description: `Building ${i}`,
+      name: nameFor(i),
+      description: nameFor(i),
       total_floors: 10
     })
   }
@@ -542,123 +512,6 @@ export const unlinkRepositoryFromApartment = async (apartmentId: string, reposit
   })
 }
 
-export const createCustomer = async (
-  firstName: string,
-  lastName: string,
-  email: string,
-  phone: string,
-  address: string
-) => {
-  const { data, error } = await supabase
-    .from('customers')
-    .insert({
-      // '' would collide on the UNIQUE email index for a second contactless
-      // buyer; null does not. See normalizeContactFields in the Customers module.
-      name: firstName,
-      surname: lastName,
-      email: email?.trim() || null,
-      phone: phone?.trim() || null,
-      address: address || '',
-      status: 'buyer'
-    })
-    .select()
-    .single()
-
-  if (error) throw error
-
-  logActivity({
-    action: 'customer.create',
-    entity: 'customer',
-    entityId: data?.id ?? null,
-    metadata: { severity: 'low', entity_name: `${firstName} ${lastName}`.trim() }
-  })
-
-  return data
-}
-
-export const createSale = async (
-  unitId: string,
-  unitType: UnitType,
-  customerId: string,
-  salePrice: number,
-  paymentMethod: string,
-  downPayment: number,
-  monthlyPayment: number,
-  saleDate: string,
-  contractSigned: boolean,
-  notes: string
-) => {
-  const remaining_amount = salePrice - downPayment
-  const unitIdField = unitType === 'apartment' ? 'apartment_id'
-                    : unitType === 'garage' ? 'garage_id'
-                    : 'repository_id'
-
-  const { data, error } = await supabase
-    .from('sales')
-    .insert({
-      [unitIdField]: unitId,
-      customer_id: customerId,
-      sale_price: salePrice,
-      payment_method: paymentMethod,
-      down_payment: downPayment,
-      total_paid: downPayment,
-      remaining_amount: remaining_amount,
-      monthly_payment: monthlyPayment,
-      sale_date: saleDate,
-      contract_signed: contractSigned,
-      notes: notes
-    })
-    .select()
-    .single()
-
-  if (error) throw error
-  return data
-}
-
-export const updateCustomerStatus = async (customerId: string, status: string) => {
-  const { error } = await supabase
-    .from('customers')
-    .update({ status })
-    .eq('id', customerId)
-
-  if (error) throw error
-
-  logActivity({
-    action: 'customer.update',
-    entity: 'customer',
-    entityId: customerId,
-    metadata: { severity: 'low', changed_fields: ['status'], status }
-  })
-}
-
-export const updateUnitAfterSale = async (
-  unitId: string,
-  unitType: UnitType,
-  buyerName: string
-) => {
-  let tableName = ''
-  if (unitType === 'apartment') tableName = 'apartments'
-  else if (unitType === 'garage') tableName = 'garages'
-  else if (unitType === 'repository') tableName = 'repositories'
-
-  const { error } = await supabase
-    .from(tableName)
-    .update({
-      status: 'Sold',
-      buyer_name: buyerName
-    })
-    .eq('id', unitId)
-
-  if (error) throw error
-
-  logActivity({
-    action: `${unitType}.update`,
-    entity: unitType,
-    entityId: unitId,
-    metadata: { severity: 'low', changed_fields: ['status', 'buyer_name'], status: 'Sold' }
-  })
-}
-
 /**
  * Adjusts the price per m² of every selected unit that is not sold.
  *
@@ -681,7 +534,7 @@ export const bulkUpdateUnitPrice = async (
   // re-checked on each update in case a unit was sold in the meantime
   const { data: units, error: fetchError } = await supabase
     .from(tableName)
-    .select('id, size_m2, price_per_m2')
+    .select('id, size_m2, price, price_per_m2')
     .in('id', unitIds)
     .neq('status', 'Sold')
 
@@ -689,8 +542,8 @@ export const bulkUpdateUnitPrice = async (
   // Every selected unit was already sold — nothing to do, and not a failure.
   if (!units || units.length === 0) return summarizeBulkPriceUpdate(unitIds.length, [])
 
-  const updates = units.map((unit: { id: string; size_m2: number; price_per_m2: number | null }) => {
-    const currentPricePerM2 = unit.price_per_m2 || 0
+  const updates = units.map((unit: { id: string; size_m2: number; price: number; price_per_m2: number | null }) => {
+    const currentPricePerM2 = effectivePricePerM2(unit)
     const newPricePerM2 = adjustmentType === 'increase'
       ? currentPricePerM2 + adjustmentValue
       : Math.max(0, currentPricePerM2 - adjustmentValue)

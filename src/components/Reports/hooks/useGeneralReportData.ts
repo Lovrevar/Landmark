@@ -1,4 +1,4 @@
-import { format, subMonths } from 'date-fns'
+import { format, startOfMonth, subMonths } from 'date-fns'
 import { fetchGeneralReportData } from '../services/generalReportService'
 import { useCachedData } from '../../../lib/useCachedData'
 import type { ComprehensiveReport } from '../types'
@@ -23,7 +23,8 @@ export function useGeneralReportData(): UseGeneralReportDataResult {
     'report:general',
     () => {
       const dateRange = {
-        start: format(subMonths(new Date(), 6), 'yyyy-MM-dd'),
+        // Six calendar months including this one; subMonths(now, 6) spanned seven month buckets.
+        start: format(startOfMonth(subMonths(new Date(), 5)), 'yyyy-MM-dd'),
         end: format(new Date(), 'yyyy-MM-dd')
       }
       return fetchGeneralReportData('all', dateRange)

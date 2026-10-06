@@ -1,5 +1,6 @@
 import { supabase, Customer } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
+import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { CustomerWithApartments, CustomerCategory, CustomerCounts, ProjectOption } from '../types'
 
 /**
@@ -229,12 +230,14 @@ export const customerService = {
   },
 
   async deleteCustomer(id: string): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('customers')
       .delete()
       .eq('id', id)
+      .select('id')
 
     if (error) throw error
+    assertRowsAffected(data)
 
     logActivity({ action: 'customer.delete', entity: 'customer', entityId: id, metadata: { severity: 'medium' } })
   },

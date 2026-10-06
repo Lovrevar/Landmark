@@ -63,7 +63,7 @@ Ovo je slajd koji publici objašnjava zašto je Cognilion drugačiji:
 ```
 ERP (računovodstvo)          Gradilište              Prodajni ured
       │ automatska                 │ dnevnik rada,          │ prodaja stana,
-      │ sinkronizacija             │ situacije              │ uplate kupaca
+      │ sinkronizacija             │ milestoneovi           │ uplate kupaca
       ▼                            ▼                        ▼
               ┌──────────────────────────────────┐
               │            COGNILION             │
@@ -74,7 +74,7 @@ ERP (računovodstvo)          Gradilište              Prodajni ured
               dashboardi po ulozi · izvještaji · AI asistent · alarmi
 ```
 
-Računovodstvo knjiži račun **jednom, u ERP-u**. Petnaestak minuta kasnije račun je u
+Računovodstvo knjiži račun **jednom, u ERP-u**. S prvim sljedećim ERP izvozom račun je u
 Cognilionu — već pridružen projektu i kategoriji troška — i vidljiv je na realizaciji
 ugovora, iskorištenosti kredita i direktorskom dashboardu. Nema dvostrukog unosa, nema
 prepisivanja, nema „čija je tablica točna".
@@ -129,14 +129,14 @@ usklađivanja.
 
 ### 3. Nadzor (Supervision)
 
-**U jednoj rečenici:** Upravljanje gradilištem — podizvođači, ugovori, situacije i građevinski dnevnik, s financijama po fazi.
+**U jednoj rečenici:** Upravljanje gradilištem — podizvođači, ugovori s milestoneovima plaćanja i građevinski dnevnik, s financijama po fazi.
 
 Što modul radi:
 - Aktivna gradilišta s građevinskim fazama i budžetom po fazi; budžet faze automatski se
   preračunava iz aktivnih ugovora.
-- Ugovori s podizvođačima vezani na faze, s praćenjem **situacija** (privremenih i
-  okončanih) — postotak realizacije ugovora izvodi se automatski iz proknjiženih računa
-  koji stižu iz ERP-a.
+- Ugovori s podizvođačima vezani na faze, s **milestoneovima plaćanja** (dijelovi ugovora
+  izraženi u postotku ugovorene vrijednosti: na čekanju → završeno → plaćeno) — postotak
+  realizacije ugovora izvodi se automatski iz proknjiženih računa koji stižu iz ERP-a.
 - Dnevnik rada s gradilišta (work logs) — tko je što radio, po danima; tjedni pregled na
   dashboardu nadzora.
 - Financijski sažetak po fazi: ugovoreno vs. budžet vs. fakturirano vs. plaćeno.
@@ -144,7 +144,7 @@ usklađivanja.
 - Registar podizvođača s ugovorima, dokumentima, računima i plaćanjima po svakome.
 
 **Talking point:** nadzorni inženjer i računovodstvo gledaju **isti ugovor** — kada
-računovodstvo u ERP-u proknjiži račun po situaciji, realizacija ugovora u Cognilionu se
+računovodstvo u ERP-u proknjiži račun izvođača, realizacija ugovora u Cognilionu se
 ažurira sama. Nestaje e-mail „koliko smo do sada stvarno platili ovom izvođaču?".
 
 ---
@@ -167,7 +167,8 @@ Ovo je najveći modul u sustavu. Što pokriva:
 - **Banke:** žiro računi po firmi, kreditne linije s planom otplate (kamata, glavnica,
   frekvencija), računi vezani na kredit.
 - **Firme:** registar vlastitih firmi grupe (uparivanje preko OIB-a s ERP-om).
-- **Kupci i dobavljači:** registri s automatskim uparivanjem ERP partnera preko OIB-a.
+- **Kupci i dobavljači:** registri na koje se ERP partneri (komitenti) jednom ručno
+  mapiraju u **Šifrarnicima**; račun nemapiranog partnera čeka u redu za provjeru.
 - **Stanje duga:** pregled obveza i potraživanja — tko nama duguje, kome mi dugujemo,
   po dospijeću.
 - **Pozajmice:** međukompanijske pozajmice unutar grupe.
@@ -176,12 +177,13 @@ Ovo je najveći modul u sustavu. Što pokriva:
   budžeti.
 
 **ERP integracija u praksi (predstaviti kao način na koji modul radi):**
-- Računi i plaćanja **ne unose se ručno** — sinkroniziraju se iz ERP-a inkrementalno,
-  svakih ~15 minuta.
+- Računi i plaćanja **ne unose se ručno** — ERP ih izvozi u datoteke koje lokalni agent
+  na serveru firme automatski šalje u Cognilion (učestalost izvoza još nije dogovorena).
 - **Projekt se pridružuje automatski iz mjesta troška** koje računovodstvo ionako unosi
-  pri knjiženju; **kategorija troška izvodi se iz konta** (kontni plan). Partneri i
-  vlastite firme uparuju se preko **OIB-a**.
-- Ono što ERP ne zna — veza na konkretan ugovor, situaciju, stan ili kreditnu liniju —
+  pri knjiženju; **kategorija troška izvodi se iz konta** (kontni plan). Vlastite firme
+  uparuju se preko **OIB-a**, a partneri preko šifrarnika koji se ručno održava u
+  **Šifrarnicima**.
+- Ono što ERP ne zna — veza na konkretan ugovor, milestone, stan ili kreditnu liniju —
   dodjeljuje se u Cognilionu u par klikova; računi koje nije moguće automatski povezati
   čekaju u redu **„nepovezani računi"** za klasifikaciju.
 - **Stanja žiro računa prikazuju se mjerodavno iz ERP-a** (banka/izvod), a ne
@@ -225,13 +227,14 @@ drugoga.
   (uključujući alokacije za opex i refinanciranje).
 - **Isplate (povlačenja tranši)**, planovi otplate, obračun kamata i troškova po
   kreditu, otplate glavnice.
-- **Obavijesti o plaćanju** i virmanska plaćanja: prema bankama, investitorima i
-  podizvođačima — s pregledom rasporeda plaćanja prije potvrde.
+- **Pregled plaćanja po kreditima:** povlačenja, otplate i naknade, s filtrima i
+  izvozom u Excel.
 - **Investitori:** odnosi s investitorima, equity ulozi, kreditni aranžmani, detaljne
   kartice po investitoru.
 - **TIC (Troškovna Informatička Struktura)** — strukturirana razrada troškova
-  investicije po projektu: planirana struktura troškova naspram stvarne potrošnje,
-  stavku po stavku. Stvarna potrošnja puni se automatski iz ERP-sinkroniziranih računa.
+  investicije po projektu: planirana struktura troškova (vlastita naspram kreditnih
+  sredstava), stavku po stavku. TIC je jedini izvor planiranog budžeta — iz njega se
+  izvode budžet projekta, faza i kategorija troška.
 - Bankovni računi i naknade vezani na kreditne linije — iskorištenost kredita uvijek je
   ažurna jer svaki bankovni račun iz ERP-a nosi vezu na svoju kreditnu partiju.
 
@@ -262,8 +265,8 @@ modul na to odgovara jednim ekranom.
   export.
 
 **Talking point:** budući da računi i stanja računa stižu iz ERP-a automatski,
-dashboardi odražavaju **knjigovodstvenu istinu** nekoliko minuta nakon što računovođa
-proknjiži dokument. Menadžersko izvještavanje bez izvještajnog ciklusa.
+dashboardi odražavaju **knjigovodstvenu istinu** čim stigne sljedeći ERP izvoz nakon
+što računovođa proknjiži dokument. Menadžersko izvještavanje bez izvještajnog ciklusa.
 
 ### 8. Izvještaji
 
@@ -347,22 +350,24 @@ pretvara je u upravljačku inteligenciju. Nema dvostrukog unosa, nema prepisivan
 
 Kako radi:
 
-1. **Automatska sinkronizacija** — Cognilion inkrementalno povlači račune i plaćanja iz
-   ERP API-ja (kursor `updated_since`, ciklus ~15 minuta; webhooci za gotovo trenutni
-   prijenos). Storna i obrisani dokumenti sinkroniziraju se također — lokalna kopija
-   nikad ne odstupa.
+1. **Automatski uvoz** — ERP (4D Wand) izvozi račune i plaćanja u datoteke, a lokalni
+   agent na serveru firme automatski ih šalje u Cognilion (učestalost izvoza još nije
+   dogovorena; iste datoteke mogu se i ručno učitati). Storna stižu kao vlastiti
+   dokumenti, a dokument koji nestane iz izvoza označava se za provjeru.
 2. **Automatsko povezivanje bez ljudskog unosa:**
    - **Projekt** ← izveden iz **mjesta troška** koje računovodstvo ionako upisuje pri
      knjiženju (šifrarnik mapiranja MT → projekt održava se u Cognilionu).
    - **Kategorija troška** ← izvedena iz **konta** (kontni plan → interna kategorija).
-   - **Firma i partner** ← upareni preko **OIB-a**.
+   - **Vlastita firma** ← uparena preko **OIB-a**.
+   - **Partner** (komitent) ← preko šifrarnika koji se ručno održava u **Šifrarnicima**;
+     nemapirani partner šalje račun u red za provjeru.
 3. **Čovjek samo tamo gdje dodaje vrijednost** — veze koje ERP ne poznaje (ugovor,
-   situacija, stan, kreditna linija) dodjeljuju se u Cognilionu; unutar projekta
+   milestone, stan, kreditna linija) dodjeljuju se u Cognilionu; unutar projekta
    izvedenog iz mjesta troška lista kandidata je kratka pa je to par klikova. Računi
    koje nije moguće automatski uparivati čekaju u redu **„nepovezani računi"**.
 4. **Stanja žiro računa iz ERP-a** — umjesto ručnog preračunavanja, Cognilion prikazuje
    mjerodavno ERP/bančino stanje po računu i radi usklađenje.
-5. **Sve nizvodno radi samo** — statusi računa, realizacija ugovora, napredak situacija,
+5. **Sve nizvodno radi samo** — statusi računa, realizacija ugovora, napredak milestoneova,
    iskorištenost kredita i svi dashboardi izvode se database triggerima nad
    sinkroniziranim podacima. Cijela platforma vozi na knjigovodstvenoj istini,
    automatski.
@@ -371,7 +376,7 @@ Kako radi:
    prvorazredni su pojmovi sync modela, a ne bilješke u opisu.
 
 **Formulacije za pozornicu:**
-- „Računovođa proknjiži račun u ERP-u. Petnaest minuta kasnije račun je u Cognilionu —
+- „Računovođa proknjiži račun u ERP-u. S prvim sljedećim izvozom račun je u Cognilionu —
   već na pravom projektu i kategoriji troška — i svaki dashboard, ugovor i kreditna
   linija to odražavaju."
 - „Mjesto troška i konto — podaci koje računovodstvo ionako unosi — postaju ključevi
@@ -410,10 +415,9 @@ Kako radi:
 | Multi-PDV račun | Jedan račun, do 4 PDV stope (25/13/5/0 %) | Hrvatska zakonska stvarnost; generički alati to ne modeliraju |
 | Cesija | Treća firma plaća dug u naše ime (ustup tražbine) | Prvorazredni tip plaćanja s vlastitom logikom, ne bilješka u opisu |
 | Kompenzacija | Međusobni prijeboj dugovanja dviju firmi | Isto — modelirana s vlastitom trigger logikom stanja računa |
-| Situacija | Privremena/okončana obračunska situacija u građenju | Realizacija ugovora s podizvođačem izvodi se automatski iz njih |
-| TIC | Troškovna Informatička Struktura — razrada troškova investicije | Plan vs. stvarnost troškova, stavku po stavku, po projektu |
+| TIC | Troškovna Informatička Struktura — razrada troškova investicije | Jedini izvor planiranog budžeta projekta, stavku po stavku |
 | Mjesto troška / konto | ERP-ove dimenzije knjiženja | Ključevi koji omogućuju automatsko vezanje računa na projekt i kategoriju |
-| OIB | Osobni identifikacijski broj | Osnova automatskog uparivanja partnera i firmi u ERP sinkronizaciji |
+| OIB | Osobni identifikacijski broj | Osnova automatskog uparivanja vlastitih firmi u ERP uvozu (partneri se mapiraju u Šifrarnicima) |
 
 ---
 

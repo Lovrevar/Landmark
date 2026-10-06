@@ -32,14 +32,18 @@ import { formatDate } from '../../../utils/formatters'
 import { PROJECT_STATUS, UNIT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 import { useAuth } from '../../../contexts/AuthContext'
+import { isClosedContract } from '../../../utils/contractRollup'
+import { formatCreditType } from '../../Funding/Investors/utils/creditCalculations'
 
 const ProjectDetailsEnhanced: React.FC = () => {
   const { t, i18n } = useTranslation()
   // Editing a project is Director-only at the RLS level; hide the entry point
   // for everyone else instead of letting the save fail with a 403.
-  const { user } = useAuth()
+  const { user, hasProjectAccess } = useAuth()
   const canManageProjects = user?.role === 'Director'
   const { id } = useParams<{ id: string }>()
+  // Mirrors the project_milestones write policy: Directors, and Supervision on assigned projects.
+  const canManageMilestones = !!id && hasProjectAccess(id)
   const navigate = useNavigate()
   const [project, setProject] = useState<ProjectDisplay | null>(null)
   const [milestones, setMilestones] = useState<Milestone[]>([])
@@ -148,6 +152,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
 
   // contracts.budget_realized is the app's single "paid" figure — a trigger-kept cache of
   // accounting_payments, repaired and sealed by migration 20260910120000.
+  // Draft and active only: completed and terminated contracts are no longer "active" (GEN-6).
+  const activeContractCount = contracts.filter(c => !isClosedContract(c.status)).length
   const totalSpent = contracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
   const hasPlan = ticTotal !== null && ticTotal > 0
   const totalRevenue = apartments.filter(a => a.status === 'Sold').reduce((sum, a) => sum + Number(a.price), 0)
@@ -251,7 +257,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <span className="text-sm text-orange-700 dark:text-orange-400">{t('general_projects.team')}</span>
               <Users className="w-5 h-5 text-orange-400" />
             </div>
-            <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{contracts.length}</p>
+            <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{activeContractCount}</p>
             <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">{t('general_projects.stat_active_contracts')}</p>
           </div>
         </div>
@@ -415,7 +421,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                             {investment.bank_credits?.banks?.name || t('general_projects.unknown_bank')}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            {investment.bank_credits?.credit_name} • {investment.bank_credits?.credit_type?.replace(/_/g, ' ')}
+                            {investment.bank_credits?.credit_name} • {formatCreditType(t, investment.bank_credits?.credit_type)}
                             {investment.bank_credits?.start_date ? ` • ${formatDate(investment.bank_credits.start_date, i18n.language)}` : ''}
                           </p>
                           {investment.description && (
@@ -450,28 +456,32 @@ const ProjectDetailsEnhanced: React.FC = () => {
                         : t('general_projects.milestone_template.expand_all')}
                     </button>
                   )}
-                  <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
-                    {t('general_projects.use_template')}
-                  </Button>
-                  <Button
-                    icon={Plus}
-                    onClick={() => {
-                      // While editing, Add switches the open form back to add mode instead of closing it.
-                      if (editingMilestone) {
-                        setEditingMilestone(null)
-                        setNewMilestone({ name: '', due_date: '', completed: false })
-                        setShowMilestoneForm(true)
-                      } else {
-                        setShowMilestoneForm(!showMilestoneForm)
-                      }
-                    }}
-                  >
-                    {t('general_projects.add_milestone')}
-                  </Button>
+                  {canManageMilestones && (
+                    <>
+                      <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
+                        {t('general_projects.use_template')}
+                      </Button>
+                      <Button
+                        icon={Plus}
+                        onClick={() => {
+                          // While editing, Add switches the open form back to add mode instead of closing it.
+                          if (editingMilestone) {
+                            setEditingMilestone(null)
+                            setNewMilestone({ name: '', due_date: '', completed: false })
+                            setShowMilestoneForm(true)
+                          } else {
+                            setShowMilestoneForm(!showMilestoneForm)
+                          }
+                        }}
+                      >
+                        {t('general_projects.add_milestone')}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {showMilestoneForm && (
+              {canManageMilestones && showMilestoneForm && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                   <h4 className="font-medium text-gray-900 dark:text-white mb-4">
                     {editingMilestone ? t('general_projects.milestone_edit') : t('general_projects.new_milestone')}
@@ -513,7 +523,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   icon={Target}
                   title={t('general_projects.milestones_empty_title')}
                   description={t('general_projects.milestones_empty_desc')}
-                  action={
+                  action={canManageMilestones ? (
                     <div className="flex items-center gap-2">
                       <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
                         {t('general_projects.use_template')}
@@ -522,15 +532,15 @@ const ProjectDetailsEnhanced: React.FC = () => {
                         {t('general_projects.add_first_milestone')}
                       </Button>
                     </div>
-                  }
+                  ) : undefined}
                 />
               ) : (
                 <MilestoneTimeline
                   milestones={milestones}
-                  onToggleComplete={handleToggleMilestone}
-                  onEdit={handleEditMilestone}
-                  onDelete={handleDeleteMilestone}
-                  editable={true}
+                  onToggleComplete={canManageMilestones ? handleToggleMilestone : undefined}
+                  onEdit={canManageMilestones ? handleEditMilestone : undefined}
+                  onDelete={canManageMilestones ? handleDeleteMilestone : undefined}
+                  editable={canManageMilestones}
                   groupByPhase
                   isPhaseExpanded={phaseCollapse.isExpanded}
                   onTogglePhase={phaseCollapse.toggle}

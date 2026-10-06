@@ -11,7 +11,6 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "e2e:serve": "vite preview --host 127.0.0.1 --port 5173 --strictPort",
-    "e2e:seed": "node scripts/seed-e2e.mjs",
     "erp:smoke": "node --env-file=.env scripts/erp-pipeline-smoke.mjs",
     "test": "vitest run",
     "test:functions": "cd supabase/functions && deno task test",
@@ -24,6 +23,7 @@
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",
+    "@floating-ui/react": "^0.27.20",
     "@supabase/supabase-js": "^2.57.0",
     "@tanstack/react-virtual": "^3.13.24",
     "date-fns": "^4.1.0",

@@ -22,7 +22,7 @@ import { InvoicesModal } from './modals/InvoicesModal'
 import { PhaseClassificationBudgetsModal } from './modals/PhaseClassificationBudgetsModal'
 import { ManageCostClassificationsModal } from './modals/ManageCostClassificationsModal'
 import { MilestoneList } from './MilestoneList'
-import { canManagePayments, getAccessibleProjectIds, isSupervisionRole } from '../../../utils/permissions'
+import { canManagePayments, getAccessibleProjectIds, isDirectorRole, isSupervisionRole } from '../../../utils/permissions'
 
 /** Remembers the phase-first vs classification-first choice per browser. */
 const GROUPING_STORAGE_KEY = 'cognilion.site_management_grouping'
@@ -95,6 +95,8 @@ const SiteManagement: React.FC = () => {
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | null>(null)
   const [showSubcontractorForm, setShowSubcontractorForm] = useState(false)
   const [selectedPhase, setSelectedPhase] = useState<ProjectPhase | null>(null)
+  // The classification row whose "+" opened the form, preselected in it (SUP-5).
+  const [selectedClassificationId, setSelectedClassificationId] = useState<number | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingSubcontractor, setEditingSubcontractor] = useState<Subcontractor | null>(null)
   const [selectedSubcontractorForPayment, setSelectedSubcontractorForPayment] = useState<Subcontractor | null>(null)
@@ -314,24 +316,28 @@ const SiteManagement: React.FC = () => {
     }
   }
 
+  // Rows in the site tree are contracts: `id` is the contract, `subcontractor_id` the company.
+  // Comments belong to the company (subcontractor_comments.subcontractor_id → subcontractors).
+  const companyIdOf = (row: Subcontractor) => row.subcontractor_id ?? row.id
+
   const openSubcontractorDetails = async (subcontractor: Subcontractor) => {
     setSelectedSubcontractor(subcontractor)
     setSubcontractorComments([])
     setCommentsError(null)
-    await loadComments(subcontractor.id)
+    await loadComments(companyIdOf(subcontractor))
   }
 
   const handleAddComment = async () => {
     if (!selectedSubcontractor || !user?.id) return
     const success = await addSubcontractorComment(
-      selectedSubcontractor.id,
+      companyIdOf(selectedSubcontractor),
       user.id,
       newComment,
       commentType
     )
     if (success) {
       setNewComment('')
-      await loadComments(selectedSubcontractor.id)
+      await loadComments(companyIdOf(selectedSubcontractor))
     }
   }
 
@@ -350,6 +356,8 @@ const SiteManagement: React.FC = () => {
   }
 
   const userCanManagePayments = canManagePayments(user)
+  // Deleting contracts and phases is Director-only under RLS; other roles would get a no-op.
+  const userCanDelete = isDirectorRole(user)
 
   if (selectedProject) {
     return (
@@ -377,9 +385,10 @@ const SiteManagement: React.FC = () => {
             setIsPhaseSetupEditMode(true)
           }}
           onEditPhase={openEditPhaseModal}
-          onDeletePhase={handleDeletePhase}
-          onAddSubcontractor={(phase) => {
+          onDeletePhase={userCanDelete ? handleDeletePhase : undefined}
+          onAddSubcontractor={(phase, classificationId) => {
             setSelectedPhase(phase)
+            setSelectedClassificationId(classificationId ?? null)
             setShowSubcontractorForm(true)
           }}
           onOpenPaymentHistory={userCanManagePayments ? openPaymentHistory : undefined}
@@ -391,7 +400,7 @@ const SiteManagement: React.FC = () => {
             setShowEditModal(true)
           }}
           onOpenSubDetails={openSubcontractorDetails}
-          onDeleteSubcontractor={handleDeleteSubcontractor}
+          onDeleteSubcontractor={userCanDelete ? handleDeleteSubcontractor : undefined}
           onManageMilestones={handleManageMilestones}
           canManagePayments={userCanManagePayments}
           classifications={classifications}
@@ -460,8 +469,10 @@ const SiteManagement: React.FC = () => {
           onClose={() => {
             setShowSubcontractorForm(false)
             setSelectedPhase(null)
+            setSelectedClassificationId(null)
           }}
           phase={selectedPhase}
+          classificationId={selectedClassificationId}
           existingSubcontractors={existingSubcontractors}
           onSubmit={handleAddSubcontractor}
           projectId={selectedProject?.id || ''}
@@ -529,7 +540,7 @@ const SiteManagement: React.FC = () => {
           canManagePayments={userCanManagePayments}
           comments={subcontractorComments}
           commentsError={commentsError}
-          onRetryComments={selectedSubcontractor ? () => loadComments(selectedSubcontractor.id) : undefined}
+          onRetryComments={selectedSubcontractor ? () => loadComments(companyIdOf(selectedSubcontractor)) : undefined}
           newComment={newComment}
           commentType={commentType}
           onCommentChange={setNewComment}

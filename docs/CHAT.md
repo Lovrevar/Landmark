@@ -10,13 +10,13 @@
 
 ## Data Layer
 
-Three tables: `chat_conversations`, `chat_participants` (junction with `last_read_at`), `chat_messages` (optional `file_url`/`file_name`/`file_size`/`file_type`). File attachments are stored in the `chat-attachments` Supabase storage bucket.
+Three tables: `chat_conversations`, `chat_participants` (junction with `last_read_at`), `chat_messages` (optional `file_url`/`file_name`/`file_size`/`file_type`). File attachments are stored in the **private** `chat-attachments` Supabase storage bucket; only participants of the conversation named by the path's first folder can read or upload (`can_access_chat_object`, migration `20260930100000`). `file_url` holds the object path (older rows hold the former public URL); `getChatAttachmentUrl` signs it for an hour when a message renders.
 
 ### services/chatService.ts
 - `fetchAllUsers()` — list of all users for the new-conversation picker
-- `fetchConversations(userId)` — conversations the user participates in, hydrated with participants, last message, and per-conversation unread count (counts messages newer than `last_read_at`, excluding own messages)
+- `fetchConversations()` — conversations the caller participates in. The last message and per-conversation unread count (messages newer than `last_read_at`, excluding own messages) come from the `get_chat_conversation_summaries` RPC (migration `20260529120000`; SECURITY DEFINER, scoped to `auth.uid()`, ordered by last activity), not from the client; one batched `chat_participants` query then hydrates participants and their users
 - `fetchMessages(conversationId, limit?, offset?)` — paginated messages for a conversation, hydrated with sender data
-- `uploadChatFile(file, conversationId)` — uploads to `chat-attachments` bucket, enforces 25 MB limit (throws `FILE_TOO_LARGE`), returns public URL + metadata
+- `uploadChatFile(file, conversationId)` — uploads to `chat-attachments` bucket, enforces 25 MB limit (throws `FILE_TOO_LARGE`), returns the storage path + metadata (the bucket is private; see `getChatAttachmentUrl`)
 - `sendMessage(conversationId, senderId, content, attachment?)` — inserts a message row
 - `createConversation(creatorId, participantIds, name, isGroup)` — for 1:1, reuses the existing direct conversation if one exists between the two users; for group, creates new
 - `findExistingDirectConversation(userA, userB)` — internal helper used by `createConversation` to avoid duplicate 1:1 conversations
@@ -102,4 +102,4 @@ Two distinct Supabase Realtime channels are used. They MUST have different names
 ## Notes
 - Activity logging is intentionally limited to `conversation.create` — message sends are not logged to keep the audit trail noise-free
 - File size limit (25 MB) is enforced client-side in `uploadChatFile` and surfaces as a translated error
-- `last_read_at` on `chat_participants` is the source of truth for unread counts; both per-conversation and global counts are computed from it
+- `last_read_at` on `chat_participants` is the source of truth for unread counts; both per-conversation (in the summaries RPC) and global (client-side, in `getTotalUnreadCount`) counts are computed from it

@@ -8,7 +8,7 @@ import {
   hexToRgb
 } from './pdfCharts'
 import { pdfMoneyRounded, pdfMoneyCompact } from './pdfText'
-import type { ComprehensiveReport } from '../types'
+import type { CashFlowAmounts, ComprehensiveReport } from '../types'
 import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import {
   formatDate,
@@ -696,7 +696,7 @@ export async function generateGeneralReportPDF(
     yPosition += 8
 
     const contractData = report.contract_types.map((ct, idx) => ({
-      label: ct.name.substring(0, 12),
+      label: (ct.name || t('common.uncategorized')).substring(0, 12),
       value: ct.count,
       color: ['#2563eb', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][idx % 6]
     }))
@@ -741,44 +741,66 @@ export async function generateGeneralReportPDF(
   pdf.text(t('reports.general.cash_flow'), margin, yPosition)
   yPosition += 10
 
-  pdf.setFillColor(240, 240, 240)
-  pdf.rect(margin, yPosition, pageWidth - 2 * margin, 8, 'F')
+  // Two tables with the same columns: operations, then financing (credit principal drawn and
+  // repaid). Their sum is the total cash flow the charts above plot.
+  const sumRows = (rows: readonly CashFlowAmounts[]) => rows.reduce(
+    (total, row) => ({ inflow: total.inflow + row.inflow, outflow: total.outflow + row.outflow, net: total.net + row.net }),
+    { inflow: 0, outflow: 0, net: 0 },
+  )
+  const amountsLine = (amounts: CashFlowAmounts) => [
+    `${withColon('reports.general.inflow_col')} ${moneyCompact(amounts.inflow)}`,
+    `${withColon('reports.general.outflow_col')} ${moneyCompact(amounts.outflow)}`,
+    `${withColon('reports.general.net_col')} ${moneyCompact(amounts.net)}`
+  ].join(' | ')
+
+  for (const activity of ['operating', 'financing'] as const) {
+    const rows = report.cash_flow.map(month => month[activity])
+    checkPageBreak(33 + rows.length * 5)
+
+    pdf.setFontSize(11)
+    pdf.setFont(fontFamily, 'bold')
+    pdf.setTextColor(0, 0, 0)
+    pdf.text(t(`reports.general.cash_flow_${activity}`), margin, yPosition)
+    pdf.setFontSize(8)
+    pdf.setFont(fontFamily, 'normal')
+    pdf.setTextColor(100, 100, 100)
+    pdf.text(t(`reports.general.cash_flow_${activity}_note`), margin, yPosition + 4)
+    pdf.setTextColor(0, 0, 0)
+    yPosition += 8
+
+    pdf.setFillColor(240, 240, 240)
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 8, 'F')
+    pdf.setFontSize(9)
+    pdf.setFont(fontFamily, 'bold')
+    pdf.text(t('reports.general.month_col'), margin + 5, yPosition + 5)
+    pdf.text(t('reports.general.inflow_col'), margin + 50, yPosition + 5)
+    pdf.text(t('reports.general.outflow_col'), margin + 90, yPosition + 5)
+    pdf.text(t('reports.general.net_col'), margin + 130, yPosition + 5)
+    // 13, not 10: at 10 the first row's text sat on the lower edge of the header band.
+    yPosition += 13
+
+    pdf.setFont(fontFamily, 'normal')
+    rows.forEach((amounts, index) => {
+      const y = yPosition + (index * 5)
+      pdf.text(formatMonthYear(report.cash_flow[index].month_key, language), margin + 5, y)
+      pdf.text(moneyCompact(amounts.inflow), margin + 50, y)
+      pdf.text(moneyCompact(amounts.outflow), margin + 90, y)
+      pdf.setTextColor(amounts.net >= 0 ? 22 : 220, amounts.net >= 0 ? 163 : 38, amounts.net >= 0 ? 74 : 38)
+      pdf.text(moneyCompact(amounts.net), margin + 130, y)
+      pdf.setTextColor(0, 0, 0)
+    })
+    yPosition += rows.length * 5 + 3
+
+    pdf.setFont(fontFamily, 'bold')
+    pdf.text(amountsLine(sumRows(rows)), margin + 5, yPosition)
+    yPosition += 9
+  }
+
+  checkPageBreak(15)
   pdf.setFontSize(9)
   pdf.setFont(fontFamily, 'bold')
-  pdf.text(t('reports.general.month_col'), margin + 5, yPosition + 5)
-  pdf.text(t('reports.general.inflow_col'), margin + 50, yPosition + 5)
-  pdf.text(t('reports.general.outflow_col'), margin + 90, yPosition + 5)
-  pdf.text(t('reports.general.net_col'), margin + 130, yPosition + 5)
-  yPosition += 10
-
-  pdf.setFont(fontFamily, 'normal')
-  let totalInflow = 0
-  let totalOutflow = 0
-  let totalNet = 0
-
-  report.cash_flow.forEach((month, index) => {
-    totalInflow += month.inflow
-    totalOutflow += month.outflow
-    totalNet += month.net
-
-    pdf.text(formatMonthYear(month.month_key, language), margin + 5, yPosition + (index * 5))
-    pdf.text(moneyCompact(month.inflow), margin + 50, yPosition + (index * 5))
-    pdf.text(moneyCompact(month.outflow), margin + 90, yPosition + (index * 5))
-
-    pdf.setTextColor(month.net >= 0 ? 22 : 220, month.net >= 0 ? 163 : 38, month.net >= 0 ? 74 : 38)
-    pdf.text(moneyCompact(month.net), margin + 130, yPosition + (index * 5))
-    pdf.setTextColor(0, 0, 0)
-  })
-
-  yPosition += report.cash_flow.length * 5 + 5
-  pdf.setFont(fontFamily, 'bold')
-  pdf.text(t('reports.general.six_month_totals'), margin + 5, yPosition)
-  const totalsLine = [
-    `${withColon('reports.general.inflow_col')} ${moneyCompact(totalInflow)}`,
-    `${withColon('reports.general.outflow_col')} ${moneyCompact(totalOutflow)}`,
-    `${withColon('reports.general.net_col')} ${moneyCompact(totalNet)}`
-  ].join(' | ')
-  pdf.text(totalsLine, margin + 5, yPosition + 5)
+  pdf.text(`${t('reports.general.six_month_totals')} ${t('reports.general.cash_flow_total')}`, margin + 5, yPosition)
+  pdf.text(amountsLine(sumRows(report.cash_flow)), margin + 5, yPosition + 5)
   yPosition += 15
 
   // ── Project Portfolio page ────────────────────────────────────────────────

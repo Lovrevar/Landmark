@@ -18,16 +18,17 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 #### Services
 
 ### services/salesService.ts
-- `fetchProjects()` — fetches all sales projects
+- `fetchProjects()` — fetches the projects whose `category` is in `SALES_PROJECT_CATEGORIES` (`stambeno`, `retail`); Interno projects are excluded
 - `fetchBuildings()` — fetches buildings for a project
 - `fetchApartments()`, `fetchGarages()`, `fetchRepositories()` — fetches units by type
 - `fetchCustomers()` — fetches all customers
 - `fetchSales()` — fetches all sale records
 - `fetchActualTotalPaidByApartment(apartmentId)` — computes total paid for an apartment
 - `createBuilding(data)`, `deleteBuilding(id)` — building CRUD
+- `createBulkBuildings(projectId, quantity, nameFor)` — creates `quantity` buildings named by `nameFor(i)`; the screen passes `sales_projects.default_building_name` ("Zgrada {{n}}" / "Building {{n}}"), so names are stored in the creator's language rather than hard-coded English
 - `createUnit(data)`, `bulkCreateUnits(data)`, `deleteUnit(id)` — unit CRUD
 - `updateUnitStatus(id, status)` — updates a unit's availability status
-- `bulkUpdateUnitPrice(ids, unitType, adjustmentType, value)` — adjusts price per m² for selected units. Sold units are never repriced: they are excluded from the fetch and each update re-checks `status <> 'Sold'`. The `apartment.bulk_price_update` log `count` is the number of rows actually updated, not the number of ids passed
+- `bulkUpdateUnitPrice(ids, unitType, adjustmentType, value)` — adjusts price per m² for selected units. Sold units are never repriced: they are excluded from the fetch and each update re-checks `status <> 'Sold'`. The `apartment.bulk_price_update` log `count` is the number of rows actually updated, not the number of ids passed. The current per-m² value comes from `effectivePricePerM2` (`Sales/utils/priceUtils.ts`), which falls back to price ÷ size when the stored value is 0; the `trg_sync_price_per_m2` trigger (migration `20260930100200`) keeps `price_per_m2 = round(price / size_m2, 2)` on apartments, garages and repositories whenever price or size is written, so every create, edit and import path stays consistent
   - **Returns `{ selected, updated, failed }`** (`bulkPriceResult.ts`, folded by the pure
     `summarizeBulkPriceUpdate`, unit-tested) instead of throwing on a partial failure. It used
     to throw `Failed to update N units`, which both discarded the count and skipped the page's
@@ -38,7 +39,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `linkGarageToApartment(garageId, apartmentId)`, `unlinkGarageFromApartment(...)` — garage linking
 - `linkRepositoryToApartment(repoId, apartmentId)`, `unlinkRepositoryFromApartment(...)` — storage linking
 - `createCustomer(data)` — creates a new customer from the sale form
-- `completeSale(saleData)` — records a sale and updates unit status, links customer
+- `completeSale(saleData)` — records the sale through the `complete_apartment_sale` RPC, one transaction that creates the new customer (if any), inserts the `sales` row, marks the apartment and its linked garages/storage units Sold with the buyer's name, and sets the customer to `buyer`. Runs as the caller, so RLS decides who may sell (Director, Sales, Accounting). **Only apartments are sold**: garages and storage units go with the apartment's package, and the Sell button is shown on apartments only. `sales.total_paid` / `remaining_amount` are a snapshot at sale time; paid-to-date always comes from `accounting_payments` on the apartment's `OUTGOING_SALES` invoices
 - `updateCustomerStatus(customerId, status)` — updates customer CRM status
 - `updateUnitAfterSale(apartmentId, saleData)` — patches unit record post-sale
 - **Depends on:** supabase client
@@ -47,6 +48,18 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 - `importGaragesFromExcel(file, buildingId)` — parses Excel file and bulk-inserts garage records. Returns `{ created, updated, errors }`, where `errors` is `{ number, message }[]` (one per failed garage) so the modal can list them translated
 - `fetchExistingGarageNumbers(buildingId)` — returns existing garage numbers to detect duplicates
 - **Depends on:** supabase client, xlsx, importOutcome
+
+### services/apartmentImportTemplate.ts
+- `APARTMENT_IMPORT_COLUMNS` — the 26 column headers A–Z in the order the parser reads them by index. The order is the contract; `apartmentImportTemplate.test.ts` pins each header to its index
+- `APARTMENT_IMPORT_FORMAT_KEYS` — the instruction lines shown in step 1 of the modal
+- `downloadApartmentImportTemplate()` — the **Download template** button: an `.xlsx` with a header-only first sheet and a second sheet repeating the instructions in Croatian (the import reads the first sheet only)
+- Fixes SALES-12: the instructions used to say columns V–Y held dates; they are euro amounts, and Z (the loan amount) was not mentioned
+
+### services/apartmentImportValidation.ts
+- `dateCellsInAmountColumns(cellAt)` — the money columns U–Z of a row that hold a date: text that reads as a date (`01.02.2026`, `2026-02-01`, …) or a cell Excel itself stores as a date (a number with a date format — which is why the modal reads the workbook with `cellNF: true`). `parseNumber` used to turn both into amounts: 1 022 026 € from the text, about 46 000 € from the serial
+- The modal rejects such a row with "Column V (1. rata …): holds a date where an amount in EUR is expected"
+- The row number in every import error is now the sheet's own row, also when blank rows sit above or between the data (it used to be the position among non-empty rows + 2)
+- Covered by `apartmentImportValidation.test.ts`
 
 ### services/apartmentImportService.ts
 - `importApartmentRow(row, projectId)` — upserts one apartment plus its parking/storage unit and link; logs `apartment.import_excel` per row
@@ -68,7 +81,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 ### ProjectsGrid.tsx
 - Project card grid showing building count, unit count, sold count, revenue, and progress bar
-- Only `stambeno` projects reach this screen: `fetchProjects()` filters on `category = 'stambeno'`, since the Sales module sells residential units and Interno/Retail projects have nothing to sell here
+- Both sellable categories reach this screen: `fetchProjects()` filters on `SALES_PROJECT_CATEGORIES` (`stambeno`, `retail`), and `index.tsx` splits them with a Stambeno / Retail `Tabs` bar (with per-category counts) above the grid. Interno projects are company-internal and never shown
 
 ### BuildingsGrid.tsx
 - Building card grid for a selected project showing unit counts and revenue per building
@@ -137,6 +150,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 
 ### modals/ExcelImportApartmentsModal.tsx
 - 3-step apartment bulk import (file upload → preview → results)
+- The format help says what the parser does: V–Y (columns 22–25) are instalment **amounts** (rata 1–4) and Z is the credit amount; it used to call them dates
 - Collects a per-row error (validation reason or the write error) for every skipped/failed row and logs one run summary via `logApartmentImportSummary`
 - **Uses services:** apartmentImportService
 - **Uses Ui:** Modal, Button, useToast
@@ -178,8 +192,8 @@ Individual apartment and unit management. Handles CRUD, payment history, contrac
 
 ### services/linkUnitsService.ts
 - `fetchLinkedUnitIds(apartmentId)` — returns IDs of currently linked garages and storage units
-- `fetchAvailableUnits(buildingId)` — returns unlinked garages and storage units in the building
-- `saveUnitLinks(apartmentId, garageIds, storageIds)` — upserts and removes links to match selection; logs `apartment.link_garage` / `apartment.link_repository` when links are added
+- `fetchAvailableUnits(buildingId)` — returns all garages and storage units in the building (the modal decides which are selectable); throws on a failed read
+- `saveUnitLinks(apartmentId, garageIds, storageIds)` — diffs the selection against the current links and applies it through the Sales Projects `linkGarageToApartment` / `unlinkGarageFromApartment` (and repository) functions, so both screens behave alike: a unit linked to a sold apartment becomes Sold with the same buyer, an unlinked unit returns to Available. Logs `apartment.link_garage` / `apartment.unlink_garage` (and repository) per change
 - **Depends on:** supabase client, activityLog
 
 #### Hooks
@@ -356,14 +370,14 @@ Payment tracking for apartment sales contracts.
 
 ## Shared Utilities
 
-### Payments/paymentMethod.ts
-- `PAYMENT_METHOD_LABEL_KEY` + `paymentMethodLabel(method, t)` — label for
-  `accounting_payments.payment_method` (WIRE / CASH / CHECK / CARD), using the same
-  `payments.method_*` keys `Cashflow/components/PaymentMethodField` already uses. Three screens
-  printed the raw stored value in a Croatian UI: `Sales/Payments`, `Retail/Sales` and
-  `Retail/Projects/modals/RetailPaymentHistoryModal` (which imports it from here). The stored
-  value is a CHECK constraint — map at render only. An unknown value keeps its raw text, a
-  missing one renders `—`. Covered by `paymentMethod.test.ts`
+### Payment method labels (no Sales-local helper)
+- There is no `Sales/Payments/paymentMethod.ts`. `Sales/Payments` (table and Excel export),
+  `Retail/Sales` and `Retail/Projects/modals/RetailPaymentHistoryModal` all label
+  `accounting_payments.payment_method` (WIRE / CASH / CHECK / CARD) with
+  `getPaymentMethodLabel(method, source, t)` from `Cashflow/services/paymentHelpers.ts`, which maps
+  to the `payments.method_*` keys. The stored value is a CHECK constraint — map at render only. An
+  unknown value keeps its raw text, a missing one (or a kompenzacija source) renders `—`. Covered
+  by `paymentHelpers.test.ts`
 
 ### utils/priceUtils.ts
 - `calculateAdjustedPriceRange(range, adjustmentType, amount)` — applies an `'increase'` / `'decrease'` of `amount` to a `PriceRange` (`{ min, max }`) for the bulk price update preview; decrease clamps each bound to 0. Exports the `PriceRange` interface
@@ -392,15 +406,17 @@ Payment tracking for apartment sales contracts.
   to Croatian Excel), dates as **real date cells** formatted `dd.mm.yyyy.`, `payment_method` is
   translated rather than written raw, and the headers are the screen's own Croatian keys. Dates go
   through `toDateCell`, so a date-only column keeps the day it says rather than the UTC one before it
-- **Deliberately left in English**, pending a wording decision: the 12- and 4-bullet
-  "Expected File Format" lists in the two import modals (they name literal Croatian spreadsheet
-  columns — `zgrada`, `oznaka stana`, `stan m2 prodajno`, `kapara 10%` — which must stay
-  verbatim); the sample identity placeholders in `SaleFormModal` ("John Smith",
+- **Apartment import instructions are translated** (`sales_projects.excel_import.format.*`) and
+  generated from `services/apartmentImportTemplate.ts`; the literal spreadsheet column names
+  (`zgrada`, `oznaka stana`, `kapara 10%`) stay Croatian in both locales
+- The garage import's four instruction lines are translated too
+  (`sales_projects.excel_import.garage_format.*`)
+- **Deliberately left in English**, pending a wording decision: the sample identity placeholders in `SaleFormModal` ("John Smith",
   "john@example.com", "+1 (555) 123-4567", "123 Main St"); and the `e.g., …` placeholders in
   `SingleApartmentModal`, `EditApartmentModal`, `SingleUnitModal`, `SingleBuildingModal`,
   `BulkUnitsModal` and `CustomerFormModal`
 
 ## Notes
-- Customer records here are property buyers (Sales CRM) — distinct from `Cashflow/Customers` (accounting customers)
+- Customer records here are property buyers (Sales CRM). `Cashflow/Customers` is a different screen over the **same** `customers` table (its `customerService.fetchCustomers` reads `customers` and adds the buyer's `accounting_invoices` and `sales`, read-only), so a buyer edited here is what Cashflow shows
 - Unit types: `stan` (apartment), `garaža` (garage), `repozitorij` (storage) — linked via junction tables `apartment_garages` and `apartment_repositories`
 - All delete confirmation dialogs use `ConfirmDialog` from `src/components/ui/` via the pending-item pattern — never use `window.confirm()` or `confirm()`

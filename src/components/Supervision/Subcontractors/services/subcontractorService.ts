@@ -1,16 +1,20 @@
 import { supabase } from '../../../../lib/supabase'
+import { fetchAllRows } from '../../../../lib/fetchAllRows'
 import { logActivity } from '../../../../lib/activityLog'
 import { NO_VALUE } from '../../../../utils/formatters'
 import type { SubcontractorSummary, SubcontractorContract } from '../types'
 
 export async function fetchSubcontractorsWithSummary(): Promise<Map<string, SubcontractorSummary>> {
-  const { data: subcontractorsData, error: subError } = await supabase
+  // Each of these can pass PostgREST's 1000-row page, which would silently drop companies,
+  // contracts or invoices from the register's totals.
+  const subcontractorsData = await fetchAllRows((from, to) => supabase
     .from('subcontractors')
     .select('*')
     .order('name')
-  if (subError) throw subError
+    .order('id')
+    .range(from, to))
 
-  const { data: contractsData, error: contractsError } = await supabase
+  const contractsData = await fetchAllRows((from, to) => supabase
     .from('contracts')
     .select(`
       *,
@@ -20,13 +24,15 @@ export async function fetchSubcontractorsWithSummary(): Promise<Map<string, Subc
       )
     `)
     .order('created_at', { ascending: false })
-  if (contractsError) throw contractsError
+    .order('id')
+    .range(from, to))
 
-  const { data: invoicesData, error: invoicesError } = await supabase
+  const invoicesData = await fetchAllRows((from, to) => supabase
     .from('accounting_invoices')
     .select('contract_id, base_amount, total_amount, paid_amount, remaining_amount')
     .eq('invoice_category', 'SUBCONTRACTOR')
-  if (invoicesError) throw invoicesError
+    .order('id')
+    .range(from, to))
 
   const grouped = new Map<string, SubcontractorSummary>()
 

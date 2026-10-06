@@ -20,9 +20,24 @@ export const canManageWorkLogs = (user: User | null): boolean => {
   return user.role === 'Director' || user.role === 'Supervision'
 }
 
+/** Mirrors the accounting_invoices UPDATE policy; other roles would get a silent no-op. */
+export const canApproveInvoices = (user: User | null): boolean => {
+  if (!user) return false
+  return user.role === 'Director' || user.role === 'Accounting'
+}
+
 export const canManageProjectPhases = (user: User | null): boolean => {
   if (!user) return false
   return user.role === 'Director'
+}
+
+/**
+ * Who may switch into the Cashflow profile. Mirrors the RLS on the finance tables (Director and
+ * Accounting); everyone else would get an empty, misleading dashboard (DEFECT_BACKLOG SEC-A8).
+ */
+export const canUseCashflow = (user: User | null): boolean => {
+  if (!user) return false
+  return user.role === 'Director' || user.role === 'Accounting'
 }
 
 export const isSupervisionRole = (user: User | null): boolean => {

@@ -26,6 +26,7 @@ import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { useBudgetControl } from './hooks/useBudgetControl'
 import LoadingSpinner from '../../ui/LoadingSpinner'
 import ErrorState from '../../ui/ErrorState'
+import InfoHint from '../../ui/InfoHint'
 import { formatEuro, formatEuroCompact, NO_VALUE } from '../../../utils/formatters'
 
 /**
@@ -37,15 +38,26 @@ const compactEuro = formatEuroCompact
 /** The same figure in full, under a tile and in the chart tooltip. */
 const formatEuroFull = formatEuro
 
+/** The "?" beside an EVM acronym: what it stands for, how it is computed and how to read it. */
+function EvmHint({ metric }: { metric: 'cpi' | 'spi' | 'eac' | 'vac' }) {
+  const { t } = useTranslation()
+  return (
+    <InfoHint hintId={`budget_control.${metric}`} label={t(`budget_control.hints.${metric}_title`)} articleId="term-evm">
+      <p>{t(`budget_control.hints.${metric}_body`)}</p>
+    </InfoHint>
+  )
+}
+
 interface IndexCardProps {
   label: string
   /** `null` when the index cannot be computed — rendered as "—" rather than a made-up 1.00. */
   value: number | null
   sublabel: string
   status: 'good' | 'warning' | 'bad' | 'unknown'
+  hint?: React.ReactNode
 }
 
-function IndexCard({ label, value, sublabel, status }: IndexCardProps) {
+function IndexCard({ label, value, sublabel, status, hint }: IndexCardProps) {
   const colors = {
     good: { bg: 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700', text: 'text-green-700 dark:text-green-400', sub: 'text-green-600 dark:text-green-400', label: 'text-green-800 dark:text-green-300' },
     warning: { bg: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700', text: 'text-yellow-700 dark:text-yellow-400', sub: 'text-yellow-600 dark:text-yellow-400', label: 'text-yellow-800 dark:text-yellow-300' },
@@ -57,7 +69,7 @@ function IndexCard({ label, value, sublabel, status }: IndexCardProps) {
 
   return (
     <div className={`rounded-xl border p-4 ${c.bg}`}>
-      <p className={`text-sm font-medium mb-1 ${c.label}`}>{label}</p>
+      <p className={`flex items-center gap-1.5 text-sm font-medium mb-1 ${c.label}`}>{label}{hint}</p>
       <p className={`text-2xl font-bold ${c.text}`}>{value === null ? NO_VALUE : value.toFixed(2)}</p>
       <div className={`flex items-center gap-1 mt-1 text-xs ${c.sub}`}>
         <Icon className="w-3 h-3" />
@@ -314,6 +326,7 @@ export default function BudgetControl() {
                   value={data.metrics.CPI}
                   sublabel={t(cpiStatus.labelKey)}
                   status={cpiStatus.status}
+                  hint={<EvmHint metric="cpi" />}
                 />
               )}
               <IndexCard
@@ -321,9 +334,10 @@ export default function BudgetControl() {
                 value={spiStatus ? data.metrics.SPI : null}
                 sublabel={spiStatus ? t(spiStatus.labelKey) : t('budget_control.no_schedule')}
                 status={spiStatus ? spiStatus.status : 'unknown'}
+                hint={<EvmHint metric="spi" />}
               />
               <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 p-4">
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">{t('budget_control.eac')}</p>
+                <p className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-sm mb-1">{t('budget_control.eac')}<EvmHint metric="eac" /></p>
                 <p className="text-xl font-bold text-gray-800 dark:text-gray-100">
                   {forecastAvailable ? compactEuro(data.metrics.EAC) : NO_VALUE}
                 </p>
@@ -333,7 +347,7 @@ export default function BudgetControl() {
               </div>
               {forecastAvailable ? (
                 <div className={`rounded-xl border p-4 ${forecastUnderBudget ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'}`}>
-                  <p className={`text-sm mb-1 ${forecastUnderBudget ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{t('budget_control.vac')}</p>
+                  <p className={`flex items-center gap-1.5 text-sm mb-1 ${forecastUnderBudget ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{t('budget_control.vac')}<EvmHint metric="vac" /></p>
                   <p className={`text-xl font-bold ${forecastUnderBudget ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}`}>{compactEuro(data.metrics.VAC)}</p>
                   <div className={`flex items-center gap-1 mt-1 text-xs ${forecastUnderBudget ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                     {forecastUnderBudget
@@ -344,7 +358,7 @@ export default function BudgetControl() {
                 </div>
               ) : (
                 <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 p-4">
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">{t('budget_control.vac')}</p>
+                  <p className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-sm mb-1">{t('budget_control.vac')}<EvmHint metric="vac" /></p>
                   <p className="text-xl font-bold text-gray-500 dark:text-gray-400">{NO_VALUE}</p>
                   <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
                     <HelpCircle className="w-3 h-3" /><span>{t('budget_control.no_forecast')}</span>

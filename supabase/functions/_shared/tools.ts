@@ -1,9 +1,9 @@
 // AI chat tool catalog.
 //
-// This file defines the 12 tools the assistant can invoke and the role-based
-// filter that selects which tools each user is allowed to use. Each handler
-// is currently a stub that echoes its input back; real handlers move to
-// ./tool-handlers.ts in Phase 3.2.
+// This file defines the 15 tools the assistant can invoke and the role-based
+// filter that selects which tools each user is allowed to use. The handlers
+// themselves live in ./tool-handlers.ts (search_help in ./help-search.ts);
+// each entry here only wires its schema and role gate to its handler.
 //
 // Descriptions are model-facing English: they are the only signal the model
 // uses to choose tools, so they must be specific (what / when / non-obvious
@@ -69,8 +69,7 @@ const FINANCE_PLUS_SUPERVISION: Role[] = ['Director', 'Accounting', 'Supervision
 // ---------------------------------------------------------------------------
 // TOOLS
 // ---------------------------------------------------------------------------
-// Order matches the role-gating table in the spec. Phase 3.2 batches will
-// replace each stub handler with real logic.
+// Order matches the role-gating table in the spec.
 
 export const TOOLS: ToolDefinition[] = [
   {
@@ -549,6 +548,18 @@ export const TOOLS: ToolDefinition[] = [
 
 // Returns the subset of TOOLS the given user is allowed to invoke based on
 // their role. No project-scoping here — that's per-handler logic in 3.2.
-export function selectAvailableTools(ctx: AuthContext): ToolDefinition[] {
+export function selectAvailableTools(ctx: Pick<AuthContext, 'role'>): ToolDefinition[] {
   return TOOLS.filter((t) => t.requiredRoles.includes(ctx.role))
+}
+
+// Looks up a tool by name, but only among the tools this user's role may
+// invoke. The orchestration loop dispatches whatever name the model returned,
+// and selectAvailableTools only controls which tools are *advertised* — so
+// dispatch must re-apply the role gate itself, or a name the model was never
+// given would still run. Returns undefined for unknown and forbidden alike.
+export function findAvailableTool(
+  ctx: Pick<AuthContext, 'role'>,
+  name: string,
+): ToolDefinition | undefined {
+  return selectAvailableTools(ctx).find((t) => t.name === name)
 }

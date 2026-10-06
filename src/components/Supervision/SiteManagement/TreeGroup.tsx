@@ -7,6 +7,8 @@ import { remainingBudget } from './utils/contractTree'
 import { ContractCard } from './ContractCard'
 import { Button } from '../../ui'
 import { formatEuroRounded } from '../../../utils/formatters'
+import { isClosedContract } from '../../../utils/contractRollup'
+import { useHideClosedContracts } from './hideClosedContracts'
 
 interface TreeGroupProps {
   node: TreeNode
@@ -21,7 +23,7 @@ interface TreeGroupProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor: (subcontractorId: string) => void
+  onDeleteSubcontractor?: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /** False drops the "Paid" column from every row of this subtree. */
   canManagePayments: boolean
@@ -72,6 +74,7 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
   ...cardHandlers
 }) => {
   const { t } = useTranslation()
+  const hideClosed = useHideClosedContracts()
   const isExpanded = expandedNodes.has(node.key)
   const isLeaf = node.children.length === 0
 
@@ -92,6 +95,10 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
   // Nothing to reveal, so the row is not a toggle. Expanding it opened an empty container and
   // left a chevron pointing at nothing — the budget on the row is already the whole story.
   const isExpandable = node.children.length > 0 || node.contracts.length > 0
+  // Hidden at render only; node totals were built from every contract and still include them.
+  const visibleContracts = hideClosed
+    ? node.contracts.filter(sub => !isClosedContract(sub.contract_status))
+    : node.contracts
 
   return (
     <div className={
@@ -196,7 +203,14 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
       {isExpanded && isExpandable && (
         isLeaf ? (
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {node.contracts.map(subcontractor => (
+            {visibleContracts.length < node.contracts.length && (
+              <p className="col-span-full text-xs text-gray-500 dark:text-gray-400">
+                {t('supervision.site_management.closed_contracts_hidden', {
+                  count: node.contracts.length - visibleContracts.length,
+                })}
+              </p>
+            )}
+            {visibleContracts.map(subcontractor => (
               <ContractCard
                 key={subcontractor.id}
                 subcontractor={subcontractor as unknown as Subcontractor}

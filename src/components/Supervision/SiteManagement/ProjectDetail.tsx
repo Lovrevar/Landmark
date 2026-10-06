@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Building2, Settings, CreditCard, Layers, Tags } from 'lucide-react'
+import { ArrowLeft, Building2, Settings, CreditCard, Layers, Tags, Eye, EyeOff } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases, SubcontractorWithPhase, SiteGrouping, VIEW_DIMENSIONS, CostClassification } from './types'
 import { PhaseCard } from './PhaseCard'
@@ -12,8 +12,11 @@ import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statu
 import { TICBudgetBadge } from './TICBudgetBadge'
 import { ProjectSummaryBanner } from './ProjectSummaryBanner'
 import { TreeGroup } from './TreeGroup'
+import { HideClosedContractsContext } from './hideClosedContracts'
+import { isClosedContract } from '../../../utils/contractRollup'
 import { fetchCreditAllocations, type CreditAllocation } from './services/siteService'
 import { Button, Badge, EmptyState } from '../../ui'
+import InlineLoadError from '../../ui/InlineLoadError'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 
 interface ProjectDetailProps {
@@ -22,7 +25,7 @@ interface ProjectDetailProps {
   onOpenPhaseSetup: () => void
   onEditPhaseSetup?: () => void
   onEditPhase: (phase: ProjectPhase) => void
-  onDeletePhase: (phase: ProjectPhase) => void
+  onDeletePhase?: (phase: ProjectPhase) => void
   onAddSubcontractor: (phase: ProjectPhase, classificationId?: number | null) => void
   onEditClassificationBudgets: (phase: ProjectPhase) => void
   onEditClassificationBudget: (phaseId: string, classificationId: number) => void
@@ -34,7 +37,7 @@ interface ProjectDetailProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor: (subcontractorId: string) => void
+  onDeleteSubcontractor?: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /**
    * Whether this user may see money already paid. Defaults to **false**: every figure derived
@@ -111,18 +114,31 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     ),
     [project.subcontractors, treeContext]
   )
+  const [hideClosed, setHideClosed] = useState(false)
+  const hasClosedContracts = project.subcontractors.some(sub => isClosedContract(sub.contract_status))
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [, setLoadingCredits] = useState(false)
+  // A failed load used to hide the section, which reads as "no credit is allocated" (SUP-8).
+  const [creditsLoadFailed, setCreditsLoadFailed] = useState(false)
 
-  useEffect(() => {
+  const loadCreditAllocations = React.useCallback(() => {
     setLoadingCredits(true)
+    setCreditsLoadFailed(false)
     fetchCreditAllocations(project.id)
       .then(setCreditAllocations)
-      .catch(err => console.error('Error fetching project credit allocations:', err))
+      .catch(err => {
+        console.error('Error fetching project credit allocations:', err)
+        setCreditsLoadFailed(true)
+      })
       .finally(() => setLoadingCredits(false))
   }, [project.id])
 
+  useEffect(() => {
+    loadCreditAllocations()
+  }, [loadCreditAllocations])
+
   return (
+    <HideClosedContractsContext.Provider value={hideClosed}>
     <div>
       <div className="mb-6">
         <div className="mb-3">
@@ -185,6 +201,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 </button>
               </div>
             )}
+            {hasClosedContracts && (
+              <Button
+                variant="secondary"
+                onClick={() => setHideClosed(h => !h)}
+                icon={hideClosed ? Eye : EyeOff}
+              >
+                {hideClosed
+                  ? t('supervision.site_management.show_closed_contracts')
+                  : t('supervision.site_management.hide_closed_contracts')}
+              </Button>
+            )}
             <Button variant="secondary" onClick={onManageClassifications} icon={Tags}>
               {t('supervision.cost_classification.manage_title')}
             </Button>
@@ -210,6 +237,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       </div>
 
       {/* Project Credits Section */}
+      {creditsLoadFailed && (
+        <InlineLoadError
+          className="mb-6"
+          message={t('supervision.site_management.project_detail.allocations_load_error')}
+          onRetry={loadCreditAllocations}
+        />
+      )}
       {creditAllocations.length > 0 && (
         <div className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/30 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
           <div className="flex items-center mb-4">
@@ -401,5 +435,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       )}
 
     </div>
+    </HideClosedContractsContext.Provider>
   )
 }

@@ -94,7 +94,7 @@ Uklanjanje skupine briše i sve njezine stavke, pa se traži potvrda. Nijedna iz
 
 **Uvoz iz Excela** učitava `.xlsx` ili `.xls` datoteku i **zamjenjuje sve stavke u obje tablice**. Prikazuje se pregled — koji je list učitan u koju karticu i koliko je stavki pronađeno — prije nego se išta promijeni.
 
-Datoteka treba imati listove **INVESTICIJA** i **GRAĐENJE** (ako nazivi ne odgovaraju, koristi se prvi i drugi list). Stupci se pronalaze automatski prema retku zaglavlja koji sadrži **NAMJENA** i **VLASTITA SREDSTVA**, pa razlika u rasporedu stupaca između dvaju listova nije problem. Prazni retci te retci *Ukupno* i *SVEUKUPNO* se preskaču.
+Datoteka treba imati listove **INVESTICIJA** i **GRAĐENJE**. Listovi drugačijeg naziva prepoznaju se po obliku tablice (list građenja ima prvi stupac s oznakama A), B), C) i rimskim brojevima). Stupci se pronalaze automatski prema retku zaglavlja koji sadrži **NAMJENA** i **VLASTITA SREDSTVA**, pa razlika u rasporedu stupaca između dvaju listova nije problem. Prazni retci te retci *Ukupno* i *SVEUKUPNO* se preskaču.
 
 Ako zaglavlje sadrži stupce **FAZA 1**, **FAZA 2** … , uvoz ih prepoznaje i raspoređuje iznose po
 fazama. Redak čiji zbroj po fazama ne odgovara njegovu ukupnom iznosu tretira se kao nefaziran,
