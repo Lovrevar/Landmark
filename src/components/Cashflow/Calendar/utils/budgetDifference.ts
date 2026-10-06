@@ -16,13 +16,13 @@ export interface BudgetDifference {
   /** budget − paid, to the cent. Negative when the month is over budget. */
   difference: number
   overBudget: boolean
-  /** The signed amount as shown: "€8.409,50" or "€−1.691.590,00". */
+  /** The signed amount as shown: "€8.409,50" or "−€1.691.590,00". */
   formatted: string
 }
 
 export function budgetDifference(budgetAmount: number, paid: number): BudgetDifference {
   // Whole cents, so a month paid exactly to budget is 0 and not a float residue that would be
-  // negative and read as an overrun of €−0,00.
+  // negative and read as an overrun.
   const difference = (Math.round(budgetAmount * 100) - Math.round(paid * 100)) / 100
   return { difference, overBudget: difference < 0, formatted: formatEuro(difference) }
 }

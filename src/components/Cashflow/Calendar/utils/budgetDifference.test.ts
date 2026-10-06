@@ -8,7 +8,7 @@ describe('budgetDifference', () => {
     const result = budgetDifference(450000, 2141590)
     expect(result.difference).toBe(-1691590)
     expect(result.overBudget).toBe(true)
-    expect(result.formatted).toBe(`€${MINUS}1.691.590,00`)
+    expect(result.formatted).toBe(`${MINUS}€1.691.590,00`)
   })
 
   it('shows money left as a positive amount', () => {
@@ -26,6 +26,6 @@ describe('budgetDifference', () => {
   })
 
   it('is over budget by a single cent', () => {
-    expect(budgetDifference(100, 100.01)).toMatchObject({ difference: -0.01, overBudget: true, formatted: `€${MINUS}0,01` })
+    expect(budgetDifference(100, 100.01)).toMatchObject({ difference: -0.01, overBudget: true, formatted: `${MINUS}€0,01` })
   })
 })

@@ -15,7 +15,7 @@ describe('money on the Companies screens', () => {
     expect(formatEuro(190000)).toBe('€190.000,00')
     expect(formatEuro(262806.25)).toBe('€262.806,25')
     expect(formatEuro(0)).toBe('€0,00')
-    expect(formatEuro(-7088981.45)).toBe('€−7.088.981,45')
+    expect(formatEuro(-7088981.45)).toBe('\u2212€7.088.981,45')
     expect(formatEuro(93062.5)).toBe('€93.062,50')
   })
 

@@ -10,6 +10,7 @@ import BudgetModal from './forms/BudgetModal'
 import { getInvoiceTypeLongLabel, getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 import PageHelpLink from '../../ui/PageHelpLink'
 import { budgetDifference } from './utils/budgetDifference'
+import { formatEuro } from '../../../utils/formatters'
 
 const AccountingCalendar: React.FC = () => {
   const { t } = useTranslation()
@@ -110,31 +111,31 @@ const AccountingCalendar: React.FC = () => {
       </StatGrid>
 
       <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between gap-3 text-sm">
           <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.summary.total_invoices')}</span>
           <span className="font-semibold text-gray-900 dark:text-white">{monthStats.total}</span>
         </div>
         <div className="border-t border-gray-300 dark:border-gray-600 my-2"></div>
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between gap-3 text-sm">
           <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.summary.outgoing_invoices')}</span>
-          <span className="font-semibold text-green-600">€{monthStats.outgoingPaid.toLocaleString('hr-HR')}</span>
+          <span className="font-semibold text-green-600">{formatEuro(monthStats.outgoingPaid)}</span>
         </div>
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between gap-3 text-sm">
           <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.summary.incoming_paid')}</span>
-          <span className="font-semibold text-red-600">€{monthStats.incomingPaid.toLocaleString('hr-HR')}</span>
+          <span className="font-semibold text-red-600">{formatEuro(monthStats.incomingPaid)}</span>
         </div>
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between gap-3 text-sm">
           <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.summary.incoming_unpaid')}</span>
           <div className="text-right">
-            <span className="font-semibold text-orange-600">€{monthStats.incomingUnpaid.toLocaleString('hr-HR')}</span>
+            <span className="font-semibold text-orange-600">{formatEuro(monthStats.incomingUnpaid)}</span>
             <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">{t('cashflow_calendar.summary.invoices_count', { count: monthStats.incomingUnpaidCount })}</span>
           </div>
         </div>
         <div className="border-t border-gray-300 dark:border-gray-600 my-2"></div>
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between gap-3 text-sm">
           <span className="text-gray-700 dark:text-gray-200 font-medium">{t('cashflow_calendar.summary.net_label')}</span>
           <span className={`font-bold text-lg ${monthStats.netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            €{monthStats.netAmount.toLocaleString('hr-HR')}
+            {formatEuro(monthStats.netAmount)}
           </span>
         </div>
         {(() => {
@@ -144,11 +145,11 @@ const AccountingCalendar: React.FC = () => {
             return (
               <>
                 <div className="border-t border-gray-300 dark:border-gray-600 my-2"></div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between gap-3 text-sm">
                   <span className="text-gray-600 dark:text-gray-400">{t('cashflow_calendar.summary.planned_budget')}</span>
-                  <span className="font-semibold text-blue-600">€{budget.budget_amount.toLocaleString('hr-HR')}</span>
+                  <span className="font-semibold text-blue-600">{formatEuro(budget.budget_amount)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between gap-3 text-sm">
                   <span className="text-gray-700 dark:text-gray-200 font-medium">{t('cashflow_calendar.summary.budget_difference')}</span>
                   <span className={`font-bold ${overBudget ? 'text-red-600' : 'text-green-600'}`}>
                     {formatted} {overBudget ? t('cashflow_calendar.summary.over_budget') : t('cashflow_calendar.summary.under_budget')}
@@ -313,15 +314,15 @@ const AccountingCalendar: React.FC = () => {
                       </td>
                       <td data-label={t('cashflow_calendar.table.my_company')} className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{invoice.company?.name || 'N/A'}</td>
                       <td data-label={t('cashflow_calendar.table.category')} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{invoice.category || '-'}</td>
-                      <td data-label={t('cashflow_calendar.table.base')} className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">€{invoice.base_amount.toLocaleString('hr-HR')}</td>
-                      <td data-label={t('cashflow_calendar.table.vat')} className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">€{invoice.vat_amount.toLocaleString('hr-HR')}</td>
-                      <td data-label={t('cashflow_calendar.table.total')} className="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-white">€{invoice.total_amount.toLocaleString('hr-HR')}</td>
+                      <td data-label={t('cashflow_calendar.table.base')} className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">{formatEuro(invoice.base_amount)}</td>
+                      <td data-label={t('cashflow_calendar.table.vat')} className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">{formatEuro(invoice.vat_amount)}</td>
+                      <td data-label={t('cashflow_calendar.table.total')} className="px-4 py-3 text-right text-sm font-bold text-gray-900 dark:text-white">{formatEuro(invoice.total_amount)}</td>
                       <td data-label={t('cashflow_calendar.table.paid')} className={`px-4 py-3 text-right text-sm font-semibold ${
                         invoice.invoice_type.startsWith('INCOMING_')
                           ? 'text-red-600'
                           : 'text-green-600'
                       }`}>
-                        €{invoice.paid_amount.toLocaleString('hr-HR')}
+                        {formatEuro(invoice.paid_amount)}
                       </td>
                       <td data-label={t('cashflow_calendar.table.status')} className="px-4 py-3 text-center">
                         <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
