@@ -1,7 +1,7 @@
 # Backlog — app-wide UI
 
 Problems that repeat across modules: formatting, status display, failed loads, translations, the
-shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-10`). Entry format and
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-11`). Entry format and
 rules are in [README.md](./README.md).
 
 A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
@@ -9,6 +9,16 @@ helper or a sweep. Counts were measured on 2026-09-21 to 2026-09-23 and will hav
 again before starting a sweep. Check [../UI.md](../UI.md) before adding a primitive.
 
 ## Open
+
+### UI-10 · Low · Shell labels that disagree or are unused
+- **Check:** Code reading (help-article audit, 2026-10-06)
+- Menu label and page title differ on several pages (the help articles now name both).
+- The Cashflow prompt says "Lozinka" and its error "Netočna šifra".
+- Looks unused: `profiles.unlock`, `profiles.locked`, `profiles.select_profile` and some `nav.*`
+  labels. Grep before deleting.
+- English literals left on screen: "TBD", "Mixed", "Retail", "Site".
+- The assistant only boosts articles for `/site-management`, not for a project opened inside it
+  (`routeLabels.ts`), and the page help link there finds no article for the same reason.
 
 ### UI-8 · Medium · Mobile
 - Non-wrapping header rows in Supervision, which is used on phones on site.

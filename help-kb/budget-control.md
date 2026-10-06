@@ -1,26 +1,35 @@
 ---
 id: budget-control
 title: Kontrola proračuna (EVM)
-keywords: [kontrola proračuna, budget control, EVM, CPI, SPI, EAC, VAC, performanse projekta]
+keywords: [kontrola proračuna, budget control, EVM, CPI, SPI, EAC, VAC, performanse projekta, planirani proračun, ugovoreno, plaćeno, dovršenost]
 routes: [/budget-control]
 roles: [Director, Accounting, Investment]
 ---
 
-**Kontrola proračuna** prikazuje EVM (Earned Value Management) pregled performansi po fazama jednog projekta. Projekt birate iz padajućeg izbornika u gornjem desnom kutu.
+**Kontrola proračuna** prikazuje EVM (Earned Value Management) pregled performansi odabranog projekta, zbrojeno preko svih njegovih faza. Projekt birate iz padajućeg izbornika **Projekt** u gornjem desnom kutu.
 
-Prikazuje se pet ključnih pokazatelja:
-- **CPI** (indeks troškovne učinkovitosti) sa značkom statusa
-- **SPI** (indeks vremenske učinkovitosti) sa značkom statusa
-- **EAC** (procjena konačnog troška)
-- **VAC** (varijanca konačnog troška)
-- iskorištenost budžeta u postotcima
+## Gornji red kartica
 
-Ispod kartica nalazi se stupčasti grafikon (Planirano, Ugovoreno, Plaćeno, Prognoza) i raspršeni grafikon CPI/SPI po fazama.
+- **TIC** — ukupni investicijski trošak iz TIC-a projekta
+- **Planirani proračun** — zbroj budžeta faza. Može biti manji od TIC-a kada TIC sadrži troškove koji nisu fazirani (npr. zemljište)
+- **Ugovoreno** — zbroj iznosa ugovora projekta, s postotkom od proračuna
+- **Plaćeno** — zbroj plaćenih iznosa po tim ugovorima, s postotkom od ugovorenog
+- **Prognoza (EAC)** — procijenjeni konačni trošak, uz oznaku **Ispod proračuna** ili **Iznad proračuna**
 
-Napomena: SPI (indeks izvršenja rasporeda) računa se samo ako faza ima upisan početni i završni datum. Ako nijedna faza projekta nema datume, SPI nema osnovu za usporedbu i ne treba ga čitati kao "u roku". CPI (indeks izvršenja troška) računa se uvijek.
+## Grafikoni
 
-Realizirani budžet računa se iz ugovora (`contracts`), ne iz polja `budget_used` na fazi — to polje nije pouzdano.
+Između dva reda kartica nalaze se stupčasti grafikon **Kontrola proračuna** (**Planirano**, **Ugovoreno**, **Plaćeno**, **Prognoza (EAC)**) i grafikon **EVM indeksi performansi** s trenutnim CPI-jem i SPI-jem projekta te linijama **Cilj (1.0)** i **Upozorenje (0.9)**.
 
-Planirani iznosi (budžet projekta i budžeti faza) dolaze iz [[tic]] projekta — vidi [[term-tic]].
-Projekt bez TIC-a nema plan, pa CPI i SPI za njega nemaju osnovu; brojke se prikazuju iz onoga što
-je zapisano, ali ih ne treba čitati kao mjeru izvedbe dok TIC ne postoji.
+## EVM metrike performansi
+
+Na dnu su kartice **CPI** i **SPI** (obojane prema statusu), **EAC**, **VAC** i **Dovršenost** — udio plaćenog u ugovorenom. Uz CPI, SPI, EAC i VAC nalazi se „?” koji objašnjava metriku; značenje i boje opisuje [[term-evm]].
+
+- Ako nijedna faza nema oba datuma (početak i završetak), kartica SPI prikazuje „—” i napomenu **Nema faza s datumima početka i završetka**. To ne znači da je projekt u roku.
+- CPI se prikazuje uvijek; dok ništa nije plaćeno iznosi 1,00.
+- Ako je CPI 0, EAC i VAC prikazuju „—” jer prognoze nema.
+
+## Projekt bez budžeta
+
+Ako faze projekta nemaju budžet (projekt nema TIC), umjesto kartica i grafikona prikazuje se poruka **Nema podataka o proračunu za ovaj projekt**. Budžet se ne upisuje ovdje: postavlja se spremanjem [[tic]] projekta — vidi [[term-budzet-iz-tic]].
+
+Odakle dolazi iznos **Plaćeno** objašnjava [[term-realised-budget]].

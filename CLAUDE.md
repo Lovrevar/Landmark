@@ -146,7 +146,7 @@ Module conventions, cross-module rules and per-file notes are in
 
 ## Shared UI Library
 
-There is a shared component library at `src/components/ui/` with 31 components. Check it before
+There is a shared component library at `src/components/ui/` with 32 components. Check it before
 creating any new UI primitive — the full list with props is in [`docs/UI.md`](./docs/UI.md).
 
 **Six are not in the barrel file** and must be imported by path: `AvatarStack`,

@@ -1,15 +1,15 @@
 ---
 id: work-logs
 title: Radni dnevnik (dnevnici radova)
-keywords: [radni dnevnik, dnevnici radova, work logs, novi radni zapis, status rada]
+keywords: [radni dnevnik, dnevnici radova, work logs, novi radni zapis, status rada, blokada]
 routes: [/work-logs]
 roles: [Director, Supervision]
 ---
 
-**Radni dnevnik** služi praćenju aktivnosti podugovaratelja i zapažanja na gradilištu. Naslov: **Radni dnevnik**, podnaslov **Praćenje aktivnosti podugovaratelja i zapažanja na gradilištu**.
+Stavka **Dnevnici radova** otvara stranicu **Radni dnevnik** — praćenje aktivnosti podugovaratelja i zapažanja na gradilištu. Podnaslov: **Praćenje aktivnosti podugovaratelja i zapažanja na gradilištu**.
 
-Klikom na **Novi radni zapis** (+ gumb) otvara se modal s obaveznim poljima: **Projekt**, **Faza** (omogućava se nakon odabira projekta), **Ugovor** (omogućava se nakon faze), **Datum**, **Status** i **Opis rada**.
+Klikom na **Novi radni zapis** otvara se obrazac s obaveznim poljima: **Projekt**, **Faza** (bira se nakon projekta), **Ugovor** (bira se nakon faze), **Datum**, **Status** i **Opis rada**. Ako faza nema aktivnih ugovora, zapis se ne može dodati — ugovore provjerite u [[site-management]].
 
-Mogući statusi: **Rad završen**, **U tijeku**, **Blokada**, **Problem kvalitete**, **Čekanje materijala**, **Kašnjenje zbog vremena**. Ovisno o odabranom statusu pojavljuju se dodatna polja (**Detalji blokade**, **Detalji problema**, **Boja za nadzornu ploču**, **Dodatne napomene**).
+Mogući statusi: **Rad završen**, **U tijeku**, **Blokada**, **Problem kvalitete**, **Čekanje materijala**, **Kašnjenje zbog vremena**. Uz status **Blokada** pojavljuje se polje **Detalji blokade**, a uz **Problem kvalitete** polje **Detalji problema**. **Dodatne napomene** su uvijek dostupne i nisu obavezne.
 
-Stranicu mogu uređivati samo uloge **Director** i **Supervision**.
+Ispod obrasca je **Povijest radnih zapisa**: projekt i faza, ugovor, status, opis i vrijeme unosa. Svaki zapis ima **Uredi** i **Obriši**.

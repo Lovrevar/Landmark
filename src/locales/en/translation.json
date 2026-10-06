@@ -202,7 +202,8 @@
       "October",
       "November",
       "December"
-    ]
+    ],
+    "no_results_description": "Clear the search or change the filters."
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -325,7 +326,8 @@
     "wrong_password": "Wrong password",
     "cashflow_misconfigured_title": "Configuration error",
     "cashflow_misconfigured_body": "Cashflow access is misconfigured. Contact an administrator.",
-    "select_profile": "Select Profile"
+    "select_profile": "Select Profile",
+    "hint": "A profile changes the menu and dashboard, not what you are allowed to do."
   },
   "status": {
     "planning": "Planning",
@@ -461,7 +463,8 @@
       "buyer": "Customer",
       "category": "Category",
       "issue_date": "Issue Date",
-      "no_invoices": "No invoices found"
+      "no_invoices": "No invoices found",
+      "no_invoices_description": "Invoices of the selected direction (incoming or outgoing) are listed here. Enter a new one with the \"New Invoice\" button in the page header."
     },
     "stats": {
       "total": "Total Invoices",
@@ -746,7 +749,8 @@
       "actions": "Actions",
       "no_payments": "No payments found",
       "expense": "EXPENSE",
-      "income": "INCOME"
+      "income": "INCOME",
+      "no_payments_description": "Payments recorded against invoices are listed here. Add the first one with the \"New Payment\" button."
     },
     "stats": {
       "total_count": "Total Payments",
@@ -1627,7 +1631,8 @@
       "status_partial": "Partial",
       "status_unpaid": "Unpaid",
       "close": "Close"
-    }
+    },
+    "empty_description": "Customers are listed here with their invoices and payments. Add customers in the Sales profile, on the Customers page, with the \"Add Customer\" button."
   },
   "invoice_entity": {
     "supplier_label": "Supplier",
@@ -1838,7 +1843,13 @@
     "funding_sources": "Funding Sources",
     "no_credit_allocations": "No credit allocations recorded",
     "budget_not_set": "Budget not set",
-    "budget_from_tic_hint": "Budget comes from the project's TIC."
+    "budget_from_tic_hint": "Budget comes from the project's TIC.",
+    "open_tic": "Open the project's TIC",
+    "no_credit_allocations_description": "Funding sources appear here once this project is assigned to a credit in the Funding profile, on the Investments page, with the \"Investment Purpose\" button.",
+    "no_projects_description": "All of the company's projects are listed here. Add the first one with the \"New Project\" button.",
+    "no_projects_description_readonly": "All of the company's projects are listed here. Only a user with the Director role can add a new project.",
+    "no_phases_description": "Phases are set up in the Supervision profile, on the Site Management page, with the \"Setup Phases\" button. Contracts are then listed here by phase.",
+    "no_contracts_description": "Subcontractor contracts appear here once they are added to the project's phases in the Supervision profile, on the Site Management page."
   },
   "sales_projects": {
     "default_building_name": "Building {{n}}",
@@ -2115,7 +2126,11 @@
       "apartments": "Apartments",
       "garages": "Garages",
       "repositories": "Repositories"
-    }
+    },
+    "no_projects_title": "No projects in this category",
+    "no_projects_description": "Projects in the stambeno and retail categories are listed here. Projects are added in the General profile, on the Projects page, with the \"New Project\" button.",
+    "no_buildings_title": "This project has no buildings yet",
+    "no_buildings_description": "Add them with the \"Create Buildings\" or \"Add Building\" button, or import them with the \"Import from Excel\" button in the page header."
   },
   "apartments": {
     "title": "Apartments",
@@ -2226,7 +2241,8 @@
       "progress": "Overall Progress",
       "all_payments": "All Payments",
       "no_payments": "No payments recorded yet",
-      "type": "Payment type"
+      "type": "Payment type",
+      "no_payments_description": "The buyer's payments appear here once payments are recorded in the Cashflow profile against this apartment's invoices."
     },
     "contracted": {
       "title": "Contracted",
@@ -2241,7 +2257,9 @@
       "rate3": "3. rata obrtnički radovi 20% (EUR)",
       "rate4": "4. rata uporabna 20% (EUR)",
       "credit_amount": "Kredit etažiranje 90% (EUR)"
-    }
+    },
+    "empty_title": "No apartments",
+    "empty_description": "Apartments from all projects are listed here. Add them with the \"Add Apartment\" or \"Bulk Create\" button."
   },
   "sale_form": {
     "title": "Complete Sale for",
@@ -2395,7 +2413,9 @@
       "phone_required": "Phone is required.",
       "delete_failed": "The customer could not be deleted.",
       "update_contact_failed": "The contact date could not be updated."
-    }
+    },
+    "empty_title": "No customers",
+    "empty_description": "Customers are added with the \"Add Customer\" button and sorted into the Leads, Interested and Buyers tabs."
   },
   "supervision": {
     "title": "Supervision",
@@ -2760,7 +2780,8 @@
       "ref": "Ref:",
       "created": "Created",
       "managed_in_accounting": "Managed in Accounting",
-      "load_failed": "The payment history could not be loaded"
+      "load_failed": "The payment history could not be loaded",
+      "no_payments_description": "Payments appear here once they are recorded in the Cashflow profile against this subcontractor's invoices."
     },
     "invoices_modal": {
       "title": "Invoices -",
@@ -3329,7 +3350,8 @@
       "remaining_label": "Remaining: €{{amount}}",
       "type_incoming_supplier": "Incoming (Supplier)",
       "type_outgoing_supplier": "Outgoing (Supplier)",
-      "type_outgoing_sales": "Outgoing (Customer)"
+      "type_outgoing_sales": "Outgoing (Customer)",
+      "no_invoices_description": "Invoices appear here once they are entered in the Cashflow profile, on the Invoices page, with the \"New Retail Invoice\" button and linked to this contract."
     }
   },
   "land_plots": {
@@ -3601,7 +3623,8 @@
         "total_available_footer": "Total Available",
         "bank_badge": "BANK",
         "expiring_soon_badge": "EXPIRING SOON",
-        "expired_badge": "EXPIRED"
+        "expired_badge": "EXPIRED",
+        "no_funding_sources_description": "Loans and equity appear here once this project is assigned to them on the Investments page with the \"Investment Purpose\" button."
       }
     },
     "payments": {
@@ -4286,7 +4309,8 @@
       "cash_flow_operating_note": "Receipts from customers, and payments to suppliers, the office and financiers, including credit costs.",
       "cash_flow_financing": "Financing activities",
       "cash_flow_financing_note": "Credit principal: drawdowns (inflow) and repayments (outflow).",
-      "cash_flow_total": "Total cash flow"
+      "cash_flow_total": "Total cash flow",
+      "no_data_description": "The report is built from projects, sales, contracts and funding. Once that data has been entered, reload it with the \"Refresh\" button."
     },
     "sales": {
       "title": "Sales Reports",
@@ -4396,7 +4420,9 @@
         "projects_overview": "Projects – Overview",
         "top_suppliers": "Top Suppliers"
       },
-      "description": "{{projects}} projects · {{customers}} customers · {{suppliers}} suppliers"
+      "description": "{{projects}} projects · {{customers}} customers · {{suppliers}} suppliers",
+      "no_data": "No data for the retail report",
+      "no_data_description": "The report is built from retail projects, land plots, contracts and invoices. Once that data has been entered, reload it with the \"Refresh\" button."
     },
     "portfolio": {
       "active_count": "{{count}} active",
@@ -4447,7 +4473,8 @@
       "customers_count": "{{count}} customers",
       "no_customers": "No customer data",
       "area": "Area",
-      "collection_col": "Collection"
+      "collection_col": "Collection",
+      "no_customers_description": "Customers appear here once a sales contract is signed with them on a retail project."
     },
     "costs": {
       "cost_structure": "Cost Structure",
@@ -4460,7 +4487,10 @@
       "contracted": "Contracted",
       "contracts_count": "{{count}} contracts",
       "paid_abbr": "Paid",
-      "unpaid_abbr": "Unpaid"
+      "unpaid_abbr": "Unpaid",
+      "no_supplier_types": "No costs by supplier type",
+      "no_supplier_types_description": "The breakdown appears once suppliers have contracts on retail projects.",
+      "no_suppliers_description": "Suppliers appear here once they have a contract on a retail project."
     }
   },
   "retail_customers": {
@@ -4650,7 +4680,7 @@
       "load_data_failed": "Failed to load data"
     },
     "title": "Budget Control",
-    "subtitle": "EVM performance overview across project phases",
+    "subtitle": "EVM performance overview of the selected project",
     "project": "Project",
     "tic": "TIC",
     "tic_sub": "Total Investment Cost",
@@ -4684,7 +4714,7 @@
     "chart_label": "Budget",
     "no_projects": "No projects found.",
     "no_budget_data": "No budget data for this project",
-    "no_budget_data_sub": "Add phases with allocated budgets and contracts to see EVM performance.",
+    "no_budget_data_sub": "A project's budget comes from its TIC. Save a TIC for this project and add contracts to see EVM performance.",
     "target_line": "Target (1.0)",
     "warning_line": "Warning (0.9)",
     "evm_indices_caption": "Earned value is based on completed contract milestones.",

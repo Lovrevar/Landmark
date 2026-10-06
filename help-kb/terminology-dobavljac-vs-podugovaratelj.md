@@ -1,17 +1,17 @@
 ---
 id: terminology-dobavljac-vs-podugovaratelj
 title: Dobavljač vs. podugovaratelj (terminološka razlika)
-keywords: [dobavljač, podugovaratelj, supplier, subcontractor, supplier_id, terminologija]
+keywords: [dobavljač, podugovaratelj, supplier, subcontractor, office dobavljač, terminologija]
 routes: [/subcontractors, /accounting-suppliers, /office-suppliers]
-roles: [Director, Accounting, Supervision]
+roles: [Director, Accounting]
 ---
 
-U sučelju se koriste dva pojma za vendore — **podugovaratelj** i **dobavljač** — i mogu zbuniti jer označavaju isti zapis u sustavu.
+U sučelju se koriste dva pojma — **podugovaratelj** i **dobavljač** — i mogu zbuniti jer na gradilišnim projektima označavaju istu tvrtku.
 
-- Stranica **[[subcontractors]]** (Supervision profil) zove ih **Podugovaratelji**.
-- Stranica **[[cashflow-suppliers]]** (Cashflow profil) zove ih **Dobavljači**, ali prikazuje **iste zapise** iz tablice `subcontractors`. Ne postoji zasebna tablica dobavljača.
-- Stranica **[[office-suppliers]]** (Cashflow profil) je **stvarno zasebna** — ovdje su uredski/back-office vendori u vlastitoj tablici, odvojeno od gradilišnih podugovaratelja.
+- Stranica **[[subcontractors]]** (profil Supervision) i [[site-management]] zovu ih **Podugovaratelji**.
+- Stranica **[[cashflow-suppliers]]** (profil Cashflow) zove ih **Dobavljači** i prikazuje **iste tvrtke** s oznakom **Site**, uz dobavljače retail projekata s oznakom **Retail**. Podugovaratelj dodan na gradilištu pojavit će se i ondje, i obrnuto.
+- Stranica **[[office-suppliers]]** (profil Cashflow) je **stvarno zasebna** — ondje su dobavljači uredskih troškova, odvojeno od gradilišnih podugovaratelja.
 
-Polje **supplier_id** na računima (`accounting_invoices.supplier_id`) zapravo upućuje na **podugovaratelja**, a ne na neki "supplier" entitet.
+Zato na računima i plaćanjima gradilišnih projekata stupac **Dobavljač** pokazuje podugovaratelja.
 
-Pravilo: ako u dokumentaciji vidite "supplier" ili "dobavljač" u kontekstu gradilišta — riječ je o podugovaratelju.
+Pravilo: ako vidite „dobavljač” u kontekstu gradilišta — riječ je o podugovaratelju.

@@ -34,6 +34,8 @@ import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, M
 import { useAuth } from '../../../contexts/AuthContext'
 import { isClosedContract } from '../../../utils/contractRollup'
 import { formatCreditType } from '../../Funding/Investors/utils/creditCalculations'
+import PageHelpLink from '../../ui/PageHelpLink'
+import { OpenTICLink } from '../../Funding/TIC/OpenTICLink'
 
 const ProjectDetailsEnhanced: React.FC = () => {
   const { t, i18n } = useTranslation()
@@ -184,7 +186,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{project.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{project.name}<PageHelpLink /></h1>
             <p className="text-gray-600 dark:text-gray-400">{project.location}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -207,7 +209,10 @@ const ProjectDetailsEnhanced: React.FC = () => {
             {hasPlan ? (
               <p className="text-2xl font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</p>
             ) : (
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{t('general_projects.budget_not_set')}</p>
+              <>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{t('general_projects.budget_not_set')}</p>
+                <OpenTICLink projectId={project.id} />
+              </>
             )}
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('general_projects.card_spent')}: €{totalSpent.toLocaleString('hr-HR')}</p>
           </div>
@@ -410,7 +415,11 @@ const ProjectDetailsEnhanced: React.FC = () => {
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('general_projects.funding_sources')}</h3>
               {investments.length === 0 ? (
-                <EmptyState icon={DollarSign} title={t('general_projects.no_credit_allocations')} />
+                <EmptyState
+                  icon={DollarSign}
+                  title={t('general_projects.no_credit_allocations')}
+                  description={t('general_projects.no_credit_allocations_description')}
+                />
               ) : (
                 <div className="space-y-4">
                   {investments.map((investment) => (

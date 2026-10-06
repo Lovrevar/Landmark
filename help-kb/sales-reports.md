@@ -1,20 +1,19 @@
 ---
 id: sales-reports
 title: Izvještaji prodaje
-keywords: [izvještaji prodaje, sales reports, izvještaj projekta, izvještaj o kupcima, PDF]
+keywords: [izvještaji prodaje, prodajni izvještaji, sales reports, izvještaj projekta, izvještaj o kupcima, PDF]
 routes: [/sales-reports]
 roles: [Director, Accounting, Sales]
 ---
 
-Stranica **Izvještaji prodaje** generira dvije vrste izvještaja koje birate iz prekidača na vrhu: **Izvještaj o prodaji projekta** ili **Izvještaj o kupcima**.
+Stavka **Izvještaji** u profilu **Sales** otvara stranicu **Prodajni izvještaji**. U okviru **Konfiguracija izvještaja** birate:
 
-Konfiguracijski parametri:
-- vrsta izvještaja
-- projekt (za projektni izvještaj) — **Odaberite projekt**
-- raspon datuma — **Početni datum** / **Završni datum**
+- **Vrsta izvještaja** — **Prodajni izvještaj projekta** ili **Izvještaj o kupcima**
+- **Projekt** (samo za izvještaj projekta) — **Odaberi projekt**
+- raspon datuma — **Datum početka** / **Datum završetka**
 
-**Projektni izvještaj** prikazuje karticu projekta sa statusom, statistiku (ukupno jedinica, prodano, prihod, stopa prodaje %), raščlanu statusa jedinica (Prodano / Dostupno / Rezervirano), mjesečni trend prodaje i preporuke.
+**Prodajni izvještaj projekta** prikazuje pregled projekta i prodajni učinak, statistiku (**Ukupno jedinica**, **Prodano jedinica**, **Ukupni prihod**, **Stopa prodaje**), **Raspored statusa jedinica** (**Prodano** / **Dostupno** / **Rezervirano**), **Trend mjesečne prodaje** te istaknute rezultate i preporuke.
 
-**Izvještaj o kupcima** prikazuje statistiku (ukupno kupaca, stvarni kupci, prihod, prosječna kupnja), raspodjelu (**Kupci / Zainteresirani / Leadovi**) i sažetak s konverzijskom stopom.
+**Izvještaj o kupcima** prikazuje statistiku (**Ukupno kupaca**, **Kupci**, **Ukupni prihod**, **Prosj. kupnja**), **Raspored kupaca** (**Kupci** / **Zainteresirani** / **Potencijalni**) i sažetak sa stopom konverzije.
 
-Gumb **Preuzmi izvještaj** preuzima PDF.
+Gumb **Izvozi izvještaj** (pojavljuje se kad je izvještaj učitan) preuzima PDF. PDF je uvijek na hrvatskom; izvoza u Excel na ovoj stranici nema.

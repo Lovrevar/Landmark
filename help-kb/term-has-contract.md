@@ -1,15 +1,15 @@
 ---
 id: term-has-contract
-title: Usmeni dogovor (has_contract = false)
-keywords: [has_contract, usmeni dogovor, bez ugovora, verbal agreement, contract_amount]
-routes: [/subcontractors, /projects/:id]
+title: Bez ugovora (usmeni dogovor)
+keywords: [bez ugovora, usmeni dogovor, bez formalnog ugovora, verbal agreement, značka, podugovaratelj]
+routes: [/site-management, /subcontractors, /projects/:id]
 roles: [Director, Accounting, Supervision]
 ---
 
-Polje **has_contract** na ugovoru označava postoji li potpisani pisani ugovor. Ako je vrijednost **false**, riječ je o usmenom dogovoru — radnja je formalno evidentirana u sustavu, ali bez papirnatog ugovora.
+Oznaka **BEZ UGOVORA** znači da s podugovarateljem ne postoji potpisan pisani ugovor — posao je evidentiran u sustavu, ali na temelju usmenog dogovora.
 
-**Posljedica:** iznos u polju **contract_amount** može biti potcijenjen ili nepotpun, jer usmeni dogovori često rastu kroz vrijeme bez aneksa. Ne računajte ovu vrijednost kao garantiranu obvezu.
+**Gdje se postavlja:** pri dodavanju podugovaratelja na fazu u [[site-management]] kvačicom **Bez ugovora**, a kasnije u **Uredi** pod **Status ugovora** (**Sa ugovorom** / **Bez ugovora**). U retail projektima isto radi kvačica **Postoji formalni ugovor**.
 
-U sučelju će se na ugovorima bez pisanog ugovora pojaviti oznaka **Bez ugovora**. AI asistent posebno ističe ovu informaciju kada se pojavi u rezultatima.
+**Gdje se vidi:** žuta oznaka **BEZ UGOVORA** stoji na kartici i u detaljima ugovora u Upravljanju gradilištem, u popisu ugovora na stranici [[subcontractors]], na kartici **Podugovaratelji** u [[project-details]] te na ugovorima u [[retail-projects]]. Na stranici Podugovaratelji postoji i filtar **Bez ugovora**, koji prikazuje podugovaratelje bez ijednog ugovora — to nije isto što i ova oznaka.
 
-Realiziran iznos (stvarno ispostavljeni i plaćeni računi) precizniji je pokazatelj — koristite ga umjesto **contract_amount** za usmene dogovore.
+**Posljedica:** za takav posao nema ugovorenog iznosa s kojim bi se plaćanja uspoređivala. Trošak se prati samo kroz račune: u detaljima piše **Bez formalnog ugovora** i, onima koji vide plaćanja, prikazuje se **Plaćeno ukupno**, bez preostalog iznosa. Usmeni dogovori često rastu s vremenom, pa plaćeni iznos ne smatrajte konačnom obvezom.

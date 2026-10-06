@@ -24,6 +24,7 @@ export { default as Pagination } from './Pagination'
 export { default as Table } from './Table'
 
 export { default as PageHeader } from './PageHeader'
+export { default as PageHelpLink } from './PageHelpLink'
 export { default as StatGrid } from './StatGrid'
 export { default as FilterBar } from './FilterBar'
 export { default as FilterChip } from './FilterChip'

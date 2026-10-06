@@ -28,6 +28,8 @@ import LoadingSpinner from '../../ui/LoadingSpinner'
 import ErrorState from '../../ui/ErrorState'
 import InfoHint from '../../ui/InfoHint'
 import { formatEuro, formatEuroCompact, NO_VALUE } from '../../../utils/formatters'
+import PageHelpLink from '../../ui/PageHelpLink'
+import { OpenTICLink } from '../../Funding/TIC/OpenTICLink'
 
 /**
  * Abbreviated euros for the EVM tiles and the chart's Y axis. Named for what it does, so it no
@@ -156,7 +158,7 @@ export default function BudgetControl() {
       {/* Header + Project Selector */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('budget_control.title')}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('budget_control.title')}<PageHelpLink /></h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('budget_control.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -197,6 +199,7 @@ export default function BudgetControl() {
         <div className="text-center py-16">
           <p className="text-base font-medium text-gray-700 dark:text-gray-200">{t('budget_control.no_budget_data')}</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('budget_control.no_budget_data_sub')}</p>
+          {selectedProjectId && <OpenTICLink projectId={selectedProjectId} className="mt-3" />}
         </div>
       )}
 

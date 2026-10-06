@@ -1,10 +1,23 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-20`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-22`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
+
+### GEN-20 · Medium · Budget Control reports healthy CPI and SPI when there is nothing to measure
+- **Check:** Code reading (found during the help-article audit, 2026-10-06)
+- **Where:** `General/BudgetControl`.
+- **What happens:** with no cost data the CPI card is green and says "Ispod proračuna ✓"; before
+  any phase has started SPI falls back to 1,00. Both read as "on track". The `planned_budget_sub`
+  label also describes the figure wrongly.
+- **Fix direction:** show `—` and a neutral card until there is cost data and a started phase.
+  Related: GEN-8.
+
+### GEN-21 · Low · Projects list shows a failed load as an Alert in the content area
+- **Where:** `General/Projects/index.tsx:117`.
+- **Fix direction:** `ErrorState` with `refetch`. Part of UI-4 in [ui.md](./ui.md).
 
 ### GEN-5 · Low · Budget not gated on the TIC in three places
 - Director dashboard portfolio table, Investment dashboard portfolio value and PDF, Sales report.

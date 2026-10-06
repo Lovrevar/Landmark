@@ -1,8 +1,8 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Trash2, ArrowLeft } from 'lucide-react'
+import { Trash2, ArrowLeft, Building2 } from 'lucide-react'
 import { ProjectWithBuildings, OnSelectBuildingCallback, OnDeleteBuildingCallback } from './types'
-import { Button } from '../../ui'
+import { Button, EmptyState } from '../../ui'
 
 interface BuildingsGridProps {
   project: ProjectWithBuildings
@@ -23,6 +23,14 @@ export const BuildingsGrid: React.FC<BuildingsGridProps> = ({
       <Button variant="ghost" icon={ArrowLeft} onClick={onBack}>
         {t('sales_projects.back_to_projects')}
       </Button>
+
+      {project.buildings.length === 0 && (
+        <EmptyState
+          icon={Building2}
+          title={t('sales_projects.no_buildings_title')}
+          description={t('sales_projects.no_buildings_description')}
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {project.buildings.map((building) => (

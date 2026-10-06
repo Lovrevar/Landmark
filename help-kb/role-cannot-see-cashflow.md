@@ -6,13 +6,13 @@ routes: []
 roles: [Sales, Supervision, Investment]
 ---
 
-Profil **Cashflow** vidljiv je u dropdownu profila svim korisnicima koji ga mogu odabrati, ali stvarni pristup imaju samo uloge **Director** i **Accounting**.
+Profil **Cashflow** u dropdownu profila vide samo uloge **Director** i **Accounting**. Ulogama **Sales** i **Investment** on se u popisu profila uopće ne nudi, a uloga **Supervision** nema ni dropdown profila.
 
-Ako pokušate ući u Cashflow s drugom ulogom (Sales, Supervision, Investment), čak i s ispravnom lozinkom, sustav vas preusmjerava natrag na početnu stranicu. To nije bug — sadrži osjetljive financijske podatke (cijeli pregled računa, plaćanja, dugova, kredita) za koje vaša uloga nije ovlaštena.
+To nije bug — Cashflow sadrži osjetljive financijske podatke (cijeli pregled računa, plaćanja, dugova, kredita) za koje vaša uloga nije ovlaštena. Ako Cashflow stranicu pokušate otvoriti izravnom adresom, sustav vas vraća na početnu stranicu.
 
-Ako trebate vidjeti specifične financijske podatke u okviru svojih projekata:
-- **Sales** — vidi prodajne uplate u [[sales-payments]]
-- **Supervision** — vidi plaćanja podugovarateljima i neplaćene račune za vlastite projekte u [[supervision-payments]] i [[supervision-invoices]]
-- **Investment** — vidi investicijske tokove u [[funding-payments]] i [[investment-projects]]
+Što od financijskih podataka vidite sa svojom ulogom:
+- **Sales** — prodajne uplate u [[sales-payments]]
+- **Supervision** — nema pristup plaćanjima; neplaćene račune svojih projekata može zatražiti od AI asistenta
+- **Investment** — investitore, investicije i projekte u Funding profilu ([[investment-projects]]); popis plaćanja u [[funding-payments]] za ovu ulogu ostaje prazan
 
-Za pristup punom Cashflow modulu potrebna je promjena uloge u administraciji.
+Za pristup Cashflow profilu potrebna je promjena uloge — obratite se administratoru.

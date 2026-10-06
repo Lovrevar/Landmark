@@ -1,17 +1,17 @@
 ---
 id: language-and-theme
 title: Promjena jezika i teme
-keywords: [jezik, language, hrvatski, engleski, theme, dark mode, light mode, sun, moon]
+keywords: [jezik, language, hrvatski, engleski, HR, EN, tema, tamna tema, svijetla tema, dark mode, light mode]
 routes: []
 roles: [Director, Accounting, Sales, Supervision, Investment]
 ---
 
-Jezik i tema mijenjaju se iz gornje navigacije:
+Jezik i tema mijenjaju se iz gornje trake (na mobitelu: u izborniku, pod **Račun**):
 
-**Jezik:** klikom na Language Switcher u gornjoj traci. Podržani su **hrvatski** i **engleski**. Preferencija se pamti za vaš račun; ako nije postavljena, koristi se jezik preglednika.
+**Jezik:** gumb **EN** / **HR** prebacuje sučelje između hrvatskog i engleskog — gumb pokazuje jezik na koji će se prebaciti. Odabir se pamti u pregledniku na tom uređaju; ako ništa nije odabrano, koristi se jezik preglednika.
 
-**Tema:** ikona **Sunce/Mjesec** u gornjoj traci prebacuje između svijetle i tamne teme. Promjena je trenutna i pamti se za vaš račun.
+**Tema:** ikona sunca/mjeseca prebacuje između svijetle i tamne teme. Promjena je trenutna i pamti se u pregledniku na tom uređaju; dok ništa ne odaberete, prati se postavka uređaja.
 
-**Bilješka o jeziku:** terminologija specifična za hrvatsko poslovanje (cesija, kompenzacija, OIB, naslovi profila itd.) ostaje na hrvatskom čak i u engleskom prijevodu — to su pravni i računovodstveni termini koji nemaju izravan engleski ekvivalent.
+**Bilješka o jeziku:** terminologija specifična za hrvatsko poslovanje (cesija, kompenzacija, TIC, PDV, OIB) ostaje na hrvatskom i u engleskom sučelju. Izvezene datoteke (Excel i PDF) uvijek su na hrvatskom — vidi [[exporting-data]].
 
-AI asistent uvijek odgovara na hrvatskom, bez obzira na vašu jezičnu preferenciju u sučelju.
+AI asistent uvijek odgovara na hrvatskom, bez obzira na jezik sučelja.

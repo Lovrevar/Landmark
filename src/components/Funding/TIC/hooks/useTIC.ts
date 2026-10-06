@@ -95,8 +95,11 @@ export function useTIC() {
       setProjects(data)
 
       if (data.length > 0) {
-        // Used to prefer any project with "funtana" in its name, a leftover hard-code (FUND-13).
-        setSelectedProjectId(data[0].id)
+        // `?project=<id>` comes from the "open TIC" links on screens that show a project without
+        // a budget; otherwise the first project. (It used to prefer any project with "funtana"
+        // in its name, a leftover hard-code — FUND-13.)
+        const requested = new URLSearchParams(window.location.search).get('project')
+        setSelectedProjectId(data.find(project => project.id === requested)?.id ?? data[0].id)
       }
     } catch (error) {
       console.error('Error loading projects:', error)

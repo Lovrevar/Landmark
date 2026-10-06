@@ -112,6 +112,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
           <EmptyState
             icon={FileText}
             title={t('retail_projects.invoices_modal.no_invoices')}
+            description={t('retail_projects.invoices_modal.no_invoices_description')}
           />
         ) : (
           <div className="space-y-4">

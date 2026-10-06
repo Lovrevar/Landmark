@@ -1,17 +1,19 @@
 ---
 id: retail-land-plots
 title: Zemljišne čestice
-keywords: [zemljišne čestice, land plots, parcele, čestica, plaćeno, u projektu, m2]
+keywords: [zemljišne čestice, zemljišta, land plots, parcele, čestica, plaćeno, u projektu, m2]
 routes: [/retail-land-plots]
 roles: [Director, Accounting, Investment]
 ---
 
-**Zemljišne čestice** je popis svih kupljenih zemljišnih čestica (parcela). Naslov: **Zemljišne čestice**.
+Stavka **Zemljišne čestice** u profilu **Retail** otvara stranicu **Zemljišta** — popis svih kupljenih čestica. Podnaslov: **Upravljanje zemljištima i česticama**.
 
-Glavna akcija: **Dodaj novu česticu** (+ gumb). Tražilica: **Pretraži čestice...**.
+Glavna akcija: **Novo zemljište** (vlasnik, broj čestice, lokacija, ukupna i kupljena površina, cijena po m², datum i status plaćanja). Tražilica: **Pretraži po vlasniku, broju čestice ili lokaciji...**.
 
-Kartice statistike: ukupno čestica, ukupna površina (m²), ukupno uloženo (€), broj plaćenih.
+Kartice statistike: **Ukupno čestica**, **Ukupna površina** (m²), **Ukupno investirano**, **Plaćeno** (broj plaćenih od ukupnog broja).
+
+Stupci tablice: **Vlasnik**, **Čestica**, **Lokacija**, **Površina** (kupljena od ukupne), **Cijena/m²**, **Ukupno**, **Status**, **Akcije**.
 
 Statusi (značke): **Plaćeno**, **Djelomično**, **Na čekanju**. Oznaka **U projektu** pojavljuje se ako je čestica povezana s retail projektom.
 
-Tablica prikazuje kupljenu i ukupnu površinu po čestici. Akcije: **Uredi**, **Obriši**, **Detalji**. Detaljni modal navodi povezane prodaje.
+Akcije po retku: **Detalji**, **Uredi**, **Obriši**. Detalji prikazuju podatke o čestici, ukupnu cijenu i povezane prodaje.

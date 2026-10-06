@@ -116,7 +116,11 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('general_projects.subcontractors_contracts')}</h3>
 
       {contracts.length === 0 ? (
-        <EmptyState icon={Users} title={t('general_projects.no_contracts')} />
+        <EmptyState
+          icon={Users}
+          title={t('general_projects.no_contracts')}
+          description={t('general_projects.no_contracts_description')}
+        />
       ) : (
         <>
           <StatGrid columns={4}>

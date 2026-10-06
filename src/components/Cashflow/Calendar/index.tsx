@@ -8,6 +8,7 @@ import { toErrorMessage } from '../../../lib/errorMessage'
 import { handleSaveBudgets } from './services/calendarService'
 import BudgetModal from './forms/BudgetModal'
 import { getInvoiceTypeLongLabel, getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
+import PageHelpLink from '../../ui/PageHelpLink'
 
 const AccountingCalendar: React.FC = () => {
   const { t } = useTranslation()
@@ -163,6 +164,7 @@ const AccountingCalendar: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white">
             {monthNames[month]} {year}
+            <PageHelpLink />
           </h3>
           <div className="flex items-center space-x-2">
             <Button variant="success" size="sm" icon={DollarSign} onClick={handleOpenBudgetModal}>

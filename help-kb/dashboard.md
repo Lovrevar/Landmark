@@ -6,16 +6,16 @@ routes: [/]
 roles: [Director, Accounting, Sales, Investment]
 ---
 
-**Nadzorna ploča** je početna stranica sustava. Sadržaj se mijenja prema aktivnom **profilu**, ne prema ulozi.
+**Nadzorna ploča** je početna stranica sustava. Sadržaj se mijenja prema aktivnom **profilu**, ne prema ulozi (vidi [[switch-profile]]).
 
 Naslovi po profilu:
-- **General** — *Nadzorna ploča direktora*
+- **General** — *Opća nadzorna ploča*
 - **Sales** — *Prodajna nadzorna ploča*
-- **Supervision** — *Nadzorna ploča nadzora*
-- **Funding** — *Investicijska nadzorna ploča*
+- **Supervision** — *Nadzor gradilišta*
+- **Funding** — *Investicijska nadzorna ploča* (s gumbom **Izvoz u PDF**)
 - **Cashflow** — *Računovodstvena nadzorna ploča*
 - **Retail** — *Retail nadzorna ploča*
 
-Svaka verzija prikazuje karakteristične widgete: financijske metrike (prihod, troškovi, dobit), sažetak statusa projekata, sažetak računa/plaćanja, status tima (Supervision), analizu novčanog toka (Cashflow), itd.
+Svaka verzija prikazuje pokazatelje svog područja — primjerice financije i projekte (General), prodaju i naplatu (Sales), stanje gradilišta (Supervision), kredite (Funding), novčani tok, firme i PDV (Cashflow).
 
-Korisnici uloge **Supervision** ne vide nadzornu ploču — automatski se preusmjeravaju na [[site-management]]. Profil **Cashflow** zahtijeva lozinku — pogledajte [[cashflow-unlock]].
+Korisnici uloge **Supervision** ne vide nadzornu ploču — automatski se preusmjeravaju na [[site-management]]. Profil **Cashflow** dostupan je samo ulogama Director i Accounting i zahtijeva lozinku — pogledajte [[cashflow-unlock]].

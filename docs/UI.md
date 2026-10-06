@@ -144,10 +144,15 @@ Shared primitive component library. Always check here before building new UI —
 ### PageHeader.tsx
 - Page title bar with optional description and an action slot
 - Props: `title`, `description?`, `subtitle?`, `icon?` (ElementType), `actions?` (ReactNode), `className?`
-- **Help link:** shows a "?" after the title when `help-kb` has an article whose `routes` match the current page and whose `roles` include the user's. It opens `/help?page=<pathname>` in a new tab and logs `help.page_link_click`. Needs no prop; it requires the router and auth context every page already has
+- **Help link:** renders `PageHelpLink` after the title (below)
 - **Layout from `sm` up:** the title block keeps at least 14rem and the actions wrap beside it, right-aligned. (Until October 2026 the actions never shrank, so a page with five buttons squeezed its title and description into a ~90px column.) A page with many actions now shows them on two or three rows
 - **Mobile-responsive:** title block and actions stack vertically on phones and sit on one row from `sm` up; actions wrap when they overflow
 - Note: `subtitle` and `icon` are accepted by the prop type but not currently rendered by the component — only `title`, `description`, and `actions` are displayed
+
+### PageHelpLink.tsx
+- The "?" beside a page title. Shown only when `help-kb` has an article whose `routes` match the current page and that the user's role may read; opens `/help?page=<pathname>` in a new tab (so unsaved work on the page survives) and logs `help.page_link_click`
+- Props: `tone?` (`'default'` | `'light'` for a title on a dark background), `className?`
+- `PageHeader` includes it. A page with its own title element puts `<PageHelpLink />` inside that element — the six dashboards, Budget Control, project details, the General report, TIC, the Cashflow calendar, Tasks, Calendar, Chat and Site Management do. **A new page without `PageHeader` should do the same**
 
 ### Pagination.tsx
 - Previous/next pagination controls with page info

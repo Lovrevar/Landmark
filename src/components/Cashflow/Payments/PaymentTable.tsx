@@ -11,6 +11,8 @@ import { Table, Button, EmptyState, Badge } from '../../ui'
 interface PaymentTableProps {
   payments: Payment[]
   visibleColumns: VisibleColumns
+  /** A search term or filter is active, so an empty table means "no match". */
+  filtered?: boolean
   onView: (payment: Payment) => void
   onEdit: (payment: Payment) => void
   onDelete: (id: string) => void
@@ -19,6 +21,7 @@ interface PaymentTableProps {
 const PaymentTable: React.FC<PaymentTableProps> = ({
   payments,
   visibleColumns,
+  filtered = false,
   onView,
   onEdit,
   onDelete
@@ -46,7 +49,8 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1}>
               <EmptyState
                 icon={CreditCard}
-                title={t('payments.table.no_payments')}
+                title={filtered ? t('common.no_results') : t('payments.table.no_payments')}
+                description={filtered ? t('common.no_results_description') : t('payments.table.no_payments_description')}
               />
             </td>
           </tr>

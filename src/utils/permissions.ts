@@ -67,3 +67,14 @@ export const getAccessibleProjectIds = (user: User | null): string[] => {
 
   return []
 }
+
+/**
+ * Who may create or change a project's TIC — and with it the planned budget, since the TIC is its
+ * only writer. Mirrors the "Funding roles can … TIC cost structures" policies
+ * (20260930100400_funding_rename_and_tic_writes.sql): the three roles that work in the Funding
+ * profile. Use it to decide whether to offer a way to the TIC, not as protection.
+ */
+export const canManageTIC = (user: User | null): boolean => {
+  if (!user) return false
+  return user.role === 'Director' || user.role === 'Accounting' || user.role === 'Investment'
+}

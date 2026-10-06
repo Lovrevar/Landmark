@@ -12,6 +12,8 @@ interface CustomerGridProps {
   loading: boolean
   /** The load failed and nothing is on screen — never render this as "no customers". */
   loadFailed?: boolean
+  /** A search term or project filter is active, so an empty grid means "no match". */
+  filtered?: boolean
   onRetry?: () => void
   selectedIds: Set<string>
   onToggleSelect: (id: string) => void
@@ -28,6 +30,7 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
   activeCategory,
   loading,
   loadFailed = false,
+  filtered = false,
   onRetry,
   selectedIds,
   onToggleSelect,
@@ -56,7 +59,8 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
     return (
       <EmptyState
         icon={Users}
-        title={t('common.no_data')}
+        title={filtered ? t('common.no_results') : t('customers.empty_title')}
+        description={filtered ? t('common.no_results_description') : t('customers.empty_description')}
       />
     )
   }

@@ -164,7 +164,11 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({
       </div>
 
       {phases.length === 0 ? (
-        <EmptyState icon={Briefcase} title={t('general_projects.no_phases')} />
+        <EmptyState
+          icon={Briefcase}
+          title={t('general_projects.no_phases')}
+          description={t('general_projects.no_phases_description')}
+        />
       ) : phases.length === 1 ? (
         // A single-phase project renders no phase level, matching Site Management: a collapsible
         // wrapper around the only phase is indentation, not structure.

@@ -1,13 +1,19 @@
 ---
 id: subcontractors
 title: Podugovaratelji
-keywords: [podugovaratelji, subcontractors, dobavljači, dodaj podugovaratelja]
+keywords: [podugovaratelji, subcontractors, dobavljači, dodaj podugovaratelja, ugovori, bez ugovora]
 routes: [/subcontractors]
-roles: [Director, Supervision]
+roles: [Director, Accounting]
 ---
 
-**Podugovaratelji** je središnji popis svih podugovaratelja i njihovih ugovora. Naslov: **Podugovaratelji** s podnaslovom **Pregled svih podugovaratelja i njihovih ugovora**.
+**Podugovaratelji** (profil **Supervision**) je središnji popis svih podugovaratelja i njihovih ugovora. Podnaslov: **Pregled svih podugovaratelja i njihovih ugovora**. Korisnici s ulogom **Supervision** nemaju ovu stranicu u izborniku — podugovaratelje vide kroz [[site-management]].
 
-Tražilica: **Pretraži po imenu ili kontaktu...**. Gumb **Dodaj podugovaratelja** otvara obrazac za novog. Kartice prikazuju osnovne podatke; klik otvara detaljni modal s rollupom: **Ukupno ugovora**, **Vrijednost ugovora**, **Ukupno plaćeno**, **Preostalo**. Modal sadrži i sekciju **Svi ugovori** (proširiva) te **Dokumenti**.
+Kartice statistike: **Podugovaratelji**, **Aktivni ugovori**, **Ukupno plaćeno**, **Preostalo**.
 
-Napomena: u Cashflow profilu postoji stranica **Dobavljači** koja prikazuje iste zapise iz tablice `subcontractors` (ne postoji zasebna tablica dobavljača). Pogledajte [[cashflow-suppliers]] i [[terminology-dobavljac-vs-podugovaratelj]].
+Tražilica: **Pretraži po imenu ili kontaktu...**. Filtri: **Aktivni ugovori**, **Nepodmireno**, **Podmireno**, **Bez ugovora** te izbor projekta (**Svi projekti**). Popis se može sortirati po nazivu, preostalom, vrijednosti ili plaćenom iznosu i prikazati kao **Kartice** ili **Tablica**.
+
+Gumb **Dodaj podugovaratelja** otvara obrazac (naziv, kontakt, napomene). Na kartici ili retku su **Uredi podugovaratelja** i **Obriši podugovaratelja**; brisanje ne uspijeva dok podugovaratelj ima povezane ugovore. Ugovori se ne dodaju ovdje, nego na fazi projekta u [[site-management]].
+
+Klik na podugovaratelja otvara detalje: **Ukupno ugovora**, **Vrijednost ugovora**, **Ukupno plaćeno**, **Preostalo**, popis **Svi ugovori** (s oznakom **BEZ UGOVORA** gdje nema pisanog ugovora — [[term-has-contract]]) i **Dokumenti**.
+
+U profilu **Cashflow** isti se podugovaratelji pojavljuju na stranici **Dobavljači** — pogledajte [[terminology-dobavljac-vs-podugovaratelj]].

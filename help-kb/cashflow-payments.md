@@ -1,17 +1,21 @@
 ---
 id: cashflow-payments
 title: Plaćanja (Cashflow)
-keywords: [plaćanja, accounting payments, cashflow, cesija, kompenzacija, virman, gotovina]
+keywords: [plaćanja, accounting payments, cashflow, novo plaćanje, izvor plaćanja, cesija, kompenzacija, virman, gotovina, prihod, rashod]
 routes: [/accounting-payments]
 roles: [Director, Accounting]
 ---
 
 Stranica **Plaćanja** u Cashflow profilu evidentira sva plaćanja po računima. Podnaslov: **Upravljanje plaćanjima**.
 
-Glavne akcije: **Novo plaćanje** (+ gumb) i **Polja** (vidljivost stupaca).
+Glavne akcije: **Novo plaćanje** i **Polja** (vidljivost stupaca). Račun se može platiti i izravno sa stranice [[cashflow-invoices]].
 
-Filtri: tekstualna pretraga, **Svi načini plaćanja** (Virman, Gotovina, Ček, Kartica, Kompenzacija, Cesija), **Svi tipovi računa** (Ulazni / Izlazni), raspon **Datum OD** / **Datum DO** te gumb **Resetuj datume**.
+Filtri: tekstualna pretraga, **Svi načini plaćanja** (Virman, Gotovina, Ček, Kartica), **Svi tipovi računa** (Ulazni / Izlazni) te raspon **Datum OD** / **Datum DO**. Gumb **Resetuj datume** pojavljuje se kad je datum postavljen.
 
-Plaćanja označena kao **Cesija** (oznaka **is_cesija**) predstavljaju asignaciju potraživanja — pogledajte [[term-cesija]]. Način **Kompenzacija** predstavlja međusobni prijeboj — pogledajte [[term-kompenzacija]].
+Šest kartica iznad tablice odnosi se na filtrirana plaćanja: **Ukupno plaćanja**, **Ukupno Prihod**, **Ukupno Rashod**, **Neto**, **PDV Ulaz** i **PDV Izlaz**. Plaćanje ulaznog računa je rashod, a izlaznog prihod; u tablici to pokazuje stupac **Tip** (**RASHOD** crveno, **PRIHOD** zeleno) i boja iznosa. Klik na redak otvara **Detalji plaćanja**, gdje je tip računa ispisan punim nazivom (vidi [[term-invoice-types]]).
 
-Paginacija ispod prikazuje filtrirani ukupni iznos.
+U obrascu plaćanja polje **Izvor plaćanja** nudi **Bankovni račun**, **Kredit**, **Kompenzacija** i **Gotovina**, a o izvoru ovisi koji su načini plaćanja ponuđeni. Znak **?** pokraj polja objašnjava izvore. **Kompenzacija** je međusobni prijeboj bez kretanja novca — pogledajte [[term-kompenzacija]].
+
+Cesija se unosi kvačicom **Ugovor o cesiji (plaćanje iz druge firme)**, uz koju je također znak **?**; u tablici se vidi kao **Cesija - {naziv firme}** u stupcu **Opis** — pogledajte [[term-cesija]].
+
+Uz paginaciju se za filtrirana plaćanja prikazuje **Filtrirano:** s tri iznosa — **PRIHOD**, **RASHOD** i **Neto**.

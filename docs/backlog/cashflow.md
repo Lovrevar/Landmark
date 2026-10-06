@@ -1,13 +1,52 @@
 # Backlog — Cashflow
 
 Invoices, payments, companies, bank accounts, loans, cesija and kompenzacija. Ids: `CASH-n` (next
-free: `CASH-24`). Entry format and rules are in [README.md](./README.md).
+free: `CASH-29`). Entry format and rules are in [README.md](./README.md).
 
 Phase 5 of the ERP integration removes in-app invoice and payment creation. Each entry says how
 that changes it; do not build new authoring UI here without reading
 [../erp-integration/](../erp-integration/README.md) first.
 
 ## Open
+
+### CASH-24 · Medium · Calendar "Neplaćeno" card leaves out partly paid invoices
+- **Check:** Code reading (found during the help-article audit, 2026-10-06)
+- **Where:** Cashflow → Kalendar, the unpaid summary card.
+- **What happens:** the card counts invoices with status `UNPAID` only, so the open part of a
+  `PARTIALLY_PAID` invoice is in no card.
+- **Fix direction:** sum `remaining_amount` over every invoice that is not fully paid.
+
+### CASH-25 · Low · Payment detail and table show the wrong direction cues
+- **Check:** Code reading
+- **Where:** `Cashflow/Payments/PaymentDetailView.tsx`, `PaymentTable.tsx`.
+- **What happens:** the detail view prints a literal "Cesija" and colours every amount green,
+  money out included; the table labels a payment with no direction as PRIHOD.
+- **Fix direction:** `paymentDirection` from `invoiceHelpers.ts` for both, a dash when unknown.
+
+### CASH-26 · Low · Banks page has a delete button that does nothing and a modal nothing opens
+- **Check:** Code reading
+- **Where:** `Cashflow/Banks/index.tsx`.
+- **Fix direction:** wire the delete (with `ConfirmDialog`, `assertRowsAffected`, `logActivity`) or
+  remove both.
+
+### CASH-27 · Low · Payments date filter parses the dates as UTC
+- **Check:** Code reading
+- **Where:** `Cashflow/Payments/hooks/usePayments.ts:345-346`, `new Date(dateFrom)` / `new Date(dateTo)`.
+- **What happens:** a payment on the first or last day of the range can fall outside it.
+- **Fix direction:** `parseLocalDate` from `utils/dateOnly.ts`.
+
+### CASH-28 · Low · Cashflow wording, hardcoded strings and unused keys
+- **Check:** Code reading
+- Hardcoded: `columnLabels` and the row-action tooltips in the payments table; `SupplierCard.tsx`
+  builds a label by cutting a translated string.
+- Wording: "Resetuj datume" is not Croatian usage ("Poništi datume"); `payments.form.cesija_hint`
+  does not mention paying from a credit; "Ugovor o cesiji" is used for something that is not a
+  cesija contract; the bank invoice form is called Investitor, Novi Račun Banka and Investicije in
+  three places; capitalisation of button labels varies.
+- `Cashflow/Customers/index.tsx` hand-builds its money (UI-1) and prints `N/A` (CASH-20).
+- Unused keys: `invoices.filters.all_projects|all_suppliers|date_from|date_to`,
+  `cashflow_calendar.title|subtitle`.
+- **Rule:** the wording items need someone from accounting to choose the term.
 
 ### CASH-6 · Medium · Cesija from a credit decreases the allocation's usage
 - **Check:** Runtime check needed. **Blocked on an accounting decision.**

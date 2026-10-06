@@ -251,11 +251,24 @@ const ApartmentManagement: React.FC = () => {
       {loadFailed ? (
         <ErrorState onRetry={fetchData} />
       ) : apartments.length === 0 ? (
-        <EmptyState
-          icon={Home}
-          title={t('common.no_data')}
-          description={t('apartments.search')}
-        />
+        searchTerm.trim() || filterProject !== 'all' || filterBuilding !== 'all' || filterStatus !== 'all' ? (
+          <EmptyState
+            icon={Home}
+            title={t('common.no_results')}
+            description={t('common.no_results_description')}
+          />
+        ) : (
+          <EmptyState
+            icon={Home}
+            title={t('apartments.empty_title')}
+            description={t('apartments.empty_description')}
+            action={
+              <Button variant="primary" icon={Building2} onClick={() => setShowSingleModal(true)}>
+                {t('apartments.add')}
+              </Button>
+            }
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {apartments.map((apartment) => {

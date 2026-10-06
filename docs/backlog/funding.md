@@ -1,9 +1,25 @@
 # Backlog — Funding and TIC
 
 Bank credits, investors, drawdowns, allocations and the TIC cost structure. Ids: `FUND-n` (next
-free: `FUND-17`). Entry format and rules are in [README.md](./README.md).
+free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
 
 ## Open
+
+### FUND-17 · Medium · Funding payments register labels a drawdown PRIHOD and a repayment RASHOD
+- **Check:** Code reading
+- **Where:** Funding → Plaćanja.
+- **What happens:** contradicts the CASH-7 decision that credit principal is financing, neither
+  income nor expense. Every other screen now says "Financiranje".
+- **Fix direction:** label by `invoiceCashCategory` from `utils/invoiceCashDirection.ts`.
+
+### FUND-18 · Low · Funding labels and hardcoded strings
+- **Check:** Code reading
+- Validation messages in `useCreditManagement.ts:119-134` are literals; `AllocationRow.tsx` has a
+  delete button with no `title`/`aria-label` and prints `N/A`; `InvestorCard` and the Loans page
+  have icon-only buttons without labels.
+- "Investicije" names two different menu items; `funding.investments.title` is "Investicije" in
+  the English file too; "investitor" and "banka" are used for the same party.
+- The Funding menu shows Plaćanja to the Investment role, which reads no payments (SEC-A10).
 
 ### FUND-13 · Low · The TIC Excel export drops phases and classifications
 - **Where:** `ticImport.ts` reads `FAZA n` column groups into `LineItem.phases`; `ticExport.ts`

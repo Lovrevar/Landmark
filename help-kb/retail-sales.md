@@ -1,19 +1,31 @@
 ---
 id: retail-sales
-title: Retail prodaja (čestice)
-keywords: [retail prodaja, retail sales, prodaja čestica, dodaj prodaju, prekoračenje, dospijeće]
-routes: [/retail-sales]
+title: Retail prodaje i plaćanja kupaca
+keywords: [retail prodaja, retail sales, prodaje, retail plaćanja prodaje, prodaja čestica, nova prodaja, dospjelo, export excel]
+routes: [/retail-sales-payments, /retail-sales]
 roles: [Director, Accounting, Investment]
 ---
 
-**Retail prodaja** evidentira prodaju zemljišnih čestica kupcima. Naslov stranice je **Prodajna plaćanja**.
+## Prodaje (stavka izbornika)
 
-Glavna akcija: **Dodaj novu prodaju** (+ gumb).
+Stavka **Prodaje** u profilu **Retail** otvara stranicu **Retail plaćanja prodaje** — pregled svih uplata retail kupaca. Podnaslov: **Praćenje svih plaćanja retail kupaca**. Stranica je samo za pregled.
 
-Filtri: tražilica **Pretraži po kupcu/čestici...** i padajući izbornik statusa s vrijednostima **Svi statusi**, **Na čekanju**, **Djelomično**, **Plaćeno**, **Prekoračenje**.
+Kartice statistike: **Ukupno plaćanja**, **Ukupni iznos**, **Ovaj mjesec**, **Iznos ovog mjeseca**.
 
-Stupci tablice: **Kupac**, **Čestica**, **Površina** (m² + cijena/m²), **Ukupno** (€), **Plaćeno** (€), **Rok**, **Status**.
+Filtri: tražilica **Pretraži plaćanja...**, izbornik (**Sva plaćanja**, **Nedavno (7 dana)**, **Veće od €10k**) i raspon datuma (**Datum početka** / **Datum kraja**). Gumb **Export Excel** preuzima filtrirani popis kao Excel (.xlsx) datoteku, uvijek na hrvatskom.
 
-Akcijske ikone po retku: **Dodaj plaćanje** (vidljivo samo ako status nije **Plaćeno**), **Uredi**, **Obriši**. Modal plaćanja prikazuje ukupno, plaćeno i preostalo te traži iznos uplate.
+Stupci: **Datum plaćanja**, **Račun**, **Kupac**, **Ugovor**, **Projekt**, **Ukupno računa**, **Plaćanje**, **Metoda**, **Banka**.
 
-Status **Prekoračenje** označava prekoračen rok dospijeća.
+## Prodaja čestica
+
+Zasebna stranica **Prodaje** (podnaslov **Upravljanje prodajama i rokovima plaćanja**) evidentira prodaju zemljišnih čestica kupcima. Trenutno nije u izborniku.
+
+Glavna akcija: **Nova prodaja** (čestica, kupac, površina, cijena po m², rok plaćanja, broj ugovora).
+
+Kartice statistike: **Ukupno prodaja**, **Ukupni prihod**, **Plaćeno**, **Za naplatu**.
+
+Filtri: tražilica **Pretraži po kupcu, čestici ili ugovoru...** i status (**Svi statusi**, **Na čekanju**, **Djelomično**, **Plaćeno**, **Dospjelo**).
+
+Stupci: **Kupac**, **Čestica**, **Površina** (m² i cijena po m²), **Ukupno**, **Plaćeno** (s preostalim iznosom), **Rok**, **Status**, **Akcije**.
+
+Akcije po retku: **Dodaj plaćanje** (samo dok prodaja nije plaćena), **Uredi**, **Obriši**. Prozor plaćanja prikazuje ukupno, plaćeno i preostalo te traži iznos uplate. Status **Dospjelo** znači da je rok plaćanja prošao.

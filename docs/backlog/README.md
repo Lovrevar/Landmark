@@ -64,7 +64,7 @@ it from the ranking. Never reuse an id: code comments and migrations quote them 
 
 ## Open work, ranked
 
-Ranked on 2026-10-05 by what goes wrong if the item is left, then by how small the job is.
+Ranked on 2026-10-05 (items 8 to 11 added 2026-10-06) by what goes wrong if the item is left, then by how small the job is.
 
 ### 1. Do first
 
@@ -84,19 +84,23 @@ still open in production.
 | 5 | [SEC-004](./security.md) — `contracts` readable by every signed-in user | The Supervision payment gate is screen-only. Touches the most-read table; needs its own test pass. |
 | 6 | [COLLAB-4](./collaboration.md) — AI rate limit miscounts and fails open | Deferred to the voice branch (OQ-3). Do it there. |
 | 7 | [SALES-10](./sales.md) — no sale cancellation flow | A reverted sale counts in dashboards and reports for ever. |
+| 8 | [RETAIL-4](./retail.md) — retail invoice approval ungated and silent | A refused approval looks like it worked. Small. |
+| 9 | [GEN-20](./projects-dashboards-reports.md) — Budget Control shows healthy CPI/SPI with no data | A project nobody has costed reads as on track. |
+| 10 | [CASH-24](./cashflow.md), [FUND-17](./funding.md) — calendar unpaid card, Funding payments labels | Wrong figure and wrong label; both small. Check CASH-24 against data first. |
+| 11 | [RETAIL-5](./retail.md) — `/retail-sales` unreachable from the menu | Needs a decision: link it or remove it. |
 
 ### 3. Larger work, schedule deliberately
 
 | # | Item | Note |
 |---|---|---|
-| 8 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
-| 9 | [UI-8](./ui.md) — mobile | Supervision is used on site, on phones. |
-| 10 | [UI-4](./ui.md) — remaining silent failures | A failed load still reads as "no data" on ~39 inline loaders. |
-| 11 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
-| 12 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
-| 13 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
-| 14 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
-| 15 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
+| 12 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
+| 13 | [UI-8](./ui.md) — mobile | Supervision is used on site, on phones. |
+| 14 | [UI-4](./ui.md) — remaining silent failures | A failed load still reads as "no data" on ~39 inline loaders. |
+| 15 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
+| 16 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
+| 17 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
+| 18 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
+| 19 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
 
 ### 4. Small and low-risk
 

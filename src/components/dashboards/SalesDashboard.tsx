@@ -18,6 +18,7 @@ import { formatEuroCompact, formatDayMonth, formatMonthYear } from '../../utils/
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from './types/salesDashboardTypes'
 import * as salesService from './services/salesDashboardService'
 import DashboardError from './DashboardError'
+import PageHelpLink from '../ui/PageHelpLink'
 
 const defaultStats: SalesDashboardStats = {
   totalUnits: 0, availableUnits: 0, reservedUnits: 0, soldUnits: 0,
@@ -48,7 +49,7 @@ const SalesDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.sales.title')}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.sales.title')}<PageHelpLink /></h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.sales.subtitle')}</p>
       </div>
 

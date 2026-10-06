@@ -205,7 +205,8 @@
       "Listopad",
       "Studeni",
       "Prosinac"
-    ]
+    ],
+    "no_results_description": "Očistite pretragu ili promijenite filtere."
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -282,7 +283,7 @@
     "customers": "Kupci",
     "apartments": "Stanovi",
     "calendar": "Kalendar dospijeća",
-    "debt_status": "Stanje dugu",
+    "debt_status": "Stanje duga",
     "loans": "Pozajmice i Prijenosi",
     "approvals": "Odobrenja",
     "my_companies": "Moje firme",
@@ -328,7 +329,8 @@
     "wrong_password": "Netočna šifra. Pokušajte ponovno.",
     "cashflow_misconfigured_title": "Pogreška u konfiguraciji",
     "cashflow_misconfigured_body": "Pristup Cashflowu nije ispravno konfiguriran. Obratite se administratoru.",
-    "select_profile": "Odaberi profil"
+    "select_profile": "Odaberi profil",
+    "hint": "Profil mijenja izbornik i nadzornu ploču, ne i vaše ovlasti."
   },
   "status": {
     "planning": "Planiranje",
@@ -464,7 +466,8 @@
       "buyer": "Kupac",
       "category": "Kategorija",
       "issue_date": "Datum izdavanja",
-      "no_invoices": "Nema pronađenih računa"
+      "no_invoices": "Nema pronađenih računa",
+      "no_invoices_description": "Ovdje se prikazuju računi odabranog smjera (ulazni ili izlazni). Novi unesite gumbom „Novi račun” u zaglavlju stranice."
     },
     "stats": {
       "total": "Ukupno računa",
@@ -749,7 +752,8 @@
       "actions": "Akcije",
       "no_payments": "Nema pronađenih plaćanja",
       "expense": "RASHOD",
-      "income": "PRIHOD"
+      "income": "PRIHOD",
+      "no_payments_description": "Ovdje se prikazuju plaćanja evidentirana po računima. Dodajte prvo gumbom „Novo plaćanje”."
     },
     "stats": {
       "total_count": "Ukupno plaćanja",
@@ -991,7 +995,7 @@
     "link": {
       "title": "Poveži Dobavljača",
       "description": "Dodaj postojećeg dobavljača u fazu projekta",
-      "info": "Dobavljač će biti dodan u odabranu fazu bez ugovora (has_contract = false)",
+      "info": "Dobavljač će biti dodan u odabranu fazu bez ugovora",
       "supplier_label": "Dobavljač",
       "project_label": "Projekt",
       "phase_label": "Faza",
@@ -1630,7 +1634,8 @@
       "status_partial": "Djelomično",
       "status_unpaid": "Neplaćeno",
       "close": "Zatvori"
-    }
+    },
+    "empty_description": "Ovdje se prikazuju kupci s njihovim računima i uplatama. Kupci se dodaju u profilu Sales, na stranici Kupci, gumbom „Dodaj kupca”."
   },
   "invoice_entity": {
     "supplier_label": "Dobavljač",
@@ -1843,7 +1848,13 @@
     "funding_sources": "Izvori financiranja",
     "no_credit_allocations": "Nema evidentiranih kreditnih alokacija",
     "budget_not_set": "Budžet nije postavljen",
-    "budget_from_tic_hint": "Budžet se preuzima iz TIC-a projekta."
+    "budget_from_tic_hint": "Budžet se preuzima iz TIC-a projekta.",
+    "open_tic": "Otvori TIC projekta",
+    "no_credit_allocations_description": "Izvori financiranja pojavljuju se ovdje kad se kreditu u profilu Funding, na stranici Investicije, gumbom „Namjena Investicije” dodijeli ovaj projekt.",
+    "no_projects_description": "Ovdje se prikazuju svi projekti tvrtke. Dodajte prvi gumbom „Novi projekt”.",
+    "no_projects_description_readonly": "Ovdje se prikazuju svi projekti tvrtke. Novi projekt može dodati samo korisnik s ulogom Director.",
+    "no_phases_description": "Faze se postavljaju u profilu Supervision, na stranici Upravljanje gradilištem, gumbom „Postavi faze”. Ugovori se zatim prikazuju ovdje po fazama.",
+    "no_contracts_description": "Ugovori s podugovarateljima pojavljuju se ovdje kad se dodaju fazama projekta u profilu Supervision, na stranici Upravljanje gradilištem."
   },
   "sales_projects": {
     "default_building_name": "Zgrada {{n}}",
@@ -2121,7 +2132,11 @@
       "apartments": "Stanovi",
       "garages": "Garaže",
       "repositories": "Repozitoriji"
-    }
+    },
+    "no_projects_title": "Nema projekata u ovoj kategoriji",
+    "no_projects_description": "Ovdje se prikazuju projekti kategorija stambeno i retail. Projekti se dodaju u profilu General, na stranici Projekti, gumbom „Novi projekt”.",
+    "no_buildings_title": "Projekt još nema zgrada",
+    "no_buildings_description": "Dodajte ih gumbom „Kreiraj zgrade” ili „Dodaj zgradu”, ili ih uvezite gumbom „Uvezi iz Excela” u zaglavlju stranice."
   },
   "apartments": {
     "title": "Stanovi",
@@ -2233,7 +2248,8 @@
       "progress": "Ukupni napredak",
       "all_payments": "Sva plaćanja",
       "no_payments": "Još nema plaćanja",
-      "type": "Vrsta plaćanja"
+      "type": "Vrsta plaćanja",
+      "no_payments_description": "Uplate kupca pojavljuju se ovdje kad se u profilu Cashflow evidentiraju plaćanja po računima za ovaj stan."
     },
     "contracted": {
       "title": "Ugovoreno",
@@ -2248,7 +2264,9 @@
       "rate3": "3. rata obrtnički radovi 20% (EUR)",
       "rate4": "4. rata uporabna 20% (EUR)",
       "credit_amount": "Kredit etažiranje 90% (EUR)"
-    }
+    },
+    "empty_title": "Nema stanova",
+    "empty_description": "Ovdje se prikazuju stanovi svih projekata. Dodajte ih gumbom „Dodaj stan” ili „Masovno dodavanje”."
   },
   "sale_form": {
     "title": "Završi prodaju za",
@@ -2402,7 +2420,9 @@
       "phone_required": "Telefon je obavezan.",
       "delete_failed": "Kupca nije moguće obrisati.",
       "update_contact_failed": "Datum kontakta nije moguće ažurirati."
-    }
+    },
+    "empty_title": "Nema kupaca",
+    "empty_description": "Kupci se dodaju gumbom „Dodaj kupca” i razvrstavaju u kartice Potencijalni, Zainteresirani i Kupci."
   },
   "supervision": {
     "title": "Nadzor",
@@ -2767,7 +2787,8 @@
       "ref": "Ref:",
       "created": "Kreirano",
       "managed_in_accounting": "Upravljanje u Accounting modulu",
-      "load_failed": "Povijest plaćanja nije učitana"
+      "load_failed": "Povijest plaćanja nije učitana",
+      "no_payments_description": "Plaćanja se pojavljuju ovdje kad se u profilu Cashflow evidentiraju po računima ovog podugovaratelja."
     },
     "invoices_modal": {
       "title": "Fakture -",
@@ -3336,7 +3357,8 @@
       "remaining_label": "Preostalo: €{{amount}}",
       "type_incoming_supplier": "Ulazni (Dobavljač)",
       "type_outgoing_supplier": "Izlazni (Dobavljač)",
-      "type_outgoing_sales": "Izlazni (Kupac)"
+      "type_outgoing_sales": "Izlazni (Kupac)",
+      "no_invoices_description": "Računi se pojavljuju ovdje kad se u profilu Cashflow, na stranici Računi, unesu gumbom „Novi Retail Račun” i povežu s ovim ugovorom."
     }
   },
   "land_plots": {
@@ -3611,7 +3633,8 @@
         "total_available_footer": "Ukupno dostupno",
         "bank_badge": "BANKA",
         "expiring_soon_badge": "USKORO ISTJEČE",
-        "expired_badge": "ISTEKLO"
+        "expired_badge": "ISTEKLO",
+        "no_funding_sources_description": "Krediti i ulaganja pojavljuju se ovdje kad im se na stranici Investicije gumbom „Namjena Investicije” dodijeli ovaj projekt."
       }
     },
     "payments": {
@@ -4306,7 +4329,8 @@
       "cash_flow_operating_note": "Naplata od kupaca te plaćanja dobavljačima, uredu i financijerima, uključujući troškove kredita.",
       "cash_flow_financing": "Financijske aktivnosti",
       "cash_flow_financing_note": "Glavnica kredita: isplate (priljev) i otplate (odljev).",
-      "cash_flow_total": "Ukupni novčani tok"
+      "cash_flow_total": "Ukupni novčani tok",
+      "no_data_description": "Izvještaj se sastavlja iz projekata, prodaje, ugovora i financiranja. Kad ti podaci budu uneseni, učitajte ga ponovno gumbom „Osvježi”."
     },
     "sales": {
       "title": "Prodajni izvještaji",
@@ -4421,7 +4445,9 @@
         "projects_overview": "Projekti – pregled",
         "top_suppliers": "Top dobavljači"
       },
-      "description": "{{projects}} projekata · {{customers}} kupaca · {{suppliers}} dobavljača"
+      "description": "{{projects}} projekata · {{customers}} kupaca · {{suppliers}} dobavljača",
+      "no_data": "Nema podataka za retail izvještaj",
+      "no_data_description": "Izvještaj se sastavlja iz retail projekata, zemljišta, ugovora i računa. Kad ti podaci budu uneseni, učitajte ga ponovno gumbom „Osvježi”."
     },
     "portfolio": {
       "active_count": "{{count}} aktivnih",
@@ -4472,7 +4498,8 @@
       "customers_count": "{{count}} kupaca",
       "no_customers": "Nema podataka o kupcima",
       "area": "Površina",
-      "collection_col": "Naplata"
+      "collection_col": "Naplata",
+      "no_customers_description": "Kupci se pojavljuju ovdje kad se s njima sklopi prodajni ugovor na retail projektu."
     },
     "costs": {
       "cost_structure": "Struktura troškova",
@@ -4485,7 +4512,10 @@
       "contracted": "Ugovoreno",
       "contracts_count": "{{count}} ugovora",
       "paid_abbr": "Plaćeno",
-      "unpaid_abbr": "Neplaćeno"
+      "unpaid_abbr": "Neplaćeno",
+      "no_supplier_types": "Nema troškova po tipu dobavljača",
+      "no_supplier_types_description": "Raspodjela se prikazuje kad dobavljači dobiju ugovore na retail projektima.",
+      "no_suppliers_description": "Dobavljači se pojavljuju ovdje kad dobiju ugovor na retail projektu."
     }
   },
   "retail_customers": {
@@ -4675,7 +4705,7 @@
       "load_data_failed": "Podatke nije moguće učitati"
     },
     "title": "Kontrola proračuna",
-    "subtitle": "EVM pregled performansi po fazama projekta",
+    "subtitle": "EVM pregled performansi odabranog projekta",
     "project": "Projekt",
     "tic": "TIC",
     "tic_sub": "Ukupni investicijski trošak",
@@ -4709,7 +4739,7 @@
     "chart_label": "Proračun",
     "no_projects": "Nema pronađenih projekata.",
     "no_budget_data": "Nema podataka o proračunu za ovaj projekt",
-    "no_budget_data_sub": "Dodajte faze s dodijeljenim proračunom i ugovore za prikaz EVM performansi.",
+    "no_budget_data_sub": "Budžet projekta dolazi iz TIC-a. Spremite TIC za ovaj projekt i dodajte ugovore kako bi se prikazale EVM performanse.",
     "target_line": "Cilj (1.0)",
     "warning_line": "Upozorenje (0.9)",
     "evm_indices_caption": "Ostvarena vrijednost temelji se na dovršenim fazama ugovora.",

@@ -6,10 +6,10 @@ routes: [/apartments]
 roles: [Director, Accounting, Sales, Investment]
 ---
 
-Stranica **Stanovi** prikazuje sve prodajne jedinice. Glavne akcije: **Stanovi masovno kreirani** (masovno unošenje) i **Dodaj stan** (pojedinačno).
+Stranica **Stanovi** (podnaslov **Upravljanje stanovima**) prikazuje sve stanove kao kartice. Glavne akcije: **Masovno dodavanje** (više stanova odjednom) i **Dodaj stan** (pojedinačno).
 
-Filtri: tražilica po broju stana, kupcu, projektu ili zgradi; padajući izbornici **Odaberite projekt** i **Odaberite zgradu**; te tipke statusa **Dostupno**, **Rezervirano**, **Prodano** (boja kartice odgovara statusu — zelena = prodano, žuta = rezervirano).
+Filtri: tražilica **Pretraži stanove...** (po broju stana i imenu kupca); padajući izbornici **Odaberi projekt** i **Odaberi zgradu**; te tipke **Status** (svi), **Dostupno**, **Rezervirano**, **Prodano**. Boja kartice odgovara statusu — zelena = prodano, žuta = rezervirano.
 
-Svaki stan može imati povezanu **garažu** i **repozitorij** (vidi [[term-unit-types]]). Kartica pokazuje napredak plaćanja (uplaćeno / ukupno €).
+Kartica pokazuje projekt, zgradu, kat, površinu i cijenu. Stan može imati povezanu **garažu** i **repozitorij** (vidi [[term-unit-types]]); tada se prikazuje i ukupna cijena paketa. Za prodan stan kartica pokazuje kupca i **Ukupni napredak** plaćanja (uplaćeno / ukupno €) — uplate se vode na stanu i pokrivaju i povezane jedinice.
 
-Akcije po kartici: **Historija plaćanja**, **Povežite jedinice**, **Uredi**, **Detalji**, **Obriši**.
+Akcije po kartici: **Povijest plaćanja**, **Poveži jedinice**, **Uredi**, **Detalji stana**, **Obriši**.

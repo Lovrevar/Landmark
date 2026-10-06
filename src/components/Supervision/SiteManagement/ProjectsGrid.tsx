@@ -7,6 +7,7 @@ import { Button, Badge, EmptyState, ErrorState, Alert } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import { formatEuroCompact } from '../../../utils/formatters'
 import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
+import PageHelpLink from '../../ui/PageHelpLink'
 
 interface ProjectsGridProps {
   projects: ProjectWithPhases[]
@@ -35,7 +36,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
     <div>
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('supervision.site_management.title')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('supervision.site_management.title')}<PageHelpLink /></h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">{t('supervision.site_management.projects_grid.subtitle')}</p>
         </div>
         {onRefresh && (

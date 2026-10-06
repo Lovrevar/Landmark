@@ -1,10 +1,38 @@
 # Backlog — Sales
 
 Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (next free:
-`SALES-16`). Entry format and rules are in [README.md](./README.md). Retail is in
+`SALES-20`). Entry format and rules are in [README.md](./README.md). Retail is in
 [retail.md](./retail.md).
 
 ## Open
+
+### SALES-16 · Low · Apartments page actions are not role-gated
+- **Check:** Code reading
+- **Where:** `Sales/Apartments/index.tsx:22` calls `useAuth()` and discards the result; create and
+  delete show to every role. Same for the delete-building button in `BuildingsGrid.tsx`.
+- **What happens:** a role RLS refuses sees the button and gets an error (or nothing).
+- **Fix direction:** `utils/permissions.ts`.
+
+### SALES-17 · Low · Bulk building creation
+- **Check:** Code reading
+- **Where:** `createBulkBuildings`.
+- **What happens:** it can create buildings with names that already exist, always gives them 10
+  floors, and writes `severity` inside the activity-log metadata, not as the severity.
+
+### SALES-18 · Low · Garage and storage import has no template; import tolerance differs from the screen
+- **Where:** the garage import modal has no "download template" button (the apartment import
+  does). The apartment import accepts a price difference of 0,05 while the screen says 0,02.
+
+### SALES-19 · Low · Sales labels, grammar and hardcoded strings
+- **Check:** Code reading
+- "Dodaj jednu Stan" and similar: sentences glued from a verb and a unit type.
+- `Apartments/modals/PaymentHistoryModal.tsx:122,131` print English "Garages (…)" / "Storages (…)".
+- The "all" option of the Apartments status filter is labelled "Status".
+- Double colons in `CustomerCard.tsx` and `CustomerDetailModal.tsx`; the customer delete uses the
+  generic confirmation text.
+- "Apartmani" and "Stanovi" both name the same page; the menu says "Sales projekti", the page
+  title "Projekti".
+- Icon-only buttons without labels in `BuildingsGrid` and `UnitsGrid`; both hand-build money (UI-1).
 
 ### SALES-6 · Medium · The package total is still computed per screen
 - **Where:** Sales Projects cards, Apartments page, Customers, Sales dashboard, Sales Payments.
@@ -37,6 +65,8 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
   `BulkPriceUpdateModal.tsx` hand-roll their formatting.
 - **Fix direction:** `formatEuro` / `formatEuroRounded`. Part of UI-1 in [ui.md](./ui.md).
 
+## Resolved
+
 ### SALES-15 · Low · Sales project and building grids have no empty state
-- **Where:** Sales `ProjectsGrid` and `BuildingsGrid`.
-- **Fix direction:** `EmptyState`.
+- Fixed on `feat/user-guidance-phase-2` (2026-10-06): both grids render `EmptyState` with a
+  description saying where projects and buildings are added.

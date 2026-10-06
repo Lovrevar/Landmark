@@ -122,11 +122,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setCurrentProfile('General')
       return
     }
-    if (currentProfile === 'Cashflow' && !cashflowUnlocked) {
+    // Not on the Help page. A "?" beside a Cashflow page title opens Help in a new tab, where the
+    // profile is still Cashflow but the unlock (kept per tab) is not carried over. Asking for
+    // the password there put the prompt over the article, and cancelling it navigated away from
+    // the help the user had just asked for. Help shows no Cashflow data; the prompt comes back
+    // as soon as they leave it for any other page.
+    const onHelpPage = location.pathname.startsWith('/help')
+    if (currentProfile === 'Cashflow' && !cashflowUnlocked && !onHelpPage) {
       setPendingProfile('Cashflow')
       setShowPasswordModal(true)
     }
-  }, [currentProfile, cashflowUnlocked, user, setCurrentProfile])
+  }, [currentProfile, cashflowUnlocked, user, setCurrentProfile, location.pathname])
 
   const getMenuItems = () => {
     // The Supervision *role* short-circuits the profile menus below: whichever profile is
@@ -306,7 +312,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </button>
 
                   {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 pt-1 pb-2 z-50">
                       {profiles.map((profile) => (
                         <button
                           key={profile}
@@ -319,6 +325,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           {profile === 'Cashflow' && <Lock className="w-3 h-3" />}
                         </button>
                       ))}
+                      {/* Profile and role are easy to confuse: one changes what you look at, the
+                          other what you may do. */}
+                      <p className="px-4 pt-2 mt-1 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                        {t('profiles.hint')}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -508,6 +519,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   {t('profiles.title')}
                 </p>
+                <p className="px-3 pb-2 text-xs text-gray-500 dark:text-gray-400">{t('profiles.hint')}</p>
                 <ul className="space-y-1">
                   {profiles.map((profile) => (
                     <li key={profile}>
