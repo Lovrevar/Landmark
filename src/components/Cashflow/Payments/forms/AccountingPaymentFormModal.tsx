@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import DateInput from '../../../Common/DateInput'
 import { Payment, Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation, PaymentFormData } from '../types'
 import { Modal, Button, Select, Input, Textarea, FormField, Form } from '../../../ui'
-import { PaymentSourceHint, CesijaHint } from '../../components/PaymentHints'
 import CurrencyInput, { formatCurrency } from '../../../Common/CurrencyInput'
 import { CesijaPaymentFields } from '../../components/CesijaPaymentFields'
 import { PaymentMethodField } from '../../components/PaymentMethodField'
@@ -129,7 +128,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
 
             {formData.invoice_id && !formData.is_cesija && (
               <>
-                <FormField label={t('payments.form.source_label')} required hint={<PaymentSourceHint />} className="md:col-span-2">
+                <FormField label={t('payments.form.source_label')} required className="md:col-span-2">
                   <Select
                     value={formData.payment_source_type}
                     onChange={(e) => changeForm({
@@ -223,7 +222,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
 
             {formData.invoice_id && (
               <div className="md:col-span-2">
-                <div className="flex items-center gap-1.5">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -246,8 +244,6 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                     {t('payments.form.cesija_checkbox')}
                   </span>
                 </label>
-                <CesijaHint />
-                </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
                   {t('payments.form.cesija_hint')}
                 </p>

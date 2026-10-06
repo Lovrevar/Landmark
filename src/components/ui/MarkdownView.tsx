@@ -1,5 +1,4 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -21,12 +20,7 @@ const MarkdownView: React.FC<Props> = ({ content, className }) => {
           ul: ({ children }) => <ul className="list-disc pl-5 my-1.5">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal pl-5 my-1.5">{children}</ol>,
           li: ({ children }) => <li className="my-0.5">{children}</li>,
-          a: ({ href, children }) => href?.startsWith('/') ? (
-            // An app route (the Help page's article links): navigate in place, no reload.
-            <Link to={href} className="text-blue-600 dark:text-blue-400 hover:underline">
-              {children}
-            </Link>
-          ) : (
+          a: ({ href, children }) => (
             <a
               href={href}
               target="_blank"

@@ -4,7 +4,7 @@ import { createSellableApartment } from '../support/factories/salesUnits'
 
 // Exercises the apartment "complete sale" money-write path end to end:
 // completeSale() creates a customer + a sale row, flips the apartment to Sold,
-// and (in the complete_apartment_sale RPC) flips linked units to Sold too. Assertions
+// and (via updateLinkedUnitsAfterSale) flips linked units to Sold too. Assertions
 // go through the service-role admin client so we check the persisted state, not
 // just the UI.
 //
@@ -65,7 +65,7 @@ test.describe('sales — complete sale', () => {
       .poll(async () => {
         const { data } = await admin.from('garages').select('status').eq('id', seed.garageId!).single()
         return data?.status
-      }, { timeout: 10_000, message: 'linked garage should be flipped to Sold by complete_apartment_sale' })
+      }, { timeout: 10_000, message: 'linked garage should be flipped to Sold by updateLinkedUnitsAfterSale' })
       .toBe('Sold')
 
     const { data: apt } = await admin

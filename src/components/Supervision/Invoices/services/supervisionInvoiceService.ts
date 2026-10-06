@@ -1,8 +1,6 @@
 import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
-import { fetchAllRows } from '../../../../lib/fetchAllRows'
 import { logActivity } from '../../../../lib/activityLog'
-import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
 import { exportT } from '../../../../utils/exportLanguage'
 import { getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
@@ -57,7 +55,7 @@ type RawInvoice = Record<string, unknown> & {
 }
 
 export async function fetchSupervisionInvoices(): Promise<InvoiceWithDetails[]> {
-  const invoicesData = await fetchAllRows<RawInvoice>((from, to) => supabase
+  const { data: invoicesData, error: invoicesError } = await supabase
     .from('accounting_invoices')
     .select(`
       *,
@@ -70,13 +68,13 @@ export async function fetchSupervisionInvoices(): Promise<InvoiceWithDetails[]> 
         phase:project_phases(id, phase_name)
       )
     `)
-    .eq('invoice_category', 'SUBCONTRACTOR')
+    .in('invoice_category', ['SUBCONTRACTOR', 'SUPERVISION'])
     .not('project_id', 'is', null)
     .order('issue_date', { ascending: false })
-    .order('id')
-    .range(from, to))
 
-  return invoicesData.map((invoice: RawInvoice) => {
+  if (invoicesError) throw invoicesError
+
+  return (invoicesData || []).map((invoice: RawInvoice) => {
     return {
       id: invoice.id,
       invoice_number: invoice.invoice_number,
@@ -113,14 +111,12 @@ export function calculateInvoiceStats(invoices: InvoiceWithDetails[]): InvoiceSt
 }
 
 export async function toggleInvoiceApproval(invoiceId: string, currentApproved: boolean): Promise<void> {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('accounting_invoices')
     .update({ approved: !currentApproved })
     .eq('id', invoiceId)
-    .select('id')
 
   if (error) throw error
-  assertRowsAffected(data)
 
   logActivity({ action: 'invoice.approve', entity: 'invoice', entityId: invoiceId, metadata: { severity: 'high', approved: !currentApproved } })
 }

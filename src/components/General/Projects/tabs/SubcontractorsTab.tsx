@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { Users, ChevronUp, ChevronDown } from 'lucide-react'
 import { Badge, Button, EmptyState, Select, SearchInput, StatCard, StatGrid, Table } from '../../../ui'
 import type { Phase, ContractWithDetails } from '../types'
-import { NO_VALUE } from '../../../../utils/formatters'
-import { contractRemaining, hasContractAmount, summariseContracts } from './subcontractorsSummary'
 
 interface SubcontractorsTabProps {
   contracts: ContractWithDetails[]
@@ -18,6 +16,7 @@ type SortDir = 'asc' | 'desc'
 
 const NO_PHASE = '__none'
 const formatEur = (n: number) => `€${n.toLocaleString('hr-HR')}`
+const remainingOf = (c: ContractWithDetails) => c.contract_amount - c.budget_realized
 
 const statusVariant = (status: string): 'green' | 'gray' | 'yellow' =>
   status === 'active' ? 'green' : status === 'completed' ? 'gray' : 'yellow'
@@ -61,18 +60,13 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
         case 'classification': return c.classification?.name ?? ''
         case 'contract_amount': return c.contract_amount
         case 'realized': return c.budget_realized
-        case 'remaining': return contractRemaining(c) ?? Number.NaN
+        case 'remaining': return remainingOf(c)
         case 'status': return c.status
       }
     }
     return [...filtered].sort((a, b) => {
       const av = value(a)
       const bv = value(b)
-      // A row with no contract has no remaining (NaN), and sinks whichever way the column sorts
-      // rather than landing at one end or the other as if it were a very large or small number.
-      const aMissing = typeof av === 'number' && Number.isNaN(av)
-      const bMissing = typeof bv === 'number' && Number.isNaN(bv)
-      if (aMissing !== bMissing) return aMissing ? 1 : -1
       let cmp: number
       if (typeof av === 'number' && typeof bv === 'number') cmp = av - bv
       else cmp = String(av).localeCompare(String(bv))
@@ -81,9 +75,11 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
     })
   }, [filtered, sortKey, sortDir])
 
-  // All contract values minus all payments used to take every euro paid to a supplier with no
-  // contract off the contracts' remaining. See subcontractorsSummary.ts.
-  const summary = useMemo(() => summariseContracts(filtered), [filtered])
+  const summary = useMemo(() => {
+    const totalValue = filtered.reduce((s, c) => s + Number(c.contract_amount || 0), 0)
+    const totalRealized = filtered.reduce((s, c) => s + Number(c.budget_realized || 0), 0)
+    return { totalValue, totalRealized, totalRemaining: totalValue - totalRealized, count: filtered.length }
+  }, [filtered])
 
   const statusLabel = (s: string) => t(`status.${s}`, s)
 
@@ -173,19 +169,10 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
                 </Table.Tr>
               </Table.Head>
               <Table.Body>
-                {sorted.map((contract) => {
-                  // A dash where there is no contract to measure against; red only for a real
-                  // contract that has been overpaid. It used to be green whatever the sign.
-                  const remaining = contractRemaining(contract)
-                  return (
+                {sorted.map((contract) => (
                   <Table.Tr key={contract.id}>
                     <Table.Td label={t('common.subcontractor')} className="font-medium text-gray-900 dark:text-white">
-                      <span className="inline-flex items-center gap-2 flex-wrap">
-                        {contract.subcontractor.name}
-                        {!hasContractAmount(contract) && (
-                          <Badge variant="yellow" size="sm">{t('supervision.subcontractor_details.no_contract_badge')}</Badge>
-                        )}
-                      </span>
+                      {contract.subcontractor.name}
                     </Table.Td>
                     <Table.Td label={t('common.phase')}>
                       {contract.phase?.phase_number != null
@@ -196,26 +183,20 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
                       {contract.classification?.name ?? t('supervision.site_management.phase_card.unclassified')}
                     </Table.Td>
                     <Table.Td label={t('general_projects.contract_amount')} className="font-semibold">
-                      {hasContractAmount(contract) ? formatEur(contract.contract_amount) : NO_VALUE}
+                      {formatEur(contract.contract_amount)}
                     </Table.Td>
                     <Table.Td label={t('general_projects.realized')} className="text-blue-600 dark:text-blue-400">
                       {formatEur(contract.budget_realized)}
                     </Table.Td>
-                    <Table.Td
-                      label={t('common.remaining')}
-                      className={remaining !== null && remaining < 0
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-gray-900 dark:text-white'}
-                    >
-                      {remaining === null ? NO_VALUE : formatEur(remaining)}
+                    <Table.Td label={t('common.remaining')} className="text-green-600 dark:text-green-400">
+                      {formatEur(remainingOf(contract))}
                     </Table.Td>
                     <Table.Td label={t('common.status')}>
                       <Badge variant={statusVariant(contract.status)} size="sm">{statusLabel(contract.status)}</Badge>
                     </Table.Td>
                     <Table.Td label={t('general_projects.contact')}>{contract.subcontractor.contact || '-'}</Table.Td>
                   </Table.Tr>
-                  )
-                })}
+                ))}
               </Table.Body>
             </Table>
           )}

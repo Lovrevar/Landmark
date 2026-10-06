@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Files, ExternalLink, Pencil, Trash2, Loader2, ChevronRight } from 'lucide-react'
+import { Files, ExternalLink, Trash2, Loader2, ChevronRight } from 'lucide-react'
 
 import { Table, Badge, EmptyState, Button } from '../../ui'
 import type { SearchableOption } from '../../ui/SearchableSelect'
@@ -20,17 +20,14 @@ interface DocumentListTableProps {
   creditOptions: SearchableOption[]
   breadcrumbFor: (cat: DocumentCategory | null) => string
   onOpen: (doc: DocumentWithRelations) => void
-  onEdit: (doc: DocumentWithRelations) => void
   onDelete: (doc: DocumentWithRelations) => void
-  /** Whether the viewer may edit or delete this document (uploader, Director, Accounting). */
-  canModify: (doc: DocumentWithRelations) => boolean
 }
 
 export const DocumentListTable: React.FC<DocumentListTableProps> = ({
   documents, loading, openingId, categoryById,
   projectOptions, subcontractorOptions, phaseOptions,
   contractOptions, creditOptions,
-  breadcrumbFor, onOpen, onEdit, onDelete, canModify,
+  breadcrumbFor, onOpen, onDelete,
 }) => {
   const { t, i18n } = useTranslation()
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
@@ -160,24 +157,13 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
                           openingId === doc.id ? '[&>svg]:animate-spin' : '',
                         ].join(' ')}
                       />
-                      {canModify(doc) && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            icon={Pencil}
-                            onClick={() => onEdit(doc)}
-                            title={t('documents.page.actions.edit')}
-                          />
-                          <Button
-                            variant="ghost-danger"
-                            size="icon-sm"
-                            icon={Trash2}
-                            onClick={() => onDelete(doc)}
-                            title={t('documents.page.actions.delete')}
-                          />
-                        </>
-                      )}
+                      <Button
+                        variant="ghost-danger"
+                        size="icon-sm"
+                        icon={Trash2}
+                        onClick={() => onDelete(doc)}
+                        title={t('documents.page.actions.delete')}
+                      />
                     </div>
                   </Table.Td>
                 </Table.Tr>

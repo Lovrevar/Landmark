@@ -6,14 +6,9 @@ import CompanyFormModal from './forms/CompanyFormModal'
 import CompanyDetailsModal from './modals/CompanyDetailsModal'
 import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, ConfirmDialog } from '../../ui'
 import { toErrorMessage } from '../../../lib/errorMessage'
-import { useAuth } from '../../../contexts/AuthContext'
-import { isDirectorRole } from '../../../utils/permissions'
 
 const AccountingCompanies: React.FC = () => {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  // Deleting companies is Director-only under RLS.
-  const canDelete = isDirectorRole(user)
   const {
     companies,
     loading,
@@ -153,17 +148,6 @@ const AccountingCompanies: React.FC = () => {
                       €{company.profit.toLocaleString('hr-HR')}
                     </span>
                   </div>
-                  {/* Credit principal — drawn and repaid — sits outside turnover and result.
-                      Shown only for a company that has any, and only once the view reports them. */}
-                  {company.financing_received !== null && company.financing_repaid !== null &&
-                    (company.financing_received !== 0 || company.financing_repaid !== 0) && (
-                    <div className="flex justify-between gap-2 text-sm mt-1">
-                      <span className="text-gray-600 dark:text-gray-400">{t('companies.card.financing_label')}</span>
-                      <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                        €{company.financing_received.toLocaleString('hr-HR')} / €{company.financing_repaid.toLocaleString('hr-HR')}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -183,9 +167,7 @@ const AccountingCompanies: React.FC = () => {
                   {t('common.details')}
                 </Button>
                 <Button variant="ghost" size="icon-md" icon={Edit} onClick={() => handleOpenAddModal(company)} title={t('common.edit')} />
-                {canDelete && (
-                  <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => handleDelete(company.id)} title={t('common.delete')} />
-                )}
+                <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => handleDelete(company.id)} title={t('common.delete')} />
               </div>
             </div>
           ))}

@@ -1,5 +1,4 @@
 import { supabase } from '../../../../lib/supabase'
-import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { logActivity } from '../../../../lib/activityLog'
 import { OfficeSupplierWithStats, Invoice, OfficeSupplierFormData } from '../types'
 
@@ -87,14 +86,12 @@ export const updateSupplier = async (id: string, formData: OfficeSupplierFormDat
 }
 
 export const deleteSupplier = async (id: string): Promise<void> => {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('office_suppliers')
     .delete()
     .eq('id', id)
-    .select('id')
 
   if (error) throw error
-  assertRowsAffected(data)
 
   logActivity({ action: 'office_supplier.delete', entity: 'office_supplier', entityId: id, metadata: { severity: 'medium' } })
 }

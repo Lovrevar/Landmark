@@ -77,8 +77,6 @@ export async function updateCredit(
         newCredit.disbursed_to_account && newCredit.disbursed_to_bank_account_id
           ? newCredit.disbursed_to_bank_account_id
           : null,
-      // Nothing else sets a credit repaid or defaulted, so the edit form is where it happens.
-      status: newCredit.status,
     })
     .eq('id', creditId)
 

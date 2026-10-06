@@ -247,18 +247,7 @@
     "back_to_sign_in": "Back to sign in",
     "or": "or",
     "sign_in_with_microsoft": "Sign in with Microsoft",
-    "redirecting_to_microsoft": "Redirecting to Microsoft...",
-    "new_password": "New password",
-    "confirm_password": "Confirm password",
-    "set_new_password": "Set a new password",
-    "set_new_password_subtitle": "Enter a new password for your account",
-    "save_password": "Save password",
-    "saving_password": "Saving...",
-    "password_too_short": "Password must be at least {{min}} characters",
-    "passwords_do_not_match": "Passwords do not match",
-    "password_updated": "Your password has been changed",
-    "password_update_failed": "The password could not be changed. Please try again",
-    "reset_link_invalid": "This reset link is invalid or has expired. Request a new one from the sign-in page"
+    "redirecting_to_microsoft": "Redirecting to Microsoft..."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -571,7 +560,10 @@
       "paid_amount": "Paid Amount:",
       "remaining": "Remaining Amount:",
       "category": "Category",
-      "description": "Description"
+      "description": "Description",
+      "status_unpaid": "Unpaid",
+      "status_partial": "Partially Paid",
+      "status_paid": "Paid"
     },
     "actions": {
       "new": "New Invoice",
@@ -693,12 +685,7 @@
       "base_vat5": "Base (VAT 5%):",
       "base_vat0": "Base (VAT 0%):"
     },
-    "vat_rate_line": "VAT {{rate}}%:",
-    "hints": {
-      "type_title": "Invoice type",
-      "type_intro": "The abbreviation in brackets says what the invoice relates to:",
-      "type_colour": "Red marks invoices we pay (every incoming one), green marks invoices we are paid on (every outgoing one)."
-    }
+    "vat_rate_line": "VAT {{rate}}%:"
   },
   "payments": {
     "toast": {
@@ -878,15 +865,15 @@
       "source_bank": "Bank Account",
       "source_credit": "Credit",
       "source_kompenzacija": "Compensation",
-      "source_cash": "Cash"
-    },
-    "hints": {
-      "source_title": "Payment source",
-      "source_accounts": "Bank account or Credit: the payment is booked against the account or credit you pick. Cash: a payment with no bank account.",
-      "source_kompenzacija": "Kompenzacija: a mutual offset of debts with the other party. No money moves, so neither an account nor a payment method is chosen.",
-      "cesija_title": "Cesija",
-      "cesija_what": "Another of your companies pays the invoice from its own bank account or credit, instead of the company the invoice is addressed to.",
-      "cesija_rules": "Pick the paying company and its source. The payment method is always a wire transfer; cesija cannot be combined with kompenzacija or cash."
+      "source_cash": "Cash",
+      "type_incoming_supplier": "Incoming Supplier",
+      "type_outgoing_supplier": "Outgoing Supplier",
+      "type_incoming_investment": "Incoming Investment",
+      "type_outgoing_sales": "Outgoing Sales",
+      "type_incoming_office": "Incoming Office",
+      "type_outgoing_office": "Outgoing Office",
+      "type_incoming_bank": "Incoming Bank",
+      "type_outgoing_bank": "Outgoing Bank"
     }
   },
   "suppliers": {
@@ -1036,8 +1023,7 @@
       "revenue_label": "Revenue:",
       "profit_loss_label": "Profit/Loss:",
       "unpaid_income": "Unpaid (income):",
-      "unpaid_expense": "Unpaid (expense):",
-      "financing_label": "Financing (received / repaid):"
+      "unpaid_expense": "Unpaid (expense):"
     },
     "table": {
       "name": "Name",
@@ -1354,6 +1340,14 @@
       "unpaid": "Unpaid",
       "overdue": "Overdue"
     },
+    "invoice_types": {
+      "incoming_supplier": "Incoming - Supplier",
+      "incoming_investment": "Incoming - Investment",
+      "incoming_office": "Incoming - Office",
+      "outgoing_supplier": "Outgoing - Supplier",
+      "outgoing_sales": "Outgoing - Sales",
+      "outgoing_office": "Outgoing - Office"
+    },
     "table": {
       "heading": "Invoices for {{day}}. {{month}} - {{count}} invoices",
       "invoice_number": "Invoice Number",
@@ -1547,6 +1541,11 @@
         "status": "Status"
       },
       "close": "Close"
+    },
+    "status": {
+      "paid": "Paid",
+      "partial": "Partial",
+      "unpaid": "Unpaid"
     },
     "form": {
       "title_add": "New Office Supplier",
@@ -2030,31 +2029,7 @@
       "error_missing_size": "Missing size (m²)",
       "error_missing_price": "Missing price",
       "error_missing_building": "Missing building",
-      "error_building_not_found": "Building \"{{name}}\" not found",
-      "download_template": "Download template",
-      "template_failed": "The template could not be downloaded. Please try again.",
-      "template_sheet_data": "Apartments",
-      "template_sheet_notes": "Notes",
-      "format": {
-        "layout": "Only the first sheet is read. Headers are on row 1 and data starts on row 2; the column order matters, not the header names.",
-        "required": "Required: A – zgrada (the name must match an existing building in the project), D – oznaka stana (apartment number), J – stan m2 prodajno (saleable area), L – cijena stana (apartment price).",
-        "details": "Optional: B – ulaz (entrance), C – kat (floor), E – tip (type), F – sobnost (rooms), H – otvorena površina (open area), I – otvorena površina s koeficijentom (open area with coefficient), K – cijena po m2 (price per m²).",
-        "parking": "M–O – parking: oznaka, m2, cijena (label, m², price). A garage is created and linked to the apartment only when all three cells are filled.",
-        "storage": "P–R – repozitorij (storage unit): oznaka, m2, cijena. The same rule applies as for parking.",
-        "contract_date": "T – datum potpisa predugovora (pre-contract signing date), as DD.MM.YYYY. This is the only date column.",
-        "amounts": "U – kapara 10% (deposit), V–Y – instalments 1–4 (AB konstrukcija 30%, postava stolarije 20%, obrtnički radovi 20%, uporabna 20%), Z – kredit etažiranje 90% (loan). All of these columns hold amounts in EUR, not dates.",
-        "payment_type": "The payment type is set automatically: instalments if any of columns V–Y is filled, otherwise loan if Z is filled.",
-        "not_imported": "G – zatvorena površina (closed area) and S – ukupna cijena (total price) are not imported.",
-        "numbers": "Numbers may use the European format (e.g. \"3.000,00\").",
-        "existing": "An apartment that already exists (same building and number) is updated instead of added again; its status is left as it is."
-      },
-      "error_date_in_amount_column": "Column {{column}} ({{name}}): holds a date where an amount in EUR is expected",
-      "garage_format": {
-        "layout": "Headers are on row 1 and data starts on row 2.",
-        "label": "A – parking oznaka (garage label or number)",
-        "size": "B – parking m2 (size in m²)",
-        "price": "C – parking cijena (price in EUR)"
-      }
+      "error_building_not_found": "Building \"{{name}}\" not found"
     },
     "filter": {
       "all": "All",
@@ -3315,6 +3290,7 @@
       "remaining_label": "Remaining: €{{amount}}",
       "type_incoming_supplier": "Incoming (Supplier)",
       "type_outgoing_supplier": "Outgoing (Supplier)",
+      "type_incoming_investment": "Incoming (Customer)",
       "type_outgoing_sales": "Outgoing (Customer)"
     }
   },
@@ -3661,12 +3637,6 @@
       "add_error": "Error adding equity investment.",
       "preview_incomplete": "Enter amount, dates, and IRR to calculate",
       "preview_invalid_range": "Invalid date range"
-    },
-    "hints": {
-      "allocations_title": "Credit allocations",
-      "allocations_purpose": "An allocation is a part of the credit set aside for a project, for OPEX (costs with no project) or for refinancing a company or a bank.",
-      "allocations_amounts": "Allocated is the amount set aside, Used is what has already been paid or drawn against it, and Available is the difference (red when the allocation is overdrawn).",
-      "allocations_disbursed": "For a credit disbursed straight to the company's account, the whole allocation counts as used."
     }
   },
   "tic": {
@@ -3716,7 +3686,7 @@
       "upload_heading": "Select an Excel file",
       "upload_hint": "A file with the investment and construction cost structure (.xlsx or .xls)",
       "format_heading": "Expected file format:",
-      "format_sheets": "Two sheets: INVESTICIJA and GRAĐENJE. Sheets with other names are recognised by the shape of the table (the construction sheet has a leading column of A), B), C) codes and roman numerals).",
+      "format_sheets": "Two sheets: INVESTICIJA and GRAĐENJE (without those names, the first and second sheet are used)",
       "format_header": "The header row contains NAMJENA and VLASTITA SREDSTVA — columns are located automatically",
       "format_investment": "INVESTICIJA: line item name, then VLASTITA SREDSTVA (EUR, %) and KREDITNA SREDSTVA (EUR, %)",
       "format_construction": "GRAĐENJE: the first column holds the section code (A), B), C)) or the item's roman numeral",
@@ -3738,8 +3708,7 @@
       "unphased_title": "Not phased:",
       "unphased_body": "these costs are incurred once for the whole project, so they are not split across phases. The sheet repeats them in full in every phase — summing those columns would inflate the plan.",
       "inconsistent_title": "Check the split:",
-      "inconsistent_body": "on these rows the phase amounts do not add up to the total. They are imported exactly as written, without being reconciled.",
-      "format_phases": "Phases (optional): on the INVESTICIJA sheet, headers FAZA 1, FAZA 2 … above each phase's group of columns, laid out like the totals (own funds, %, credit funds)."
+      "inconsistent_body": "on these rows the phase amounts do not add up to the total. They are imported exactly as written, without being reconciled."
     },
     "col_classification": "Cost classification",
     "classification_unmapped": "— unclassified —",
@@ -3766,12 +3735,6 @@
       "row_mismatch": "The phase split does not add up to this row’s total.",
       "remove_phase_title": "Remove phase {{number}}",
       "remove_phase_confirm": "Remove phase {{number}} and its amounts from {{count}} row(s)? The phases after it are renumbered, and the change is only stored when you press Save."
-    },
-    "hints": {
-      "phases_title": "Phases in the TIC",
-      "phases_phased": "Clicking a phase cell opens that row's split across phases. The phase amounts should add up to the row's amount.",
-      "phases_unphased": "\"—\" means the cost is at project level (land, for example): it is counted once and belongs to no phase.",
-      "mismatch_body": "The amounts entered per phase differ from this row's own or credit funds. Nothing is corrected automatically: click a phase cell and fix the split, or correct the row's amount."
     }
   },
   "dashboards": {
@@ -4267,12 +4230,7 @@
         "cash_flow_trend": "CASH FLOW TREND",
         "project_portfolio": "PROJECT PORTFOLIO",
         "project_performance": "Project Performance Overview"
-      },
-      "cash_flow_operating": "Operating activities",
-      "cash_flow_operating_note": "Receipts from customers, and payments to suppliers, the office and financiers, including credit costs.",
-      "cash_flow_financing": "Financing activities",
-      "cash_flow_financing_note": "Credit principal: drawdowns (inflow) and repayments (outflow).",
-      "cash_flow_total": "Total cash flow"
+      }
     },
     "sales": {
       "title": "Sales Reports",
@@ -4673,17 +4631,7 @@
     "no_budget_data_sub": "Add phases with allocated budgets and contracts to see EVM performance.",
     "target_line": "Target (1.0)",
     "warning_line": "Warning (0.9)",
-    "evm_indices_caption": "Earned value is based on completed contract milestones.",
-    "hints": {
-      "cpi_title": "CPI – Cost Performance Index",
-      "cpi_body": "Earned value of the work divided by what has been paid. 1.00 or more: spending is within plan (green); 0.90–0.99: slightly over (yellow); below 0.90: over budget (red). Until something is paid it reads 1.00.",
-      "spi_title": "SPI – Schedule Performance Index",
-      "spi_body": "Earned value of the work divided by the value planned to date. 1.00 or more: on schedule; 0.90–0.99: slightly behind; below 0.90: behind. Only phases with both a start and an end date count.",
-      "eac_title": "EAC – Estimate at Completion",
-      "eac_body": "Planned budget divided by CPI: what the project will cost if spending keeps going the way it has.",
-      "vac_title": "VAC – Variance at Completion",
-      "vac_body": "Planned budget minus EAC. A positive amount is the expected saving, a negative one the expected overrun."
-    }
+    "evm_indices_caption": "Earned value is based on completed contract milestones."
   },
   "chat": {
     "title": "Chat",
@@ -5013,7 +4961,6 @@
   "documents": {
     "upload_modal": {
       "title": "Upload document",
-      "edit_title": "Edit document",
       "file_label": "File",
       "drag_or_click": "Drag a file here or click to select",
       "any_type_hint": "Any file type, up to 50 MB",
@@ -5054,9 +5001,7 @@
       "toast": {
         "success": "Document uploaded",
         "success_many": "{{count}} documents uploaded",
-        "error_generic": "Failed to upload document",
-        "update_success": "Document updated",
-        "update_error": "The document could not be saved"
+        "error_generic": "Failed to upload document"
       }
     },
     "page": {
@@ -5089,7 +5034,6 @@
       },
       "actions": {
         "open": "Open",
-        "edit": "Edit",
         "delete": "Delete"
       },
       "delete_confirm_title": "Delete document?",
@@ -5196,13 +5140,11 @@
       "payment_notification": "Payment Notification",
       "retail_milestone": "Retail Milestone",
       "retail_supplier": "Retail Supplier",
-      "retail_supplier_type": "Retail Supplier Type",
-      "help": "Help"
+      "retail_supplier_type": "Retail Supplier Type"
     },
     "actions": {
       "auth.login": "User logged in",
       "auth.logout": "User logged out",
-      "auth.password_reset": "Password reset",
       "project.create": "Project created",
       "project.update": "Project updated",
       "project.delete": "Project deleted",
@@ -5384,12 +5326,8 @@
       "erp_partner_map.upsert": "ERP partner mapping saved",
       "erp_partner_map.delete": "ERP partner mapping removed",
       "erp_import.upload": "ERP feed file imported",
-      "erp_import.reclassify": "ERP import reclassified",
-      "help.view": "Help opened",
-      "help.page_link_click": "Page help link clicked",
-      "help.hint_open": "Hint opened"
-    },
-    "show_help_events": "Also show help usage"
+      "erp_import.reclassify": "ERP import reclassified"
+    }
   },
   "sifrarnici": {
     "title": "Šifrarnici",
@@ -5501,39 +5439,5 @@
     "col_amount": "Amount",
     "col_problems": "Problems",
     "lines": "{{count}} line(s)"
-  },
-  "help": {
-    "title": "Help",
-    "description": "Short guides to pages, terms and roles. The AI assistant answers from the same articles.",
-    "search_placeholder": "Search help...",
-    "results_count": "Articles found: {{count}}",
-    "no_results_title": "No results",
-    "no_results_description": "Try another term, or ask the AI assistant.",
-    "for_this_page": "For the page you came from",
-    "groups": {
-      "pages": "Page guides",
-      "terms": "Terms",
-      "roles": "Roles and access"
-    },
-    "back_to_all": "All help",
-    "article_unavailable_title": "Article not available",
-    "article_unavailable_description": "The article does not exist or is not meant for your role.",
-    "croatian_only_note": "Help articles are currently available in Croatian only.",
-    "page_link": "Help for this page",
-    "hint": {
-      "button_label": "Explain: {{topic}}",
-      "more": "More in Help"
-    }
-  },
-  "invoice_type_long": {
-    "ulazni_dob": "Incoming (Supplier)",
-    "ulazni_inv": "Incoming (Investments)",
-    "ulazni_ured": "Incoming (Office)",
-    "ulazni_banka": "Incoming (Bank)",
-    "ulazni_troskred": "Incoming (Loan costs)",
-    "izlazni_ured": "Outgoing (Office)",
-    "izlazni_dob": "Outgoing (Supplier)",
-    "izlazni_prod": "Outgoing (Sales)",
-    "izlazni_banka": "Outgoing (Bank)"
   }
 }

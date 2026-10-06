@@ -1,5 +1,4 @@
 import { supabase } from '../../../../lib/supabase'
-import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { logActivity } from '../../../../lib/activityLog'
 import { uploadDocument } from '../../../Documents/services/documentService'
 import type { AssociationInput } from '../../../Documents/types'
@@ -199,14 +198,12 @@ export const deleteSubcontractor = async (contractId: string) => {
     .eq('id', contractId)
     .maybeSingle()
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('contracts')
     .delete()
     .eq('id', contractId)
-    .select('id')
 
   if (error) throw error
-  assertRowsAffected(data)
 
   logActivity({ action: 'subcontractor.delete', entity: 'subcontractor', entityId: contractId, projectId: contractRow?.project_id ?? null, metadata: { severity: 'high' } })
 }

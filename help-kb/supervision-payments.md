@@ -3,7 +3,7 @@ id: supervision-payments
 title: Upravljanje plaćanjima (podugovaratelji)
 keywords: [plaćanja, payments, upravljanje plaćanjima, podugovaratelji, izvezi CSV]
 routes: [/payments]
-roles: [Director, Accounting, Investment]
+roles: [Director, Accounting, Investment, Supervision]
 ---
 
 Stranica **Upravljanje plaćanjima** prikazuje sva plaćanja prema podugovarateljima kroz sve projekte. Naslov: **Upravljanje plaćanjima**.

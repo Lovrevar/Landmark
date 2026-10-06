@@ -7,7 +7,6 @@ import { PaymentMethodField } from '../../components/PaymentMethodField'
 import { snapPaymentMethod } from '../../services/paymentHelpers'
 import { PaymentInvoiceSummary, PartialPaymentAlert } from './PaymentInvoiceSummary'
 import { Modal, Button, Input, Select, Textarea, FormField, Form } from '../../../ui'
-import { PaymentSourceHint, CesijaHint } from '../../components/PaymentHints'
 import type { Invoice, Company, CompanyBankAccount, CompanyCredit, CreditAllocation } from '../../Invoices/types'
 
 interface PaymentModalFormData {
@@ -79,7 +78,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {!paymentFormData.is_cesija && (
               <>
-                <FormField label={payingInvoice.invoice_type.startsWith('OUTGOING') ? t('payments.form.source_incoming_label') : t('payments.form.source_outgoing_label')} required hint={<PaymentSourceHint />} className="md:col-span-2">
+                <FormField label={payingInvoice.invoice_type.startsWith('OUTGOING') ? t('payments.form.source_incoming_label') : t('payments.form.source_outgoing_label')} required className="md:col-span-2">
                   <Select
                     value={paymentFormData.payment_source_type}
                     onChange={(e) => changeForm({
@@ -188,7 +187,6 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
             )}
 
             <div className="md:col-span-2">
-              <div className="flex items-center gap-1.5">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -214,8 +212,6 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
                   {t('payments.form.cesija_checkbox')}
                 </span>
               </label>
-              <CesijaHint />
-              </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-6">
                 {t('payments.form.cesija_hint')}
               </p>

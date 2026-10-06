@@ -4,7 +4,6 @@ title: Statusi se razlikuju po tablicama
 keywords: [status, casing, projekt status, ugovor status, račun status, planiranje, UNPAID]
 routes: [/projects, /accounting-invoices]
 roles: [Director, Accounting, Sales, Supervision, Investment]
-assistant_only: true
 ---
 
 Vrijednosti statusa u sustavu pišu se različito ovisno o tipu entiteta. Sučelje uvijek prikazuje hrvatske oznake, ali u sirovim podacima razlike postoje:

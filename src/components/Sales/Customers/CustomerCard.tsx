@@ -14,7 +14,7 @@ interface CustomerCardProps {
   onToggleSelect: (id: string) => void
   onViewDetails: (customer: CustomerWithApartments) => void
   onEdit: (customer: CustomerWithApartments) => void
-  onDelete?: (id: string) => void
+  onDelete: (id: string) => void
   onUpdateContact: (id: string) => void
 }
 
@@ -83,9 +83,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
         <div className="flex space-x-1" onClick={e => e.stopPropagation()}>
           <Button variant="ghost" size="icon-sm" icon={Eye} onClick={() => onViewDetails(customer)} title={t('customers.card.view_details')} aria-label={t('customers.card.view_details')} />
           <Button variant="ghost" size="icon-sm" icon={Edit2} onClick={() => onEdit(customer)} title={t('common.edit')} aria-label={t('common.edit')} />
-          {onDelete && (
-            <Button variant="danger" size="icon-sm" icon={Trash2} onClick={() => onDelete(customer.id)} title={t('common.delete')} aria-label={t('common.delete')} />
-          )}
+          <Button variant="danger" size="icon-sm" icon={Trash2} onClick={() => onDelete(customer.id)} title={t('common.delete')} aria-label={t('common.delete')} />
         </div>
       </div>
 

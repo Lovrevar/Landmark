@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { Modal, Button, FormField, Textarea } from '../ui'
 import { useToast } from '../../contexts/ToastContext'
 
-import { uploadDocument, updateDocument, fetchCategories } from './services/documentService'
+import { uploadDocument, fetchCategories } from './services/documentService'
 import type {
   AssociationInput,
   DocumentCategory,
@@ -49,13 +49,6 @@ interface DocumentUploadModalProps {
   defaultAssociations?: AssociationInput[]
   lockedFields?: LockableField[]
   title?: string
-  /**
-   * Edit mode: re-categorise and re-link an existing document instead of uploading. The file
-   * picker is hidden, the fields start from the document, and associations the pickers do not
-   * cover (phase, company — e.g. from an email import) are kept as they are.
-   */
-  editDocument?: DocumentWithRelations | null
-  onSaved?: (document: DocumentWithRelations) => void
 }
 
 const initialPickerState = (): Record<PickerEntity, string | null> => ({
@@ -71,8 +64,6 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   defaultAssociations,
   lockedFields,
   title,
-  editDocument,
-  onSaved,
 }) => {
   const { t } = useTranslation()
   const toast = useToast()
@@ -101,17 +92,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     [lockedFields],
   )
 
-  const isEdit = !!editDocument
-  const editAssocs = useMemo<AssociationInput[]>(
-    () => (editDocument?.associations ?? []).map(a => ({ entityType: a.entity_type, entityId: a.entity_id })),
-    [editDocument],
-  )
-  const defaultAssocs = isEdit ? EMPTY_ASSOCS : (defaultAssociations ?? EMPTY_ASSOCS)
-  // Associations with no picker (phase, company) survive an edit untouched.
-  const preservedAssocs = useMemo(
-    () => editAssocs.filter(a => !(PICKER_TYPES as readonly string[]).includes(a.entityType)),
-    [editAssocs],
-  )
+  const defaultAssocs = defaultAssociations ?? EMPTY_ASSOCS
   const defaultAssocByType = useMemo(() => {
     const m: Partial<Record<EntityType, string>> = {}
     for (const a of defaultAssocs) m[a.entityType] = a.entityId
@@ -123,15 +104,15 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   useEffect(() => {
     if (!isOpen) return
     setFiles([])
-    setCategoryId(isEdit ? editDocument!.category_id : (defaultCategoryId ?? null))
+    setCategoryId(defaultCategoryId ?? null)
     const init = initialPickerState()
-    for (const a of isEdit ? editAssocs : defaultAssocs) {
+    for (const a of defaultAssocs) {
       if ((PICKER_TYPES as readonly string[]).includes(a.entityType)) {
         init[a.entityType as PickerEntity] = a.entityId
       }
     }
     setPickerValues(init)
-    setDescription(isEdit ? (editDocument!.description ?? '').slice(0, MAX_DESCRIPTION) : '')
+    setDescription('')
     setErrors({})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
@@ -198,8 +179,6 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     if (lockedSet.has(type)) return true
     if (requiredAssocs.includes(type)) return true
     if (defaultAssocByType[type]) return true
-    // An edit shows every link the document already has, whatever the category.
-    if (isEdit && editAssocs.some(a => a.entityType === type)) return true
     // Project is offered for any selected category, optionally — covers FINANCIJE
     // where project isn't required but the user may still want to tag one.
     if (type === 'project')       return !!selectedCategory
@@ -220,9 +199,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
   const handleSubmit = async () => {
     const errs: Record<string, string> = {}
-    if (isEdit) {
-      // No file to validate: an edit changes the metadata only.
-    } else if (files.length === 0) {
+    if (files.length === 0) {
       errs.file = t('documents.upload_modal.errors.file_required')
     } else {
       const oversized = files.find(f => f.size > MAX_FILE_SIZE)
@@ -247,8 +224,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
-    if (!categoryId) return // type-narrow
-    if (!isEdit && files.length === 0) return
+    if (files.length === 0 || !categoryId) return // type-narrow
 
     // Combine picker values + defaults, dedup on (type, id).
     const seen = new Set<string>()
@@ -267,27 +243,6 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       if (isPickerVisible(type)) add(type, pickerValues[type])
     }
     for (const a of defaultAssocs) add(a.entityType, a.entityId)
-    for (const a of preservedAssocs) add(a.entityType, a.entityId)
-
-    if (isEdit) {
-      setSubmitting(true)
-      try {
-        const saved = await updateDocument(editDocument!.id, {
-          categoryId,
-          associations: finalAssocs,
-          description: description.trim() || null,
-        })
-        toast.success(t('documents.upload_modal.toast.update_success'))
-        onSaved?.(saved)
-        onClose()
-      } catch (err) {
-        console.error('Document update failed:', err)
-        toast.error(t('documents.upload_modal.toast.update_error'))
-      } finally {
-        setSubmitting(false)
-      }
-      return
-    }
 
     setSubmitting(true)
     // Sequential, fail-fast — matches the existing siteService multi-upload
@@ -332,23 +287,19 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     onClose()
   }
 
-  const modalTitle = title ?? (isEdit ? t('documents.upload_modal.edit_title') : t('documents.upload_modal.title'))
+  const modalTitle = title ?? t('documents.upload_modal.title')
   const categoryLocked = lockedSet.has('category')
 
   return (
     <Modal show={isOpen} onClose={handleClose} size="lg">
       <Modal.Header title={modalTitle} onClose={handleClose} />
       <Modal.Body>
-        {isEdit ? (
-          <p className="text-sm font-medium text-gray-900 dark:text-white mb-4 break-all">{editDocument!.file_name}</p>
-        ) : (
-          <FilePickerField
-            files={files}
-            onChange={(next) => { setFiles(next); clearError('file') }}
-            error={errors.file}
-            disabled={submitting}
-          />
-        )}
+        <FilePickerField
+          files={files}
+          onChange={(next) => { setFiles(next); clearError('file') }}
+          error={errors.file}
+          disabled={submitting}
+        />
 
         <FormField group
           label={t('documents.upload_modal.category_label')}
@@ -437,11 +388,9 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
           {t('documents.upload_modal.cancel')}
         </Button>
         <Button onClick={handleSubmit} loading={submitting}>
-          {isEdit
-            ? (submitting ? t('common.saving') : t('common.save'))
-            : submitting
-              ? t('documents.upload_modal.uploading')
-              : t('documents.upload_modal.submit')}
+          {submitting
+            ? t('documents.upload_modal.uploading')
+            : t('documents.upload_modal.submit')}
         </Button>
       </Modal.Footer>
     </Modal>

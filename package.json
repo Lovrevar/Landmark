@@ -24,7 +24,6 @@
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",
-    "@floating-ui/react": "^0.27.20",
     "@supabase/supabase-js": "^2.57.0",
     "@tanstack/react-virtual": "^3.13.24",
     "date-fns": "^4.1.0",

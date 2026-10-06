@@ -6,15 +6,9 @@ import OfficeSupplierFormModal from './forms/OfficeSupplierFormModal'
 import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
 import { formatEuro, formatEuropean, formatDate } from '../../../utils/formatters'
 import { toErrorMessage } from '../../../lib/errorMessage'
-import { useAuth } from '../../../contexts/AuthContext'
-import { isDirectorRole } from '../../../utils/permissions'
-import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 const OfficeSuppliers: React.FC = () => {
   const { t, i18n } = useTranslation()
-  const { user } = useAuth()
-  // Deleting office suppliers is Director-only under RLS.
-  const canDelete = isDirectorRole(user)
   const {
     suppliers,
     loading,
@@ -208,18 +202,16 @@ const OfficeSuppliers: React.FC = () => {
                 >
                   {t('office_suppliers.card.edit')}
                 </Button>
-                {canDelete && (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDelete(supplier.id)
-                    }}
-                    variant="outline-danger"
-                    size="icon-md"
-                    icon={Trash2}
-                    title={t('office_suppliers.card.delete')}
-                  />
-                )}
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDelete(supplier.id)
+                  }}
+                  variant="outline-danger"
+                  size="icon-md"
+                  icon={Trash2}
+                  title={t('office_suppliers.card.delete')}
+                />
               </div>
             </div>
           ))}
@@ -302,8 +294,17 @@ const OfficeSuppliers: React.FC = () => {
                           {formatEuro(parseFloat(invoice.remaining_amount))}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.status')} className="text-center">
-                          <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
-                            {getInvoiceStatusLabel(invoice.status, t)}
+                          <Badge
+                            variant={
+                              invoice.status === 'PAID'
+                                ? 'green'
+                                : invoice.status === 'PARTIALLY_PAID'
+                                ? 'yellow'
+                                : 'red'
+                            }
+                            size="sm"
+                          >
+                            {invoice.status === 'PAID' ? t('office_suppliers.status.paid') : invoice.status === 'PARTIALLY_PAID' ? t('office_suppliers.status.partial') : t('office_suppliers.status.unpaid')}
                           </Badge>
                         </Table.Td>
                       </Table.Tr>

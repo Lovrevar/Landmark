@@ -250,18 +250,7 @@
     "back_to_sign_in": "Natrag na prijavu",
     "or": "ili",
     "sign_in_with_microsoft": "Prijava putem Microsoft računa",
-    "redirecting_to_microsoft": "Preusmjeravanje na Microsoft...",
-    "new_password": "Nova lozinka",
-    "confirm_password": "Potvrdite lozinku",
-    "set_new_password": "Postavite novu lozinku",
-    "set_new_password_subtitle": "Unesite novu lozinku za svoj račun",
-    "save_password": "Spremi lozinku",
-    "saving_password": "Spremanje...",
-    "password_too_short": "Lozinka mora imati najmanje {{min}} znakova",
-    "passwords_do_not_match": "Lozinke se ne podudaraju",
-    "password_updated": "Lozinka je promijenjena",
-    "password_update_failed": "Lozinku nije moguće promijeniti. Pokušajte ponovno",
-    "reset_link_invalid": "Poveznica za resetiranje nije valjana ili je istekla. Zatražite novu na stranici za prijavu"
+    "redirecting_to_microsoft": "Preusmjeravanje na Microsoft..."
   },
   "nav": {
     "dashboard": "Nadzorna ploča",
@@ -574,7 +563,10 @@
       "paid_amount": "Plaćeni iznos:",
       "remaining": "Preostali iznos:",
       "category": "Kategorija",
-      "description": "Opis"
+      "description": "Opis",
+      "status_unpaid": "Neplaćeno",
+      "status_partial": "Djelomično plaćeno",
+      "status_paid": "Plaćeno"
     },
     "actions": {
       "new": "Novi račun",
@@ -696,12 +688,7 @@
       "base_vat5": "Osnovica (PDV 5%):",
       "base_vat0": "Osnovica (PDV 0%):"
     },
-    "vat_rate_line": "PDV {{rate}}%:",
-    "hints": {
-      "type_title": "Tip računa",
-      "type_intro": "Kratica u zagradi govori na što se račun odnosi:",
-      "type_colour": "Crveno označava račune koje plaćamo (svi ulazni), zeleno račune po kojima novac primamo (svi izlazni)."
-    }
+    "vat_rate_line": "PDV {{rate}}%:"
   },
   "payments": {
     "toast": {
@@ -881,15 +868,15 @@
       "source_bank": "Bankovni račun",
       "source_credit": "Kredit",
       "source_kompenzacija": "Kompenzacija",
-      "source_cash": "Gotovina"
-    },
-    "hints": {
-      "source_title": "Izvor plaćanja",
-      "source_accounts": "Bankovni račun ili Kredit: plaćanje se knjiži na odabrani račun, odnosno kredit. Gotovina: plaćanje bez bankovnog računa.",
-      "source_kompenzacija": "Kompenzacija: međusobni prijeboj dugovanja s drugom stranom. Novac se ne kreće, pa se ne bira ni račun ni način plaćanja.",
-      "cesija_title": "Cesija",
-      "cesija_what": "Račun plaća druga vaša firma sa svog bankovnog računa ili kredita, umjesto firme na koju račun glasi.",
-      "cesija_rules": "Odaberite firmu koja plaća i njezin izvor. Način plaćanja je uvijek virman; cesija se ne može kombinirati s kompenzacijom ni gotovinom."
+      "source_cash": "Gotovina",
+      "type_incoming_supplier": "Ulazni dobavljač",
+      "type_outgoing_supplier": "Izlazni dobavljač",
+      "type_incoming_investment": "Ulazni investitor",
+      "type_outgoing_sales": "Izlazni prodaja",
+      "type_incoming_office": "Ulazni ured",
+      "type_outgoing_office": "Izlazni ured",
+      "type_incoming_bank": "Ulazni banka",
+      "type_outgoing_bank": "Izlazni banka"
     }
   },
   "suppliers": {
@@ -1039,8 +1026,7 @@
       "revenue_label": "Promet:",
       "profit_loss_label": "Dobit/Gubitak:",
       "unpaid_income": "Neplaćeno (prihod):",
-      "unpaid_expense": "Neplaćeno (rashod):",
-      "financing_label": "Financiranje (primljeno / otplaćeno):"
+      "unpaid_expense": "Neplaćeno (rashod):"
     },
     "table": {
       "name": "Naziv",
@@ -1357,6 +1343,14 @@
       "unpaid": "Neplaćeno",
       "overdue": "Dospjelo"
     },
+    "invoice_types": {
+      "incoming_supplier": "Ulazni - Dobavljač",
+      "incoming_investment": "Ulazni - Investicije",
+      "incoming_office": "Ulazni - Office",
+      "outgoing_supplier": "Izlazni - Dobavljač",
+      "outgoing_sales": "Izlazni - Prodaja",
+      "outgoing_office": "Izlazni - Office"
+    },
     "table": {
       "heading": "Računi za {{day}}. {{month}} - {{count}} računa",
       "invoice_number": "Broj Računa",
@@ -1550,6 +1544,11 @@
         "status": "Status"
       },
       "close": "Zatvori"
+    },
+    "status": {
+      "paid": "Plaćeno",
+      "partial": "Djelomično",
+      "unpaid": "Neplaćeno"
     },
     "form": {
       "title_add": "Novi office dobavljač",
@@ -2036,31 +2035,7 @@
       "error_missing_size": "Nedostaje površina (m²)",
       "error_missing_price": "Nedostaje cijena",
       "error_missing_building": "Nedostaje zgrada",
-      "error_building_not_found": "Zgrada \"{{name}}\" nije pronađena",
-      "download_template": "Preuzmi predložak",
-      "template_failed": "Predložak nije moguće preuzeti. Pokušajte ponovno.",
-      "template_sheet_data": "Stanovi",
-      "template_sheet_notes": "Upute",
-      "format": {
-        "layout": "Čita se samo prvi list. Zaglavlje je u 1. retku, podaci počinju od 2. retka; važan je redoslijed stupaca, a ne nazivi u zaglavlju.",
-        "required": "Obavezno: A – zgrada (naziv mora odgovarati postojećoj zgradi projekta), D – oznaka stana, J – stan m2 prodajno, L – cijena stana.",
-        "details": "Neobavezno: B – ulaz, C – kat, E – tip, F – sobnost, H – otvorena površina, I – otvorena površina s koeficijentom, K – cijena po m2.",
-        "parking": "M–O – parking: oznaka, m2, cijena. Garaža se kreira i povezuje sa stanom samo ako su sva tri polja popunjena.",
-        "storage": "P–R – repozitorij: oznaka, m2, cijena. Vrijedi isto pravilo kao za parking.",
-        "contract_date": "T – datum potpisa predugovora, u formatu DD.MM.GGGG. To je jedini stupac s datumom.",
-        "amounts": "U – kapara 10 %, V–Y – rate 1–4 (AB konstrukcija 30 %, postava stolarije 20 %, obrtnički radovi 20 %, uporabna 20 %), Z – kredit etažiranje 90 %. U sve te stupce upisuju se iznosi u EUR, a ne datumi.",
-        "payment_type": "Način plaćanja određuje se sam: rate ako je popunjen bilo koji od stupaca V–Y, inače kredit ako je popunjen Z.",
-        "not_imported": "G – zatvorena površina i S – ukupna cijena ne uvoze se.",
-        "numbers": "Brojevi mogu biti u europskom formatu (npr. „3.000,00”).",
-        "existing": "Stan koji već postoji (ista zgrada i oznaka) ažurira se umjesto da se doda ponovno; status mu se ne mijenja."
-      },
-      "error_date_in_amount_column": "Stupac {{column}} ({{name}}): upisan je datum, a očekuje se iznos u EUR",
-      "garage_format": {
-        "layout": "Zaglavlje je u 1. retku, podaci počinju od 2. retka.",
-        "label": "A – parking oznaka (oznaka garaže)",
-        "size": "B – parking m2 (površina u m²)",
-        "price": "C – parking cijena (cijena u EUR)"
-      }
+      "error_building_not_found": "Zgrada \"{{name}}\" nije pronađena"
     },
     "filter": {
       "all": "Svi",
@@ -3322,6 +3297,7 @@
       "remaining_label": "Preostalo: €{{amount}}",
       "type_incoming_supplier": "Ulazni (Dobavljač)",
       "type_outgoing_supplier": "Izlazni (Dobavljač)",
+      "type_incoming_investment": "Ulazni (Kupac)",
       "type_outgoing_sales": "Izlazni (Kupac)"
     }
   },
@@ -3671,12 +3647,6 @@
       "add_error": "Greška pri dodavanju investicije.",
       "preview_incomplete": "Unesite iznos, datume i IRR za izračun",
       "preview_invalid_range": "Neispravan raspon datuma"
-    },
-    "hints": {
-      "allocations_title": "Namjene kredita",
-      "allocations_purpose": "Namjena je dio kredita rezerviran za projekt, OPEX (troškove bez projekta) ili refinanciranje firme ili banke.",
-      "allocations_amounts": "Alocirano je rezervirani iznos, Iskorišteno ono što je s te namjene već plaćeno ili isplaćeno, a Dostupno razlika između njih (crveno ako je namjena prekoračena).",
-      "allocations_disbursed": "Kod kredita isplaćenog izravno na račun firme cijela se namjena vodi kao iskorištena."
     }
   },
   "tic": {
@@ -3726,7 +3696,7 @@
       "upload_heading": "Odaberite Excel datoteku",
       "upload_hint": "Datoteka sa strukturom troškova investicije i građenja (.xlsx ili .xls)",
       "format_heading": "Očekivani format datoteke:",
-      "format_sheets": "Dva lista: INVESTICIJA i GRAĐENJE. Listovi drugačijeg naziva prepoznaju se po obliku tablice (list građenja ima prvi stupac s oznakama A), B), C) i rimskim brojevima).",
+      "format_sheets": "Dva lista: INVESTICIJA i GRAĐENJE (ako nedostaju nazivi, koristi se prvi i drugi list)",
       "format_header": "Redak zaglavlja sadrži NAMJENA i VLASTITA SREDSTVA — stupci se pronalaze automatski",
       "format_investment": "INVESTICIJA: naziv stavke, pa VLASTITA SREDSTVA (EUR, %) i KREDITNA SREDSTVA (EUR, %)",
       "format_construction": "GRAĐENJE: prvi stupac je oznaka skupine (A), B), C)) ili rimski broj stavke",
@@ -3748,8 +3718,7 @@
       "unphased_title": "Nije fazirano:",
       "unphased_body": "ovi troškovi nastaju jednom za cijeli projekt, pa se ne dijele po fazama. U tablici se ponavljaju u svakoj fazi u punom iznosu — zbrajanje tih stupaca uvećalo bi plan.",
       "inconsistent_title": "Provjerite raspodjelu:",
-      "inconsistent_body": "kod ovih redaka zbroj po fazama ne odgovara ukupnom iznosu. Uvezeni su onako kako su napisani, bez ispravljanja.",
-      "format_phases": "Faze (neobavezno): na listu INVESTICIJA zaglavlja FAZA 1, FAZA 2 … iznad skupine stupaca svake faze, s istim rasporedom kao ukupni iznos (vlastita sredstva, %, kreditna sredstva)."
+      "inconsistent_body": "kod ovih redaka zbroj po fazama ne odgovara ukupnom iznosu. Uvezeni su onako kako su napisani, bez ispravljanja."
     },
     "col_classification": "Klasifikacija troška",
     "classification_unmapped": "— nije klasificirano —",
@@ -3776,12 +3745,6 @@
       "row_mismatch": "Zbroj po fazama ne odgovara ukupnom iznosu ovog retka.",
       "remove_phase_title": "Ukloni fazu {{number}}",
       "remove_phase_confirm": "Ukloniti fazu {{number}} i njene iznose iz {{count}} redaka? Faze nakon nje se prenumeriraju, a promjena se sprema tek klikom na Spremi."
-    },
-    "hints": {
-      "phases_title": "Faze u TIC-u",
-      "phases_phased": "Klik na ćeliju faze otvara raspodjelu tog retka po fazama. Zbroj po fazama treba odgovarati iznosu retka.",
-      "phases_unphased": "„—” znači da je trošak na razini projekta (npr. zemljište): računa se jednom i ne pripada nijednoj fazi.",
-      "mismatch_body": "Iznosi upisani po fazama razlikuju se od vlastitih ili kreditnih sredstava ovog retka. Ništa se ne ispravlja automatski: kliknite ćeliju faze i uskladite raspodjelu, ili ispravite iznos retka."
     }
   },
   "dashboards": {
@@ -4287,12 +4250,7 @@
         "cash_flow_trend": "TREND NOVČANOG TOKA",
         "project_portfolio": "PORTFELJ PROJEKATA",
         "project_performance": "Pregled uspješnosti projekata"
-      },
-      "cash_flow_operating": "Poslovne aktivnosti",
-      "cash_flow_operating_note": "Naplata od kupaca te plaćanja dobavljačima, uredu i financijerima, uključujući troškove kredita.",
-      "cash_flow_financing": "Financijske aktivnosti",
-      "cash_flow_financing_note": "Glavnica kredita: isplate (priljev) i otplate (odljev).",
-      "cash_flow_total": "Ukupni novčani tok"
+      }
     },
     "sales": {
       "title": "Prodajni izvještaji",
@@ -4698,17 +4656,7 @@
     "no_budget_data_sub": "Dodajte faze s dodijeljenim proračunom i ugovore za prikaz EVM performansi.",
     "target_line": "Cilj (1.0)",
     "warning_line": "Upozorenje (0.9)",
-    "evm_indices_caption": "Ostvarena vrijednost temelji se na dovršenim fazama ugovora.",
-    "hints": {
-      "cpi_title": "CPI – indeks izvršenja troška",
-      "cpi_body": "Ostvarena vrijednost radova podijeljena s plaćenim. 1,00 ili više: troši se u okviru plana (zeleno); 0,90–0,99: malo iznad (žuto); ispod 0,90: iznad proračuna (crveno). Dok ništa nije plaćeno, iznosi 1,00.",
-      "spi_title": "SPI – indeks izvršenja rokova",
-      "spi_body": "Ostvarena vrijednost radova podijeljena s vrijednošću planiranom do danas. 1,00 ili više: u skladu s planom; 0,90–0,99: malo u zaostatku; ispod 0,90: u zaostatku. Računa se samo iz faza koje imaju datum početka i završetka.",
-      "eac_title": "EAC – procjena ukupnog troška",
-      "eac_body": "Planirani proračun podijeljen s CPI-jem: koliko će projekt koštati ako se trošak nastavi kretati kao dosad.",
-      "vac_title": "VAC – odstupanje na kraju projekta",
-      "vac_body": "Planirani proračun umanjen za EAC. Pozitivan iznos je očekivana ušteda, negativan očekivano prekoračenje."
-    }
+    "evm_indices_caption": "Ostvarena vrijednost temelji se na dovršenim fazama ugovora."
   },
   "chat": {
     "title": "Chat",
@@ -5039,7 +4987,6 @@
   "documents": {
     "upload_modal": {
       "title": "Učitaj dokument",
-      "edit_title": "Uredi dokument",
       "file_label": "Datoteka",
       "drag_or_click": "Povucite datoteku ovdje ili kliknite za odabir",
       "any_type_hint": "Bilo koja vrsta datoteke, najviše 50 MB",
@@ -5080,9 +5027,7 @@
       "toast": {
         "success": "Dokument učitan",
         "success_many": "Učitano dokumenata: {{count}}",
-        "error_generic": "Greška pri učitavanju dokumenta",
-        "update_success": "Dokument ažuriran",
-        "update_error": "Dokument nije moguće spremiti"
+        "error_generic": "Greška pri učitavanju dokumenta"
       }
     },
     "page": {
@@ -5115,7 +5060,6 @@
       },
       "actions": {
         "open": "Otvori",
-        "edit": "Uredi",
         "delete": "Obriši"
       },
       "delete_confirm_title": "Obriši dokument?",
@@ -5222,13 +5166,11 @@
       "payment_notification": "Obavijest o plaćanju",
       "retail_milestone": "Retail prekretnica",
       "retail_supplier": "Retail dobavljač",
-      "retail_supplier_type": "Tip retail dobavljača",
-      "help": "Pomoć"
+      "retail_supplier_type": "Tip retail dobavljača"
     },
     "actions": {
       "auth.login": "Korisnik se prijavio",
       "auth.logout": "Korisnik se odjavio",
-      "auth.password_reset": "Promjena lozinke",
       "project.create": "Projekt kreiran",
       "project.update": "Projekt ažuriran",
       "project.delete": "Projekt obrisan",
@@ -5410,12 +5352,8 @@
       "erp_partner_map.upsert": "Spremljeno povezivanje komitenta",
       "erp_partner_map.delete": "Uklonjeno povezivanje komitenta",
       "erp_import.upload": "Uvezena datoteka iz ERP-a",
-      "erp_import.reclassify": "Ponovljena klasifikacija uvoza",
-      "help.view": "Otvorena pomoć",
-      "help.page_link_click": "Kliknuta pomoć za stranicu",
-      "help.hint_open": "Otvoreno objašnjenje"
-    },
-    "show_help_events": "Prikaži i korištenje pomoći"
+      "erp_import.reclassify": "Ponovljena klasifikacija uvoza"
+    }
   },
   "sifrarnici": {
     "title": "Šifrarnici",
@@ -5527,39 +5465,5 @@
     "col_amount": "Iznos",
     "col_problems": "Problemi",
     "lines": "{{count}} redak/redaka"
-  },
-  "help": {
-    "title": "Pomoć",
-    "description": "Kratke upute za stranice, pojmove i uloge. Iz istih članaka odgovara i AI asistent.",
-    "search_placeholder": "Pretraži upute...",
-    "results_count": "Pronađeno članaka: {{count}}",
-    "no_results_title": "Nema rezultata",
-    "no_results_description": "Pokušajte s drugim pojmom ili pitajte AI asistenta.",
-    "for_this_page": "Za stranicu s koje ste došli",
-    "groups": {
-      "pages": "Upute po stranicama",
-      "terms": "Pojmovi",
-      "roles": "Uloge i pristup"
-    },
-    "back_to_all": "Sve upute",
-    "article_unavailable_title": "Članak nije dostupan",
-    "article_unavailable_description": "Članak ne postoji ili nije namijenjen vašoj ulozi.",
-    "croatian_only_note": "Članci pomoći dostupni su samo na hrvatskom jeziku.",
-    "page_link": "Pomoć za ovu stranicu",
-    "hint": {
-      "button_label": "Objašnjenje: {{topic}}",
-      "more": "Više u pomoći"
-    }
-  },
-  "invoice_type_long": {
-    "ulazni_dob": "Ulazni (Dobavljač)",
-    "ulazni_inv": "Ulazni (Investicije)",
-    "ulazni_ured": "Ulazni (Ured)",
-    "ulazni_banka": "Ulazni (Banka)",
-    "ulazni_troskred": "Ulazni (Troškovi kredita)",
-    "izlazni_ured": "Izlazni (Ured)",
-    "izlazni_dob": "Izlazni (Dobavljač)",
-    "izlazni_prod": "Izlazni (Prodaja)",
-    "izlazni_banka": "Izlazni (Banka)"
   }
 }

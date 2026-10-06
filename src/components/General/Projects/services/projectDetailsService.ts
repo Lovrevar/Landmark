@@ -15,12 +15,12 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
 }> {
   const [
     { data: projectData, error: projectError },
-    { data: milestonesData, error: milestonesError },
-    { data: phasesData, error: phasesError },
-    { data: contractsData, error: contractsError },
-    { data: apartmentsData, error: apartmentsError },
-    { data: investmentsData, error: investmentsError },
-    { data: ticData, error: ticError },
+    { data: milestonesData },
+    { data: phasesData },
+    { data: contractsData },
+    { data: apartmentsData },
+    { data: investmentsData },
+    { data: ticData },
   ] = await Promise.all([
     supabase.from('projects').select('*').eq('id', id).single(),
     supabase
@@ -63,12 +63,6 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
     supabase.from('tic_cost_structures').select('line_items').eq('project_id', id).maybeSingle(),
   ])
   if (projectError) throw projectError
-  if (milestonesError) throw milestonesError
-  if (phasesError) throw phasesError
-  if (contractsError) throw contractsError
-  if (apartmentsError) throw apartmentsError
-  if (investmentsError) throw investmentsError
-  if (ticError) throw ticError
 
   const contracts = (contractsData || []) as unknown as ContractWithDetails[]
 

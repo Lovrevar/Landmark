@@ -19,7 +19,7 @@ interface ClassificationCardProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor?: (subcontractorId: string) => void
+  onDeleteSubcontractor: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /** False hides the paid and unpaid tiles; unpaid is contracted minus paid, so it leaks paid. */
   canManagePayments: boolean

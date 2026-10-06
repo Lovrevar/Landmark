@@ -9,7 +9,6 @@ from **4D Wand**, the ERP the company adopted.
 | [PROGRESS.md](./PROGRESS.md) | Phase-by-phase status. What is done, what is next. |
 | [DECISIONS.md](./DECISIONS.md) | Decision log — what was chosen, and why, so choices are not silently relitigated. |
 | [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) | Questions blocking work, with owner and status. |
-| [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) | Defects in the merged code found by the September 2026 audit — several must be fixed before resuming — and how later fixes on `development` interact with the integration. |
 | [AGENT.md](./AGENT.md) | The contract the on-prem push agent has to satisfy: endpoint, feed order, retry and file-handling rules. The agent script itself is not written yet. |
 | [LEDGER_NOTES.md](./LEDGER_NOTES.md) | What the raw GL export looks like. Reference only. |
 

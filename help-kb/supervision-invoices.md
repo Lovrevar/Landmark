@@ -3,7 +3,7 @@ id: supervision-invoices
 title: Računi projekata (Supervision)
 keywords: [računi, invoices, projekti računi, odobreno, dobavljač, izvezi CSV]
 routes: [/invoices]
-roles: [Director, Accounting]
+roles: [Director, Accounting, Supervision]
 ---
 
 Stranica **Projekti - Računi** prikazuje račune dobavljača i nadzora po svim projektima. Podnaslov: **Pregled i upravljanje računima dobavljača i nadzora za sve projekte**.

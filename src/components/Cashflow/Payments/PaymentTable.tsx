@@ -2,11 +2,11 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { CreditCard, Edit, Trash2 } from 'lucide-react'
 import { Payment, VisibleColumns } from './types'
-import { getPaymentMethodLabel, getPaymentMethodVariant } from '../services/paymentHelpers'
+import { getPaymentMethodLabel, getPaymentMethodColor } from '../services/paymentHelpers'
 import { paymentDirection } from '../services/invoiceHelpers'
 import { DIRECTION_AMOUNT_CLASS } from '../services/paymentTotals'
 import { formatEuro, formatDate } from '../../../utils/formatters'
-import { Table, Button, EmptyState, Badge } from '../../ui'
+import { Table, Button, EmptyState } from '../../ui'
 
 interface PaymentTableProps {
   payments: Payment[]
@@ -105,9 +105,9 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 )}
                 {visibleColumns.payment_method && (
                   <Table.Td label={t('payments.table.payment_method')}>
-                    <Badge variant={getPaymentMethodVariant(payment.payment_method, payment.payment_source_type)}>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentMethodColor(payment.payment_method, payment.payment_source_type)}`}>
                       {getPaymentMethodLabel(payment.payment_method, payment.payment_source_type, t)}
-                    </Badge>
+                    </span>
                   </Table.Td>
                 )}
                 {visibleColumns.reference_number && (

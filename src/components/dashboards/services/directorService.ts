@@ -1,6 +1,5 @@
 import { supabase, type ProjectCategory } from '../../../lib/supabase'
 import { startOfMonth } from 'date-fns'
-import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
 import {
   countOverdueMilestones,
@@ -114,15 +113,15 @@ export interface DirectorDashboardData {
 export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const [
     { data: projectsData, error: projectsError },
-    { data: apartmentsData, error: apartmentsError },
-    { data: contractsData, error: contractsError },
-    { data: invoicesData, error: invoicesError },
-    { data: paymentsData, error: paymentsError },
-    { data: salesRowsData, error: salesRowsError },
-    { data: allocationsData, error: allocationsError },
-    { data: creditsData, error: creditsError },
-    { data: subcontractorsData, error: subcontractorsError },
-    { data: milestonesData, error: milestonesError }
+    { data: apartmentsData },
+    { data: contractsData },
+    { data: invoicesData },
+    { data: paymentsData },
+    { data: salesRowsData },
+    { data: allocationsData },
+    { data: creditsData },
+    { data: subcontractorsData },
+    { data: milestonesData }
   ] = await Promise.all([
     supabase
       .from('projects')
@@ -149,17 +148,7 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
       .select('id, milestone_name, due_date, status, contract_id')
   ])
 
-  // Every read is checked: a failure shows the error panel instead of a dashboard of zeros.
   if (projectsError) throw projectsError
-  if (apartmentsError) throw apartmentsError
-  if (contractsError) throw contractsError
-  if (invoicesError) throw invoicesError
-  if (paymentsError) throw paymentsError
-  if (salesRowsError) throw salesRowsError
-  if (allocationsError) throw allocationsError
-  if (creditsError) throw creditsError
-  if (subcontractorsError) throw subcontractorsError
-  if (milestonesError) throw milestonesError
 
   const projects = (projectsData || []) as ProjectRow[]
   const apartments = (apartmentsData || []) as ApartmentRow[]
@@ -225,13 +214,17 @@ function deriveProjects(
     // contracts by reporting the full planned amount as if already spent.)
     const contractExpenses = projectContracts.map(c => {
       const contractInvoices = (invoicesByContract.get(c.id) || []).filter(
-        inv => isCostInvoiceType(inv.invoice_type)
+        inv => inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE'
       )
       return contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
     })
 
     const invoicesWithoutContract = (invoicesByProject.get(project.id) || [])
-      .filter(inv => !inv.contract_id && isCostInvoiceType(inv.invoice_type))
+      .filter(
+        inv =>
+          !inv.contract_id &&
+          (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
+      )
       .reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
 
     const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
@@ -278,7 +271,8 @@ function deriveFinancial(
     invoices.filter(inv => inv.invoice_category === 'CUSTOMER').map(inv => inv.id)
   )
   const apartmentPayments = payments.filter(p => p.invoice_id && customerInvoiceIds.has(p.invoice_id))
-  const isCostInvoice = (inv: InvoiceRow) => isCostInvoiceType(inv.invoice_type)
+  const isCostInvoice = (inv: InvoiceRow) =>
+    inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE'
 
   const totalRevenue = salesRows.reduce((sum, s) => sum + s.sale_price, 0)
   // Expenses = cash paid out on genuine cost invoices only. (Previously summed
