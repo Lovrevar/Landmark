@@ -90,7 +90,7 @@ logActivity({
 - `severity` is merged into `metadata.severity` (not a separate column)
 - When `userId`/`userRole` are omitted, the function calls `supabase.auth.getUser()` and looks up the `users` row internally
 - Whatever the client sends, the `trg_stamp_activity_log_actor` trigger overwrites `user_id` and `user_role` from `auth.uid()` (migration `20260930100000`), so a row cannot be attributed to another user. Service-role inserts keep the values they send
-- Every call except `export.*` and `auth.*` also clears the `useCachedData` cache, because the figures on dashboards and reports just went stale
+- Every call except `export.*`, `auth.*` and `help.*` also clears the `useCachedData` cache, because the figures on dashboards and reports just went stale
 - The insert uses a try/catch with `console.warn` — never throws
 
 ---
@@ -363,6 +363,20 @@ Entities are `erp_import_run`, `erp_account_map`, `erp_cost_center_map` and `erp
 The importer itself runs as the service role inside the `import-erp` edge function and does
 **not** call `logActivity()` — `erp.import_runs` is its own audit trail. What is logged here
 is the *user* action that triggered or corrected a run.
+
+### Help usage (3)
+Not mutations — usage events for the in-app guidance, written through `logHelpEvent`
+(`src/lib/helpEvents.ts`). See [HELP.md](./HELP.md). The page leaves them out unless the
+"show help usage" checkbox is ticked or the Help category is selected: `fetchActivityLogs` sends
+`p_exclude_action_prefix: 'help'` (migration `20261005100000`). Against a database without that
+parameter PostgREST answers `PGRST202`; the service then repeats the call without it and reports
+`excludeSupported: false`, and the page hides the checkbox rather than pretend to filter.
+
+| Action | Severity | File |
+|---|---|---|
+| `help.view` | L | `Help/index.tsx` (metadata `article_id`, `from_page`) |
+| `help.page_link_click` | L | `ui/PageHeader.tsx` (metadata `page`) |
+| `help.hint_open` | L | `ui/InfoHint.tsx` (metadata `hint_id`, `page`) |
 
 ### AI chat (2)
 | Action | Severity | File |

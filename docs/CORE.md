@@ -161,6 +161,12 @@ read "Jan 05, 2026".
 - `appLanguage` falls back to Croatian for an unknown language, mirroring what `fallbackLng: 'hr'`
   does to the strings on the same screen
 
+### invoiceCashDirection.ts
+- `INVOICE_CASH_DIRECTION` / `invoiceCashDirection(type)` → `'IN' | 'OUT' | null` — which way money moves for each of the nine invoice types: every `INCOMING_*` invoice (a bill received) is out, every `OUTGOING_*` one (issued) is in. **The only place this is decided**; do not write a type list in a service
+- `INVOICE_CASH_MAP` — per type, `{ direction, category }`. `invoiceCashCategory(type)` → `'operating' | 'financing'`. Financing is credit **principal** only (drawdown, repayment); credit fees are operating. `invoiceTypesFor(direction, category)` lists one cell of the grid. **Financing is never income or expense**: the General report shows it as its own cash-flow table, `company_statistics` as its own two columns
+- `isCashIn` / `isCashOut`; `isCostInvoiceType` / `COST_INVOICE_TYPES` — **derived**: every operating money-out type (supplier, office, ULAZNI (INV), credit fees). The only money-out type that is not a cost is the repayment of principal; `carriesInputVat` / `carriesOutputVat`
+- `invoiceCashDirection.test.ts` also reads the SQL (`recalc_company_bank_account_balance`, the `company_statistics` migration) and the calendar hook, and fails if any of them disagrees with the map
+
 ### statusDisplay.ts
 - `PROJECT_STATUS`, `CONTRACT_STATUS`, `RETAIL_CONTRACT_STATUS`, `RETAIL_PHASE_STATUS`,
   `UNIT_STATUS`, `MILESTONE_STATUS`, `RETAIL_MILESTONE_STATUS`, `RISK_LEVEL` — one label key and one

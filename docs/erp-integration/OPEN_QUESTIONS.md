@@ -150,9 +150,11 @@ IBAN field to the company form; the form's balance fields go in phase 5 anyway.
 *Owner: us.*
 
 ### ✅ Q19 — Is `INCOMING_INVESTMENT` money in or money out?
-**Answered 2026-10-01: money out.** Implemented on `fix/backlog-batch-2` — every cash figure uses
-`paymentDirection()`, and `company_statistics` leaves the bank-credit types out of income and
-expense. The importer's mapping needs no change.
+**Answered 2026-10-01: money out**, and settled further on 2026-10-05: it is an operating cost,
+as are credit fees; only credit principal (drawdowns, repayments) is financing and stays out of
+income and expense. Every cash figure reads one map, `src/utils/invoiceCashDirection.ts`
+(`paymentDirection()` is that function), and `company_statistics` follows it — see migration
+`20261006100000_company_statistics_final`. The importer's mapping needs no change.
 
 The resolver reads `INCOMING` as a received bill, so an `INCOMING_INVESTMENT` from an
 investor partner is a payable — money out when paid. The balance trigger and the

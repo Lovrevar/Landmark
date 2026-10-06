@@ -1579,11 +1579,13 @@ prikazuju se u oba smjera, s nazivom druge firme.
 
 Podaci iz pogleda `company_statistics` po firmi: ukupno stanje računa i broj računa, dostupni
 krediti (Σ iznos − iskorišteno), **prihodi** (računi koje je firma izdala: `OUTGOING_SALES`,
-`OUTGOING_OFFICE`, `OUTGOING_SUPPLIER` — broj, ukupno, plaćeno, preostalo) i **rashodi** (računi koje
-plaća: `INCOMING_SUPPLIER`, `INCOMING_OFFICE`, s plaćenim uključujući cesije koje je firma platila za
-druge). Bankovni i investicijski računi (`INCOMING_INVESTMENT`, `INCOMING_BANK`,
-`INCOMING_BANK_EXPENSES`, `OUTGOING_BANK`) su financiranje i ne ulaze ni u prihode ni u rashode.
-Dobit = plaćeni prihodi − plaćeni rashodi. Pogled poštuje RLS pozivatelja.
+`OUTGOING_OFFICE`, `OUTGOING_SUPPLIER` — broj, ukupno, plaćeno, preostalo) i **rashodi** (računi
+poslovanja koje plaća: `INCOMING_SUPPLIER`, `INCOMING_OFFICE`, `INCOMING_INVESTMENT` i troškovi
+kredita `INCOMING_BANK_EXPENSES`, s plaćenim uključujući cesije koje je firma platila za druge).
+Glavnica kredita je **financiranje** i ne ulazi ni u prihode ni u rashode: isplate (`OUTGOING_BANK`)
+i otplate (`INCOMING_BANK`) prikazuju se zasebno, u retku „Financiranje (primljeno / otplaćeno)”.
+Dobit = plaćeni prihodi − plaćeni rashodi. Pogled poštuje RLS pozivatelja. Pravilo je jedno za
+cijelu aplikaciju: `src/utils/invoiceCashDirection.ts` (smjer i kategorija za svaki tip računa).
 
 - **Statistika:** broj firmi, ukupno stanje, ukupni prihod, dobit/gubitak.
 - **Pretraga** po nazivu ili OIB-u.

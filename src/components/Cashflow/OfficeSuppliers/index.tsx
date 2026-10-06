@@ -8,6 +8,7 @@ import { formatEuro, formatEuropean, formatDate } from '../../../utils/formatter
 import { toErrorMessage } from '../../../lib/errorMessage'
 import { useAuth } from '../../../contexts/AuthContext'
 import { isDirectorRole } from '../../../utils/permissions'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 const OfficeSuppliers: React.FC = () => {
   const { t, i18n } = useTranslation()
@@ -301,17 +302,8 @@ const OfficeSuppliers: React.FC = () => {
                           {formatEuro(parseFloat(invoice.remaining_amount))}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.status')} className="text-center">
-                          <Badge
-                            variant={
-                              invoice.status === 'PAID'
-                                ? 'green'
-                                : invoice.status === 'PARTIALLY_PAID'
-                                ? 'yellow'
-                                : 'red'
-                            }
-                            size="sm"
-                          >
-                            {invoice.status === 'PAID' ? t('office_suppliers.status.paid') : invoice.status === 'PARTIALLY_PAID' ? t('office_suppliers.status.partial') : t('office_suppliers.status.unpaid')}
+                          <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
+                            {getInvoiceStatusLabel(invoice.status, t)}
                           </Badge>
                         </Table.Td>
                       </Table.Tr>

@@ -62,6 +62,7 @@ Each profile renders a different navigation menu and dashboard. Profile ≠ role
 | Tasks | `src/components/Tasks/` | Org-wide task list, comments, attachments; schema shared with a mobile app |
 | Calendar | `src/components/Calendar/` | Events, RSVP, recurrence, per-user task overlay |
 | Chat | `src/components/Chat/` | 1:1 and group conversations, attachments, realtime unread badge |
+| Help | `src/components/Help/` | `/help` page over `help-kb/`, the "?" beside page titles, `InfoHint` popovers — see [`docs/HELP.md`](./docs/HELP.md) |
 | AI Chat | `src/components/AiChat/` | Floating Claude assistant (SSE events, tool calling, document generation) |
 | Documents | `src/components/Documents/` | Document browser and category tree; auto-classified emailed documents |
 | Auth | `src/components/Auth/` | Login form (email/password + Microsoft Entra ID), password reset |
@@ -145,7 +146,7 @@ Module conventions, cross-module rules and per-file notes are in
 
 ## Shared UI Library
 
-There is a shared component library at `src/components/ui/` with 30 components. Check it before
+There is a shared component library at `src/components/ui/` with 31 components. Check it before
 creating any new UI primitive — the full list with props is in [`docs/UI.md`](./docs/UI.md).
 
 **Six are not in the barrel file** and must be imported by path: `AvatarStack`,
@@ -165,7 +166,8 @@ comes from `src/components/ui`.
 
 ## AI Assistant Help Articles
 
-The AI assistant answers "how do I…" questions from `help-kb/*.md`. When you change what a screen
+The AI assistant answers "how do I…" questions from `help-kb/*.md`, and the same articles are
+shown to users on the `/help` page and linked from `InfoHint` popovers. When you change what a screen
 shows or does, update its article and run `npm run kb:build` — stale articles make the assistant
 give wrong answers.
 

@@ -2,20 +2,13 @@ import type { TFunction } from 'i18next'
 import type { Invoice, Project, Contract, Milestone } from '../Invoices/types'
 import { daysFromToday } from '../../../utils/dateOnly'
 import { NO_VALUE } from '../../../utils/formatters'
-
-export const getStatusColor = (status: string): string => {
-  switch (status) {
-    case 'PAID': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-    case 'PARTIALLY_PAID': return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300'
-    case 'UNPAID': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-    default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-  }
-}
+import { invoiceCashDirection, type CashDirection } from '../../../utils/invoiceCashDirection'
 
 /**
  * The one invoice-status renderer: Badge variant + i18n label key. Use these rather than a local
  * switch — hand-rolled copies had drifted (UNPAID yellow on one screen, red on the rest; a
- * lowercase 'paid' check that never matched; the raw enum shown as the label).
+ * lowercase 'paid' check that never matched; the raw enum shown as the label). Every screen that
+ * shows `accounting_invoices.status` now reads it from here.
  */
 export type InvoiceStatusVariant = 'green' | 'yellow' | 'red' | 'gray'
 
@@ -75,26 +68,23 @@ export const getInvoiceCategoryLabel = (category: string | null | undefined, t: 
   return key ? t(key) : (category || NO_VALUE)
 }
 
+/**
+ * Colour of an invoice type label: red for an invoice the company pays, green for one it is paid
+ * on. Read from the shared direction map, so the label cannot disagree with the tab the invoice
+ * sits on — ULAZNI (INV) used to be green on the red "Ulazni" tab.
+ */
 export const getTypeColor = (type: string): string =>
-  paymentDirection(type) === 'OUT' ? 'text-red-600' : 'text-green-600'
+  invoiceCashDirection(type) === 'OUT' ? 'text-red-600' : 'text-green-600'
 
 /**
- * Which way money moves when an invoice of this type is paid, from the company's side. The prefix
- * names the invoice, not the cash: paying an INCOMING_* invoice (a bill we received — a supplier,
- * a loan repayment, credit fees) is money OUT; an OUTGOING_* invoice (one we issued — a sale, a
- * credit drawdown booked as OUTGOING_BANK) is money IN. Same sign convention as the bank-balance
- * trigger in 20260917100000_payment_update_balance_triggers.sql. Null for a type with neither prefix.
- * INCOMING_INVESTMENT is a received bill we pay, so it is OUT (decided 2026-10-01, DEFECT_BACKLOG
- * CASH-7; the ERP importer reads `INCOMING` the same way). Every cash-direction figure — dashboards,
- * reports, the payment calendar, the balance trigger — uses this one rule.
+ * Which way money moves when an invoice of this type is paid, from the company's side: `'OUT'`
+ * for every INCOMING_* invoice (a bill received), `'IN'` for every OUTGOING_* one (an invoice
+ * issued, including a credit drawdown booked as OUTGOING_BANK). The rule itself lives in
+ * `utils/invoiceCashDirection.ts`, which every screen and the bank-balance trigger agree with.
  */
-export type PaymentDirection = 'IN' | 'OUT'
+export type PaymentDirection = CashDirection
 
-export const paymentDirection = (invoiceType: string | null | undefined): PaymentDirection | null => {
-  if (invoiceType?.startsWith('OUTGOING_')) return 'IN'
-  if (invoiceType?.startsWith('INCOMING_')) return 'OUT'
-  return null
-}
+export const paymentDirection = invoiceCashDirection
 
 export type InvoiceDirection = 'INCOMING' | 'OUTGOING'
 
@@ -135,20 +125,35 @@ export const getInvoiceTypeLabelKey = (type: string): string | null => {
   return null
 }
 
-export const getTypeLabel = (type: string): string => {
-  switch (type) {
-    case 'INCOMING_SUPPLIER': return 'ULAZNI (DOB)'
-    case 'INCOMING_INVESTMENT': return 'ULAZNI (INV)'
-    case 'INCOMING_OFFICE': return 'ULAZNI (URED)'
-    case 'INCOMING_BANK': return 'ULAZNI (BANKA)'
-    case 'INCOMING_BANK_EXPENSES': return 'ULAZNI (TROŠ.KRED)'
-    case 'OUTGOING_OFFICE': return 'IZLAZNI (URED)'
-    case 'OUTGOING_SUPPLIER': return 'IZLAZNI (DOB)'
-    case 'OUTGOING_SALES': return 'IZLAZNI (PROD)'
-    case 'OUTGOING_BANK': return 'IZLAZNI (BANKA)'
-    default: return type
-  }
+/**
+ * Translated short code for a full invoice type ("ULAZNI (DOB)"), for dense tables. An unknown
+ * type is shown as-is rather than hidden.
+ */
+export const getInvoiceTypeLabel = (type: string | null | undefined, t: TFunction): string => {
+  const key = type ? getInvoiceTypeLabelKey(type) : null
+  return key ? t(key) : (type || NO_VALUE)
 }
+
+/**
+ * i18n key for the spelled-out form of an invoice type ("Ulazni – dobavljač"), or null for an
+ * unknown type. Detail views use this form; the type legend pairs it with the short code, so the
+ * bracketed abbreviations are explained from the same vocabulary that prints them.
+ */
+export const getInvoiceTypeLongLabelKey = (type: string): string | null => {
+  const key = getInvoiceTypeLabelKey(type)
+  return key ? key.replace(/^invoice_type\./, 'invoice_type_long.') : null
+}
+
+/** Translated spelled-out invoice type. An unknown type is shown as-is rather than hidden. */
+export const getInvoiceTypeLongLabel = (type: string | null | undefined, t: TFunction): string => {
+  const key = type ? getInvoiceTypeLongLabelKey(type) : null
+  return key ? t(key) : (type || NO_VALUE)
+}
+
+/** Every invoice type the CHECK allows, in the order the legend lists them. */
+export const ALL_INVOICE_TYPES: ReadonlyArray<string> = (
+  Object.keys(INVOICE_CATEGORIES_BY_DIRECTION) as InvoiceDirection[]
+).flatMap(direction => INVOICE_CATEGORIES_BY_DIRECTION[direction].map(c => `${direction}_${c.value}`))
 
 export const getSupplierCustomerName = (invoice: Invoice): string => {
   if (invoice.subcontractors?.name) return invoice.subcontractors.name

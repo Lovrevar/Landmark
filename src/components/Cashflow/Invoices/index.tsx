@@ -18,9 +18,6 @@ import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { InvoiceActionButtons } from './InvoiceActionButtons'
 import { InvoicePagination } from './InvoicePagination'
 import {
-  getTypeColor,
-  getTypeLabel,
-  getStatusColor,
   getSupplierCustomerName,
   getCustomerProjects,
   getCustomerApartmentsByProject,
@@ -253,9 +250,6 @@ const AccountingInvoices: React.FC = () => {
           // Deleting invoices is Director-only under RLS.
           onDelete={isDirectorRole(user) ? handleDelete : undefined}
           onPayment={handleOpenPaymentModal}
-          getTypeColor={getTypeColor}
-          getTypeLabel={getTypeLabel}
-          getStatusColor={getStatusColor}
           getSupplierCustomerName={getSupplierCustomerName}
           isOverdue={isOverdue}
         />
@@ -313,9 +307,6 @@ const AccountingInvoices: React.FC = () => {
       <InvoiceDetailView
         invoice={viewingInvoice}
         onClose={handleCloseViewModal}
-        getTypeColor={getTypeColor}
-        getTypeLabel={getTypeLabel}
-        getStatusColor={getStatusColor}
         getSupplierCustomerName={getSupplierCustomerName}
         isOverdue={isOverdue}
       />

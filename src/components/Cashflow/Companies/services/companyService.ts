@@ -24,6 +24,8 @@ export const fetchCompaniesWithStats = async (): Promise<CompanyStats[]> => {
     total_expense_amount: number
     total_expense_paid: number
     total_expense_unpaid: number
+    total_financing_received?: number | null
+    total_financing_repaid?: number | null
     total_bank_balance: number
   }
 
@@ -40,6 +42,8 @@ export const fetchCompaniesWithStats = async (): Promise<CompanyStats[]> => {
     total_expense_amount: stats.total_expense_amount,
     total_expense_paid: stats.total_expense_paid,
     total_expense_unpaid: stats.total_expense_unpaid,
+    financing_received: stats.total_financing_received ?? null,
+    financing_repaid: stats.total_financing_repaid ?? null,
     current_balance: stats.total_bank_balance,
     profit: stats.total_income_paid - stats.total_expense_paid,
     revenue: stats.total_income_amount,

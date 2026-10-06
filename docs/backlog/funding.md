@@ -1,7 +1,7 @@
 # Backlog — Funding and TIC
 
 Bank credits, investors, drawdowns, allocations and the TIC cost structure. Ids: `FUND-n` (next
-free: `FUND-16`). Entry format and rules are in [README.md](./README.md).
+free: `FUND-17`). Entry format and rules are in [README.md](./README.md).
 
 ## Open
 
@@ -44,3 +44,12 @@ free: `FUND-16`). Entry format and rules are in [README.md](./README.md).
 
 ### FUND-14 · Low · Orphan function
 - `update_overdue_notifications()` references the removed `payment_notifications` table.
+
+### FUND-16 · Low · TIC page scrolls sideways
+- **Check:** Seen in the guidance visual check ([../screenshots/guidance-phase-1/README.md](../screenshots/guidance-phase-1/README.md), finding 8).
+- **Where:** `Funding/TIC/components/InvestmentTable.tsx` inside `Funding/TIC/index.tsx`.
+- **What happens:** at 390px the whole page is 973px wide (1262px with phase columns); at 1440px
+  it overflows once two phase columns exist. The header, tabs and buttons scroll away with the
+  table.
+- **Fix direction:** the table scrolls inside its card (`overflow-x-auto` on a wrapper, `min-w-0`
+  up the flex chain) instead of widening the document.

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Invoice, MonthlyBudget } from '../types'
 import { toLoadError } from '../../services/loadError'
 import { fetchInvoices as fetchInvoicesService, fetchBudgets as fetchBudgetsService } from '../services/calendarService'
-import { paymentDirection } from '../../services/invoiceHelpers'
+import { isCashIn, isCashOut } from '../../../../utils/invoiceCashDirection'
 
 export const useCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -85,10 +85,11 @@ export const useCalendar = () => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Bills we pay vs invoices we issued, by the shared cash-direction rule. The bill list used to
-    // leave out INCOMING_BANK_EXPENSES (credit interest and fees) — DEFECT_BACKLOG CASH-8.
-    const incomingInvoices = monthInvoices.filter(inv => paymentDirection(inv.invoice_type) === 'OUT')
-    const outgoingInvoices = monthInvoices.filter(inv => paymentDirection(inv.invoice_type) === 'IN')
+    // Sides come from the shared direction map. The two lists kept here before left credit
+    // fees (INCOMING_BANK_EXPENSES) out of both, so a month's "Ulazni" total and its net
+    // ignored them while the bank balance did not.
+    const incomingInvoices = monthInvoices.filter(inv => isCashOut(inv.invoice_type))
+    const outgoingInvoices = monthInvoices.filter(inv => isCashIn(inv.invoice_type))
 
     const incomingPaid = incomingInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
     const incomingUnpaid = incomingInvoices.filter(inv => inv.status !== 'PAID').reduce((sum, inv) => sum + inv.remaining_amount, 0)

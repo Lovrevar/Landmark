@@ -22,6 +22,25 @@
   Column names, types and order are unchanged, so CREATE OR REPLACE keeps every reader working.
 */
 
+-- Guard added 2026-10-06 when this branch met feat/user-guidance-phase-1. Production and
+-- LandmarkDev had already received 20261005110000 and 20261005120000, which give this view two
+-- more columns (total_financing_received, total_financing_repaid). CREATE OR REPLACE VIEW cannot
+-- drop columns, so on those two databases this statement would fail and block every later
+-- migration. Where the newer view is already in place it is left alone; 20261006100000 then sets
+-- the final definition everywhere. On a database built from migrations in order, the guard is
+-- false and this runs exactly as written.
+DO $guard$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'company_statistics'
+      AND column_name = 'total_financing_received'
+  ) THEN
+    RAISE NOTICE 'company_statistics already has the financing columns; leaving its definition to 20261006100000';
+    RETURN;
+  END IF;
+
+  EXECUTE $view$
 CREATE OR REPLACE VIEW public.company_statistics AS
  SELECT c.id,
     c.name,
@@ -85,6 +104,9 @@ CREATE OR REPLACE VIEW public.company_statistics AS
            FROM public.accounting_payments ap
           WHERE ((ap.cesija_company_id = c.id) AND (ap.is_cesija = true))) cesija_stats ON (true))
      LEFT JOIN public.accounting_invoices inv ON ((inv.company_id = c.id)))
-  GROUP BY c.id, c.name, c.oib, c.initial_balance, c.created_at, ba_stats.total_balance, ba_stats.accounts_count, cr_stats.available, cr_stats.credits_count, cesija_stats.cesija_paid;
+  GROUP BY c.id, c.name, c.oib, c.initial_balance, c.created_at, ba_stats.total_balance, ba_stats.accounts_count, cr_stats.available, cr_stats.credits_count, cesija_stats.cesija_paid
+  $view$;
+END
+$guard$;
 
 ALTER VIEW public.company_statistics SET (security_invoker = on);

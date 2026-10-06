@@ -41,7 +41,8 @@ import {
   BookMarked,
   Upload,
   Menu as MenuIcon,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react'
 import { canUseCashflow, canViewActivityLog, isDirectorRole } from '../../utils/permissions'
 import Input from '../ui/Input'
@@ -224,6 +225,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handleProfileChange = (profile: Profile) => {
     // Switching profile lands on the dashboard, so it leaves the current screen just as a menu
     // click does — guarded as one.
+    // Not offered to other roles; refused here as well in case the request comes some other way.
+    if (profile === 'Cashflow' && !canUseCashflow(user)) return
     requestLeave(() => {
       if (profile === 'Cashflow' && !cashflowUnlocked) {
         setPendingProfile(profile)
@@ -370,6 +373,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     {eventUnread > 99 ? '99+' : eventUnread}
                   </span>
                 )}
+              </button>
+              <button
+                onClick={() => requestLeave(() => navigate('/help'))}
+                className={`relative p-2 transition-colors duration-200 ${
+                  location.pathname.startsWith('/help')
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+                title={t('help.title')}
+                aria-label={t('help.title')}
+              >
+                <HelpCircle className="w-5 h-5" />
               </button>
               <div className="hidden lg:block">
                 <LanguageSwitcher />
