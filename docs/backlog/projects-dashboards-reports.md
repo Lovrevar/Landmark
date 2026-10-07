@@ -6,15 +6,6 @@ are in [README.md](./README.md).
 
 ## Open
 
-### GEN-20 · Medium · Budget Control reports healthy CPI and SPI when there is nothing to measure
-- **Check:** Code reading (found during the help-article audit, 2026-10-06)
-- **Where:** `General/BudgetControl`.
-- **What happens:** with no cost data the CPI card is green and says "Ispod proračuna ✓"; before
-  any phase has started SPI falls back to 1,00. Both read as "on track". The `planned_budget_sub`
-  label also describes the figure wrongly.
-- **Fix direction:** show `—` and a neutral card until there is cost data and a started phase.
-  Related: GEN-8.
-
 ### GEN-21 · Low · Projects list shows a failed load as an Alert in the content area
 - **Where:** `General/Projects/index.tsx:117`.
 - **Fix direction:** `ErrorState` with `refetch`. Part of UI-4 in [ui.md](./ui.md).
@@ -33,6 +24,8 @@ are in [README.md](./README.md).
 ### GEN-7 · Low · Budget Control chart and scope
 - The forecast bar is drawn in red when the forecast is suppressed; contracts without a phase
   count in Committed and Paid but not in EV and AC.
+- The indices chart prints an unrounded number as its top axis label when CPI is above 2
+  (seen 2026-10-07 on the demo: "…527306968").
 
 ### GEN-8 · Low · EVM "physical" progress is payment-driven in practice
 - Milestone statuses feeding EV are set by the payment trigger, so EV is not independent of AC.
@@ -68,3 +61,10 @@ are in [README.md](./README.md).
 - **What happens:** both appear whatever organisation the instance belongs to.
 - **Fix direction:** one configurable organisation name used by both and by the other report
   generators that print it.
+
+## Resolved
+
+### GEN-20 · Medium · Budget Control reports healthy CPI and SPI when there is nothing to measure
+- Fixed on `fix/audit-medium-findings` (2026-10-07): `calculateProjectEVM` returns `costAvailable`, and until something is
+  paid CPI, EAC and VAC show "—" with "Još nema plaćenih troškova". The SPI half of the report
+  was wrong: `scheduleAvailable` already covered it.

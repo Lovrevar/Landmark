@@ -12,7 +12,7 @@ Kartice statistike: **Ukupno isplate**, **Ukupno otplate i troškovi**, **Neto**
 
 Filtri: tražilica **Pretraži plaćanja...** (po banci, projektu i napomenama), padajući izbornik (**Sva plaćanja**, **Nedavno (7 dana)**, **Velika (> €50k)**), raspon datuma (**Datum početka** / **Datum kraja**) i gumb **Export Excel**, koji izvozi filtrirani popis.
 
-Stupci tablice: **Datum**, **Tip** (značka **PRIHOD** za isplatu kredita, **RASHOD** za otplatu ili trošak), **Primatelj** (banka), **Projekt**, **Kategorija** (vrsta kredita), **Iznos**, **Napomene**. Ispod tablice je redak **Filtrirani rezultati** sa zbrojem isplata, otplata i troškova te neto iznosom.
+Stupci tablice: **Datum**, **Tip** (značka **ISPLATA KREDITA** za povlačenje kredita, **OTPLATA GLAVNICE** za otplatu i **RASHOD** za troškove kredita; isplata i otplata su financiranje, a ne prihod ili rashod), **Primatelj** (banka), **Projekt**, **Kategorija** (vrsta kredita), **Iznos**, **Napomene**. Ispod tablice je redak **Filtrirani rezultati** sa zbrojem isplata, otplata i troškova te neto iznosom.
 
 Stranica je samo za pregled — plaćanja nastaju u Cashflow profilu, kada se evidentira plaćanje računa vezanog uz kredit.
 

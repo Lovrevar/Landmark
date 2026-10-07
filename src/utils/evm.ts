@@ -16,6 +16,11 @@ export interface EVMMetrics {
    * Set only by calculateProjectEVM; per-phase results always have a schedule by construction.
    */
   scheduleAvailable?: boolean
+  /**
+   * False while nothing has been paid. CPI is then 1 and EAC the budget only by convention —
+   * there is no cost to measure against, so callers must not present them as "under budget".
+   */
+  costAvailable?: boolean
 }
 
 export interface MilestoneProgress {
@@ -129,6 +134,8 @@ export function calculateProjectEVM(
     totalBudget += Number(phase.budget_allocated)
   })
 
+  // With nothing paid there is no cost performance to report: CPI is not 1, it is unknown.
+  // Callers should check `costAvailable` before presenting it (GEN-20).
   const CPI = totalAC > 0 ? totalEV / totalAC : 1
   // With no dated phase there is no schedule baseline, so SPI is not merely 1 — it is unknown.
   // Callers should check `scheduleAvailable` before presenting it.
@@ -140,6 +147,7 @@ export function calculateProjectEVM(
 
   return {
     PV: totalPV, EV: totalEV, AC: totalAC, CPI, SPI, EAC, VAC, CV, SV,
-    scheduleAvailable: scheduledPhases > 0
+    scheduleAvailable: scheduledPhases > 0,
+    costAvailable: totalAC > 0,
   }
 }

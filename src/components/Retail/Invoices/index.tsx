@@ -4,10 +4,14 @@ import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Bu
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
 import { useRetailInvoices } from './hooks/useRetailInvoices'
 import { formatDate } from '../../../utils/formatters'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canApproveInvoices } from '../../../utils/permissions'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 
 const RetailInvoicesManagement: React.FC = () => {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
+  const canApprove = canApproveInvoices(user)
   const {
     loading,
     error,
@@ -146,8 +150,11 @@ const RetailInvoicesManagement: React.FC = () => {
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => handleApprove(invoice.id, invoice.approved)}
-                      title={invoice.approved ? t('retail_invoices.approve_title_cancel') : t('retail_invoices.approve_title')}
-                      className={`p-1 rounded transition-colors ${
+                      disabled={!canApprove}
+                      title={!canApprove
+                        ? t('retail_invoices.approve_title_forbidden')
+                        : invoice.approved ? t('retail_invoices.approve_title_cancel') : t('retail_invoices.approve_title')}
+                      className={`p-1 rounded transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                         invoice.approved
                           ? 'text-green-600 hover:text-green-800'
                           : 'text-gray-400 dark:text-gray-500 hover:text-blue-600'

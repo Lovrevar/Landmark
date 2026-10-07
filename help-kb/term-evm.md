@@ -29,7 +29,7 @@ Kartica VAC je zelena (**Ispod proračuna ✓**) kada je iznos nula ili pozitiva
 
 ## Kada metrike nema
 
-- Dok ništa nije plaćeno, CPI iznosi 1,00 jer još nema troška za usporedbu.
+- Dok ništa nije plaćeno, CPI, EAC i VAC prikazuju „—” uz napomenu **Još nema plaćenih troškova**, jer još nema troška za usporedbu.
 - Ako je CPI 0 (ima plaćanja, ali nema ostvarene vrijednosti), EAC i VAC prikazuju „—” uz napomenu **Nema prognoze: CPI je 0 (trošak bez ostvarene vrijednosti)**.
 - SPI prikazuje „—” i napomenu **Nema faza s datumima početka i završetka** ako nijedna faza nema oba datuma. Računa se samo iz faza koje ih imaju.
 

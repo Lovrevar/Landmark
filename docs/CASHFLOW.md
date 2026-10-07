@@ -279,6 +279,9 @@ Monthly calendar view showing scheduled invoice payments and due dates. Supports
 - **Calls:** calendarService.ts
 - **Returns:** currentDate, invoices, loading, error, refetch, selectedDate, selectedInvoices, budgets, showBudgetModal, budgetYear, budgetFormData, getDaysInMonth, getInvoicesForDate, getMonthStats, handlePreviousMonth, handleNextMonth, handleDateClick, handleOpenBudgetModal, getCurrentMonthBudget
 
+### Calendar/utils/monthStats.ts
+- `monthStats(invoices, year, month, now?)` → the counts and amounts above the calendar, by due date. Pure, so it is tested (`monthStats.test.ts`); `useCalendar.getMonthStats` only passes the month in. An invoice is paid or it is not: `PARTIALLY_PAID` counts as unpaid in every figure (CASH-24).
+
 ### Calendar/utils/budgetDifference.ts
 - `budgetDifference(budgetAmount, paid)` → `{ difference, overBudget, formatted }`. `difference` is budget − paid in whole cents and keeps its sign, so the "Razlika od budžeta" row shows an overrun as a negative amount (`−€1.691.590,00`) rather than an absolute value with only a suffix to say which way it went. Covered by `budgetDifference.test.ts`
 - Every amount on the calendar (summary, invoice table, `BudgetModal` total) goes through `formatEuro`; `calendarMoney.test.ts` guards it
@@ -929,6 +932,10 @@ Shared utilities used across multiple Cashflow sub-modules.
     main invoice list and detail view, Office Suppliers, the Cashflow Calendar and Retail's
     invoice list. No screen renders `accounting_invoices.status` its own way any more;
     `getStatusColor` is gone
+- `paymentKind(invoiceType)` → `{ labelKey, financing } | null` — the word the payment registers
+  print in their "Tip" column: PRIHOD / RASHOD for operating money, ISPLATA KREDITA / OTPLATA
+  GLAVNICE for credit principal, which is neither (FUND-17). Used by the Cashflow payments table,
+  the Funding payments register and its export.
 - `paymentDirection(invoiceType)` → `'IN' | 'OUT' | null` — which way cash moves when an invoice
   of that type is paid: `OUTGOING_*` (we issued it — a sale, a credit drawdown) is money **in**,
   `INCOMING_*` (we received it — a supplier bill, a repayment, credit fees) is money **out**. Same

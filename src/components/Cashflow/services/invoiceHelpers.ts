@@ -2,7 +2,7 @@ import type { TFunction } from 'i18next'
 import type { Invoice, Project, Contract, Milestone } from '../Invoices/types'
 import { daysFromToday } from '../../../utils/dateOnly'
 import { NO_VALUE } from '../../../utils/formatters'
-import { invoiceCashDirection, type CashDirection } from '../../../utils/invoiceCashDirection'
+import { invoiceCashCategory, invoiceCashDirection, type CashDirection } from '../../../utils/invoiceCashDirection'
 
 /**
  * The one invoice-status renderer: Badge variant + i18n label key. Use these rather than a local
@@ -85,6 +85,33 @@ export const getTypeColor = (type: string): string =>
 export type PaymentDirection = CashDirection
 
 export const paymentDirection = invoiceCashDirection
+
+export interface PaymentKind {
+  /** i18n key of the word a payment register prints for this payment. */
+  labelKey: string
+  /** Credit principal: neither income nor expense, so it is not coloured as either. */
+  financing: boolean
+}
+
+/**
+ * What a payment *is*, for the "Tip" column of the payment registers.
+ *
+ * Direction alone is not it: a credit drawdown is money in and a principal repayment money out,
+ * but neither is income or expense (CASH-7), and both registers labelled them PRIHOD and RASHOD
+ * (FUND-17). Credit fees are an operating cost and stay RASHOD. `null` for a type the cash map
+ * does not know — print a dash, never a guess.
+ */
+export function paymentKind(invoiceType: string | null | undefined): PaymentKind | null {
+  const direction = invoiceCashDirection(invoiceType)
+  if (!direction) return null
+  if (invoiceCashCategory(invoiceType) === 'financing') {
+    return { labelKey: direction === 'IN' ? 'payments.table.credit_drawdown' : 'payments.table.principal_repayment', financing: true }
+  }
+  return { labelKey: direction === 'IN' ? 'payments.table.income' : 'payments.table.expense', financing: false }
+}
+
+/** Text colour for a financing label where the register colours the word, not a badge. */
+export const FINANCING_TEXT_CLASS = 'text-blue-600 dark:text-blue-400'
 
 export type InvoiceDirection = 'INCOMING' | 'OUTGOING'
 
