@@ -2,7 +2,7 @@
 id: term-has-contract
 title: Bez ugovora (usmeni dogovor)
 keywords: [bez ugovora, usmeni dogovor, bez formalnog ugovora, verbal agreement, značka, podugovaratelj]
-routes: [/site-management, /subcontractors, /projects/:id]
+routes: [/site-management/:projectId?, /subcontractors, /projects/:id]
 roles: [Director, Accounting, Supervision]
 ---
 

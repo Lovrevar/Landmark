@@ -1,12 +1,19 @@
 # Backlog — Supervision
 
 Site management, subcontractors, contracts, phases and work logs. Ids: `SUP-n` (next free:
-`SUP-15`). Entry format and rules are in [README.md](./README.md).
+`SUP-16`). Entry format and rules are in [README.md](./README.md).
 
 Supervision is used on phones on site; the mobile problems are UI-8 in [ui.md](./ui.md). The
 payment gate being screen-only is SEC-004 in [security.md](./security.md).
 
 ## Open
+
+### SUP-15 · Low · Header buttons of an opened project are clipped on a laptop
+- **Check:** Confirmed (browser, 1440px wide, 2026-10-07)
+- **Where:** `Supervision/SiteManagement/ProjectDetail.tsx`, the row with the view switch and
+  "Klasifikacije troškova" / "Uredi faze".
+- **What happens:** the labels wrap to three lines and "Po klasifikacijama troškova" is cut off.
+- **Fix direction:** let the row wrap under the title. Same family as UI-8 in [ui.md](./ui.md).
 
 ### SUP-13 · Low · Work logs and Subcontractors show their actions to every role
 - **Check:** Code reading

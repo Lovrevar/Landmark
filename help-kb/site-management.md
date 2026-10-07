@@ -2,7 +2,7 @@
 id: site-management
 title: Upravljanje gradilištem
 keywords: [upravljanje gradilištem, site management, gradilište, nadzor, faze, klasifikacija troška, ugovori, završeno, raskinuto, budžet nije postavljen, nije fazirano]
-routes: [/site-management]
+routes: [/site-management/:projectId?]
 roles: [Director, Supervision]
 ---
 

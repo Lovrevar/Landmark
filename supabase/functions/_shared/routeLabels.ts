@@ -31,7 +31,7 @@ const PATTERNS: RouteEntry[] = [
   { re: /^\/projects$/,               pattern: '/projects',              label: 'Projekti (popis)' },
   { re: /^\/budget-control$/,         pattern: '/budget-control',        label: 'Kontrola proračuna' },
   { re: /^\/subcontractors$/,         pattern: '/subcontractors',        label: 'Podugovaratelji' },
-  { re: /^\/site-management$/,        pattern: '/site-management',       label: 'Upravljanje gradilištem' },
+  { re: /^\/site-management(\/[^/]+)?$/, pattern: '/site-management/:projectId?', label: 'Upravljanje gradilištem' },
   { re: /^\/work-logs$/,              pattern: '/work-logs',             label: 'Radni dnevnik' },
   { re: /^\/payments$/,               pattern: '/payments',              label: 'Upravljanje plaćanjima' },
   { re: /^\/invoices$/,               pattern: '/invoices',              label: 'Projekti — Računi' },

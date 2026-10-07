@@ -2,7 +2,7 @@
 id: term-budzet-iz-tic
 title: Odakle dolazi budžet projekta?
 keywords: [budžet nije postavljen, budget not set, odakle budžet, planirani budžet, budžet projekta, budžet faze, ne mogu upisati budžet, budžet je zaključan, iz TIC-a]
-routes: [/projects, /site-management, /tic, /budget-control]
+routes: [/projects, /site-management/:projectId?, /tic, /budget-control]
 roles: [Director, Accounting, Sales, Supervision, Investment]
 ---
 

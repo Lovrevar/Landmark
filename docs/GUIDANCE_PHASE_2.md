@@ -12,7 +12,7 @@ Phase 2 makes them reach every page and corrects what they say. How the pieces w
 |---|---|---|
 | 1 | Help articles | All 66 articles in `help-kb/` were compared with the code and corrected: button and menu names, who can do what, steps that no longer exist. The phase 1 audit's proposed corrections were re-checked first, since some had gone stale. `INDEX.md` and the assistant's index (`npm run kb:build`) are rebuilt. |
 | 2 | Two misleading Budget Control strings | The subtitle claimed more than the page shows; the "no budget" text now says the budget comes from the TIC. |
-| 3 | Help link on every page | The 15 pages that draw their own title instead of using `PageHeader` now carry the same "?" through `PageHelpLink`: the six dashboards, Budget Control, project details, General reports, Tasks, Calendar, TIC, the Cashflow calendar, Chat and Site management. |
+| 3 | Help link on every page | The 15 pages that draw their own title instead of using `PageHeader` now carry the same "?" through `PageHelpLink`: the six dashboards, Budget Control, project details, General reports, Tasks, Calendar, TIC, the Cashflow calendar, Chat and Site management (the project list and an opened project). |
 | 4 | Empty states | 18 lists that said only "no data" now say what belongs there and where it is added; a list emptied by a search or filter says so instead ("Nema rezultata pretrage"). The Sales project and building grids had no empty state at all (SALES-15, closed). |
 | 5 | "Budget not set" leads somewhere | Budget Control and project details link to the project's TIC (`/tic?project=<id>`, which now opens on that project) for Director, Accounting and Investment. |
 | 6 | Profile is not role | One line under the profile switcher, desktop and mobile. |
@@ -82,13 +82,17 @@ wrong. To change one, edit it in `src/locales/hr|en/translation.json`.
 - `npm run typecheck`, `npm test`, `npm run test:functions`, ESLint on the changed files.
 - Every article's frontmatter parses, and every role still sees its articles
   (Director 62, Accounting 61, Sales 47, Investment 47, Supervision 18).
-- In a browser against LandmarkDemo, as Director, with activity-log writes intercepted: the "?"
-  on eight of the pages in item 3 and on project details, the filtered empty state on Projects,
-  Apartments and Customers, the TIC link and the project it opens on, the profile hint, the
-  assistant's questions on Budget Control, and the dashboard at phone width.
+- In a browser against LandmarkDemo, with activity-log writes intercepted, as each of the five
+  roles in light and dark mode: the "?" on every page visited (36 page loads per theme, no script
+  errors), the number of articles each role sees on `/help`, and the dashboard at phone width.
+- As Director: the filtered empty state on Projects, Apartments and Customers, the profile hint,
+  and the assistant's questions on Budget Control.
+- The TIC link on a project without a budget shows for Director and Investment and not for Sales,
+  and opens the TIC page on that project.
+- At phone width the "?" stays beside the last word of the title on the dashboards, Budget
+  Control, project details and Site management.
 
-Not checked in a browser: the "nothing here yet" empty states (the demo data has no empty lists),
-the other four roles, and dark mode.
+Not checked in a browser: the "nothing here yet" empty states (the demo data has no empty lists).
 
 ## 4. Found and not fixed
 
@@ -101,7 +105,7 @@ Comparing 66 articles with the code turned up defects in the code. They are in `
 | GEN-20 | Budget Control shows a healthy CPI and SPI when there is nothing to measure |
 | CASH-24 | The calendar's "Neplaćeno" card leaves out partly paid invoices |
 | FUND-17 | Funding payments label a drawdown PRIHOD and a repayment RASHOD |
-| CASH-25 to CASH-28, FUND-18, GEN-21, SALES-16 to SALES-19, RETAIL-6, SUP-13, SUP-14, UI-10 | Low: missing role checks on buttons, dead buttons, wording, hardcoded strings, unused keys |
+| CASH-25 to CASH-28, FUND-18, GEN-21, SALES-16 to SALES-19, RETAIL-6, SUP-13 to SUP-15, UI-10 | Low: missing role checks on buttons, dead buttons, wording, hardcoded strings, unused keys |
 
 Where the code and the intended behaviour disagree, the articles describe what the screen does
 today, so they need another look when one of these is fixed.
@@ -110,4 +114,3 @@ today, so they need another look when one of these is fixed.
 
 - More `InfoHint`s: wait for the `help.*` usage events to show where people open Help.
 - English articles, and screen recordings.
-- On a phone the "?" wraps under a long dashboard title.

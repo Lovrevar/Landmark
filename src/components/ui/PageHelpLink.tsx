@@ -31,18 +31,24 @@ export default function PageHelpLink({ tone = 'default', className = '' }: PageH
 
   const label = t('help.page_link')
   return (
-    <Link
-      to={`/help?page=${encodeURIComponent(pathname)}`}
-      // A new tab: the page being asked about may hold unsaved edits or a half-filled form, and
-      // help is read next to the task, not instead of it.
-      target="_blank"
-      rel="noopener"
-      onClick={() => logHelpEvent({ action: 'help.page_link_click', page: pathname })}
-      title={label}
-      aria-label={label}
-      className={`inline-flex align-middle ml-2 ${TONES[tone]} ${className}`}
-    >
-      <HelpCircle className="w-5 h-5" aria-hidden="true" />
-    </Link>
+    // The icon is an inline box, and a browser may break the line before one whatever precedes it,
+    // so on a phone it used to wrap alone under a title that fills the line. A no-wrap span that
+    // starts with a word joiner glues it to the last word of the title, which then wraps with it.
+    <span className="whitespace-nowrap">
+      {'\u2060'}
+      <Link
+        to={`/help?page=${encodeURIComponent(pathname)}`}
+        // A new tab: the page being asked about may hold unsaved edits or a half-filled form, and
+        // help is read next to the task, not instead of it.
+        target="_blank"
+        rel="noopener"
+        onClick={() => logHelpEvent({ action: 'help.page_link_click', page: pathname })}
+        title={label}
+        aria-label={label}
+        className={`inline-flex align-middle ml-2 ${TONES[tone]} ${className}`}
+      >
+        <HelpCircle className="w-5 h-5" aria-hidden="true" />
+      </Link>
+    </span>
   )
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PageHelpLink } from '../../ui'
 import { ArrowLeft, Building2, Settings, CreditCard, Layers, Tags, Eye, EyeOff } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases, SubcontractorWithPhase, SiteGrouping, VIEW_DIMENSIONS, CostClassification } from './types'
@@ -153,7 +154,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{project.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{project.name}<PageHelpLink /></h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">{project.location}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {t('supervision.site_management.project_detail.budget_label')}:{' '}

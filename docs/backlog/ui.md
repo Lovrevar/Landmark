@@ -17,8 +17,6 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
 - Looks unused: `profiles.unlock`, `profiles.locked`, `profiles.select_profile` and some `nav.*`
   labels. Grep before deleting.
 - English literals left on screen: "TBD", "Mixed", "Retail", "Site".
-- The assistant only boosts articles for `/site-management`, not for a project opened inside it
-  (`routeLabels.ts`), and the page help link there finds no article for the same reason.
 
 ### UI-8 · Medium · Mobile
 - Non-wrapping header rows in Supervision, which is used on phones on site.
