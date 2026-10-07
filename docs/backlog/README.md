@@ -12,7 +12,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [sales.md](./sales.md) | Units, the sale flow, customers | 7 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
 | [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 4 |
-| [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 10, plus 4 waiting on the ERP |
+| [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 7, plus 4 waiting on the ERP |
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
 | [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 10 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 10 |

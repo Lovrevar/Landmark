@@ -28,9 +28,27 @@ export const formatEuropean = (value: Money): string => {
   return value.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+/** The minus sign hr-HR prints: U+2212, not an ASCII hyphen. */
+const MINUS = '\u2212'
+
+/**
+ * Puts the euro sign on an already-formatted number, with the minus sign in front of it:
+ * "−€1.691.590,00", not "€−1.691.590,00". A sign belongs to the amount as a whole, and wedged
+ * between the currency and the digits it is easy to miss — and at a line break it could be left
+ * behind on the previous line.
+ *
+ * An amount that rounds to zero carries no sign: −0,004 is "€0,00", not "−€0,00".
+ */
+const withEuroSign = (formatted: string): string => {
+  const negative = formatted.startsWith(MINUS) || formatted.startsWith('-')
+  const magnitude = negative ? formatted.slice(1) : formatted
+  const isZero = !/[1-9]/.test(magnitude)
+  return `${negative && !isZero ? MINUS : ''}€${magnitude}`
+}
+
 export const formatEuro = (value: Money): string => {
   if (!isRenderable(value)) return NO_VALUE
-  return `€${formatEuropean(value)}`
+  return withEuroSign(formatEuropean(value))
 }
 
 /**
@@ -43,7 +61,7 @@ export const formatEuro = (value: Money): string => {
  */
 export const formatEuroRounded = (value: Money): string => {
   if (!isRenderable(value)) return NO_VALUE
-  return `€${value.toLocaleString('hr-HR', { maximumFractionDigits: 0 })}`
+  return withEuroSign(value.toLocaleString('hr-HR', { maximumFractionDigits: 0 }))
 }
 
 /**
@@ -64,10 +82,10 @@ export const formatEuroCompact = (value: Money): string => {
   if (!isRenderable(value)) return NO_VALUE
   const magnitude = Math.abs(value)
   if (magnitude >= 1_000_000) {
-    return `€${(value / 1_000_000).toLocaleString('hr-HR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`
+    return withEuroSign(`${(value / 1_000_000).toLocaleString('hr-HR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`)
   }
   if (magnitude >= 10_000) {
-    return `€${(value / 1_000).toLocaleString('hr-HR', { maximumFractionDigits: 0 })}K`
+    return withEuroSign(`${(value / 1_000).toLocaleString('hr-HR', { maximumFractionDigits: 0 })}K`)
   }
   return formatEuroRounded(value)
 }

@@ -1,3 +1,4 @@
+import type React from 'react'
 import type { LucideIcon } from 'lucide-react'
 
 type StatColorScheme = 'white' | 'blue' | 'green' | 'red' | 'yellow' | 'gray' | 'teal' | 'orange'
@@ -58,10 +59,12 @@ interface StatCardProps {
   className?: string
 }
 
+// `value` is the largest the figure is drawn (Tailwind's text-lg / text-xl / text-3xl). On a
+// narrow card it shrinks from there and, failing that, wraps — see `.stat-card` in index.css.
 const sizeConfig = {
-  sm: { container: 'p-3', value: 'text-lg', icon: 'w-5 h-5', iconWrap: 'p-1.5' },
-  md: { container: 'p-4', value: 'text-xl', icon: 'w-6 h-6', iconWrap: 'p-2' },
-  lg: { container: 'p-6', value: 'text-3xl', icon: 'w-8 h-8', iconWrap: 'p-3' },
+  sm: { container: 'p-3', value: '1.125rem', icon: 'w-5 h-5', iconWrap: 'p-1.5' },
+  md: { container: 'p-4', value: '1.25rem', icon: 'w-6 h-6', iconWrap: 'p-2' },
+  lg: { container: 'p-6', value: '1.875rem', icon: 'w-8 h-8', iconWrap: 'p-3' },
 }
 
 export default function StatCard({
@@ -76,9 +79,12 @@ export default function StatCard({
 }: StatCardProps) {
   const displayLabel = label ?? title ?? ''
   const cfg = sizeConfig[size]
+  // A browser may break a line between "−" and "€". If a negative amount ever has to wrap, the
+  // sign must not be what gets left behind on the line above, so the two are kept together.
+  const signPrefix = typeof value === 'string' ? (value.match(/^[\u2212-]€/)?.[0] ?? null) : null
 
   const classes = [
-    'rounded-xl shadow-sm',
+    'stat-card rounded-xl shadow-sm',
     containerStyles[color],
     cfg.container,
     className,
@@ -86,16 +92,19 @@ export default function StatCard({
 
   return (
     <div className={classes}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium ${labelStyles[color]} mb-1`}>{displayLabel}</p>
-          <p className={`${cfg.value} font-bold ${valueStyles[color]}`}>{value}</p>
-          {subtitle && (
-            <p className={`text-xs mt-1 ${labelStyles[color]} opacity-75`}>{subtitle}</p>
-          )}
-        </div>
+      <div className="stat-card__grid">
+        <p className={`stat-card__label text-sm font-medium ${labelStyles[color]} mb-1`}>{displayLabel}</p>
+        <p
+          className={`stat-card__value font-bold ${valueStyles[color]}`}
+          style={{ '--stat-value-size': cfg.value } as React.CSSProperties}
+        >
+          {signPrefix ? <><span className="whitespace-nowrap">{signPrefix}</span>{String(value).slice(signPrefix.length)}</> : value}
+        </p>
+        {subtitle && (
+          <p className={`stat-card__subtitle text-xs mt-1 ${labelStyles[color]} opacity-75`}>{subtitle}</p>
+        )}
         {Icon && (
-          <div className={`${cfg.iconWrap} ${iconBgStyles[color]} rounded-lg flex-shrink-0 ml-3`}>
+          <div className={`stat-card__icon ${cfg.iconWrap} ${iconBgStyles[color]} rounded-lg`}>
             <Icon className={`${cfg.icon} ${valueStyles[color]}`} />
           </div>
         )}

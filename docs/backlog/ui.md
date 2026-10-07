@@ -46,6 +46,10 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
   decimals), and 74 `DollarSign` icons in 29 files outside Reports and dashboards.
 - **Fix direction:** `formatEuro` / `formatEuroRounded` / `formatEuroCompact` from
   `utils/formatters.ts`.
+- **Sign order (2026-10-06):** the shared euro helpers now print a negative as "−€1.234,56". The
+  hand-built sites do not follow: about 59 that write "€" before `formatCurrency`, about 148 that
+  write it before a bare `toLocaleString`, and 10 locale strings of the form `€{{amount}}` still
+  print "€−…". Most never go negative; "Preostalo" after an overpayment can.
 
 ### UI-5 · Low · Hardcoded strings
 - **Done:** the English strings on screen, in every module and the shell.

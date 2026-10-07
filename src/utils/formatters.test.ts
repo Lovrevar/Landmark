@@ -55,8 +55,18 @@ describe('formatEuro', () => {
     expect(formatEuro(0)).toBe('€0,00')
   })
 
-  it('keeps the sign after the euro symbol for negatives (locale minus)', () => {
-    expect(formatEuro(-50)).toBe('€−50,00')
+  it('puts the minus sign before the euro symbol, as the locale minus (U+2212)', () => {
+    expect(formatEuro(-50)).toBe('\u2212€50,00')
+    expect(formatEuro(-1691590)).toBe('\u2212€1.691.590,00')
+    // Not the old order, and not an ASCII hyphen.
+    expect(formatEuro(-50)).not.toContain('€\u2212')
+    expect(formatEuro(-50)).not.toContain('-')
+  })
+
+  it('gives an amount that rounds to zero no sign', () => {
+    expect(formatEuro(-0.004)).toBe('€0,00')
+    expect(formatEuro(-0)).toBe('€0,00')
+    expect(formatEuro(-0.01)).toBe('\u2212€0,01') // a real cent keeps its minus
   })
 })
 
@@ -76,7 +86,8 @@ describe('formatEuroRounded', () => {
     expect(formatEuroRounded(0)).toBe('€0')
     // hr-HR uses U+2212 MINUS SIGN, not an ASCII hyphen. Asserted explicitly so a future change
     // to the locale or formatter shows up here rather than in a snapshot somewhere.
-    expect(formatEuroRounded(-1500.6)).toBe('€\u22121.501')
+    expect(formatEuroRounded(-1500.6)).toBe('\u2212€1.501')
+    expect(formatEuroRounded(-0.4)).toBe('€0')
   })
 })
 
@@ -101,8 +112,8 @@ describe('formatEuroCompact', () => {
   })
 
   it('abbreviates negatives by magnitude', () => {
-    expect(formatEuroCompact(-2500000)).toBe('€\u22122,5M')
-    expect(formatEuroCompact(-45000)).toBe('€\u221245K')
+    expect(formatEuroCompact(-2500000)).toBe('\u2212€2,5M')
+    expect(formatEuroCompact(-45000)).toBe('\u2212€45K')
   })
 })
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { paymentTotalsByDirection } from './paymentTotals'
+import { formatSignedEuro, paymentTotalsByDirection } from './paymentTotals'
 
 describe('paymentTotalsByDirection', () => {
   it('nets a drawdown against its repayment instead of adding them', () => {
@@ -59,3 +59,17 @@ describe('paymentTotalsByDirection', () => {
     expect(paymentTotalsByDirection([])).toEqual({ inflow: 0, outflow: 0, net: 0, count: 0 })
   })
 })
+
+describe('formatSignedEuro', () => {
+  // The net figures on both payment screens. The plus is added here; the minus comes from the
+  // shared formatter, which now puts it in the same place: before the euro sign.
+  it('puts either sign before the euro sign', () => {
+    expect(formatSignedEuro(1500)).toBe('+€1.500,00')
+    expect(formatSignedEuro(-1500)).toBe('\u2212€1.500,00')
+  })
+
+  it('gives zero no sign', () => {
+    expect(formatSignedEuro(0)).toBe('€0,00')
+  })
+})
+
