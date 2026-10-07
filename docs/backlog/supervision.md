@@ -8,13 +8,6 @@ payment gate being screen-only is SEC-004 in [security.md](./security.md).
 
 ## Open
 
-### SUP-15 · Low · Header buttons of an opened project are clipped on a laptop
-- **Check:** Confirmed (browser, 1440px wide, 2026-10-07)
-- **Where:** `Supervision/SiteManagement/ProjectDetail.tsx`, the row with the view switch and
-  "Klasifikacije troškova" / "Uredi faze".
-- **What happens:** the labels wrap to three lines and "Po klasifikacijama troškova" is cut off.
-- **Fix direction:** let the row wrap under the title. Same family as UI-8 in [ui.md](./ui.md).
-
 ### SUP-13 · Low · Work logs and Subcontractors show their actions to every role
 - **Check:** Code reading
 - **Where:** `Supervision/WorkLogs`, `Supervision/Subcontractors`; the matching helpers in
@@ -46,3 +39,9 @@ payment gate being screen-only is SEC-004 in [security.md](./security.md).
   `recalculateAllPhaseBudgets` (no UI caller).
 - Before deleting, grep every exported symbol; see [../GRAPHIFY.md](../GRAPHIFY.md) on why "no
   inbound import" is not proof.
+
+## Resolved
+
+### SUP-15 · Low · Header buttons of an opened project are clipped on a laptop
+- Fixed on `feat/user-guidance-phase-2` (2026-10-07): the header row in `ProjectDetail.tsx` wraps
+  under the title instead of squeezing its buttons.

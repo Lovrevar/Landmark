@@ -66,7 +66,9 @@ const GeneralReports: React.FC = () => {
               icon={Download}
               onClick={handleGeneratePDF}
               loading={generatingPDF}
-              className="bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
+              // `!`: the default variant's own `text-white` outranks a plain text colour here, which left
+              // the label white on white.
+              className="bg-white dark:bg-gray-800 !text-blue-600 dark:!text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
             >
               {t('reports.general.export_pdf')}
             </Button>

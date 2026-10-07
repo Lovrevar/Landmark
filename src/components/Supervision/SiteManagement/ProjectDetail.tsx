@@ -152,8 +152,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             {t('supervision.site_management.project_detail.back_to_projects')}
           </Button>
         </div>
-        <div className="flex items-center justify-between">
-          <div>
+        {/* Wraps: with every button present the row is wider than a laptop screen, and squeezing
+            it cut the labels off (SUP-15). */}
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <div className="min-w-0">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{project.name}<PageHelpLink /></h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">{project.location}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -171,7 +173,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               )}
             </p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-3">
             <ProjectCategoryBadge category={project.category} size="md" />
             <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="md">
               {statusLabel(PROJECT_STATUS, project.status, t)}
@@ -180,7 +182,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <div className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
                 <button
                   onClick={() => onChangeGrouping('byPhase')}
-                  className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${
+                  className={`px-3 py-2 text-sm whitespace-nowrap flex items-center gap-1.5 transition-colors ${
                     grouping === 'byPhase'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -191,7 +193,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 </button>
                 <button
                   onClick={() => onChangeGrouping('byClassification')}
-                  className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${
+                  className={`px-3 py-2 text-sm whitespace-nowrap flex items-center gap-1.5 transition-colors ${
                     grouping === 'byClassification'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'

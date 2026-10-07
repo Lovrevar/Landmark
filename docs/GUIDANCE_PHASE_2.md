@@ -92,7 +92,18 @@ wrong. To change one, edit it in `src/locales/hr|en/translation.json`.
 - At phone width the "?" stays beside the last word of the title on the dashboards, Budget
   Control, project details and Site management.
 
-Not checked in a browser: the "nothing here yet" empty states (the demo data has no empty lists).
+- The "nothing here yet" empty states, by answering the app's read requests with empty lists in
+  the browser (no database was changed): Projects, Apartments, Customers, Sales projects and a
+  project's buildings, Cashflow customers, invoices and payments, the three project-detail tabs,
+  and the Prodaja and Troškovi tabs of the Retail report.
+
+Not seen in a browser: the empty states of the General and Retail report pages themselves. With
+an empty database both draw a report of zeros; their empty state only appears when no report
+comes back at all. The four empty states inside modals were not opened either.
+
+Fixed along the way, both found by this pass: the header buttons of an opened Site management
+project were cut off on a laptop screen (SUP-15), and the "Izvoz PDF" button on the General
+report was white on white in light mode.
 
 ## 4. Found and not fixed
 
@@ -105,7 +116,7 @@ Comparing 66 articles with the code turned up defects in the code. They are in `
 | GEN-20 | Budget Control shows a healthy CPI and SPI when there is nothing to measure |
 | CASH-24 | The calendar's "Neplaćeno" card leaves out partly paid invoices |
 | FUND-17 | Funding payments label a drawdown PRIHOD and a repayment RASHOD |
-| CASH-25 to CASH-28, FUND-18, GEN-21, SALES-16 to SALES-19, RETAIL-6, SUP-13 to SUP-15, UI-10 | Low: missing role checks on buttons, dead buttons, wording, hardcoded strings, unused keys |
+| CASH-25 to CASH-28, FUND-18, GEN-21, SALES-16 to SALES-19, RETAIL-6, SUP-13, SUP-14, UI-10 | Low: missing role checks on buttons, dead buttons, wording, hardcoded strings, unused keys |
 
 Where the code and the intended behaviour disagree, the articles describe what the screen does
 today, so they need another look when one of these is fixed.
