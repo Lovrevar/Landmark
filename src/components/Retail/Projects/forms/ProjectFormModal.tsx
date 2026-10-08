@@ -5,6 +5,7 @@ import { retailProjectService } from '../services/retailProjectService'
 import type { RetailLandPlot } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, ConfirmDialog, Form } from '../../../ui'
 import { formatEuro } from '../../../../utils/formatters'
+import InlineLoadError from '../../../ui/InlineLoadError'
 
 interface ProjectFormModalProps {
   onClose: () => void
@@ -31,6 +32,8 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
     notes: String(project?.notes || '')
   })
   const [landPlots, setLandPlots] = useState<RetailLandPlot[]>([])
+  // A failed lookup is not an empty list: say so beside the control, with a retry (UI-4).
+  const [landPlotsFailed, setLandPlotsFailed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -44,10 +47,12 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
   const loadLandPlots = async () => {
     try {
+      setLandPlotsFailed(false)
       setLoadingLandPlots(true)
       const plots = await retailProjectService.fetchLandPlots()
       setLandPlots(plots)
     } catch (err) {
+      setLandPlotsFailed(true)
       console.error('Error loading land plots:', err)
     } finally {
       setLoadingLandPlots(false)
@@ -176,6 +181,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                         </option>
                       ))}
                     </Select>
+                    {landPlotsFailed && <InlineLoadError message={t('common.list_load_error')} onRetry={() => { void loadLandPlots() }} className="mt-1" />}
                     {selectedPlot && (
                       <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg text-sm">
                         <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">{t('retail_projects.project_form.land_info_title')}</div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import InlineLoadError from '../../../ui/InlineLoadError'
 import { useTranslation } from 'react-i18next'
 import { MessageSquare, Send, Calendar, Building2, FileText, DollarSign } from 'lucide-react'
 import { CommentWithUser, SubcontractorWithPhase } from '../types'
@@ -71,6 +72,10 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
   const [funderName, setFunderName] = useState<string | null>(null)
   const [, setLoadingFunder] = useState(false)
   const [contractData, setContractData] = useState<ContractData | null>(null)
+  // Both blocks below simply disappear when they have no data; a failed load must not look like
+  // "no contract" or "not financed" (UI-4).
+  const [contractFailed, setContractFailed] = useState(false)
+  const [funderFailed, setFunderFailed] = useState(false)
   const [, setLoadingContract] = useState(false)
 
   const loadContractData = useCallback(async () => {
@@ -78,10 +83,12 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
     const contractId = subcontractor.contract_id || subcontractor.id
     try {
       setLoadingContract(true)
+      setContractFailed(false)
       const data = await fetchContractDetails(contractId)
       if (data) setContractData(data)
     } catch (error) {
       console.error('Error loading contract data:', error)
+      setContractFailed(true)
     } finally {
       setLoadingContract(false)
     }
@@ -95,10 +102,12 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
     }
     try {
       setLoadingFunder(true)
+      setFunderFailed(false)
       const name = await fetchBankById(subcontractor.financed_by_bank_id)
       setFunderName(name)
     } catch (error) {
       console.error('Error loading funder:', error)
+      setFunderFailed(true)
     } finally {
       setLoadingFunder(false)
     }
@@ -169,6 +178,9 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
           </div>
 
           {/* Contract Information */}
+          {subcontractor.has_contract !== false && contractFailed && (
+            <InlineLoadError onRetry={() => { void loadContractData() }} />
+          )}
           {subcontractor.has_contract !== false && contractData && (
             <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
               <div className="flex items-center justify-between mb-3">
@@ -286,6 +298,7 @@ export const SubcontractorDetailsModal: React.FC<SubcontractorDetailsModalProps>
           )}
 
           {/* Financing Information */}
+          {funderFailed && <InlineLoadError onRetry={() => { void loadFunderInfo() }} />}
           {funderName && (
             <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
               <div className="flex items-center">

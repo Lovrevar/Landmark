@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import InlineLoadError from '../../../ui/InlineLoadError'
 import { useTranslation } from 'react-i18next'
 import { MilestoneFormData } from '../types'
 import { validateMilestonePercentagesForContract } from '../services/siteService'
@@ -44,6 +45,9 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
 
   const { t } = useTranslation()
   const [remainingPercentage, setRemainingPercentage] = useState(100)
+  // The cap defaults to 100 %. If the real figure failed to load, that default is not a limit
+  // anyone computed: say so instead of presenting it as the maximum (UI-4).
+  const [remainingFailed, setRemainingFailed] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const loadRemainingPercentage = useCallback(async () => {
@@ -53,8 +57,10 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
         editingMilestone?.id
       )
       setRemainingPercentage(validation.remainingPercentage)
+      setRemainingFailed(false)
     } catch (error) {
       console.error('Error loading remaining percentage:', error)
+      setRemainingFailed(true)
     }
   }, [contractId, editingMilestone?.id])
 
@@ -128,6 +134,8 @@ export const MilestoneFormModal: React.FC<MilestoneFormModalProps> = ({
               placeholder={t('supervision.milestone_form.description_placeholder')}
             />
           </FormField>
+
+          {remainingFailed && <InlineLoadError onRetry={() => { void loadRemainingPercentage() }} />}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField

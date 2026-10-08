@@ -21,11 +21,6 @@ looked, not because the module is clean.
   number are not localised. (Revenue per customer dividing by non-buyers was fixed on
   `fix/backlog-small-batch`, 2026-10-08: `buying_customers`.)
 
-### RETAIL-2 · Low · Contract form hides a failed supplier load
-- **Where:** `src/components/Retail/Projects/modals/ContractFormModal.tsx`. A failed load is
-  logged to the console and shows an empty dropdown.
-- **Fix direction:** an error state with retry, as in the three Retail modals already fixed.
-
 ### RETAIL-3 · Low · Milestones panel is a hand-rolled overlay
 - **Where:** `src/components/Retail/Projects/ProjectDetail.tsx`, `MilestoneList.tsx`.
 - **What happens:** role, label, focus trap and Escape were added, but there is still no portal,
@@ -33,6 +28,10 @@ looked, not because the module is clean.
 - **Fix direction:** `<Modal size="full">`.
 
 ## Resolved
+
+### RETAIL-2 · Low · Contract form hides a failed supplier load
+- Fixed on `fix/failed-loads-ui4` (2026-10-08) with the other Retail form lookups: an inline
+  error with retry under the dropdown.
 
 ### RETAIL-5 · Medium · The `/retail-sales` page cannot be reached from the menu
 - Fixed on `fix/figures-and-tic-export` (2026-10-08): the Retail menu's "Prodaje" opens `/retail-sales`, and the payments register

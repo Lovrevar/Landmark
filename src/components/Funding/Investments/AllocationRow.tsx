@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import InlineLoadError from '../../ui/InlineLoadError'
 import { ChevronDown, ChevronUp, Trash2, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Badge, LoadingSpinner } from '../../ui'
@@ -49,18 +50,21 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
   const { t, i18n } = useTranslation()
   const [invoicesExpanded, setInvoicesExpanded] = useState(false)
   const [invoices, setInvoices] = useState<AllocationInvoice[]>([])
+  const [invoicesFailed, setInvoicesFailed] = useState(false)
   const [invoicesLoading, setInvoicesLoading] = useState(false)
   const [invoicesFetched, setInvoicesFetched] = useState(false)
 
   const fetchInvoices = async () => {
     if (invoicesFetched) return
     setInvoicesLoading(true)
+    setInvoicesFailed(false)
     try {
       const mapped = await fetchAllocationInvoices(allocation.id)
       setInvoices(mapped)
       setInvoicesFetched(true)
     } catch (err) {
       console.error('Error fetching allocation invoices:', err)
+      setInvoicesFailed(true)
     } finally {
       setInvoicesLoading(false)
     }
@@ -223,6 +227,9 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                   <div className="p-4">
                     <LoadingSpinner message={t('funding.allocation_row.loading_invoices')} />
                   </div>
+                ) : invoicesFailed ? (
+                  // Not "no invoices": the list did not load (UI-4).
+                  <InlineLoadError className="px-4 py-3" onRetry={() => { void fetchInvoices() }} />
                 ) : invoices.length === 0 ? (
                   <p className="text-sm text-gray-500 dark:text-gray-400 px-4 py-3">
                     {t('funding.allocation_row.no_invoices')}

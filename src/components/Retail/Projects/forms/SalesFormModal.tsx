@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailContract, RetailProjectPhase } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
+import InlineLoadError from '../../../ui/InlineLoadError'
 
 interface RetailCustomer {
   id: string
@@ -28,6 +29,8 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
 }) => {
   const { t } = useTranslation()
   const [customers, setCustomers] = useState<RetailCustomer[]>([])
+  // A failed lookup is not an empty list: say so beside the control, with a retry (UI-4).
+  const [customersFailed, setCustomersFailed] = useState(false)
   const [formData, setFormData] = useState({
     customer_id: contract?.customer_id || '',
     contract_number: contract?.contract_number || '',
@@ -47,9 +50,11 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
 
   const loadCustomers = useCallback(async () => {
     try {
+      setCustomersFailed(false)
       const data = await retailProjectService.fetchCustomers()
       setCustomers(data)
     } catch (err) {
+      setCustomersFailed(true)
       console.error('Error loading customers:', err)
     }
   }, [])
@@ -167,6 +172,7 @@ export const SalesFormModal: React.FC<SalesFormModalProps> = ({
                   </option>
                 ))}
               </Select>
+              {customersFailed && <InlineLoadError message={t('common.list_load_error')} onRetry={() => { void loadCustomers() }} className="mt-1" />}
             </FormField>
 
             <FormField label={t('retail_projects.contract_form.contract_number_label')} required>

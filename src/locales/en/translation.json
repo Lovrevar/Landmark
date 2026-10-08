@@ -176,6 +176,7 @@
     "option_name_unavailable": "Name not loaded",
     "projects_load_error": "The project list could not be loaded",
     "users_load_error": "The user list could not be loaded",
+    "list_load_error": "The list could not be loaded",
     "generated": "Generated:",
     "pdf": {
       "confidential": "CONFIDENTIAL",

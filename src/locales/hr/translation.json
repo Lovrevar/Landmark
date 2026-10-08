@@ -176,6 +176,7 @@
     "option_name_unavailable": "Naziv nije učitan",
     "projects_load_error": "Popis projekata nije moguće učitati",
     "users_load_error": "Popis korisnika nije moguće učitati",
+    "list_load_error": "Popis nije moguće učitati",
     "generated": "Generirano:",
     "pdf": {
       "confidential": "POVJERLJIVO",
