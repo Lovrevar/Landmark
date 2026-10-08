@@ -4,6 +4,7 @@ import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Building2, Square, Ch
 import { CustomerWithApartments, CustomerCategory } from './types'
 import { Button } from '../../ui'
 import { formatEuroCompact, formatDate } from '../../../utils/formatters'
+import { unitPackageTotal } from '../utils/packageTotal'
 
 interface CustomerCardProps {
   customer: CustomerWithApartments
@@ -115,11 +116,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           <p className="text-xs font-semibold text-green-800 dark:text-green-200 mb-2">{t('customers.card.purchased_units')}</p>
           <div className="space-y-2">
             {customer.apartments.map((unit) => {
-              const apartmentPrice = (unit.type === 'apartment' ? (unit.price || 0) : 0)
-              const garagePrice = (unit.garage?.price || 0)
-              const repositoryPrice = (unit.repository?.price || 0)
-              const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
-              const totalPackage = apartmentPrice + garagePrice + repositoryPrice + standalonePrice
+              const totalPackage = unitPackageTotal(unit)
 
               return (
                 <div key={unit.id} className="bg-white dark:bg-gray-700 rounded p-2 space-y-1">
@@ -167,13 +164,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
 
           {(() => {
             const totalPaid = customer.apartments.reduce((sum, unit) => sum + (unit.total_paid || 0), 0)
-            const totalPrice = customer.apartments.reduce((sum, unit) => {
-              const aptPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
-              const garPrice = unit.garage?.price || 0
-              const repPrice = unit.repository?.price || 0
-              const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
-              return sum + aptPrice + garPrice + repPrice + standalonePrice
-            }, 0)
+            const totalPrice = customer.apartments.reduce((sum, unit) => sum + unitPackageTotal(unit), 0)
             const remaining = totalPrice - totalPaid
 
             return (

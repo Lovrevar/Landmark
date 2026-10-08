@@ -5,6 +5,7 @@ import { CustomerWithApartments } from '../types'
 import { Modal } from '../../../ui'
 import { groupCustomerPurchasesByProject } from '../../utils/customerUtils'
 import { formatEuroCompact, formatDate } from '../../../../utils/formatters'
+import { unitPackageTotal } from '../../utils/packageTotal'
 
 interface CustomerDetailModalProps {
   show: boolean
@@ -87,11 +88,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
                           <div className="space-y-3">
                             {units.map((unit) => {
-                              const apartmentPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
-                              const garagePrice = unit.garage?.price || 0
-                              const repositoryPrice = unit.repository?.price || 0
-                              const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
-                              const totalPackage = apartmentPrice + garagePrice + repositoryPrice + standalonePrice
+                              const totalPackage = unitPackageTotal(unit)
 
                               return (
                                 <div key={unit.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">

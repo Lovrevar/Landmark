@@ -14,13 +14,13 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
   the English file too; "investitor" and "banka" are used for the same party.
 - The Funding menu shows Plaćanja to the Investment role, which reads no payments (SEC-A10).
 
-### FUND-13 · Low · The TIC Excel export drops phases and classifications
-- **Where:** `ticImport.ts` reads `FAZA n` column groups into `LineItem.phases`; `ticExport.ts`
-  never writes them and `TICExportData` has no phase field.
-- **What happens:** exporting a phased TIC and importing it back silently returns an unphased one.
-  The round-trip test passes because its fixture is unphased.
-- **Fix direction:** add the columns to the export and a phased fixture to the test. The sheet
-  layout is a frozen contract, so re-check the importer when adding them.
+### FUND-13 · Low · The TIC Excel export drops classifications
+- **Where:** `ticExport.ts`. Phases are exported and re-imported since 2026-10-08
+  (`fix/figures-and-tic-export`, with a phased round-trip test). A line's `classification_id` is
+  still not written; on import it is re-derived from the row's name, so a classification the user
+  chose by hand for a renamed row is lost.
+- **Fix direction:** a classification column, read back by the importer. The sheet layout is a
+  frozen contract, so change both together.
 - Also: TIC messages are hard-coded Croatian.
 
 ### FUND-8 · Low · `recalculate_bank_credit_fields` ignores `disbursed_to_account`
@@ -44,8 +44,8 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
   supplier payments drawn from a credit are not listed.
 
 ### FUND-10 · Low · Investment projects screen
-- Budget is not gated on the TIC (a project without one shows €0, 0 % funded, High risk); the
-  "debt" list includes equity; opex and refinancing allocations are invisible.
+- The "debt" list includes equity; opex and refinancing allocations are invisible. (The budget
+  not being gated on the TIC was fixed on `fix/figures-and-tic-export`, 2026-10-08.)
 
 ### FUND-12 · Low · Allocation invoice list does not reconcile
 - It lists payments with `credit_allocation_id` only; `OUTGOING_BANK` drawdowns counted in the

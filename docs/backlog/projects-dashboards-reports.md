@@ -10,14 +10,6 @@ are in [README.md](./README.md).
 - **Where:** `General/Projects/index.tsx:117`.
 - **Fix direction:** `ErrorState` with `refetch`. Part of UI-4 in [ui.md](./ui.md).
 
-### GEN-5 · Low · Budget not gated on the TIC in three places
-- Director dashboard portfolio table, Investment dashboard portfolio value and PDF, Sales report.
-  A project without a TIC shows a €0 budget instead of "no budget set".
-
-### GEN-9 · Low · Director and Sales dashboards define sales differently
-- Director counts apartments only and uses contracted sale value; Sales counts all unit types and
-  uses cash collected. Needs one definition, or labels that say which is which.
-
 ### GEN-10 · Low · Supervision dashboard "paid" uses invoice `paid_amount`
 - Contrary to the rule that `contracts.budget_realized` is the only paid figure.
 
@@ -63,6 +55,15 @@ are in [README.md](./README.md).
   generators that print it.
 
 ## Resolved
+
+### GEN-5 · Low · Budget not gated on the TIC in three places
+- Fixed on `fix/figures-and-tic-export` (2026-10-08): `budgetIsSet` / `fetchBudgetedProjectIds`; the Director table, the
+  Investment dashboard's portfolio value and PDF, and the Sales report say "Budžet nije postavljen".
+
+### GEN-9 · Low · Director and Sales dashboards define sales differently
+- Decided 2026-10-08 to keep both figures and name them: the Director dashboard says
+  "Prodani stanovi" and "Ugovorena prodaja", the Sales dashboard "Naplaćeno od prodaje" and
+  "Stopa prodaje (sve jedinice)". Done on `fix/figures-and-tic-export` (2026-10-08).
 
 ### GEN-20 · Medium · Budget Control reports healthy CPI and SPI when there is nothing to measure
 - Fixed on `fix/audit-medium-findings` (2026-10-07): `calculateProjectEVM` returns `costAvailable`, and until something is

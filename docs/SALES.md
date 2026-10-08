@@ -8,6 +8,20 @@ Manages the real estate sales pipeline: projects, buildings, apartment/garage/st
 
 ---
 
+## The package total
+
+An apartment is sold as a package with its linked garages and storage units, but a `sales` row
+holds one price, and it is the apartment's. Every screen that puts a total beside "paid" takes it
+from `packageTotal` in `Sales/utils/packageTotal.ts` (decided 2026-10-08, SALES-6):
+
+- **sold:** `sales.sale_price` plus the list prices of the linked units;
+- **not sold:** list prices throughout.
+
+Used by the Sales project unit cards, the Apartments page and its payment history, and the
+Customers card, detail modal and per-project sums (`unitPackageTotal`). Do not add prices up in a
+component. `sales.total_paid` and `sales.remaining_amount` are a sale-time snapshot that nothing
+reads; "paid" is always the payments on the apartment's `OUTGOING_SALES` invoices.
+
 ## Sub-modules
 
 ### SalesProjects

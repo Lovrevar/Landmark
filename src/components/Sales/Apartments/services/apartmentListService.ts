@@ -27,6 +27,8 @@ export interface ApartmentListPage {
   apartments: ApartmentWithDetails[]
   totalCount: number
   apartmentPaymentTotals: Record<string, number>
+  /** Sale price by apartment id, for the sold ones — the package total starts from it. */
+  apartmentSalePrices: Record<string, number>
   linkedGarages: Record<string, LinkedUnit[]>
   linkedStorages: Record<string, LinkedUnit[]>
 }
@@ -71,6 +73,7 @@ export async function fetchApartmentListPage(params: ApartmentListParams): Promi
       apartments: [],
       totalCount: count ?? 0,
       apartmentPaymentTotals: {},
+      apartmentSalePrices: {},
       linkedGarages: {},
       linkedStorages: {},
     }
@@ -86,7 +89,7 @@ export async function fetchApartmentListPage(params: ApartmentListParams): Promi
     ),
   ]
 
-  const [{ data: projectsData }, { data: buildingsData }, { data: paymentsData }, { data: garageLinks }, { data: repositoryLinks }] = await Promise.all([
+  const [{ data: projectsData }, { data: buildingsData }, { data: paymentsData }, { data: garageLinks }, { data: repositoryLinks }, { data: salesData, error: salesError }] = await Promise.all([
     projectIds.length > 0
       ? supabase.from('projects').select('id, name').in('id', projectIds)
       : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
@@ -107,7 +110,16 @@ export async function fetchApartmentListPage(params: ApartmentListParams): Promi
       .from('apartment_repositories')
       .select('apartment_id, repository:repositories(id, number, size_m2, price, status)')
       .in('apartment_id', apartmentIds),
+    supabase.from('sales').select('apartment_id, sale_price').in('apartment_id', apartmentIds),
   ])
+  // Without the sale prices every sold package would fall back to list price: a wrong total, not
+  // a missing one. Fail the load instead.
+  if (salesError) throw salesError
+
+  const apartmentSalePrices: Record<string, number> = {}
+  for (const sale of (salesData || []) as Array<{ apartment_id: string | null; sale_price: number | string | null }>) {
+    if (sale.apartment_id) apartmentSalePrices[sale.apartment_id] = Number(sale.sale_price) || 0
+  }
 
   const aptPaymentTotals: Record<string, number> = {}
   if (paymentsData) {
@@ -171,6 +183,7 @@ export async function fetchApartmentListPage(params: ApartmentListParams): Promi
     apartments: apartmentsWithDetails,
     totalCount: count ?? 0,
     apartmentPaymentTotals: aptPaymentTotals,
+    apartmentSalePrices,
     linkedGarages: garagesMap,
     linkedStorages: storagesMap,
   }

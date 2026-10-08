@@ -220,6 +220,8 @@ export interface SalesData {
 
 export interface ProjectSalesReport {
   project: Project
+  /** False for a project with no TIC: `project.budget` is then not a budget and must not be shown. */
+  budget_set: boolean
   total_units: number
   sold_units: number
   available_units: number

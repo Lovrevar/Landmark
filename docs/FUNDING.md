@@ -498,6 +498,13 @@ plan. Nothing else writes one — the project form, the phase setup modal and th
 budgets modal all display budget read-only, and a project with no TIC reads **"budget not set"**
 rather than showing a zero that looks like a real figure.
 
+A screen that prints a project's budget asks `budgetIsSet(lineItems)` (`TIC/utils/ticBudget.ts`), or
+`fetchBudgetedProjectIds()` (`Supervision/SiteManagement/services/siteService.ts`) for a whole
+list — never `projects.budget > 0`, which is true for a project whose figure was typed or seeded
+without a TIC. The Director and Investment dashboards, the Sales report and Investment projects
+use it; on Investment projects the shares of budget and the funding status become "—", the
+progress bar is hidden and risk rests on the schedule alone (GEN-5, FUND-10).
+
 Saving `tic_cost_structures` fires `sync_project_from_tic(project_id)`, which derives:
 
 | Target | From |
@@ -591,6 +598,7 @@ zeroed split reads as "planned at nothing", which is not what "not attributed to
 - `exportToExcel(data: TICExportData)` — async; writes a real `.xlsx` with two sheets (`INVESTICIJA`, `GRAĐENJE`) laid out in the source workbook's shape, so an export re-imports cleanly (covered by `ticExport.test.ts`)
 - `exportToPDF(data: TICExportData)` — two-page landscape A4 PDF, one page per tab; row height is derived from the row count so a long Građenje breakdown is not clipped
 - `buildInvestmentSheet(data)` / `buildConstructionSheet(data)` — pure AOA builders, exported for the round-trip test
+- A phased TIC is exported with one `FAZA n` column group per phase (own funds / % / credit / %) to the right of the project block, in the shape `ticImport.detectPhaseColumns` reads; an unphased TIC keeps the six-column layout. The phased round-trip is pinned in `ticExport.test.ts` (FUND-13). Classifications are still not exported.
 - **Depends on:** `@e965/xlsx` (dynamic import), jsPDF, activityLog
 - _Note: this previously emitted an HTML table blob named `.xls`, which the docs already described as `.xlsx`; it now genuinely is `.xlsx`._
 

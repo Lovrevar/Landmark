@@ -212,9 +212,11 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 - Clickable project table with budget, expenses, revenue, profit margin, and completion %
 - The project cell carries the project-category badge (ProjectCategoryBadge) next to the name; `directorService` selects `category` for it
 - Props: `ProjectStats[]`
+- The budget column reads "Budžet nije postavljen" where `budget_set` is false (no TIC), never €0 (GEN-5)
 
 ### InvestmentSummaryCards.tsx
 - 4-card grid showing total portfolio value, total debt, available credit, and utilization
+- Portfolio value sums only projects whose budget is set (a TIC that totals above zero — `fetchBudgetedProjectIds`); the card's subtitle says how many projects were left out, and the PDF prints "Budžet nije postavljen" for them (GEN-5)
 - Props: `FinancialSummary`
 
 ### InvestmentCreditsTable.tsx

@@ -134,7 +134,7 @@ export async function generateSalesReportPDF(
       [rowLabel('reports.sales.location'), projectReport.project.location],
       [rowLabel('common.status'), statusLabel(PROJECT_STATUS, projectReport.project.status, t)],
       [rowLabel('reports.sales.start_date_label'), formatDate(projectReport.project.start_date, lang)],
-      [rowLabel('reports.sales.budget'), pdfMoney(projectReport.project.budget)],
+      [rowLabel('reports.sales.budget'), projectReport.budget_set ? pdfMoney(projectReport.project.budget) : t('common.budget_not_set')],
       [rowLabel('reports.sales.total_units_stat'), projectReport.total_units.toString()],
       [rowLabel('reports.sales.units_sold_label'), `${projectReport.sold_units} (${projectReport.sales_rate.toFixed(1)}%)`],
       [rowLabel('reports.general.available_units'), projectReport.available_units.toString()],

@@ -159,7 +159,7 @@ const AccountingCompanies: React.FC = () => {
                   {company.financing_received !== null && company.financing_repaid !== null &&
                     (company.financing_received !== 0 || company.financing_repaid !== 0) && (
                     <div className="flex justify-between gap-2 text-sm mt-1">
-                      <span className="text-gray-600 dark:text-gray-400">{t('companies.card.financing_label')}</span>
+                      <span className="text-gray-600 dark:text-gray-400">{t('common.financing_received_repaid')}</span>
                       <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                         {formatEuro(company.financing_received)} / {formatEuro(company.financing_repaid)}
                       </span>

@@ -25,6 +25,14 @@ export interface ClassificationTotals {
 /** A line's planned amount: own funds plus credit. The split matters to investors, not to budgets. */
 export const lineItemTotal = (item: LineItem): number => item.vlastita + item.kreditna
 
+/**
+ * Whether a project has a planned budget at all. The TIC is its only writer, so a project with no
+ * TIC (or an empty one) has none — whatever `projects.budget` happens to hold. Screens must then
+ * say "budget not set", never print €0 or a stale figure (GEN-5).
+ */
+export const budgetIsSet = (lineItems: LineItem[] | null | undefined): boolean =>
+  !!lineItems && ticGrandTotal(lineItems) > 0
+
 /** The TIC grand total — the "UKUPNO:" figure, and what a project's budget syncs to. */
 export const ticGrandTotal = (lineItems: LineItem[]): number => {
   const { vlastita, kreditna } = calculateTotals(lineItems)

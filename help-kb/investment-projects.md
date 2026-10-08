@@ -16,6 +16,6 @@ Kartica projekta pokazuje:
 
 Četiri pokazatelja po projektu: **Dionički kapital** i **Dužničko financiranje** (iznos i postotak od budžeta), **Prosječna kamatna stopa** (ponderirani prosjek) te **Status financiranja** (postotak i oznaka **Potpuno financirano** ili **Potrebno financiranje**).
 
-Traka **Ukupni napredak financiranja** pokazuje koliko budžeta pokrivaju kapital i dug zajedno. Budžet dolazi iz [[tic]] projekta. Ispod su **Financijeri** — prve tri banke i oznaka **+N više** ako ih ima više.
+Traka **Ukupni napredak financiranja** pokazuje koliko budžeta pokrivaju kapital i dug zajedno. Budžet dolazi iz [[tic]] projekta. Projekt bez TIC-a nema budžet: umjesto iznosa piše **Budžet nije postavljen**, postoci od budžeta i status financiranja prikazuju „—”, traka napretka se ne prikazuje, a rizik se procjenjuje samo prema roku. Ispod su **Financijeri** — prve tri banke i oznaka **+N više** ako ih ima više.
 
 **Pregled detalja** otvara prozor s pregledom financiranja po bankama, analizom poluge i prinosa, vremenskim okvirom, faktorima rizika i iskorištenošću izvora financiranja.

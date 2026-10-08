@@ -584,7 +584,7 @@ export const generateInvestmentReportPDF = async (
       doc.setFontSize(8)
       doc.setTextColor(100, 100, 100)
       doc.text(
-        `${project.location} | ${rowLabel(t, 'common.budget')} ${pdfMoney(project.budget)} | ${statusLabel(PROJECT_STATUS, project.status, t)}`,
+        `${project.location} | ${rowLabel(t, 'common.budget')} ${financialSummary.unbudgeted_project_ids.includes(project.id) ? t('common.budget_not_set') : pdfMoney(project.budget)} | ${statusLabel(PROJECT_STATUS, project.status, t)}`,
         27,
         yPos + 4
       )

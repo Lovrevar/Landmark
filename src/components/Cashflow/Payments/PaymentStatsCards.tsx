@@ -4,8 +4,7 @@ import { CreditCard, TrendingUp, TrendingDown, Scale, Receipt } from 'lucide-rea
 import { Payment } from './types'
 import { StatCard, StatGrid } from '../../ui'
 import { formatEuro } from '../../../utils/formatters'
-import { paymentDirection } from '../services/invoiceHelpers'
-import { paymentTotalsByDirection, formatSignedEuro } from '../services/paymentTotals'
+import { paymentTotalsByCategory, formatSignedEuro } from '../services/paymentTotals'
 
 interface PaymentStatsCardsProps {
   /** The **filtered** list — the rows the table below is showing. */
@@ -23,12 +22,16 @@ interface PaymentStatsCardsProps {
  * ignored the filters entirely, so filtering to one company left the totals on the whole book.
  *
  * VAT keeps its own two cards: VAT is a per-invoice share of each payment, not a direction.
+ *
+ * Income, expense and net are operating money only. Credit principal drawn and repaid is
+ * financing — neither income nor expense — and has its own line under the cards, shown when the
+ * filtered list holds any (CASH-29).
  */
 const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
   const { t } = useTranslation()
 
-  const totals = paymentTotalsByDirection(
-    payments.map(p => ({ amount: p.amount, direction: paymentDirection(p.accounting_invoices?.invoice_type) }))
+  const { operating: totals, financing } = paymentTotalsByCategory(
+    payments.map(p => ({ amount: p.amount, invoiceType: p.accounting_invoices?.invoice_type }))
   )
 
   // The VAT actually settled by a payment is the invoice's VAT in the same proportion as the
@@ -42,10 +45,11 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
     }, 0)
 
   return (
+    <div>
     <StatGrid columns={6}>
       <StatCard
         label={t('payments.stats.total_count')}
-        value={totals.count}
+        value={payments.length}
         icon={CreditCard}
         color="white"
       />
@@ -85,6 +89,15 @@ const PaymentStatsCards: React.FC<PaymentStatsCardsProps> = ({ payments }) => {
         color="green"
       />
     </StatGrid>
+    {financing.count > 0 && (
+      <p className="mt-2 flex flex-wrap justify-end gap-x-2 text-sm">
+        <span className="text-gray-600 dark:text-gray-400">{t('common.financing_received_repaid')}</span>
+        <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
+          {formatEuro(financing.inflow)} / {formatEuro(financing.outflow)}
+        </span>
+      </p>
+    )}
+    </div>
   )
 }
 

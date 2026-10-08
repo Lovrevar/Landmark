@@ -206,7 +206,9 @@
       "Studeni",
       "Prosinac"
     ],
-    "no_results_description": "Očistite pretragu ili promijenite filtere."
+    "no_results_description": "Očistite pretragu ili promijenite filtere.",
+    "financing_received_repaid": "Financiranje (primljeno / otplaćeno):",
+    "budget_not_set": "Budžet nije postavljen"
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -1049,8 +1051,7 @@
       "revenue_label": "Promet:",
       "profit_loss_label": "Dobit/Gubitak:",
       "unpaid_income": "Neplaćeno (prihod):",
-      "unpaid_expense": "Neplaćeno (rashod):",
-      "financing_label": "Financiranje (primljeno / otplaćeno):"
+      "unpaid_expense": "Neplaćeno (rashod):"
     },
     "table": {
       "name": "Naziv",
@@ -3832,12 +3833,12 @@
       "last_updated": "Zadnje ažuriranje",
       "sales_performance": "Prodajni učinak",
       "view_details": "Pogledaj detalje",
-      "sold_units": "Prodane jedinice",
+      "sold_units": "Prodani stanovi",
       "reserved": "Rezervirano",
       "available": "Dostupno",
-      "sales_rate": "Stopa prodaje",
-      "total_sales_revenue": "Ukupni prihod od prodaje",
-      "avg_price_per_unit": "Prosječna cijena po jedinici",
+      "sales_rate": "Stopa prodaje stanova",
+      "total_sales_revenue": "Ugovorena prodaja",
+      "avg_price_per_unit": "Prosječna ugovorena cijena",
       "monthly_sales": "Prodaja ({{month}})",
       "units": "jedinica",
       "construction_site": "Gradnja i upravljanje gradilištem",
@@ -3921,7 +3922,7 @@
       "no_projects": "Nema dostupnih projekata",
       "credit_utilization": "Iskorištenost kredita",
       "total_credit_facilities": "Ukupni krediti",
-      "revenue_amount": "{{amount}} prihoda"
+      "revenue_amount": "{{amount}} ugovoreno"
     },
     "accounting": {
       "title": "Računovodstvena nadzorna ploča",
@@ -3967,9 +3968,9 @@
       "title": "Prodajna nadzorna ploča",
       "subtitle": "Pregled prodajnog učinka i metrika",
       "loading": "Učitavanje prodajne nadzorne ploče...",
-      "total_revenue": "Ukupni prihod",
+      "total_revenue": "Naplaćeno od prodaje",
       "units_sold": "prodanih jedinica",
-      "sales_rate": "Stopa prodaje",
+      "sales_rate": "Stopa prodaje (sve jedinice)",
       "avg_sale_price": "Prosječna cijena prodaje",
       "per_unit": "Po jedinici",
       "active_leads": "Aktivni potencijalni kupci",
@@ -4115,7 +4116,8 @@
           "description_few": "Rok korištenja za {{name}} istječe za {{count}} dana",
           "description_other": "Rok korištenja za {{name}} istječe za {{count}} dana"
         }
-      }
+      },
+      "projects_without_budget": "Projekti bez budžeta: {{count}}"
     },
     "retail": {
       "title": "Retail nadzorna ploča",

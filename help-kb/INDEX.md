@@ -52,7 +52,7 @@ Files live alongside this index; each is self-contained markdown with frontmatte
 - [retail-projects](retail-projects.md) — **Retail projekti** — Projekti razvoja zemljišta s tabovima Pregled, Čestice, Kupci, Prodaja, Računi.
 - [retail-land-plots](retail-land-plots.md) — **Zemljišne čestice** — Popis kupljenih parcela s površinom, ulaganjima i statusom plaćanja.
 - [retail-customers](retail-customers.md) — **Retail kupci** — Kupci zemljišnih čestica, zaseban modul od kupaca stanova.
-- [retail-sales](retail-sales.md) — **Retail prodaje i plaćanja kupaca** — Registar plaćanja kupaca čestica (stavka izbornika Prodaje) i stranica prodaja čestica.
+- [retail-sales](retail-sales.md) — **Retail prodaje i plaćanja kupaca** — Prodaja čestica kupcima (stavka Prodaje) i registar plaćanja kupaca (stavka Plaćanja).
 - [retail-invoices](retail-invoices.md) — **Računi (Retail)** — Računi retail strane s filterima tipa i odobrenja; CSV izvoz.
 - [retail-reports](retail-reports.md) — **Retail izvještaji** — PDF izvještaji za retail portfelj s tabovima Pregled/Projekti/Prodaja/Troškovi.
 

@@ -15,6 +15,7 @@ import { ApartmentDetailsModal } from './modals/ApartmentDetailsModal'
 import { PaymentHistoryModal } from './modals/PaymentHistoryModal'
 import { LinkUnitsModal } from './modals/LinkUnitsModal'
 import { formatEuroRounded } from '../../../utils/formatters'
+import { packageTotal } from '../utils/packageTotal'
 
 const ApartmentManagement: React.FC = () => {
   const { t } = useTranslation()
@@ -26,6 +27,7 @@ const ApartmentManagement: React.FC = () => {
     projects,
     buildings,
     apartmentPaymentTotals,
+    apartmentSalePrices,
     linkedGarages,
     linkedStorages,
     loading,
@@ -279,10 +281,12 @@ const ApartmentManagement: React.FC = () => {
             // invoices (invoices have no garage/repository linkage), so the
             // apartment payment total already covers any linked garage/storage
             const totalPaid = apartmentPaymentTotals[apartment.id] || 0
-
-            const garagesTotalPrice = aptLinkedGarages.reduce((sum, g) => sum + (g.price || 0), 0)
-            const storagesTotalPrice = aptLinkedStorages.reduce((sum, s) => sum + (s.price || 0), 0)
-            const totalPrice = apartment.price + garagesTotalPrice + storagesTotalPrice
+            // The same total as on Sales Projects and Customers: the sale price once sold (SALES-6).
+            const totalPrice = packageTotal({
+              listPrice: apartment.price,
+              salePrice: apartmentSalePrices[apartment.id],
+              linkedPrices: [...aptLinkedGarages, ...aptLinkedStorages].map(linked => linked.price),
+            })
             const overallPercentage = totalPrice > 0 ? (totalPaid / totalPrice) * 100 : 0
 
             return (
@@ -492,6 +496,7 @@ const ApartmentManagement: React.FC = () => {
         payments={payments}
         linkedGarages={selectedApartment ? (linkedGarages[selectedApartment.id] || []) : []}
         linkedStorages={selectedApartment ? (linkedStorages[selectedApartment.id] || []) : []}
+        salePrice={selectedApartment ? apartmentSalePrices[selectedApartment.id] : undefined}
       />
 
       <LinkUnitsModal

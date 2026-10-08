@@ -186,7 +186,7 @@ const SalesReports: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.location')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.project.location}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium text-gray-900 dark:text-white">{formatDate(projectReport.project.start_date, i18n.language)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">{formatEuro(projectReport.project.budget)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.budget_set ? formatEuro(projectReport.project.budget) : t('common.budget_not_set')}</span></div>
                 </div>
               </div>
 

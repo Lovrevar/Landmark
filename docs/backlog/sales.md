@@ -34,15 +34,6 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
   title "Projekti".
 - Icon-only buttons without labels in `BuildingsGrid` and `UnitsGrid`; both hand-build money (UI-1).
 
-### SALES-6 · Medium · The package total is still computed per screen
-- **Where:** Sales Projects cards, Apartments page, Customers, Sales dashboard, Sales Payments.
-- **What happens:** the "paid" side is fixed: every apartment-level screen counts payments on the
-  apartment's `OUTGOING_SALES` invoices. The denominator is not: some screens use list price,
-  others `sale_price`, so the same apartment can show different totals and remaining amounts.
-- **Fix direction:** one shared helper for the package total; drop or derive the stale
-  `sales.total_paid` / `remaining_amount` columns (documented as a sale-time snapshot).
-- **ERP:** if buyer payments come from the ERP (Q14), the paid basis already matches.
-
 ### SALES-10 · Low · No sale cancellation flow
 - **What happens:** nothing updates or deletes `sales` rows, so a reverted sale still counts in
   dashboards and reports. Filed Low, but it distorts figures for as long as the row exists.
@@ -53,7 +44,8 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 - Duplicates are possible through bulk create, single create and within-file garage imports.
 
 ### SALES-8 · Low · Customers module keeps only one garage and one storage per apartment
-- Customer totals also use list prices instead of `sale_price` (same root as SALES-6).
+- A second garage or storage unit linked to the apartment is neither shown nor counted in the
+  package total on the Customers screens.
 
 ### SALES-13 · Low · Delete dialog on the Apartments page is half Croatian, half English
 - **Where:** `src/components/Sales/Apartments/index.tsx`. Title is a literal "Potvrda brisanja",
@@ -66,6 +58,14 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 - **Fix direction:** `formatEuro` / `formatEuroRounded`. Part of UI-1 in [ui.md](./ui.md).
 
 ## Resolved
+
+### SALES-6 · Medium · The package total is still computed per screen
+- Decided 2026-10-08: a sold package totals its sale price plus the list prices of the linked
+  garages and storage units; an unsold one, list prices throughout. `packageTotal` in
+  `Sales/utils/packageTotal.ts` is the one implementation, used by the Sales project cards, the
+  Apartments page and its payment history, and the Customers card, detail modal and per-project
+  sums (`fix/figures-and-tic-export`). The stale `sales.total_paid` / `remaining_amount` columns
+  are still there, unread by any screen; dropping them needs a migration.
 
 ### SALES-15 · Low · Sales project and building grids have no empty state
 - Fixed on `feat/user-guidance-phase-2` (2026-10-06): both grids render `EmptyState` with a

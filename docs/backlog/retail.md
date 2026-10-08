@@ -8,11 +8,6 @@ looked, not because the module is clean.
 
 ## Open
 
-### RETAIL-5 · Medium · The `/retail-sales` page cannot be reached from the menu
-- **Check:** Confirmed (`Common/Layout.tsx:213`: the "Prodaje" item goes to `/retail-sales-payments`)
-- **What happens:** the page exists and works by URL only.
-- **Fix direction:** a decision: link it or remove it. The help article says how to reach both.
-
 ### RETAIL-6 · Low · Retail strings
 - **Check:** Code reading
 - English in the Croatian file: retail phase and contract statuses, "Deadline", "Milestones
@@ -39,6 +34,10 @@ looked, not because the module is clean.
 - **Fix direction:** `<Modal size="full">`.
 
 ## Resolved
+
+### RETAIL-5 · Medium · The `/retail-sales` page cannot be reached from the menu
+- Fixed on `fix/figures-and-tic-export` (2026-10-08): the Retail menu's "Prodaje" opens `/retail-sales`, and the payments register
+  has its own item "Plaćanja".
 
 ### RETAIL-4 · Medium · Approving a retail invoice is not role-gated and fails silently
 - Fixed on `fix/audit-medium-findings` (2026-10-07): the update checks `assertRowsAffected`, the tick is disabled unless

@@ -15,6 +15,7 @@ import { UNIT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDi
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { Button, Badge } from '../../ui'
 import { filterUnitsByStatus, getSelectableUnitIds, getUnitsOfType } from './unitFilters'
+import { packageTotal } from '../utils/packageTotal'
 
 interface UnitsGridProps {
   building: BuildingWithUnits
@@ -176,10 +177,11 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
           const isSelected = selectedUnitIds.includes(unit.id)
 
-          const apartmentPrice = unit.price || 0
-          const garagesPrice = linkedGarages.reduce((sum: number, g: { price: number }) => sum + (g?.price || 0), 0)
-          const repositoriesPrice = linkedRepositories.reduce((sum: number, r: { price: number }) => sum + (r?.price || 0), 0)
-          const totalPackagePrice = apartmentPrice + garagesPrice + repositoriesPrice
+          const totalPackagePrice = packageTotal({
+            listPrice: unit.price,
+            salePrice: unit.sale_info?.sale_price,
+            linkedPrices: [...linkedGarages, ...linkedRepositories].map(linked => linked?.price),
+          })
           const hasLinkedUnits = linkedGarages.length > 0 || linkedRepositories.length > 0
 
           return (

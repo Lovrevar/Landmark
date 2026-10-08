@@ -1,4 +1,5 @@
-import type { PaymentDirection } from './invoiceHelpers'
+import { paymentDirection, type PaymentDirection } from './invoiceHelpers'
+import { invoiceCashCategory } from '../../../utils/invoiceCashDirection'
 import { formatEuro } from '../../../utils/formatters'
 
 /**
@@ -56,6 +57,27 @@ export function paymentTotalsByDirection(rows: readonly TotalsRow[]): PaymentTot
     net: (inflowCents - outflowCents) / 100,
     count: rows.length,
   }
+}
+
+interface TypedRow {
+  amount: number | string | null | undefined
+  invoiceType: string | null | undefined
+}
+
+/**
+ * The same sums, kept apart by what the money is: `operating` is income and expense, `financing`
+ * is credit principal drawn and repaid, which is neither (CASH-7).
+ *
+ * The Cashflow payments cards summed by direction alone, so a drawdown sat in "Ukupno Prihod" and
+ * a principal repayment in "Ukupno Rashod" above rows the table labels as financing (CASH-29).
+ * Credit fees are an operating cost and stay in `operating`.
+ */
+export function paymentTotalsByCategory(rows: readonly TypedRow[]): { operating: PaymentTotals; financing: PaymentTotals } {
+  const split: Record<'operating' | 'financing', TotalsRow[]> = { operating: [], financing: [] }
+  for (const row of rows) {
+    split[invoiceCashCategory(row.invoiceType)].push({ amount: row.amount, direction: paymentDirection(row.invoiceType) })
+  }
+  return { operating: paymentTotalsByDirection(split.operating), financing: paymentTotalsByDirection(split.financing) }
 }
 
 /**

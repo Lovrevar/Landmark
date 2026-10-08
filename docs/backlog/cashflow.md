@@ -1,7 +1,7 @@
 # Backlog — Cashflow
 
 Invoices, payments, companies, bank accounts, loans, cesija and kompenzacija. Ids: `CASH-n` (next
-free: `CASH-30`). Entry format and rules are in [README.md](./README.md).
+free: `CASH-31`). Entry format and rules are in [README.md](./README.md).
 
 Phase 5 of the ERP integration removes in-app invoice and payment creation. Each entry says how
 that changes it; do not build new authoring UI here without reading
@@ -9,15 +9,14 @@ that changes it; do not build new authoring UI here without reading
 
 ## Open
 
-### CASH-29 · Medium · Cashflow payments totals count credit principal as income and expense
-- **Check:** Code reading (2026-10-07)
-- **Where:** Cashflow → Plaćanja: the cards "Ukupno Prihod" / "Ukupno Rashod" / "Neto" and the
-  "Filtrirano" line (`paymentTotalsByDirection`).
-- **What happens:** they sum by direction, so a credit drawdown is in "Prihod" and a principal
-  repayment in "Rashod", against the CASH-7 decision. The rows themselves are now labelled as
-  financing (FUND-17), so the cards disagree with the table under them.
-- **Fix direction:** split the totals by `invoiceCashCategory`, as the Companies cards do, or
-  rename the cards to "Priljev" / "Odljev". Changes figures: show the accountant first.
+### CASH-30 · Low · Payments table cuts the last digits of the amount
+- **Check:** Confirmed (browser, 1440px wide, 2026-10-08)
+- **Where:** Cashflow → Plaćanja, the "Iznos" column beside the sticky "Akcije" cell
+  (`Cashflow/Payments/PaymentTable.tsx`, `ui/Table.tsx`).
+- **What happens:** with every column shown, "€145.000,00" reads "€145.00(": the sticky cell
+  covers the end of the amount.
+- **Fix direction:** `whitespace-nowrap` and room for the amount, or let the table scroll before
+  the sticky cell overlaps. Same family as CASH-17.
 
 ### CASH-25 · Low · Payment detail view shows the wrong direction cues
 - **Check:** Code reading
@@ -123,6 +122,10 @@ These turn into ERP work or disappear in phase 5. Do not fix them in the app.
   delete for non-Directors (SEC-A7): the forms go and writes are locked to the service role.
 
 ## Resolved
+
+### CASH-29 · Medium · Cashflow payments totals count credit principal as income and expense
+- Fixed on `fix/figures-and-tic-export` (2026-10-08): `paymentTotalsByCategory` keeps credit principal out of Prihod / Rashod /
+  Neto; the cards and the "Filtrirano" line show it as "Financiranje (primljeno / otplaćeno)".
 
 ### CASH-24 · Medium · Calendar "Neplaćeno" card leaves out partly paid invoices
 - Fixed on `fix/audit-medium-findings` (2026-10-07): the month figures moved to `Calendar/utils/monthStats.ts`, where every

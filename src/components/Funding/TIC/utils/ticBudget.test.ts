@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   totalsByClassification, ticGrandTotal, remainingFromTIC, lineItemTotal,
   phaseTotals, budgetMatrix, phaseClassificationTotals,
-  phaseSplitCheck, hasPhaseSplitMismatch, ticPhaseCount, normalizePhaseNumbers
+  phaseSplitCheck, hasPhaseSplitMismatch, ticPhaseCount, normalizePhaseNumbers,
+  budgetIsSet,
 } from './ticBudget'
 import { calculateTotals, LineItem } from './ticFormatters'
 
@@ -425,5 +426,20 @@ describe('normalizePhaseNumbers', () => {
       { name: 'a', vlastita: 100, kreditna: 0, phases: [ph(2, 100, 0)] },
     ])
     expect('phases' in fixed[0]).toBe(false)
+  })
+})
+
+describe('budgetIsSet', () => {
+  // The TIC is the only writer of planned budget. Without one a project has no budget, whatever
+  // `projects.budget` holds — the demo seeds a figure there directly (GEN-5).
+  it('is false with no TIC, or one that totals nothing', () => {
+    expect(budgetIsSet(undefined)).toBe(false)
+    expect(budgetIsSet(null)).toBe(false)
+    expect(budgetIsSet([])).toBe(false)
+    expect(budgetIsSet([{ name: 'Građenje', vlastita: 0, kreditna: 0 }])).toBe(false)
+  })
+
+  it('is true once the TIC carries any amount', () => {
+    expect(budgetIsSet([{ name: 'Građenje', vlastita: 0, kreditna: 1 }])).toBe(true)
   })
 })

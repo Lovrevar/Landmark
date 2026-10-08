@@ -203,7 +203,9 @@
       "November",
       "December"
     ],
-    "no_results_description": "Clear the search or change the filters."
+    "no_results_description": "Clear the search or change the filters.",
+    "financing_received_repaid": "Financing (received / repaid):",
+    "budget_not_set": "Budget not set"
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -1046,8 +1048,7 @@
       "revenue_label": "Revenue:",
       "profit_loss_label": "Profit/Loss:",
       "unpaid_income": "Unpaid (income):",
-      "unpaid_expense": "Unpaid (expense):",
-      "financing_label": "Financing (received / repaid):"
+      "unpaid_expense": "Unpaid (expense):"
     },
     "table": {
       "name": "Name",
@@ -3822,12 +3823,12 @@
       "last_updated": "Last updated",
       "sales_performance": "Sales Performance",
       "view_details": "View Details",
-      "sold_units": "Sold Units",
+      "sold_units": "Apartments sold",
       "reserved": "Reserved",
       "available": "Available",
-      "sales_rate": "Sales Rate",
-      "total_sales_revenue": "Total Sales Revenue",
-      "avg_price_per_unit": "Avg Price per Unit",
+      "sales_rate": "Apartment sales rate",
+      "total_sales_revenue": "Contracted sales",
+      "avg_price_per_unit": "Avg contracted price",
       "monthly_sales": "Monthly Sales ({{month}})",
       "units": "units",
       "construction_site": "Construction & Site Management",
@@ -3908,7 +3909,7 @@
       "no_projects": "No projects available",
       "credit_utilization": "Credit Utilization",
       "total_credit_facilities": "Total Credit",
-      "revenue_amount": "{{amount}} revenue"
+      "revenue_amount": "{{amount}} contracted"
     },
     "accounting": {
       "title": "Accounting Dashboard",
@@ -3954,9 +3955,9 @@
       "title": "Sales Dashboard",
       "subtitle": "Overview of sales performance and metrics",
       "loading": "Loading sales dashboard...",
-      "total_revenue": "Total Revenue",
+      "total_revenue": "Collected from sales",
       "units_sold": "units sold",
-      "sales_rate": "Sales Rate",
+      "sales_rate": "Sales rate (all units)",
       "avg_sale_price": "Avg Sale Price",
       "per_unit": "Per unit",
       "active_leads": "Active Leads",
@@ -4097,7 +4098,8 @@
           "description_one": "{{name}} usage expires in {{count}} day",
           "description_other": "{{name}} usage expires in {{count}} days"
         }
-      }
+      },
+      "projects_without_budget": "Projects without a budget: {{count}}"
     },
     "retail": {
       "title": "Retail Dashboard",

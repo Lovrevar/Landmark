@@ -1,9 +1,11 @@
 import { CustomerWithApartments } from '../Customers/types'
+import { unitPackageTotal } from './packageTotal'
 
 type UnitItem = {
   id: string
   type?: string
   price?: number
+  sale_price?: number
   project_name?: string
   total_paid?: number
   garage?: { price: number; number: string } | null
@@ -38,13 +40,8 @@ export function groupCustomerPurchasesByProject(customer: CustomerWithApartments
 
   const result: Record<string, ProjectGroup> = {}
   for (const [projectName, units] of Object.entries(groups)) {
-    const projectTotal = units.reduce((sum: number, u: UnitItem) => {
-      const aptPrice = u.type === 'apartment' ? (u.price || 0) : 0
-      const garPrice = u.garage?.price || 0
-      const repPrice = u.repository?.price || 0
-      const standalonePrice = (u.type === 'garage' || u.type === 'repository') ? (u.price || 0) : 0
-      return sum + aptPrice + garPrice + repPrice + standalonePrice
-    }, 0)
+    // The shared package total, so the per-project sum agrees with the rows under it (SALES-6).
+    const projectTotal = units.reduce((sum: number, u: UnitItem) => sum + unitPackageTotal(u), 0)
     const projectPaid = units.reduce((sum: number, u: UnitItem) => sum + (u.total_paid || 0), 0)
     const projectRemaining = projectTotal - projectPaid
     result[projectName] = { units, projectTotal, projectPaid, projectRemaining }
