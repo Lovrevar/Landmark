@@ -122,7 +122,7 @@ export async function toggleInvoiceApproval(invoiceId: string, currentApproved: 
   if (error) throw error
   assertRowsAffected(data)
 
-  logActivity({ action: 'invoice.approve', entity: 'invoice', entityId: invoiceId, metadata: { severity: 'high', approved: !currentApproved } })
+  logActivity({ action: 'invoice.approve', entity: 'invoice', entityId: invoiceId, severity: 'high', metadata: { approved: !currentApproved } })
 }
 
 const SHEET_NAME = 'Računi'

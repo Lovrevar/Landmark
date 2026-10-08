@@ -753,6 +753,8 @@
       "no_payments": "Nema pronađenih plaćanja",
       "expense": "RASHOD",
       "income": "PRIHOD",
+      "credit_drawdown": "ISPLATA KREDITA",
+      "principal_repayment": "OTPLATA GLAVNICE",
       "no_payments_description": "Ovdje se prikazuju plaćanja evidentirana po računima. Dodajte prvo gumbom „Novo plaćanje”."
     },
     "stats": {
@@ -4620,6 +4622,7 @@
     "date_to": "Datum do",
     "approve_title": "Klikni za odobravanje",
     "approve_title_cancel": "Odobreno - klikni za poništenje",
+    "approve_title_forbidden": "Odobravati mogu samo uloge Director i Accounting",
     "filter": {
       "all_types": "Svi tipovi",
       "incoming": "Ulazni",
@@ -4639,6 +4642,10 @@
       "outgoing_sales": "Izlazni - Prodaja",
       "outgoing_supplier": "Izlazni - Dobavljač",
       "incoming_investment": "Ulazni - Investicija"
+    },
+    "errors": {
+      "load_failed": "Učitavanje retail računa nije uspjelo",
+      "approval_failed": "Ažuriranje statusa odobrenja računa nije uspjelo"
     }
   },
   "retail_sales": {
@@ -4726,6 +4733,7 @@
     "spi_bad": "U zaostatku ✗",
     "no_schedule": "Nema faza s datumima početka i završetka",
     "no_forecast": "Nema prognoze: CPI je 0 (trošak bez ostvarene vrijednosti)",
+    "no_cost": "Još nema plaćenih troškova",
     "budget_chart_title": "Kontrola proračuna",
     "evm_indices_title": "EVM indeksi performansi",
     "evm_metrics_title": "EVM metrike performansi",
@@ -4745,7 +4753,7 @@
     "evm_indices_caption": "Ostvarena vrijednost temelji se na dovršenim fazama ugovora.",
     "hints": {
       "cpi_title": "CPI – indeks izvršenja troška",
-      "cpi_body": "Ostvarena vrijednost radova podijeljena s plaćenim. 1,00 ili više: troši se u okviru plana (zeleno); 0,90–0,99: malo iznad (žuto); ispod 0,90: iznad proračuna (crveno). Dok ništa nije plaćeno, iznosi 1,00.",
+      "cpi_body": "Ostvarena vrijednost radova podijeljena s plaćenim. 1,00 ili više: troši se u okviru plana (zeleno); 0,90–0,99: malo iznad (žuto); ispod 0,90: iznad proračuna (crveno). Dok ništa nije plaćeno, prikazuje se „—”.",
       "spi_title": "SPI – indeks izvršenja rokova",
       "spi_body": "Ostvarena vrijednost radova podijeljena s vrijednošću planiranom do danas. 1,00 ili više: u skladu s planom; 0,90–0,99: malo u zaostatku; ispod 0,90: u zaostatku. Računa se samo iz faza koje imaju datum početka i završetka.",
       "eac_title": "EAC – procjena ukupnog troška",

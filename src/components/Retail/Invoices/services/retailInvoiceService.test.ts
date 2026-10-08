@@ -1,5 +1,19 @@
-import { describe, it, expect } from 'vitest'
-import { buildRetailInvoicesSheet, type RetailInvoiceWithDetails } from './retailInvoiceService'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { buildRetailInvoicesSheet, toggleRetailInvoiceApproval, type RetailInvoiceWithDetails } from './retailInvoiceService'
+import { logActivity } from '../../../../lib/activityLog'
+
+let updatedRows: { id: string }[] = []
+
+vi.mock('../../../../lib/supabase', () => ({
+  supabase: {
+    from: () => ({
+      update: () => ({ eq: () => ({ select: async () => ({ data: updatedRows, error: null }) }) }),
+    }),
+  },
+}))
+vi.mock('../../../../lib/activityLog', () => ({ logActivity: vi.fn() }))
+
+beforeEach(() => { vi.mocked(logActivity).mockClear() })
 import { exportT } from '../../../../utils/exportLanguage'
 
 const t = exportT()
@@ -54,5 +68,23 @@ describe('buildRetailInvoicesSheet', () => {
 
   it('falls back to the customer when there is no supplier, comma and all', () => {
     expect(buildRetailInvoicesSheet([invoice()], t)[1][5]).toBe('PANNONIA, d.o.o.')
+  })
+})
+
+describe('toggleRetailInvoiceApproval', () => {
+  // RLS refuses the update for every role but Director and Accounting without an error: the
+  // request succeeds with zero rows. The screen used to flip the tick anyway (RETAIL-4).
+  it('throws when the update changed no row', async () => {
+    updatedRows = []
+    await expect(toggleRetailInvoiceApproval('i1', false)).rejects.toThrow()
+    expect(logActivity).not.toHaveBeenCalled()
+  })
+
+  it('logs the approval once a row was updated', async () => {
+    updatedRows = [{ id: 'i1' }]
+    await toggleRetailInvoiceApproval('i1', false)
+    expect(logActivity).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'invoice.approve', entityId: 'i1', severity: 'high', metadata: { approved: true },
+    }))
   })
 })

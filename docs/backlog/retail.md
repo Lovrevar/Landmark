@@ -8,13 +8,6 @@ looked, not because the module is clean.
 
 ## Open
 
-### RETAIL-4 · Medium · Approving a retail invoice is not role-gated and fails silently
-- **Check:** Code reading
-- **Where:** `Retail/Invoices/index.tsx:147`, `retailInvoiceService.ts:80-85`.
-- **What happens:** every role sees the approve action; when RLS refuses the update PostgREST
-  reports success with zero rows and the screen says nothing.
-- **Fix direction:** `.select('id')` + `assertRowsAffected`, and hide the action by role.
-
 ### RETAIL-5 · Medium · The `/retail-sales` page cannot be reached from the menu
 - **Check:** Confirmed (`Common/Layout.tsx:213`: the "Prodaje" item goes to `/retail-sales-payments`)
 - **What happens:** the page exists and works by URL only.
@@ -44,3 +37,9 @@ looked, not because the module is clean.
 - **What happens:** role, label, focus trap and Escape were added, but there is still no portal,
   backdrop close or scroll lock.
 - **Fix direction:** `<Modal size="full">`.
+
+## Resolved
+
+### RETAIL-4 · Medium · Approving a retail invoice is not role-gated and fails silently
+- Fixed on `fix/audit-medium-findings` (2026-10-07): the update checks `assertRowsAffected`, the tick is disabled unless
+  `canApproveInvoices`, and the toasts are translated.

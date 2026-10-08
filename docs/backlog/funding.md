@@ -5,13 +5,6 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
 
 ## Open
 
-### FUND-17 · Medium · Funding payments register labels a drawdown PRIHOD and a repayment RASHOD
-- **Check:** Code reading
-- **Where:** Funding → Plaćanja.
-- **What happens:** contradicts the CASH-7 decision that credit principal is financing, neither
-  income nor expense. Every other screen now says "Financiranje".
-- **Fix direction:** label by `invoiceCashCategory` from `utils/invoiceCashDirection.ts`.
-
 ### FUND-18 · Low · Funding labels and hardcoded strings
 - **Check:** Code reading
 - Validation messages in `useCreditManagement.ts:119-134` are literals; `AllocationRow.tsx` has a
@@ -69,3 +62,10 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
   table.
 - **Fix direction:** the table scrolls inside its card (`overflow-x-auto` on a wrapper, `min-w-0`
   up the flex chain) instead of widening the document.
+
+## Resolved
+
+### FUND-17 · Medium · Funding payments register labels a drawdown PRIHOD and a repayment RASHOD
+- Fixed on `fix/audit-medium-findings` (2026-10-07): `paymentKind` in `invoiceHelpers.ts` names a drawdown ISPLATA KREDITA
+  and a repayment OTPLATA GLAVNICE, on the Funding register, its export and the Cashflow payments
+  table. The Cashflow totals are CASH-29.

@@ -111,7 +111,7 @@ describe('screens that read the map', () => {
   })
 
   it('the Cashflow calendar takes both sides from the map, so no type is left out of its sums', () => {
-    const source = read('src/components/Cashflow/Calendar/hooks/useCalendar.ts')
+    const source = read('src/components/Cashflow/Calendar/utils/monthStats.ts')
     expect(source).toContain('monthInvoices.filter(inv => isCashOut(inv.invoice_type))')
     expect(source).toContain('monthInvoices.filter(inv => isCashIn(inv.invoice_type))')
     // Its old lists named four types a side and missed credit fees.

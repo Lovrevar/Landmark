@@ -1,7 +1,7 @@
 # Backlog — Cashflow
 
 Invoices, payments, companies, bank accounts, loans, cesija and kompenzacija. Ids: `CASH-n` (next
-free: `CASH-29`). Entry format and rules are in [README.md](./README.md).
+free: `CASH-30`). Entry format and rules are in [README.md](./README.md).
 
 Phase 5 of the ERP integration removes in-app invoice and payment creation. Each entry says how
 that changes it; do not build new authoring UI here without reading
@@ -9,19 +9,22 @@ that changes it; do not build new authoring UI here without reading
 
 ## Open
 
-### CASH-24 · Medium · Calendar "Neplaćeno" card leaves out partly paid invoices
-- **Check:** Code reading (found during the help-article audit, 2026-10-06)
-- **Where:** Cashflow → Kalendar, the unpaid summary card.
-- **What happens:** the card counts invoices with status `UNPAID` only, so the open part of a
-  `PARTIALLY_PAID` invoice is in no card.
-- **Fix direction:** sum `remaining_amount` over every invoice that is not fully paid.
+### CASH-29 · Medium · Cashflow payments totals count credit principal as income and expense
+- **Check:** Code reading (2026-10-07)
+- **Where:** Cashflow → Plaćanja: the cards "Ukupno Prihod" / "Ukupno Rashod" / "Neto" and the
+  "Filtrirano" line (`paymentTotalsByDirection`).
+- **What happens:** they sum by direction, so a credit drawdown is in "Prihod" and a principal
+  repayment in "Rashod", against the CASH-7 decision. The rows themselves are now labelled as
+  financing (FUND-17), so the cards disagree with the table under them.
+- **Fix direction:** split the totals by `invoiceCashCategory`, as the Companies cards do, or
+  rename the cards to "Priljev" / "Odljev". Changes figures: show the accountant first.
 
-### CASH-25 · Low · Payment detail and table show the wrong direction cues
+### CASH-25 · Low · Payment detail view shows the wrong direction cues
 - **Check:** Code reading
-- **Where:** `Cashflow/Payments/PaymentDetailView.tsx`, `PaymentTable.tsx`.
-- **What happens:** the detail view prints a literal "Cesija" and colours every amount green,
-  money out included; the table labels a payment with no direction as PRIHOD.
-- **Fix direction:** `paymentDirection` from `invoiceHelpers.ts` for both, a dash when unknown.
+- **Where:** `Cashflow/Payments/PaymentDetailView.tsx`.
+- **What happens:** it prints a literal "Cesija" and colours every amount green, money out
+  included. (The table's PRIHOD for an unknown type was fixed with FUND-17.)
+- **Fix direction:** `paymentDirection` / `paymentKind` from `invoiceHelpers.ts`.
 
 ### CASH-26 · Low · Banks page has a delete button that does nothing and a modal nothing opens
 - **Check:** Code reading
@@ -120,6 +123,10 @@ These turn into ERP work or disappear in phase 5. Do not fix them in the app.
   delete for non-Directors (SEC-A7): the forms go and writes are locked to the service role.
 
 ## Resolved
+
+### CASH-24 · Medium · Calendar "Neplaćeno" card leaves out partly paid invoices
+- Fixed on `fix/audit-medium-findings` (2026-10-07): the month figures moved to `Calendar/utils/monthStats.ts`, where every
+  invoice that is not `PAID` counts as unpaid.
 
 ### CASH-7 · Medium · Income and expense are classified four different ways
 - Decided 2026-10-01 (money out) and extended 2026-10-05 with accounting: every invoice type has

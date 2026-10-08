@@ -120,12 +120,14 @@ export default function BudgetControl() {
           [t('budget_control.planned')]: data.plannedBudget,
           [t('budget_control.committed')]: data.committed,
           [t('budget_control.paid')]: data.paid,
-          [t('budget_control.forecast_eac')]: data.metrics.EAC,
         },
       ]
     : []
 
-  const scatterCPI = data ? [{ x: t('budget_control.current'), y: data.metrics.CPI }] : []
+  // Likewise for CPI while nothing is paid: 1.00 there is a convention, not a measurement.
+  const scatterCPI = data && data.metrics.costAvailable !== false
+    ? [{ x: t('budget_control.current'), y: data.metrics.CPI }]
+    : []
   // No schedule baseline means no SPI point to plot — a fabricated 1.00 on the target line is
   // the most reassuring thing this chart could draw.
   const scatterSPI = data && data.metrics.scheduleAvailable !== false
@@ -133,7 +135,14 @@ export default function BudgetControl() {
     : []
 
   const hasBudgetData = !!data && data.plannedBudget > 0
-  const cpiStatus = hasBudgetData ? getIndexStatus(data.metrics.CPI, 'CPI') : null
+
+  /**
+   * CPI is only a figure once something has been paid. Before that `calculateProjectEVM` falls
+   * back to 1, which this page coloured green and labelled "Ispod proračuna ✓" — on a project
+   * nobody had spent a euro on (GEN-20).
+   */
+  const costAvailable = hasBudgetData && data.metrics.costAvailable !== false
+  const cpiStatus = costAvailable ? getIndexStatus(data.metrics.CPI, 'CPI') : null
 
   /**
    * SPI is only a figure when at least one phase carries both a start and an end date.
@@ -148,10 +157,13 @@ export default function BudgetControl() {
    * EAC is `plannedBudget / CPI`, and CPI is 0 when money has been spent with no earned value
    * against it. `evm.ts:138` then falls back to EAC = the budget, so VAC = 0 — and the tiles
    * read a cheerful green "Ispod proračuna" next to a red CPI of 0.00. There is no forecast to
-   * give in that state, so both tiles say so.
+   * give in that state, so both tiles say so. Nor is there one before anything is paid: the
+   * "forecast" is then just the budget again.
    */
-  const forecastAvailable = hasBudgetData && data.metrics.CPI !== 0
+  const forecastAvailable = costAvailable && data.metrics.CPI !== 0
+  const noForecastLabel = t(costAvailable || !hasBudgetData ? 'budget_control.no_forecast' : 'budget_control.no_cost')
   const forecastUnderBudget = forecastAvailable && data.metrics.VAC >= 0
+  if (forecastAvailable && barData[0]) barData[0][t('budget_control.forecast_eac')] = data.metrics.EAC
 
   return (
     <div className="p-6 space-y-6">
@@ -244,7 +256,7 @@ export default function BudgetControl() {
             <MetricCard
               label={t('budget_control.forecast_eac')}
               sublabel={!forecastAvailable
-                ? t('budget_control.no_forecast')
+                ? noForecastLabel
                 : forecastUnderBudget ? t('budget_control.under_budget') : t('budget_control.over_budget')}
               value={forecastAvailable ? formatEuroFull(data.metrics.EAC) : NO_VALUE}
               icon={!forecastAvailable ? HelpCircle : forecastUnderBudget ? TrendingDown : TrendingUp}
@@ -270,11 +282,15 @@ export default function BudgetControl() {
                   <Bar dataKey={t('budget_control.planned')} fill={CHART_COLORS.planned} radius={[4, 4, 0, 0]} />
                   <Bar dataKey={t('budget_control.committed')} fill={CHART_COLORS.committed} radius={[4, 4, 0, 0]} />
                   <Bar dataKey={t('budget_control.paid')} fill={CHART_COLORS.paid} radius={[4, 4, 0, 0]} />
-                  <Bar
-                    dataKey={t('budget_control.forecast_eac')}
-                    fill={forecastUnderBudget ? CHART_COLORS.forecastUnder : CHART_COLORS.forecastOver}
-                    radius={[4, 4, 0, 0]}
-                  />
+                  {/* No bar where the tiles say there is no forecast: it drew the budget a second
+                      time, in red, beside a tile reading "—". */}
+                  {forecastAvailable && (
+                    <Bar
+                      dataKey={t('budget_control.forecast_eac')}
+                      fill={forecastUnderBudget ? CHART_COLORS.forecastUnder : CHART_COLORS.forecastOver}
+                      radius={[4, 4, 0, 0]}
+                    />
+                  )}
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -323,12 +339,12 @@ export default function BudgetControl() {
           <div>
             <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-3">{t('budget_control.evm_metrics_title')}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
-              {cpiStatus && (
+              {hasBudgetData && (
                 <IndexCard
                   label={t('budget_control.cpi')}
-                  value={data.metrics.CPI}
-                  sublabel={t(cpiStatus.labelKey)}
-                  status={cpiStatus.status}
+                  value={cpiStatus ? data.metrics.CPI : null}
+                  sublabel={cpiStatus ? t(cpiStatus.labelKey) : t('budget_control.no_cost')}
+                  status={cpiStatus ? cpiStatus.status : 'unknown'}
                   hint={<EvmHint metric="cpi" />}
                 />
               )}
@@ -345,7 +361,7 @@ export default function BudgetControl() {
                   {forecastAvailable ? compactEuro(data.metrics.EAC) : NO_VALUE}
                 </p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  {forecastAvailable ? formatEuroFull(data.metrics.EAC) : t('budget_control.no_forecast')}
+                  {forecastAvailable ? formatEuroFull(data.metrics.EAC) : noForecastLabel}
                 </p>
               </div>
               {forecastAvailable ? (
@@ -364,7 +380,7 @@ export default function BudgetControl() {
                   <p className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-sm mb-1">{t('budget_control.vac')}<EvmHint metric="vac" /></p>
                   <p className="text-xl font-bold text-gray-500 dark:text-gray-400">{NO_VALUE}</p>
                   <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    <HelpCircle className="w-3 h-3" /><span>{t('budget_control.no_forecast')}</span>
+                    <HelpCircle className="w-3 h-3" /><span>{noForecastLabel}</span>
                   </div>
                 </div>
               )}

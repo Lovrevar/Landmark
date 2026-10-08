@@ -750,6 +750,8 @@
       "no_payments": "No payments found",
       "expense": "EXPENSE",
       "income": "INCOME",
+      "credit_drawdown": "CREDIT DRAWDOWN",
+      "principal_repayment": "PRINCIPAL REPAYMENT",
       "no_payments_description": "Payments recorded against invoices are listed here. Add the first one with the \"New Payment\" button."
     },
     "stats": {
@@ -4595,6 +4597,7 @@
     "date_to": "Date To",
     "approve_title": "Click to approve",
     "approve_title_cancel": "Approved - click to revoke",
+    "approve_title_forbidden": "Only the Director and Accounting roles can approve",
     "filter": {
       "all_types": "All types",
       "incoming": "Incoming",
@@ -4614,6 +4617,10 @@
       "outgoing_sales": "Outgoing - Sales",
       "outgoing_supplier": "Outgoing - Supplier",
       "incoming_investment": "Incoming - Investment"
+    },
+    "errors": {
+      "load_failed": "Retail invoices could not be loaded",
+      "approval_failed": "The invoice approval status could not be updated"
     }
   },
   "retail_sales": {
@@ -4701,6 +4708,7 @@
     "spi_bad": "Behind schedule ✗",
     "no_schedule": "No phase has both a start and an end date",
     "no_forecast": "No forecast: CPI is 0 (cost with no earned value)",
+    "no_cost": "No costs paid yet",
     "budget_chart_title": "Budget Control",
     "evm_indices_title": "EVM Performance Indices",
     "evm_metrics_title": "EVM Performance Metrics",
@@ -4720,7 +4728,7 @@
     "evm_indices_caption": "Earned value is based on completed contract milestones.",
     "hints": {
       "cpi_title": "CPI – Cost Performance Index",
-      "cpi_body": "Earned value of the work divided by what has been paid. 1.00 or more: spending is within plan (green); 0.90–0.99: slightly over (yellow); below 0.90: over budget (red). Until something is paid it reads 1.00.",
+      "cpi_body": "Earned value of the work divided by what has been paid. 1.00 or more: spending is within plan (green); 0.90–0.99: slightly over (yellow); below 0.90: over budget (red). Until something is paid it shows \"—\".",
       "spi_title": "SPI – Schedule Performance Index",
       "spi_body": "Earned value of the work divided by the value planned to date. 1.00 or more: on schedule; 0.90–0.99: slightly behind; below 0.90: behind. Only phases with both a start and an end date count.",
       "eac_title": "EAC – Estimate at Completion",

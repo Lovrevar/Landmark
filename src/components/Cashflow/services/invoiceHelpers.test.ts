@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { TFunction } from 'i18next'
 import {
+  paymentKind,
   INVOICE_CATEGORIES_BY_DIRECTION,
   isInvoiceCategoryValidForDirection,
   getInvoiceTypeLabelKey,
@@ -197,5 +198,25 @@ describe('spelled-out invoice type labels', () => {
         expect(bundle[long[0]][long[1]], `${type} long`).toBeTruthy()
       }
     }
+  })
+})
+
+describe('paymentKind', () => {
+  // Credit principal is financing, neither income nor expense (CASH-7). The payment registers
+  // filed a drawdown under PRIHOD and a repayment under RASHOD (FUND-17).
+  it('names credit principal as financing in both directions', () => {
+    expect(paymentKind('OUTGOING_BANK')).toEqual({ labelKey: 'payments.table.credit_drawdown', financing: true })
+    expect(paymentKind('INCOMING_BANK')).toEqual({ labelKey: 'payments.table.principal_repayment', financing: true })
+  })
+
+  it('keeps credit fees and every other invoice as expense or income', () => {
+    expect(paymentKind('INCOMING_BANK_EXPENSES')).toEqual({ labelKey: 'payments.table.expense', financing: false })
+    expect(paymentKind('INCOMING_SUPPLIER')?.labelKey).toBe('payments.table.expense')
+    expect(paymentKind('OUTGOING_SALES')).toEqual({ labelKey: 'payments.table.income', financing: false })
+  })
+
+  it('has no answer for a type the cash map does not know', () => {
+    expect(paymentKind(null)).toBeNull()
+    expect(paymentKind('SOMETHING_NEW')).toBeNull()
   })
 })

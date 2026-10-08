@@ -25,7 +25,7 @@ Između dva reda kartica nalaze se stupčasti grafikon **Kontrola proračuna** (
 Na dnu su kartice **CPI** i **SPI** (obojane prema statusu), **EAC**, **VAC** i **Dovršenost** — udio plaćenog u ugovorenom. Uz CPI, SPI, EAC i VAC nalazi se „?” koji objašnjava metriku; značenje i boje opisuje [[term-evm]].
 
 - Ako nijedna faza nema oba datuma (početak i završetak), kartica SPI prikazuje „—” i napomenu **Nema faza s datumima početka i završetka**. To ne znači da je projekt u roku.
-- CPI se prikazuje uvijek; dok ništa nije plaćeno iznosi 1,00.
+- Dok ništa nije plaćeno, CPI i prognoza (EAC, VAC) prikazuju „—” uz napomenu **Još nema plaćenih troškova**.
 - Ako je CPI 0, EAC i VAC prikazuju „—” jer prognoze nema.
 
 ## Projekt bez budžeta

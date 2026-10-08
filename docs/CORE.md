@@ -220,7 +220,7 @@ read "Jan 05, 2026".
 ### evm.ts
 - `calculatePhaseEVM(plannedBudget, physicalCompletionPct, startDate, endDate, actualCost)` — computes PV, EV, AC, CPI, SPI, CV, SV, EAC, VAC for a single phase using standard EVM formulas
 - `calculateProjectEVM(phases, contracts, milestones = [])` — aggregates phase-level EVM across all phases of a project; contracts join phases on `phase_id`. A phase's `physicalCompletionPct` is the contract-value-weighted average of each contract's milestone-based completion (sum of the `percentage` of its `subcontractor_milestones` that are completed or paid), falling back to `budget_realized / contract_amount` only for a contract with no milestones; maps `Phase.budget_allocated → plannedBudget`, `Phase.start_date / end_date → planned dates`. EV and AC are accumulated for every phase; PV only for dated ones
-- **Returns:** `EVMMetrics` (`PV`, `EV`, `AC`, `CPI`, `SPI`, `CV`, `SV`, `EAC`, `VAC`, plus `scheduleAvailable` — false when no phase has both dates, so SPI = 1 means "unknown")
+- **Returns:** `EVMMetrics` (`PV`, `EV`, `AC`, `CPI`, `SPI`, `CV`, `SV`, `EAC`, `VAC`, plus `scheduleAvailable` — false when no phase has both dates, so SPI = 1 means "unknown" — and `costAvailable`, false while nothing is paid, so CPI = 1 and EAC = budget mean "unknown" too)
 - **Used by:** `BudgetControl/hooks/useBudgetControl.ts`
 - **Depends on:** `Phase`, `ContractWithDetails` from `General/Projects/types.ts`
 

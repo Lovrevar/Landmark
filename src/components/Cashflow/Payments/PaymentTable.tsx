@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { CreditCard, Edit, Trash2 } from 'lucide-react'
 import { Payment, VisibleColumns } from './types'
 import { getPaymentMethodLabel, getPaymentMethodVariant } from '../services/paymentHelpers'
-import { paymentDirection } from '../services/invoiceHelpers'
+import { paymentDirection, paymentKind, FINANCING_TEXT_CLASS } from '../services/invoiceHelpers'
 import { DIRECTION_AMOUNT_CLASS } from '../services/paymentTotals'
-import { formatEuro, formatDate } from '../../../utils/formatters'
+import { formatEuro, formatDate, NO_VALUE } from '../../../utils/formatters'
 import { Table, Button, EmptyState, Badge } from '../../ui'
 
 interface PaymentTableProps {
@@ -62,6 +62,7 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
             // The amount takes the direction's colour. It used to be green on every row —
             // including the rows the type column beside it marked RASHOD in red.
             const direction = paymentDirection(invoice.invoice_type)
+            const kind = paymentKind(invoice.invoice_type)
 
             return (
               <Table.Tr key={payment.id} onClick={() => onView(payment)} className="cursor-pointer">
@@ -82,10 +83,13 @@ const PaymentTable: React.FC<PaymentTableProps> = ({
                 )}
                 {visibleColumns.invoice_type && (
                   <Table.Td label={t('payments.table.invoice_type')}>
-                    <span className={`text-xs font-semibold ${
-                      direction ? DIRECTION_AMOUNT_CLASS[direction] : 'text-gray-900 dark:text-white'}`}>
-                      {direction === 'OUT' ? t('payments.table.expense') : t('payments.table.income')}
-                    </span>
+                    {/* Financing is named, not filed under PRIHOD/RASHOD (FUND-17); an unknown type
+                        is a dash — it used to read PRIHOD. */}
+                    {kind && direction ? (
+                      <span className={`text-xs font-semibold ${kind.financing ? FINANCING_TEXT_CLASS : DIRECTION_AMOUNT_CLASS[direction]}`}>
+                        {t(kind.labelKey)}
+                      </span>
+                    ) : NO_VALUE}
                   </Table.Td>
                 )}
                 {visibleColumns.company_supplier && (
