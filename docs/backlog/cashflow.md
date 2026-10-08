@@ -18,25 +18,6 @@ that changes it; do not build new authoring UI here without reading
 - **Fix direction:** `whitespace-nowrap` and room for the amount, or let the table scroll before
   the sticky cell overlaps. Same family as CASH-17.
 
-### CASH-25 · Low · Payment detail view shows the wrong direction cues
-- **Check:** Code reading
-- **Where:** `Cashflow/Payments/PaymentDetailView.tsx`.
-- **What happens:** it prints a literal "Cesija" and colours every amount green, money out
-  included. (The table's PRIHOD for an unknown type was fixed with FUND-17.)
-- **Fix direction:** `paymentDirection` / `paymentKind` from `invoiceHelpers.ts`.
-
-### CASH-26 · Low · Banks page has a delete button that does nothing and a modal nothing opens
-- **Check:** Code reading
-- **Where:** `Cashflow/Banks/index.tsx`.
-- **Fix direction:** wire the delete (with `ConfirmDialog`, `assertRowsAffected`, `logActivity`) or
-  remove both.
-
-### CASH-27 · Low · Payments date filter parses the dates as UTC
-- **Check:** Code reading
-- **Where:** `Cashflow/Payments/hooks/usePayments.ts:345-346`, `new Date(dateFrom)` / `new Date(dateTo)`.
-- **What happens:** a payment on the first or last day of the range can fall outside it.
-- **Fix direction:** `parseLocalDate` from `utils/dateOnly.ts`.
-
 ### CASH-28 · Low · Cashflow wording, hardcoded strings and unused keys
 - **Check:** Code reading
 - Hardcoded: `columnLabels` and the row-action tooltips in the payments table; `SupplierCard.tsx`
@@ -122,6 +103,17 @@ These turn into ERP work or disappear in phase 5. Do not fix them in the app.
   delete for non-Directors (SEC-A7): the forms go and writes are locked to the service role.
 
 ## Resolved
+
+### CASH-25 · Low · Payment detail view shows the wrong direction cues
+- Fixed on `fix/backlog-small-batch` (2026-10-08): "Cesija" comes from the locale file and the amount takes the
+  direction's colour.
+
+### CASH-26 · Low · Banks page has a delete button that does nothing and a modal nothing opens
+- Fixed on `fix/backlog-small-batch` (2026-10-08): `AllocationRow`'s delete is optional and the read-only Banks page passes
+  none. The unreachable `BankCreditFormModal` stays under CASH-15.
+
+### CASH-27 · Low · Payments date filter parses the dates as UTC
+- Fixed on `fix/backlog-small-batch` (2026-10-08): the filter compares `yyyy-mm-dd` text, day against day.
 
 ### CASH-29 · Medium · Cashflow payments totals count credit principal as income and expense
 - Fixed on `fix/figures-and-tic-export` (2026-10-08): `paymentTotalsByCategory` keeps credit principal out of Prihod / Rashod /

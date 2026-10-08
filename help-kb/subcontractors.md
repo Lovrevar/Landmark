@@ -12,7 +12,7 @@ Kartice statistike: **Podugovaratelji**, **Aktivni ugovori**, **Ukupno plaćeno*
 
 Tražilica: **Pretraži po imenu ili kontaktu...**. Filtri: **Aktivni ugovori**, **Nepodmireno**, **Podmireno**, **Bez ugovora** te izbor projekta (**Svi projekti**). Popis se može sortirati po nazivu, preostalom, vrijednosti ili plaćenom iznosu i prikazati kao **Kartice** ili **Tablica**.
 
-Gumb **Dodaj podugovaratelja** otvara obrazac (naziv, kontakt, napomene). Na kartici ili retku su **Uredi podugovaratelja** i **Obriši podugovaratelja**; brisanje ne uspijeva dok podugovaratelj ima povezane ugovore. Ugovori se ne dodaju ovdje, nego na fazi projekta u [[site-management]].
+Gumb **Dodaj podugovaratelja** otvara obrazac (naziv, kontakt, napomene). Na kartici ili retku su **Uredi podugovaratelja** i **Obriši podugovaratelja**; brisanje ne uspijeva dok podugovaratelj ima povezane ugovore. Dodavati i uređivati mogu uloge Director, Supervision i Accounting, a brisati samo Director; tko nema ovlast, taj gumb ne vidi. Ugovori se ne dodaju ovdje, nego na fazi projekta u [[site-management]].
 
 Klik na podugovaratelja otvara detalje: **Ukupno ugovora**, **Vrijednost ugovora**, **Ukupno plaćeno**, **Preostalo**, popis **Svi ugovori** (s oznakom **BEZ UGOVORA** gdje nema pisanog ugovora — [[term-has-contract]]) i **Dokumenti**.
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { ChevronDown, ChevronUp, Trash2, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Badge, LoadingSpinner } from '../../ui'
-import { formatEuro, formatDate } from '../../../utils/formatters'
+import { formatEuro, formatDate, NO_VALUE } from '../../../utils/formatters'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 import { fetchAllocationInvoices, AllocationInvoice } from './services/allocationService'
 
@@ -33,7 +33,8 @@ interface AllocationRowProps {
   allocationKey: string
   isExpanded: boolean
   onToggle: (key: string) => void
-  onDelete: (allocationId: string, creditId: string) => void
+  /** Omit on a read-only screen (Cashflow → Banke): the button is then not drawn at all. */
+  onDelete?: (allocationId: string, creditId: string) => void
 }
 
 
@@ -131,15 +132,19 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
               </div>
             )}
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete(allocation.id, allocation.credit_id)
-            }}
-            className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(allocation.id, allocation.credit_id)
+              }}
+              title={t('common.delete')}
+              aria-label={t('common.delete')}
+              className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+            >
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -255,7 +260,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                                 {inv.invoice_number}
                               </td>
                               <td data-label={t('funding.allocation_row.table.supplier')} className="px-4 py-2.5 text-gray-700 dark:text-gray-200">
-                                {inv.supplier_name ?? '-'}
+                                {inv.kind === 'drawdown' ? t('funding.allocation_row.drawdown') : inv.supplier_name ?? NO_VALUE}
                               </td>
                               <td data-label={t('funding.allocation_row.table.payment_date')} className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
                                 {formatDate(inv.payment_date, i18n.language)}

@@ -891,6 +891,7 @@
       "source_bank": "Bankovni račun",
       "source_credit": "Kredit",
       "source_kompenzacija": "Kompenzacija",
+      "source_cesija": "Cesija",
       "source_cash": "Gotovina"
     },
     "hints": {
@@ -3524,7 +3525,8 @@
         "payment_amount": "Iznos plaćanja",
         "total_amount": "Ukupni iznos",
         "status": "Status"
-      }
+      },
+      "drawdown": "Isplata kredita"
     },
     "credit_invoice_section": {
       "loading": "Učitavanje...",

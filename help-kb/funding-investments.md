@@ -36,4 +36,4 @@ Svaka namjena nosi naziv projekta, **OPEX (Bez projekta)** ili **Refinanciranje 
 
 Kod kredita isplaćenog izravno na račun firme cijela se namjena vodi kao iskorištena, pa se **Dostupno** ne prikazuje.
 
-Klik na namjenu otvara njezin opis i popis **Računi plaćeni ovom alokacijom**. Ikona koša briše namjenu, uz potvrdu.
+Klik na namjenu otvara njezin opis i popis **Računi plaćeni ovom alokacijom**. Popis sadrži plaćanja s te namjene i isplate kredita knjižene na nju (u stupcu dobavljača piše **Isplata kredita**), pa zajedno objašnjavaju iznos **Iskorišteno**. Ikona koša briše namjenu, uz potvrdu.

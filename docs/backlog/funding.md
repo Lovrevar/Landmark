@@ -47,10 +47,6 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
 - The "debt" list includes equity; opex and refinancing allocations are invisible. (The budget
   not being gated on the TIC was fixed on `fix/figures-and-tic-export`, 2026-10-08.)
 
-### FUND-12 · Low · Allocation invoice list does not reconcile
-- It lists payments with `credit_allocation_id` only; `OUTGOING_BANK` drawdowns counted in the
-  allocation's `used_amount` are missing.
-
 ### FUND-14 · Low · Orphan function
 - `update_overdue_notifications()` references the removed `payment_notifications` table.
 
@@ -64,6 +60,10 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
   up the flex chain) instead of widening the document.
 
 ## Resolved
+
+### FUND-12 · Low · Allocation invoice list does not reconcile
+- Fixed on `fix/backlog-small-batch` (2026-10-08): `fetchAllocationInvoices` also returns the `OUTGOING_BANK` invoices booked
+  against the allocation, labelled "Isplata kredita".
 
 ### FUND-17 · Medium · Funding payments register labels a drawdown PRIHOD and a repayment RASHOD
 - Fixed on `fix/audit-medium-findings` (2026-10-07): `paymentKind` in `invoiceHelpers.ts` names a drawdown ISPLATA KREDITA

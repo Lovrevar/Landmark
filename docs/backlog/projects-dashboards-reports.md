@@ -10,9 +10,6 @@ are in [README.md](./README.md).
 - **Where:** `General/Projects/index.tsx:117`.
 - **Fix direction:** `ErrorState` with `refetch`. Part of UI-4 in [ui.md](./ui.md).
 
-### GEN-10 · Low · Supervision dashboard "paid" uses invoice `paid_amount`
-- Contrary to the rule that `contracts.budget_realized` is the only paid figure.
-
 ### GEN-7 · Low · Budget Control chart and scope
 - The forecast bar is drawn in red when the forecast is suppressed; contracts without a phase
   count in Committed and Paid but not in EV and AC.
@@ -55,6 +52,10 @@ are in [README.md](./README.md).
   generators that print it.
 
 ## Resolved
+
+### GEN-10 · Low · Supervision dashboard "paid" uses invoice `paid_amount`
+- Fixed on `fix/backlog-small-batch` (2026-10-08): contract progress reads `contracts.budget_realized` only; the invoice
+  query is gone.
 
 ### GEN-5 · Low · Budget not gated on the TIC in three places
 - Fixed on `fix/figures-and-tic-export` (2026-10-08): `budgetIsSet` / `fetchBudgetedProjectIds`; the Director table, the

@@ -1,17 +1,17 @@
 # Backlog — Sales
 
 Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (next free:
-`SALES-20`). Entry format and rules are in [README.md](./README.md). Retail is in
+`SALES-21`). Entry format and rules are in [README.md](./README.md). Retail is in
 [retail.md](./retail.md).
 
 ## Open
 
-### SALES-16 · Low · Apartments page actions are not role-gated
-- **Check:** Code reading
-- **Where:** `Sales/Apartments/index.tsx:22` calls `useAuth()` and discards the result; create and
-  delete show to every role. Same for the delete-building button in `BuildingsGrid.tsx`.
-- **What happens:** a role RLS refuses sees the button and gets an error (or nothing).
-- **Fix direction:** `utils/permissions.ts`.
+### SALES-20 · Low · Sales projects unit actions are not role-gated
+- **Check:** Code reading (2026-10-08)
+- **Where:** `Sales/SalesProjects/UnitsGrid.tsx` and its header: add, edit, delete, bulk create,
+  bulk price, link, import and sell show to every role.
+- **Fix direction:** `canEditSalesUnits` / `canDeleteSalesUnits` from `utils/permissions.ts`, as
+  on the Apartments page. Check which roles `complete_apartment_sale` accepts before gating "sell".
 
 ### SALES-17 · Low · Bulk building creation
 - **Check:** Code reading
@@ -58,6 +58,11 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 - **Fix direction:** `formatEuro` / `formatEuroRounded`. Part of UI-1 in [ui.md](./ui.md).
 
 ## Resolved
+
+### SALES-16 · Low · Apartments page actions are not role-gated
+- Fixed on `fix/backlog-small-batch` (2026-10-08): `canEditSalesUnits` / `canDeleteSalesUnits` mirror the RLS policies and
+  gate the Apartments page buttons and the delete-building button. The unit cards on Sales
+  projects are not gated yet (SALES-20).
 
 ### SALES-6 · Medium · The package total is still computed per screen
 - Decided 2026-10-08: a sold package totals its sale price plus the list prices of the linked

@@ -888,6 +888,7 @@
       "source_bank": "Bank Account",
       "source_credit": "Credit",
       "source_kompenzacija": "Compensation",
+      "source_cesija": "Cesija",
       "source_cash": "Cash"
     },
     "hints": {
@@ -3517,7 +3518,8 @@
         "payment_amount": "Payment Amount",
         "total_amount": "Total Amount",
         "status": "Status"
-      }
+      },
+      "drawdown": "Credit drawdown"
     },
     "credit_invoice_section": {
       "loading": "Loading...",

@@ -38,6 +38,8 @@ export interface RetailContractRow {
   phase_id: string | null
   contract_amount?: unknown
   budget_realized?: unknown
+  /** The buyer, on a sales-phase contract. */
+  customer_id?: string | null
 }
 
 /** `retail_land_plots` row. */
@@ -69,6 +71,12 @@ export interface RetailTotals {
   total_costs: number
   /** Contracted sales value: Σ `contract_amount` over sales-phase contracts. */
   total_revenue: number
+  /**
+   * Distinct customers with a sales-phase contract — the people `total_revenue` came from. "Per
+   * customer" divides by this, not by every row in `retail_customers`: leads who bought nothing
+   * pulled the average down (RETAIL-1).
+   */
+  buying_customers: number
   /** Cash collected from buyers: Σ `budget_realized` over sales-phase contracts. */
   total_collected: number
   /** Still to collect: Σ `remaining_amount` over unsettled sales-contract invoices. */
@@ -86,6 +94,7 @@ export const EMPTY_RETAIL_TOTALS: RetailTotals = {
   total_invested: 0,
   total_costs: 0,
   total_revenue: 0,
+  buying_customers: 0,
   total_collected: 0,
   total_remaining: 0,
   total_invoiced: 0,
@@ -113,6 +122,7 @@ export function computeRetailTotals({
   let total_collected = 0
   let total_revenue = 0
   const salesContractIds = new Set<string>()
+  const buyers = new Set<string>()
 
   for (const contract of contracts) {
     const type = contract.phase_id ? phaseType.get(contract.phase_id) : undefined
@@ -126,6 +136,7 @@ export function computeRetailTotals({
       total_collected += paid
       total_revenue += num(contract.contract_amount)
       salesContractIds.add(contract.id)
+      if (contract.customer_id) buyers.add(contract.customer_id)
     }
     // A contract on a phase we do not recognise (or with no phase) is left out of every
     // total rather than guessed at — guessing is how sales landed in costs.
@@ -150,6 +161,7 @@ export function computeRetailTotals({
     total_invested,
     total_costs,
     total_revenue,
+    buying_customers: buyers.size,
     total_collected,
     total_remaining,
     total_invoiced,

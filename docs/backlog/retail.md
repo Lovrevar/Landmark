@@ -15,12 +15,11 @@ looked, not because the module is clean.
 - Several strings send the user to an "Accounting modul" that is called Cashflow on screen.
 - The `land_plots.*` locale block looks unused.
 
-### RETAIL-1 · Low · Retail dashboard per-customer figures (was DASH-505)
+### RETAIL-1 · Low · Retail dashboard overdue list (was DASH-505)
 - **Where:** `src/components/dashboards/services/retailDashboardService.ts`.
-- **What happens:** per-customer revenue divides by all customers, including non-buyers;
-  `customer_name` falls back to the invoice number; `'N/A'` and the contract number are not
-  localised.
-- **Fix direction:** divide by buyers only; consider gating on `approved = true`.
+- **What happens:** `customer_name` falls back to the invoice number; `'N/A'` and the contract
+  number are not localised. (Revenue per customer dividing by non-buyers was fixed on
+  `fix/backlog-small-batch`, 2026-10-08: `buying_customers`.)
 
 ### RETAIL-2 · Low · Contract form hides a failed supplier load
 - **Where:** `src/components/Retail/Projects/modals/ContractFormModal.tsx`. A failed load is
