@@ -35,9 +35,13 @@ import { SaleFormModal } from './forms/SaleFormModal'
 import { BulkPriceUpdateModal } from './modals/BulkPriceUpdateModal'
 import { ExcelImportApartmentsModal } from './modals/ExcelImportApartmentsModal'
 import { ExcelImportGaragesModal } from './modals/ExcelImportGaragesModal'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canEditSalesUnits } from '../../../utils/permissions'
 
 const SalesProjectsEnhanced: React.FC = () => {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const canEdit = canEditSalesUnits(user)
   const toast = useToast()
   const { projects, garages, repositories, customers, loading, error, dismissError, refetch } = useSalesData()
 
@@ -358,7 +362,7 @@ const SalesProjectsEnhanced: React.FC = () => {
         className="mb-6"
         actions={
           <>
-            {viewMode === 'buildings' && selectedProject && (
+            {canEdit && viewMode === 'buildings' && selectedProject && (
               <>
                 <Button
                   variant="info"
@@ -382,7 +386,7 @@ const SalesProjectsEnhanced: React.FC = () => {
                 </Button>
               </>
             )}
-            {viewMode === 'units' && selectedBuilding && (
+            {canEdit && viewMode === 'units' && selectedBuilding && (
               <>
                 {activeUnitType === 'garage' && (
                   <Button

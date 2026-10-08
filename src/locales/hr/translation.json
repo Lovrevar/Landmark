@@ -2064,6 +2064,7 @@
       "download_template": "Preuzmi predložak",
       "template_failed": "Predložak nije moguće preuzeti. Pokušajte ponovno.",
       "template_sheet_data": "Stanovi",
+      "garage_template_sheet_data": "Garaže",
       "template_sheet_notes": "Upute",
       "format": {
         "layout": "Čita se samo prvi list. Zaglavlje je u 1. retku, podaci počinju od 2. retka; važan je redoslijed stupaca, a ne nazivi u zaglavlju.",
@@ -3418,6 +3419,7 @@
       "error_add_bank": "Greška pri dodavanju banke. Pokušajte ponovno.",
       "error_update_bank": "Greška pri ažuriranju banke.",
       "error_credit_fields_required": "Popunite obavezna polja (banka, naziv kredita, iznos, datum početka)",
+      "error_disbursement_account_required": "Odaberite bankovni račun na koji je kredit isplaćen.",
       "error_add_credit": "Greška pri dodavanju kreditne linije.",
       "error_update_credit": "Greška pri ažuriranju kreditne linije.",
       "investor_form": {

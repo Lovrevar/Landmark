@@ -23,7 +23,8 @@ export interface SubcontractorStatus {
   progress: number
   cost: number | undefined
   budget_realized: number | undefined
-  days_until_deadline: number
+  /** Days to the contract's end date, negative once past it; `null` when it has no end date. */
+  days_until_deadline: number | null
   is_overdue: boolean
   recent_work_logs: number
   last_activity: string | null

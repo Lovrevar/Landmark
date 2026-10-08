@@ -20,12 +20,6 @@ are in [README.md](./README.md).
 - Milestone statuses feeding EV are set by the payment trigger, so EV is not independent of AC.
   The code comment claims otherwise.
 
-### GEN-15 · Low · Supervision dashboard display polish (was DASH-605)
-- **Where:** `src/components/dashboards/services/supervisionService.ts`.
-- `999` is still the sentinel for "no deadline" (prefer `null`). Re-check the other two points
-  from the June audit: unrounded `progress`, and the week view showing and ordering by
-  `created_at` instead of the work `date`.
-
 ### GEN-16 · Low · Activity Log shows raw entity keys and ID fragments
 - Every entity type shows its key and a UUID fragment instead of a name. Same problem in
   Documents (COLLAB-11 in [collaboration.md](./collaboration.md)).
@@ -52,6 +46,11 @@ are in [README.md](./README.md).
   generators that print it.
 
 ## Resolved
+
+### GEN-15 · Low · Supervision dashboard display polish (was DASH-605)
+- Closed on `fix/backlog-batch-3` (2026-10-08): "no deadline" is `null`, tested in `dashboards/utils/supervisionDeadlines.ts`.
+  The other two points from the June audit were already fixed: progress is rounded, and the week
+  view shows and orders by the work `date`.
 
 ### GEN-10 · Low · Supervision dashboard "paid" uses invoice `paid_amount`
 - Fixed on `fix/backlog-small-batch` (2026-10-08): contract progress reads `contracts.budget_realized` only; the invoice

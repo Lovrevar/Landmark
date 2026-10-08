@@ -9,15 +9,6 @@ that changes it; do not build new authoring UI here without reading
 
 ## Open
 
-### CASH-30 · Low · Payments table cuts the last digits of the amount
-- **Check:** Confirmed (browser, 1440px wide, 2026-10-08)
-- **Where:** Cashflow → Plaćanja, the "Iznos" column beside the sticky "Akcije" cell
-  (`Cashflow/Payments/PaymentTable.tsx`, `ui/Table.tsx`).
-- **What happens:** with every column shown, "€145.000,00" reads "€145.00(": the sticky cell
-  covers the end of the amount.
-- **Fix direction:** `whitespace-nowrap` and room for the amount, or let the table scroll before
-  the sticky cell overlaps. Same family as CASH-17.
-
 ### CASH-28 · Low · Cashflow wording, hardcoded strings and unused keys
 - **Check:** Code reading
 - Hardcoded: `columnLabels` and the row-action tooltips in the payments table; `SupplierCard.tsx`
@@ -53,7 +44,9 @@ that changes it; do not build new authoring UI here without reading
 ### CASH-17 · Low · Sticky actions cell cuts the overdue tint on desktop
 - **Where:** `src/components/ui/Table.tsx` (sticky cell is `bg-white`),
   `Cashflow/Invoices/InvoiceTable.tsx`.
-- **Fix direction:** let the sticky cell inherit the row tint.
+- **Fix direction:** let the sticky cell inherit the row tint. Not a one-liner: the dark-mode tint
+  is translucent (`dark:bg-red-900/20`), so an inherited background would let the columns
+  scrolling underneath show through. The cell needs a solid base with the tint painted over it.
 
 ### CASH-18 · Low · Invoice types are named and coloured differently per screen
 - **Check:** Mostly fixed on `feat/user-guidance-phase-1`: one short label set (`invoice_type.*`)
@@ -103,6 +96,11 @@ These turn into ERP work or disappear in phase 5. Do not fix them in the app.
   delete for non-Directors (SEC-A7): the forms go and writes are locked to the service role.
 
 ## Resolved
+
+### CASH-30 · Low · Payments table cuts the last digits of the amount
+- Closed on `fix/backlog-batch-3` (2026-10-08): nothing was cut — the table is wider than the screen and the column
+  had scrolled under the sticky "Akcije" cell. Sticky cells in `ui/Table.tsx` now carry a soft
+  edge so it reads as an overlay. The table's width is UI-8.
 
 ### CASH-25 · Low · Payment detail view shows the wrong direction cues
 - Fixed on `fix/backlog-small-batch` (2026-10-08): "Cesija" comes from the locale file and the amount takes the

@@ -1,3 +1,4 @@
+import { isDueThisWeek } from '../utils/supervisionDeadlines'
 import { supabase } from '../../../lib/supabase'
 import { format, startOfWeek, endOfWeek } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
@@ -127,8 +128,8 @@ function deriveSubcontractorStatus(
 ): SubcontractorStatus[] {
   return contracts.map(sub => {
     const recentLogs = recentLogsBySubcontractor.get(sub.subcontractor_id) || []
-    const daysUntilDeadline = sub.deadline ? daysFromToday(sub.deadline) : 999
-    const isOverdue = sub.deadline ? daysUntilDeadline < 0 && sub.progress < 100 : false
+    const daysUntilDeadline = sub.deadline ? daysFromToday(sub.deadline) : null
+    const isOverdue = daysUntilDeadline !== null && daysUntilDeadline < 0 && sub.progress < 100
     const lastActivity = recentLogs.length > 0 ? recentLogs[0].date : null
 
     return {
@@ -163,9 +164,7 @@ function buildWeeklyStats(
     contracts.filter(sub => sub.progress < 100 && sub.phase_id).map(sub => sub.phase_id)
   )
   const overdueCount = subcontractorStatus.filter(s => s.is_overdue).length
-  const criticalDeadlines = subcontractorStatus.filter(
-    s => s.days_until_deadline >= 0 && s.days_until_deadline <= 7 && s.progress < 100
-  ).length
+  const criticalDeadlines = subcontractorStatus.filter(isDueThisWeek).length
 
   return {
     completed_this_week: completedThisWeek,

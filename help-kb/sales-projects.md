@@ -41,6 +41,10 @@ Datoteka se učitava gumbom **Analiziraj datoteku**. Čita se samo prvi list; za
 
 Stan koji već postoji (ista zgrada i oznaka) ažurira se umjesto da se doda ponovno, a status mu se ne mijenja. Prije uvoza prikazuje se pregled s brojem valjanih i nevaljanih redaka i razlogom za svaki nevaljani.
 
+## Tko što može
+
+Zgrade i jedinice dodaju, uređuju, povezuju, rezerviraju i prodaju uloge **Director**, **Sales** i **Accounting**; brisati mogu samo **Director** i **Sales**. Ostale uloge stranicu samo pregledavaju i te gumbe ne vide.
+
 ## Uvoz garaža iz Excela
 
-Gumb **Uvezi garaže iz Excela** na tabu **Garaže** uvozi garaže u otvorenu zgradu. Zaglavlje je u 1. retku, podaci od 2. retka: A – oznaka garaže, B – površina u m², C – cijena u EUR. Postojeća garaža s istim brojem se ažurira. Repozitoriji nemaju zaseban uvoz — dolaze uz stanove (stupci P–R).
+Gumb **Uvezi garaže iz Excela** na tabu **Garaže** uvozi garaže u otvorenu zgradu. Zaglavlje je u 1. retku, podaci od 2. retka: A – oznaka garaže, B – površina u m², C – cijena u EUR. Gumb **Preuzmi predložak** u prozoru uvoza preuzima praznu tablicu s tim zaglavljima. Postojeća garaža s istim brojem se ažurira. Repozitoriji nemaju zaseban uvoz — dolaze uz stanove (stupci P–R).

@@ -2058,6 +2058,7 @@
       "download_template": "Download template",
       "template_failed": "The template could not be downloaded. Please try again.",
       "template_sheet_data": "Apartments",
+      "garage_template_sheet_data": "Garages",
       "template_sheet_notes": "Notes",
       "format": {
         "layout": "Only the first sheet is read. Headers are on row 1 and data starts on row 2; the column order matters, not the header names.",
@@ -3411,6 +3412,7 @@
       "error_add_bank": "Error adding bank. Please try again.",
       "error_update_bank": "Error updating bank.",
       "error_credit_fields_required": "Please fill in the required fields (Bank, Credit Name, Amount, Start Date)",
+      "error_disbursement_account_required": "Choose the bank account the credit was disbursed to.",
       "error_add_credit": "Error adding credit facility.",
       "error_update_credit": "Error updating credit facility.",
       "investor_form": {

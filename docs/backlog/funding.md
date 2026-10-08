@@ -32,9 +32,6 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
 - Drawdown, repayment and fee sections come back empty for that role. Needs the decision in
   SEC-A10 / SEC-004 ([security.md](./security.md)).
 
-### FUND-6 · Low · "Disbursed to account" without an account gives a generic error
-- The account is marked required but not validated; the database CHECK rejects the save.
-
 ### FUND-7 · Low · Equity form drops fields
 - `percentage_stake`, `notes` and custom schedules are shown but not stored.
 
@@ -60,6 +57,9 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
   up the flex chain) instead of widening the document.
 
 ## Resolved
+
+### FUND-6 · Low · "Disbursed to account" without an account gives a generic error
+- Fixed on `fix/backlog-batch-3` (2026-10-08): the Funding credit form checks the account before saving.
 
 ### FUND-12 · Low · Allocation invoice list does not reconcile
 - Fixed on `fix/backlog-small-batch` (2026-10-08): `fetchAllocationInvoices` also returns the `OUTGOING_BANK` invoices booked

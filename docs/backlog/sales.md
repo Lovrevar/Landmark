@@ -6,22 +6,11 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 
 ## Open
 
-### SALES-20 · Low · Sales projects unit actions are not role-gated
-- **Check:** Code reading (2026-10-08)
-- **Where:** `Sales/SalesProjects/UnitsGrid.tsx` and its header: add, edit, delete, bulk create,
-  bulk price, link, import and sell show to every role.
-- **Fix direction:** `canEditSalesUnits` / `canDeleteSalesUnits` from `utils/permissions.ts`, as
-  on the Apartments page. Check which roles `complete_apartment_sale` accepts before gating "sell".
-
 ### SALES-17 · Low · Bulk building creation
 - **Check:** Code reading
 - **Where:** `createBulkBuildings`.
 - **What happens:** it can create buildings with names that already exist, always gives them 10
   floors, and writes `severity` inside the activity-log metadata, not as the severity.
-
-### SALES-18 · Low · Garage and storage import has no template; import tolerance differs from the screen
-- **Where:** the garage import modal has no "download template" button (the apartment import
-  does). The apartment import accepts a price difference of 0,05 while the screen says 0,02.
 
 ### SALES-19 · Low · Sales labels, grammar and hardcoded strings
 - **Check:** Code reading
@@ -58,6 +47,16 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 - **Fix direction:** `formatEuro` / `formatEuroRounded`. Part of UI-1 in [ui.md](./ui.md).
 
 ## Resolved
+
+### SALES-18 · Low · Garage and storage import has no template; import tolerance differs from the screen
+- Fixed on `fix/backlog-batch-3` (2026-10-08): the garage import has a "Preuzmi predložak" button
+  (`garageImportTemplate.ts`). The reported tolerance mismatch (0,05 against 0,02) was not found
+  in the code or the strings.
+
+### SALES-20 · Low · Sales projects unit actions are not role-gated
+- Fixed on `fix/backlog-batch-3` (2026-10-08): the unit cards and the page header use `canEditSalesUnits` /
+  `canDeleteSalesUnits`. Selling needs INSERT on `sales` and `customers` and UPDATE on the unit,
+  all three open to Director, Sales and Accounting.
 
 ### SALES-16 · Low · Apartments page actions are not role-gated
 - Fixed on `fix/backlog-small-batch` (2026-10-08): `canEditSalesUnits` / `canDeleteSalesUnits` mirror the RLS policies and
