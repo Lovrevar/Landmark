@@ -75,7 +75,11 @@ const AccountingCustomers: React.FC = () => {
           ) : error && customers.length === 0 ? (
             <ErrorState onRetry={() => void refetch()} />
           ) : filteredCustomers.length === 0 ? (
-            <EmptyState icon={Users} title={t('accounting_customers.empty')} />
+            searchTerm.trim() ? (
+              <EmptyState icon={Users} title={t('common.no_results')} description={t('common.no_results_description')} />
+            ) : (
+              <EmptyState icon={Users} title={t('accounting_customers.empty')} description={t('accounting_customers.empty_description')} />
+            )
           ) : (
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700/50">

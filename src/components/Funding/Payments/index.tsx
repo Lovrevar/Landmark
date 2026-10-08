@@ -6,13 +6,15 @@ import { usePaymentsData } from './hooks/usePaymentsData'
 import { paymentTotalsByDirection, DIRECTION_AMOUNT_CLASS, formatSignedEuro } from '../../Cashflow/services/paymentTotals'
 import type { BankPaymentWithDetails } from './services/bankPaymentsService'
 import { exportFundingPaymentsExcel } from './services/fundingPaymentsExport'
-import type { PaymentDirection } from '../../Cashflow/services/invoiceHelpers'
+import { paymentKind, type PaymentDirection } from '../../Cashflow/services/invoiceHelpers'
 import { getCreditTypeLabelKey } from '../Investors/utils/creditCalculations'
 import { useAsyncExport } from '../../../hooks/useAsyncExport'
 import { formatEuro, formatDate, NO_VALUE } from '../../../utils/formatters'
 
-// A drawdown is money in (green), a repayment or credit fee money out (red). The amount classes
-// and the signed-net formatter are shared with the Cashflow payments screen.
+// Money in is green and money out red on the amount; the badge says what the payment is. A
+// drawdown or a principal repayment is financing and gets a neutral badge, only a credit fee is
+// an expense (FUND-17). The amount classes and the signed-net formatter are shared with the
+// Cashflow payments screen.
 const DIRECTION_BADGE: Record<PaymentDirection, 'green' | 'red'> = { IN: 'green', OUT: 'red' }
 
 const FundingPaymentsManagement: React.FC = () => {
@@ -22,9 +24,6 @@ const FundingPaymentsManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
-
-  const directionLabel = (direction: PaymentDirection | null): string =>
-    direction === 'IN' ? t('payments.table.income') : direction === 'OUT' ? t('payments.table.expense') : NO_VALUE
 
   const creditTypeLabel = (payment: BankPaymentWithDetails): string => {
     const key = getCreditTypeLabelKey(payment.credit_type, payment.credit_seniority)
@@ -165,11 +164,13 @@ const FundingPaymentsManagement: React.FC = () => {
                     : formatDate(new Date(payment.created_at), i18n.language)}
                 </Table.Td>
                 <Table.Td label={t('funding.payments.table.type_col')}>
-                  {payment.direction ? (
-                    <Badge variant={DIRECTION_BADGE[payment.direction]}>{directionLabel(payment.direction)}</Badge>
-                  ) : (
-                    NO_VALUE
-                  )}
+                  {(() => {
+                    const kind = paymentKind(payment.invoice_type)
+                    if (!kind || !payment.direction) return NO_VALUE
+                    return (
+                      <Badge variant={kind.financing ? 'blue' : DIRECTION_BADGE[payment.direction]}>{t(kind.labelKey)}</Badge>
+                    )
+                  })()}
                 </Table.Td>
                 <Table.Td label={t('funding.payments.table.recipient_col')} className="font-medium">{payment.bank_name || t('funding.investments.unknown_bank')}</Table.Td>
                 <Table.Td label={t('funding.payments.table.project_col')}>{payment.project_name || t('common.no_project')}</Table.Td>

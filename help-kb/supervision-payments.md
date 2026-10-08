@@ -1,17 +1,21 @@
 ---
 id: supervision-payments
 title: Upravljanje plaćanjima (podugovaratelji)
-keywords: [plaćanja, payments, upravljanje plaćanjima, podugovaratelji, izvezi CSV]
+keywords: [plaćanja, payments, upravljanje plaćanjima, podugovaratelji, export excel]
 routes: [/payments]
-roles: [Director, Accounting, Investment]
+roles: [Director, Accounting]
 ---
 
-Stranica **Upravljanje plaćanjima** prikazuje sva plaćanja prema podugovarateljima kroz sve projekte. Naslov: **Upravljanje plaćanjima**.
+Stavka **Plaćanja** u profilu **Supervision** otvara stranicu **Upravljanje plaćanjima** — sva plaćanja podugovarateljima kroz sve projekte. Podnaslov: **Pregled i upravljanje svim plaćanjima u svim projektima**.
 
-Na vrhu se nalaze četiri kartice statistike: **Ukupno plaćanja**, **Ukupno iznosa (€)**, **Plaćanja ovog mjeseca**, **Iznos ovog mjeseca (€)**.
+Stranicu koriste **Director** i **Accounting** kad se prebace u profil Supervision. Korisnici s ulogom **Supervision** nemaju je u izborniku i ne vide podatke o plaćanjima.
 
-Filtri: tražilica **Pretraži plaćanja...**, padajući izbornik statusa (**Sva plaćanja**, **Nedavna**, **Velika**), te raspon datuma (**Datum početka** / **Datum kraja**). Klikom na **Izvezi CSV** preuzimate trenutno filtrirani popis.
+Kartice statistike: **Ukupno plaćanja**, **Ukupni iznos**, **Ovaj mjesec** (broj plaćanja), **Iznos ovog mjeseca**.
 
-Stupci tablice: **Datum**, **Podugovaratelj**, **Projekt**, **Faza**, **Plaćeno od (firma)**, **Iznos**, **Napomene**.
+Filtri: tražilica **Pretraži plaćanja...**, izbornik (**Sva plaćanja**, **Nedavno (7 dana)**, **Veće od €10k**) i raspon datuma (**Datum početka** / **Datum završetka**). Ispod tablice stoji zbroj filtriranih plaćanja.
 
-Supervision korisnici vide samo plaćanja na svojim dodijeljenim projektima.
+Gumb **Export Excel** preuzima filtrirani popis kao Excel (.xlsx) datoteku; izvoz je uvijek na hrvatskom.
+
+Stupci tablice: **Datum**, **Podugovaratelj**, **Projekt**, **Faza**, **Plaćeno od**, **Iznos**, **Napomene**.
+
+Stranica je samo za pregled — plaćanja se unose i mijenjaju u profilu **Cashflow** ([[cashflow-payments]]).

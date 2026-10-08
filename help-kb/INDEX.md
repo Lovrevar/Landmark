@@ -20,17 +20,17 @@ Files live alongside this index; each is self-contained markdown with frontmatte
 ## Sales
 
 - [apartments](apartments.md) — **Stanovi (jedinice za prodaju)** — Mreža stanova s filterom statusa (Dostupno/Rezervirano/Prodano) i povezanim garažama/repozitorijima.
-- [sales-projects](sales-projects.md) — **Prodajni projekti** — Trorazinska navigacija Projekti → Zgrade → Jedinice; bulk kreiranje i Excel uvoz.
+- [sales-projects](sales-projects.md) — **Sales projekti (zgrade i jedinice)** — Trorazinska navigacija Projekti → Zgrade → Jedinice; bulk kreiranje i Excel uvoz.
 - [customers](customers.md) — **Kupci (prodaja)** — Kupci stanova s kategorijama (kupci/zainteresirani/leadovi) i grupnim e-mail izvozom.
-- [sales-payments](sales-payments.md) — **Plaćanja prodaje** — Uplate kupaca po projektima i stanovima; ista stranica služi i retail rutu.
+- [sales-payments](sales-payments.md) — **Plaćanja prodaje** — Uplate kupaca po projektima i stanovima; Excel izvoz.
 - [sales-reports](sales-reports.md) — **Izvještaji prodaje** — Dvije vrste izvještaja: po projektu i po kupcima; PDF izvoz.
 
 ## Funding
 
 - [funding-investors](funding-investors.md) — **Investitori (Funding)** — Banke i investitori; dodavanje pozajmica i kapitala.
 - [funding-investments](funding-investments.md) — **Investicije (krediti i alokacije)** — Kreditne linije banaka s alokacijama prema projektima, OPEX-u ili refinanciranju.
-- [investment-projects](investment-projects.md) — **Projektne investicije** — Pregled svakog projekta s podjelom na kapital, dug i očekivani povrat.
-- [funding-payments](funding-payments.md) — **Uplate financiranja** — Sve uplate vezane uz bankarsko financiranje; CSV izvoz.
+- [investment-projects](investment-projects.md) — **Investicijski projekti** — Pregled svakog projekta s podjelom na kapital, dug i očekivani povrat.
+- [funding-payments](funding-payments.md) — **Plaćanja financiranja** — Sve uplate vezane uz bankarsko financiranje; CSV izvoz.
 - [tic](tic.md) — **TIC — Struktura troškova investicije** — Matrica troškova investicije po namjeni s vlastitim/kreditnim sredstvima; Excel/PDF izvoz.
 
 ## Cashflow
@@ -40,7 +40,7 @@ Files live alongside this index; each is self-contained markdown with frontmatte
 - [cashflow-suppliers](cashflow-suppliers.md) — **Dobavljači (Cashflow)** — Isti zapisi kao podugovaratelji, prikazani iz računovodstvene perspektive.
 - [office-suppliers](office-suppliers.md) — **Office Dobavljači** — Zasebna tablica vendora za uredske/administrativne troškove.
 - [cashflow-companies](cashflow-companies.md) — **Moje firme** — Financijski pregled svih firmi pod grupom Landmark.
-- [cashflow-banks](cashflow-banks.md) — **Banke / Investicije (Cashflow)** — Read-only pregled bankovnih računa, kredita i alokacija.
+- [cashflow-banks](cashflow-banks.md) — **Investicije (Cashflow)** — Read-only pregled bankovnih računa, kredita i alokacija.
 - [cashflow-customers](cashflow-customers.md) — **Kupci (Cashflow)** — Pregled kupaca s računima i dugovanjima iz računovodstvene perspektive.
 - [cashflow-calendar](cashflow-calendar.md) — **Kalendar dospijeća** — Mjesečni kalendar dospijeća računa s planiranim budžetom.
 - [cashflow-loans](cashflow-loans.md) — **Pozajmice i prijenosi** — Interne pozajmice i prijenosi između firmi grupe.
@@ -52,7 +52,7 @@ Files live alongside this index; each is self-contained markdown with frontmatte
 - [retail-projects](retail-projects.md) — **Retail projekti** — Projekti razvoja zemljišta s tabovima Pregled, Čestice, Kupci, Prodaja, Računi.
 - [retail-land-plots](retail-land-plots.md) — **Zemljišne čestice** — Popis kupljenih parcela s površinom, ulaganjima i statusom plaćanja.
 - [retail-customers](retail-customers.md) — **Retail kupci** — Kupci zemljišnih čestica, zaseban modul od kupaca stanova.
-- [retail-sales](retail-sales.md) — **Retail prodaja (čestice)** — Prodaja čestica kupcima s plaćanjem, statusima i dospijećima.
+- [retail-sales](retail-sales.md) — **Retail prodaje i plaćanja kupaca** — Registar plaćanja kupaca čestica (stavka izbornika Prodaje) i stranica prodaja čestica.
 - [retail-invoices](retail-invoices.md) — **Računi (Retail)** — Računi retail strane s filterima tipa i odobrenja; CSV izvoz.
 - [retail-reports](retail-reports.md) — **Retail izvještaji** — PDF izvještaji za retail portfelj s tabovima Pregled/Projekti/Prodaja/Troškovi.
 
@@ -64,16 +64,16 @@ Files live alongside this index; each is self-contained markdown with frontmatte
 - [tasks](tasks.md) — **Zadaci** — Praćenje zadataka s tabovima i statusima (todo / u tijeku / gotovo).
 - [calendar](calendar.md) — **Kalendar** — Sastanci, podsjetnici i događaji s RSVP-om i pregledima mjesec/tjedan/dan/agenda.
 - [top-nav](top-nav.md) — **Gornja navigacija (header)** — Logo, profil dropdown, ikone obavijesti, jezik, tema, odjava.
-- [exporting-data](exporting-data.md) — **Izvoz podataka (CSV, Excel, PDF)** — Mapa stranica i gumba za sve dostupne izvoze.
+- [exporting-data](exporting-data.md) — **Izvoz podataka (Excel, PDF)** — Mapa stranica i gumba za sve dostupne izvoze.
 - [language-and-theme](language-and-theme.md) — **Promjena jezika i teme** — Kako promijeniti jezik i temu iz gornje navigacije.
 - [ai-chat-widget](ai-chat-widget.md) — **AI asistent (chat widget)** — Plutajući AI widget; što može i ne može, opseg i odgovornost.
 
 ## Domain terms
 
-- [term-cesija](term-cesija.md) — **Što je cesija (asignacija potraživanja)?** — Plaćanje od strane treće osobe; oznaka is_cesija na zapisu plaćanja.
+- [term-cesija](term-cesija.md) — **Što je cesija (ustup potraživanja)?** — Plaćanje od strane treće osobe; oznaka is_cesija na zapisu plaćanja.
 - [term-kompenzacija](term-kompenzacija.md) — **Što je kompenzacija (prijeboj)?** — Međusobni prijeboj duga između dvije strane; način plaćanja bez stvarnog protoka novca.
 - [term-faza-vs-prekretnica](term-faza-vs-prekretnica.md) — **Faza vs. prekretnica (milestone)** — Razlika između dvije različite tablice i pojmova.
-- [term-has-contract](term-has-contract.md) — **Usmeni dogovor (has_contract = false)** — Što znači kada ugovor nema potpisanu pisanu verziju.
+- [term-has-contract](term-has-contract.md) — **Bez ugovora (usmeni dogovor)** — Što znači kada ugovor nema potpisanu pisanu verziju.
 - [term-multi-vat](term-multi-vat.md) — **Multi-VAT računi (više PDV stopa)** — Hrvatska računovodstvena specifičnost: do 4 PDV stope po dokumentu.
 - [term-unit-types](term-unit-types.md) — **Tipovi jedinica: stan, garaža, repozitorij** — Tri tipa prodajnih jedinica i njihovo povezivanje.
 - [term-tic](term-tic.md) — **TIC — što znači skraćenica?** — Troškovna Informatička Struktura, strukturirani prikaz troškova investicije.

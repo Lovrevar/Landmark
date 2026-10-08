@@ -12,7 +12,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [sales.md](./sales.md) | Units, the sale flow, customers | 7 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
 | [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 4 |
-| [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 10, plus 4 waiting on the ERP |
+| [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 7, plus 4 waiting on the ERP |
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
 | [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 10 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 10 |
@@ -64,7 +64,7 @@ it from the ranking. Never reuse an id: code comments and migrations quote them 
 
 ## Open work, ranked
 
-Ranked on 2026-10-05 by what goes wrong if the item is left, then by how small the job is.
+Ranked on 2026-10-05 (items 8 and 9 added 2026-10-07) by what goes wrong if the item is left, then by how small the job is.
 
 ### 1. Do first
 
@@ -84,19 +84,21 @@ still open in production.
 | 5 | [SEC-004](./security.md) — `contracts` readable by every signed-in user | The Supervision payment gate is screen-only. Touches the most-read table; needs its own test pass. |
 | 6 | [COLLAB-4](./collaboration.md) — AI rate limit miscounts and fails open | Deferred to the voice branch (OQ-3). Do it there. |
 | 7 | [SALES-10](./sales.md) — no sale cancellation flow | A reverted sale counts in dashboards and reports for ever. |
+| 8 | [CASH-29](./cashflow.md) — Cashflow payments totals count credit principal as income and expense | The cards disagree with the rows under them. Needs the accountant before the figures change. |
+| 9 | [RETAIL-5](./retail.md) — `/retail-sales` unreachable from the menu | Needs a decision: link it or remove it. |
 
 ### 3. Larger work, schedule deliberately
 
 | # | Item | Note |
 |---|---|---|
-| 8 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
-| 9 | [UI-8](./ui.md) — mobile | Supervision is used on site, on phones. |
-| 10 | [UI-4](./ui.md) — remaining silent failures | A failed load still reads as "no data" on ~39 inline loaders. |
-| 11 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
-| 12 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
-| 13 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
-| 14 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
-| 15 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
+| 10 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
+| 11 | [UI-8](./ui.md) — mobile | Supervision is used on site, on phones. |
+| 12 | [UI-4](./ui.md) — remaining silent failures | A failed load still reads as "no data" on ~39 inline loaders. |
+| 13 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
+| 14 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
+| 15 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
+| 16 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
+| 17 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
 
 ### 4. Small and low-risk
 

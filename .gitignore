@@ -64,8 +64,13 @@ vapid.json
 # Real financial data from 4D Wand exports — kept local, never committed.
 docs/erp-samples/
 
-# Visual-check output (Playwright screenshots, the exported PDF and the downloaded template).
-# Regenerable and ~13 MB; the findings are in the README beside them, which is tracked.
-docs/screenshots/guidance-phase-1/*.png
-docs/screenshots/guidance-phase-1/*.pdf
-docs/screenshots/guidance-phase-1/*.xlsx
+# Visual-check output under docs/screenshots/ (Playwright screenshots, exported PDFs, downloaded
+# templates), in every subfolder. Regenerable and large. The README.md beside them holds the
+# findings and stays tracked.
+docs/screenshots/**/*.png
+docs/screenshots/**/*.jpg
+docs/screenshots/**/*.jpeg
+docs/screenshots/**/*.webp
+docs/screenshots/**/*.gif
+docs/screenshots/**/*.pdf
+docs/screenshots/**/*.xlsx

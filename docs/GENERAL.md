@@ -228,8 +228,12 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 
 #### What the EVM screen refuses to claim
 
-Three fallbacks inside `calculateProjectEVM` used to surface as confident figures:
+Four fallbacks inside `calculateProjectEVM` used to surface as confident figures:
 
+- **No cost yet.** `costAvailable` is false while nothing has been paid; CPI then falls back to 1
+  and EAC to the budget, which read as a green "Ispod proračuna ✓" on an unstarted project
+  (GEN-20). CPI, EAC and VAC now render "—" with `budget_control.no_cost`, and no CPI point is
+  plotted.
 - **No schedule baseline.** `scheduleAvailable` is false when no phase carries both a start and
   an end date; SPI then falls back to 1 (`evm.ts:135`). Nothing read the flag, so a project with
   no dates at all reported a green "On schedule ✓". SPI now renders "—" with

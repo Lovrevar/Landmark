@@ -8,6 +8,7 @@ import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatC
 import { toErrorMessage } from '../../../lib/errorMessage'
 import { useAuth } from '../../../contexts/AuthContext'
 import { isDirectorRole } from '../../../utils/permissions'
+import { formatEuro } from '../../../utils/formatters'
 
 const AccountingCompanies: React.FC = () => {
   const { t } = useTranslation()
@@ -74,9 +75,9 @@ const AccountingCompanies: React.FC = () => {
       {!(error && companies.length === 0) && (
       <StatGrid columns={4}>
         <StatCard label={t('companies.stats.total_count')} value={companies.length} icon={Building2} />
-        <StatCard label={t('companies.stats.total_balance')} value={`€${totalBalance.toLocaleString('hr-HR')}`} icon={DollarSign} color={totalBalance >= 0 ? 'green' : 'red'} />
-        <StatCard label={t('companies.stats.total_revenue')} value={`€${totalRevenue.toLocaleString('hr-HR')}`} icon={TrendingUp} color="blue" />
-        <StatCard label={t('companies.stats.profit_loss')} value={`€${totalProfit.toLocaleString('hr-HR')}`} icon={totalProfit >= 0 ? TrendingUp : TrendingDown} color={totalProfit >= 0 ? 'green' : 'red'} />
+        <StatCard label={t('companies.stats.total_balance')} value={formatEuro(totalBalance)} icon={DollarSign} color={totalBalance >= 0 ? 'green' : 'red'} />
+        <StatCard label={t('companies.stats.total_revenue')} value={formatEuro(totalRevenue)} icon={TrendingUp} color="blue" />
+        <StatCard label={t('companies.stats.profit_loss')} value={formatEuro(totalProfit)} icon={totalProfit >= 0 ? TrendingUp : TrendingDown} color={totalProfit >= 0 ? 'green' : 'red'} />
       </StatGrid>
       )}
 
@@ -118,7 +119,7 @@ const AccountingCompanies: React.FC = () => {
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
                   <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t('companies.card.current_balance')}</p>
                   <p className={`text-xl font-bold ${company.current_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    €{company.current_balance.toLocaleString('hr-HR')}
+                    {formatEuro(company.current_balance)}
                   </p>
                 </div>
 
@@ -128,7 +129,7 @@ const AccountingCompanies: React.FC = () => {
                       <ArrowUpCircle className="w-4 h-4 text-green-600 mr-1" />
                       <p className="text-xs text-green-700 dark:text-green-400">{t('companies.card.issued')}</p>
                     </div>
-                    <p className="text-sm font-bold text-green-900 dark:text-green-300">€{company.total_income_paid.toLocaleString('hr-HR')}</p>
+                    <p className="text-sm font-bold text-green-900 dark:text-green-300">{formatEuro(company.total_income_paid)}</p>
                     <p className="text-xs text-gray-600 dark:text-gray-400">{t('companies.card.invoices_count', { count: company.total_income_invoices })}</p>
                   </div>
 
@@ -137,7 +138,7 @@ const AccountingCompanies: React.FC = () => {
                       <ArrowDownCircle className="w-4 h-4 text-red-600 mr-1" />
                       <p className="text-xs text-red-700 dark:text-red-400">{t('companies.card.paid_out')}</p>
                     </div>
-                    <p className="text-sm font-bold text-red-900 dark:text-red-300">€{company.total_expense_paid.toLocaleString('hr-HR')}</p>
+                    <p className="text-sm font-bold text-red-900 dark:text-red-300">{formatEuro(company.total_expense_paid)}</p>
                     <p className="text-xs text-gray-600 dark:text-gray-400">{t('companies.card.invoices_count', { count: company.total_expense_invoices })}</p>
                   </div>
                 </div>
@@ -145,12 +146,12 @@ const AccountingCompanies: React.FC = () => {
                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600 dark:text-gray-400">{t('companies.card.revenue_label')}</span>
-                    <span className="font-medium text-gray-900 dark:text-white">€{company.revenue.toLocaleString('hr-HR')}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{formatEuro(company.revenue)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-400">{t('companies.card.profit_loss_label')}</span>
                     <span className={`font-medium ${company.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      €{company.profit.toLocaleString('hr-HR')}
+                      {formatEuro(company.profit)}
                     </span>
                   </div>
                   {/* Credit principal — drawn and repaid — sits outside turnover and result.
@@ -160,7 +161,7 @@ const AccountingCompanies: React.FC = () => {
                     <div className="flex justify-between gap-2 text-sm mt-1">
                       <span className="text-gray-600 dark:text-gray-400">{t('companies.card.financing_label')}</span>
                       <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                        €{company.financing_received.toLocaleString('hr-HR')} / €{company.financing_repaid.toLocaleString('hr-HR')}
+                        {formatEuro(company.financing_received)} / {formatEuro(company.financing_repaid)}
                       </span>
                     </div>
                   )}
@@ -169,11 +170,11 @@ const AccountingCompanies: React.FC = () => {
                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>{t('companies.card.unpaid_income')}</span>
-                    <span className="text-orange-600">€{company.total_income_unpaid.toLocaleString('hr-HR')}</span>
+                    <span className="text-orange-600">{formatEuro(company.total_income_unpaid)}</span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>{t('companies.card.unpaid_expense')}</span>
-                    <span className="text-orange-600">€{company.total_expense_unpaid.toLocaleString('hr-HR')}</span>
+                    <span className="text-orange-600">{formatEuro(company.total_expense_unpaid)}</span>
                   </div>
                 </div>
               </div>

@@ -14,6 +14,8 @@ interface InvoiceTableProps {
   sortField: 'due_date' | 'invoice_number' | null
   sortDirection: 'asc' | 'desc'
   filterDirection: 'INCOMING' | 'OUTGOING'
+  /** A search term or a filter other than the direction is active, so an empty table means "no match". */
+  filtered?: boolean
   onSort: (field: 'due_date' | 'invoice_number') => void
   onView: (invoice: Invoice) => void
   onEdit: (invoice: Invoice) => void
@@ -29,6 +31,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   sortField,
   sortDirection,
   filterDirection,
+  filtered = false,
   onSort,
   onView,
   onEdit,
@@ -102,7 +105,8 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
             <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1}>
               <EmptyState
                 icon={FileText}
-                title={t('invoices.table.no_invoices')}
+                title={filtered ? t('common.no_results') : t('invoices.table.no_invoices')}
+                description={filtered ? t('common.no_results_description') : t('invoices.table.no_invoices_description')}
               />
             </td>
           </tr>

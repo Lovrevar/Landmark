@@ -1,27 +1,31 @@
 ---
 id: exporting-data
-title: Izvoz podataka (CSV, Excel, PDF)
-keywords: [izvoz, export, CSV, Excel, PDF, preuzmi, download]
-routes: [/payments, /invoices, /general-reports, /tic, /debt-status, /sales-payments]
-roles: [Director, Accounting, Sales, Supervision, Investment]
+title: Izvoz podataka (Excel, PDF)
+keywords: [izvoz, export, Excel, xlsx, PDF, preuzmi, download]
+routes: [/payments, /invoices, /sales-payments, /funding-payments, /retail-invoices, /retail-sales-payments, /tic, /debt-status, /general-reports, /sales-reports, /retail-reports]
+roles: [Director, Accounting, Sales, Investment]
 ---
 
-Stranice koje podržavaju izvoz podataka:
+Podaci se izvoze u **Excel (.xlsx)** i **PDF**. Izvezene datoteke uvijek su na hrvatskom, bez obzira na jezik sučelja. CSV izvoza nema.
 
-**CSV (popis transakcija):**
-- [[supervision-payments]] — gumb **Izvezi CSV**
-- [[supervision-invoices]] — gumb **Izvezi CSV**
-- [[sales-payments]] — gumb **Preuzmi CSV**
-- [[funding-payments]] — gumb **Preuzmi CSV**
-- [[retail-invoices]] — gumb **Export CSV**
+**Excel (popisi) — gumb Export Excel:**
+- [[supervision-payments]]
+- [[supervision-invoices]]
+- [[sales-payments]]
+- [[funding-payments]]
+- [[retail-invoices]]
+- [[retail-sales]]
 
 **Excel + PDF:**
-- [[tic]] — gumbi **Preuzmi Excel** i **Preuzmi PDF**
+- [[tic]] — gumbi **Export Excel** i **Export PDF**
 - [[debt-status]] — gumbi **Export Excel** i **Export PDF**
 
 **PDF (izvještaji):**
 - [[general-reports]] — gumb **Izvoz PDF**
-- [[sales-reports]] — gumb **Preuzmi izvještaj**
-- [[retail-reports]] — gumb **Izvezi PDF**
+- [[sales-reports]] — gumb **Izvozi izvještaj**
+- [[retail-reports]] — gumb **PDF izvještaj**
+- Investicijska nadzorna ploča (Funding profil) — gumb **Izvoz u PDF**
 
-Izvozi uvažavaju trenutno aktivne filtre — primjerice, filtrirate račune po datumu i mjesecu, pa CSV sadrži samo te retke. AI asistent ne može generirati izvoze — to morate učiniti ručno na odgovarajućoj stranici.
+Izvoz popisa sadrži retke koji su trenutno prikazani — prvo postavite pretragu i filtre, pa izvezite.
+
+[[ai-chat-widget]] također može izraditi PDF ili Excel dokument od podataka koje je pronašao u razgovoru.

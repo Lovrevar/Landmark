@@ -197,6 +197,7 @@ const AccountingPayments: React.FC = () => {
         <PaymentTable
           payments={paginatedPayments}
           visibleColumns={visibleColumns}
+          filtered={searchTerm.trim() !== '' || filterMethod !== 'ALL' || filterInvoiceType !== 'ALL' || !!dateFrom || !!dateTo}
           onView={handleViewPayment}
           onEdit={handleOpenModal}
           onDelete={handleDelete}

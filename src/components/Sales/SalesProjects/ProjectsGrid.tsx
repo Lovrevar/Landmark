@@ -1,7 +1,8 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { ProjectWithBuildings, OnSelectProjectCallback } from './types'
-import { Badge } from '../../ui'
+import { Building2 } from 'lucide-react'
+import { Badge, EmptyState } from '../../ui'
 import { PROJECT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDisplay'
 
 interface ProjectsGridProps {
@@ -11,6 +12,17 @@ interface ProjectsGridProps {
 
 export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectProject }) => {
   const { t } = useTranslation()
+
+  if (projects.length === 0) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title={t('sales_projects.no_projects_title')}
+        description={t('sales_projects.no_projects_description')}
+      />
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => (

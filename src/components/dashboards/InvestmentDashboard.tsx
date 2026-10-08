@@ -20,6 +20,7 @@ import DashboardError from './DashboardError'
 import InvestmentSummaryCards from './sections/InvestmentSummaryCards'
 import InvestmentCreditsTable from './sections/InvestmentCreditsTable'
 import { formatCreditType } from '../Funding/Investors/utils/creditCalculations'
+import PageHelpLink from '../ui/PageHelpLink'
 
 const defaultFinancialSummary: FinancialSummary = {
   total_portfolio_value: 0, total_debt: 0, total_equity: 0,
@@ -86,7 +87,7 @@ const InvestmentDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.investment.title')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.investment.title')}<PageHelpLink /></h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.investment.subtitle')}</p>
         </div>
         <Button variant="danger" icon={FileDown} onClick={handleExportPDF} disabled={bankCredits.length === 0}>

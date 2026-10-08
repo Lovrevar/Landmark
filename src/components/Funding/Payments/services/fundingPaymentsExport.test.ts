@@ -37,9 +37,20 @@ describe('buildFundingPaymentsSheet', () => {
     expect([date.getFullYear(), date.getMonth() + 1, date.getDate()]).toEqual([2026, 1, 5])
   })
 
-  it('translates the direction and the credit type rather than writing the enum', () => {
+  // A drawdown and a principal repayment are financing, not income and expense (FUND-17); only
+  // the credit fee is a cost.
+  it('names a drawdown, a repayment and a credit fee for what they are', () => {
+    const rows = buildFundingPaymentsSheet([
+      payment({ invoice_type: 'OUTGOING_BANK', direction: 'IN' }),
+      payment({ invoice_type: 'INCOMING_BANK', direction: 'OUT' }),
+      payment({ invoice_type: 'INCOMING_BANK_EXPENSES', direction: 'OUT' }),
+      payment({ invoice_type: '', direction: null }),
+    ], t).slice(1)
+    expect(rows.map(row => row[1])).toEqual(['ISPLATA KREDITA', 'OTPLATA GLAVNICE', 'RASHOD', ''])
+  })
+
+  it('translates the credit type rather than writing the enum', () => {
     const [, row] = buildFundingPaymentsSheet([payment({})], t)
-    expect(row[1]).toBe('PRIHOD')
     expect(row[4]).not.toContain('_')
     expect(row[4]).toBe(t('banks.credit_form.loc_junior'))
   })

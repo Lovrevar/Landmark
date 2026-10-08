@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Invoice, MonthlyBudget } from '../types'
 import { toLoadError } from '../../services/loadError'
 import { fetchInvoices as fetchInvoicesService, fetchBudgets as fetchBudgetsService } from '../services/calendarService'
-import { isCashIn, isCashOut } from '../../../../utils/invoiceCashDirection'
+import { monthStats } from '../utils/monthStats'
 
 export const useCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -75,47 +75,7 @@ export const useCalendar = () => {
 
   const getMonthStats = () => {
     const { year, month } = getDaysInMonth(currentDate)
-    const monthInvoices = invoices.filter(inv => {
-      const dateParts = inv.due_date.split('T')[0].split('-')
-      const invYear = parseInt(dateParts[0])
-      const invMonth = parseInt(dateParts[1]) - 1
-      return invYear === year && invMonth === month
-    })
-
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    // Sides come from the shared direction map. The two lists kept here before left credit
-    // fees (INCOMING_BANK_EXPENSES) out of both, so a month's "Ulazni" total and its net
-    // ignored them while the bank balance did not.
-    const incomingInvoices = monthInvoices.filter(inv => isCashOut(inv.invoice_type))
-    const outgoingInvoices = monthInvoices.filter(inv => isCashIn(inv.invoice_type))
-
-    const incomingPaid = incomingInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
-    const incomingUnpaid = incomingInvoices.filter(inv => inv.status !== 'PAID').reduce((sum, inv) => sum + inv.remaining_amount, 0)
-    const incomingUnpaidCount = incomingInvoices.filter(inv => inv.status !== 'PAID').length
-    const outgoingPaid = outgoingInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0)
-    const netAmount = outgoingPaid - incomingPaid
-
-    return {
-      total: monthInvoices.length,
-      paid: monthInvoices.filter(inv => inv.status === 'PAID').length,
-      unpaid: monthInvoices.filter(inv => inv.status === 'UNPAID').length,
-      overdue: monthInvoices.filter(inv => {
-        const dateParts = inv.due_date.split('T')[0].split('-')
-        const dueDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]))
-        dueDate.setHours(0, 0, 0, 0)
-        return inv.status !== 'PAID' && dueDate < today
-      }).length,
-      totalAmount: monthInvoices.reduce((sum, inv) => sum + inv.total_amount, 0),
-      paidAmount: monthInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0),
-      unpaidAmount: monthInvoices.filter(inv => inv.status !== 'PAID').reduce((sum, inv) => sum + inv.total_amount, 0),
-      incomingPaid,
-      incomingUnpaid,
-      incomingUnpaidCount,
-      outgoingPaid,
-      netAmount
-    }
+    return monthStats(invoices, year, month)
   }
 
   const handlePreviousMonth = () => {

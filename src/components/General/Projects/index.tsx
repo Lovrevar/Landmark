@@ -122,7 +122,26 @@ const ProjectsManagement: React.FC = () => {
             </button>
           </Alert>
         ) : filteredProjects.length === 0 ? (
-          <EmptyState icon={FolderKanban} title={t('general_projects.no_projects')} />
+          searchTerm.trim() || statusFilter !== 'all' || categoryFilter !== 'all' ? (
+            <EmptyState
+              icon={FolderKanban}
+              title={t('common.no_results')}
+              description={t('common.no_results_description')}
+            />
+          ) : (
+            <EmptyState
+              icon={FolderKanban}
+              title={t('general_projects.no_projects')}
+              description={canManageProjects
+                ? t('general_projects.no_projects_description')
+                : t('general_projects.no_projects_description_readonly')}
+              action={canManageProjects ? (
+                <Button icon={Plus} onClick={() => setShowNewProjectModal(true)}>
+                  {t('general_projects.new_project')}
+                </Button>
+              ) : undefined}
+            />
+          )
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project) => (

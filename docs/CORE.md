@@ -125,6 +125,7 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 ### formatters.ts
 - `formatFileSize(bytes)` — returns human-readable file size string (B / KB / MB)
 - `formatEuropean(value)` — `hr-HR` number, always 2 decimals, no symbol: `1.234,56`. Use when the `€` is supplied separately, e.g. it already sits inside a translated string
+- **Negatives:** all three euro helpers put the minus sign before the euro sign, as the locale minus U+2212 — `−€1.234,56`, `−€1.235`, `−€1,2M`, never `€−…` — and an amount that rounds to zero carries no sign (`€0,00`)
 - `formatEuro(value)` — `€1.234,56`. **Exact cents**: invoices, contracts, payments, per-record amounts
 - `formatEuroRounded(value)` — `€1.235`. **Aggregates**, where cents are noise (phase and group rollups, yearly totals). Also cures the ragged `toLocaleString('hr-HR')` output, where a whole number renders `73.125` but a fractional one renders `1.425.597,5`
 - `formatEuroCompact(value)` — `€1,2M` / `€45K` / `€9.500`. **Dashboard tiles and chart axes only.** Thousands start at 10.000, so a five-figure amount keeps its digits; every screen used to divide by a million itself, which rendered €45.000 as `€0.0M`
@@ -219,7 +220,7 @@ read "Jan 05, 2026".
 ### evm.ts
 - `calculatePhaseEVM(plannedBudget, physicalCompletionPct, startDate, endDate, actualCost)` — computes PV, EV, AC, CPI, SPI, CV, SV, EAC, VAC for a single phase using standard EVM formulas
 - `calculateProjectEVM(phases, contracts, milestones = [])` — aggregates phase-level EVM across all phases of a project; contracts join phases on `phase_id`. A phase's `physicalCompletionPct` is the contract-value-weighted average of each contract's milestone-based completion (sum of the `percentage` of its `subcontractor_milestones` that are completed or paid), falling back to `budget_realized / contract_amount` only for a contract with no milestones; maps `Phase.budget_allocated → plannedBudget`, `Phase.start_date / end_date → planned dates`. EV and AC are accumulated for every phase; PV only for dated ones
-- **Returns:** `EVMMetrics` (`PV`, `EV`, `AC`, `CPI`, `SPI`, `CV`, `SV`, `EAC`, `VAC`, plus `scheduleAvailable` — false when no phase has both dates, so SPI = 1 means "unknown")
+- **Returns:** `EVMMetrics` (`PV`, `EV`, `AC`, `CPI`, `SPI`, `CV`, `SV`, `EAC`, `VAC`, plus `scheduleAvailable` — false when no phase has both dates, so SPI = 1 means "unknown" — and `costAvailable`, false while nothing is paid, so CPI = 1 and EAC = budget mean "unknown" too)
 - **Used by:** `BudgetControl/hooks/useBudgetControl.ts`
 - **Depends on:** `Phase`, `ContractWithDetails` from `General/Projects/types.ts`
 

@@ -1,10 +1,14 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-20`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-22`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
+
+### GEN-21 · Low · Projects list shows a failed load as an Alert in the content area
+- **Where:** `General/Projects/index.tsx:117`.
+- **Fix direction:** `ErrorState` with `refetch`. Part of UI-4 in [ui.md](./ui.md).
 
 ### GEN-5 · Low · Budget not gated on the TIC in three places
 - Director dashboard portfolio table, Investment dashboard portfolio value and PDF, Sales report.
@@ -20,6 +24,8 @@ are in [README.md](./README.md).
 ### GEN-7 · Low · Budget Control chart and scope
 - The forecast bar is drawn in red when the forecast is suppressed; contracts without a phase
   count in Committed and Paid but not in EV and AC.
+- The indices chart prints an unrounded number as its top axis label when CPI is above 2
+  (seen 2026-10-07 on the demo: "…527306968").
 
 ### GEN-8 · Low · EVM "physical" progress is payment-driven in practice
 - Milestone statuses feeding EV are set by the payment trigger, so EV is not independent of AC.
@@ -55,3 +61,10 @@ are in [README.md](./README.md).
 - **What happens:** both appear whatever organisation the instance belongs to.
 - **Fix direction:** one configurable organisation name used by both and by the other report
   generators that print it.
+
+## Resolved
+
+### GEN-20 · Medium · Budget Control reports healthy CPI and SPI when there is nothing to measure
+- Fixed on `fix/audit-medium-findings` (2026-10-07): `calculateProjectEVM` returns `costAvailable`, and until something is
+  paid CPI, EAC and VAC show "—" with "Još nema plaćenih troškova". The SPI half of the report
+  was wrong: `scheduleAvailable` already covered it.

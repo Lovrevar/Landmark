@@ -6,15 +6,15 @@ routes: []
 roles: [Director, Accounting, Sales, Investment]
 ---
 
-Profil mijenjate iz dropdowna u gornjoj desnoj zoni — kliknite ime trenutnog profila (npr. **General**) i odaberite drugi: **General**, **Supervision**, **Sales**, **Funding**, **Cashflow** (s lokotom), **Retail**.
+Profil mijenjate iz dropdowna u gornjoj traci desno — kliknite naziv trenutnog profila (npr. **General**) i odaberite drugi: **General**, **Supervision**, **Sales**, **Funding**, **Cashflow** (s lokotom), **Retail**. Na mobitelu se profili nalaze na dnu bočnog izbornika, pod naslovom **Profil**.
 
 Promjena profila:
 - mijenja bočni izbornik (vidite drugi set stranica)
 - mijenja nadzornu ploču ([[dashboard]])
-- preusmjerava vas na `/` (početnu nadzornu ploču novog profila)
+- vraća vas na početnu stranicu (nadzornu ploču novog profila)
 
-**Cashflow** profil traži lozinku — pogledajte [[cashflow-unlock]].
+**Cashflow** se u popisu nudi samo ulogama **Director** i **Accounting** i traži lozinku — pogledajte [[cashflow-unlock]]. Ostale uloge ga u popisu ne vide ([[role-cannot-see-cashflow]]).
 
-**Supervision korisnici** nemaju dropdown profila — oni vide samo svoj fiksni Supervision izbornik. To je posebnost uloge.
+**Supervision korisnici** nemaju dropdown profila — oni vide samo svoj fiksni izbornik. To je posebnost uloge.
 
-Promjena profila ne mijenja vaša prava — vidite samo stranice na kojima vaša uloga ima pristup. Pogledajte [[role-profile-vs-role]] za pojašnjenje.
+Promjena profila ne mijenja vaša prava — izbornik se promijeni, ali podatke vidite samo ondje gdje vaša uloga ima pristup. Tako je, primjerice, stavka **Izvještaji** u General profilu vidljiva samo ulozi Director. Pogledajte [[role-profile-vs-role]] za pojašnjenje.

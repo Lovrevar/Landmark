@@ -244,6 +244,7 @@ const AccountingInvoices: React.FC = () => {
           sortField={sortField}
           sortDirection={sortDirection}
           filterDirection={filterDirection}
+          filtered={searchTerm.trim() !== '' || filterCategory !== 'ALL' || filterStatus !== 'ALL' || filterCompany !== 'ALL'}
           onSort={handleSort}
           onView={handleViewInvoice}
           onEdit={handleOpenModal}

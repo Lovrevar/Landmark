@@ -1,4 +1,5 @@
 import React from 'react'
+import PageHelpLink from '../ui/PageHelpLink'
 import {
   Download,
   RefreshCw,
@@ -45,7 +46,7 @@ const GeneralReports: React.FC = () => {
     <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}</h1>
+          <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}<PageHelpLink tone="light" /></h1>
           <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
           {fetchedAt && (
             <p className="text-sm opacity-90">{t('reports.general.generated')} {formatDateTime(new Date(fetchedAt), i18n.language)}</p>
@@ -65,7 +66,9 @@ const GeneralReports: React.FC = () => {
               icon={Download}
               onClick={handleGeneratePDF}
               loading={generatingPDF}
-              className="bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
+              // `!`: the default variant's own `text-white` outranks a plain text colour here, which left
+              // the label white on white.
+              className="bg-white dark:bg-gray-800 !text-blue-600 dark:!text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
             >
               {t('reports.general.export_pdf')}
             </Button>
@@ -89,7 +92,13 @@ const GeneralReports: React.FC = () => {
         {header}
         {error
           ? <ErrorState onRetry={refetch} />
-          : <EmptyState icon={FileText} title={t('reports.general.no_data')} />}
+          : (
+            <EmptyState
+              icon={FileText}
+              title={t('reports.general.no_data')}
+              description={t('reports.general.no_data_description')}
+            />
+          )}
       </div>
     )
   }

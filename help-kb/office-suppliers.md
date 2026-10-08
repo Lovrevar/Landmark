@@ -1,17 +1,19 @@
 ---
 id: office-suppliers
 title: Office Dobavljači
-keywords: [office dobavljači, uredski dobavljači, back-office, OIB, VAT, novi dobavljač]
+keywords: [office dobavljači, uredski dobavljači, uredski troškovi, OIB, PDV ID, novi dobavljač]
 routes: [/office-suppliers]
 roles: [Director, Accounting]
 ---
 
-**Office Dobavljači** je zaseban popis dobavljača za uredske/administrativne troškove. Podnaslov: **Upravljanje dobavljačima za uredske troškove**.
+**Office Dobavljači** je zaseban popis dobavljača za uredske troškove (plaće, lizing, najam ureda, režije i slično). Nalazi se u profilu **Cashflow**. Podnaslov: **Upravljanje dobavljačima za uredske troškove**.
 
-**Razlika u odnosu na [[cashflow-suppliers]]:** Office dobavljači su u zasebnoj tablici, ne dijele zapise s podugovarateljima sa gradilišta. Ovdje su vendori za uredske režije, materijale, usluge tvrtke i sl.
+**Razlika u odnosu na [[cashflow-suppliers]]:** office dobavljači vode se odvojeno od podugovaratelja s gradilišta i ne prikazuju se u projektnim računima.
 
-Glavna akcija: **Novi dobavljač** (+ gumb). Tražilica: **Pretraži dobavljače...**.
+Glavna akcija: **Novi dobavljač**. Tražilica: **Pretraži dobavljače...**.
 
-Kartice statistike: **Ukupno**, **Ukupno računa**, **Ukupno plaćeno**, **Preostalo**.
+Kartice statistike: **Ukupno dobavljača**, **Ukupno računa**, **Ukupno plaćeno**, **Preostalo**.
 
-Kartice dobavljača prikazuju ime, kontakt, email, adresu, OIB, VAT ID, broj računa, plaćeni i preostali iznos. Bez Site/Retail značaka — ovdje su isključivo uredski vendori.
+Kartica dobavljača prikazuje naziv, telefon, email, adresu, **OIB**, **PDV ID**, broj računa, **Ukupno (s PDV)**, **Osnovica**, **Plaćeno** i **Preostalo**. Klik na karticu otvara popis računa tog dobavljača s datumima, iznosima i statusom.
+
+Gumb **Uredi** otvara obrazac dobavljača. Brisanje (ikona kante) vidi samo **Director**; brisanjem dobavljača brišu se i njegovi računi.

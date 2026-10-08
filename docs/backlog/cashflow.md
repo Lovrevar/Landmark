@@ -1,13 +1,55 @@
 # Backlog — Cashflow
 
 Invoices, payments, companies, bank accounts, loans, cesija and kompenzacija. Ids: `CASH-n` (next
-free: `CASH-24`). Entry format and rules are in [README.md](./README.md).
+free: `CASH-30`). Entry format and rules are in [README.md](./README.md).
 
 Phase 5 of the ERP integration removes in-app invoice and payment creation. Each entry says how
 that changes it; do not build new authoring UI here without reading
 [../erp-integration/](../erp-integration/README.md) first.
 
 ## Open
+
+### CASH-29 · Medium · Cashflow payments totals count credit principal as income and expense
+- **Check:** Code reading (2026-10-07)
+- **Where:** Cashflow → Plaćanja: the cards "Ukupno Prihod" / "Ukupno Rashod" / "Neto" and the
+  "Filtrirano" line (`paymentTotalsByDirection`).
+- **What happens:** they sum by direction, so a credit drawdown is in "Prihod" and a principal
+  repayment in "Rashod", against the CASH-7 decision. The rows themselves are now labelled as
+  financing (FUND-17), so the cards disagree with the table under them.
+- **Fix direction:** split the totals by `invoiceCashCategory`, as the Companies cards do, or
+  rename the cards to "Priljev" / "Odljev". Changes figures: show the accountant first.
+
+### CASH-25 · Low · Payment detail view shows the wrong direction cues
+- **Check:** Code reading
+- **Where:** `Cashflow/Payments/PaymentDetailView.tsx`.
+- **What happens:** it prints a literal "Cesija" and colours every amount green, money out
+  included. (The table's PRIHOD for an unknown type was fixed with FUND-17.)
+- **Fix direction:** `paymentDirection` / `paymentKind` from `invoiceHelpers.ts`.
+
+### CASH-26 · Low · Banks page has a delete button that does nothing and a modal nothing opens
+- **Check:** Code reading
+- **Where:** `Cashflow/Banks/index.tsx`.
+- **Fix direction:** wire the delete (with `ConfirmDialog`, `assertRowsAffected`, `logActivity`) or
+  remove both.
+
+### CASH-27 · Low · Payments date filter parses the dates as UTC
+- **Check:** Code reading
+- **Where:** `Cashflow/Payments/hooks/usePayments.ts:345-346`, `new Date(dateFrom)` / `new Date(dateTo)`.
+- **What happens:** a payment on the first or last day of the range can fall outside it.
+- **Fix direction:** `parseLocalDate` from `utils/dateOnly.ts`.
+
+### CASH-28 · Low · Cashflow wording, hardcoded strings and unused keys
+- **Check:** Code reading
+- Hardcoded: `columnLabels` and the row-action tooltips in the payments table; `SupplierCard.tsx`
+  builds a label by cutting a translated string.
+- Wording: "Resetuj datume" is not Croatian usage ("Poništi datume"); `payments.form.cesija_hint`
+  does not mention paying from a credit; "Ugovor o cesiji" is used for something that is not a
+  cesija contract; the bank invoice form is called Investitor, Novi Račun Banka and Investicije in
+  three places; capitalisation of button labels varies.
+- `Cashflow/Customers/index.tsx` hand-builds its money (UI-1) and prints `N/A` (CASH-20).
+- Unused keys: `invoices.filters.all_projects|all_suppliers|date_from|date_to`,
+  `cashflow_calendar.title|subtitle`.
+- **Rule:** the wording items need someone from accounting to choose the term.
 
 ### CASH-6 · Medium · Cesija from a credit decreases the allocation's usage
 - **Check:** Runtime check needed. **Blocked on an accounting decision.**
@@ -55,31 +97,6 @@ that changes it; do not build new authoring UI here without reading
 - `calculate_invoice_amounts()` hard-codes 25 / 13 / 0 / 5 % by slot and ignores `vat_rate_n`.
   Intended; document it in [../CASHFLOW.md](../CASHFLOW.md).
 
-### CASH-21 · Low · Companies stat cards clip their amounts on a phone
-- **Check:** Seen in the guidance visual check at 390px ([../screenshots/guidance-phase-1/README.md](../screenshots/guidance-phase-1/README.md), finding 9).
-- **Where:** the four stat cards at the top of `Cashflow/Companies/index.tsx`; the cause is in the
-  shared `ui/StatCard.tsx`, so every screen with stat cards has it.
-- **What happens:** "€1.287.631,05" runs past the edge of its card in the two-column grid.
-- **Fix direction:** written on `fix/budget-diff-and-decimals` (numbered CASH-17 there, before the
-  ids were reconciled): the value takes the full card width, shrinks with the card and wraps,
-  never truncates. Waiting for that branch to be rebased and merged.
-
-### CASH-22 · Low · Companies cards show ragged decimals
-- **Check:** Seen in the same check (finding 12).
-- **Where:** every amount in `Cashflow/Companies/index.tsx` and `CompanyDetailsModal.tsx` is
-  `€{value.toLocaleString('hr-HR')}`, including the "Financiranje (primljeno / otplaćeno)" line.
-- **What happens:** €2.715.147,70 prints as "€2.715.147,7"; whole amounts print with no decimals.
-- **Fix direction:** written on `fix/budget-diff-and-decimals` (CASH-18 there): `formatEuro`
-  throughout, with a guard test. Part of UI-1 in [ui.md](./ui.md).
-
-### CASH-23 · Low · Calendar "Razlika od budžeta" shows an overrun as a positive amount
-- **Check:** Seen in the same check (finding 13).
-- **Where:** the monthly summary in `Cashflow/Calendar/index.tsx`.
-- **What happens:** budget €450.000, paid €2.141.590, shown as "€1.691.590 (Preko budžeta -
-  loše)"; only the colour and the suffix say it is an overrun.
-- **Fix direction:** written on `fix/budget-diff-and-decimals` (CASH-19 there): the signed
-  difference, with the minus before the euro sign in the shared formatters.
-
 ## Waiting on the ERP integration
 
 These turn into ERP work or disappear in phase 5. Do not fix them in the app.
@@ -107,6 +124,10 @@ These turn into ERP work or disappear in phase 5. Do not fix them in the app.
 
 ## Resolved
 
+### CASH-24 · Medium · Calendar "Neplaćeno" card leaves out partly paid invoices
+- Fixed on `fix/audit-medium-findings` (2026-10-07): the month figures moved to `Calendar/utils/monthStats.ts`, where every
+  invoice that is not `PAID` counts as unpaid.
+
 ### CASH-7 · Medium · Income and expense are classified four different ways
 - Decided 2026-10-01 (money out) and extended 2026-10-05 with accounting: every invoice type has
   one direction and one category in `src/utils/invoiceCashDirection.ts`. `INCOMING_INVESTMENT`
@@ -115,3 +136,18 @@ These turn into ERP work or disappear in phase 5. Do not fix them in the app.
   `company_statistics` follows in migration `20261006100000`, which supersedes `20261001100000`,
   `20261005110000` and `20261005120000`. Figures: [../ACCOUNTING_REVIEW_CASH7.md](../ACCOUNTING_REVIEW_CASH7.md).
   Earlier history is in [archive/DEFECT_BACKLOG.md](./archive/DEFECT_BACKLOG.md).
+
+### CASH-21 · Low · Companies stat cards clip their amounts on a phone
+- Fixed on `fix/budget-diff-and-decimals` in the shared `StatCard`: on a narrow card the value
+  takes the full width, shrinks with the card and wraps as a last resort, keeping "−€" together;
+  nothing is truncated (`.stat-card` in `index.css`, `statCardFit.test.ts`).
+
+### CASH-22 · Low · Companies cards show ragged decimals
+- Fixed on `fix/budget-diff-and-decimals`: every amount on the cards, the stat cards, the
+  financing line and `CompanyDetailsModal` goes through `formatEuro` (`companyMoney.test.ts`).
+
+### CASH-23 · Low · Calendar "Razlika od budžeta" shows an overrun as a positive amount
+- Fixed on `fix/budget-diff-and-decimals`: the row shows the signed difference
+  (`Calendar/utils/budgetDifference.ts`). With it, `formatEuro`, `formatEuroRounded` and
+  `formatEuroCompact` print the minus before the euro sign ("−€1.234,56") everywhere, and all the
+  calendar's amounts use `formatEuro`.

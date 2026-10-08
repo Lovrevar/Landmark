@@ -9,6 +9,7 @@ import { EMPTY_RETAIL_TOTALS } from './utils/retailTotals'
 import type { DashboardStats, OverdueInvoice } from './types/retailDashboardTypes'
 import { fetchRetailDashboardData } from './services/retailDashboardService'
 import DashboardError from './DashboardError'
+import PageHelpLink from '../ui/PageHelpLink'
 
 const defaultStats: DashboardStats = {
   ...EMPTY_RETAIL_TOTALS,
@@ -37,7 +38,7 @@ const RetailDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.retail.title')}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.retail.title')}<PageHelpLink /></h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.retail.subtitle')}</p>
       </div>
 

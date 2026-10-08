@@ -1,6 +1,13 @@
 # User guidance, phase 1 — strings for sign-off
 
-**Date:** 2026-10-05 · **Branch:** `feat/user-guidance-phase-1` · **Status:** awaiting review
+**Date:** 2026-10-05 · **Branch:** `feat/user-guidance-phase-1` · **Status:** signed off 2026-10-06
+
+> **Closed.** The strings in sections 1 to 4 and 8 were accepted as they are on 2026-10-06, on the
+> understanding that the people who use the screens will say if a term is wrong. The article
+> corrections in section 6 were applied in phase 2 (re-checked against the code first, since
+> some had gone stale), and the remaining 41 articles were checked in the same pass — see
+> [GUIDANCE_PHASE_2.md](./GUIDANCE_PHASE_2.md). Section 7's decisions are settled or recorded in
+> `docs/backlog/`. Kept as the record of what phase 1 added.
 
 Every user-facing string this phase added or changed, in one place, plus the help-article audit.
 The strings are already in `src/locales/hr/translation.json` and `src/locales/en/translation.json`

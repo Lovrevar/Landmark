@@ -8,15 +8,17 @@ roles: [Sales, Supervision, Investment]
 
 Globalne financijske informacije (ukupni dug, sažetak svih računa, povijest plaćanja po podugovaratelju) dostupne su samo ulogama **Director** i **Accounting**.
 
-Konkretno, alati AI asistenta i izvještaji koji daju sljedeće podatke vidljivi su samo Direktoru i Računovodstvu:
+Konkretno, sljedeće podatke AI asistent daje samo ulogama Director i Accounting:
 - ukupni status plaćanja podugovaratelja (zbroj svih ugovora i računa)
 - detaljna povijest plaćanja podugovaratelja
 - globalni sažetak računa (broj, ukupni iznos, dospjelo)
 - ukupni financijski sažetak projekta s rollupom troškova i prihoda
 
-**Iznimka:** alat **neplaćeni računi** dostupan je i ulozi **Supervision**, ali ograničen na njihove dodijeljene projekte.
+Isto vrijedi za cijeli Cashflow profil ([[role-cannot-see-cashflow]]), a stranice **Izvještaji** u General profilu i **Dnevnik aktivnosti** vidi samo Director.
+
+**Iznimka:** popis **neplaćenih računa** AI asistent daje i ulozi **Supervision**, ali samo za projekte na koje je korisnik dodijeljen (mogu se pojaviti i računi projekata kojima nije dodijeljen nijedan voditelj).
 
 Što vidite kao Sales, Supervision ili Investment:
 - **Sales** — prodajne uplate i kupce ([[customers]], [[sales-payments]])
-- **Supervision** — plaćanja i račune svojih projekata ([[supervision-payments]], [[supervision-invoices]])
-- **Investment** — investicijske tokove ([[funding-payments]], [[investment-projects]])
+- **Supervision** — neplaćene račune svojih projekata preko AI asistenta; plaćanja ne vidi
+- **Investment** — investitore, investicije i projekte u Funding profilu ([[investment-projects]]); podatke o plaćanjima ne vidi

@@ -212,7 +212,7 @@ Retail-specific invoicing separate from Cashflow invoices.
 #### Services
 
 ### services/retailInvoiceService.ts
-- Fetch and CRUD for retail invoice records; `toggleRetailInvoiceApproval` logs `invoice.approve`
+- Fetch and CRUD for retail invoice records; `toggleRetailInvoiceApproval` checks that a row changed (`assertRowsAffected` — RLS refuses every role but Director and Accounting silently) and logs `invoice.approve`; the page disables the tick unless `canApproveInvoices`
 - **Depends on:** supabase client, activityLog
 
 #### Hooks

@@ -1,12 +1,14 @@
 ---
 id: general-reports
 title: Opći izvještaji (Izvještaj za rukovodstvo)
-keywords: [opći izvještaji, general reports, izvještaj za rukovodstvo, PDF, portfelj, KPI]
+keywords: [opći izvještaji, general reports, izvještaj za rukovodstvo, PDF, portfelj, KPI, novčani tok]
 routes: [/general-reports]
-roles: [Director, Accounting, Investment]
+roles: [Director]
 ---
 
-**Opći izvještaji** je sveobuhvatni izvještaj za rukovodstvo s naslovom **LANDMARK GROUP — Sveobuhvatni izvještaj za rukovodstvo**. U gornjem desnom kutu nalazi se gumb **Izvoz PDF**.
+**Opći izvještaj** je sveobuhvatni izvještaj za rukovodstvo s naslovom **LANDMARK GROUP — Sveobuhvatni izvještaj za rukovodstvo**. Otvara se stavkom **Izvještaji** u General profilu i dostupan je samo ulozi **Director**.
+
+U zaglavlju su vrijeme generiranja te gumbi **Osvježi** i **Izvoz PDF** (PDF je uvijek na hrvatskom).
 
 Izvještaj sadrži:
 - **Sažetak za rukovodstvo** (portfelj, financije, struktura kapitala, prodaja, gradnja)
@@ -14,6 +16,8 @@ Izvještaj sadrži:
 - **Prodajni učinak**
 - **Financijska struktura i financiranje**
 - **Status gradnje i nadzora**
-- dodatne sekcije: Računovodstvo, Uredski troškovi, Investicije, Bankovni računi, Zgrade i jedinice, Retail portfelj, Tipovi ugovora, Analiza novčanog toka (odvojeno **Poslovne aktivnosti** i **Financijske aktivnosti** — isplate i otplate kredita — te **Ukupni novčani tok**)
+- **Pregled računovodstva**, **Uredski troškovi**, **Investicije tvrtke**, **Bankovni računi**, **Zgrade i jedinice**, **Retail portfelj**, **Tipovi ugovora**
+- **Analiza novčanog toka** — dvije tablice po mjesecima (**Priljevi**, **Odljevi**, **Neto novčani tok**): **Poslovne aktivnosti** (naplata od kupaca te plaćanja dobavljačima, uredu i financijerima, uključujući troškove kredita) i **Financijske aktivnosti** (glavnica kredita: isplate i otplate); ispod njih zbroj za 6 mjeseci i **Ukupni novčani tok**
+- **Pregled po projektima**, **Procjena rizika** i **Uvidi i preporuke za rukovodstvo**
 
-Stranica nema interaktivne filtre — izvještaj se generira iz svih projekata u sustavu.
+Stranica nema filtre — izvještaj obuhvaća sve projekte u sustavu. Projekt bez TIC-a prikazuje se s oznakom **Budžet nije postavljen**.

@@ -1,19 +1,21 @@
 ---
 id: investment-projects
-title: Projektne investicije
-keywords: [projektne investicije, investment projects, kapital, dug, ROI, financiranje]
+title: Investicijski projekti
+keywords: [investicijski projekti, projektne investicije, investment projects, kapital, dug, kamatna stopa, financiranje]
 routes: [/investment-projects]
 roles: [Director, Accounting, Investment]
 ---
 
-Stranica **Projektne investicije** prikazuje investicijski pregled svakog projekta — koliko je uloženo vlastitog kapitala, koliko je financirano dugom, te očekivani povrat.
+Stranica **Investicijski projekti** (stavka **Projekti** u Funding profilu) prikazuje kako je svaki projekt financiran — koliko kapitalom, a koliko dugom. Podnaslov: **Praćenje projektnog financiranja, investicija i financijske uspješnosti**.
 
-Po svakoj kartici projekta vidljive su:
-- naziv, status (značka), razina rizika (značka), lokacija
-- vremenski okvir (početak – kraj ili **Odloženo**)
-- ukupni budžet
-- gumb **Pogledaj detalje**
+Kartica projekta pokazuje:
+- naziv, status (značka), razinu rizika (značka **Rizik: …**), lokaciju
+- vremenski okvir (početak – kraj; **TBD** ako kraj nije određen)
+- **Ukupni budžet**
+- gumb **Pregled detalja**
 
-Četiri statističke kartice po projektu: **Investicija kapitala** (zelena), **Financiranje duga** (crvena), **Očekivani povrat** (plava), **Status financiranja** (tirkizna; zelena ako ≥100 %, narančasta ako <80 %).
+Četiri pokazatelja po projektu: **Dionički kapital** i **Dužničko financiranje** (iznos i postotak od budžeta), **Prosječna kamatna stopa** (ponderirani prosjek) te **Status financiranja** (postotak i oznaka **Potpuno financirano** ili **Potrebno financiranje**).
 
-Traka napretka pokazuje postotak financiranja prema budžetu (budžet dolazi iz [[tic]] projekta; projekt bez TIC-a nema ga postavljenog). Ispod se prikazuju glavni financijeri (top 3 banke, oznaka **+N više** ako ih ima više). Detaljni modal raščlanjuje sve izvore kapitala i duga.
+Traka **Ukupni napredak financiranja** pokazuje koliko budžeta pokrivaju kapital i dug zajedno. Budžet dolazi iz [[tic]] projekta. Ispod su **Financijeri** — prve tri banke i oznaka **+N više** ako ih ima više.
+
+**Pregled detalja** otvara prozor s pregledom financiranja po bankama, analizom poluge i prinosa, vremenskim okvirom, faktorima rizika i iskorištenošću izvora financiranja.

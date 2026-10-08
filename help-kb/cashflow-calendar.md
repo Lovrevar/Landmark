@@ -6,12 +6,22 @@ routes: [/accounting-calendar]
 roles: [Director, Accounting]
 ---
 
-**Kalendar dospijeća** prikazuje računovodstvene rokove (dospijeća računa) u mjesečnom prikazu. Naslov: **Kalendar**, podnaslov: **Sastanci, podsjetnici i rokovi**.
+**Kalendar dospijeća** (Cashflow profil) prikazuje račune po datumu dospijeća u mjesečnom prikazu. Stranica nema zaseban naslov — iznad kalendara stoji naziv mjeseca i godina.
 
-Glavna akcija: zeleni gumb **Budžet** (€ ikona) otvara modal za postavljanje planiranog budžeta za odabranu godinu i mjesec.
+Kartice statistike za odabrani mjesec (broj računa): **Ukupno računa**, **Plaćeno**, **Neplaćeno**, **Dospjelo**. Djelomično plaćen račun broji se pod **Neplaćeno**.
 
-Kartice statistike: **Ukupno**, **Plaćeno**, **Neplaćeno**, **U kašnjenju**.
+Sažetak mjeseca (iznad kalendara):
+- **Ukupno računa**
+- **Izlazni računi** — plaćeni priljevi
+- **Ulazni računi (plaćeno)** — plaćeni odljevi
+- **Ulazni računi (neplaćeno)** — preostali iznos i broj računa
+- **NETO (Prihodi - Troškovi)** — izlazni plaćeni minus ulazni plaćeni
+- ako je za mjesec postavljen budžet: **Planirani budžet (Rashodi)** i **Razlika od budžeta** — budžet minus plaćeni ulazni računi, s oznakom **(Ispod budžeta - dobro)** ili **(Preko budžeta - loše)**
 
-Sažetak ispod kalendara prikazuje: **Ukupno računa na mjesec**, **Izlazni računi**, **Ulazni plaćeni**, **Ulazni neplaćeni** (s brojem), **Neto iznos** (istaknut), **Planirani budžet** (ako je postavljen) i **Razlika od budžeta** (oznaka iznad/ispod budžeta).
+U iznose ulaze svi računi s dospijećem u tom mjesecu, uključujući troškove kredita (kamate i naknade).
 
-Navigacija mjeseca: gumbi prethodnog/sljedećeg mjeseca. Klikom na datum vidite sažetak računa tog dana.
+Zeleni gumb **Namjesti Budžet** otvara prozor **Namjesti Godišnji Budžet**: odaberete godinu, upišete iznos za svaki mjesec i spremite s **Spremi Budžete**.
+
+Strelice mijenjaju mjesec. Točkice na danu označavaju račune: zelena = **Plaćeno**, žuta = **Neplaćeno**, crvena = **Dospjelo**. Klikom na dan ispod kalendara se otvara tablica računa tog dana (broj računa, tip, dobavljač/kupac, firma, kategorija, osnovica, PDV, ukupno, plaćeno, status).
+
+Ovo nije isto što i [[calendar]] (sastanci i događaji).

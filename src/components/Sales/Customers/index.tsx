@@ -236,6 +236,7 @@ const CustomersManagement: React.FC = () => {
         activeCategory={activeCategory}
         loading={loading && customers.length === 0}
         loadFailed={loadFailed}
+        filtered={searchTerm.trim() !== '' || projectFilter !== ''}
         onRetry={() => { void refetch() }}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}

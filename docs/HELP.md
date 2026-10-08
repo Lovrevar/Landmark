@@ -13,7 +13,19 @@ that the AI assistant also answers from:
 | Page link | the "?" beside a `PageHeader` title | Opens `/help?page=<pathname>` in a new tab, with that page's articles first. Hidden when no article names the route |
 | `InfoHint` | a "?" beside a label | A one- or two-sentence popover with a "more" link to an article |
 
-A "?" in the top bar (`Layout.tsx`) opens `/help` for pages that have no `PageHeader`.
+A "?" in the top bar (`Layout.tsx`) opens `/help` from anywhere. Pages that have a title of their
+own instead of `PageHeader` (dashboards, Budget Control, TIC, Tasks, …) render `PageHelpLink`
+inside it, so every page with an article has the link.
+
+Two more pieces came in phase 2:
+
+| Piece | Where | What it does |
+|---|---|---|
+| Starter questions | the assistant's empty panel (`AiChat/lib/starterQuestions.ts`) | Up to three opening questions for the page behind the panel: one about the page, then one per help article written for it |
+| "Open TIC" link | `Funding/TIC/OpenTICLink.tsx` | Wherever a project shows "Budžet nije postavljen" (Budget Control, project details), a link to `/tic?project=<id>` for the roles that can save a TIC (`canManageTIC`) |
+
+The Cashflow password prompt is not shown on `/help`: a "?" on a Cashflow page opens Help in a new
+tab, where the per-tab unlock is missing, and the prompt used to cover the article.
 
 **Division of labour:** an `InfoHint` says just enough to carry on with the task; the durable
 explanation lives in the article it links to. Do not grow hints into paragraphs — they break when

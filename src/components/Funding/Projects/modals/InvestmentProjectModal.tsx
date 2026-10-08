@@ -307,7 +307,11 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
           <div>
             <h4 className="font-semibold text-gray-900 dark:text-white mb-4">{t('funding.projects.modal.funding_sources_heading')}</h4>
             {fundingUtilization.length === 0 ? (
-              <EmptyState icon={DollarSign} title={t('funding.projects.modal.no_funding_sources_title')} />
+              <EmptyState
+                icon={DollarSign}
+                title={t('funding.projects.modal.no_funding_sources_title')}
+                description={t('funding.projects.modal.no_funding_sources_description')}
+              />
             ) : (
               <div className="space-y-4">
                 {fundingUtilization.map((source) => {

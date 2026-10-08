@@ -1,17 +1,19 @@
 ---
 id: funding-payments
-title: Uplate financiranja
-keywords: [uplate financiranja, funding payments, isplate banke, kredit, izvezi CSV]
+title: Plaćanja financiranja
+keywords: [plaćanja financiranja, uplate financiranja, funding payments, isplate banke, kredit, otplate, export excel]
 routes: [/funding-payments]
 roles: [Director, Accounting, Investment]
 ---
 
-Stranica **Uplate financiranja** prikazuje sva plaćanja vezana uz bankarsko financiranje (isplate kredita, otplate, troškovi).
+Stranica **Plaćanja financiranja** (stavka **Plaćanja** u Funding profilu) prikazuje sva plaćanja vezana uz kredite: isplate kredita, otplate i troškove. Podnaslov: **Praćenje i upravljanje svim bankovnim kreditnim plaćanjima**.
 
-Kartice statistike: **Ukupno plaćanja**, **Ukupni iznos**, **Plaćanja ovog mjeseca**, **Iznos ovog mjeseca**.
+Kartice statistike: **Ukupno isplate**, **Ukupno otplate i troškovi**, **Neto**, **Ovaj mjesec** (neto).
 
-Filtri: tražilica po banci/projektu/napomenama, padajući izbornik (**Sva plaćanja**, **Nedavna**, **Velika**), raspon datuma (**Početni datum** / **Završni datum**) i gumb **Preuzmi CSV**.
+Filtri: tražilica **Pretraži plaćanja...** (po banci, projektu i napomenama), padajući izbornik (**Sva plaćanja**, **Nedavno (7 dana)**, **Velika (> €50k)**), raspon datuma (**Datum početka** / **Datum kraja**) i gumb **Export Excel**, koji izvozi filtrirani popis.
 
-Stupci tablice: **Datum**, **Tip** (značka **Banka**), **Primatelj** (banka), **Projekt**, **Kategorija** (vrsta kredita), **Iznos**, **Napomene**.
+Stupci tablice: **Datum**, **Tip** (značka **ISPLATA KREDITA** za povlačenje kredita, **OTPLATA GLAVNICE** za otplatu i **RASHOD** za troškove kredita; isplata i otplata su financiranje, a ne prihod ili rashod), **Primatelj** (banka), **Projekt**, **Kategorija** (vrsta kredita), **Iznos**, **Napomene**. Ispod tablice je redak **Filtrirani rezultati** sa zbrojem isplata, otplata i troškova te neto iznosom.
 
-Stranica je za pregled — nove uplate evidentiraju se kroz [[funding-investments]] (alokacije/isplate kredita).
+Stranica je samo za pregled — plaćanja nastaju u Cashflow profilu, kada se evidentira plaćanje računa vezanog uz kredit.
+
+Podatke o plaćanjima vide uloge Director i Accounting. Uloga Investment može otvoriti stranicu, ali joj je popis prazan.

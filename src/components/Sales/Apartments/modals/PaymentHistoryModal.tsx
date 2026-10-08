@@ -144,6 +144,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
               <EmptyState
                 icon={DollarSign}
                 title={t('apartments.payment_history_modal.no_payments')}
+                description={t('apartments.payment_history_modal.no_payments_description')}
               />
             ) : (
               <div className="space-y-3">

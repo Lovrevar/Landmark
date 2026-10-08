@@ -1,7 +1,7 @@
 # Backlog — app-wide UI
 
 Problems that repeat across modules: formatting, status display, failed loads, translations, the
-shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-10`). Entry format and
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-11`). Entry format and
 rules are in [README.md](./README.md).
 
 A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
@@ -9,6 +9,14 @@ helper or a sweep. Counts were measured on 2026-09-21 to 2026-09-23 and will hav
 again before starting a sweep. Check [../UI.md](../UI.md) before adding a primitive.
 
 ## Open
+
+### UI-10 · Low · Shell labels that disagree or are unused
+- **Check:** Code reading (help-article audit, 2026-10-06)
+- Menu label and page title differ on several pages (the help articles now name both).
+- The Cashflow prompt says "Lozinka" and its error "Netočna šifra".
+- Looks unused: `profiles.unlock`, `profiles.locked`, `profiles.select_profile` and some `nav.*`
+  labels. Grep before deleting.
+- English literals left on screen: "TBD", "Mixed", "Retail", "Site".
 
 ### UI-8 · Medium · Mobile
 - Non-wrapping header rows in Supervision, which is used on phones on site.
@@ -38,6 +46,10 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
   decimals), and 74 `DollarSign` icons in 29 files outside Reports and dashboards.
 - **Fix direction:** `formatEuro` / `formatEuroRounded` / `formatEuroCompact` from
   `utils/formatters.ts`.
+- **Sign order (2026-10-06):** the shared euro helpers now print a negative as "−€1.234,56". The
+  hand-built sites do not follow: about 59 that write "€" before `formatCurrency`, about 148 that
+  write it before a bare `toLocaleString`, and 10 locale strings of the form `€{{amount}}` still
+  print "€−…". Most never go negative; "Preostalo" after an overpayment can.
 
 ### UI-5 · Low · Hardcoded strings
 - **Done:** the English strings on screen, in every module and the shell.

@@ -118,7 +118,7 @@ describe('calculateProjectEVM', () => {
 
   it('returns guarded zeros for an empty project', () => {
     const m = calculateProjectEVM([], [])
-    expect(m).toEqual({ PV: 0, EV: 0, AC: 0, CPI: 1, SPI: 1, EAC: 0, VAC: 0, CV: 0, SV: 0, scheduleAvailable: false })
+    expect(m).toEqual({ PV: 0, EV: 0, AC: 0, CPI: 1, SPI: 1, EAC: 0, VAC: 0, CV: 0, SV: 0, scheduleAvailable: false, costAvailable: false })
   })
 
   it('derives physical completion from milestones (not money spent)', () => {
@@ -205,6 +205,26 @@ describe('calculateProjectEVM', () => {
     expect(m.VAC).toBe(0)
     // A schedule existed for at least one phase, so SPI is meaningful here.
     expect(m.scheduleAvailable).toBe(true)
+  })
+
+  it('marks the cost side unavailable while nothing is paid, rather than implying under budget', () => {
+    const phases = [phase({ id: 'ph1', phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
+    const contracts = [contract({ id: 'c1', phaseId: 'ph1', contract_amount: 100000, budget_realized: 0 })]
+
+    const m = calculateProjectEVM(phases, contracts)
+
+    expect(m.AC).toBe(0)
+    expect(m.costAvailable).toBe(false)
+    // CPI 1 and EAC = budget are conventions here, not measurements — callers must check
+    // costAvailable before presenting them as "under budget".
+    expect(m.CPI).toBe(1)
+    expect(m.VAC).toBe(0)
+  })
+
+  it('reports the cost side as available once something is paid', () => {
+    const phases = [phase({ id: 'ph1', phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
+    const contracts = [contract({ id: 'c1', phaseId: 'ph1', contract_amount: 100000, budget_realized: 1 })]
+    expect(calculateProjectEVM(phases, contracts).costAvailable).toBe(true)
   })
 
   it('marks the schedule unavailable when no phase is dated, rather than implying on-track', () => {
