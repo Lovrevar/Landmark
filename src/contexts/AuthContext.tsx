@@ -402,6 +402,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem('currentProfile', profile)
   }
 
+  /**
+   * Mirrors SQL `user_has_project_access(project_id)`, the function the `project_milestones`
+   * policy calls: a Director, or a Supervision user assigned to the project. (A two-argument
+   * overload of the same name is more generous and unused — AUTH-4.)
+   */
   const hasProjectAccess = (projectId: string): boolean => {
     if (!user) return false
 

@@ -141,20 +141,20 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                     </span>
                   </div>
 
-                  {unit.type === 'apartment' && (unit.garage || unit.repository) && (
+                  {unit.type === 'apartment' && ((unit.garages?.length ?? 0) > 0 || (unit.repositories?.length ?? 0) > 0) && (
                     <div className="text-xs text-gray-600 dark:text-gray-400 pl-2 space-y-0.5">
-                      {unit.garage && (
-                        <div className="flex justify-between">
-                          <span className="text-orange-600">+ {t('common.garage')} {unit.garage.number}</span>
-                          <span>{formatEuroCompact(unit.garage.price)}</span>
+                      {(unit.garages ?? []).map(garage => (
+                        <div key={garage.id} className="flex justify-between">
+                          <span className="text-orange-600">+ {t('common.garage')} {garage.number}</span>
+                          <span>{formatEuroCompact(garage.price)}</span>
                         </div>
-                      )}
-                      {unit.repository && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">+ {t('common.storage')} {unit.repository.number}</span>
-                          <span>{formatEuroCompact(unit.repository.price)}</span>
+                      ))}
+                      {(unit.repositories ?? []).map(repository => (
+                        <div key={repository.id} className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">+ {t('common.storage')} {repository.number}</span>
+                          <span>{formatEuroCompact(repository.price)}</span>
                         </div>
-                      )}
+                      ))}
                     </div>
                   )}
                 </div>

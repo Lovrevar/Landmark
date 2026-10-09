@@ -32,10 +32,6 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 ### SALES-9 · Low · No unique constraint on unit numbers
 - Duplicates are possible through bulk create, single create and within-file garage imports.
 
-### SALES-8 · Low · Customers module keeps only one garage and one storage per apartment
-- A second garage or storage unit linked to the apartment is neither shown nor counted in the
-  package total on the Customers screens.
-
 ### SALES-13 · Low · Delete dialog on the Apartments page is half Croatian, half English
 - **Where:** `src/components/Sales/Apartments/index.tsx`. Title is a literal "Potvrda brisanja",
   message is English.
@@ -47,6 +43,10 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 - **Fix direction:** `formatEuro` / `formatEuroRounded`. Part of UI-1 in [ui.md](./ui.md).
 
 ## Resolved
+
+### SALES-8 · Low · Customers module keeps only one garage and one storage per apartment
+- Fixed on `fix/backlog-batch-4` (2026-10-09): Customers keeps every linked garage and storage unit, shows each on the
+  card and in the detail window, and counts them all in the package total.
 
 ### SALES-18 · Low · Garage and storage import has no template; import tolerance differs from the screen
 - Fixed on `fix/backlog-batch-3` (2026-10-08): the garage import has a "Preuzmi predložak" button

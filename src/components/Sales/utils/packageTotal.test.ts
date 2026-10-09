@@ -25,8 +25,17 @@ describe('packageTotal', () => {
 })
 
 describe('unitPackageTotal', () => {
-  it('adds the one garage and storage unit a purchased unit carries to its sale price', () => {
-    expect(unitPackageTotal({ price: 200_000, sale_price: 195_000, garage: { price: 15_000 }, repository: { price: 5_000 } })).toBe(215_000)
-    expect(unitPackageTotal({ price: 12_000, sale_price: 12_000, garage: null, repository: null })).toBe(12_000)
+  it('adds the garage and storage unit a purchased unit carries to its sale price', () => {
+    expect(unitPackageTotal({ price: 200_000, sale_price: 195_000, garages: [{ price: 15_000 }], repositories: [{ price: 5_000 }] })).toBe(215_000)
+    expect(unitPackageTotal({ price: 12_000, sale_price: 12_000, garages: [], repositories: [] })).toBe(12_000)
+  })
+
+  // The Customers screens kept one garage and one storage unit per apartment, so a second of
+  // either was missing from the total (SALES-8).
+  it('counts every linked unit, not one of each', () => {
+    expect(unitPackageTotal({
+      price: 200_000, sale_price: 200_000,
+      garages: [{ price: 15_000 }, { price: 14_000 }], repositories: [{ price: 5_000 }, { price: 4_000 }],
+    })).toBe(238_000)
   })
 })

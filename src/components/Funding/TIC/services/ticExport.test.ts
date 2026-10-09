@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildInvestmentSheet, buildConstructionSheet, type TICExportData } from './ticExport'
 import { parseTICWorkbook } from './ticImport'
+import { applyImportedClassifications } from '../utils/ticClassificationMap'
 import { calculateTotals, calculateConstructionTotals, type LineItem } from '../utils/ticFormatters'
 
 /**
@@ -123,6 +124,64 @@ describe('a phased TIC survives export → import', () => {
 
   it('leaves an unphased TIC in the six-column layout it always had', () => {
     expect(new Set(buildInvestmentSheet(data).map(row => row.length))).toEqual(new Set([6]))
+  })
+})
+
+describe('classifications survive export → import', () => {
+  // The export wrote no classification, so on import every line was re-guessed from its name: a
+  // mapping the user had chosen by hand for a renamed row came back as the default, or as none
+  // (FUND-13).
+  const classifications = [{ id: 7, code: 'CONSTRUCTION' }, { id: 9, code: 'LAND' }, { id: 12, code: null }]
+  const mapped: LineItem[] = [
+    { name: 'Radovi po ugovoru s izvođačem', vlastita: 0, kreditna: 1000, classification_id: 7 },
+    { name: 'Vrijednost zemljišta', vlastita: 500, kreditna: 0, classification_id: 9 },
+    { name: 'Nešto bez klasifikacije', vlastita: 10, kreditna: 0, classification_id: null },
+  ]
+  const mappedTotals = calculateTotals(mapped)
+  const mappedData: TICExportData = {
+    ...data,
+    lineItems: mapped,
+    totals: mappedTotals,
+    grandTotal: mappedTotals.vlastita + mappedTotals.kreditna,
+    classificationCodes: new Map([[7, 'CONSTRUCTION'], [9, 'LAND']]),
+  }
+  const sheet = buildInvestmentSheet(mappedData)
+  const reparsed = parseTICWorkbook([{ name: 'INVESTICIJA', rows: sheet }])
+
+  it('writes the code in a last column headed KLASIFIKACIJA', () => {
+    expect(sheet[4][sheet[4].length - 1]).toBe('KLASIFIKACIJA')
+    expect(new Set(sheet.map(row => row.length))).toEqual(new Set([7]))
+    expect(sheet.filter(row => typeof row[1] === 'number' && row[0] !== 'UKUPNO:').map(row => row[6])).toEqual(['CONSTRUCTION', 'LAND', null])
+  })
+
+  it('reads the codes back, line for line, with the amounts untouched', () => {
+    expect(reparsed.errors).toEqual([])
+    expect(reparsed.investment?.classificationCodes).toEqual(['CONSTRUCTION', 'LAND', null])
+    expect(reparsed.investment?.lineItems.map(item => [item.name, item.vlastita, item.kreditna]))
+      .toEqual(mapped.map(item => [item.name, item.vlastita, item.kreditna]))
+  })
+
+  it('restores every mapping, and keeps an unmapped line unmapped rather than re-guessing it', () => {
+    const restored = applyImportedClassifications(reparsed.investment!.lineItems, reparsed.investment!.classificationCodes, classifications)
+    expect(restored.map(item => item.classification_id)).toEqual([7, 9, null])
+  })
+
+  it('leaves a line open to the name default when the code is unknown here, or the sheet has no column', () => {
+    const lines: LineItem[] = [{ name: 'Građenje', vlastita: 1, kreditna: 0 }]
+    expect(applyImportedClassifications(lines, ['NOT_IN_THIS_DB'], classifications)[0].classification_id).toBeUndefined()
+    expect(applyImportedClassifications(lines, null, classifications)[0].classification_id).toBeUndefined()
+    expect(parseTICWorkbook([{ name: 'INVESTICIJA', rows: buildInvestmentSheet(data) }]).investment?.classificationCodes).toBeNull()
+  })
+
+  it('sits after the phase groups on a phased sheet without disturbing them', () => {
+    const phasedLine: LineItem = { name: 'Građenje', vlastita: 0, kreditna: 100, classification_id: 7, phases: [
+      { phase_number: 1, vlastita: 0, kreditna: 60 }, { phase_number: 2, vlastita: 0, kreditna: 40 },
+    ] }
+    const rows = buildInvestmentSheet({ ...mappedData, lineItems: [phasedLine], totals: { vlastita: 0, kreditna: 100 }, grandTotal: 100 })
+    const back = parseTICWorkbook([{ name: 'INVESTICIJA', rows }]).investment!
+    expect(rows[4].length).toBe(15)
+    expect(back.lineItems[0].phases).toEqual(phasedLine.phases)
+    expect(back.classificationCodes).toEqual(['CONSTRUCTION'])
   })
 })
 

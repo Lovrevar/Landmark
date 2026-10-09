@@ -107,7 +107,7 @@ Uklanjanje skupine briše i sve njezine stavke, pa se traži potvrda. Nijedna iz
 
 - **Spremi** — pohrana izmjena
 - **Uvoz iz Excela** — učitavanje strukture iz Excel datoteke (vidi niže)
-- **Export Excel** — izvoz obje kartice u `.xlsx` datoteku s listovima INVESTICIJA i GRAĐENJE; ako TIC planira faze, list INVESTICIJA sadrži i stupce **FAZA n**, pa se izvezena datoteka može ponovno uvesti bez gubitka podjele po fazama
+- **Export Excel** — izvoz obje kartice u `.xlsx` datoteku s listovima INVESTICIJA i GRAĐENJE; ako TIC planira faze, list INVESTICIJA sadrži i stupce **FAZA n**, a zadnji stupac **KLASIFIKACIJA** nosi klasifikaciju troška svakog retka, pa se izvezena datoteka može ponovno uvesti bez gubitka podjele po fazama i klasifikacija
 - **Export PDF** — izvoz u PDF, po jedna stranica za svaku karticu
 
 Izvoz ne sadrži stupce faza — raspodjela po fazama ostaje samo u aplikaciji.

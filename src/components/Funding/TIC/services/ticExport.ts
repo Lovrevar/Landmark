@@ -17,10 +17,18 @@ export interface TICExportData {
   constructionTotals: TICTotals
   constructionGrandTotal: number
   projectName?: string
+  /**
+   * Classification code by id, for the lines' `classification_id`. When given, the INVESTICIJA
+   * sheet gets a last column `KLASIFIKACIJA` holding each line's code, so a mapping the user chose
+   * by hand survives export and import (FUND-13). Codes, not ids: ids differ between databases.
+   */
+  classificationCodes?: ReadonlyMap<number, string>
 }
 
 const INVESTMENT_SHEET = 'INVESTICIJA'
 const CONSTRUCTION_SHEET = 'GRAĐENJE'
+/** Header of the optional last column of the INVESTICIJA sheet; `ticImport` looks for the same text. */
+export const CLASSIFICATION_HEADER = 'KLASIFIKACIJA'
 
 const formatNumberForExport = (num: number): string =>
   new Intl.NumberFormat('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num)
@@ -73,7 +81,10 @@ export const exportedPhaseNumbers = (lineItems: LineItem[]): number[] =>
  */
 export function buildInvestmentSheet(data: TICExportData): SheetRows {
   const phaseNumbers = exportedPhaseNumbers(data.lineItems)
-  const blank = (): Cell[] => phaseNumbers.flatMap(() => [null, null, null, null])
+  const withCodes = data.classificationCodes !== undefined
+  // The trailing cell of the classification column on rows that carry no code.
+  const codeGap: Cell[] = withCodes ? [null] : []
+  const blank = (): Cell[] => [...phaseNumbers.flatMap(() => [null, null, null, null]), ...codeGap]
   const base = (): Cell[] => [null, null, null, null, null, null, ...blank()]
 
   const rows: SheetRows = [
@@ -82,8 +93,9 @@ export function buildInvestmentSheet(data: TICExportData): SheetRows {
     ['STRUKTURA TROŠKOVA INVESTICIJE (bez PDV-a)', null, null, null, null, null, ...blank()],
     base(),
     ['NAMJENA', 'VLASTITA SREDSTVA', null, 'KREDITNA SREDSTVA', null, 'UKUPNA INVESTICIJA',
-      ...phaseNumbers.flatMap((n): Cell[] => [`FAZA ${n}`, null, null, null])],
-    [null, 'EUR', '(%)', 'EUR', '(%)', 'EUR', ...phaseNumbers.flatMap((): Cell[] => ['EUR', '(%)', 'EUR', '(%)'])],
+      ...phaseNumbers.flatMap((n): Cell[] => [`FAZA ${n}`, null, null, null]),
+      ...(withCodes ? [CLASSIFICATION_HEADER] : [])],
+    [null, 'EUR', '(%)', 'EUR', '(%)', 'EUR', ...phaseNumbers.flatMap((): Cell[] => ['EUR', '(%)', 'EUR', '(%)']), ...codeGap],
     base(),
   ]
 
@@ -110,6 +122,8 @@ export function buildInvestmentSheet(data: TICExportData): SheetRows {
         total.kreditna += amounts.kreditna
         return phaseCells(amounts)
       }),
+      // An unmapped line writes an empty cell, which the importer reads back as "unmapped".
+      ...(withCodes ? [item.classification_id != null ? data.classificationCodes!.get(item.classification_id) ?? null : null] : []),
     ])
   }
 
@@ -121,6 +135,7 @@ export function buildInvestmentSheet(data: TICExportData): SheetRows {
     percentFraction(data.totals.kreditna, data.grandTotal),
     data.grandTotal,
     ...phaseNumbers.flatMap(n => phaseCells(phaseTotals.get(n))),
+    ...codeGap,
   ])
   rows.push(base())
   rows.push([null, null, null, null, 'Za investitora:', null, ...blank()])
@@ -197,6 +212,7 @@ export const exportToExcel = async (data: TICExportData): Promise<void> => {
   investmentSheet['!cols'] = [
     { wch: 42 }, { wch: 16 }, { wch: 10 }, { wch: 16 }, { wch: 10 }, { wch: 18 },
     ...exportedPhaseNumbers(data.lineItems).flatMap(() => [{ wch: 16 }, { wch: 10 }, { wch: 16 }, { wch: 10 }]),
+    ...(data.classificationCodes ? [{ wch: 18 }] : []),
   ]
   XLSX.utils.book_append_sheet(workbook, investmentSheet, INVESTMENT_SHEET)
 

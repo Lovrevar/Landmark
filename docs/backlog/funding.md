@@ -1,7 +1,7 @@
 # Backlog — Funding and TIC
 
 Bank credits, investors, drawdowns, allocations and the TIC cost structure. Ids: `FUND-n` (next
-free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
+free: `FUND-20`). Entry format and rules are in [README.md](./README.md).
 
 ## Open
 
@@ -13,14 +13,9 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
 - "Investicije" names two different menu items; `funding.investments.title` is "Investicije" in
   the English file too; "investitor" and "banka" are used for the same party.
 
-### FUND-13 · Low · The TIC Excel export drops classifications
-- **Where:** `ticExport.ts`. Phases are exported and re-imported since 2026-10-08
-  (`fix/figures-and-tic-export`, with a phased round-trip test). A line's `classification_id` is
-  still not written; on import it is re-derived from the row's name, so a classification the user
-  chose by hand for a renamed row is lost.
-- **Fix direction:** a classification column, read back by the importer. The sheet layout is a
-  frozen contract, so change both together.
-- Also: TIC messages are hard-coded Croatian.
+### FUND-19 · Low · TIC messages are hard-coded Croatian
+- Split off FUND-13 when the export was fixed. `useTIC.ts` and the import preview build their
+  messages as literals instead of locale keys.
 
 ### FUND-8 · Low · `recalculate_bank_credit_fields` ignores `disbursed_to_account`
 - It can overwrite the `used_amount = amount` set by the disbursement trigger.
@@ -52,6 +47,12 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
   up the flex chain) instead of widening the document.
 
 ## Resolved
+
+### FUND-13 · Low · The TIC Excel export drops phases and classifications
+- Fixed in two steps: phases on `fix/figures-and-tic-export` (2026-10-08), classifications on
+  `fix/backlog-batch-4` (2026-10-09). The INVESTICIJA sheet's last column `KLASIFIKACIJA` carries each line's
+  classification code; the importer reads it back, an empty cell staying unmapped. Both round
+  trips are pinned in `ticExport.test.ts`. The hard-coded messages are FUND-19.
 
 ### FUND-15 · Low · Investment role sees credits but no money movements
 - Fixed on `fix/storage-policies-sec-a12` (2026-10-09) with SEC-A10: the Funding "Plaćanja" menu item, the register page and the

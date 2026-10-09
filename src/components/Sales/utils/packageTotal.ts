@@ -32,12 +32,12 @@ export function packageTotal({ listPrice, salePrice, linkedPrices = [] }: Packag
   return own + linkedPrices.reduce<number>((sum, price) => sum + amount(price), 0)
 }
 
-/** A buyer's purchased unit, as the Customers screens hold it: one garage and one storage unit at most. */
+/** A buyer's purchased unit, as the Customers screens hold it, with everything linked to it. */
 export interface PurchasedUnit {
   price?: number | null
   sale_price?: number | null
-  garage?: { price: number } | null
-  repository?: { price: number } | null
+  garages?: ReadonlyArray<{ price: number }>
+  repositories?: ReadonlyArray<{ price: number }>
 }
 
 /** `packageTotal` for a purchased unit on the Customers card, its detail modal and their per-project sums. */
@@ -45,5 +45,5 @@ export const unitPackageTotal = (unit: PurchasedUnit): number =>
   packageTotal({
     listPrice: unit.price,
     salePrice: unit.sale_price,
-    linkedPrices: [unit.garage?.price, unit.repository?.price],
+    linkedPrices: [...(unit.garages ?? []), ...(unit.repositories ?? [])].map(linked => linked.price),
   })

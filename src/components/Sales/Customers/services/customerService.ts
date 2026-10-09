@@ -113,13 +113,22 @@ export const customerService = {
     const garageById = new Map(garages.map(g => [g.id, g]))
     const repoById = new Map(repos.map(r => [r.id, r]))
 
-    const garageByApartment = new Map<string, typeof garages[number] | null>()
-    for (const link of garageLinks) {
-      if (link.garage_id) garageByApartment.set(link.apartment_id, garageById.get(link.garage_id) || null)
+    // Every linked unit, not the last one read: an apartment can carry two garages, and a Map
+    // keyed by apartment kept only one of them — so the second was neither shown nor counted in
+    // the package total (SALES-8).
+    const push = <U,>(byApartment: Map<string, U[]>, apartmentId: string, unit: U | undefined) => {
+      if (!unit) return
+      const list = byApartment.get(apartmentId)
+      if (list) list.push(unit)
+      else byApartment.set(apartmentId, [unit])
     }
-    const repoByApartment = new Map<string, typeof repos[number] | null>()
+    const garagesByApartment = new Map<string, typeof garages>()
+    for (const link of garageLinks) {
+      if (link.garage_id) push(garagesByApartment, link.apartment_id, garageById.get(link.garage_id))
+    }
+    const reposByApartment = new Map<string, typeof repos>()
     for (const link of repoLinks) {
-      if (link.repository_id) repoByApartment.set(link.apartment_id, repoById.get(link.repository_id) || null)
+      if (link.repository_id) push(reposByApartment, link.apartment_id, repoById.get(link.repository_id))
     }
 
     const paidByInvoice = new Map<string, number>()
@@ -164,8 +173,8 @@ export const customerService = {
           sale_date: sale.sale_date,
           down_payment: sale.down_payment,
           total_paid: paidByCustomerApt.get(`${customer.id}|${apt.id}`) || 0,
-          garage: garageByApartment.get(apt.id) || null,
-          repository: repoByApartment.get(apt.id) || null,
+          garages: garagesByApartment.get(apt.id) || [],
+          repositories: reposByApartment.get(apt.id) || [],
         })
       }
 

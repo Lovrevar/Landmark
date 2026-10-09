@@ -17,10 +17,15 @@ it; write down why, and what a fix would look like.
 - **Fix direction:** add a shared-secret header like `send-push` before enabling. Part of turning
   reminders back on (COLLAB-1 in [collaboration.md](./collaboration.md)).
 
-### AUTH-4 · Low · Client and SQL disagree on project access
-- **Where:** `hasProjectAccess` in `src/contexts/AuthContext.tsx` returns `false` for Accounting,
-  Sales and Investment; SQL `user_has_project_access(user, proj)` grants them all projects.
-- **Fix direction:** align one to the other.
+### AUTH-4 · Low · An unused `user_has_project_access(uuid, uuid)` overload contradicts the real rule
+- **Check:** Confirmed on production, read-only (2026-10-09).
+- **What is there:** two functions share the name. The one-argument one — Director, or Supervision
+  on an assigned project — is what the only policy using it (`project_milestones`) calls, and
+  `hasProjectAccess` in `src/contexts/AuthContext.tsx` matches it exactly. The two-argument one
+  also grants Accounting, Sales and Investment, and nothing calls it: no policy, no function, no
+  app code. The earlier entry compared the client with the wrong one; the client is right.
+- **Fix direction:** drop the two-argument overload in a migration, so nobody builds a policy on
+  it by mistake.
 
 ## Accepted risks
 

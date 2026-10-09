@@ -598,7 +598,7 @@ zeroed split reads as "planned at nothing", which is not what "not attributed to
 - `exportToExcel(data: TICExportData)` — async; writes a real `.xlsx` with two sheets (`INVESTICIJA`, `GRAĐENJE`) laid out in the source workbook's shape, so an export re-imports cleanly (covered by `ticExport.test.ts`)
 - `exportToPDF(data: TICExportData)` — two-page landscape A4 PDF, one page per tab; row height is derived from the row count so a long Građenje breakdown is not clipped
 - `buildInvestmentSheet(data)` / `buildConstructionSheet(data)` — pure AOA builders, exported for the round-trip test
-- A phased TIC is exported with one `FAZA n` column group per phase (own funds / % / credit / %) to the right of the project block, in the shape `ticImport.detectPhaseColumns` reads; an unphased TIC keeps the six-column layout. The phased round-trip is pinned in `ticExport.test.ts` (FUND-13). Classifications are still not exported.
+- A phased TIC is exported with one `FAZA n` column group per phase (own funds / % / credit / %) to the right of the project block, in the shape `ticImport.detectPhaseColumns` reads; an unphased TIC keeps the six-column layout. The phased round-trip is pinned in `ticExport.test.ts` (FUND-13). The last column, `KLASIFIKACIJA`, holds each line's classification **code** (ids differ between databases); `applyImportedClassifications` in `ticClassificationMap.ts` maps it back on import, an empty cell meaning "unmapped" and an unknown code falling back to the name default.
 - **Depends on:** `@e965/xlsx` (dynamic import), jsPDF, activityLog
 - _Note: this previously emitted an HTML table blob named `.xls`, which the docs already described as `.xlsx`; it now genuinely is `.xlsx`._
 
