@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canManagePayments } from '../../../utils/permissions'
 import { Calendar, Download, Filter, TrendingUp, TrendingDown, Scale, AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Table } from '../../ui'
@@ -19,6 +22,7 @@ const DIRECTION_BADGE: Record<PaymentDirection, 'green' | 'red'> = { IN: 'green'
 
 const FundingPaymentsManagement: React.FC = () => {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
   const { payments, stats, loading, error, refetch } = usePaymentsData()
   const [errorDismissed, setErrorDismissed] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -57,6 +61,9 @@ const FundingPaymentsManagement: React.FC = () => {
 
   // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
   const { exporting, run: runExportExcel } = useAsyncExport(exportFundingPaymentsExcel, 'common.export_error')
+
+  // RLS returns payments to Director and Accounting only; anyone else would see an empty register.
+  if (!canManagePayments(user)) return <Navigate to="/" replace />
 
   if (loading && payments.length === 0) {
     return <LoadingSpinner message={t('funding.payments.loading')} />

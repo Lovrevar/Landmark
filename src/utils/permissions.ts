@@ -1,8 +1,15 @@
 import { User } from '../contexts/AuthContext'
 
+/**
+ * Who sees payments and invoices: the paid figures on Site management, the Funding payments
+ * register and the drawdown, repayment and fee sections of a credit. Mirrors the RLS on
+ * `accounting_payments` and `accounting_invoices` (Director and Accounting). Investment used to be
+ * included here while the database returned it no rows, so every one of those screens read as
+ * "never paid" or empty (SEC-A10, decided 2026-10-09: hide them rather than widen the policy).
+ */
 export const canManagePayments = (user: User | null): boolean => {
   if (!user) return false
-  return user.role === 'Director' || user.role === 'Accounting' || user.role === 'Investment'
+  return user.role === 'Director' || user.role === 'Accounting'
 }
 
 export const canViewAllProjects = (user: User | null): boolean => {

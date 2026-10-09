@@ -10,9 +10,13 @@ import CreditDisbursements from './CreditDisbursements'
 import CreditRepayments from './CreditRepayments'
 import CreditExpenses from './CreditExpenses'
 import { useCreditManagement } from './hooks/useCreditManagement'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canManagePayments } from '../../../utils/permissions'
 
 const CreditsManagement: React.FC = () => {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const showPayments = canManagePayments(user)
   const [errorDismissed, setErrorDismissed] = React.useState(false)
   const {
     credits,
@@ -171,6 +175,7 @@ const CreditsManagement: React.FC = () => {
                                 isExpanded={expandedAllocations.has(allocationKey)}
                                 onToggle={toggleAllocation}
                                 onDelete={handleDeleteAllocation}
+                                showInvoices={showPayments}
                               />
                             )
                           })}
@@ -178,9 +183,16 @@ const CreditsManagement: React.FC = () => {
                       </div>
                     )}
 
-                    <CreditDisbursements creditId={credit.id} />
-                    <CreditRepayments creditId={credit.id} />
-                    <CreditExpenses creditId={credit.id} />
+                    {/* Invoices and payments are readable by Director and Accounting only. For any
+                        other role these three came back empty and read as "nothing drawn, nothing
+                        repaid" (FUND-15). */}
+                    {showPayments && (
+                      <>
+                        <CreditDisbursements creditId={credit.id} />
+                        <CreditRepayments creditId={credit.id} />
+                        <CreditExpenses creditId={credit.id} />
+                      </>
+                    )}
 
                     {credit.purpose && (
                       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">

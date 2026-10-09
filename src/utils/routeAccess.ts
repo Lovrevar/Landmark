@@ -28,6 +28,9 @@ export const CASHFLOW_ROUTES: readonly string[] = [
   '/erp-import',
 ]
 
+/** Director and Accounting only; the page guards itself with `canManagePayments` (SEC-A10). */
+export const PAYMENT_ROUTES: readonly string[] = ['/funding-payments']
+
 /** Director only: `<DirectorRoute>`, plus the Activity Log, which guards itself. */
 export const DIRECTOR_ROUTES: readonly string[] = ['/general-reports', '/activity-log']
 
@@ -57,7 +60,7 @@ const staticPrefix = (routePattern: string): string => {
 export function canRoleAccessRoute(role: string | null | undefined, routePattern: string): boolean {
   if (!role) return false
   const route = staticPrefix(routePattern)
-  if (CASHFLOW_ROUTES.includes(route)) return role === 'Director' || role === 'Accounting'
+  if (CASHFLOW_ROUTES.includes(route) || PAYMENT_ROUTES.includes(route)) return role === 'Director' || role === 'Accounting'
   if (DIRECTOR_ROUTES.includes(route)) return role === 'Director'
   if (role === 'Supervision') return SUPERVISION_ROLE_ROUTES.includes(route)
   return true

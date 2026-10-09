@@ -12,7 +12,6 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
   have icon-only buttons without labels.
 - "Investicije" names two different menu items; `funding.investments.title` is "Investicije" in
   the English file too; "investitor" and "banka" are used for the same party.
-- The Funding menu shows Plaćanja to the Investment role, which reads no payments (SEC-A10).
 
 ### FUND-13 · Low · The TIC Excel export drops classifications
 - **Where:** `ticExport.ts`. Phases are exported and re-imported since 2026-10-08
@@ -27,10 +26,6 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
 - It can overwrite the `used_amount = amount` set by the disbursement trigger.
 - **ERP:** gains weight; a disbursed credit would be counted twice once the ERP feeds drawdowns
   (Q17).
-
-### FUND-15 · Low · Investment role sees credits but no money movements
-- Drawdown, repayment and fee sections come back empty for that role. Needs the decision in
-  SEC-A10 / SEC-004 ([security.md](./security.md)).
 
 ### FUND-7 · Low · Equity form drops fields
 - `percentage_stake`, `notes` and custom schedules are shown but not stored.
@@ -57,6 +52,10 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
   up the flex chain) instead of widening the document.
 
 ## Resolved
+
+### FUND-15 · Low · Investment role sees credits but no money movements
+- Fixed on `fix/storage-policies-sec-a12` (2026-10-09) with SEC-A10: the Funding "Plaćanja" menu item, the register page and the
+  drawdown, repayment, fee and allocation-invoice sections show to Director and Accounting only.
 
 ### FUND-6 · Low · "Disbursed to account" without an account gives a generic error
 - Fixed on `fix/backlog-batch-3` (2026-10-08): the Funding credit form checks the account before saving.

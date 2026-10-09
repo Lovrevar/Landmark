@@ -44,7 +44,7 @@ import {
   X,
   HelpCircle
 } from 'lucide-react'
-import { canUseCashflow, canViewActivityLog, isDirectorRole } from '../../utils/permissions'
+import { canManagePayments, canUseCashflow, canViewActivityLog, isDirectorRole } from '../../utils/permissions'
 import Input from '../ui/Input'
 import { useChatNotifications } from '../Chat/hooks/useChatNotifications'
 import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
@@ -184,7 +184,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.investors'), icon: Building2, path: '/banks' },
         { name: t('nav.investments'), icon: CreditCard, path: '/funding-credits' },
         { name: t('nav.projects'), icon: Building2, path: '/investment-projects' },
-        { name: t('nav.payments'), icon: DollarSign, path: '/funding-payments' },
+        // Payments are readable by Director and Accounting only; for anyone else the register is empty.
+        ...(canManagePayments(user) ? [{ name: t('nav.payments'), icon: DollarSign, path: '/funding-payments' }] : []),
         { name: t('nav.tic'), icon: Calculator, path: '/tic' },
         { name: t('nav.documents'), icon: Files, path: '/documents' }
       ],

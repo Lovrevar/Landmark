@@ -10,29 +10,6 @@ it; write down why, and what a fix would look like.
 
 ## Open defects
 
-### SEC-A12 · Medium · Any signed-in user can delete any stored document file
-- **Check:** Confirmed (found 2026-10-01).
-- **Where:** `supabase/migrations/20260527100000_restore_documents_bucket_and_policies.sql` and
-  `20260527100100_restore_other_storage_buckets_and_policies.sql`: the `storage.objects`
-  INSERT / SELECT / DELETE policies on the `documents` and `contract-documents` buckets check only
-  `bucket_id`.
-- **What happens:** `20260930100000` limited deleting a `public.documents` row to its uploader,
-  Director and Accounting, but the file itself can be removed, or overwritten by path, by any
-  signed-in user through the Storage API, leaving a row that points at nothing. Every signed-in
-  user can also read every file, which matches the table's SELECT policy today but has no
-  per-entity check.
-- **Fix direction:** mirror the table rule in the DELETE and UPDATE policies on `storage.objects`:
-  owner (`owner_id = auth.uid()`) or `app_user_role() IN ('Director','Accounting')`, the way
-  `can_access_chat_object` does for chat.
-
-### SEC-A10 · Low · Investment role can manage payments in the UI but reads none
-- **What happens:** `canManagePayments` is true for Investment, but `accounting_payments` RLS is
-  Director/Accounting only. Investment users get the full paid UI over rows RLS will not return;
-  the payment-history modal reads as "never paid", and Funding's drawdown, repayment and fee
-  sections come back empty (FUND-15 in [funding.md](./funding.md)).
-- **Fix direction:** a product decision about what the Investment role is for, then make
-  `canManagePayments` and the policy agree. Detail under SEC-004 below.
-
 ### SEC-A9 · Low · `dispatch-calendar-reminders` has no request authentication
 - **Where:** `supabase/functions/dispatch-calendar-reminders/index.ts`, `verify_jwt = false`.
 - **What happens:** harmless today because the function is disabled in `config.toml`. Enabling it
@@ -199,6 +176,16 @@ A migration here touches the most widely read table in the app — `contracts` i
 - SEC-001 above — the same "UI gate over role-only RLS" shape, one layer up
 
 ## Resolved
+
+### SEC-A10 · Low · Investment role can manage payments in the UI but reads none
+- Decided 2026-10-09: hide the screens rather than widen the policy (production has no
+  Investment user). `canManagePayments` is Director and Accounting, as the RLS; done on `fix/storage-policies-sec-a12` (2026-10-09).
+
+### SEC-A12 · Medium · Any signed-in user can delete any stored document file
+- Fixed by migration `20261009100000_storage_document_delete_policies` (written 2026-10-09,
+  **not applied yet** — see [release.md](./release.md)): the DELETE policies on the `documents`
+  and `contract-documents` buckets allow the file's owner, Director and Accounting. There was no
+  UPDATE policy on either bucket, so files could not be overwritten; the entry was wrong on that.
 
 - **SEC-003** (RLS on `project_managers`): never present in the applied schema. Record in
   [archive/SECURITY_BACKLOG.md](./archive/SECURITY_BACKLOG.md).

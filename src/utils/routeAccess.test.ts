@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { CASHFLOW_ROUTES, DIRECTOR_ROUTES, SUPERVISION_ROLE_ROUTES, canRoleAccessRoute } from './routeAccess'
+import { CASHFLOW_ROUTES, DIRECTOR_ROUTES, PAYMENT_ROUTES, SUPERVISION_ROLE_ROUTES, canRoleAccessRoute } from './routeAccess'
 
 const read = (file: string) => readFileSync(join(process.cwd(), file), 'utf8')
 
@@ -30,6 +30,15 @@ describe('the lists match the router', () => {
     const guarded = routes.filter(route => route.guard === 'director').map(route => route.path)
     expect([...DIRECTOR_ROUTES].sort()).toEqual([...guarded, '/activity-log'].sort())
     expect(read('src/components/General/ActivityLog/index.tsx')).toContain('canViewActivityLog(user)')
+  })
+
+  it('lists the Funding payments register, which guards itself and is offered in the menu on the same test', () => {
+    expect([...PAYMENT_ROUTES]).toEqual(['/funding-payments'])
+    expect(read('src/components/Funding/Payments/index.tsx')).toContain('canManagePayments(user)')
+    expect(read('src/components/Common/Layout.tsx')).toMatch(/canManagePayments\(user\)[\s\S]{0,80}path: '\/funding-payments'/)
+    expect(canRoleAccessRoute('Accounting', '/funding-payments')).toBe(true)
+    expect(canRoleAccessRoute('Investment', '/funding-payments')).toBe(false)
+    expect(canRoleAccessRoute('Sales', '/funding-payments')).toBe(false)
   })
 
   it('gives the Supervision role the three menu items Layout does', () => {

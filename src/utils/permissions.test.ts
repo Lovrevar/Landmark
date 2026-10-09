@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   canEditSalesUnits, canDeleteSalesUnits, canManageSubcontractors, canDeleteSubcontractors, canManageWorkLogs,
+  canManagePayments,
 } from './permissions'
 import type { User } from '../contexts/AuthContext'
 
@@ -25,6 +26,12 @@ describe('button permissions follow the RLS policies', () => {
 
   it('work logs: Director and Supervision', () => {
     expect(allowed(canManageWorkLogs)).toEqual(['Director', 'Supervision'])
+  })
+
+  // Investment was in this list while RLS returned it no payments, so every payment screen it was
+  // shown read as empty (SEC-A10).
+  it('payments and invoices: Director and Accounting, as the RLS on both tables', () => {
+    expect(allowed(canManagePayments)).toEqual(['Director', 'Accounting'])
   })
 
   it('nobody signed in may do anything', () => {
