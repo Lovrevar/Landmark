@@ -1,3 +1,4 @@
+import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
 import { supabase, type ProjectCategory } from '../../../lib/supabase'
 import { startOfMonth } from 'date-fns'
 import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
@@ -122,7 +123,8 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
     { data: allocationsData, error: allocationsError },
     { data: creditsData, error: creditsError },
     { data: subcontractorsData, error: subcontractorsError },
-    { data: milestonesData, error: milestonesError }
+    { data: milestonesData, error: milestonesError },
+    budgetedProjectIds
   ] = await Promise.all([
     supabase
       .from('projects')
@@ -146,7 +148,9 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
     supabase.from('subcontractors').select('id'),
     supabase
       .from('subcontractor_milestones')
-      .select('id, milestone_name, due_date, status, contract_id')
+      .select('id, milestone_name, due_date, status, contract_id'),
+    // Which projects have a budget at all: only a TIC sets one (GEN-5).
+    fetchBudgetedProjectIds()
   ])
 
   // Every read is checked: a failure shows the error panel instead of a dashboard of zeros.
@@ -172,7 +176,7 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const subcontractors = (subcontractorsData || []) as SubcontractorRow[]
   const milestones = (milestonesData || []) as MilestoneRow[]
 
-  const projectStats = deriveProjects(projects, apartments, contracts, invoices, allocations, credits)
+  const projectStats = deriveProjects(projects, apartments, contracts, invoices, allocations, credits, budgetedProjectIds)
   const financial = deriveFinancial(invoices, payments, salesRows, credits)
   const sales = deriveSales(apartments, salesRows)
   const construction = deriveConstruction(contracts, subcontractors, milestones, invoices)
@@ -207,7 +211,8 @@ function deriveProjects(
   contracts: ContractRow[],
   invoices: InvoiceRow[],
   allocations: AllocationRow[],
-  credits: CreditRow[]
+  credits: CreditRow[],
+  budgetedProjectIds: ReadonlySet<string>
 ): ProjectStats[] {
   const apartmentsByProject = groupBy(apartments, a => a.project_id)
   const contractsByProject = groupBy(contracts, c => c.project_id)
@@ -258,6 +263,7 @@ function deriveProjects(
       status: project.status ?? '',
       category: project.category ?? null,
       budget: project.budget ?? 0,
+      budget_set: budgetedProjectIds.has(project.id),
       total_expenses: totalExpenses,
       apartment_sales: apartmentSales,
       total_investment: totalInvestment,

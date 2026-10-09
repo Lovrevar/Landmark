@@ -144,6 +144,8 @@ Core retail module. Tracks development projects through phases (development, con
 
 Retail-specific sales tracking (parcel/lot sales to buyers) — distinct from the Sales module.
 
+Two pages, two menu items in the Retail profile: **Prodaje** → `/retail-sales` (`RetailSales.tsx`, where a sale is created and a payment recorded) and **Plaćanja** → `/retail-sales-payments` (`index.tsx`, the read-only payments register). Until 2026-10-08 "Prodaje" opened the register and the sales page had no menu item (RETAIL-5).
+
 #### Services
 
 ### services/retailSalesService.ts

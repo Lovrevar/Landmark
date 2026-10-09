@@ -89,11 +89,6 @@ const AccountingBanks: React.FC = () => {
     })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleDeleteAllocation = (_allocationId: string, _creditId: string) => {
-    // read-only view - allocations cannot be deleted from cashflow banke
-  }
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -243,7 +238,6 @@ const AccountingBanks: React.FC = () => {
                                           allocationKey={allocationKey}
                                           isExpanded={expandedAllocations.has(allocationKey)}
                                           onToggle={toggleAllocation}
-                                          onDelete={handleDeleteAllocation}
                                         />
                                       )
                                     })}

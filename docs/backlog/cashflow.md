@@ -1,42 +1,13 @@
 # Backlog — Cashflow
 
 Invoices, payments, companies, bank accounts, loans, cesija and kompenzacija. Ids: `CASH-n` (next
-free: `CASH-30`). Entry format and rules are in [README.md](./README.md).
+free: `CASH-31`). Entry format and rules are in [README.md](./README.md).
 
 Phase 5 of the ERP integration removes in-app invoice and payment creation. Each entry says how
 that changes it; do not build new authoring UI here without reading
 [../erp-integration/](../erp-integration/README.md) first.
 
 ## Open
-
-### CASH-29 · Medium · Cashflow payments totals count credit principal as income and expense
-- **Check:** Code reading (2026-10-07)
-- **Where:** Cashflow → Plaćanja: the cards "Ukupno Prihod" / "Ukupno Rashod" / "Neto" and the
-  "Filtrirano" line (`paymentTotalsByDirection`).
-- **What happens:** they sum by direction, so a credit drawdown is in "Prihod" and a principal
-  repayment in "Rashod", against the CASH-7 decision. The rows themselves are now labelled as
-  financing (FUND-17), so the cards disagree with the table under them.
-- **Fix direction:** split the totals by `invoiceCashCategory`, as the Companies cards do, or
-  rename the cards to "Priljev" / "Odljev". Changes figures: show the accountant first.
-
-### CASH-25 · Low · Payment detail view shows the wrong direction cues
-- **Check:** Code reading
-- **Where:** `Cashflow/Payments/PaymentDetailView.tsx`.
-- **What happens:** it prints a literal "Cesija" and colours every amount green, money out
-  included. (The table's PRIHOD for an unknown type was fixed with FUND-17.)
-- **Fix direction:** `paymentDirection` / `paymentKind` from `invoiceHelpers.ts`.
-
-### CASH-26 · Low · Banks page has a delete button that does nothing and a modal nothing opens
-- **Check:** Code reading
-- **Where:** `Cashflow/Banks/index.tsx`.
-- **Fix direction:** wire the delete (with `ConfirmDialog`, `assertRowsAffected`, `logActivity`) or
-  remove both.
-
-### CASH-27 · Low · Payments date filter parses the dates as UTC
-- **Check:** Code reading
-- **Where:** `Cashflow/Payments/hooks/usePayments.ts:345-346`, `new Date(dateFrom)` / `new Date(dateTo)`.
-- **What happens:** a payment on the first or last day of the range can fall outside it.
-- **Fix direction:** `parseLocalDate` from `utils/dateOnly.ts`.
 
 ### CASH-28 · Low · Cashflow wording, hardcoded strings and unused keys
 - **Check:** Code reading
@@ -73,7 +44,9 @@ that changes it; do not build new authoring UI here without reading
 ### CASH-17 · Low · Sticky actions cell cuts the overdue tint on desktop
 - **Where:** `src/components/ui/Table.tsx` (sticky cell is `bg-white`),
   `Cashflow/Invoices/InvoiceTable.tsx`.
-- **Fix direction:** let the sticky cell inherit the row tint.
+- **Fix direction:** let the sticky cell inherit the row tint. Not a one-liner: the dark-mode tint
+  is translucent (`dark:bg-red-900/20`), so an inherited background would let the columns
+  scrolling underneath show through. The cell needs a solid base with the tint painted over it.
 
 ### CASH-18 · Low · Invoice types are named and coloured differently per screen
 - **Check:** Mostly fixed on `feat/user-guidance-phase-1`: one short label set (`invoice_type.*`)
@@ -123,6 +96,26 @@ These turn into ERP work or disappear in phase 5. Do not fix them in the app.
   delete for non-Directors (SEC-A7): the forms go and writes are locked to the service role.
 
 ## Resolved
+
+### CASH-30 · Low · Payments table cuts the last digits of the amount
+- Closed on `fix/backlog-batch-3` (2026-10-08): nothing was cut — the table is wider than the screen and the column
+  had scrolled under the sticky "Akcije" cell. Sticky cells in `ui/Table.tsx` now carry a soft
+  edge so it reads as an overlay. The table's width is UI-8.
+
+### CASH-25 · Low · Payment detail view shows the wrong direction cues
+- Fixed on `fix/backlog-small-batch` (2026-10-08): "Cesija" comes from the locale file and the amount takes the
+  direction's colour.
+
+### CASH-26 · Low · Banks page has a delete button that does nothing and a modal nothing opens
+- Fixed on `fix/backlog-small-batch` (2026-10-08): `AllocationRow`'s delete is optional and the read-only Banks page passes
+  none. The unreachable `BankCreditFormModal` stays under CASH-15.
+
+### CASH-27 · Low · Payments date filter parses the dates as UTC
+- Fixed on `fix/backlog-small-batch` (2026-10-08): the filter compares `yyyy-mm-dd` text, day against day.
+
+### CASH-29 · Medium · Cashflow payments totals count credit principal as income and expense
+- Fixed on `fix/figures-and-tic-export` (2026-10-08): `paymentTotalsByCategory` keeps credit principal out of Prihod / Rashod /
+  Neto; the cards and the "Filtrirano" line show it as "Financiranje (primljeno / otplaćeno)".
 
 ### CASH-24 · Medium · Calendar "Neplaćeno" card leaves out partly paid invoices
 - Fixed on `fix/audit-medium-findings` (2026-10-07): the month figures moved to `Calendar/utils/monthStats.ts`, where every

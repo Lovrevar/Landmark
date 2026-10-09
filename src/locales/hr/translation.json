@@ -176,6 +176,7 @@
     "option_name_unavailable": "Naziv nije učitan",
     "projects_load_error": "Popis projekata nije moguće učitati",
     "users_load_error": "Popis korisnika nije moguće učitati",
+    "list_load_error": "Popis nije moguće učitati",
     "generated": "Generirano:",
     "pdf": {
       "confidential": "POVJERLJIVO",
@@ -206,7 +207,9 @@
       "Studeni",
       "Prosinac"
     ],
-    "no_results_description": "Očistite pretragu ili promijenite filtere."
+    "no_results_description": "Očistite pretragu ili promijenite filtere.",
+    "financing_received_repaid": "Financiranje (primljeno / otplaćeno):",
+    "budget_not_set": "Budžet nije postavljen"
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -889,6 +892,7 @@
       "source_bank": "Bankovni račun",
       "source_credit": "Kredit",
       "source_kompenzacija": "Kompenzacija",
+      "source_cesija": "Cesija",
       "source_cash": "Gotovina"
     },
     "hints": {
@@ -1049,8 +1053,7 @@
       "revenue_label": "Promet:",
       "profit_loss_label": "Dobit/Gubitak:",
       "unpaid_income": "Neplaćeno (prihod):",
-      "unpaid_expense": "Neplaćeno (rashod):",
-      "financing_label": "Financiranje (primljeno / otplaćeno):"
+      "unpaid_expense": "Neplaćeno (rashod):"
     },
     "table": {
       "name": "Naziv",
@@ -2062,6 +2065,7 @@
       "download_template": "Preuzmi predložak",
       "template_failed": "Predložak nije moguće preuzeti. Pokušajte ponovno.",
       "template_sheet_data": "Stanovi",
+      "garage_template_sheet_data": "Garaže",
       "template_sheet_notes": "Upute",
       "format": {
         "layout": "Čita se samo prvi list. Zaglavlje je u 1. retku, podaci počinju od 2. retka; važan je redoslijed stupaca, a ne nazivi u zaglavlju.",
@@ -3416,6 +3420,7 @@
       "error_add_bank": "Greška pri dodavanju banke. Pokušajte ponovno.",
       "error_update_bank": "Greška pri ažuriranju banke.",
       "error_credit_fields_required": "Popunite obavezna polja (banka, naziv kredita, iznos, datum početka)",
+      "error_disbursement_account_required": "Odaberite bankovni račun na koji je kredit isplaćen.",
       "error_add_credit": "Greška pri dodavanju kreditne linije.",
       "error_update_credit": "Greška pri ažuriranju kreditne linije.",
       "investor_form": {
@@ -3523,7 +3528,8 @@
         "payment_amount": "Iznos plaćanja",
         "total_amount": "Ukupni iznos",
         "status": "Status"
-      }
+      },
+      "drawdown": "Isplata kredita"
     },
     "credit_invoice_section": {
       "loading": "Učitavanje...",
@@ -3832,12 +3838,12 @@
       "last_updated": "Zadnje ažuriranje",
       "sales_performance": "Prodajni učinak",
       "view_details": "Pogledaj detalje",
-      "sold_units": "Prodane jedinice",
+      "sold_units": "Prodani stanovi",
       "reserved": "Rezervirano",
       "available": "Dostupno",
-      "sales_rate": "Stopa prodaje",
-      "total_sales_revenue": "Ukupni prihod od prodaje",
-      "avg_price_per_unit": "Prosječna cijena po jedinici",
+      "sales_rate": "Stopa prodaje stanova",
+      "total_sales_revenue": "Ugovorena prodaja",
+      "avg_price_per_unit": "Prosječna ugovorena cijena",
       "monthly_sales": "Prodaja ({{month}})",
       "units": "jedinica",
       "construction_site": "Gradnja i upravljanje gradilištem",
@@ -3921,7 +3927,7 @@
       "no_projects": "Nema dostupnih projekata",
       "credit_utilization": "Iskorištenost kredita",
       "total_credit_facilities": "Ukupni krediti",
-      "revenue_amount": "{{amount}} prihoda"
+      "revenue_amount": "{{amount}} ugovoreno"
     },
     "accounting": {
       "title": "Računovodstvena nadzorna ploča",
@@ -3967,9 +3973,9 @@
       "title": "Prodajna nadzorna ploča",
       "subtitle": "Pregled prodajnog učinka i metrika",
       "loading": "Učitavanje prodajne nadzorne ploče...",
-      "total_revenue": "Ukupni prihod",
+      "total_revenue": "Naplaćeno od prodaje",
       "units_sold": "prodanih jedinica",
-      "sales_rate": "Stopa prodaje",
+      "sales_rate": "Stopa prodaje (sve jedinice)",
       "avg_sale_price": "Prosječna cijena prodaje",
       "per_unit": "Po jedinici",
       "active_leads": "Aktivni potencijalni kupci",
@@ -4115,7 +4121,8 @@
           "description_few": "Rok korištenja za {{name}} istječe za {{count}} dana",
           "description_other": "Rok korištenja za {{name}} istječe za {{count}} dana"
         }
-      }
+      },
+      "projects_without_budget": "Projekti bez budžeta: {{count}}"
     },
     "retail": {
       "title": "Retail nadzorna ploča",

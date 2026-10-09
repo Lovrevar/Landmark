@@ -1,27 +1,16 @@
 # Backlog — Sales
 
 Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (next free:
-`SALES-20`). Entry format and rules are in [README.md](./README.md). Retail is in
+`SALES-21`). Entry format and rules are in [README.md](./README.md). Retail is in
 [retail.md](./retail.md).
 
 ## Open
-
-### SALES-16 · Low · Apartments page actions are not role-gated
-- **Check:** Code reading
-- **Where:** `Sales/Apartments/index.tsx:22` calls `useAuth()` and discards the result; create and
-  delete show to every role. Same for the delete-building button in `BuildingsGrid.tsx`.
-- **What happens:** a role RLS refuses sees the button and gets an error (or nothing).
-- **Fix direction:** `utils/permissions.ts`.
 
 ### SALES-17 · Low · Bulk building creation
 - **Check:** Code reading
 - **Where:** `createBulkBuildings`.
 - **What happens:** it can create buildings with names that already exist, always gives them 10
   floors, and writes `severity` inside the activity-log metadata, not as the severity.
-
-### SALES-18 · Low · Garage and storage import has no template; import tolerance differs from the screen
-- **Where:** the garage import modal has no "download template" button (the apartment import
-  does). The apartment import accepts a price difference of 0,05 while the screen says 0,02.
 
 ### SALES-19 · Low · Sales labels, grammar and hardcoded strings
 - **Check:** Code reading
@@ -34,15 +23,6 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
   title "Projekti".
 - Icon-only buttons without labels in `BuildingsGrid` and `UnitsGrid`; both hand-build money (UI-1).
 
-### SALES-6 · Medium · The package total is still computed per screen
-- **Where:** Sales Projects cards, Apartments page, Customers, Sales dashboard, Sales Payments.
-- **What happens:** the "paid" side is fixed: every apartment-level screen counts payments on the
-  apartment's `OUTGOING_SALES` invoices. The denominator is not: some screens use list price,
-  others `sale_price`, so the same apartment can show different totals and remaining amounts.
-- **Fix direction:** one shared helper for the package total; drop or derive the stale
-  `sales.total_paid` / `remaining_amount` columns (documented as a sale-time snapshot).
-- **ERP:** if buyer payments come from the ERP (Q14), the paid basis already matches.
-
 ### SALES-10 · Low · No sale cancellation flow
 - **What happens:** nothing updates or deletes `sales` rows, so a reverted sale still counts in
   dashboards and reports. Filed Low, but it distorts figures for as long as the row exists.
@@ -53,7 +33,8 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 - Duplicates are possible through bulk create, single create and within-file garage imports.
 
 ### SALES-8 · Low · Customers module keeps only one garage and one storage per apartment
-- Customer totals also use list prices instead of `sale_price` (same root as SALES-6).
+- A second garage or storage unit linked to the apartment is neither shown nor counted in the
+  package total on the Customers screens.
 
 ### SALES-13 · Low · Delete dialog on the Apartments page is half Croatian, half English
 - **Where:** `src/components/Sales/Apartments/index.tsx`. Title is a literal "Potvrda brisanja",
@@ -66,6 +47,29 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 - **Fix direction:** `formatEuro` / `formatEuroRounded`. Part of UI-1 in [ui.md](./ui.md).
 
 ## Resolved
+
+### SALES-18 · Low · Garage and storage import has no template; import tolerance differs from the screen
+- Fixed on `fix/backlog-batch-3` (2026-10-08): the garage import has a "Preuzmi predložak" button
+  (`garageImportTemplate.ts`). The reported tolerance mismatch (0,05 against 0,02) was not found
+  in the code or the strings.
+
+### SALES-20 · Low · Sales projects unit actions are not role-gated
+- Fixed on `fix/backlog-batch-3` (2026-10-08): the unit cards and the page header use `canEditSalesUnits` /
+  `canDeleteSalesUnits`. Selling needs INSERT on `sales` and `customers` and UPDATE on the unit,
+  all three open to Director, Sales and Accounting.
+
+### SALES-16 · Low · Apartments page actions are not role-gated
+- Fixed on `fix/backlog-small-batch` (2026-10-08): `canEditSalesUnits` / `canDeleteSalesUnits` mirror the RLS policies and
+  gate the Apartments page buttons and the delete-building button. The unit cards on Sales
+  projects are not gated yet (SALES-20).
+
+### SALES-6 · Medium · The package total is still computed per screen
+- Decided 2026-10-08: a sold package totals its sale price plus the list prices of the linked
+  garages and storage units; an unsold one, list prices throughout. `packageTotal` in
+  `Sales/utils/packageTotal.ts` is the one implementation, used by the Sales project cards, the
+  Apartments page and its payment history, and the Customers card, detail modal and per-project
+  sums (`fix/figures-and-tic-export`). The stale `sales.total_paid` / `remaining_amount` columns
+  are still there, unread by any screen; dropping them needs a migration.
 
 ### SALES-15 · Low · Sales project and building grids have no empty state
 - Fixed on `feat/user-guidance-phase-2` (2026-10-06): both grids render `EmptyState` with a

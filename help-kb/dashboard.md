@@ -18,4 +18,6 @@ Naslovi po profilu:
 
 Svaka verzija prikazuje pokazatelje svog područja — primjerice financije i projekte (General), prodaju i naplatu (Sales), stanje gradilišta (Supervision), kredite (Funding), novčani tok, firme i PDV (Cashflow).
 
+Prodaja se na dvije ploče mjeri različito, pa se brojke ne moraju poklapati: opća ploča (General) prikazuje **Ugovorenu prodaju** i broji samo stanove, a prodajna (Sales) prikazuje **Naplaćeno od prodaje** i broji sve jedinice — stanove, garaže i spremišta.
+
 Korisnici uloge **Supervision** ne vide nadzornu ploču — automatski se preusmjeravaju na [[site-management]]. Profil **Cashflow** dostupan je samo ulogama Director i Accounting i zahtijeva lozinku — pogledajte [[cashflow-unlock]].

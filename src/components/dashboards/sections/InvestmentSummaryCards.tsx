@@ -20,6 +20,9 @@ const InvestmentSummaryCards: React.FC<Props> = ({ financialSummary }) => {
       <StatCard
         label={t('dashboards.investment.portfolio_value')}
         value={formatEuroCompact(financialSummary.total_portfolio_value)}
+        subtitle={financialSummary.projects_without_budget > 0
+          ? t('dashboards.investment.projects_without_budget', { count: financialSummary.projects_without_budget })
+          : undefined}
         icon={Building2}
         color="blue"
         size="lg"

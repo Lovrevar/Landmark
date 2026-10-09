@@ -15,6 +15,9 @@ import { UNIT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDi
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { Button, Badge } from '../../ui'
 import { filterUnitsByStatus, getSelectableUnitIds, getUnitsOfType } from './unitFilters'
+import { packageTotal } from '../utils/packageTotal'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canEditSalesUnits, canDeleteSalesUnits } from '../../../utils/permissions'
 
 interface UnitsGridProps {
   building: BuildingWithUnits
@@ -58,6 +61,11 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
   onConfigurePrice
 }) => {
   const { t } = useTranslation()
+  // Actions follow the RLS policies on the unit tables: Director, Sales and Accounting change
+  // units and record sales; only Director and Sales delete (SALES-20).
+  const { user } = useAuth()
+  const canEdit = canEditSalesUnits(user)
+  const canDelete = canDeleteSalesUnits(user)
   const getUnitIcon = (unitType: UnitType) => {
     if (unitType === 'apartment') return Home
     if (unitType === 'garage') return Warehouse
@@ -158,14 +166,16 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <button
-            onClick={allFilteredSelected ? onDeselectAllUnits : onSelectAllUnits}
-            disabled={selectableUnitIds.length === 0}
-            className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {allFilteredSelected ? <Square className="w-4 h-4 mr-2" /> : <CheckSquare className="w-4 h-4 mr-2" />}
-            {allFilteredSelected ? t('sales_projects.deselect_all') : t('sales_projects.select_all')}
-          </button>
+          {canEdit && (
+            <button
+              onClick={allFilteredSelected ? onDeselectAllUnits : onSelectAllUnits}
+              disabled={selectableUnitIds.length === 0}
+              className="flex items-center px-3 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {allFilteredSelected ? <Square className="w-4 h-4 mr-2" /> : <CheckSquare className="w-4 h-4 mr-2" />}
+              {allFilteredSelected ? t('sales_projects.deselect_all') : t('sales_projects.select_all')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -176,10 +186,11 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
 
           const isSelected = selectedUnitIds.includes(unit.id)
 
-          const apartmentPrice = unit.price || 0
-          const garagesPrice = linkedGarages.reduce((sum: number, g: { price: number }) => sum + (g?.price || 0), 0)
-          const repositoriesPrice = linkedRepositories.reduce((sum: number, r: { price: number }) => sum + (r?.price || 0), 0)
-          const totalPackagePrice = apartmentPrice + garagesPrice + repositoriesPrice
+          const totalPackagePrice = packageTotal({
+            listPrice: unit.price,
+            salePrice: unit.sale_info?.sale_price,
+            linkedPrices: [...linkedGarages, ...linkedRepositories].map(linked => linked?.price),
+          })
           const hasLinkedUnits = linkedGarages.length > 0 || linkedRepositories.length > 0
 
           return (
@@ -197,24 +208,26 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => onToggleUnitSelection(unit.id)}
-                    disabled={unit.status === 'Sold' && !isSelected}
-                    className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                  >
-                    {isSelected ? (
-                      <CheckSquare className="w-5 h-5 text-blue-600" />
-                    ) : (
-                      <Square className="w-5 h-5 text-gray-400" />
-                    )}
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => onToggleUnitSelection(unit.id)}
+                      disabled={unit.status === 'Sold' && !isSelected}
+                      className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="w-5 h-5 text-blue-600" />
+                      ) : (
+                        <Square className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  )}
                   <div>
                     <h4 className="font-semibold text-gray-900 dark:text-white">{t('common.unit')} {unit.number}</h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{t('common.floor')} {unit.floor}</p>
                   </div>
                 </div>
                 <div className="flex space-x-1">
-                  {activeUnitType === 'apartment' && (
+                  {canEdit && activeUnitType === 'apartment' && (
                     <button
                       onClick={() => onLinkApartment(unit as unknown as Apartment)}
                       className="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-600"
@@ -224,12 +237,16 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                       <LinkIcon className="w-4 h-4" />
                     </button>
                   )}
-                  <button
-                    onClick={() => onDeleteUnit(unit.id, activeUnitType)}
-                    className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={() => onDeleteUnit(unit.id, activeUnitType)}
+                      title={t('common.delete')}
+                      aria-label={t('common.delete')}
+                      className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -302,12 +319,14 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                   <div key={garage.id} className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-2 space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-semibold text-orange-700 dark:text-orange-400">{t('common.garage')}: {garage.number}</span>
-                      <button
-                        onClick={() => onUnlinkGarage(unit.id, garage.id)}
-                        className="text-orange-600 hover:text-orange-800"
-                      >
-                        <Unlink className="w-3 h-3" />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => onUnlinkGarage(unit.id, garage.id)}
+                          className="text-orange-600 hover:text-orange-800"
+                        >
+                          <Unlink className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-orange-600 dark:text-orange-400">{t('sales_projects.unit_detail.price')}:</span>
@@ -320,12 +339,14 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                   <div key={repository.id} className="bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg p-2 space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{t('common.storage')}: {repository.number}</span>
-                      <button
-                        onClick={() => onUnlinkRepository(unit.id, repository.id)}
-                        className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-                      >
-                        <Unlink className="w-3 h-3" />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => onUnlinkRepository(unit.id, repository.id)}
+                          className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                        >
+                          <Unlink className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-600 dark:text-gray-400">{t('sales_projects.unit_detail.price')}:</span>
@@ -343,7 +364,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     {statusLabel(UNIT_STATUS, unit.status, t)}
                   </Badge>
 
-                  {unit.status !== 'Sold' && (
+                  {canEdit && unit.status !== 'Sold' && (
                     <div className="flex space-x-1">
                       {unit.status === 'Available' && (
                         <Button size="sm" variant="warning" onClick={() => onUpdateUnitStatus(unit.id, activeUnitType, 'Reserved')}>

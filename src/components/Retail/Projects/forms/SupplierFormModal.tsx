@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { retailProjectService } from '../services/retailProjectService'
 import type { RetailSupplier, RetailSupplierType } from '../../../../types/retail'
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
+import InlineLoadError from '../../../ui/InlineLoadError'
 
 interface SupplierFormModalProps {
   onClose: () => void
@@ -25,6 +26,8 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
   })
   const { t } = useTranslation()
   const [supplierTypes, setSupplierTypes] = useState<RetailSupplierType[]>([])
+  // A failed lookup is not an empty list: say so beside the control, with a retry (UI-4).
+  const [typesFailed, setTypesFailed] = useState(false)
   const [showNewTypeInput, setShowNewTypeInput] = useState(false)
   const [newTypeName, setNewTypeName] = useState('')
   const [loading, setLoading] = useState(false)
@@ -37,9 +40,11 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
 
   const loadSupplierTypes = async () => {
     try {
+      setTypesFailed(false)
       const types = await retailProjectService.fetchSupplierTypes()
       setSupplierTypes(types)
     } catch (err) {
+      setTypesFailed(true)
       console.error('Error loading supplier types:', err)
     }
   }
@@ -138,6 +143,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
                     </option>
                   ))}
                 </Select>
+                {typesFailed && <InlineLoadError message={t('common.list_load_error')} onRetry={() => { void loadSupplierTypes() }} className="mt-1" />}
                 <Button
                   type="button"
                   variant="secondary"

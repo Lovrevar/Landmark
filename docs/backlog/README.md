@@ -64,7 +64,7 @@ it from the ranking. Never reuse an id: code comments and migrations quote them 
 
 ## Open work, ranked
 
-Ranked on 2026-10-05 (items 8 and 9 added 2026-10-07) by what goes wrong if the item is left, then by how small the job is.
+Ranked on 2026-10-05 by what goes wrong if the item is left, then by how small the job is.
 
 ### 1. Do first
 
@@ -79,32 +79,27 @@ still open in production.
 |---|---|---|
 | 1 | [SEC-A12](./security.md) — any signed-in user can delete or overwrite stored document files | The only open Medium security defect; data loss with no trace. One migration. |
 | 2 | [CASH-6](./cashflow.md) — cesija-from-credit sign | Allocation usage is wrong for every such payment. Blocked on an accounting decision, not on code. |
-| 3 | [SALES-6](./sales.md) — package total computed per screen | The same apartment shows different totals and remaining amounts. |
-| 4 | [SEC-A10](./security.md), [FUND-15](./funding.md) — what the Investment role may see | Investment users get a payment UI over rows RLS will not return, so paid contracts read as never paid. Needs a product decision. |
-| 5 | [SEC-004](./security.md) — `contracts` readable by every signed-in user | The Supervision payment gate is screen-only. Touches the most-read table; needs its own test pass. |
-| 6 | [COLLAB-4](./collaboration.md) — AI rate limit miscounts and fails open | Deferred to the voice branch (OQ-3). Do it there. |
-| 7 | [SALES-10](./sales.md) — no sale cancellation flow | A reverted sale counts in dashboards and reports for ever. |
-| 8 | [CASH-29](./cashflow.md) — Cashflow payments totals count credit principal as income and expense | The cards disagree with the rows under them. Needs the accountant before the figures change. |
-| 9 | [RETAIL-5](./retail.md) — `/retail-sales` unreachable from the menu | Needs a decision: link it or remove it. |
+| 3 | [SEC-A10](./security.md), [FUND-15](./funding.md) — what the Investment role may see | Investment users get a payment UI over rows RLS will not return, so paid contracts read as never paid. Needs a product decision. |
+| 4 | [SEC-004](./security.md) — `contracts` readable by every signed-in user | The Supervision payment gate is screen-only. Touches the most-read table; needs its own test pass. |
+| 5 | [COLLAB-4](./collaboration.md) — AI rate limit miscounts and fails open | Deferred to the voice branch (OQ-3). Do it there. |
+| 6 | [SALES-10](./sales.md) — no sale cancellation flow | A reverted sale counts in dashboards and reports for ever. |
 
 ### 3. Larger work, schedule deliberately
 
 | # | Item | Note |
 |---|---|---|
-| 10 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
-| 11 | [UI-8](./ui.md) — mobile | Supervision is used on site, on phones. |
-| 12 | [UI-4](./ui.md) — remaining silent failures | A failed load still reads as "no data" on ~39 inline loaders. |
-| 13 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
-| 14 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
-| 15 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
-| 16 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
-| 17 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
+| 7 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
+| 8 | [UI-8](./ui.md) — mobile | Supervision is used on site, on phones. |
+| 9 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
+| 10 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
+| 11 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
+| 12 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
+| 13 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
 
 ### 4. Small and low-risk
 
 Everything else marked Low in the area files. Pick these up when working nearby. The ones with
-visible effect: [FUND-13](./funding.md) (TIC export drops phases), [GEN-5](./projects-dashboards-reports.md)
-(€0 budget where there is no TIC), [GEN-16](./projects-dashboards-reports.md) and
+visible effect: [FUND-13](./funding.md) (TIC export drops classifications), [GEN-16](./projects-dashboards-reports.md) and
 [COLLAB-11](./collaboration.md) (UUID fragments instead of names), [SALES-9](./sales.md) (duplicate
 unit numbers), [CASH-9](./cashflow.md) (loans with no checks).
 

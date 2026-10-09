@@ -24,12 +24,15 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
 - The Cashflow invoice table is 1400px wide.
 - Calendar opens on the month view on phones.
 
-### UI-4 · Medium · Failed loads that still read as "no data"
+### UI-4 · Low · Failed loads that still read as "no data"
 - **Done:** ~60 hook-shaped loaders expose `error` + `refetch` and render `ErrorState`; services
-  throw; all silent mutations report.
-- **Left:** ~39 `load`/`fetch` functions written inline in 33 `.tsx` files, 12 silent
-  `.catch(() => set…([]))` fallbacks, and the full-page spinner on refetch on 9 Cashflow pages
-  (the search box loses focus).
+  throw; all silent mutations report. On `fix/failed-loads-ui4` (2026-10-08) the remaining inline
+  loaders were fixed: 17 in 14 files, mostly dropdown lookups in form modals, now showing
+  `InlineLoadError` with a retry (`common.list_load_error`); the Sales report and project details
+  show `ErrorState` instead of an empty picker and "not found".
+- **Left:** the full-page spinner on refetch on 9 Cashflow pages (the search box loses focus);
+  the lookup in the unreachable `BankCreditFormModal` (CASH-15); the Projects list shows a failed
+  load as an `Alert` (GEN-21).
 - **Rule:** never render zeros or an empty state on a failed load.
 
 ### UI-3 · Medium · Status colours and labels

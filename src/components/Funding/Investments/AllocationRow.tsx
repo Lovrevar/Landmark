@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
+import InlineLoadError from '../../ui/InlineLoadError'
 import { ChevronDown, ChevronUp, Trash2, FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Badge, LoadingSpinner } from '../../ui'
-import { formatEuro, formatDate } from '../../../utils/formatters'
+import { formatEuro, formatDate, NO_VALUE } from '../../../utils/formatters'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 import { fetchAllocationInvoices, AllocationInvoice } from './services/allocationService'
 
@@ -33,7 +34,8 @@ interface AllocationRowProps {
   allocationKey: string
   isExpanded: boolean
   onToggle: (key: string) => void
-  onDelete: (allocationId: string, creditId: string) => void
+  /** Omit on a read-only screen (Cashflow → Banke): the button is then not drawn at all. */
+  onDelete?: (allocationId: string, creditId: string) => void
 }
 
 
@@ -48,18 +50,21 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
   const { t, i18n } = useTranslation()
   const [invoicesExpanded, setInvoicesExpanded] = useState(false)
   const [invoices, setInvoices] = useState<AllocationInvoice[]>([])
+  const [invoicesFailed, setInvoicesFailed] = useState(false)
   const [invoicesLoading, setInvoicesLoading] = useState(false)
   const [invoicesFetched, setInvoicesFetched] = useState(false)
 
   const fetchInvoices = async () => {
     if (invoicesFetched) return
     setInvoicesLoading(true)
+    setInvoicesFailed(false)
     try {
       const mapped = await fetchAllocationInvoices(allocation.id)
       setInvoices(mapped)
       setInvoicesFetched(true)
     } catch (err) {
       console.error('Error fetching allocation invoices:', err)
+      setInvoicesFailed(true)
     } finally {
       setInvoicesLoading(false)
     }
@@ -131,15 +136,19 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
               </div>
             )}
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete(allocation.id, allocation.credit_id)
-            }}
-            className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(allocation.id, allocation.credit_id)
+              }}
+              title={t('common.delete')}
+              aria-label={t('common.delete')}
+              className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+            >
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -218,6 +227,9 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                   <div className="p-4">
                     <LoadingSpinner message={t('funding.allocation_row.loading_invoices')} />
                   </div>
+                ) : invoicesFailed ? (
+                  // Not "no invoices": the list did not load (UI-4).
+                  <InlineLoadError className="px-4 py-3" onRetry={() => { void fetchInvoices() }} />
                 ) : invoices.length === 0 ? (
                   <p className="text-sm text-gray-500 dark:text-gray-400 px-4 py-3">
                     {t('funding.allocation_row.no_invoices')}
@@ -255,7 +267,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
                                 {inv.invoice_number}
                               </td>
                               <td data-label={t('funding.allocation_row.table.supplier')} className="px-4 py-2.5 text-gray-700 dark:text-gray-200">
-                                {inv.supplier_name ?? '-'}
+                                {inv.kind === 'drawdown' ? t('funding.allocation_row.drawdown') : inv.supplier_name ?? NO_VALUE}
                               </td>
                               <td data-label={t('funding.allocation_row.table.payment_date')} className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
                                 {formatDate(inv.payment_date, i18n.language)}

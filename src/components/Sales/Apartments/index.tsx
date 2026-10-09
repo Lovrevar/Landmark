@@ -15,17 +15,24 @@ import { ApartmentDetailsModal } from './modals/ApartmentDetailsModal'
 import { PaymentHistoryModal } from './modals/PaymentHistoryModal'
 import { LinkUnitsModal } from './modals/LinkUnitsModal'
 import { formatEuroRounded } from '../../../utils/formatters'
+import { packageTotal } from '../utils/packageTotal'
+import { canEditSalesUnits, canDeleteSalesUnits } from '../../../utils/permissions'
 
 const ApartmentManagement: React.FC = () => {
   const { t } = useTranslation()
   const toast = useToast()
-  useAuth()
+  // Buttons follow what RLS lets the role do; a refused action used to surface as an error, or
+  // as nothing at all (SALES-16).
+  const { user } = useAuth()
+  const canEdit = canEditSalesUnits(user)
+  const canDelete = canDeleteSalesUnits(user)
   const {
     apartments,
     totalCount,
     projects,
     buildings,
     apartmentPaymentTotals,
+    apartmentSalePrices,
     linkedGarages,
     linkedStorages,
     loading,
@@ -148,12 +155,16 @@ const ApartmentManagement: React.FC = () => {
               {/* A count of 0 would be a claim about the portfolio; the load failed instead. */}
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{loadFailed ? '—' : totalCount}</p>
             </div>
-            <Button variant="success" icon={Plus} onClick={() => setShowBulkModal(true)}>
-              {t('apartments.bulk_create')}
-            </Button>
-            <Button variant="primary" icon={Building2} onClick={() => setShowSingleModal(true)}>
-              {t('apartments.add')}
-            </Button>
+            {canEdit && (
+              <>
+                <Button variant="success" icon={Plus} onClick={() => setShowBulkModal(true)}>
+                  {t('apartments.bulk_create')}
+                </Button>
+                <Button variant="primary" icon={Building2} onClick={() => setShowSingleModal(true)}>
+                  {t('apartments.add')}
+                </Button>
+              </>
+            )}
           </div>
         }
       />
@@ -262,11 +273,11 @@ const ApartmentManagement: React.FC = () => {
             icon={Home}
             title={t('apartments.empty_title')}
             description={t('apartments.empty_description')}
-            action={
+            action={canEdit ? (
               <Button variant="primary" icon={Building2} onClick={() => setShowSingleModal(true)}>
                 {t('apartments.add')}
               </Button>
-            }
+            ) : undefined}
           />
         )
       ) : (
@@ -279,10 +290,12 @@ const ApartmentManagement: React.FC = () => {
             // invoices (invoices have no garage/repository linkage), so the
             // apartment payment total already covers any linked garage/storage
             const totalPaid = apartmentPaymentTotals[apartment.id] || 0
-
-            const garagesTotalPrice = aptLinkedGarages.reduce((sum, g) => sum + (g.price || 0), 0)
-            const storagesTotalPrice = aptLinkedStorages.reduce((sum, s) => sum + (s.price || 0), 0)
-            const totalPrice = apartment.price + garagesTotalPrice + storagesTotalPrice
+            // The same total as on Sales Projects and Customers: the sale price once sold (SALES-6).
+            const totalPrice = packageTotal({
+              listPrice: apartment.price,
+              salePrice: apartmentSalePrices[apartment.id],
+              linkedPrices: [...aptLinkedGarages, ...aptLinkedStorages].map(linked => linked.price),
+            })
             const overallPercentage = totalPrice > 0 ? (totalPaid / totalPrice) * 100 : 0
 
             return (
@@ -388,29 +401,33 @@ const ApartmentManagement: React.FC = () => {
                   >
                     {t('apartments.payment_history')}
                   </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    fullWidth
-                    icon={LinkIcon}
-                    onClick={() => {
-                      setSelectedApartment(apartment)
-                      setShowLinkUnitsModal(true)
-                    }}
-                  >
-                    {t('apartments.link_units')}
-                  </Button>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {canEdit && (
                     <Button
-                      variant="primary"
+                      variant="secondary"
                       size="sm"
+                      fullWidth
+                      icon={LinkIcon}
                       onClick={() => {
                         setSelectedApartment(apartment)
-                        setShowEditModal(true)
+                        setShowLinkUnitsModal(true)
                       }}
                     >
-                      {t('common.edit')}
+                      {t('apartments.link_units')}
                     </Button>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-flow-col sm:auto-cols-fr gap-2">
+                    {canEdit && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedApartment(apartment)
+                          setShowEditModal(true)
+                        }}
+                      >
+                        {t('common.edit')}
+                      </Button>
+                    )}
                     <Button
                       variant="secondary"
                       size="sm"
@@ -421,13 +438,15 @@ const ApartmentManagement: React.FC = () => {
                     >
                       {t('apartments.details')}
                     </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleDeleteApartment(apartment.id)}
-                    >
-                      {t('common.delete')}
-                    </Button>
+                    {canDelete && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDeleteApartment(apartment.id)}
+                      >
+                        {t('common.delete')}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -492,6 +511,7 @@ const ApartmentManagement: React.FC = () => {
         payments={payments}
         linkedGarages={selectedApartment ? (linkedGarages[selectedApartment.id] || []) : []}
         linkedStorages={selectedApartment ? (linkedStorages[selectedApartment.id] || []) : []}
+        salePrice={selectedApartment ? apartmentSalePrices[selectedApartment.id] : undefined}
       />
 
       <LinkUnitsModal

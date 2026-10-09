@@ -176,6 +176,7 @@
     "option_name_unavailable": "Name not loaded",
     "projects_load_error": "The project list could not be loaded",
     "users_load_error": "The user list could not be loaded",
+    "list_load_error": "The list could not be loaded",
     "generated": "Generated:",
     "pdf": {
       "confidential": "CONFIDENTIAL",
@@ -203,7 +204,9 @@
       "November",
       "December"
     ],
-    "no_results_description": "Clear the search or change the filters."
+    "no_results_description": "Clear the search or change the filters.",
+    "financing_received_repaid": "Financing (received / repaid):",
+    "budget_not_set": "Budget not set"
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -886,6 +889,7 @@
       "source_bank": "Bank Account",
       "source_credit": "Credit",
       "source_kompenzacija": "Compensation",
+      "source_cesija": "Cesija",
       "source_cash": "Cash"
     },
     "hints": {
@@ -1046,8 +1050,7 @@
       "revenue_label": "Revenue:",
       "profit_loss_label": "Profit/Loss:",
       "unpaid_income": "Unpaid (income):",
-      "unpaid_expense": "Unpaid (expense):",
-      "financing_label": "Financing (received / repaid):"
+      "unpaid_expense": "Unpaid (expense):"
     },
     "table": {
       "name": "Name",
@@ -2056,6 +2059,7 @@
       "download_template": "Download template",
       "template_failed": "The template could not be downloaded. Please try again.",
       "template_sheet_data": "Apartments",
+      "garage_template_sheet_data": "Garages",
       "template_sheet_notes": "Notes",
       "format": {
         "layout": "Only the first sheet is read. Headers are on row 1 and data starts on row 2; the column order matters, not the header names.",
@@ -3409,6 +3413,7 @@
       "error_add_bank": "Error adding bank. Please try again.",
       "error_update_bank": "Error updating bank.",
       "error_credit_fields_required": "Please fill in the required fields (Bank, Credit Name, Amount, Start Date)",
+      "error_disbursement_account_required": "Choose the bank account the credit was disbursed to.",
       "error_add_credit": "Error adding credit facility.",
       "error_update_credit": "Error updating credit facility.",
       "investor_form": {
@@ -3516,7 +3521,8 @@
         "payment_amount": "Payment Amount",
         "total_amount": "Total Amount",
         "status": "Status"
-      }
+      },
+      "drawdown": "Credit drawdown"
     },
     "credit_invoice_section": {
       "loading": "Loading...",
@@ -3822,12 +3828,12 @@
       "last_updated": "Last updated",
       "sales_performance": "Sales Performance",
       "view_details": "View Details",
-      "sold_units": "Sold Units",
+      "sold_units": "Apartments sold",
       "reserved": "Reserved",
       "available": "Available",
-      "sales_rate": "Sales Rate",
-      "total_sales_revenue": "Total Sales Revenue",
-      "avg_price_per_unit": "Avg Price per Unit",
+      "sales_rate": "Apartment sales rate",
+      "total_sales_revenue": "Contracted sales",
+      "avg_price_per_unit": "Avg contracted price",
       "monthly_sales": "Monthly Sales ({{month}})",
       "units": "units",
       "construction_site": "Construction & Site Management",
@@ -3908,7 +3914,7 @@
       "no_projects": "No projects available",
       "credit_utilization": "Credit Utilization",
       "total_credit_facilities": "Total Credit",
-      "revenue_amount": "{{amount}} revenue"
+      "revenue_amount": "{{amount}} contracted"
     },
     "accounting": {
       "title": "Accounting Dashboard",
@@ -3954,9 +3960,9 @@
       "title": "Sales Dashboard",
       "subtitle": "Overview of sales performance and metrics",
       "loading": "Loading sales dashboard...",
-      "total_revenue": "Total Revenue",
+      "total_revenue": "Collected from sales",
       "units_sold": "units sold",
-      "sales_rate": "Sales Rate",
+      "sales_rate": "Sales rate (all units)",
       "avg_sale_price": "Avg Sale Price",
       "per_unit": "Per unit",
       "active_leads": "Active Leads",
@@ -4097,7 +4103,8 @@
           "description_one": "{{name}} usage expires in {{count}} day",
           "description_other": "{{name}} usage expires in {{count}} days"
         }
-      }
+      },
+      "projects_without_budget": "Projects without a budget: {{count}}"
     },
     "retail": {
       "title": "Retail Dashboard",

@@ -86,6 +86,12 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       toast.warning(t('funding.investors.error_credit_fields_required'))
       return
     }
+    // The form marks the account required once "disbursed to account" is ticked, but nothing
+    // checked it: the save went to the database, whose CHECK refused it with a generic error (FUND-6).
+    if (newCredit.disbursed_to_account && !newCredit.disbursed_to_bank_account_id) {
+      toast.warning(t('funding.investors.error_disbursement_account_required'))
+      return
+    }
 
     // Equal principal instalments with interest on the outstanding balance (FUND-5); stored as
     // the monthly-equivalent debt service, so the credit is labelled with a monthly instalment.
@@ -120,6 +126,12 @@ export function useCreditForm(onSaved: () => Promise<void>) {
 
     if (!newCredit.bank_id || !newCredit.credit_name || !newCredit.amount || !newCredit.start_date) {
       toast.warning(t('funding.investors.error_credit_fields_required'))
+      return
+    }
+    // The form marks the account required once "disbursed to account" is ticked, but nothing
+    // checked it: the save went to the database, whose CHECK refused it with a generic error (FUND-6).
+    if (newCredit.disbursed_to_account && !newCredit.disbursed_to_bank_account_id) {
+      toast.warning(t('funding.investors.error_disbursement_account_required'))
       return
     }
 

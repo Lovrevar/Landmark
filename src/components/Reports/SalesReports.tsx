@@ -26,6 +26,7 @@ import { PROJECT_STATUS, statusLabel, statusVariant } from '../../utils/statusDi
 const SalesReports: React.FC = () => {
   const { t, i18n } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
+  const [projectsFailed, setProjectsFailed] = useState(false)
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [reportType, setReportType] = useState<'project' | 'customer'>('project')
   const [dateRange, setDateRange] = useState({
@@ -71,12 +72,14 @@ const SalesReports: React.FC = () => {
 
   const loadProjects = async () => {
     setLoading(true)
+    setProjectsFailed(false)
     try {
       const data = await fetchProjects()
       setProjects(data)
       if (data.length > 0) setSelectedProject(data[0].id)
     } catch (error) {
       console.error('Error fetching projects:', error)
+      setProjectsFailed(true)
     } finally {
       setLoading(false)
     }
@@ -97,6 +100,12 @@ const SalesReports: React.FC = () => {
 
   if (loading) {
     return <LoadingSpinner message={t('reports.sales.loading')} />
+  }
+
+  // With no project list there is nothing to report on. The page used to render its controls
+  // over an empty picker, which read as "there are no projects" (UI-4).
+  if (projectsFailed) {
+    return <ErrorState title={t('common.projects_load_error')} onRetry={() => { void loadProjects() }} />
   }
 
   return (
@@ -186,7 +195,7 @@ const SalesReports: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.location')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.project.location}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium text-gray-900 dark:text-white">{formatDate(projectReport.project.start_date, i18n.language)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">{formatEuro(projectReport.project.budget)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.budget_set ? formatEuro(projectReport.project.budget) : t('common.budget_not_set')}</span></div>
                 </div>
               </div>
 

@@ -133,6 +133,8 @@ export interface CreditAllocation {
 }
 
 export interface ProjectWithFinancials extends Project {
+  /** False for a project with no TIC: it has no budget, so `budget` and the ratios against it must not be shown. */
+  budget_set?: boolean
   total_investment: number
   total_debt: number
   debt_allocations: CreditAllocation[]

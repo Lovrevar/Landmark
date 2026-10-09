@@ -15,9 +15,14 @@ import { statusConfig, stripeClass } from './workLogStatus'
 import { StatusBadge } from './StatusBadge'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
 import { formatDate, formatDateTime } from '../../../utils/formatters'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canManageWorkLogs } from '../../../utils/permissions'
 
 const WorkLogs: React.FC = () => {
   const { t, i18n } = useTranslation()
+  // Director and Supervision write work logs; everyone else reads them (SUP-13).
+  const { user } = useAuth()
+  const canManage = canManageWorkLogs(user)
   const {
     workLogs,
     projects,
@@ -69,7 +74,7 @@ const WorkLogs: React.FC = () => {
       <PageHeader
         title={t('supervision.work_logs.title')}
         description={t('supervision.work_logs.subtitle')}
-        actions={<Button icon={Plus} onClick={openNewForm}>{t('supervision.work_logs.new_log')}</Button>}
+        actions={canManage ? <Button icon={Plus} onClick={openNewForm}>{t('supervision.work_logs.new_log')}</Button> : undefined}
       />
 
       {error && workLogs.length > 0 && !errorDismissed && (
@@ -259,8 +264,12 @@ const WorkLogs: React.FC = () => {
                             {t('supervision.work_logs.logged')} {formatDateTime(new Date(log.created_at), i18n.language)}
                           </p>
                         </div>
-                        <Button size="icon-md" variant="ghost-primary" icon={Edit2} onClick={() => openEditForm(log)} title={t('common.edit')} />
-                        <Button size="icon-md" variant="ghost-danger" icon={Trash2} onClick={() => handleDelete(log.id)} title={t('common.delete')} />
+                        {canManage && (
+                          <>
+                            <Button size="icon-md" variant="ghost-primary" icon={Edit2} onClick={() => openEditForm(log)} title={t('common.edit')} />
+                            <Button size="icon-md" variant="ghost-danger" icon={Trash2} onClick={() => handleDelete(log.id)} title={t('common.delete')} />
+                          </>
+                        )}
                       </div>
                     </div>
 

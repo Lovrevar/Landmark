@@ -8,12 +8,6 @@ payment gate being screen-only is SEC-004 in [security.md](./security.md).
 
 ## Open
 
-### SUP-13 · Low · Work logs and Subcontractors show their actions to every role
-- **Check:** Code reading
-- **Where:** `Supervision/WorkLogs`, `Supervision/Subcontractors`; the matching helpers in
-  `utils/permissions.ts` exist and are not called.
-- **Fix direction:** call them.
-
 ### SUP-14 · Low · Supervision wording
 - The subtitles of Supervision payments and invoices describe something the pages do not do.
 - Spellings: "podizvodjač" (approvals), "odobrivanje", "podizvođača"; "Izvozi izvještaj".
@@ -41,6 +35,11 @@ payment gate being screen-only is SEC-004 in [security.md](./security.md).
   inbound import" is not proof.
 
 ## Resolved
+
+### SUP-13 · Low · Work logs and Subcontractors show their actions to every role
+- Fixed on `fix/backlog-small-batch` (2026-10-08): Work logs use `canManageWorkLogs`; Subcontractors use
+  `canManageSubcontractors` (now including Accounting, as the policy does) and
+  `canDeleteSubcontractors`.
 
 ### SUP-15 · Low · Header buttons of an opened project are clipped on a laptop
 - Fixed on `feat/user-guidance-phase-2` (2026-10-07): the header row in `ProjectDetail.tsx` wraps

@@ -1,3 +1,4 @@
+import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
 import { supabase } from '../../../lib/supabase'
 import { daysFromToday } from '../../../utils/dateOnly'
 import { formatEuroCompact } from '../../../utils/formatters'
@@ -66,7 +67,12 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
     })),
   }))
 
-  const total_portfolio_value = projects.reduce((sum, p) => sum + Number(p.budget), 0)
+  // Only a TIC sets a budget (GEN-5). A project without one adds nothing to the portfolio value,
+  // and the card says how many were left out rather than counting them as €0.
+  const budgetedProjectIds = await fetchBudgetedProjectIds()
+  const budgetedProjects = projects.filter(p => budgetedProjectIds.has(p.id))
+  const total_portfolio_value = budgetedProjects.reduce((sum, p) => sum + Number(p.budget), 0)
+  const unbudgeted_project_ids = projects.filter(p => !budgetedProjectIds.has(p.id)).map(p => p.id as string)
   const total_credit_lines = credits.reduce((sum, c) => sum + Number(c.amount), 0)
   const total_used_credit = credits.reduce((sum, c) => sum + Number(c.used_amount || 0), 0)
   const total_repaid_credit = credits.reduce((sum, c) => sum + Number(c.repaid_amount || 0), 0)
@@ -147,6 +153,8 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
     recentActivities: activities.slice(0, 5),
     financialSummary: {
       total_portfolio_value,
+      projects_without_budget: unbudgeted_project_ids.length,
+      unbudgeted_project_ids,
       total_debt: total_outstanding_debt,
       total_equity: 0,
       debt_to_equity_ratio: 0,

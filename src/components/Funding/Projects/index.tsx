@@ -9,12 +9,16 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, Badge, Button, EmptyState, ErrorState } from '../../ui'
-import { formatDate } from '../../../utils/formatters'
+import { formatDate, NO_VALUE } from '../../../utils/formatters'
 import { PROJECT_STATUS, RISK_LEVEL, statusLabel, statusVariant } from '../../../utils/statusDisplay'
 import { useCachedData } from '../../../lib/useCachedData'
 import type { ProjectWithFinancials } from '../../General/Projects/types'
 import { fetchInvestmentProjects } from './services/investmentService'
 import InvestmentProjectModal from './modals/InvestmentProjectModal'
+
+/** A share of the budget, or a dash for a project that has none (no TIC). */
+const shareOfBudget = (project: ProjectWithFinancials, amount: number): string =>
+  project.budget_set !== false && project.budget > 0 ? `${((amount / project.budget) * 100).toFixed(1)}%` : NO_VALUE
 
 const getFundingColor = (ratio: number) => {
   if (ratio >= 100) return 'text-green-600'
@@ -74,7 +78,9 @@ const InvestmentProjects: React.FC = () => {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</p>
+                {project.budget_set === false
+                  ? <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{t('common.budget_not_set')}</p>
+                  : <p className="text-2xl font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</p>}
                 <p className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.total_budget_label')}</p>
                 <Button variant="secondary" size="sm" icon={Eye} onClick={() => setSelectedProject(project)} className="mt-2">
                   {t('funding.projects.view_details_button')}
@@ -90,7 +96,7 @@ const InvestmentProjects: React.FC = () => {
                 </div>
                 <p className="text-lg font-bold text-green-900 dark:text-green-300">€{project.total_investment.toLocaleString('hr-HR')}</p>
                 <p className="text-xs text-green-600">
-                  {project.budget > 0 ? ((project.total_investment / project.budget) * 100).toFixed(1) : '0'}% {t('funding.projects.of_budget')}
+                  {shareOfBudget(project, project.total_investment)} {t('funding.projects.of_budget')}
                 </p>
               </div>
 
@@ -101,7 +107,7 @@ const InvestmentProjects: React.FC = () => {
                 </div>
                 <p className="text-lg font-bold text-red-900 dark:text-red-300">€{project.total_debt.toLocaleString('hr-HR')}</p>
                 <p className="text-xs text-red-600">
-                  {project.budget > 0 ? ((project.total_debt / project.budget) * 100).toFixed(1) : '0'}% {t('funding.projects.of_budget')}
+                  {shareOfBudget(project, project.total_debt)} {t('funding.projects.of_budget')}
                 </p>
               </div>
 
@@ -119,15 +125,26 @@ const InvestmentProjects: React.FC = () => {
                   <span className="text-sm text-teal-700 dark:text-teal-400">{t('funding.projects.funding_status_label')}</span>
                   <PieChart className="w-4 h-4 text-teal-600" />
                 </div>
-                <p className={`text-lg font-bold ${getFundingColor(project.funding_ratio)}`}>
-                  {project.funding_ratio.toFixed(1)}%
-                </p>
-                <p className="text-xs text-teal-600 dark:text-teal-400">
-                  {project.funding_ratio >= 100 ? t('funding.projects.fully_funded') : t('funding.projects.needs_funding')}
-                </p>
+                {project.budget_set === false ? (
+                  <>
+                    <p className="text-lg font-bold text-gray-500 dark:text-gray-400">{NO_VALUE}</p>
+                    <p className="text-xs text-teal-600 dark:text-teal-400">{t('common.budget_not_set')}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className={`text-lg font-bold ${getFundingColor(project.funding_ratio)}`}>
+                      {project.funding_ratio.toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-teal-600 dark:text-teal-400">
+                      {project.funding_ratio >= 100 ? t('funding.projects.fully_funded') : t('funding.projects.needs_funding')}
+                    </p>
+                  </>
+                )}
               </div>
             </StatGrid>
 
+            {/* Progress towards a budget; there is nothing to draw without one. */}
+            {project.budget_set !== false && (
             <div className="mb-4">
               <div className="flex justify-between mb-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.total_funding_progress')}</span>
@@ -143,6 +160,7 @@ const InvestmentProjects: React.FC = () => {
                 ></div>
               </div>
             </div>
+            )}
 
             <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
               <div className="flex items-center justify-between mb-2">

@@ -341,9 +341,12 @@ export const usePayments = () => {
                                (filterInvoiceType === 'EXPENSE' && isExpense) ||
                                (filterInvoiceType === 'INCOME' && isIncome)
 
-    const paymentDate = new Date(payment.payment_date)
-    const matchesDateFrom = !dateFrom || paymentDate >= new Date(dateFrom)
-    const matchesDateTo = !dateTo || paymentDate <= new Date(dateTo)
+    // Day against day, as text: `yyyy-mm-dd` sorts in date order. Through `new Date()` a stored
+    // value carrying a time fell after a "to" date parsed as midnight, so the last day of the
+    // range could drop out (CASH-27).
+    const paymentDay = (payment.payment_date || '').slice(0, 10)
+    const matchesDateFrom = !dateFrom || paymentDay >= dateFrom.slice(0, 10)
+    const matchesDateTo = !dateTo || paymentDay <= dateTo.slice(0, 10)
 
     return matchesSearch && matchesMethod && matchesInvoiceType && matchesDateFrom && matchesDateTo
   })

@@ -216,7 +216,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.projects'), icon: FolderKanban, path: '/retail-projects' },
         { name: t('nav.land_plots'), icon: MapPin, path: '/retail-land-plots' },
         { name: t('nav.customers'), icon: Users, path: '/retail-customers' },
-        { name: t('nav.retail_sales'), icon: ShoppingCart, path: '/retail-sales-payments' },
+        // "Prodaje" opens the page that creates a sale. It used to open the read-only payments list,
+        // which left the sales page reachable by URL only (RETAIL-5).
+        { name: t('nav.retail_sales'), icon: ShoppingCart, path: '/retail-sales' },
+        { name: t('nav.payments'), icon: DollarSign, path: '/retail-sales-payments' },
         { name: t('nav.invoices'), icon: FileText, path: '/retail-invoices' },
         { name: t('nav.documents'), icon: Files, path: '/documents' },
         { name: t('nav.reports'), icon: BarChart3, path: '/retail-reports' }

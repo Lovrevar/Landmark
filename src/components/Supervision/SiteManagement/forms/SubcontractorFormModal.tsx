@@ -13,6 +13,7 @@ import { ContractFormFields } from './ContractFormFields'
 import { ContractTypeFormModal } from '../modals/ContractTypeFormModal'
 import { CostClassificationFormModal } from '../modals/CostClassificationFormModal'
 import { formatEuro } from '../../../../utils/formatters'
+import InlineLoadError from '../../../ui/InlineLoadError'
 
 interface SubcontractorFormModalProps {
   visible: boolean
@@ -67,6 +68,8 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const { classifications, loading: loadingClassifications, error: classificationsError, load: loadClassifications } = useCostClassifications()
   const { vatAmount, totalAmount } = useVATCalculation(formData.base_amount, formData.vat_rate)
   const [banks, setBanks] = useState<Funder[]>([])
+  // A failed lookup is not an empty list: say so beside the control, with a retry (UI-4).
+  const [fundersFailed, setFundersFailed] = useState(false)
   const [loadingFunders, setLoadingFunders] = useState(false)
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false)
   const [showNewClassificationModal, setShowNewClassificationModal] = useState(false)
@@ -79,10 +82,12 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
   const loadFunders = useCallback(async () => {
     try {
+      setFundersFailed(false)
       setLoadingFunders(true)
       const funders = await fetchProjectFunders(projectId)
       setBanks(funders.banks)
     } catch (error) {
+      setFundersFailed(true)
       console.error('Error loading funders:', error)
     } finally {
       setLoadingFunders(false)
@@ -169,6 +174,10 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         {banks.map(bank => <option key={bank.id} value={bank.id}>{bank.name}</option>)}
       </Select>
     </FormField>
+  ) : fundersFailed ? (
+    // The field only appears when the project has funders; a failed load must not look like
+    // a project with none.
+    <InlineLoadError message={t('common.list_load_error')} onRetry={() => { void loadFunders() }} />
   ) : null
 
   return (

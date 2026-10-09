@@ -122,4 +122,18 @@ describe('computeRetailTotals', () => {
 
     expect(totals.profit).toBe(-500)
   })
+
+  // "Po kupcu" divided revenue by every row in retail_customers, leads included (RETAIL-1).
+  it('counts as buyers only the customers on sales contracts, each once', () => {
+    const totals = computeRetailTotals(input({
+      contracts: [
+        { id: 'c1', phase_id: 'p-sal', contract_amount: 1000, customer_id: 'k1' },
+        { id: 'c2', phase_id: 'p-sal', contract_amount: 500, customer_id: 'k1' },
+        { id: 'c3', phase_id: 'p-sal', contract_amount: 300, customer_id: 'k2' },
+        { id: 'c4', phase_id: 'p-con', contract_amount: 900, customer_id: null }
+      ]
+    }))
+    expect(totals.buying_customers).toBe(2)
+    expect(totals.total_revenue / totals.buying_customers).toBe(900)
+  })
 })
