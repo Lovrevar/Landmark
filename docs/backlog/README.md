@@ -85,12 +85,11 @@ pre-merge sheet, and try TIC saves on dev.
 | # | Item | Note |
 |---|---|---|
 | 5 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
-| 6 | [UI-8](./ui.md) — mobile | Supervision is used on site, on phones. |
-| 7 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
-| 8 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
-| 9 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
-| 10 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
-| 11 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
+| 6 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
+| 7 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
+| 8 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
+| 9 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
+| 10 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
 
 ### 4. Small and low-risk
 

@@ -37,16 +37,11 @@ free: `FUND-20`). Entry format and rules are in [README.md](./README.md).
 ### FUND-14 · Low · Orphan function
 - `update_overdue_notifications()` references the removed `payment_notifications` table.
 
-### FUND-16 · Low · TIC page scrolls sideways
-- **Check:** Seen in the guidance visual check ([../screenshots/guidance-phase-1/README.md](../screenshots/guidance-phase-1/README.md), finding 8).
-- **Where:** `Funding/TIC/components/InvestmentTable.tsx` inside `Funding/TIC/index.tsx`.
-- **What happens:** at 390px the whole page is 973px wide (1262px with phase columns); at 1440px
-  it overflows once two phase columns exist. The header, tabs and buttons scroll away with the
-  table.
-- **Fix direction:** the table scrolls inside its card (`overflow-x-auto` on a wrapper, `min-w-0`
-  up the flex chain) instead of widening the document.
-
 ## Resolved
+
+### FUND-16 · Low · TIC page scrolls sideways
+- Not reproduced on 2026-10-09: at 390px the page stays 390px wide and the table (993px) scrolls
+  inside its card. Fixed at some point since the phase 1 visual check; closed with the mobile pass.
 
 ### FUND-13 · Low · The TIC Excel export drops phases and classifications
 - Fixed in two steps: phases on `fix/figures-and-tic-export` (2026-10-08), classifications on
