@@ -16,6 +16,7 @@ Cognilion is a full-lifecycle real estate and construction project management pl
 | `npm run test:e2e` | Playwright; refuses to run unless `VITE_SUPABASE_URL` equals `E2E_ALLOWED_SUPABASE_URL` — see [`docs/TESTING.md`](./docs/TESTING.md) |
 | `npm run build` | Production build |
 | `npm run kb:build` | Rebuilds the AI assistant's help index from `help-kb/*.md` |
+| `npm run help:shots` | Retakes the help articles' screenshots (`help-kb/img/`) from LandmarkDemo; needs `.env.demo` — see [`docs/HELP.md`](./docs/HELP.md) |
 | `npm run db:types` | Regenerates the database types (see Data Layer) |
 
 Before calling work done: `npm run typecheck`, `npm test` and `npm run lint` on the changed files.
@@ -169,7 +170,11 @@ comes from `src/components/ui`.
 The AI assistant answers "how do I…" questions from `help-kb/*.md`, and the same articles are
 shown to users on the `/help` page and linked from `InfoHint` popovers. When you change what a screen
 shows or does, update its article and run `npm run kb:build` — stale articles make the assistant
-give wrong answers.
+give wrong answers. If the article shows a screenshot of that screen, retake it (`npm run help:shots`).
+
+A release that users will notice gets a note: `help-kb/news-YYYY-MM.md` with a `date` in the
+frontmatter. The newest one is announced in a banner until each user opens or dismisses it.
+Never put production figures in an article — all of them ship to every user's browser.
 
 ## Activity Log
 

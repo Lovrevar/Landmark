@@ -209,7 +209,12 @@
     ],
     "no_results_description": "Očistite pretragu ili promijenite filtere.",
     "financing_received_repaid": "Financiranje (primljeno / otplaćeno):",
-    "budget_not_set": "Budžet nije postavljen"
+    "budget_not_set": "Budžet nije postavljen",
+    "hints": {
+      "no_contract_title": "Bez ugovora",
+      "no_contract_what": "Posao se vodi na temelju usmenog dogovora, pa nema ugovorenog iznosa s kojim bi se plaćanja uspoređivala.",
+      "no_contract_tracking": "Trošak se prati samo kroz račune, a posao nosi oznaku BEZ UGOVORA."
+    }
   },
   "confirm": {
     "delete_title": "Potvrda brisanja",
@@ -708,7 +713,10 @@
     "hints": {
       "type_title": "Tip računa",
       "type_intro": "Kratica u zagradi govori na što se račun odnosi:",
-      "type_colour": "Crveno označava račune koje plaćamo (svi ulazni), zeleno račune po kojima novac primamo (svi izlazni)."
+      "type_colour": "Crveno označava račune koje plaćamo (svi ulazni), zeleno račune po kojima novac primamo (svi izlazni).",
+      "multi_vat_title": "Više PDV stopa",
+      "multi_vat_fields": "Jedan račun može imati do četiri PDV stope. Upišite osnovicu u polje svake stope koja se na računu pojavljuje; ostala ostavite prazna.",
+      "multi_vat_calc": "PDV i ukupan iznos sustav računa sam, za svaku stopu posebno, i prikazuje ih u pregledu u obrascu."
     }
   },
   "payments": {
@@ -1859,7 +1867,18 @@
     "no_projects_description": "Ovdje se prikazuju svi projekti tvrtke. Dodajte prvi gumbom „Novi projekt”.",
     "no_projects_description_readonly": "Ovdje se prikazuju svi projekti tvrtke. Novi projekt može dodati samo korisnik s ulogom Director.",
     "no_phases_description": "Faze se postavljaju u profilu Supervision, na stranici Upravljanje gradilištem, gumbom „Postavi faze”. Ugovori se zatim prikazuju ovdje po fazama.",
-    "no_contracts_description": "Ugovori s podugovarateljima pojavljuju se ovdje kad se dodaju fazama projekta u profilu Supervision, na stranici Upravljanje gradilištem."
+    "no_contracts_description": "Ugovori s podugovarateljima pojavljuju se ovdje kad se dodaju fazama projekta u profilu Supervision, na stranici Upravljanje gradilištem.",
+    "hints": {
+      "phases_title": "Faze projekta",
+      "phases_what": "Faza je vremenski dio izvođenja, s vlastitim budžetom i ugovorima. Prekretnica je ključni datum projekta i vodi se zasebno, na kartici Prekretnice.",
+      "phases_budget": "Budžet faze ne upisuje se ovdje: dolazi iz TIC-a projekta.",
+      "realized_title": "Realizirano",
+      "realized_what": "Realizirano je iznos stvarno plaćen po ugovoru, a ne ugovoreni iznos.",
+      "realized_update": "Mijenja se sam kad se evidentira plaćanje računa po tom ugovoru.",
+      "budget_title": "Budžet projekta",
+      "budget_what": "Planirani budžet ne upisuje se ručno: izvodi se iz TIC-a projekta svaki put kad se TIC spremi.",
+      "budget_missing": "„Budžet nije postavljen” znači da projekt još nema TIC ili su u njemu svi iznosi nula."
+    }
   },
   "sales_projects": {
     "default_building_name": "Zgrada {{n}}",
@@ -2287,7 +2306,12 @@
       "credit_amount": "Kredit etažiranje 90% (EUR)"
     },
     "empty_title": "Nema stanova",
-    "empty_description": "Ovdje se prikazuju stanovi svih projekata. Dodajte ih gumbom „Dodaj stan” ili „Masovno dodavanje”."
+    "empty_description": "Ovdje se prikazuju stanovi svih projekata. Dodajte ih gumbom „Dodaj stan” ili „Masovno dodavanje”.",
+    "hints": {
+      "link_units_title": "Povezane jedinice",
+      "link_units_package": "Garaže i repozitoriji povezani sa stanom prodaju se kupcu zajedno s njim, kao paket.",
+      "link_units_price": "Uz takav stan prikazuje se i cijena „Ukupni paket”: stan i povezane jedinice zajedno."
+    }
   },
   "sale_form": {
     "title": "Završi prodaju za",
@@ -5474,7 +5498,9 @@
       "erp_import.reclassify": "Ponovljena klasifikacija uvoza",
       "help.view": "Otvorena pomoć",
       "help.page_link_click": "Kliknuta pomoć za stranicu",
-      "help.hint_open": "Otvoreno objašnjenje"
+      "help.hint_open": "Otvoreno objašnjenje",
+      "help.search_no_results": "Pretraga pomoći bez rezultata",
+      "help.ask_assistant": "Pitanje iz pomoći proslijeđeno AI asistentu"
     },
     "show_help_events": "Prikaži i korištenje pomoći"
   },
@@ -5596,8 +5622,14 @@
     "results_count": "Pronađeno članaka: {{count}}",
     "no_results_title": "Nema rezultata",
     "no_results_description": "Pokušajte s drugim pojmom ili pitajte AI asistenta.",
+    "ask_assistant": "Pitaj AI asistenta",
     "for_this_page": "Za stranicu s koje ste došli",
+    "whats_new": {
+      "lead": "Što je novo:",
+      "read": "Pročitajte"
+    },
     "groups": {
+      "news": "Što je novo",
       "pages": "Upute po stranicama",
       "terms": "Pojmovi",
       "roles": "Uloge i pristup"

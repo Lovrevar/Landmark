@@ -74,3 +74,6 @@ docs/screenshots/**/*.webp
 docs/screenshots/**/*.gif
 docs/screenshots/**/*.pdf
 docs/screenshots/**/*.xlsx
+
+# Frontend built against LandmarkDemo for the help screenshots (npm run help:shots)
+dist-demo

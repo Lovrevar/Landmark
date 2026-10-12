@@ -206,7 +206,12 @@
     ],
     "no_results_description": "Clear the search or change the filters.",
     "financing_received_repaid": "Financing (received / repaid):",
-    "budget_not_set": "Budget not set"
+    "budget_not_set": "Budget not set",
+    "hints": {
+      "no_contract_title": "No contract",
+      "no_contract_what": "The work is based on a verbal agreement, so there is no contracted amount to compare payments with.",
+      "no_contract_tracking": "The cost is tracked through invoices only, and the engagement carries the NO CONTRACT badge."
+    }
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -705,7 +710,10 @@
     "hints": {
       "type_title": "Invoice type",
       "type_intro": "The abbreviation in brackets says what the invoice relates to:",
-      "type_colour": "Red marks invoices we pay (every incoming one), green marks invoices we are paid on (every outgoing one)."
+      "type_colour": "Red marks invoices we pay (every incoming one), green marks invoices we are paid on (every outgoing one).",
+      "multi_vat_title": "Several VAT rates",
+      "multi_vat_fields": "One invoice can carry up to four VAT rates. Enter the base amount in the field of each rate that appears on the invoice and leave the others empty.",
+      "multi_vat_calc": "VAT and the total are calculated for you, separately for each rate, and shown in the preview in the form."
     }
   },
   "payments": {
@@ -1854,7 +1862,18 @@
     "no_projects_description": "All of the company's projects are listed here. Add the first one with the \"New Project\" button.",
     "no_projects_description_readonly": "All of the company's projects are listed here. Only a user with the Director role can add a new project.",
     "no_phases_description": "Phases are set up in the Supervision profile, on the Site Management page, with the \"Setup Phases\" button. Contracts are then listed here by phase.",
-    "no_contracts_description": "Subcontractor contracts appear here once they are added to the project's phases in the Supervision profile, on the Site Management page."
+    "no_contracts_description": "Subcontractor contracts appear here once they are added to the project's phases in the Supervision profile, on the Site Management page.",
+    "hints": {
+      "phases_title": "Project phases",
+      "phases_what": "A phase is a period of construction with its own budget and contracts. A milestone is a key date of the project and is kept separately, on the Milestones tab.",
+      "phases_budget": "A phase's budget is not entered here: it comes from the project's TIC.",
+      "realized_title": "Realized",
+      "realized_what": "Realized is the amount actually paid under the contract, not the contracted amount.",
+      "realized_update": "It changes by itself when a payment is recorded against an invoice under that contract.",
+      "budget_title": "Project budget",
+      "budget_what": "The planned budget is not typed in: it is derived from the project's TIC each time the TIC is saved.",
+      "budget_missing": "\"Budget not set\" means the project has no TIC yet, or every amount in it is zero."
+    }
   },
   "sales_projects": {
     "default_building_name": "Building {{n}}",
@@ -2280,7 +2299,12 @@
       "credit_amount": "Kredit etažiranje 90% (EUR)"
     },
     "empty_title": "No apartments",
-    "empty_description": "Apartments from all projects are listed here. Add them with the \"Add Apartment\" or \"Bulk Create\" button."
+    "empty_description": "Apartments from all projects are listed here. Add them with the \"Add Apartment\" or \"Bulk Create\" button.",
+    "hints": {
+      "link_units_title": "Linked units",
+      "link_units_package": "Garages and storage units linked to an apartment are sold to the buyer together with it, as a package.",
+      "link_units_price": "Such an apartment also shows a \"Total package\" price: the apartment and its linked units together."
+    }
   },
   "sale_form": {
     "title": "Complete Sale for",
@@ -5448,7 +5472,9 @@
       "erp_import.reclassify": "ERP import reclassified",
       "help.view": "Help opened",
       "help.page_link_click": "Page help link clicked",
-      "help.hint_open": "Hint opened"
+      "help.hint_open": "Hint opened",
+      "help.search_no_results": "Help search with no results",
+      "help.ask_assistant": "Help question passed to the AI assistant"
     },
     "show_help_events": "Also show help usage"
   },
@@ -5570,8 +5596,14 @@
     "results_count": "Articles found: {{count}}",
     "no_results_title": "No results",
     "no_results_description": "Try another term, or ask the AI assistant.",
+    "ask_assistant": "Ask the AI assistant",
     "for_this_page": "For the page you came from",
+    "whats_new": {
+      "lead": "What's new:",
+      "read": "Read"
+    },
     "groups": {
+      "news": "What's new",
       "pages": "Page guides",
       "terms": "Terms",
       "roles": "Roles and access"

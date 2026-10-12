@@ -8,6 +8,8 @@ roles: [Director, Supervision]
 
 **Upravljanje gradilištem** je glavna stranica nadzora. Podnaslov: **Pregled svih gradilišnih projekata**. Korisnici s ulogom **Supervision** dolaze ovamo odmah nakon prijave i vide samo projekte koji su im dodijeljeni; ako ih nema, piše **Nemate dodijeljenih projekata**.
 
+![Upravljanje gradilištem: kartice projekata](img/upravljanje-gradilistem.png)
+
 Prikaz: mreža kartica projekata (faze, alokacija budžeta, budžet, podugovaratelji, vremenski okvir) i gumb **Osvježi**. Klik na karticu otvara stranicu projekta; povratak je **Natrag na projekte**.
 
 ## Stranica projekta

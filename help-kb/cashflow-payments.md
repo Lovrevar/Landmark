@@ -8,6 +8,8 @@ roles: [Director, Accounting]
 
 Stranica **Plaćanja** u Cashflow profilu evidentira sva plaćanja po računima. Podnaslov: **Upravljanje plaćanjima**.
 
+![Obrazac Novo plaćanje s izvorom plaćanja i cesijom](img/placanje-obrazac.png)
+
 Glavne akcije: **Novo plaćanje** i **Polja** (vidljivost stupaca). Račun se može platiti i izravno sa stranice [[cashflow-invoices]].
 
 Filtri: tekstualna pretraga, **Svi načini plaćanja** (Virman, Gotovina, Ček, Kartica), **Svi tipovi računa** (Ulazni / Izlazni) te raspon **Datum OD** / **Datum DO**. Gumb **Resetuj datume** pojavljuje se kad je datum postavljen.

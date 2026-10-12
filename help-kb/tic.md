@@ -8,6 +8,8 @@ roles: [Director, Accounting, Investment]
 
 **TIC** (**Troškovna Informatička Struktura**) je matrica troškova investicije po projektu. Naslov stranice: **TIC - Struktura Troškova Investicije**.
 
+![Stranica TIC, kartica Investicija](img/tic.png)
+
 Projekt se odabire iz padajućeg izbornika **Odaberi projekt:**. Svi iznosi su bez PDV-a.
 
 ## Dvije kartice

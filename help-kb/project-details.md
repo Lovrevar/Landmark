@@ -8,6 +8,8 @@ roles: [Director, Accounting, Sales, Investment]
 
 Detaljni prikaz projekta otvara se klikom na karticu na stranici **Projekti** (ili na projekt u tablici na nadzornoj ploči). Na vrhu je gumb **Natrag na projekte**; gumb **Uredi projekt** vidi samo **Director**.
 
+![Detalji projekta, kartica Faze i ugovori](img/projekt-faze-i-ugovori.png)
+
 Ispod naziva projekta su četiri pločice: **Budžet** (s iznosom **Utrošeno**), **Vremenski okvir** (dana preostalo ili dana kašnjenja), **Napredak** (udio završenih prekretnica) i **Tim** (broj aktivnih ugovora).
 
 Prikazano je šest kartica (tabova):

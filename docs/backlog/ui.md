@@ -1,7 +1,7 @@
 # Backlog — app-wide UI
 
 Problems that repeat across modules: formatting, status display, failed loads, translations, the
-shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-11`). Entry format and
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-12`). Entry format and
 rules are in [README.md](./README.md).
 
 A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
@@ -9,6 +9,12 @@ helper or a sweep. Counts were measured on 2026-09-21 to 2026-09-23 and will hav
 again before starting a sweep. Check [../UI.md](../UI.md) before adding a primitive.
 
 ## Open
+
+### UI-11 · Low · Amounts run past their card at laptop width on Budget Control and Companies
+- **Check:** Confirmed in a browser at 1280×800 with the menu open (LandmarkDemo, 2026-10-12, while taking the help screenshots).
+- **Where:** the five summary cards on `General/BudgetControl/index.tsx`; the "Izdano" / "Plaćeno" tiles inside a company card on Cashflow → Companies.
+- **What happens:** an eight-digit amount (`€12.000.000,00`, `€3.318.750,00`) is wider than its card and is drawn over the card's edge. UI-8 measured phones; this is the desktop width between `lg` and `xl`.
+- **Fix direction:** the `.stat-card` shrink-then-wrap rule that `StatCard` already has (see `index.css`), or fewer columns below `xl`.
 
 ### UI-10 · Low · Shell labels that disagree or are unused
 - **Check:** Code reading (help-article audit, 2026-10-06)

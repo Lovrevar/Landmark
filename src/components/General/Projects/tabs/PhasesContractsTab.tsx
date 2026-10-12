@@ -10,6 +10,7 @@ import { formatEuroRounded as money } from '../../../../utils/formatters'
 import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 import type { PhaseStatus } from '../utils'
 import type { Phase, ContractWithDetails } from '../types'
+import { PhasesHint } from '../ProjectHints'
 
 interface PhasesContractsTabProps {
   phases: Phase[]
@@ -149,7 +150,10 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('general_projects.project_phases')}</h3>
+        <h3 className="flex items-center gap-1.5 text-lg font-semibold text-gray-900 dark:text-white">
+          {t('general_projects.project_phases')}
+          <PhasesHint />
+        </h3>
         {phases.length > 1 && (
           <button
             type="button"

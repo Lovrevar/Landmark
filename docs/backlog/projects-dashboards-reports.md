@@ -1,10 +1,16 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-22`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-23`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
+
+### GEN-22 · Medium · Budget Control's EVM index chart scales its axis to hundreds of millions
+- **Check:** Runtime check needed. Seen on LandmarkDemo for "Rezidencija Jarun" on 2026-10-12 (while taking the help screenshots); not diagnosed, and not checked against production data.
+- **Where:** "EVM indeksi performansi" chart on `General/BudgetControl/index.tsx`.
+- **What happens:** the y-axis tops out at 527306968 instead of about 2, so the target (1.0) and warning (0.9) lines sit on the floor and the chart says nothing. One of the plotted indices must be that large — most likely SPI with a planned value close to zero.
+- **Fix direction:** find which index it is; cap or omit an index whose denominator is effectively zero, as GEN-20 did for the cards.
 
 ### GEN-21 · Low · Projects list shows a failed load as an Alert in the content area
 - **Where:** `General/Projects/index.tsx:117`.

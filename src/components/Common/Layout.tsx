@@ -49,6 +49,7 @@ import Input from '../ui/Input'
 import { useChatNotifications } from '../Chat/hooks/useChatNotifications'
 import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
 import AiChatWidget from '../AiChat/AiChatWidget'
+import WhatsNewBanner from '../Help/WhatsNewBanner'
 import { useCalendarNotifications } from '../Calendar/hooks/useCalendarNotifications'
 import PageFallback from './PageFallback'
 import { ERP_INTEGRATION_ENABLED } from '../../lib/featureFlags'
@@ -579,6 +580,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </aside>
 
         <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 overflow-x-auto">
+          <WhatsNewBanner />
           <Suspense fallback={<PageFallback />}>
             {children}
           </Suspense>

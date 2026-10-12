@@ -5,6 +5,12 @@ Files live alongside this index; each is self-contained markdown with frontmatte
 
 ---
 
+## What's new
+
+Release notes, one per release: `news-YYYY-MM.md` with a `date` in the frontmatter. The Help page lists them newest first and announces the newest in a banner.
+
+- [news-2026-10](news-2026-10.md) — **Što je novo — listopad 2026** — Pomoć i objašnjenja uz polja, AI asistent i Pomoć, uvoz stanova, profil Cashflow, promjene u financijskim prikazima.
+
 ## Construction core
 
 - [projects-list](projects-list.md) — **Stranica Projekti (popis projekata)** — Pregled svih gradilišnih projekata kao mreže kartica, s filtriranjem po statusu.

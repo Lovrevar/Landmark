@@ -8,6 +8,8 @@ roles: [Director, Accounting, Investment]
 
 **Kontrola proračuna** prikazuje EVM (Earned Value Management) pregled performansi odabranog projekta, zbrojeno preko svih njegovih faza. Projekt birate iz padajućeg izbornika **Projekt** u gornjem desnom kutu.
 
+![Kontrola proračuna: kartice TIC, Planirani proračun, Ugovoreno, Plaćeno i Prognoza (EAC)](img/kontrola-proracuna.png)
+
 ## Gornji red kartica
 
 - **TIC** — ukupni investicijski trošak iz TIC-a projekta

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { AlertCircle, CheckCircle, Info, AlertTriangle, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -34,6 +35,7 @@ export default function Alert({
   onDismiss,
   className = '',
 }: AlertProps) {
+  const { t } = useTranslation()
   const Icon = variantIcons[variant]
 
   return (
@@ -46,7 +48,9 @@ export default function Alert({
         </div>
         {onDismiss && (
           <button
+            type="button"
             onClick={onDismiss}
+            aria-label={t('common.close')}
             className="ml-3 flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
           >
             <X className="w-4 h-4" />

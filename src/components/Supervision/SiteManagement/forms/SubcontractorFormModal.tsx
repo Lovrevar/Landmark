@@ -14,6 +14,7 @@ import { ContractTypeFormModal } from '../modals/ContractTypeFormModal'
 import { CostClassificationFormModal } from '../modals/CostClassificationFormModal'
 import { formatEuro } from '../../../../utils/formatters'
 import InlineLoadError from '../../../ui/InlineLoadError'
+import { NoContractHint } from '../../../Common/NoContractHint'
 
 interface SubcontractorFormModalProps {
   visible: boolean
@@ -194,15 +195,19 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
       <Modal.Body>
         <Alert variant="warning">
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={!hasContract}
-              onChange={(e) => setHasContract(!e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-            />
-            <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">{t('supervision.subcontractor_form.no_contract')}</span>
-          </label>
+          {/* The hint sits outside the label: inside it, opening the hint would tick the box. */}
+          <div className="flex items-center gap-1.5">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!hasContract}
+                onChange={(e) => setHasContract(!e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">{t('supervision.subcontractor_form.no_contract')}</span>
+            </label>
+            <NoContractHint />
+          </div>
           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 ml-6">
             {hasContract
               ? t('supervision.subcontractor_form.with_contract_help')

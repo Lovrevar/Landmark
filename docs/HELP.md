@@ -1,6 +1,6 @@
 # Module: Help (in-app guidance)
 
-**Path:** `src/components/Help/`, `src/components/ui/InfoHint.tsx`, `src/lib/helpKb.ts`, `src/lib/helpEvents.ts`
+**Path:** `src/components/Help/`, `src/components/ui/InfoHint.tsx`, `src/lib/helpKb.ts`, `src/lib/helpEvents.ts`, `src/lib/helpNews.ts`, `scripts/help-screenshots/`
 
 ## Overview
 
@@ -27,6 +27,15 @@ Two more pieces came in phase 2:
 The Cashflow password prompt is not shown on `/help`: a "?" on a Cashflow page opens Help in a new
 tab, where the per-tab unlock is missing, and the prompt used to cover the article.
 
+Phase 3 added four more (record: [GUIDANCE_PHASE_3.md](./GUIDANCE_PHASE_3.md)):
+
+| Piece | Where | What it does |
+|---|---|---|
+| Assistant ↔ Help | `supabase/functions/_shared/help-search.ts`, the Help page's empty search | An answer taken from an article ends with a link to it; a search that finds nothing offers **Pitaj AI asistenta**, which opens the assistant on a new conversation with the query. See [AI_CHAT.md](./AI_CHAT.md), "search_help retrieval" |
+| Release notes | `help-kb/news-*.md`, `WhatsNewBanner.tsx` in `Layout` | "Što je novo" group on the Help page, newest first, and a one-line banner above every page until the user opens the newest note or dismisses the line |
+| Screenshots | `help-kb/img/`, `scripts/help-screenshots/` | Pictures inside articles, retaken from the demo data by `npm run help:shots` |
+| Hints in forms | six more `InfoHint`s (table below) | |
+
 **Division of labour:** an `InfoHint` says just enough to carry on with the task; the durable
 explanation lives in the article it links to. Do not grow hints into paragraphs — they break when
 the UI moves, articles do not.
@@ -47,6 +56,7 @@ Frontmatter the page uses:
 | `routes` | route patterns as in `App.tsx` (`/projects/:id`) — which pages the "?" link appears on |
 | `roles` | who the article is written for. Empty = everyone. For the assistant this is only a down-rank; on the Help page it is half of the filter (below) |
 | `assistant_only: true` | keeps an article off the Help page but in the assistant's index — for notes about stored values a user never sees (`term-status-casing`) |
+| `date` | `yyyy-mm-dd`, on a release note: shown beside its title, orders the "Što je novo" group, and is what the banner compares with what the user has seen |
 
 **Who sees an article** (`isVisibleToRole`): the roles it lists, plus any role that can open a page
 it is tagged to. `roles` alone hid the Budget Control guide from a Sales user working on Budget
@@ -57,8 +67,8 @@ Supervision role → only the pages it is offered). `routeAccess.test.ts` reads 
 by `roles` alone.
 
 `[[article-id]]` references become links; one pointing at an article the reader cannot open is
-shown as plain text. Group is derived from the id prefix: `term-`/`terminology-` → terms,
-`role-` → roles, anything else → page guides.
+shown as plain text. Group is derived from the id prefix: `news-` → release notes,
+`term-`/`terminology-` → terms, `role-` → roles, anything else → page guides.
 
 Articles are Croatian only; the English UI says so above the list.
 
@@ -87,6 +97,43 @@ Articles are Croatian only; the English UI says so above the list.
   through the app's own `useEscapeKey` / `useFocusTrap` stacks so a hint inside a modal closes
   without closing the modal
 
+## Release notes ("Što je novo")
+
+- One article per release users will notice: `help-kb/news-YYYY-MM.md`, id with the `news-`
+  prefix, a `date`, and normally no `roles` so everyone sees it. Add it to `INDEX.md` and run
+  `npm run kb:build` — the assistant then answers "što je novo" from it too.
+- **No production figures.** Every article is bundled into the client whatever the reader's role,
+  and `roles` only filters the list. Say what changed in how a figure is computed, not the amount.
+- `WhatsNewBanner` (in `Layout`, above the page) shows the newest note the role can see while it is
+  newer than the date stored for that user. Opening the note or closing the line stores the note's
+  date. Storage is `localStorage['help.news.seen.<userId>']` (`src/lib/helpNews.ts`), like the
+  Tasks and Calendar view preferences: no table, so the line appears once more on a second
+  device. A user's very first sign-in also shows the current note.
+- The banner shows nothing while articles load or if they fail to.
+
+## Screenshots
+
+- Files live in `help-kb/img/`; an article shows one with `![opis](img/<file>.png)` on a line of
+  its own. `helpArticleSource.ts` bundles their addresses (hashed, under `/assets/`), and
+  `resolveHelpImages` points the reference at the file. `kb:build` strips image lines from the
+  assistant's index.
+- `helpKb.test.ts` fails if an article shows a file that does not exist, if a file is shown by no
+  article, or if a file is over 300 KB.
+- **Retaking them:** `npm run help:shots`. It builds the frontend against LandmarkDemo
+  (`vite build --mode demo` into `dist-demo/`, so `.env.demo` must exist and the demo project must
+  be awake — [DEMO_ENVIRONMENT.md](./DEMO_ENVIRONMENT.md)) and runs
+  `scripts/help-screenshots/capture.spec.ts`, which signs in as the demo Director and takes every
+  shot listed in `shots.ts`. `HELP_SHOTS_ONLY=tic,racun npm run help:shots` retakes only the files
+  whose names contain one of the words; `HELP_SHOTS_OUT=<dir>` writes somewhere else for a look
+  before overwriting.
+- **Safeguards, because the pictures go to every user:** the config refuses to start unless
+  `.env.demo` and the built bundle both name LandmarkDemo and nothing else; the run answers
+  activity-log writes in the browser and aborts every other write, so a shot that clicks the wrong
+  button fails instead of changing a row. It is not the e2e harness, whose setup creates users.
+- Pictures are Croatian, light theme, 1280×800, without the top bar and menu; a form is captured
+  as its dialog. The demo's dates move with each reseed, so retake a picture when its screen
+  changes, not on a schedule. Look at each retaken file before committing it.
+
 ## Usage logging
 
 `logHelpEvent` (`src/lib/helpEvents.ts`) writes to `activity_logs` under entity `help`, severity
@@ -97,6 +144,8 @@ low. No new table or migration.
 | `help.view` | `/help` index or an article is opened | `article_id` (null for the index), `from_page` |
 | `help.page_link_click` | the "?" beside a page title is clicked | `page` |
 | `help.hint_open` | an `InfoHint` is opened | `hint_id`, `page` |
+| `help.search_no_results` | a search on `/help` found nothing and the box rested 1.5 s on at least three characters | `query` |
+| `help.ask_assistant` | that search was handed to the assistant | `query` |
 
 `logActivity` skips the dashboard-cache invalidation for `help.*`, as it does for `export.*` and
 `auth.*`. In General → Activity Log (Director only) they are **hidden by default**: tick "Also show
@@ -109,6 +158,10 @@ To see what is used:
 select action, metadata->>'hint_id' as hint, metadata->>'article_id' as article,
        coalesce(metadata->>'page', metadata->>'from_page') as page, count(*)
 from activity_logs where entity = 'help' group by 1, 2, 3, 4 order by count(*) desc;
+
+-- what people looked for and did not find
+select metadata->>'query' as query, count(*)
+from activity_logs where action = 'help.search_no_results' group by 1 order by count(*) desc;
 ```
 
 ## Hints in place
@@ -120,6 +173,14 @@ from activity_logs where entity = 'help' group by 1, 2, 3, 4 order by count(*) d
 | `payments.source`, `payments.cesija` | both payment forms (`Cashflow/components/PaymentHints.tsx`) | `term-kompenzacija`, `term-cesija` |
 | `tic.phases`, `tic.row_mismatch` | Funding → TIC, Investment tab | `tic` |
 | `funding.allocations` | Funding → Investments, allocations heading | `funding-investments` |
+| `invoices.multi_vat` | first VAT base field of the invoice form and the retail invoice form (`Cashflow/components/MultiVatHint.tsx`) | `term-multi-vat` |
+| `apartments.link_units` | both "link units" dialogs: Sales → Apartments and the Sales project grid (`Sales/components/LinkedUnitsHint.tsx`) | `term-unit-types` |
+| `contracts.no_contract` | the "Bez ugovora" checkbox in the Supervision subcontractor form and the note in Cashflow → Suppliers → link to project (`Common/NoContractHint.tsx`) | `term-has-contract` |
+| `projects.phases_vs_milestones` | project details → Faze i ugovori, "Faze projekta" heading | `term-faza-vs-prekretnica` |
+| `projects.realized` | project details → Podugovaratelji, "Realizirano" column header (desktop only: the phone card view has no header row) | `term-realised-budget` |
+| `projects.budget_from_tic` | the read-only budget field of the project form | `term-budzet-iz-tic` |
+
+The three project hints are in `General/Projects/ProjectHints.tsx`.
 
 ## Adding guidance
 

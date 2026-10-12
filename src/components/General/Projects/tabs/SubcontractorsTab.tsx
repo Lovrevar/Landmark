@@ -6,6 +6,7 @@ import { Badge, Button, EmptyState, Select, SearchInput, StatCard, StatGrid, Tab
 import type { Phase, ContractWithDetails } from '../types'
 import { NO_VALUE } from '../../../../utils/formatters'
 import { contractRemaining, hasContractAmount, summariseContracts } from './subcontractorsSummary'
+import { RealizedHint } from '../ProjectHints'
 
 interface SubcontractorsTabProps {
   contracts: ContractWithDetails[]
@@ -98,10 +99,11 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
     setStatusFilter('all')
   }
 
-  const SortableTh: React.FC<{ sortKey: SortKey; children: React.ReactNode }> = ({ sortKey: key, children }) => (
+  const SortableTh: React.FC<{ sortKey: SortKey; hint?: React.ReactNode; children: React.ReactNode }> = ({ sortKey: key, hint, children }) => (
     <Table.Th sortable onClick={() => toggleSort(key)}>
       <span className="inline-flex items-center gap-1">
         {children}
+        {hint}
         {sortKey === key && (
           sortDir === 'asc'
             ? <ChevronUp className="w-3 h-3" />
@@ -170,7 +172,7 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
                   <SortableTh sortKey="phase">{t('common.phase')}</SortableTh>
                   <SortableTh sortKey="classification">{t('supervision.site_management.phase_card.classification_label')}</SortableTh>
                   <SortableTh sortKey="contract_amount">{t('general_projects.contract_amount')}</SortableTh>
-                  <SortableTh sortKey="realized">{t('general_projects.realized')}</SortableTh>
+                  <SortableTh sortKey="realized" hint={<RealizedHint />}>{t('general_projects.realized')}</SortableTh>
                   <SortableTh sortKey="remaining">{t('common.remaining')}</SortableTh>
                   <SortableTh sortKey="status">{t('common.status')}</SortableTh>
                   <Table.Th>{t('general_projects.contact')}</Table.Th>

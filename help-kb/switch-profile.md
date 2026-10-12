@@ -8,6 +8,8 @@ roles: [Director, Accounting, Sales, Investment]
 
 Profil mijenjate iz dropdowna u gornjoj traci desno — kliknite naziv trenutnog profila (npr. **General**) i odaberite drugi: **General**, **Supervision**, **Sales**, **Funding**, **Cashflow** (s lokotom), **Retail**. Na mobitelu se profili nalaze na dnu bočnog izbornika, pod naslovom **Profil**.
 
+![Izbornik profila u gornjoj traci](img/profil-izbornik.png)
+
 Promjena profila:
 - mijenja bočni izbornik (vidite drugi set stranica)
 - mijenja nadzornu ploču ([[dashboard]])

@@ -8,6 +8,8 @@ roles: [Director, Accounting, Sales, Investment]
 
 **Nadzorna ploča** je početna stranica sustava. Sadržaj se mijenja prema aktivnom **profilu**, ne prema ulozi (vidi [[switch-profile]]).
 
+![Opća nadzorna ploča u profilu General, uloga Director](img/nadzorna-ploca.png)
+
 Naslovi po profilu:
 - **General** — *Opća nadzorna ploča*
 - **Sales** — *Prodajna nadzorna ploča*

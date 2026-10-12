@@ -15,10 +15,12 @@ export interface HelpArticle {
   routes: string[]
   /** Roles the article is written for. Empty means everyone. */
   roles: string[]
+  /** `yyyy-mm-dd`, on a release note (`news-…`): when the changes it describes went live. */
+  date?: string
   body: string
 }
 
-export type HelpGroup = 'pages' | 'terms' | 'roles'
+export type HelpGroup = 'news' | 'pages' | 'terms' | 'roles'
 
 /**
  * Frontmatter flag that keeps an article out of the Help page while leaving it available to the
@@ -62,7 +64,7 @@ export function parseHelpArticle(fileName: string, raw: string): HelpArticle | n
   if (frontmatter[ASSISTANT_ONLY_FLAG] === 'true') return null
 
   const id = typeof frontmatter.id === 'string' && frontmatter.id ? frontmatter.id : baseName
-  return {
+  const article: HelpArticle = {
     id,
     title: typeof frontmatter.title === 'string' && frontmatter.title ? frontmatter.title : id,
     keywords: asList(frontmatter.keywords),
@@ -70,10 +72,16 @@ export function parseHelpArticle(fileName: string, raw: string): HelpArticle | n
     roles: asList(frontmatter.roles),
     body,
   }
+  if (typeof frontmatter.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(frontmatter.date)) article.date = frontmatter.date
+  return article
 }
 
-/** Glossary and role explainers are told apart by the id prefix the knowledge base already uses. */
+/**
+ * Release notes, glossary and role explainers are told apart by the id prefix the knowledge base
+ * already uses.
+ */
 export function helpGroup(article: HelpArticle): HelpGroup {
+  if (article.id.startsWith('news-')) return 'news'
   if (article.id.startsWith('term-') || article.id.startsWith('terminology-')) return 'terms'
   if (article.id.startsWith('role-')) return 'roles'
   return 'pages'
@@ -96,6 +104,26 @@ export function isVisibleToRole(
   if (article.roles.length === 0) return true
   if (!role) return false
   return article.roles.includes(role) || article.routes.some(route => canAccessRoute(role, route))
+}
+
+/**
+ * The release notes ("what's new") among the articles, newest first. A note without a valid
+ * `date` is left out: nothing could say whether the reader has seen it.
+ */
+export function newsArticles(articles: HelpArticle[]): (HelpArticle & { date: string })[] {
+  return articles
+    .filter((article): article is HelpArticle & { date: string } => helpGroup(article) === 'news' && !!article.date)
+    .sort((a, b) => b.date.localeCompare(a.date))
+}
+
+/**
+ * The newest release note the reader has not seen, given the date of the last one they did see
+ * (`null` for never). ISO dates compare as text.
+ */
+export function unseenNews(articles: HelpArticle[], seenThrough: string | null): (HelpArticle & { date: string }) | null {
+  const latest = newsArticles(articles)[0]
+  if (!latest) return null
+  return seenThrough !== null && seenThrough >= latest.date ? null : latest
 }
 
 const segments = (path: string): string[] => path.split('/').filter(Boolean)
@@ -180,4 +208,20 @@ export function resolveWikiLinks(body: string, linkable: ReadonlyMap<string, str
     const title = linkable.get(id)
     return title ? `[${title}](${helpArticlePath(id)})` : id
   })
+}
+
+const IMAGE_REFERENCE = /!\[([^\]]*)\]\(img\/([^)\s]+)\)/g
+
+/** The files under `help-kb/img/` an article shows, by name (`tic-faze.png`). */
+export function helpImageNames(body: string): string[] {
+  return [...body.matchAll(IMAGE_REFERENCE)].map(match => match[2])
+}
+
+/**
+ * Points an article's `![alt](img/name.png)` screenshots at the bundled files. `urls` maps file
+ * name to the address the build gave it. An image with no file is dropped rather than drawn
+ * broken; `helpKb.test.ts` fails first, so that should never reach a user.
+ */
+export function resolveHelpImages(body: string, urls: Readonly<Record<string, string>>): string {
+  return body.replace(IMAGE_REFERENCE, (_match, alt: string, name: string) => (urls[name] ? `![${alt}](${urls[name]})` : ''))
 }

@@ -33,7 +33,16 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
     editMessage,
     regenerateLastTurn,
     switchToLeaf,
+    close,
   } = useAiChat()
+
+  // Below `sm` the panel covers the whole screen, so an app link in an answer (a Help article)
+  // would open behind it. Following one there closes the panel; the conversation is kept.
+  const closeOnAppLink = (event: React.MouseEvent<HTMLDivElement>) => {
+    const link = (event.target as HTMLElement).closest('a')
+    if (!link || link.target === '_blank') return
+    if (window.matchMedia('(max-width: 639px)').matches) close()
+  }
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const editRef = useRef<HTMLTextAreaElement>(null)
@@ -174,7 +183,10 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
       const canRegenerate = !isStreaming && isLastAssistant === true
       return (
         <div className="group flex justify-start items-start gap-1">
-          <div className="max-w-[90%] bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 overflow-hidden break-words">
+          <div
+            className="max-w-[90%] bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 overflow-hidden break-words"
+            onClick={closeOnAppLink}
+          >
             <MarkdownView content={message.text} />
           </div>
           {canRegenerate && (

@@ -1,13 +1,19 @@
 # Backlog — Cashflow
 
 Invoices, payments, companies, bank accounts, loans, cesija and kompenzacija. Ids: `CASH-n` (next
-free: `CASH-31`). Entry format and rules are in [README.md](./README.md).
+free: `CASH-32`). Entry format and rules are in [README.md](./README.md).
 
 Phase 5 of the ERP integration removes in-app invoice and payment creation. Each entry says how
 that changes it; do not build new authoring UI here without reading
 [../erp-integration/](../erp-integration/README.md) first.
 
 ## Open
+
+### CASH-31 · Low · Companies subtitle names the customer
+- **Check:** Confirmed (seen on LandmarkDemo, 2026-10-12).
+- **Where:** `companies.subtitle` in both locale files ("Financijski pregled svih firmi pod Landmarkom").
+- **What happens:** every installation, the demo included, says "pod Landmarkom". Same kind as GEN-19 (the General report's hardcoded group name).
+- **Fix direction:** drop the name from the string, or take it from one configured place together with GEN-19.
 
 ### CASH-28 · Low · Cashflow wording, hardcoded strings and unused keys
 - **Check:** Code reading

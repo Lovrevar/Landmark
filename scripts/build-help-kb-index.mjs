@@ -37,6 +37,11 @@ function parseFrontmatter(raw) {
   return { frontmatter: fm, body }
 }
 
+// Screenshots are for the Help page. In the assistant's copy a `![alt](img/file.png)` line would
+// only add file names to the search terms and a path the model might repeat.
+const withoutImages = (body) =>
+  body.replace(/^!\[[^\]]*\]\([^)]*\)[ \t]*\n?/gm, '').replace(/\n{3,}/g, '\n\n').trim()
+
 const files = (await fs.readdir(KB_DIR)).filter((f) => f.endsWith('.md') && f !== 'INDEX.md').sort()
 if (files.length === 0) {
   console.error('No KB entries found in help-kb/. Aborting.')
@@ -57,7 +62,9 @@ for (const file of files) {
     keywords: Array.isArray(frontmatter.keywords) ? frontmatter.keywords : [],
     routes: Array.isArray(frontmatter.routes) ? frontmatter.routes : [],
     roles: Array.isArray(frontmatter.roles) ? frontmatter.roles : [],
-    body,
+    // Not on the Help page (src/lib/helpKb.ts), so search_help must not link to it there.
+    assistant_only: frontmatter.assistant_only === 'true',
+    body: withoutImages(body),
   })
 }
 

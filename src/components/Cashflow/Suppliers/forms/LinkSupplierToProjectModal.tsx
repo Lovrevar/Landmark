@@ -11,6 +11,7 @@ import {
 } from '../services/supplierService'
 import { useToast } from '../../../../contexts/ToastContext'
 import { formatPhaseLabel } from '../../../../utils/phaseLabel'
+import { NoContractHint } from '../../../Common/NoContractHint'
 
 interface LinkSupplierToProjectModalProps {
   visible: boolean
@@ -146,7 +147,10 @@ export const LinkSupplierToProjectModal: React.FC<LinkSupplierToProjectModalProp
         </div>
 
         <Alert variant="info" className="mb-6">
-          {t('suppliers.link.info')}
+          <span className="inline-flex items-center gap-1.5">
+            {t('suppliers.link.info')}
+            <NoContractHint />
+          </span>
         </Alert>
 
         <div className="space-y-4">
