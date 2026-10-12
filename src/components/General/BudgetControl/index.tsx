@@ -458,12 +458,19 @@ function MetricCard({ label, sublabel, value, icon: Icon, variant }: MetricCardP
   const s = styles[variant]
 
   return (
-    <div className={`rounded-xl border p-4 shadow-sm ${s.container}`}>
+    // `stat-card` / `stat-card__value` (index.css): the figure shrinks with the card and then
+    // wraps, instead of running past the edge when five cards share a laptop window (UI-11).
+    <div className={`stat-card rounded-xl border p-4 shadow-sm ${s.container}`}>
       <div className="flex items-start justify-between mb-2">
         <p className={`text-sm font-medium ${s.label}`}>{label}</p>
         <Icon className={`w-4 h-4 ${s.icon} flex-shrink-0`} />
       </div>
-      <p className={`text-lg font-bold ${s.value} leading-tight`}>{value}</p>
+      <p
+        className={`stat-card__value font-bold ${s.value}`}
+        style={{ '--stat-value-size': '1.125rem' } as React.CSSProperties}
+      >
+        {value}
+      </p>
       <p className={`text-xs mt-1 ${s.label} opacity-80`}>{sublabel}</p>
     </div>
   )

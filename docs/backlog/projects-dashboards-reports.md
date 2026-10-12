@@ -6,12 +6,6 @@ are in [README.md](./README.md).
 
 ## Open
 
-### GEN-22 · Medium · With an unphased TIC and several phases, Budget Control credits the whole budget to phase 1
-- **Check:** Confirmed by code reading and on LandmarkDemo ("Rezidencija Jarun", 2026-10-12); the figures on screen match the arithmetic below exactly. Not checked against production: it applies to any project whose TIC has no phase columns but which has more than one phase with contracts.
-- **Where:** `sync_project_from_tic` (`20260909140000_tic_sole_budget_source.sql`, "Unphased TIC: one phase holds the whole plan") puts the full budget on phase 1 and 0 on the others; `calculateProjectEVM` (`src/utils/evm.ts`) earns value per phase as `budget_allocated × physical %`.
-- **What happens:** earned value is the whole project budget times phase 1's completion, while cost is what was paid in every phase. On the demo: phase 1 is complete and holds €8,5M, so EV = €8,5M against €3,32M paid across four phases. CPI = 2,56 ("healthy"), and EAC = budget / CPI comes out equal to the amount paid so far (€3.318.750,00, "Ispod proračuna") on a project with €5,7M already contracted. Once phase 1 is complete the forecast always equals paid-to-date. The phase list shows the same split: "Plaćeno €335.000 / €8.500.000" on phase 1 and "Budžet nije postavljen" on the rest.
-- **Fix direction:** when no phase beyond the first has a budget, compute EVM at project level (project budget × contract-weighted physical % over all contracts) instead of summing per phase; or have the trigger leave every phase at 0 for an unphased TIC so the screens say "nije fazirano". The first is client-only. The unreadable top axis label that drew attention to this is GEN-7.
-
 ### GEN-21 · Low · Projects list shows a failed load as an Alert in the content area
 - **Where:** `General/Projects/index.tsx:117`.
 - **Fix direction:** `ErrorState` with `refetch`. Part of UI-4 in [ui.md](./ui.md).
@@ -57,6 +51,9 @@ are in [README.md](./README.md).
   generators that print it.
 
 ## Resolved
+
+### GEN-22 · Medium · With an unphased TIC and several phases, Budget Control credits the whole budget to phase 1
+- Fixed on `feat/user-guidance-phase-3` (2026-10-12): when only one of several phases carries a budget, `calculateProjectEVM` measures the project as one phase from the first start date to the last end date, holding every phase's contracts. Tested in `src/utils/evm.test.ts`. The trigger is unchanged, so the phase list still shows the whole budget on phase 1.
 
 ### GEN-15 · Low · Supervision dashboard display polish (was DASH-605)
 - Closed on `fix/backlog-batch-3` (2026-10-08): "no deadline" is `null`, tested in `dashboards/utils/supervisionDeadlines.ts`.
