@@ -11,6 +11,22 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   production. Until then any signed-in user can still delete any stored document file. After
   applying, as a Sales user delete a document you uploaded (works) and try one uploaded by
   someone else (refused).
+- [ ] **Apply `20261012100000_contracts_project_scope`** (SEC-004, AUTH-4), dev first.
+  Then, as the dev Supervision user (`e2e-supervision@mail.com`, assigned to "E2E Anchor
+  Project"): Site management shows that project's contracts and milestones and no other
+  project's, and adding a contract there works. As Director: every project still shows.
+  **Before production:** assign the Supervision user to their projects (`project_managers`). On
+  2026-10-12 production had one Supervision user and no assignments, so that user already sees
+  no projects or phases, and after this migration no contracts either.
+- [ ] **Apply `20261012100100_cancel_apartment_sale`** (SALES-10). On dev as Director: sell an
+  apartment that has a linked garage, cancel the sale, and check the apartment and garage are
+  Available, the sale has left the Sales dashboard, and the activity log shows "Prodaja
+  poništena". Then enter an invoice to the buyer for a sold apartment and check the cancel is
+  refused with the invoice message. As Sales: no "Poništi prodaju" button.
+- [ ] **Apply `20261012100200_unique_unit_numbers`** (SALES-9). It stops with a list if a
+  duplicate has appeared since 2026-10-12 (none then, in any database). Afterwards, try to add a
+  unit with a number already in the building and a building with a name already in the project:
+  both are refused with a message that says so.
 - [ ] **Walk [../test/11-pre-merge-ui-audit.md](../test/11-pre-merge-ui-audit.md).** 80 unticked
   checks, over a dozen marked blocker. Steps 0.4 and 0.5 follow the migrations directly: log in as
   Sales and Supervision and open the invoice screens; edit an existing payment's amount and bank

@@ -1953,7 +1953,14 @@
       "repository_link_error": "The storage unit could not be linked",
       "garage_unlink_error": "The garage could not be unlinked",
       "repository_unlink_error": "The storage unit could not be unlinked",
-      "sale_complete_error": "The sale could not be completed. Please try again."
+      "sale_complete_error": "The sale could not be completed. Please try again.",
+      "unit_number_exists": "A unit with that number already exists in this building.",
+      "building_name_exists": "A building with that name already exists in this project.",
+      "sale_cancel_success": "The sale was cancelled",
+      "sale_cancel_error": "The sale could not be cancelled. Please try again.",
+      "sale_cancel_has_invoices": "The sale cannot be cancelled while invoices to the buyer exist for the apartment. Deal with them in the Cashflow profile first.",
+      "sale_cancel_not_allowed": "Only the Director and Accounting roles can cancel a sale.",
+      "sale_cancel_no_sale": "No sale is recorded for this apartment."
     },
     "building_quantity_modal": {
       "title": "Bulk Create Buildings",
@@ -2136,7 +2143,13 @@
     "no_projects_title": "No projects in this category",
     "no_projects_description": "Projects in the stambeno and retail categories are listed here. Projects are added in the General profile, on the Projects page, with the \"New Project\" button.",
     "no_buildings_title": "This project has no buildings yet",
-    "no_buildings_description": "Add them with the \"Create Buildings\" or \"Add Building\" button, or import them with the \"Import from Excel\" button in the page header."
+    "no_buildings_description": "Add them with the \"Create Buildings\" or \"Add Building\" button, or import them with the \"Import from Excel\" button in the page header.",
+    "cancel_sale": {
+      "action": "Cancel sale",
+      "title": "Cancel the sale",
+      "message": "Cancel the sale of apartment {{number}} to {{buyer}} ({{price}})? The apartment and its linked garage and storage unit go back to Available, and the sale is removed from the reports. A record stays in the activity log.",
+      "confirm": "Cancel sale"
+    }
   },
   "apartments": {
     "title": "Apartments",
@@ -2150,7 +2163,8 @@
       "update_error": "Failed to save the apartment",
       "delete_error": "Failed to delete the apartment",
       "payments_load_error": "Failed to load the payment history",
-      "link_units_error": "The unit links could not be saved"
+      "link_units_error": "The unit links could not be saved",
+      "number_exists": "An apartment with that number already exists in this building."
     },
     "confirm_delete_message": "Are you sure you want to delete {{label}}? This action cannot be undone.",
     "confirm_delete_fallback": "this apartment",
@@ -2204,7 +2218,8 @@
         "saleable_area": "Saleable area is required",
         "price": "Price is required",
         "status": "Status is required"
-      }
+      },
+      "status_sold_hint": "The apartment is sold. Cancel the sale on the Sales projects page, with the \"Cancel sale\" button."
     },
     "statuses": {
       "available": "Available",
@@ -5271,6 +5286,7 @@
       "customer.update": "Customer updated",
       "customer.delete": "Customer deleted",
       "sale.create": "Sale created",
+      "sale.cancel": "Sale cancelled",
       "sale_payment.create": "Sale payment created",
       "invoice.create": "Invoice created",
       "invoice.update": "Invoice updated",

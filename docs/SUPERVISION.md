@@ -133,8 +133,8 @@ Closed contracts **stay on the site and keep counting**:
 
 #### The payment gate
 
-`canManagePayments(user)` (`src/utils/permissions.ts`) is true for **Director**, **Accounting**
-and **Investment**, false for **Supervision** and **Sales**. Site Management threads it through
+`canManagePayments(user)` (`src/utils/permissions.ts`) is true for **Director** and
+**Accounting**, false for **Supervision**, **Sales** and **Investment** (SEC-A10). Site Management threads it through
 the whole tree and hides *everything derived from payments*, not just the figures:
 
 `index.tsx` → `ProjectDetail` (default **`false`**, so a screen that forgets to pass it leaks
@@ -170,8 +170,10 @@ Since `20260526084700_tighten_cashflow_rls.sql` that role has no `accounting_pay
 statement about the reader's rights. The Supervision *profile* keeps both, because a Director or
 Accounting user can switch into it and does have the rows.
 
-> This is a **screen-only** restriction, not a data boundary — `contracts` is readable by any
-> authenticated user, so `budget_realized` is one console call away. See
+> This is a **screen-only** restriction, not a data boundary. Since migration `20261012100000` a
+> Supervision user reads and writes only the contracts and milestones of the projects they are
+> assigned to (`app_can_access_project`, the rule projects and phases already followed) — but on
+> those projects `budget_realized` is still one console call away. See
 > [backlog/security.md](./backlog/security.md) SEC-004.
 
 #### One definition of "overdue"

@@ -35,6 +35,16 @@ export const canEditSalesUnits = (user: User | null): boolean => {
   return user.role === 'Director' || user.role === 'Sales' || user.role === 'Accounting'
 }
 
+/**
+ * Who may cancel a sale. Decided 2026-10-12 and enforced by `cancel_apartment_sale`, which checks
+ * the role itself: a cancellation removes revenue from every report, so it is not the Sales
+ * role's to make.
+ */
+export const canCancelSales = (user: User | null): boolean => {
+  if (!user) return false
+  return user.role === 'Director' || user.role === 'Accounting'
+}
+
 /** Mirrors the DELETE policies on the same four tables: Accounting may edit but not delete. */
 export const canDeleteSalesUnits = (user: User | null): boolean => {
   if (!user) return false

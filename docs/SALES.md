@@ -22,6 +22,24 @@ Customers card, detail modal and per-project sums (`unitPackageTotal`). Do not a
 component. `sales.total_paid` and `sales.remaining_amount` are a sale-time snapshot that nothing
 reads; "paid" is always the payments on the apartment's `OUTGOING_SALES` invoices.
 
+## Selling and cancelling
+
+A sale is one row in `sales`, written by `complete_apartment_sale` together with the apartment's
+and its linked units' Sold status. It is undone only by `cancel_apartment_sale` — the "Poništi
+prodaju" action on a Sold apartment card on Sales projects. **Sold is not a status to set by
+hand:** the Edit Apartment form shows it read-only and offers Available / Reserved otherwise,
+because setting it there wrote no sale, and unsetting it left the sale, the buyer and the linked
+units behind (SALES-10). One sale per apartment is enforced by the unique index
+`sales_one_per_apartment`.
+
+## Unit numbers
+
+A unit number is unique in its building and a building name in its project, compared trimmed and
+case-insensitively (migration `20261012100200`). Create and edit paths test `isUniqueViolation`
+(`src/lib/dbErrors.ts`) and say "that number is taken" instead of the generic retry message; the
+imports pass the same line to `importErrorMessage`. The garage import marks its rows with
+`markExistingGarages`, so a number repeated in the file is one garage, not two.
+
 ## Sub-modules
 
 ### SalesProjects
@@ -52,10 +70,9 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
     is an error. A failure to even read the units still throws — there is nothing to report then
 - `linkGarageToApartment(garageId, apartmentId)`, `unlinkGarageFromApartment(...)` — garage linking
 - `linkRepositoryToApartment(repoId, apartmentId)`, `unlinkRepositoryFromApartment(...)` — storage linking
-- `createCustomer(data)` — creates a new customer from the sale form
 - `completeSale(saleData)` — records the sale through the `complete_apartment_sale` RPC, one transaction that creates the new customer (if any), inserts the `sales` row, marks the apartment and its linked garages/storage units Sold with the buyer's name, and sets the customer to `buyer`. Runs as the caller, so RLS decides who may sell (Director, Sales, Accounting). **Only apartments are sold**: garages and storage units go with the apartment's package, and the Sell button is shown on apartments only. `sales.total_paid` / `remaining_amount` are a snapshot at sale time; paid-to-date always comes from `accounting_payments` on the apartment's `OUTGOING_SALES` invoices
-- `updateCustomerStatus(customerId, status)` — updates customer CRM status
-- `updateUnitAfterSale(apartmentId, saleData)` — patches unit record post-sale
+- `cancelSale(apartment, projectId)` — undoes a sale through the `cancel_apartment_sale` RPC (migration `20261012100100`), one transaction: deletes the `sales` row, returns the apartment and its linked garages and storage units to Available with no buyer, and sets a customer with no other sale back to `interested`. Director and Accounting only (`canCancelSales`), and refused while `OUTGOING_SALES` invoices exist for the apartment. Throws `CancelSaleError` with `reason` `has_invoices` / `not_allowed` / `no_sale`; logs `sale.cancel` (high) with the buyer and price, since the row is gone
+- `nextBuildingNames(existing, quantity, nameFor)` / `createBulkBuildings(...)` — bulk create takes the next free default names for the project instead of always starting at "Zgrada 1" (SALES-17)
 - **Depends on:** supabase client
 
 ### services/garageImportService.ts

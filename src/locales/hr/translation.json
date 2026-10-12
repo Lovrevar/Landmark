@@ -1958,7 +1958,14 @@
       "repository_link_error": "Povezivanje repozitorija nije uspjelo",
       "garage_unlink_error": "Odspajanje garaže nije uspjelo",
       "repository_unlink_error": "Odspajanje repozitorija nije uspjelo",
-      "sale_complete_error": "Dovršavanje prodaje nije uspjelo. Pokušajte ponovno."
+      "sale_complete_error": "Dovršavanje prodaje nije uspjelo. Pokušajte ponovno.",
+      "unit_number_exists": "Jedinica s tom oznakom već postoji u ovoj zgradi.",
+      "building_name_exists": "Zgrada s tim nazivom već postoji u ovom projektu.",
+      "sale_cancel_success": "Prodaja je poništena",
+      "sale_cancel_error": "Poništavanje prodaje nije uspjelo. Pokušajte ponovno.",
+      "sale_cancel_has_invoices": "Prodaju nije moguće poništiti dok za stan postoje računi kupcu. Najprije ih riješite u profilu Cashflow.",
+      "sale_cancel_not_allowed": "Prodaju mogu poništiti samo uloge Director i Accounting.",
+      "sale_cancel_no_sale": "Za ovaj stan nema evidentirane prodaje."
     },
     "building_quantity_modal": {
       "title": "Masovno kreiranje zgrada",
@@ -2142,7 +2149,13 @@
     "no_projects_title": "Nema projekata u ovoj kategoriji",
     "no_projects_description": "Ovdje se prikazuju projekti kategorija stambeno i retail. Projekti se dodaju u profilu General, na stranici Projekti, gumbom „Novi projekt”.",
     "no_buildings_title": "Projekt još nema zgrada",
-    "no_buildings_description": "Dodajte ih gumbom „Kreiraj zgrade” ili „Dodaj zgradu”, ili ih uvezite gumbom „Uvezi iz Excela” u zaglavlju stranice."
+    "no_buildings_description": "Dodajte ih gumbom „Kreiraj zgrade” ili „Dodaj zgradu”, ili ih uvezite gumbom „Uvezi iz Excela” u zaglavlju stranice.",
+    "cancel_sale": {
+      "action": "Poništi prodaju",
+      "title": "Poništavanje prodaje",
+      "message": "Poništiti prodaju stana {{number}} kupcu {{buyer}} ({{price}})? Stan te povezana garaža i repozitorij vraćaju se u status Dostupno, a prodaja se uklanja iz izvještaja. Zapis ostaje u dnevniku aktivnosti.",
+      "confirm": "Poništi prodaju"
+    }
   },
   "apartments": {
     "title": "Stanovi",
@@ -2156,7 +2169,8 @@
       "update_error": "Spremanje stana nije uspjelo",
       "delete_error": "Brisanje stana nije uspjelo",
       "payments_load_error": "Učitavanje povijesti plaćanja nije uspjelo",
-      "link_units_error": "Spremanje povezanih jedinica nije uspjelo"
+      "link_units_error": "Spremanje povezanih jedinica nije uspjelo",
+      "number_exists": "Stan s tom oznakom već postoji u ovoj zgradi."
     },
     "confirm_delete_message": "Jeste li sigurni da želite obrisati {{label}}? Ova akcija se ne može poništiti.",
     "confirm_delete_fallback": "ovaj stan",
@@ -2211,7 +2225,8 @@
         "saleable_area": "Prodajna površina je obavezna",
         "price": "Cijena je obavezna",
         "status": "Status je obavezan"
-      }
+      },
+      "status_sold_hint": "Stan je prodan. Prodaju poništite na stranici Sales projekti, gumbom „Poništi prodaju”."
     },
     "statuses": {
       "available": "Dostupno",
@@ -5297,6 +5312,7 @@
       "customer.update": "Kupac ažuriran",
       "customer.delete": "Kupac obrisan",
       "sale.create": "Prodaja kreirana",
+      "sale.cancel": "Prodaja poništena",
       "sale_payment.create": "Uplata prodaje kreirana",
       "invoice.create": "Račun kreiran",
       "invoice.update": "Račun ažuriran",

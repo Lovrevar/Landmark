@@ -6,11 +6,12 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 
 ## Open
 
-### SALES-17 · Low · Bulk building creation
-- **Check:** Code reading
-- **Where:** `createBulkBuildings`.
-- **What happens:** it can create buildings with names that already exist, always gives them 10
-  floors, and writes `severity` inside the activity-log metadata, not as the severity.
+### SALES-17 · Low · Bulk building creation always gives ten floors
+- **Where:** `createBulkBuildings` (`total_floors: 10`); `BuildingQuantityModal` asks only for a
+  quantity. (The duplicate names were fixed on `fix/contracts-scope-sale-cancel-unit-numbers`:
+  numbering continues from the first free name. The "severity in metadata" point was not a
+  defect — `logActivity` stores severity there for every call.)
+- **Fix direction:** a floors field in the modal.
 
 ### SALES-19 · Low · Sales labels, grammar and hardcoded strings
 - **Check:** Code reading
@@ -23,15 +24,6 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
   title "Projekti".
 - Icon-only buttons without labels in `BuildingsGrid` and `UnitsGrid`; both hand-build money (UI-1).
 
-### SALES-10 · Low · No sale cancellation flow
-- **What happens:** nothing updates or deletes `sales` rows, so a reverted sale still counts in
-  dashboards and reports. Filed Low, but it distorts figures for as long as the row exists.
-- **Fix direction:** a cancel action that removes or flags the sale and returns the units to
-  Available, in one RPC like `completeSale`.
-
-### SALES-9 · Low · No unique constraint on unit numbers
-- Duplicates are possible through bulk create, single create and within-file garage imports.
-
 ### SALES-13 · Low · Delete dialog on the Apartments page is half Croatian, half English
 - **Where:** `src/components/Sales/Apartments/index.tsx`. Title is a literal "Potvrda brisanja",
   message is English.
@@ -43,6 +35,16 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 - **Fix direction:** `formatEuro` / `formatEuroRounded`. Part of UI-1 in [ui.md](./ui.md).
 
 ## Resolved
+
+### SALES-9 · Low · No unique constraint on unit numbers
+- Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): unique indexes on unit numbers per building and building names per
+  project (migration `20261012100200`, **not applied yet**); the create, edit and import paths say
+  so in words. No database had a duplicate on 2026-10-12.
+
+### SALES-10 · Low · No sale cancellation flow
+- Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): `cancel_apartment_sale` (migration `20261012100100`, **not applied yet** —
+  see [release.md](./release.md)) and the "Poništi prodaju" action for Director and Accounting.
+  The Edit Apartment form no longer sets or unsets Sold.
 
 ### SALES-8 · Low · Customers module keeps only one garage and one storage per apartment
 - Fixed on `fix/backlog-batch-4` (2026-10-09): Customers keeps every linked garage and storage unit, shows each on the

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   canEditSalesUnits, canDeleteSalesUnits, canManageSubcontractors, canDeleteSubcontractors, canManageWorkLogs,
-  canManagePayments,
+  canManagePayments, canCancelSales,
 } from './permissions'
 import type { User } from '../contexts/AuthContext'
 
@@ -32,6 +32,11 @@ describe('button permissions follow the RLS policies', () => {
   // shown read as empty (SEC-A10).
   it('payments and invoices: Director and Accounting, as the RLS on both tables', () => {
     expect(allowed(canManagePayments)).toEqual(['Director', 'Accounting'])
+  })
+
+  // Enforced by cancel_apartment_sale itself; the Sales role records sales but does not undo them.
+  it('cancelling a sale: Director and Accounting', () => {
+    expect(allowed(canCancelSales)).toEqual(['Director', 'Accounting'])
   })
 
   it('nobody signed in may do anything', () => {
