@@ -30,6 +30,8 @@ interface UnitsGridProps {
   onDeleteUnit: OnDeleteUnitCallback
   onUpdateUnitStatus: OnUpdateUnitStatusCallback
   onSellUnit: OnSellUnitCallback
+  /** Absent for roles that may not cancel a sale: the action is then not drawn. */
+  onCancelSale?: (sale: { id: string; number: string; buyer: string; price: number }) => void
   onLinkApartment: OnLinkApartmentCallback
   onUnlinkGarage: (apartmentId: string, garageId: string) => void
   onUnlinkRepository: (apartmentId: string, repositoryId: string) => void
@@ -50,6 +52,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
   onDeleteUnit,
   onUpdateUnitStatus,
   onSellUnit,
+  onCancelSale,
   onLinkApartment,
   onUnlinkGarage,
   onUnlinkRepository,
@@ -383,6 +386,22 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                         </Button>
                       )}
                     </div>
+                  )}
+                  {/* The only way back from Sold. It undoes the whole sale — the sale record, the
+                      linked units, the buyer — not just this card's status (SALES-10). */}
+                  {onCancelSale && activeUnitType === 'apartment' && unit.status === 'Sold' && unit.sale_info && (
+                    <Button
+                      size="sm"
+                      variant="outline-danger"
+                      onClick={() => onCancelSale({
+                        id: unit.id,
+                        number: unit.number ?? '',
+                        buyer: unit.sale_info?.buyer_name ?? '',
+                        price: unit.sale_info?.sale_price ?? 0,
+                      })}
+                    >
+                      {t('sales_projects.cancel_sale.action')}
+                    </Button>
                   )}
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { defaultView } from '../utils/defaultView'
 import { useAuth } from '../../../contexts/AuthContext'
 
 export type CalendarView = 'day' | 'week' | 'month' | 'agenda'
@@ -25,16 +26,20 @@ function storageKey(userId: string | undefined) {
   return userId ? `calendar.prefs.${userId}` : null
 }
 
+const isNarrowScreen = (): boolean =>
+  typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(max-width: 767px)').matches
+
 function load(userId: string | undefined): CalendarPreferences {
+  const fresh: CalendarPreferences = { ...DEFAULT_PREFS, view: defaultView(isNarrowScreen()) }
   const key = storageKey(userId)
-  if (!key) return DEFAULT_PREFS
+  if (!key) return fresh
   try {
     const raw = window.localStorage.getItem(key)
-    if (!raw) return DEFAULT_PREFS
+    if (!raw) return fresh
     const parsed = JSON.parse(raw) as Partial<CalendarPreferences>
-    return { ...DEFAULT_PREFS, ...parsed }
+    return { ...fresh, ...parsed }
   } catch {
-    return DEFAULT_PREFS
+    return fresh
   }
 }
 

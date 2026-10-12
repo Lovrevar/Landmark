@@ -109,7 +109,9 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
         : 'rounded-lg overflow-hidden'
     }>
       {/* Hover highlight only where the row actually responds to a click. */}
-      <div className={`w-full flex items-center justify-between gap-4 transition-colors duration-200 ${
+      {/* On a phone the label takes its own line: beside the figures and buttons it was squeezed
+          to nothing, leaving a row that read "(1) UGOVOR €210.000" with no name (UI-8). */}
+      <div className={`w-full flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-4 transition-colors duration-200 ${
         depth <= 1 ? 'bg-gray-50 dark:bg-gray-700/50' : 'bg-gray-50/60 dark:bg-gray-800/40'
       } ${
         !isExpandable
@@ -123,7 +125,7 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
           onClick={() => onToggleNode(node.key)}
           disabled={!isExpandable}
           aria-expanded={isExpandable ? isExpanded : undefined}
-          className="flex-1 min-w-0 px-4 py-2.5 flex items-center gap-2.5 text-left disabled:cursor-default"
+          className="basis-full sm:basis-0 flex-1 min-w-0 px-4 py-2.5 flex items-center gap-2.5 text-left disabled:cursor-default"
         >
           {/* The chevron's space is held even when there is nothing to open, so labels stay on
               one vertical line whether or not a row is expandable. */}
@@ -145,7 +147,7 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
         {/* Fixed-width right-aligned columns with the label above the value: the figures then
             line up vertically down the whole list, which is what makes a dense tree scannable.
             Mirrors the tile pattern already used on the phase header. */}
-        <div className="flex items-center gap-5 pr-2 tabular-nums">
+        <div className="flex items-center gap-5 pr-2 pb-2 sm:pb-0 ml-auto tabular-nums">
           {/* All four slots are always rendered, empty where a level has no such figure, so the
               columns line up down the whole tree rather than shifting per row. */}
           <Metric label={t('supervision.site_management.phase_card.classification_budget')} className="hidden lg:flex">

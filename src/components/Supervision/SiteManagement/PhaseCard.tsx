@@ -76,9 +76,11 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+        {/* Wraps: on a phone the budget and the four buttons ran off the right edge of the card,
+            out of reach (UI-8). */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <div className="flex items-center space-x-4 min-w-0">
             <Button
               variant="primary"
               size="icon-lg"
@@ -94,8 +96,8 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="sm:text-right">
               <p className="text-lg font-bold text-gray-900 dark:text-white">{money(phase.budget_allocated)}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {t('supervision.site_management.phase_card.forecasted_budget')}
@@ -108,9 +110,9 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               title={t('supervision.site_management.classification_budgets.title')}
               onClick={() => onEditClassificationBudgets(phase)}
             />
-            <Button variant="ghost" size="icon-md" icon={Edit2} onClick={() => onEditPhase(phase)} />
+            <Button variant="ghost" size="icon-md" icon={Edit2} title={t('common.edit')} onClick={() => onEditPhase(phase)} />
             {onDeletePhase && (
-              <Button variant="outline-danger" size="icon-md" icon={Trash2} onClick={() => onDeletePhase(phase)} />
+              <Button variant="outline-danger" size="icon-md" icon={Trash2} title={t('common.delete')} onClick={() => onDeletePhase(phase)} />
             )}
             <Button variant="success" icon={Plus} onClick={() => onAddSubcontractor(phase, null)}>
               {t('supervision.subcontractors.add')}

@@ -8,8 +8,8 @@ type UnitItem = {
   sale_price?: number
   project_name?: string
   total_paid?: number
-  garage?: { price: number; number: string } | null
-  repository?: { price: number; number: string } | null
+  garages?: { id: string; price: number; number: string }[]
+  repositories?: { id: string; price: number; number: string }[]
   floor?: number
   size_m2?: number
   number?: string

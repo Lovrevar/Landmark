@@ -114,26 +114,26 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                     </div>
                                   </div>
 
-                                  {unit.type === 'apartment' && (unit.garage || unit.repository) && (
+                                  {unit.type === 'apartment' && ((unit.garages?.length ?? 0) > 0 || (unit.repositories?.length ?? 0) > 0) && (
                                     <div className="pl-6 space-y-1 text-xs">
-                                      {unit.garage && (
-                                        <div className="flex items-center justify-between text-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded px-2 py-1">
+                                      {(unit.garages ?? []).map(garage => (
+                                        <div key={garage.id} className="flex items-center justify-between text-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded px-2 py-1">
                                           <span className="flex items-center">
                                             <Warehouse className="w-3 h-3 mr-1" />
-                                            {t('common.garage')} {unit.garage.number}
+                                            {t('common.garage')} {garage.number}
                                           </span>
-                                          <span className="font-semibold">€{unit.garage.price.toLocaleString('hr-HR')}</span>
+                                          <span className="font-semibold">€{garage.price.toLocaleString('hr-HR')}</span>
                                         </div>
-                                      )}
-                                      {unit.repository && (
-                                        <div className="flex items-center justify-between text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
+                                      ))}
+                                      {(unit.repositories ?? []).map(repository => (
+                                        <div key={repository.id} className="flex items-center justify-between text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
                                           <span className="flex items-center">
                                             <Package className="w-3 h-3 mr-1" />
-                                            {t('common.storage')} {unit.repository.number}
+                                            {t('common.storage')} {repository.number}
                                           </span>
-                                          <span className="font-semibold">€{unit.repository.price.toLocaleString('hr-HR')}</span>
+                                          <span className="font-semibold">€{repository.price.toLocaleString('hr-HR')}</span>
                                         </div>
-                                      )}
+                                      ))}
                                     </div>
                                   )}
 

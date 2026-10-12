@@ -18,11 +18,19 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
   labels. Grep before deleting.
 - English literals left on screen: "TBD", "Mixed", "Retail", "Site".
 
-### UI-8 · Medium · Mobile
-- Non-wrapping header rows in Supervision, which is used on phones on site.
-- Hover-only actions (AI chat edit and regenerate, and others) cannot be reached by touch.
-- The Cashflow invoice table is 1400px wide.
-- Calendar opens on the month view on phones.
+### UI-8 · Low · Mobile
+- **Done** on `fix/mobile-pass-ui8` (2026-10-09), measured at 390px on 45 pages as Director and
+  7 as Supervision: no page scrolls sideways and nothing is cut off any more. Fixed: the phase
+  card header and the group rows on Site management, the work log cards, the Investment project
+  cards, the calendar toolbar and the General report's project header (all pushed their right
+  half off the card); the assistant's edit and regenerate buttons (hover-only); the calendar,
+  which now opens on the agenda on a phone.
+- **Left:** tap targets under 32px — the icon buttons on Documents (expand, open, paging; 43 on
+  one screen) and the calendar's type chips and month arrows. Wide tables on desktop
+  (Cashflow invoices, the TIC with phases) scroll inside their card by design.
+- **How to re-measure:** load each page at 390px and look for elements whose right edge passes
+  the viewport or a clipping ancestor; the page's own scroll container hides a plain
+  `document.scrollWidth` check.
 
 ### UI-4 · Low · Failed loads that still read as "no data"
 - **Done:** ~60 hook-shaped loaders expose `error` + `refetch` and render `ErrorState`; services

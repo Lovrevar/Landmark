@@ -119,7 +119,7 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
                 }}
                 aria-label="Uredi poruku"
                 title="Uredi poruku"
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                className="opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 transition-opacity p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
@@ -183,7 +183,7 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
               onClick={() => void regenerateLastTurn()}
               aria-label="Generiraj ponovno"
               title="Generiraj ponovno"
-              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              className="opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 transition-opacity p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>

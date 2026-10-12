@@ -10,40 +10,12 @@ it; write down why, and what a fix would look like.
 
 ## Open defects
 
-### SEC-A12 · Medium · Any signed-in user can delete any stored document file
-- **Check:** Confirmed (found 2026-10-01).
-- **Where:** `supabase/migrations/20260527100000_restore_documents_bucket_and_policies.sql` and
-  `20260527100100_restore_other_storage_buckets_and_policies.sql`: the `storage.objects`
-  INSERT / SELECT / DELETE policies on the `documents` and `contract-documents` buckets check only
-  `bucket_id`.
-- **What happens:** `20260930100000` limited deleting a `public.documents` row to its uploader,
-  Director and Accounting, but the file itself can be removed, or overwritten by path, by any
-  signed-in user through the Storage API, leaving a row that points at nothing. Every signed-in
-  user can also read every file, which matches the table's SELECT policy today but has no
-  per-entity check.
-- **Fix direction:** mirror the table rule in the DELETE and UPDATE policies on `storage.objects`:
-  owner (`owner_id = auth.uid()`) or `app_user_role() IN ('Director','Accounting')`, the way
-  `can_access_chat_object` does for chat.
-
-### SEC-A10 · Low · Investment role can manage payments in the UI but reads none
-- **What happens:** `canManagePayments` is true for Investment, but `accounting_payments` RLS is
-  Director/Accounting only. Investment users get the full paid UI over rows RLS will not return;
-  the payment-history modal reads as "never paid", and Funding's drawdown, repayment and fee
-  sections come back empty (FUND-15 in [funding.md](./funding.md)).
-- **Fix direction:** a product decision about what the Investment role is for, then make
-  `canManagePayments` and the policy agree. Detail under SEC-004 below.
-
 ### SEC-A9 · Low · `dispatch-calendar-reminders` has no request authentication
 - **Where:** `supabase/functions/dispatch-calendar-reminders/index.ts`, `verify_jwt = false`.
 - **What happens:** harmless today because the function is disabled in `config.toml`. Enabling it
   as is would let anyone trigger reminder inserts.
 - **Fix direction:** add a shared-secret header like `send-push` before enabling. Part of turning
   reminders back on (COLLAB-1 in [collaboration.md](./collaboration.md)).
-
-### AUTH-4 · Low · Client and SQL disagree on project access
-- **Where:** `hasProjectAccess` in `src/contexts/AuthContext.tsx` returns `false` for Accounting,
-  Sales and Investment; SQL `user_has_project_access(user, proj)` grants them all projects.
-- **Fix direction:** align one to the other.
 
 ## Accepted risks
 
@@ -129,76 +101,73 @@ When `VITE_CASHFLOW_PASSWORD` is unset, the Cashflow profile remains selectable 
 - Discovered during AI chat plan, Phase 1.5 (May 2026)
 
 ---
-### SEC-004: The Supervision payment gate is screen-only; `contracts` is world-readable
+### SEC-004: Paid figures are hidden from Supervision on screen only
 
-**Status:** Open
+**Status:** Accepted risk, narrowed 2026-10-12
 **Severity:** Low
 **Filed:** 2026-09-21
-**Affected components:** [src/utils/permissions.ts](../../src/utils/permissions.ts) (`canManagePayments`), all of `src/components/Supervision/SiteManagement/`, [src/components/Common/Layout.tsx](../../src/components/Common/Layout.tsx) (the Supervision role menu), `public.contracts` and `public.accounting_invoices` RLS
+**Affected components:** [src/utils/permissions.ts](../../src/utils/permissions.ts) (`canManagePayments`), all of `src/components/Supervision/SiteManagement/`, `public.contracts`, `public.accounting_invoices`
 
-#### Summary
+#### What was fixed
 
-Site Management now hides every payment-derived figure from users for whom
-`canManagePayments(user)` is false (Supervision and Sales) — paid and unpaid tiles, the paid
-column, the utilisation bar, card tints and status badges, the paid-based overdue badge, the
-milestone paid column and status, and the entry points to the payment-history and invoice
-modals. The Supervision role's navigation no longer offers `/payments` or `/invoices`.
+Migration `20261012100000_contracts_project_scope` (written 2026-10-12, **not applied yet** — see
+[release.md](./release.md)) replaced the blanket `USING (true)` policies:
 
-**None of this is a data boundary.** It changes what the screen draws, not what the user's JWT
-can read. A Supervision user with browser devtools can recover every hidden figure with a single
-supabase-js call. The restriction is a "do not put this in front of people who do not need it"
-measure, taken with eyes open, exactly like the Cashflow password modal in SEC-001.
+- `contracts`: read through `app_can_access_project(project_id)` — Director, Accounting,
+  Investment and Sales always, Supervision only on projects in `project_managers`. Supervision
+  can insert and update contracts only on those projects.
+- `subcontractor_milestones`: readable and writable only together with their contract.
 
-#### Evidence
+A Supervision user can therefore no longer read or change anything on a project that is not
+theirs. `canManagePayments` no longer includes Investment (SEC-A10, 2026-10-09).
 
-- `contracts` is readable by **any** authenticated user:
-  ```sql
-  CREATE POLICY "Authenticated users can read contracts" ON public.contracts
-    FOR SELECT TO authenticated USING (true);
-  ```
-  ([supabase/migrations/00000000000000_baseline_schema.sql](../../supabase/migrations/00000000000000_baseline_schema.sql) line 7827). `contracts.budget_realized` is the app's single definition of money paid on a contract — a trigger-kept cache of `sum(accounting_payments.amount)` (migration `20260910120000`). Every paid figure Site Management hides is one `select budget_realized from contracts` away, as are the derived unpaid, remaining and overdue signals.
-- `accounting_invoices` carries `paid_amount` and `remaining_amount` as ordinary columns, and the policy **"Supervision can view invoices for managed projects"** (baseline line 9123) grants Supervision SELECT on the invoices of the projects they are assigned to. So the invoice-side paid figures are readable too, even though the Invoices screen and modal are no longer reachable from the menu or the contract cards.
-- `subcontractor_milestones.status` is set from payments by the `update_milestone_status_on_payment` trigger (baseline lines 1999-2045), so the hidden milestone status is likewise derivable from a readable table.
+#### What remains, and why it is accepted
 
-#### The inverse gap: `Investment` has the flag but not the rows
+On the projects a Supervision user *is* assigned to, Site management hides every payment-derived
+figure (`canManagePayments`), but the database still returns them:
 
-`canManagePayments` returns true for `Director`, `Accounting` **and** `Investment`
-([permissions.ts:3-6](../../src/utils/permissions.ts)), but `20260526084700_tighten_cashflow_rls.sql`
-gates `accounting_payments` to Director/Accounting only. An Investment user therefore gets the
-full paid UI — tiles, columns, the payment-history button — over rows RLS will not return.
-`contracts.budget_realized` still resolves (see above), so the tiles show figures; the payment
-*history* modal is the part that comes back empty and will read as "this contract was never
-paid". Either `canManagePayments` should drop `Investment`, or the RLS should include it. This
-needs a product decision about what the Investment role is for, which is why it is recorded here
-rather than fixed.
+- `contracts.budget_realized`, the trigger-kept sum of payments, is a column of a table that user
+  must read. The site screens need it themselves: the budget check on adding or editing a
+  contract counts what was paid on terminated contracts (`committedAmount`).
+- `accounting_invoices.paid_amount` / `remaining_amount` for those projects, through the policy
+  "Supervision can view invoices for managed projects".
+- `subcontractor_milestones.status`, which the payment trigger sets.
+
+Sales and Investment read every contract, as they read every phase, including `budget_realized`.
+
+Every app role connects as the one Postgres role `authenticated`, so the column cannot be
+withheld per role by a grant. Closing this means moving the paid figure out of `contracts` (a
+side table or a view per audience) and changing about forty reads across Site management, the
+dashboards, the reports and the assistant's tools. That is a project of its own.
 
 #### Threat model
 
-- **Out of scope:** anyone without a valid JWT — the tables are not exposed to `anon`.
-- **In scope:** an internal Supervision or Sales user deliberately reading data the UI declines to show them. This is a least-privilege gap, not an exposure to outsiders. The realistic everyday benefit of the screen-level gate is the opposite direction: supervisors' screens during site visits and screen-shares no longer carry the company's payment position.
+- **Out of scope:** anyone without a valid JWT.
+- **In scope:** an internal Supervision user reading, with developer tools, what has been paid on
+  a project they supervise. The everyday benefit of the screen-level gate is unchanged: a
+  supervisor's screen on site or in a screen-share does not carry the company's payment position.
 
 #### Mitigations in place
 
-- The UI gate defaults to **closed**: `ProjectDetail`'s `canManagePayments` prop defaults to `false`, so a component added later that forgets to pass it hides the figures rather than showing them.
-- The gate covers derived signals, not just the raw numbers, so a reader cannot reconstruct paid from what is left (e.g. the unpaid tile is hidden because unpaid = contracted − paid). The "remaining budget" tile stays because `remainingBudget` is `budget − contracted − unpaidWithoutContract` and never reads `paid`.
-
-#### Proposed fix
-
-1. Replace `contracts`' blanket `USING (true)` SELECT policy with a project-scoped one (Supervision sees the contracts of their `project_managers` rows; Director/Accounting/Investment see all), keeping `budget_realized` behind it.
-2. Decide whether `Investment` should have payment rights, then make `canManagePayments` and the `accounting_payments` policy agree.
-3. Consider a `security_invoker` view that exposes contracts without `budget_realized` for roles that should not see it, if (1) proves too disruptive to the many screens that read `contracts`.
-
-#### Why it isn't fixed yet
-
-A migration here touches the most widely read table in the app — `contracts` is joined by Site Management, General, Funding, Reports and the AI chat tool handlers — and a scoping mistake fails *closed*, silently emptying screens for the role that needs them most. The screen-level change ships first and on its own; the policy work is a separate, tested piece with its own verification pass. No migration was written as part of this batch.
-
-#### Cross-references
-
-- [docs/SUPERVISION.md](../SUPERVISION.md) — "The payment gate" section lists exactly what is hidden and what stays
-- [supabase/migrations/20260526084700_tighten_cashflow_rls.sql](../../supabase/migrations/20260526084700_tighten_cashflow_rls.sql) (why `/payments` showed Supervision an empty page)
-- SEC-001 above — the same "UI gate over role-only RLS" shape, one layer up
+- The UI gate defaults to **closed**: `ProjectDetail`'s `canManagePayments` prop defaults to
+  `false`, so a component that forgets to pass it hides the figures.
+- The gate covers derived signals (unpaid, utilisation, overdue), not just the raw numbers.
 
 ## Resolved
+
+### AUTH-4 · Low · An unused `user_has_project_access(uuid, uuid)` overload contradicts the real rule
+- Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): the unused two-argument `user_has_project_access` is dropped in migration
+  `20261012100000` (**not applied yet**), behind a guard that refuses if anything uses it.
+
+### SEC-A10 · Low · Investment role can manage payments in the UI but reads none
+- Decided 2026-10-09: hide the screens rather than widen the policy (production has no
+  Investment user). `canManagePayments` is Director and Accounting, as the RLS; done on `fix/storage-policies-sec-a12` (2026-10-09).
+
+### SEC-A12 · Medium · Any signed-in user can delete any stored document file
+- Fixed by migration `20261009100000_storage_document_delete_policies` (written 2026-10-09,
+  **not applied yet** — see [release.md](./release.md)): the DELETE policies on the `documents`
+  and `contract-documents` buckets allow the file's owner, Director and Accounting. There was no
+  UPDATE policy on either bucket, so files could not be overwritten; the entry was wrong on that.
 
 - **SEC-003** (RLS on `project_managers`): never present in the applied schema. Record in
   [archive/SECURITY_BACKLOG.md](./archive/SECURITY_BACKLOG.md).

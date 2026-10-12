@@ -437,7 +437,7 @@ const CalendarPage: React.FC = () => {
       </div>
 
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={goPrev} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -451,7 +451,7 @@ const CalendarPage: React.FC = () => {
             {anchorLabel}
           </h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={toggleShowTasks}

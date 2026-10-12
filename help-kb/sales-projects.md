@@ -24,6 +24,10 @@ Filtar statusa: **Svi / Dostupno / Rezervirano / Prodano**.
 
 Na kartici jedinice su gumbi **Rezerviraj** (dostupna jedinica) odnosno **Dostupno** (rezervirana), a na stanovima i **Prodaj**, koji otvara prozor **Završi prodaju** s odabirom postojećeg ili unosom novog kupca. Ikona lanca **Poveži garažu/repozitorij** na stanu povezuje ga s dostupnom garažom ili repozitorijem iz iste zgrade. Garaže i repozitoriji prodaju se uz stan: prodajom stana prodanima postaju i povezane jedinice.
 
+Prodaju poništava gumb **Poništi prodaju** na kartici prodanog stana, uz potvrdu. Vide ga uloge **Director** i **Accounting**. Poništavanjem se stan te povezana garaža i repozitorij vraćaju u status **Dostupno**, kupac se uklanja s jedinica, a prodaja nestaje iz nadzornih ploča i izvještaja; zapis ostaje u dnevniku aktivnosti. Dok za stan postoje računi kupcu, prodaju nije moguće poništiti — račune najprije treba riješiti u profilu Cashflow.
+
+Oznaka jedinice mora biti jedinstvena u zgradi, a naziv zgrade u projektu (velika i mala slova se ne razlikuju). **Kreiraj zgrade** zato nastavlja numeraciju od prvog slobodnog naziva.
+
 Za promjenu cijena označite jedinice (kvadratić na kartici ili **Odaberi sve**) i kliknite **Postavi cijenu** — otvara se **Masovno ažuriranje cijena** (**Povećaj cijenu** / **Smanji cijenu** za iznos po m²). Prodane jedinice se preskaču.
 
 ## Uvoz stanova iz Excela

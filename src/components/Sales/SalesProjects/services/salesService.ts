@@ -70,6 +70,68 @@ export const completeSale = async (payload: CompleteSalePayload): Promise<void> 
   logActivity({ action: 'apartment.update', entity: 'apartment', entityId: unitForSale.unit.id, metadata: { severity: 'low', changed_fields: ['status', 'buyer_name'], status: 'Sold' } })
 }
 
+/** Why a cancellation was refused, for the caller to put into words. */
+export type CancelSaleRefusal = 'has_invoices' | 'not_allowed' | 'no_sale'
+
+export class CancelSaleError extends Error {
+  constructor(public readonly reason: CancelSaleRefusal, public readonly original?: unknown) {
+    super(`cancel sale refused: ${reason}`)
+  }
+}
+
+/** SQLSTATEs raised by `cancel_apartment_sale` (migration 20261012100100). */
+const CANCEL_REFUSALS: Record<string, CancelSaleRefusal> = {
+  P0001: 'has_invoices',
+  '42501': 'not_allowed',
+  P0002: 'no_sale',
+}
+
+/**
+ * Undoes a sale: the `sales` row goes, the apartment and its linked garages and storage units
+ * are Available again, and a customer with no other sale is no longer a buyer — one transaction,
+ * in `cancel_apartment_sale`. The activity log keeps who was the buyer and at what price, since
+ * the row itself is deleted.
+ *
+ * Throws `CancelSaleError` for the three refusals the function names, so the screen can say why.
+ */
+export const cancelSale = async (apartment: { id: string; number?: string | null }, projectId?: string | null): Promise<void> => {
+  const { data, error } = await supabase.rpc('cancel_apartment_sale', { p_apartment_id: apartment.id })
+  if (error) {
+    const reason = CANCEL_REFUSALS[(error as { code?: string }).code ?? '']
+    if (reason) throw new CancelSaleError(reason, error)
+    throw error
+  }
+
+  const result = data as {
+    sale_id: string
+    customer_id: string
+    sale_price: number
+    sale_date: string | null
+    buyer_name: string | null
+    customer_status_reverted: boolean
+  }
+
+  logActivity({
+    action: 'sale.cancel',
+    entity: 'sale',
+    entityId: result.sale_id,
+    projectId: projectId ?? null,
+    severity: 'high',
+    metadata: {
+      entity_name: result.buyer_name,
+      sale_price: result.sale_price,
+      sale_date: result.sale_date,
+      unit_type: 'apartment',
+      unit_id: apartment.id,
+      unit_number: apartment.number ?? null,
+    },
+  })
+  logActivity({ action: 'apartment.update', entity: 'apartment', entityId: apartment.id, projectId: projectId ?? null, metadata: { severity: 'low', changed_fields: ['status', 'buyer_name'], status: 'Available' } })
+  if (result.customer_status_reverted) {
+    logActivity({ action: 'customer.update', entity: 'customer', entityId: result.customer_id, metadata: { severity: 'low', changed_fields: ['status'], status: 'interested' } })
+  }
+}
+
 // Sales lists Stambeno and Retail projects, separated by tabs on the screen.
 // Interno projects are company-internal and never offered for sale.
 export const fetchProjects = async () => {
@@ -186,17 +248,40 @@ export const fetchActualTotalPaidByApartment = async (apartmentIds: string[]): P
   return paidMap
 }
 
-/** `nameFor(i)` names building i (1-based) — the caller passes the localised "Zgrada {{n}}". */
-export const createBulkBuildings = async (projectId: string, quantity: number, nameFor: (i: number) => string) => {
-  const buildingsToCreate = []
-  for (let i = 1; i <= quantity; i++) {
-    buildingsToCreate.push({
-      project_id: projectId,
-      name: nameFor(i),
-      description: nameFor(i),
-      total_floors: 10
-    })
+/**
+ * The next `quantity` free default names for a project's buildings.
+ *
+ * `nameFor(i)` names building i (1-based) — the caller passes the localised "Zgrada {{n}}".
+ * Numbering used to start at 1 every time, so running bulk create twice made a second
+ * "Zgrada 1…n" (SALES-17). Names already taken are skipped, compared the way the unique index
+ * compares them: case-insensitively and trimmed.
+ */
+export function nextBuildingNames(existingNames: readonly string[], quantity: number, nameFor: (i: number) => string): string[] {
+  const taken = new Set(existingNames.map(name => name.trim().toLowerCase()))
+  const names: string[] = []
+  for (let i = 1; names.length < quantity; i++) {
+    const name = nameFor(i)
+    const key = name.trim().toLowerCase()
+    if (taken.has(key)) continue
+    taken.add(key)
+    names.push(name)
   }
+  return names
+}
+
+export const createBulkBuildings = async (projectId: string, quantity: number, nameFor: (i: number) => string) => {
+  const { data: existing, error: existingError } = await supabase
+    .from('buildings')
+    .select('name')
+    .eq('project_id', projectId)
+  if (existingError) throw existingError
+
+  const buildingsToCreate = nextBuildingNames((existing || []).map(b => b.name as string), quantity, nameFor).map(name => ({
+    project_id: projectId,
+    name,
+    description: name,
+    total_floors: 10
+  }))
 
   const { error } = await supabase
     .from('buildings')
@@ -204,7 +289,7 @@ export const createBulkBuildings = async (projectId: string, quantity: number, n
 
   if (error) throw error
 
-  logActivity({ action: 'building.bulk_create', entity: 'building', metadata: { severity: 'medium', count: quantity } })
+  logActivity({ action: 'building.bulk_create', entity: 'building', projectId, metadata: { severity: 'medium', count: quantity } })
 }
 
 export const createBuilding = async (projectId: string, name: string, description: string, totalFloors: number) => {

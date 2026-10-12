@@ -36,6 +36,8 @@ interface AllocationRowProps {
   onToggle: (key: string) => void
   /** Omit on a read-only screen (Cashflow → Banke): the button is then not drawn at all. */
   onDelete?: (allocationId: string, creditId: string) => void
+  /** False for a role that cannot read invoices and payments: the list would only ever be empty. */
+  showInvoices?: boolean
 }
 
 
@@ -46,6 +48,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
   isExpanded,
   onToggle,
   onDelete,
+  showInvoices = true,
 }) => {
   const { t, i18n } = useTranslation()
   const [invoicesExpanded, setInvoicesExpanded] = useState(false)
@@ -202,97 +205,99 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
             </div>
           )}
 
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-            <button
-              onClick={handleToggleInvoices}
-              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center justify-between text-sm"
-            >
-              <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-200 font-medium">
-                <FileText className="w-4 h-4" />
-                <span>
-                  {t('funding.allocation_row.invoices_section_label')}
-                  {invoicesFetched && ` (${invoices.length})`}
-                </span>
-              </div>
-              {invoicesExpanded ? (
-                <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              )}
-            </button>
-
-            {invoicesExpanded && (
-              <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                {invoicesLoading ? (
-                  <div className="p-4">
-                    <LoadingSpinner message={t('funding.allocation_row.loading_invoices')} />
-                  </div>
-                ) : invoicesFailed ? (
-                  // Not "no invoices": the list did not load (UI-4).
-                  <InlineLoadError className="px-4 py-3" onRetry={() => { void fetchInvoices() }} />
-                ) : invoices.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 px-4 py-3">
-                    {t('funding.allocation_row.no_invoices')}
-                  </p>
+          {showInvoices && (
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <button
+                onClick={handleToggleInvoices}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center justify-between text-sm"
+              >
+                <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-200 font-medium">
+                  <FileText className="w-4 h-4" />
+                  <span>
+                    {t('funding.allocation_row.invoices_section_label')}
+                    {invoicesFetched && ` (${invoices.length})`}
+                  </span>
+                </div>
+                {invoicesExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 ) : (
-                  <div className="overflow-x-auto responsive-table">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                            {t('funding.allocation_row.table.invoice_number')}
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                            {t('funding.allocation_row.table.supplier')}
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                            {t('funding.allocation_row.table.payment_date')}
-                          </th>
-                          <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                            {t('funding.allocation_row.table.payment_amount')}
-                          </th>
-                          <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                            {t('funding.allocation_row.table.total_amount')}
-                          </th>
-                          <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                            {t('funding.allocation_row.table.status')}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                        {invoices.map((inv) => {
-                          return (
-                            <tr key={inv.payment_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                              <td data-label={t('funding.allocation_row.table.invoice_number')} className="px-4 py-2.5 font-medium text-gray-900 dark:text-white">
-                                {inv.invoice_number}
-                              </td>
-                              <td data-label={t('funding.allocation_row.table.supplier')} className="px-4 py-2.5 text-gray-700 dark:text-gray-200">
-                                {inv.kind === 'drawdown' ? t('funding.allocation_row.drawdown') : inv.supplier_name ?? NO_VALUE}
-                              </td>
-                              <td data-label={t('funding.allocation_row.table.payment_date')} className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
-                                {formatDate(inv.payment_date, i18n.language)}
-                              </td>
-                              <td data-label={t('funding.allocation_row.table.payment_amount')} className="px-4 py-2.5 text-right font-semibold text-blue-700 dark:text-blue-300">
-                                {formatEuro(inv.payment_amount)}
-                              </td>
-                              <td data-label={t('funding.allocation_row.table.total_amount')} className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-200">
-                                {formatEuro(inv.total_amount)}
-                              </td>
-                              <td data-label={t('funding.allocation_row.table.status')} className="px-4 py-2.5 text-center">
-                                <Badge variant={getInvoiceStatusVariant(inv.status)}>
-                                  {getInvoiceStatusLabel(inv.status, t)}
-                                </Badge>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 )}
-              </div>
-            )}
-          </div>
+              </button>
+
+              {invoicesExpanded && (
+                <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                  {invoicesLoading ? (
+                    <div className="p-4">
+                      <LoadingSpinner message={t('funding.allocation_row.loading_invoices')} />
+                    </div>
+                  ) : invoicesFailed ? (
+                    // Not "no invoices": the list did not load (UI-4).
+                    <InlineLoadError className="px-4 py-3" onRetry={() => { void fetchInvoices() }} />
+                  ) : invoices.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 px-4 py-3">
+                      {t('funding.allocation_row.no_invoices')}
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto responsive-table">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                              {t('funding.allocation_row.table.invoice_number')}
+                            </th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                              {t('funding.allocation_row.table.supplier')}
+                            </th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                              {t('funding.allocation_row.table.payment_date')}
+                            </th>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                              {t('funding.allocation_row.table.payment_amount')}
+                            </th>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                              {t('funding.allocation_row.table.total_amount')}
+                            </th>
+                            <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                              {t('funding.allocation_row.table.status')}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                          {invoices.map((inv) => {
+                            return (
+                              <tr key={inv.payment_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <td data-label={t('funding.allocation_row.table.invoice_number')} className="px-4 py-2.5 font-medium text-gray-900 dark:text-white">
+                                  {inv.invoice_number}
+                                </td>
+                                <td data-label={t('funding.allocation_row.table.supplier')} className="px-4 py-2.5 text-gray-700 dark:text-gray-200">
+                                  {inv.kind === 'drawdown' ? t('funding.allocation_row.drawdown') : inv.supplier_name ?? NO_VALUE}
+                                </td>
+                                <td data-label={t('funding.allocation_row.table.payment_date')} className="px-4 py-2.5 text-gray-600 dark:text-gray-400">
+                                  {formatDate(inv.payment_date, i18n.language)}
+                                </td>
+                                <td data-label={t('funding.allocation_row.table.payment_amount')} className="px-4 py-2.5 text-right font-semibold text-blue-700 dark:text-blue-300">
+                                  {formatEuro(inv.payment_amount)}
+                                </td>
+                                <td data-label={t('funding.allocation_row.table.total_amount')} className="px-4 py-2.5 text-right text-gray-700 dark:text-gray-200">
+                                  {formatEuro(inv.total_amount)}
+                                </td>
+                                <td data-label={t('funding.allocation_row.table.status')} className="px-4 py-2.5 text-center">
+                                  <Badge variant={getInvoiceStatusVariant(inv.status)}>
+                                    {getInvoiceStatusLabel(inv.status, t)}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

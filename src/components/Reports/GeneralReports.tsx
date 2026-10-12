@@ -448,7 +448,7 @@ const GeneralReports: React.FC = () => {
           <div className="space-y-4">
             {report.projects.map((project) => (
               <div key={project.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4">
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">{project.name}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{project.location}</p>

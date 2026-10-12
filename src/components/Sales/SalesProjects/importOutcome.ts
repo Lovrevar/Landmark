@@ -1,3 +1,5 @@
+import { isUniqueViolation } from '../../../lib/dbErrors'
+
 /**
  * Shared result handling for the apartment and garage Excel imports.
  *
@@ -22,7 +24,10 @@ export function classifyImportOutcome(succeeded: number, failed: number): Import
  * as plain `{ message, code, ... }` objects rather than `Error` instances, which `String()`
  * would render as "[object Object]".
  */
-export function importErrorMessage(error: unknown): string {
+export function importErrorMessage(error: unknown, duplicateMessage?: string): string {
+  // A unit number or building name already taken. Postgres's own wording names an index, which
+  // means nothing to the person reading the import summary; the caller passes the translated line.
+  if (duplicateMessage && isUniqueViolation(error)) return duplicateMessage
   if (error instanceof Error) return error.message
   if (typeof error === 'object' && error !== null && 'message' in error) {
     const { message } = error as { message: unknown }

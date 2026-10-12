@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import * as XLSX from '@e965/xlsx'
 import { Upload, CheckCircle, Download } from 'lucide-react'
 import { Modal, Button } from '../../../ui'
-import { importGaragesFromExcel, fetchExistingGarageNumbers } from '../services/garageImportService'
+import { importGaragesFromExcel, fetchExistingGarageNumbers, markExistingGarages } from '../services/garageImportService'
 import { GARAGE_IMPORT_FORMAT_KEYS, downloadGarageImportTemplate } from '../services/garageImportTemplate'
 import { useToast } from '../../../../contexts/ToastContext'
 import { parseNumber } from '../../../../utils/excelParsers'
@@ -70,18 +70,22 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
 
       const existingNumbers = await fetchExistingGarageNumbers(selectedBuilding.id)
 
-      const parsed: ParsedGarageRow[] = rows
-        .slice(1)
-        .filter(row => row[0])
-        .map((row, idx) => ({
-          rowIndex: idx + 2,
-          number: String(row[0]),
-          // Same parser as importGaragesFromExcel, so the preview shows the values that will be
-          // written: Number() reads a European "3.000,00" as NaN and previewed it as 0.
-          size_m2: parseNumber(row[1]),
-          price: parseNumber(row[2]),
-          exists: existingNumbers.has(String(row[0]))
-        }))
+      // Marked by the same function the import uses, so the preview's "new / update" matches
+      // what will happen — including a number that appears twice in the file.
+      const parsed: ParsedGarageRow[] = markExistingGarages(
+        rows
+          .slice(1)
+          .filter(row => row[0])
+          .map((row, idx) => ({
+            rowIndex: idx + 2,
+            number: String(row[0]).trim(),
+            // Same parser as importGaragesFromExcel, so the preview shows the values that will be
+            // written: Number() reads a European "3.000,00" as NaN and previewed it as 0.
+            size_m2: parseNumber(row[1]),
+            price: parseNumber(row[2]),
+          })),
+        existingNumbers,
+      )
 
       setParsedRows(parsed)
       setStep(2)
@@ -96,7 +100,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
 
     setImporting(true)
     try {
-      const result = await importGaragesFromExcel(file, selectedBuilding.id)
+      const result = await importGaragesFromExcel(file, selectedBuilding.id, t('sales_projects.toast.unit_number_exists'))
       setImportResults({
         created: result.created,
         updated: result.updated,

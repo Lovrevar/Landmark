@@ -17,6 +17,7 @@ import { LinkUnitsModal } from './modals/LinkUnitsModal'
 import { formatEuroRounded } from '../../../utils/formatters'
 import { packageTotal } from '../utils/packageTotal'
 import { canEditSalesUnits, canDeleteSalesUnits } from '../../../utils/permissions'
+import { isUniqueViolation } from '../../../lib/dbErrors'
 
 const ApartmentManagement: React.FC = () => {
   const { t } = useTranslation()
@@ -73,7 +74,7 @@ const ApartmentManagement: React.FC = () => {
     } catch (error) {
       console.error('Error creating apartments:', error)
       // The modal stays open so the entered range is not lost.
-      toast.error(toErrorMessage(error, t('apartments.toast.create_error')))
+      toast.error(isUniqueViolation(error) ? t('apartments.toast.number_exists') : toErrorMessage(error, t('apartments.toast.create_error')))
     }
   }
 
@@ -85,7 +86,7 @@ const ApartmentManagement: React.FC = () => {
       toast.success(t('apartments.toast.create_success'))
     } catch (error) {
       console.error('Error creating apartment:', error)
-      toast.error(toErrorMessage(error, t('apartments.toast.create_error')))
+      toast.error(isUniqueViolation(error) ? t('apartments.toast.number_exists') : toErrorMessage(error, t('apartments.toast.create_error')))
     }
   }
 
@@ -98,7 +99,7 @@ const ApartmentManagement: React.FC = () => {
       toast.success(t('apartments.toast.update_success'))
     } catch (error) {
       console.error('Error updating apartment:', error)
-      toast.error(toErrorMessage(error, t('apartments.toast.update_error')))
+      toast.error(isUniqueViolation(error) ? t('apartments.toast.number_exists') : toErrorMessage(error, t('apartments.toast.update_error')))
     }
   }
 

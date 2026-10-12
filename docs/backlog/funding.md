@@ -1,7 +1,7 @@
 # Backlog — Funding and TIC
 
 Bank credits, investors, drawdowns, allocations and the TIC cost structure. Ids: `FUND-n` (next
-free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
+free: `FUND-20`). Entry format and rules are in [README.md](./README.md).
 
 ## Open
 
@@ -12,25 +12,15 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
   have icon-only buttons without labels.
 - "Investicije" names two different menu items; `funding.investments.title` is "Investicije" in
   the English file too; "investitor" and "banka" are used for the same party.
-- The Funding menu shows Plaćanja to the Investment role, which reads no payments (SEC-A10).
 
-### FUND-13 · Low · The TIC Excel export drops classifications
-- **Where:** `ticExport.ts`. Phases are exported and re-imported since 2026-10-08
-  (`fix/figures-and-tic-export`, with a phased round-trip test). A line's `classification_id` is
-  still not written; on import it is re-derived from the row's name, so a classification the user
-  chose by hand for a renamed row is lost.
-- **Fix direction:** a classification column, read back by the importer. The sheet layout is a
-  frozen contract, so change both together.
-- Also: TIC messages are hard-coded Croatian.
+### FUND-19 · Low · TIC messages are hard-coded Croatian
+- Split off FUND-13 when the export was fixed. `useTIC.ts` and the import preview build their
+  messages as literals instead of locale keys.
 
 ### FUND-8 · Low · `recalculate_bank_credit_fields` ignores `disbursed_to_account`
 - It can overwrite the `used_amount = amount` set by the disbursement trigger.
 - **ERP:** gains weight; a disbursed credit would be counted twice once the ERP feeds drawdowns
   (Q17).
-
-### FUND-15 · Low · Investment role sees credits but no money movements
-- Drawdown, repayment and fee sections come back empty for that role. Needs the decision in
-  SEC-A10 / SEC-004 ([security.md](./security.md)).
 
 ### FUND-7 · Low · Equity form drops fields
 - `percentage_stake`, `notes` and custom schedules are shown but not stored.
@@ -47,16 +37,21 @@ free: `FUND-19`). Entry format and rules are in [README.md](./README.md).
 ### FUND-14 · Low · Orphan function
 - `update_overdue_notifications()` references the removed `payment_notifications` table.
 
-### FUND-16 · Low · TIC page scrolls sideways
-- **Check:** Seen in the guidance visual check ([../screenshots/guidance-phase-1/README.md](../screenshots/guidance-phase-1/README.md), finding 8).
-- **Where:** `Funding/TIC/components/InvestmentTable.tsx` inside `Funding/TIC/index.tsx`.
-- **What happens:** at 390px the whole page is 973px wide (1262px with phase columns); at 1440px
-  it overflows once two phase columns exist. The header, tabs and buttons scroll away with the
-  table.
-- **Fix direction:** the table scrolls inside its card (`overflow-x-auto` on a wrapper, `min-w-0`
-  up the flex chain) instead of widening the document.
-
 ## Resolved
+
+### FUND-16 · Low · TIC page scrolls sideways
+- Not reproduced on 2026-10-09: at 390px the page stays 390px wide and the table (993px) scrolls
+  inside its card. Fixed at some point since the phase 1 visual check; closed with the mobile pass.
+
+### FUND-13 · Low · The TIC Excel export drops phases and classifications
+- Fixed in two steps: phases on `fix/figures-and-tic-export` (2026-10-08), classifications on
+  `fix/backlog-batch-4` (2026-10-09). The INVESTICIJA sheet's last column `KLASIFIKACIJA` carries each line's
+  classification code; the importer reads it back, an empty cell staying unmapped. Both round
+  trips are pinned in `ticExport.test.ts`. The hard-coded messages are FUND-19.
+
+### FUND-15 · Low · Investment role sees credits but no money movements
+- Fixed on `fix/storage-policies-sec-a12` (2026-10-09) with SEC-A10: the Funding "Plaćanja" menu item, the register page and the
+  drawdown, repayment, fee and allocation-invoice sections show to Director and Accounting only.
 
 ### FUND-6 · Low · "Disbursed to account" without an account gives a generic error
 - Fixed on `fix/backlog-batch-3` (2026-10-08): the Funding credit form checks the account before saving.

@@ -76,6 +76,8 @@ const TICManagement: React.FC = () => {
     constructionTotals,
     constructionGrandTotal,
     projectName: selectedProject?.name,
+    // Codes travel with the lines so an export re-imports with the same mapping (FUND-13).
+    classificationCodes: new Map(classifications.flatMap(c => (c.code ? [[c.id, c.code] as [number, string]] : []))),
   })
 
   // Both exports used to fail in silence — Excel swallowed the error in a `catch` that only

@@ -56,11 +56,11 @@ const InvestmentProjects: React.FC = () => {
         {projects.map((project) => (
           <div
             key={project.id}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 hover:shadow-md transition-all duration-200"
           >
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
+            <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 mb-6">
+              <div className="flex-1 min-w-[12rem]">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{project.name}</h3>
                   <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="sm">
                     {statusLabel(PROJECT_STATUS, project.status, t)}
@@ -77,7 +77,7 @@ const InvestmentProjects: React.FC = () => {
                   {project.end_date ? formatDate(project.end_date, i18n.language) : t('funding.projects.modal.tbd')}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 {project.budget_set === false
                   ? <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{t('common.budget_not_set')}</p>
                   : <p className="text-2xl font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</p>}

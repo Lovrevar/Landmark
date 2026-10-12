@@ -38,6 +38,7 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
   const { t } = useTranslation()
   const [contractFields, setContractFields] = useState<ContractFields>(emptyContractFields())
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const isSold = apartment?.status === 'Sold'
 
   useEffect(() => {
     if (apartment) {
@@ -178,14 +179,28 @@ export const EditApartmentModal: React.FC<EditApartmentModalProps> = ({
                 />
               </FormField>
 
-              <FormField label={t('apartments.form.status')} required error={fieldErrors.status}>
+              {/* Sold is not a status to pick here. Choosing it wrote no sale, and leaving it kept
+                  the sale, the buyer and the linked units as they were (SALES-10). A sale is made
+                  on Sales projects and undone there with "Poništi prodaju". */}
+              <FormField
+                label={t('apartments.form.status')}
+                required
+                error={fieldErrors.status}
+                helperText={isSold ? t('apartments.form.status_sold_hint') : undefined}
+              >
                 <Select
                   value={formData.status}
+                  disabled={isSold}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 >
-                  <option value="Available">{t('apartments.statuses.available')}</option>
-                  <option value="Reserved">{t('apartments.statuses.reserved')}</option>
-                  <option value="Sold">{t('apartments.statuses.sold')}</option>
+                  {isSold ? (
+                    <option value="Sold">{t('apartments.statuses.sold')}</option>
+                  ) : (
+                    <>
+                      <option value="Available">{t('apartments.statuses.available')}</option>
+                      <option value="Reserved">{t('apartments.statuses.reserved')}</option>
+                    </>
+                  )}
                 </Select>
               </FormField>
             </div>

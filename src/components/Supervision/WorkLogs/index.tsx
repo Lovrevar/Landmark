@@ -241,9 +241,11 @@ const WorkLogs: React.FC = () => {
                   className={`border-l-4 rounded-lg hover:shadow-md transition-shadow bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 ${stripeClass(log.status)}`}
                 >
                   <Card variant="bordered" padding="md">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
+                    {/* Wraps: on a phone the date and the edit and delete buttons were pushed past
+                        the card's right edge (UI-8). */}
+                    <div className="flex flex-wrap justify-between items-start gap-x-4 gap-y-2 mb-3">
+                      <div className="flex-1 min-w-[12rem]">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                           <h3 className="font-semibold text-gray-900 dark:text-white">{log.subcontractors?.name}</h3>
                           <StatusBadge status={log.status} />
                         </div>
@@ -255,7 +257,7 @@ const WorkLogs: React.FC = () => {
                         </p>
                       </div>
                       <div className="flex items-start space-x-2">
-                        <div className="text-right mr-2">
+                        <div className="sm:text-right mr-2">
                           <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm mb-1">
                             <Calendar className="w-4 h-4 mr-1" />
                             {formatDate(log.date, i18n.language)}
