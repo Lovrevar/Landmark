@@ -79,6 +79,7 @@ saves on dev.
 |---|---|---|
 | 1 | [CASH-6](./cashflow.md) — cesija-from-credit sign | Allocation usage is wrong for every such payment. Blocked on an accounting decision, not on code. |
 | 2 | [COLLAB-4](./collaboration.md) — AI rate limit miscounts and fails open | Deferred to the voice branch (OQ-3). Do it there. |
+| 3 | [GEN-22](./projects-dashboards-reports.md) — EVM with an unphased TIC | CPI and the forecast are wrong for every multi-phase project whose TIC has no phase columns. Client-only fix available. |
 
 ### 3. Larger work, schedule deliberately
 

@@ -9,12 +9,6 @@ that changes it; do not build new authoring UI here without reading
 
 ## Open
 
-### CASH-31 · Low · Companies subtitle names the customer
-- **Check:** Confirmed (seen on LandmarkDemo, 2026-10-12).
-- **Where:** `companies.subtitle` in both locale files ("Financijski pregled svih firmi pod Landmarkom").
-- **What happens:** every installation, the demo included, says "pod Landmarkom". Same kind as GEN-19 (the General report's hardcoded group name).
-- **Fix direction:** drop the name from the string, or take it from one configured place together with GEN-19.
-
 ### CASH-28 · Low · Cashflow wording, hardcoded strings and unused keys
 - **Check:** Code reading
 - Hardcoded: `columnLabels` and the row-action tooltips in the payments table; `SupplierCard.tsx`
@@ -102,6 +96,9 @@ These turn into ERP work or disappear in phase 5. Do not fix them in the app.
   delete for non-Directors (SEC-A7): the forms go and writes are locked to the service role.
 
 ## Resolved
+
+### CASH-31 · Low · Companies subtitle names the customer
+- Duplicate, closed 2026-10-12 without a change: GEN-19 in [projects-dashboards-reports.md](./projects-dashboards-reports.md) already covers this string.
 
 ### CASH-30 · Low · Payments table cuts the last digits of the amount
 - Closed on `fix/backlog-batch-3` (2026-10-08): nothing was cut — the table is wider than the screen and the column

@@ -12,9 +12,10 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
 
 ### UI-11 · Low · Amounts run past their card at laptop width on Budget Control and Companies
 - **Check:** Confirmed in a browser at 1280×800 with the menu open (LandmarkDemo, 2026-10-12, while taking the help screenshots).
-- **Where:** the five summary cards on `General/BudgetControl/index.tsx`; the "Izdano" / "Plaćeno" tiles inside a company card on Cashflow → Companies.
-- **What happens:** an eight-digit amount (`€12.000.000,00`, `€3.318.750,00`) is wider than its card and is drawn over the card's edge. UI-8 measured phones; this is the desktop width between `lg` and `xl`.
-- **Fix direction:** the `.stat-card` shrink-then-wrap rule that `StatCard` already has (see `index.css`), or fewer columns below `xl`.
+- **Where:** `MetricCard` at the bottom of `General/BudgetControl/index.tsx` (five summary cards); the "Izdano" / "Plaćeno" tiles in `Cashflow/Companies/index.tsx` (the `grid grid-cols-2 gap-3` inside each company card).
+- **What happens:** an eight-digit amount (`€12.000.000,00`, `€3.318.750,00`) is drawn over its card's edge.
+- **Cause:** both are hand-built cards with a fixed font size (`text-lg`, `text-sm`) around a string with no break point, and both pick their column count from the *window* width (`xl:grid-cols-5`, `lg:grid-cols-3`) although the open menu takes 256px of it. At 1280px that leaves about 150px for a figure that needs about 160px on Budget Control, and about 100px for one that needs about 108px on Companies. Neither uses `StatCard`, so neither has its shrink-then-wrap rule; UI-8 and CASH-21 fixed the same thing for `StatCard` and for phones only. Collapsing the menu, or a window of roughly 1400px and up, hides it.
+- **Fix direction:** give both values the `.stat-card` container and `.stat-card__value` sizing from `index.css` (shrinks with the card, then wraps), or build them from `StatCard`. Moving the five-column step to `2xl` would only shift the width at which it happens.
 
 ### UI-10 · Low · Shell labels that disagree or are unused
 - **Check:** Code reading (help-article audit, 2026-10-06)

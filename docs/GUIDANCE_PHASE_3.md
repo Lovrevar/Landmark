@@ -112,8 +112,11 @@ column on screen, English UI, dark mode, and phone width for the new pieces.
 | Id | What |
 |---|---|
 | UI-11 | Amounts run past their card at laptop width on Budget Control and Companies |
-| GEN-22 | Budget Control's EVM index chart scales its axis to hundreds of millions (seen on the demo, not diagnosed) |
-| CASH-31 | Companies subtitle names the customer |
+| GEN-22 | With an unphased TIC and several phases, Budget Control credits the whole budget to phase 1, so CPI and the forecast are wrong |
+
+Two things first written up here turned out to be known already: the unreadable top label of the
+EVM chart's axis is GEN-7, and the customer's name in the Companies subtitle is GEN-19 (CASH-31
+was opened for it and closed as a duplicate).
 
 These are why there is no screenshot of the Companies page or of the lower half of Budget
 Control. The Cashflow calendar has none because the demo has nothing due this month.
