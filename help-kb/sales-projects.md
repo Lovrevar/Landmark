@@ -34,6 +34,8 @@ Za promjenu cijena označite jedinice (kvadratić na kartici ili **Odaberi sve**
 
 Gumb **Uvezi iz Excela** u prikazu zgrada otvara prozor **Uvezi stanove iz Excela**. Gumb **Preuzmi predložak** u tom prozoru daje praznu tablicu s ispravnim redoslijedom stupaca i listom **Upute**.
 
+![Prozor Uvezi stanove iz Excela s uputama o stupcima i gumbom Preuzmi predložak](img/uvoz-stanova.png)
+
 Datoteka se učitava gumbom **Analiziraj datoteku**. Čita se samo prvi list; zaglavlje je u 1. retku, a podaci počinju od 2. retka. Važan je redoslijed stupaca, ne nazivi u zaglavlju:
 
 - **Obavezno:** A – zgrada (naziv mora odgovarati postojećoj zgradi projekta), D – oznaka stana, J – stan m2 prodajno, L – cijena stana.

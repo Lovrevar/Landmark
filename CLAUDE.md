@@ -17,6 +17,7 @@ Cognilion is a full-lifecycle real estate and construction project management pl
 | `npm run build` | Production build |
 | `npm run kb:build` | Rebuilds the AI assistant's help index from `help-kb/*.md` |
 | `npm run help:shots` | Retakes the help articles' screenshots (`help-kb/img/`) from LandmarkDemo; needs `.env.demo` — see [`docs/HELP.md`](./docs/HELP.md) |
+| `npm run help:check` | Visual check of the in-app guidance on LandmarkDemo: phone, dark mode, English — see [`docs/HELP.md`](./docs/HELP.md) |
 | `npm run db:types` | Regenerates the database types (see Data Layer) |
 
 Before calling work done: `npm run typecheck`, `npm test` and `npm run lint` on the changed files.

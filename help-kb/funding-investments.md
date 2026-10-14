@@ -28,6 +28,8 @@ Gumb **Namjena Investicije** (nema ga na kreditima isplaćenima izravno na raču
 
 Proširena kartica prikazuje **Vrsta kredita**, **Kamatna stopa**, **Preostali dug**, **Vraćeno**, datume (**Datum početka**, **Datum dospijeća**, **Istek korištenja**), popis **Namjene kredita** te odjeljke **Isplate kredita**, **Uplate kredita** i **Troškovi kredita**. Te odjeljke i popis **Računi plaćeni ovom alokacijom** vide samo uloge **Director** i **Accounting**.
 
+![Proširena kartica kredita s detaljima i popisom Namjene kredita](img/investicije-namjene.png)
+
 Svaka namjena nosi naziv projekta, **OPEX (Bez projekta)** ili **Refinanciranje -** i naziv firme ili banke (uz oznaku **FIRMA** / **BANKA**). Uz nju pišu tri iznosa, koje objašnjava i „?” pored naslova **Namjene kredita**:
 
 - **Alocirano** — iznos rezerviran za tu namjenu

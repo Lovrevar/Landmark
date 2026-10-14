@@ -2,47 +2,14 @@ import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test, type Page } from '@playwright/test'
-import { DEMO_USERS, SHOTS, type DemoRole, type Shot } from './shots'
+import { SHOTS, type Shot } from './shots'
+import { prepare, signIn } from './support'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const OUT_DIR = process.env.HELP_SHOTS_OUT ?? join(HERE, '..', '..', 'help-kb', 'img')
 /** `HELP_SHOTS_ONLY=tic,budget` retakes only the files whose name contains one of the words. */
 const ONLY = (process.env.HELP_SHOTS_ONLY ?? '').split(',').map(word => word.trim()).filter(Boolean)
-const PASSWORD = process.env.DEMO_USER_PASSWORD ?? 'cognilion-demo'
-
 const wanted = (shot: Shot): boolean => ONLY.length === 0 || ONLY.some(word => shot.file.includes(word))
-
-async function prepare(page: Page): Promise<void> {
-  // Croatian, light theme, Cashflow unlocked: the articles are Croatian and one look is enough.
-  await page.addInitScript(() => {
-    localStorage.setItem('i18nextLng', 'hr')
-    localStorage.setItem('theme', 'light')
-    sessionStorage.setItem('cashflow_unlocked', 'true')
-  })
-  // The run must leave the demo data as it found it. Anything that is not a read is refused
-  // outright, so a shot that clicks a wrong button fails instead of changing a row. RPCs are
-  // let by: the screens read through them. (Playwright tries the handler registered last
-  // first, so the exception for the activity log comes second.)
-  await page.route('**/rest/v1/**', route => {
-    const request = route.request()
-    const isRead = request.method() === 'GET' || request.method() === 'HEAD' || request.url().includes('/rest/v1/rpc/')
-    return isRead ? route.continue() : route.abort()
-  })
-  // The one write the screens make by being looked at is the activity log (sign-in, help usage).
-  // It is answered here and never sent.
-  await page.route('**/rest/v1/activity_logs*', route =>
-    route.request().method() === 'GET' ? route.continue() : route.fulfill({ status: 201, contentType: 'application/json', body: '[]' }),
-  )
-}
-
-async function signIn(page: Page, role: DemoRole): Promise<void> {
-  await page.goto('/')
-  await page.locator('#email').fill(DEMO_USERS[role])
-  await page.locator('#password').fill(PASSWORD)
-  await page.locator('button[type="submit"]').click()
-  await page.locator('#email').waitFor({ state: 'detached' })
-  await page.waitForLoadState('networkidle')
-}
 
 /** The assistant's floating button would otherwise sit in the corner of every picture. */
 async function clearOverlays(page: Page): Promise<void> {

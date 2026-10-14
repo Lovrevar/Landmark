@@ -33,7 +33,7 @@ Phase 3 added four more (record: [GUIDANCE_PHASE_3.md](./GUIDANCE_PHASE_3.md)):
 |---|---|---|
 | Assistant ↔ Help | `supabase/functions/_shared/help-search.ts`, the Help page's empty search | An answer taken from an article ends with a link to it; a search that finds nothing offers **Pitaj AI asistenta**, which opens the assistant on a new conversation with the query. See [AI_CHAT.md](./AI_CHAT.md), "search_help retrieval" |
 | Release notes | `help-kb/news-*.md`, `WhatsNewBanner.tsx` in `Layout` | "Što je novo" group on the Help page, newest first, and a one-line banner above every page until the user opens the newest note or dismisses the line |
-| Screenshots | `help-kb/img/`, `scripts/help-screenshots/` | Pictures inside articles, retaken from the demo data by `npm run help:shots` |
+| Screenshots | `help-kb/img/`, `scripts/help-screenshots/` | Pictures inside articles (18 in 18 articles), retaken from the demo data by `npm run help:shots` |
 | Hints in forms | six more `InfoHint`s (table below) | |
 
 **Division of labour:** an `InfoHint` says just enough to carry on with the task; the durable
@@ -131,8 +131,22 @@ Articles are Croatian only; the English UI says so above the list.
   activity-log writes in the browser and aborts every other write, so a shot that clicks the wrong
   button fails instead of changing a row. It is not the e2e harness, whose setup creates users.
 - Pictures are Croatian, light theme, 1280×800, without the top bar and menu; a form is captured
-  as its dialog. The demo's dates move with each reseed, so retake a picture when its screen
+  as its dialog. The run uses the full Chromium build with `--lang=hr`, so the browser's own
+  controls (the file picker's "Odaberi datoteku") are Croatian too.
+- A step that waits on data waits for something on screen ("Prognoza (EAC)"), not only for the
+  network to go quiet: a picture of the page before the cards rendered was the result otherwise. The demo's dates move with each reseed, so retake a picture when its screen
   changes, not on a schedule. Look at each retaken file before committing it.
+
+## Visual check
+
+`npm run help:check` (`scripts/help-screenshots/check.spec.ts`) signs in as the demo Director with
+the same guards as `help:shots` and walks the guidance pieces — banner, Help page, release note,
+an article with a picture, the empty search and the hand-over to the assistant, every phase 3
+hint opened in place — at phone width, in dark mode and in English. Each screen is checked for
+sideways scrolling, elements past the window edge, raw i18n keys, hint popovers outside the window
+or without their "more" link, and console errors; the test fails with the list. Pictures and a
+`findings.txt` per variant go to `docs/screenshots/guidance-phase-3/` (gitignored); the README
+there records what was found. Add a screen to `SCREENS` when a new piece of guidance lands.
 
 ## Usage logging
 
@@ -177,7 +191,7 @@ from activity_logs where action = 'help.search_no_results' group by 1 order by c
 | `apartments.link_units` | both "link units" dialogs: Sales → Apartments and the Sales project grid (`Sales/components/LinkedUnitsHint.tsx`) | `term-unit-types` |
 | `contracts.no_contract` | the "Bez ugovora" checkbox in the Supervision subcontractor form and the note in Cashflow → Suppliers → link to project (`Common/NoContractHint.tsx`) | `term-has-contract` |
 | `projects.phases_vs_milestones` | project details → Faze i ugovori, "Faze projekta" heading | `term-faza-vs-prekretnica` |
-| `projects.realized` | project details → Podugovaratelji, "Realizirano" column header (desktop only: the phone card view has no header row) | `term-realised-budget` |
+| `projects.realized` | project details → Podugovaratelji, the "Ukupno realizirano" card (`StatCard`'s `hint`; not the column header, which the phone card view does not show) | `term-realised-budget` |
 | `projects.budget_from_tic` | the read-only budget field of the project form | `term-budzet-iz-tic` |
 
 The three project hints are in `General/Projects/ProjectHints.tsx`.

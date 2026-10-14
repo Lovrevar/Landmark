@@ -16,7 +16,7 @@ the phase changed, what needs sign-off and what it found.
 | 3 | Search logging | `help.search_no_results` (with the query) and `help.ask_assistant` in the activity log. No migration. |
 | 4 | Hints in forms | Six `InfoHint`s: VAT bases in both invoice forms, linked units in both linking dialogs, "Bez ugovora" in two forms, project phases, the "Realizirano" column, the read-only budget field. |
 | 5 | Release notes | `help-kb/news-2026-10.md`, a "Što je novo" group on the Help page, and a dismissible banner above every page until the note is opened or the line closed (remembered per user in the browser). |
-| 6 | Screenshots | 13 pictures in 13 articles, taken from LandmarkDemo by a committed script (`npm run help:shots`) that cannot write to the database and refuses any project but the demo. |
+| 6 | Screenshots | 13 pictures in 13 articles (18 after the 2026-10-14 follow-up), taken from LandmarkDemo by a committed script (`npm run help:shots`) that cannot write to the database and refuses any project but the demo. |
 
 Also changed because they were in the way: `MarkdownView` no longer treats `//host` as an app
 route and draws only the app's own images; the `Alert` close button has a label and
@@ -103,9 +103,12 @@ one image line in each of: `dashboard`, `projects-list`, `project-details`, `bud
 - Each of the 13 screenshots was looked at. Three of the six new hints are visible in them (VAT
   base, linked units, project phases).
 
-Not checked: the assistant producing a link in a real answer (needs the function deployed), the
-hints in the subcontractor form, the link-supplier form, the project form and the Realizirano
-column on screen, English UI, dark mode, and phone width for the new pieces.
+Follow-up, 2026-10-14: `npm run help:check` walks the guidance at phone width, in dark mode and
+in English, with every phase 3 hint opened in place; findings and fixes are in
+[screenshots/guidance-phase-3/README.md](./screenshots/guidance-phase-3/README.md).
+
+Not checked: the assistant producing a link in a real answer, and following such a link on a
+phone (both need the function deployed).
 
 ## 5. Found along the way
 
@@ -126,8 +129,10 @@ Companies page or of the lower half of Budget Control. The Cashflow calendar has
 
 ## 6. Left for later
 
-- More screenshots: the plan was about 20 articles; 13 are done. Candidates: the apartment import
-  dialog, the TIC with phases, Cashflow calendar (a month with data), Funding investments.
-- The `projects.realized` hint is on the table header only, so not on a phone.
+- ~~More screenshots~~ — done 2026-10-14: 18 pictures in 18 articles (the apartment import
+  dialog, a TIC row split by phase, the Cashflow calendar on July 2026, a credit with its
+  allocations, Moje firme).
+- ~~The `projects.realized` hint is on the table header only~~ — moved to the "Ukupno
+  realizirano" card 2026-10-14, visible at every width.
 - A "start here" card for new users, an article for the Activity Log, English articles.
 - Reading the usage data: `help.*` in `activity_logs` and `ai_help_searches`.

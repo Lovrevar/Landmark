@@ -57,6 +57,8 @@ interface StatCardProps {
   color?: StatColorScheme
   size?: 'sm' | 'md' | 'lg'
   className?: string
+  /** An `InfoHint` (or other small control) shown right after the label, at every width. */
+  hint?: React.ReactNode
 }
 
 // `value` is the largest the figure is drawn (Tailwind's text-lg / text-xl / text-3xl). On a
@@ -76,6 +78,7 @@ export default function StatCard({
   color = 'white',
   size = 'md',
   className = '',
+  hint,
 }: StatCardProps) {
   const displayLabel = label ?? title ?? ''
   const cfg = sizeConfig[size]
@@ -93,7 +96,10 @@ export default function StatCard({
   return (
     <div className={classes}>
       <div className="stat-card__grid">
-        <p className={`stat-card__label text-sm font-medium ${labelStyles[color]} mb-1`}>{displayLabel}</p>
+        <p className={`stat-card__label text-sm font-medium ${labelStyles[color]} mb-1`}>
+          {displayLabel}
+          {hint && <span className="ml-1.5 inline-flex align-middle">{hint}</span>}
+        </p>
         <p
           className={`stat-card__value font-bold ${valueStyles[color]}`}
           style={{ '--stat-value-size': cfg.value } as React.CSSProperties}

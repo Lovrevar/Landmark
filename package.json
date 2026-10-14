@@ -20,7 +20,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "kb:build": "node scripts/build-help-kb-index.mjs",
-    "help:shots": "vite build --mode demo --outDir dist-demo && playwright test -c scripts/help-screenshots/playwright.config.ts"
+    "help:shots": "vite build --mode demo --outDir dist-demo && playwright test -c scripts/help-screenshots/playwright.config.ts capture",
+    "help:check": "vite build --mode demo --outDir dist-demo && playwright test -c scripts/help-screenshots/playwright.config.ts check"
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",

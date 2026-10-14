@@ -28,6 +28,9 @@ export interface Shot {
   keepAssistantButton?: boolean
 }
 
+/** `funding.investments.expand_credit_title`: the chevron that opens a credit on Funding → Investments. */
+const EXPAND_CREDIT = 'Proširi kredit'
+
 const dialog = (page: Page): Locator => page.getByRole('dialog').last()
 
 const openDialog = (button: string | RegExp) => async (page: Page) => {
@@ -60,10 +63,52 @@ export const SHOTS: Shot[] = [
     },
   },
   // The summary cards only: they are what the article walks through.
-  { file: 'kontrola-proracuna.png', role: 'Director', route: '/budget-control', before: selectProject, clip: { x: 270, y: 96, width: 1010, height: 250 } },
+  {
+    file: 'kontrola-proracuna.png',
+    role: 'Director',
+    route: '/budget-control',
+    before: async page => {
+      await selectProject(page)
+      // The cards load after the project changes; "network idle" can come before they render.
+      await page.getByText('Prognoza (EAC)').first().waitFor()
+    },
+    clip: { x: 270, y: 96, width: 1010, height: 250 } },
   { file: 'tic.png', role: 'Director', route: '/tic', before: selectProject },
   { file: 'upravljanje-gradilistem.png', role: 'Director', route: '/site-management' },
+  {
+    file: 'tic-faze.png',
+    role: 'Director',
+    route: '/tic',
+    before: async page => {
+      await selectProject(page)
+      // Two phase columns, then one row's split dialog set to "by phase" — on screen only; the
+      // dialog's Spremi is never clicked and writes are refused anyway.
+      await page.getByRole('button', { name: 'Dodaj fazu' }).click()
+      await page.getByRole('button', { name: 'Dodaj fazu' }).click()
+      await page.locator('main table tbody tr').first().getByRole('button').filter({ hasText: /—|€|\d/ }).first().click()
+      await dialog(page).waitFor()
+      await dialog(page).getByRole('radio', { name: /Raspodjela po fazama/ }).check()
+      await dialog(page).getByRole('button', { name: 'Ravnomjerno raspodijeli' }).click()
+    },
+    target: dialog,
+  },
   { file: 'racuni.png', role: 'Director', route: '/accounting-invoices' },
+  {
+    file: 'kalendar-dospijeca.png',
+    role: 'Director',
+    route: '/accounting-calendar',
+    before: async page => {
+      // The demo's invoices fall due mostly in July 2026; step back to it from whatever "today" is.
+      const heading = page.locator('main h3').filter({ hasText: /\d{4}/ }).first()
+      await heading.waitFor()
+      for (let step = 0; step < 36 && !(await heading.innerText()).includes('Srpanj 2026'); step++) {
+        await page.locator('main button:has(svg.lucide-chevron-left)').first().click()
+        await page.waitForTimeout(150)
+      }
+      await page.waitForLoadState('networkidle')
+    },
+  },
+  { file: 'moje-firme.png', role: 'Director', route: '/accounting-companies' },
   { file: 'racun-obrazac.png', role: 'Director', route: '/accounting-invoices', before: openDialog('Novi račun'), target: dialog },
   {
     file: 'placanje-obrazac.png',
@@ -75,6 +120,33 @@ export const SHOTS: Shot[] = [
       await dialog(page).locator('select').first().selectOption({ index: 1 })
     },
     target: dialog,
+  },
+  {
+    file: 'uvoz-stanova.png',
+    role: 'Director',
+    route: '/sales-projects',
+    before: async page => {
+      await page.getByText(BUSY_PROJECT).first().click()
+      await openDialog('Uvezi iz Excela')(page)
+    },
+    target: dialog,
+  },
+  {
+    file: 'investicije-namjene.png',
+    role: 'Director',
+    route: '/funding-credits',
+    before: async page => {
+      // Open credits one by one until one shows its allocations ("Namjene kredita").
+      const toggles = page.locator(`main button[title="${EXPAND_CREDIT}"]`)
+      for (let i = 0; i < 8; i++) {
+        if (await page.getByText(/Namjene kredita/).first().isVisible().catch(() => false)) break
+        if ((await toggles.count()) === 0) break
+        await toggles.first().click()
+        await page.waitForLoadState('networkidle')
+      }
+      await page.getByText(/Namjene kredita/).first().scrollIntoViewIfNeeded()
+    },
+    clip: { x: 270, y: 64, width: 1010, height: 736 },
   },
   { file: 'stanovi.png', role: 'Director', route: '/apartments' },
   { file: 'stan-povezi-jedinice.png', role: 'Director', route: '/apartments', before: openDialog(/Poveži jedinice/), target: dialog },

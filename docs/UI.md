@@ -185,7 +185,7 @@ Shared primitive component library. Always check here before building new UI —
 
 ### StatCard.tsx
 - Single KPI metric card with icon, optional trend indicator, and colour scheme
-- Props: `label?`, `title?`, `value` (string | number), `subtitle?`, `trend?`, `icon?` (LucideIcon), `color?` (8 colour schemes), `size?` ('sm' | 'md' | 'lg'), `className?`
+- Props: `label?`, `title?`, `value` (string | number), `subtitle?`, `trend?`, `icon?` (LucideIcon), `color?` (8 colour schemes), `size?` ('sm' | 'md' | 'lg'), `className?`, `hint?` (an `InfoHint` shown after the label — the place for a hint about a figure, since a table header disappears on a phone)
 - **The value never runs out of its card, and is never truncated.** On a narrow card (two-column grid on a phone) the value takes the full width under the label and icon; its font size follows the card's width from the `size`'s maximum down to 0.8rem; if it still does not fit it wraps. The layout is a small CSS grid with a container query — `.stat-card*` in `src/index.css` — because Tailwind has no container-query variant here. Do not add `truncate`, `overflow-hidden` or `whitespace-nowrap` to it: a money amount with a missing digit is a wrong amount (`statCardFit.test.ts`)
 - The card sets `container-type: inline-size`, so its width must come from its parent (a grid cell, a `flex-1`); every current use is inside a grid
 

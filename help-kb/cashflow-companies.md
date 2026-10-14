@@ -8,6 +8,8 @@ roles: [Director, Accounting]
 
 Stranica **Moje firme** prikazuje financijski pregled svih firmi pod grupom Landmark. Podnaslov: **Financijski pregled svih firmi pod Landmarkom**.
 
+![Stranica Moje firme: zbirne kartice i kartice firmi](img/moje-firme.png)
+
 Glavna akcija: **Dodaj novu firmu** — unosite naziv, OIB i bankovne račune s trenutnim stanjem. Tražilica: **Pretraži firme po imenu ili OIB-u...**.
 
 Kartice statistike: **Ukupno firmi**, **Ukupno stanje** (zeleno/crveno ovisno o predznaku), **Ukupan promet**, **Dobit/Gubitak**.

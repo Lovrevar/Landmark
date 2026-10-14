@@ -79,6 +79,8 @@ Klikom na ćeliju faze otvara se prozor **Raspodjela po fazama** za taj redak, s
   *Vrijednost zemljišta*), računa se jednom i **ne pripada nijednoj fazi**. U stupcima faza
   prikazuje se kao „—”.
 
+![Prozor Raspodjela po fazama za jedan redak TIC-a, raspodijeljen na dvije faze](img/tic-faze.png)
+
 „—” nije propust: u izvornoj tablici takav redak često ponavlja isti puni iznos u svakom stupcu
 faze, a zbrajanje bi izmislilo novac koji ne postoji. Taj se iznos u [[site-management]] prikazuje
 kao **Nije fazirano**.

@@ -36,7 +36,8 @@ if (projectRefs.size !== 1 || !projectRefs.has(DEMO_PROJECT_REF)) {
 
 export default defineConfig({
   testDir: HERE,
-  testMatch: 'capture.spec.ts',
+  // `help:shots` passes `capture`, `help:check` passes `check`, as the file filter.
+  testMatch: ['capture.spec.ts', 'check.spec.ts'],
   workers: 1,
   reporter: [['list']],
   timeout: 300_000,
@@ -47,6 +48,8 @@ export default defineConfig({
     locale: 'hr-HR',
     timezoneId: 'Europe/Zagreb',
     colorScheme: 'light',
+    // Croatian browser chrome too: the native file picker's "Choose File" follows it, not `locale`.
+    launchOptions: { channel: 'chromium', args: ['--lang=hr'], env: { ...process.env, LANGUAGE: 'hr', LANG: 'hr_HR.UTF-8' } },
     actionTimeout: 20_000,
     navigationTimeout: 30_000,
   },

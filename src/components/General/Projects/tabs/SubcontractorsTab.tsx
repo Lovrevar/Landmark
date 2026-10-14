@@ -99,11 +99,10 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
     setStatusFilter('all')
   }
 
-  const SortableTh: React.FC<{ sortKey: SortKey; hint?: React.ReactNode; children: React.ReactNode }> = ({ sortKey: key, hint, children }) => (
+  const SortableTh: React.FC<{ sortKey: SortKey; children: React.ReactNode }> = ({ sortKey: key, children }) => (
     <Table.Th sortable onClick={() => toggleSort(key)}>
       <span className="inline-flex items-center gap-1">
         {children}
-        {hint}
         {sortKey === key && (
           sortDir === 'asc'
             ? <ChevronUp className="w-3 h-3" />
@@ -127,7 +126,8 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
         <>
           <StatGrid columns={4}>
             <StatCard label={t('general_projects.total_contract_value')} value={formatEur(summary.totalValue)} color="blue" />
-            <StatCard label={t('general_projects.total_realized')} value={formatEur(summary.totalRealized)} color="teal" />
+            {/* The hint sits on the card, not the column header: below md the table is cards and has no header row. */}
+            <StatCard label={t('general_projects.total_realized')} value={formatEur(summary.totalRealized)} color="teal" hint={<RealizedHint />} />
             <StatCard label={t('general_projects.total_remaining')} value={formatEur(summary.totalRemaining)} color="green" />
             <StatCard label={t('general_projects.contract_count')} value={summary.count} color="gray" />
           </StatGrid>
@@ -172,7 +172,7 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
                   <SortableTh sortKey="phase">{t('common.phase')}</SortableTh>
                   <SortableTh sortKey="classification">{t('supervision.site_management.phase_card.classification_label')}</SortableTh>
                   <SortableTh sortKey="contract_amount">{t('general_projects.contract_amount')}</SortableTh>
-                  <SortableTh sortKey="realized" hint={<RealizedHint />}>{t('general_projects.realized')}</SortableTh>
+                  <SortableTh sortKey="realized">{t('general_projects.realized')}</SortableTh>
                   <SortableTh sortKey="remaining">{t('common.remaining')}</SortableTh>
                   <SortableTh sortKey="status">{t('common.status')}</SortableTh>
                   <Table.Th>{t('general_projects.contact')}</Table.Th>

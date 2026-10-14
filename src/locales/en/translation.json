@@ -1006,7 +1006,7 @@
     "link": {
       "title": "Link Supplier",
       "description": "Add existing supplier to a project phase",
-      "info": "Supplier will be added to the selected phase without a contract (has_contract = false)",
+      "info": "Supplier will be added to the selected phase without a contract",
       "supplier_label": "Supplier",
       "project_label": "Project",
       "phase_label": "Phase",
@@ -2303,7 +2303,7 @@
     "hints": {
       "link_units_title": "Linked units",
       "link_units_package": "Garages and storage units linked to an apartment are sold to the buyer together with it, as a package.",
-      "link_units_price": "Such an apartment also shows a \"Total package\" price: the apartment and its linked units together."
+      "link_units_price": "Such an apartment also shows a \"Total Package\" price: the apartment and its linked units together."
     }
   },
   "sale_form": {
