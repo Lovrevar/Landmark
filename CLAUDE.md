@@ -18,9 +18,10 @@ Cognilion is a full-lifecycle real estate and construction project management pl
 | `npm run kb:build` | Rebuilds the AI assistant's help index from `help-kb/*.md` |
 | `npm run help:shots` | Retakes the help articles' screenshots (`help-kb/img/`) from LandmarkDemo; needs `.env.demo` — see [`docs/HELP.md`](./docs/HELP.md) |
 | `npm run help:check` | Visual check of the in-app guidance on LandmarkDemo: phone, dark mode, English — see [`docs/HELP.md`](./docs/HELP.md) |
-| `npm run db:types` | Regenerates the database types (see Data Layer) |
+| `npm run db:types` | Regenerates the database types — use `/db-types`, it checks the linked project first |
 
-Before calling work done: `npm run typecheck`, `npm test` and `npm run lint` on the changed files.
+Before calling work done, run `/done`: typecheck, `npm test`, lint on the changed files, and the
+housekeeping below. CI runs typecheck, lint and the unit tests on every push to `development`.
 
 ## Git Workflow
 
@@ -82,45 +83,24 @@ These are business-specific — do not simplify or generalize them:
 - **Credit allocation** — bank credit lines can be allocated across multiple projects/contracts
 - **TIC** — Troškovna Informatička Struktura, a cost breakdown structure for investment projects. **It is the only writer of planned budget**: a trigger derives `projects.budget`, phase budgets and per-classification budgets from it. A project without a TIC shows "budget not set", never €0
 
-## ERP Integration (⏸️ on hold)
-
-> **On hold since 2026-09-14 — merged but switched off.** The screens are hidden behind
-> `ERP_INTEGRATION_ENABLED` in `src/lib/featureFlags.ts`, the migrations are parked in
-> `supabase/parked-migrations/erp/` (never apply them from there), and `import-erp` is not
-> deployed anywhere. Resume only via the checklist in
-> [`docs/erp-integration/PROGRESS.md`](./docs/erp-integration/PROGRESS.md) → "On hold", and fix
-> ERP-1 to ERP-5 in [`KNOWN_ISSUES.md`](./docs/erp-integration/KNOWN_ISSUES.md) first.
-
-The financial section is being rewritten so that **4D Wand** — the ERP the company adopted —
-becomes the source of truth for invoices, payments and bank balances. Cognilion stops
-authoring them and becomes a consumer that imports, classifies and links. Everything
-downstream keeps reading `accounting_invoices` / `accounting_payments` unchanged; what is
-changing is *who writes* those two tables.
-
-- Phases 0–3 (foundation, reference data, ingestion, classification/promotion) are done;
-  phase 4 (historical re-import) is next. **Phase 5 removes the in-app creation UI and locks
-  writes to the service role** — do not build new invoice/payment authoring UI without
-  checking the plan first
-- Lives in the `erp` Postgres schema, surfaced through `security_invoker` views in `public`;
-  the parked migrations also expose `erp` to PostgREST (decision D13). UI at `/sifrarnici`
-  (mappings) and `/erp-import`
-- Ingestion is the `import-erp` edge function; `npm run erp:smoke` exercises the chain
-- Read [`docs/erp-integration/`](./docs/erp-integration/README.md) before touching invoices,
-  payments, or bank balances
+**ERP integration is on hold** (since 2026-09-14, merged but switched off). 4D Wand is meant to
+become the source of truth for invoices, payments and bank balances. Until it resumes, do not
+build new invoice or payment authoring UI without checking
+[`docs/erp-integration/`](./docs/erp-integration/README.md) first. Details load from
+`.claude/rules/erp.md` when you touch the ERP or Cashflow code.
 
 ## Data Layer
 
-- 350+ Supabase migrations (a 2026-05-15 baseline plus later ones) — write new migration files
-  freely, but **never execute or apply migrations without being explicitly asked**
+- Migrations in `supabase/migrations/` are a 2026-05-15 baseline plus later ones. Write new ones with
+  `/new-migration` — but **never execute or apply migrations without being explicitly asked**
 - All tables use RLS (Row Level Security) — always respect existing policies
 - Never bypass auth context when writing queries
 - **Check which project the Supabase CLI is linked to** before `db:types`, `db push` or anything
   else that uses the link: it may be left on the demo project, and the production ref is not
   recorded in the repo. The demo setup is in [`docs/DEMO_ENVIRONMENT.md`](./docs/DEMO_ENVIRONMENT.md)
-- `npm run db:types` regenerates `src/types/database.ts` from the linked project
-  (both the `public` and `erp` schemas) and mirrors it into `supabase/functions/_shared/`.
-  While the ERP integration is on hold no project has the `erp` schema, so regenerating
-  drops the ERP types that `import-erp` needs — restore them from git afterwards
+- The `tasks` tables are shared with a standalone mobile app on the same production database —
+  read [`docs/SHARED_SCHEMA.md`](./docs/SHARED_SCHEMA.md) before changing any `task*` table, RPC
+  or policy. Never run anything in `todoMigrations/` against this database
 
 ## Architecture and Conventions
 
@@ -141,106 +121,43 @@ UI Component → Custom Hook → Service Layer → Supabase → Database
   `daysFromToday`), never `new Date('yyyy-mm-dd')`, which is UTC and shifts the day in Croatia
 - **Money and dates on screen** go through `src/utils/formatters.ts` (`formatEuro`, `formatDate`, …)
 - **PDF and Excel exports are always Croatian** (`exportT()` in `src/utils/exportLanguage.ts`)
-- **Confirmations use `ConfirmDialog`**, never `window.confirm`
+- **Confirmations use `ConfirmDialog`**, never `window.confirm` (ESLint enforces it)
+- **Every mutation is logged** with `logActivity()` from `src/lib/activityLog.ts` — it also keeps
+  the dashboards fresh. The rules load from `.claude/rules/activity-log.md` when you touch a
+  service; the full reference is [`docs/ACTIVITY_LOG.md`](./docs/ACTIVITY_LOG.md)
+- **i18n:** always ask before translating ambiguous strings, and never translate Croatian
+  domain/legal terms. The rest loads from `.claude/rules/i18n.md`
 
-Module conventions, cross-module rules and per-file notes are in
-[`docs/CODEBASE_INDEX.md`](./docs/CODEBASE_INDEX.md) and [`docs/CORE.md`](./docs/CORE.md).
+Module layout and layer rules load from `.claude/rules/architecture.md` when you touch `src/`.
+Cross-module rules and per-file notes are in [`docs/CODEBASE_INDEX.md`](./docs/CODEBASE_INDEX.md)
+and [`docs/CORE.md`](./docs/CORE.md). When working in a module, read its doc in `docs/` (e.g.
+`docs/SALES.md`) first. Reference module: `src/components/Sales/`.
 
 ## Shared UI Library
 
-There is a shared component library at `src/components/ui/` with 32 components. Check it before
-creating any new UI primitive — the full list with props is in [`docs/UI.md`](./docs/UI.md).
+There is a shared component library at `src/components/ui/`. Check it before creating any new UI
+primitive — the full list with props is in [`docs/UI.md`](./docs/UI.md).
 
 **Six are not in the barrel file** and must be imported by path: `AvatarStack`,
 `InlineLoadError`, `MarkdownView`, `SearchableSelect`, `ToggleSwitch`, and `Toast` (which you
 never import directly — use `useToast()` from `src/contexts/ToastContext`). Everything else
 comes from `src/components/ui`.
 
-## i18n
+## Keeping docs, help and the backlog current
 
-1. **Always ask before translating ambiguous strings** — do not guess or auto-translate;
-   batch questions by component and wait for confirmation
-2. Strings that appear in multiple components must use a `common.*` shared key
-3. Croatian domain/legal terms are **never translated** — keep them as literal string values
-   in both locale files
-4. After any i18n change, re-scan the affected components for missed hardcoded strings
-5. The language switcher respects the user's stored preference; browser locale is the fallback
-
-## AI Assistant Help Articles
-
-The AI assistant answers "how do I…" questions from `help-kb/*.md`, and the same articles are
-shown to users on the `/help` page and linked from `InfoHint` popovers. When you change what a screen
-shows or does, update its article and run `npm run kb:build` — stale articles make the assistant
-give wrong answers. If the article shows a screenshot of that screen, retake it (`npm run help:shots`).
-
-A release that users will notice gets a note: `help-kb/news-YYYY-MM.md` with a `date` in the
-frontmatter. The newest one is announced in a banner until each user opens or dismisses it.
-Never put production figures in an article — all of them ship to every user's browser.
-
-## Activity Log
-
-Every mutation (create, update, delete, bulk, import, export) must be logged via `logActivity()` from `src/lib/activityLog.ts`. This is a fire-and-forget call that never blocks the user's operation. It also clears the dashboard/report cache (`useCachedData`), so logged mutations are what keep dashboards fresh.
-
-### Rules for new features
-
-1. **Always add logging** — after every successful `supabase.from().insert/update/delete`, add a `logActivity()` call
-2. **Action naming** — format is `entity.verb` (e.g. `invoice.create`, `apartment.bulk_price_update`). Use the table name (singular) as the entity prefix
-3. **Capture entity IDs** — for inserts, chain `.select('id').maybeSingle()` to capture the new ID and pass it as `entityId`
-4. **Severity levels** — `low` for reads/links, `medium` for standard creates/updates, `high` for deletes/financial/bulk/imports
-5. **Metadata conventions** — creates include `entity_name`, updates include `changed_fields: Object.keys(updates)`, deletes include `entity_name` when available, bulk ops include `count`
-6. **Never use `.catch()` on Supabase builder** — it returns `PromiseLike`, not `Promise`. Use async/await with try/catch
-7. **Register entity routes** — add new entities to `ENTITY_ROUTE_MAP` in `src/components/General/ActivityLog/types.ts`
-8. **Add i18n keys** — add action labels under `activity_log.actions` in both locale files
-
-Full documentation: [`docs/ACTIVITY_LOG.md`](./docs/ACTIVITY_LOG.md)
-
-## Reference Implementations
-
-- `src/components/Sales/` — folder layout of a feature module (`index.tsx`, `types.ts`,
-  `components/`, `forms/`, `modals/`, `hooks/`, `services/`). Copy the structure; for data
-  handling follow the conventions above
-
-## Codebase Index
-
-Full module map with per-file descriptions: [`docs/CODEBASE_INDEX.md`](./docs/CODEBASE_INDEX.md).
-When working in a specific module, read the relevant file in `docs/` (e.g. `docs/SALES.md`, `docs/FUNDING.md`) before making changes.
-
-The `tasks` tables are **shared with a standalone mobile task app** that points at the same
-production database. This repo owns that schema. Before changing any `task*` table, RPC or
-policy, read [`docs/SHARED_SCHEMA.md`](./docs/SHARED_SCHEMA.md) — it records the contracts
-both clients depend on and the assumptions the other app gets wrong. Never run anything in
-`todoMigrations/` against this database.
-After creating new files or doing major updates, update the relevant docs.
-
-## Backlog
-
-Known defects, gaps and open decisions live in [`docs/backlog/`](./docs/backlog/README.md), one
-file per area (`security.md`, `sales.md`, `retail.md`, `supervision.md`, `cashflow.md`,
-`funding.md`, `projects-dashboards-reports.md`, `collaboration.md`, `ui.md`), plus `release.md`
-for fixes that are written but not live. The README there has the ranked list and the entry format.
-
-1. **Before working in a module, read its backlog file** — the bug you are about to hit may be
-   known, decided or waiting on the ERP integration
-2. **Add what you find and do not fix** — a bug, a wrong figure, a missing guard, dead code, a doc
-   that disagrees with the code, or a decision nobody has made. Add an entry to the area file in
-   the same change, with the next free id from the top of that file. Do not leave it only in a
-   chat reply or a code comment
-3. **When you fix an item, close it** — move the entry to `## Resolved` at the bottom of its file
-   with one line saying how and in which commit or migration, and take it out of the ranked list
-4. **Never reuse or renumber an id** — code comments and migrations quote them (`DEFECT_BACKLOG
-   CASH-7`). An id that is not in an area file is in `docs/backlog/archive/DEFECT_BACKLOG.md`
-5. `docs/backlog/archive/` is closed history — do not update it. ERP items go in
-   `docs/erp-integration/KNOWN_ISSUES.md` and `OPEN_QUESTIONS.md`, not here
+- **Help articles:** the AI assistant, the `/help` page and `InfoHint` popovers all read
+  `help-kb/*.md`. When you change what a screen shows or does, update its article — use
+  `/help-article`. Never put production figures in an article
+- **Docs:** after creating new files or doing major updates, update the relevant docs
+- **Backlog** ([`docs/backlog/`](./docs/backlog/README.md), one file per area):
+  1. Before working in a module, read its backlog file — the bug may be known, decided or
+     waiting on the ERP integration
+  2. Add what you find and do not fix — a bug, a wrong figure, a missing guard, dead code, a doc
+     that disagrees with the code, or an open decision — in the same change. Use `/backlog`.
+     Never leave it only in a chat reply or a code comment
 
 ## graphify
 
-A code-only knowledge graph lives in `graphify-out/` (docs and SQL are not in it). Git hooks
-rebuild it after every commit and branch switch; to query uncommitted changes, run
-`python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`
-from the repo root.
-
-Use it to find *where* something lives. Trust only `imports_from` edges between files whose names
-are unique in the repo, reading direction from `_src`/`_tgt`. Cross-file `calls` edges are false,
-same-named files are merged into one fake hub, barrel and Deno imports are missing — so **a file's
-absence or lack of importers proves nothing**; grep before deleting anything. Details and the
-evidence: [`docs/GRAPHIFY.md`](./docs/GRAPHIFY.md).
+`graphify-out/` is a code-only graph, rebuilt by git hooks. Use it only to find *where* something
+lives; trust only `imports_from` edges between uniquely-named files, and grep before deleting
+anything. Why, and how to rebuild for uncommitted changes: [`docs/GRAPHIFY.md`](./docs/GRAPHIFY.md).
