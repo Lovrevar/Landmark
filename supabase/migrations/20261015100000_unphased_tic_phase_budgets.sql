@@ -265,13 +265,19 @@ COMMENT ON COLUMN public.project_phases.budget_allocated IS
 -- 4. Backfill
 -- ---------------------------------------------------------------------------
 
+-- Only unphased TICs: they are the ones whose phase budgets change. Re-running the full sync on a
+-- phased TIC would also delete any empty phase added above its count since it was last saved.
 DO $backfill$
 DECLARE
   r record;
   v_unsplit integer;
 BEGIN
-  FOR r IN SELECT project_id FROM public.tic_cost_structures WHERE project_id IS NOT NULL LOOP
-    PERFORM public.sync_project_from_tic(r.project_id);
+  FOR r IN
+    SELECT t.project_id FROM public.tic_cost_structures t
+     WHERE t.project_id IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM public.tic_phase_totals(t.line_items))
+  LOOP
+    PERFORM public.apply_unphased_tic_budget(r.project_id);
   END LOOP;
 
   SELECT count(DISTINCT project_id) INTO v_unsplit

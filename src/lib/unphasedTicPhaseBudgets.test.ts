@@ -70,7 +70,11 @@ describe('unphased TIC phase budgets', () => {
     )
   })
 
-  it('backfills every TIC', () => {
-    expect(statements).toMatch(/FOR r IN SELECT project_id FROM public\.tic_cost_structures WHERE project_id IS NOT NULL LOOP\s+PERFORM public\.sync_project_from_tic\(r\.project_id\)/)
+  // The full sync would also delete empty phases added to a phased TIC's project since its last save.
+  it('backfills only unphased TICs, without re-running the full sync', () => {
+    const backfill = statements.slice(statements.indexOf('DO $backfill$'))
+    expect(backfill).toMatch(/NOT EXISTS \(SELECT 1 FROM public\.tic_phase_totals\(t\.line_items\)\)/)
+    expect(backfill).toContain('PERFORM public.apply_unphased_tic_budget(r.project_id)')
+    expect(backfill).not.toContain('sync_project_from_tic')
   })
 })
