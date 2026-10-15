@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
 import { isCashIn, isCashOut, isCostInvoiceType, invoiceCashCategory, type CashCategory } from '../../../utils/invoiceCashDirection'
 import type { CashFlowAmounts, ComprehensiveReport, ProjectData, ReportRisk } from '../types'
+import { normalizeOrgName } from '../../../lib/orgName'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -50,6 +51,8 @@ export async function fetchGeneralReportData(
     supabase.from('retail_land_plots').select('*'),
     supabase.from('retail_customers').select('*'),
     supabase.from('retail_suppliers').select('*'),
+    // The one row of organisation settings: its name heads the report (GEN-19).
+    supabase.from('organization_settings').select('name'),
   ])
 
   throwIfAnyFailed(responses)
@@ -82,6 +85,7 @@ export async function fetchGeneralReportData(
     { data: retailLandPlots },
     { data: retailCustomers },
     { data: retailSuppliers },
+    { data: organizationSettings },
   ] = responses
 
   const projectsArray = projects || []
@@ -450,6 +454,7 @@ export async function fetchGeneralReportData(
   const contractTypesData = Object.entries(contractTypeCounts).map(([name, count]) => ({ name, count }))
 
   return {
+    organization_name: normalizeOrgName(organizationSettings?.[0]?.name),
     executive_summary: {
       total_projects: projectsArray.length,
       active_projects: projectsArray.filter(p => p.status === 'In Progress').length,

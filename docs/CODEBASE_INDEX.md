@@ -71,7 +71,8 @@ Module/
 `projects.budget`, `project_phases.budget_allocated` and `phase_classification_budgets` are
 **derived from the project's TIC** by `sync_project_from_tic()`, and nothing in the client writes
 them. Any screen showing a planned figure must gate on whether a TIC exists — a project without
-one reads "budget not set", never €0. Details in
+one reads "budget not set", never €0. A phase's `budget_allocated` is NULL when the TIC is not
+split by phase and the project has several (`budgetNotSplitByPhase`). Details in
 [FUNDING.md](./FUNDING.md#the-tic-is-the-only-source-of-planned-budget).
 
 Two companion rules that follow from the same change, and that every module is expected to obey:
@@ -115,6 +116,7 @@ Two companion rules that follow from the same change, and that every module is e
 | `src/contexts/ToastContext.tsx` | App-wide toast queue (`ToastProvider`, `useToast`) |
 | `src/lib/useCachedData.ts` | TTL-cached fetch hook used by every dashboard (`useCachedData`, `invalidateCachedData`); exposes `error` — never render zeros on a failed load |
 | `src/lib/dbErrors.ts` | `isForeignKeyViolation()` — distinguishes FK violations from other Supabase errors |
+| `src/lib/orgName.ts` | The organisation's name for report headers: `fetchOrgName()` reads the one row of `organization_settings` (set with SQL per database; null prints only the title), `orgHeading()` capitalises it (GEN-19) |
 | `src/lib/featureFlags.ts` | Compile-time flags for merged-but-unreleased work; `ERP_INTEGRATION_ENABLED` (off) hides the ERP screens |
 | `src/hooks/useMediaQuery.ts` | `useMediaQuery`, `useIsMobile`, `useIsTabletUp`, `useIsDesktop` — the responsive breakpoint hooks |
 | `src/hooks/useListPreferences.ts` | Persisted per-list view mode / sort preferences |

@@ -93,8 +93,11 @@ sprema kako je upisana.
 Ikona koša u zaglavlju faze uklanja tu fazu iz svih redaka (uz potvrdu); faze nakon nje se
 prenumeriraju.
 
-TIC bez ijednog faziranog retka opisuje projekt kao cjelinu: cijeli budžet dobiva Faza 1 (stvara
-se ako projekt nema faza), a ostale postojeće faze ostaju s budžetom 0.
+TIC bez ijednog faziranog retka opisuje projekt kao cjelinu. Ako projekt nema faza, stvara se
+Faza 1; ako ima jednu fazu, ona dobiva cijeli budžet. Ako ima više faza, budžet se ne dijeli
+među njima: popis faza i [[site-management]] pišu **TIC nije raspoređen po fazama — budžet …
+vrijedi za cijeli projekt**, a pojedina faza nema vlastiti budžet. Kad se faza doda ili obriše,
+to se odmah ponovno primjenjuje. Da bi svaka faza imala svoj budžet, rasporedite retke po fazama.
 
 ## Uređivanje stavki
 

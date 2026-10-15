@@ -207,6 +207,7 @@
     "no_results_description": "Clear the search or change the filters.",
     "financing_received_repaid": "Financing (received / repaid):",
     "budget_not_set": "Budget not set",
+    "phase_budget_not_split": "The TIC is not split by phase — the {{amount}} budget covers the whole project",
     "hints": {
       "no_contract_title": "No contract",
       "no_contract_what": "The work is based on a verbal agreement, so there is no contracted amount to compare payments with.",
@@ -1032,7 +1033,7 @@
       "delete_in_use": "The company has invoices or other linked records, so it cannot be deleted"
     },
     "title": "My Companies",
-    "subtitle": "Financial overview of all companies under Landmark",
+    "subtitle": "Financial overview of all companies in the group",
     "add": "Add New Company",
     "add_new": "Add New Company",
     "edit": "Edit Company",
@@ -1069,6 +1070,7 @@
     },
     "form": {
       "name": "Company Name",
+      "name_placeholder": "e.g. Primjer d.o.o.",
       "oib": "Tax ID (OIB)",
       "oib_helper": "Enter 11-digit Tax ID (OIB)",
       "oib_title": "OIB must be exactly 11 digits",
@@ -1081,6 +1083,7 @@
       "bank_accounts_heading": "Bank Accounts",
       "account_label": "Account #{{number}}",
       "bank_name": "Bank Name",
+      "bank_name_placeholder": "e.g. Erste banka",
       "current_balance": "Current Balance (€)",
       "balance_date": "Balance Date",
       "balance_date_helper": "Payments from this date are included in the balance calculation",
@@ -4182,7 +4185,6 @@
       "title": "General Reports",
       "loading": "Generating comprehensive report...",
       "no_data": "No data available for report generation",
-      "landmark_group": "LANDMARK GROUP",
       "exec_report": "Comprehensive Executive Report",
       "generated": "Generated:",
       "export_pdf": "Export PDF",

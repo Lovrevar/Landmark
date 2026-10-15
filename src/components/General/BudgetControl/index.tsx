@@ -27,7 +27,8 @@ import { useBudgetControl } from './hooks/useBudgetControl'
 import LoadingSpinner from '../../ui/LoadingSpinner'
 import ErrorState from '../../ui/ErrorState'
 import InfoHint from '../../ui/InfoHint'
-import { formatEuro, formatEuroCompact, NO_VALUE } from '../../../utils/formatters'
+import { formatEuro, formatEuroCompact, formatIndex, NO_VALUE } from '../../../utils/formatters'
+import { indexAxisTop } from '../../../utils/evm'
 import PageHelpLink from '../../ui/PageHelpLink'
 import { OpenTICLink } from '../../Funding/TIC/OpenTICLink'
 
@@ -72,7 +73,7 @@ function IndexCard({ label, value, sublabel, status, hint }: IndexCardProps) {
   return (
     <div className={`rounded-xl border p-4 ${c.bg}`}>
       <p className={`flex items-center gap-1.5 text-sm font-medium mb-1 ${c.label}`}>{label}{hint}</p>
-      <p className={`text-2xl font-bold ${c.text}`}>{value === null ? NO_VALUE : value.toFixed(2)}</p>
+      <p className={`text-2xl font-bold ${c.text}`}>{value === null ? NO_VALUE : formatIndex(value)}</p>
       <div className={`flex items-center gap-1 mt-1 text-xs ${c.sub}`}>
         <Icon className="w-3 h-3" />
         <span>{sublabel}</span>
@@ -307,9 +308,13 @@ export default function BudgetControl() {
                     tick={{ fill: '#6b7280', fontSize: 12 }}
                     allowDuplicatedCategory={false}
                   />
-                  <YAxis domain={[0, 2]} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                  <YAxis
+                    domain={[0, indexAxisTop]}
+                    tickFormatter={formatIndex}
+                    tick={{ fill: '#6b7280', fontSize: 11 }}
+                  />
                   <Tooltip
-                    formatter={(value) => Number(value).toFixed(2)}
+                    formatter={(value) => formatIndex(Number(value))}
                     contentStyle={tooltipStyle}
                   />
                   <Legend />

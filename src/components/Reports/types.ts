@@ -34,6 +34,8 @@ export interface CashFlowAmounts {
 }
 
 export interface ComprehensiveReport {
+  /** The organisation's name from `organization_settings`; null when none is set (GEN-19). */
+  organization_name: string | null
   executive_summary: {
     total_projects: number
     active_projects: number

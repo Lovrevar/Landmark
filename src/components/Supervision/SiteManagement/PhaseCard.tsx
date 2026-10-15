@@ -65,14 +65,32 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
 
   const contracts = phaseSubcontractors as unknown as SubcontractorWithPhase[]
   const rollup = rollupContracts(contracts)
-  const remaining = remainingBudget(phase.budget_allocated, rollup)
+  // NULL: the TIC is not split by phase, so this phase has no budget of its own and every
+  // figure measured against one is "—" rather than a fabricated zero (GEN-22). The project page
+  // says what the plan is.
+  const phaseBudget = phase.budget_allocated
+  const remaining = phaseBudget === null ? null : remainingBudget(phaseBudget, rollup)
   const unallocated = unallocatedBudget(phase, project.classification_budgets || [])
 
   // Utilisation is paid-against-plan, so it goes with the paid tiles rather than standing on
   // its own: a bar at 80% says what the hidden figure is.
-  const budgetUtilization = phase.budget_allocated > 0
-    ? (rollup.paid / phase.budget_allocated) * 100
+  const budgetUtilization = phaseBudget !== null && phaseBudget > 0
+    ? (rollup.paid / phaseBudget) * 100
     : 0
+
+  /** Tile colours: red below zero, the tile's own colour otherwise, grey with no figure. */
+  const tone = (value: number | null, positive: [string, string, string]) =>
+    value === null
+      ? ['bg-gray-50 dark:bg-gray-700', 'text-gray-700 dark:text-gray-200', 'text-gray-900 dark:text-white']
+      : value < 0
+        ? ['bg-red-50 dark:bg-red-900/20', 'text-red-700 dark:text-red-400', 'text-red-900 dark:text-red-300']
+        : positive
+  const [remainingBg, remainingLabel, remainingValue] = tone(remaining, [
+    'bg-green-50 dark:bg-green-900/20', 'text-green-700 dark:text-green-400', 'text-green-900 dark:text-green-300',
+  ])
+  const [unallocatedBg, unallocatedLabel, unallocatedValue] = tone(unallocated, [
+    'bg-blue-50 dark:bg-blue-900/20', 'text-blue-700 dark:text-blue-400', 'text-blue-900 dark:text-blue-300',
+  ])
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -145,27 +163,27 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
               </div>
             </>
           )}
-          <div className={`p-3 rounded-lg ${remaining < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20'}`}>
-            <p className={`text-sm ${remaining < 0 ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
+          <div className={`p-3 rounded-lg ${remainingBg}`}>
+            <p className={`text-sm ${remainingLabel}`}>
               {t('supervision.site_management.phase_card.remaining_budget')}
             </p>
-            <p className={`text-lg font-bold ${remaining < 0 ? 'text-red-900 dark:text-red-300' : 'text-green-900 dark:text-green-300'}`}>
+            <p className={`text-lg font-bold ${remainingValue}`}>
               {money(remaining)}
             </p>
           </div>
           {/* Phase budget not yet handed to any classification. Shown so the phase-first and
               classification-first views visibly reconcile — they differ by exactly this. */}
-          <div className={`p-3 rounded-lg ${unallocated < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
-            <p className={`text-sm ${unallocated < 0 ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'}`}>
+          <div className={`p-3 rounded-lg ${unallocatedBg}`}>
+            <p className={`text-sm ${unallocatedLabel}`}>
               {t('supervision.site_management.phase_card.unallocated')}
             </p>
-            <p className={`text-lg font-bold ${unallocated < 0 ? 'text-red-900 dark:text-red-300' : 'text-blue-900 dark:text-blue-300'}`}>
+            <p className={`text-lg font-bold ${unallocatedValue}`}>
               {money(unallocated)}
             </p>
           </div>
         </div>
 
-        {canManagePayments && (
+        {canManagePayments && phaseBudget !== null && (
           <div className="mt-4">
             <div className="flex justify-between mb-2">
               <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -183,7 +201,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
             </div>
             {budgetUtilization > 100 && (
               <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                {t('supervision.site_management.phase_card.over_budget_by')} {money(rollup.paid - phase.budget_allocated)}
+                {t('supervision.site_management.phase_card.over_budget_by')} {money(rollup.paid - phaseBudget)}
               </p>
             )}
           </div>

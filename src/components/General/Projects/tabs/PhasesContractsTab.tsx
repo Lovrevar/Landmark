@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Briefcase, ChevronDown } from 'lucide-react'
-import { EmptyState, Table } from '../../../ui'
+import { Alert, EmptyState, Table } from '../../../ui'
 import { usePhaseCollapseState } from '../hooks/usePhaseCollapseState'
 import { formatEuroRounded as money } from '../../../../utils/formatters'
 // The label helper and the classification sort come from Site Management on purpose. This tab is
@@ -11,6 +11,7 @@ import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 import type { PhaseStatus } from '../utils'
 import type { Phase, ContractWithDetails } from '../types'
 import { PhasesHint } from '../ProjectHints'
+import { budgetNotSplitByPhase } from '../../../Funding/TIC/utils/ticBudget'
 
 interface PhasesContractsTabProps {
   phases: Phase[]
@@ -99,6 +100,9 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({
   const collapse = usePhaseCollapseState(projectId, phaseStatuses, 'phase_contracts_collapse_v2')
 
   const hasPlan = ticTotal !== null && ticTotal > 0
+  // An unphased TIC over several phases gives none of them a budget (GEN-22): the plan is the
+  // project's, said once above the list, and no phase is "budget not set".
+  const notSplit = hasPlan && budgetNotSplitByPhase(phases)
 
   const renderContracts = (phaseContracts: ContractWithDetails[]) => (
     <div className="space-y-4">
@@ -183,6 +187,11 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({
             </p>
       ) : (
         <div className="space-y-4">
+          {notSplit && (
+            <Alert variant="info">
+              {t('common.phase_budget_not_split', { amount: money(ticTotal) })}
+            </Alert>
+          )}
           {phases.map((phase) => {
             const phaseContracts = contractsByPhase.get(phase.id) ?? []
             const expanded = collapse.isExpanded(phase.id)
@@ -190,9 +199,10 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({
             const paid = phaseContracts.reduce((sum, c) => sum + paidFor(c), 0)
             // Utilisation is paid against the plan, the same ratio the phase card draws. It is
             // only drawn when there is a plan to be a share of.
-            const phaseHasPlan = hasPlan && phase.budget_allocated > 0
+            const phaseBudget = phase.budget_allocated ?? 0
+            const phaseHasPlan = hasPlan && phaseBudget > 0
             const pct = phaseHasPlan
-              ? Math.min(100, Math.round((paid / phase.budget_allocated) * 100))
+              ? Math.min(100, Math.round((paid / phaseBudget) * 100))
               : 0
 
             return (
@@ -227,7 +237,7 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({
                           />
                         </div>
                         <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                          {t('common.paid')}: {money(paid)} / {money(phase.budget_allocated)}
+                          {t('common.paid')}: {money(paid)} / {money(phaseBudget)}
                         </span>
                       </>
                     ) : (
@@ -235,9 +245,11 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                           {t('common.paid')}: {money(paid)}
                         </span>
-                        <span className="text-xs text-orange-600 dark:text-orange-400 whitespace-nowrap">
-                          {t('general_projects.budget_not_set')}
-                        </span>
+                        {!notSplit && (
+                          <span className="text-xs text-orange-600 dark:text-orange-400 whitespace-nowrap">
+                            {t('general_projects.budget_not_set')}
+                          </span>
+                        )}
                       </>
                     )}
                   </div>

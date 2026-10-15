@@ -45,7 +45,7 @@ Release notes, one per release: `news-YYYY-MM.md` with a `date` in the frontmatt
 - [cashflow-payments](cashflow-payments.md) — **Plaćanja (Cashflow)** — Sva plaćanja s podrškom za cesiju i kompenzaciju.
 - [cashflow-suppliers](cashflow-suppliers.md) — **Dobavljači (Cashflow)** — Isti zapisi kao podugovaratelji, prikazani iz računovodstvene perspektive.
 - [office-suppliers](office-suppliers.md) — **Office Dobavljači** — Zasebna tablica vendora za uredske/administrativne troškove.
-- [cashflow-companies](cashflow-companies.md) — **Moje firme** — Financijski pregled svih firmi pod grupom Landmark.
+- [cashflow-companies](cashflow-companies.md) — **Moje firme** — Financijski pregled svih firmi u grupi.
 - [cashflow-banks](cashflow-banks.md) — **Investicije (Cashflow)** — Read-only pregled bankovnih računa, kredita i alokacija.
 - [cashflow-customers](cashflow-customers.md) — **Kupci (Cashflow)** — Pregled kupaca s računima i dugovanjima iz računovodstvene perspektive.
 - [cashflow-calendar](cashflow-calendar.md) — **Kalendar dospijeća** — Mjesečni kalendar dospijeća računa s planiranim budžetom.

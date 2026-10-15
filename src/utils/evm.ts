@@ -1,4 +1,5 @@
 import type { Phase, ContractWithDetails } from '../components/General/Projects/types'
+import { budgetNotSplitByPhase } from '../components/Funding/TIC/utils/ticBudget'
 
 export interface EVMMetrics {
   PV: number
@@ -49,6 +50,14 @@ function contractPhysicalPct(
   return contractAmount > 0 ? Math.min(100, (budgetRealized / contractAmount) * 100) : 0
 }
 
+/**
+ * Top of the CPI/SPI chart's axis: 2, or the largest index rounded up to the next 0.5. A fixed
+ * [0, 2] let Recharts stretch the axis to the raw value and print it as the top tick (GEN-7).
+ */
+export function indexAxisTop(largest: number): number {
+  return Number.isFinite(largest) ? Math.max(2, Math.ceil(largest * 2) / 2) : 2
+}
+
 export function calculatePhaseEVM(
   plannedBudget: number,
   physicalCompletionPct: number,
@@ -78,11 +87,16 @@ export function calculatePhaseEVM(
   return { PV, EV, AC, CPI, SPI, EAC, VAC, CV, SV }
 }
 
+/**
+ * `projectBudget` is the TIC total. It is read only when the TIC is not split by phase, since the
+ * phases then carry no budget of their own (`budgetNotSplitByPhase`).
+ */
 export function calculateProjectEVM(
   phases: Phase[],
   contracts: ContractWithDetails[],
   milestones: MilestoneProgress[] = [],
-  currentDate: Date = new Date()
+  currentDate: Date = new Date(),
+  projectBudget: number | null = null
 ): EVMMetrics {
   let totalPV = 0, totalEV = 0, totalAC = 0, totalBudget = 0
   let scheduledPhases = 0
@@ -94,27 +108,26 @@ export function calculateProjectEVM(
     else milestonesByContract.set(m.contract_id, [m])
   })
 
-  // An unphased TIC puts the whole plan on the first phase and nothing on the others (see
-  // sync_project_from_tic). Taken phase by phase, the whole budget would then count as earned
-  // the day that one phase is finished, against what was paid in all of them — a CPI far above 1
-  // and a forecast equal to paid-to-date (GEN-22). The plan does not distinguish the phases, so
+  // An unphased TIC over several phases gives none of them a budget: they carry NULL
+  // (apply_unphased_tic_budget). It used to put the whole plan on phase 1, and taken phase by
+  // phase that counted the whole budget as earned the day phase 1 was finished — a CPI far above
+  // 1 and a forecast equal to paid-to-date (GEN-22). The plan does not distinguish the phases, so
   // neither does the measurement: the project is one phase running from the first start date to
-  // the last end date, holding every phase's contracts.
-  const funded = phases.filter(phase => Number(phase.budget_allocated) > 0)
+  // the last end date, holding every phase's contracts, measured against the TIC total.
   const phaseIds = new Set(phases.map(phase => phase.id))
-  const unphasedPlan = phases.length > 1 && funded.length === 1
+  const unphasedPlan = budgetNotSplitByPhase(phases)
 
   const starts = phases.map(phase => phase.start_date).filter((date): date is string => !!date).sort()
   const ends = phases.map(phase => phase.end_date).filter((date): date is string => !!date).sort()
   const measured = unphasedPlan
     ? [{
-        budget: Number(funded[0].budget_allocated),
+        budget: projectBudget ?? 0,
         contracts: contracts.filter(c => c.phase_id != null && phaseIds.has(c.phase_id)),
         start: starts[0] ?? null,
         end: ends[ends.length - 1] ?? null,
       }]
     : phases.map(phase => ({
-        budget: Number(phase.budget_allocated),
+        budget: Number(phase.budget_allocated ?? 0),
         // Join on phase_id, not phase_name. Names are not unique — every project now has a phase
         // called "Faza 1" — so a name-keyed filter silently pulled in other projects' contracts
         // and, within a project, could not tell two same-named phases apart.

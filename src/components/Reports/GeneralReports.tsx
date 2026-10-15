@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { formatEuroCompact, formatEuroRounded, formatDateTime, formatMonthYear } from '../../utils/formatters'
 import { PROJECT_STATUS, RISK_LEVEL, statusLabel, statusVariant } from '../../utils/statusDisplay'
 import { exportT, EXPORT_LANGUAGE } from '../../utils/exportLanguage'
+import { orgHeading } from '../../lib/orgName'
 
 const GeneralReports: React.FC = () => {
   const { t, i18n } = useTranslation()
@@ -46,8 +47,16 @@ const GeneralReports: React.FC = () => {
     <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}<PageHelpLink tone="light" /></h1>
-          <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
+          {/* The organisation's name heads the page when its database has one (GEN-19);
+              otherwise — and until the report has loaded — the report title does. */}
+          {orgHeading(report?.organization_name) ? (
+            <>
+              <h1 className="text-4xl font-bold mb-2">{orgHeading(report?.organization_name)}<PageHelpLink tone="light" /></h1>
+              <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
+            </>
+          ) : (
+            <h1 className="text-3xl font-bold mb-2">{t('reports.general.exec_report')}<PageHelpLink tone="light" /></h1>
+          )}
           {fetchedAt && (
             <p className="text-sm opacity-90">{t('reports.general.generated')} {formatDateTime(new Date(fetchedAt), i18n.language)}</p>
           )}

@@ -3,7 +3,7 @@ import {
   totalsByClassification, ticGrandTotal, remainingFromTIC, lineItemTotal,
   phaseTotals, budgetMatrix, phaseClassificationTotals,
   phaseSplitCheck, hasPhaseSplitMismatch, ticPhaseCount, normalizePhaseNumbers,
-  budgetIsSet,
+  budgetIsSet, budgetNotSplitByPhase, plannedOnPhases,
 } from './ticBudget'
 import { calculateTotals, LineItem } from './ticFormatters'
 
@@ -441,5 +441,30 @@ describe('budgetIsSet', () => {
 
   it('is true once the TIC carries any amount', () => {
     expect(budgetIsSet([{ name: 'Građenje', vlastita: 0, kreditna: 1 }])).toBe(true)
+  })
+})
+
+describe('phases of a TIC that is not split by phase (GEN-22)', () => {
+  const unsplit = [{ budget_allocated: null }, { budget_allocated: null }]
+  const phased = [{ budget_allocated: 400 }, { budget_allocated: 600 }]
+
+  it('recognises the NULL the sync leaves on every phase', () => {
+    expect(budgetNotSplitByPhase(unsplit)).toBe(true)
+    expect(budgetNotSplitByPhase(phased)).toBe(false)
+    expect(budgetNotSplitByPhase([])).toBe(false)
+  })
+
+  it('does not take a phase the TIC plans nothing for as unsplit', () => {
+    expect(budgetNotSplitByPhase([{ budget_allocated: 1000 }, { budget_allocated: 0 }])).toBe(false)
+  })
+
+  it('plans the TIC total across unsplit phases', () => {
+    expect(plannedOnPhases(unsplit, 1000)).toBe(1000)
+    expect(plannedOnPhases(unsplit, null)).toBe(0)
+  })
+
+  it('sums the phases of a phased plan', () => {
+    expect(plannedOnPhases(phased, 1200)).toBe(1000)
+    expect(plannedOnPhases([], 1000)).toBe(0)
   })
 })

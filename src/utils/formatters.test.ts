@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
-  formatFileSize, formatEuropean, formatEuro, formatEuroRounded, formatEuroCompact,
+  formatFileSize, formatEuropean, formatEuro, formatEuroRounded, formatEuroCompact, formatIndex,
   formatDate, formatDateTime, formatMonthYear, formatDayMonth, formatMonthShort,
 } from './formatters'
 
@@ -114,6 +114,19 @@ describe('formatEuroCompact', () => {
   it('abbreviates negatives by magnitude', () => {
     expect(formatEuroCompact(-2500000)).toBe('\u2212€2,5M')
     expect(formatEuroCompact(-45000)).toBe('\u2212€45K')
+  })
+})
+
+describe('formatIndex', () => {
+  it('rounds a ratio to two decimals with a decimal comma', () => {
+    expect(formatIndex(2.527306968)).toBe('2,53')
+    expect(formatIndex(1)).toBe('1,00')
+    expect(formatIndex(0.5)).toBe('0,50')
+  })
+
+  it('shows a dash for a missing value', () => {
+    expect(formatIndex(null)).toBe('—')
+    expect(formatIndex(NaN)).toBe('—')
   })
 })
 

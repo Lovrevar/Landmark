@@ -27,6 +27,33 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   duplicate has appeared since 2026-10-12 (none then, in any database). Afterwards, try to add a
   unit with a number already in the building and a building with a name already in the project:
   both are refused with a message that says so.
+- [ ] **Apply `20261015100000_unphased_tic_phase_budgets`** (GEN-22), dev first, and **before the
+  client from 2026-10-15 ships**: that client no longer recognises the old "phase 1 holds the whole
+  plan" shape, so on an unmigrated database Budget Control would measure such a project as phase 1
+  alone. First list the projects it changes (unphased TIC, more than one phase):
+  `select p.name, count(ph.id) from projects p join tic_cost_structures t on t.project_id = p.id
+  join project_phases ph on ph.project_id = p.id where not exists (select 1 from
+  tic_phase_totals(t.line_items)) group by p.name having count(ph.id) > 1;`
+  Then, on dev:
+  1. Faze i ugovori on such a project shows "TIC nije raspoređen po fazama — budžet … vrijedi za
+     cijeli projekt" and no orange "Budžet nije postavljen".
+  2. Budget Control's planned budget equals the TIC.
+  3. Add a phase in Site Management to a single-phase project with an unphased TIC: both phases
+     show "—" and the note. Delete it again: the remaining phase has the whole budget back.
+  4. Add a phase to a project with a phased TIC: the other phases keep their budgets, the new one
+     shows 0.
+  5. Delete a test project that has phases: it goes without an error.
+  Then apply it to LandmarkDemo, whose Jarun project is such a project, and retake
+  `HELP_SHOTS_ONLY=projekt-faze-i-ugovori,kontrola-proracuna,upravljanje-gradilistem npm run help:shots`.
+  Not before: on the unmigrated demo the new client measures Jarun phase by phase, which is the
+  wrong CPI GEN-22 fixed, and Budget Control's shot would show it.
+- [ ] **Apply `20261015100100_organization_settings`** (GEN-19) before the client from
+  2026-10-15 ships — that client reads the table, and the General report and Sales PDFs fail
+  to load without it. Dev first. Then set each database's name with SQL:
+  `update organization_settings set name = 'Landmark Group';` on production,
+  `'Adriatic Development'` on LandmarkDemo (re-seeding does it too). With no name the reports
+  print only their titles. Check as Director and as Sales: the General report header and its PDF
+  cover, header band and footer, and both Sales report PDFs.
 - [ ] **Walk [../test/11-pre-merge-ui-audit.md](../test/11-pre-merge-ui-audit.md).** 80 unticked
   checks, over a dozen marked blocker. Steps 0.4 and 0.5 follow the migrations directly: log in as
   Sales and Supervision and open the invoice screens; edit an existing payment's amount and bank

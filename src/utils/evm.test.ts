@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculatePhaseEVM, calculateProjectEVM, type MilestoneProgress } from './evm'
+import { calculatePhaseEVM, calculateProjectEVM, indexAxisTop, type MilestoneProgress } from './evm'
 import type { Phase, ContractWithDetails } from '../components/General/Projects/types'
 
 // Minimal fixture builders — EVM only reads a handful of fields, so we cast
@@ -260,13 +260,14 @@ describe('calculateProjectEVM', () => {
     expect(m.EV).toBe(100000)
   })
 
-  // GEN-22. An unphased TIC leaves the whole budget on phase 1 and zero on the rest.
+  // GEN-22. An unphased TIC leaves every phase NULL; the plan is the project's TIC total.
   describe('an unphased plan over several phases', () => {
     const now = new Date('2026-07-01T00:00:00.000Z')
     const phases = [
-      phase({ id: 'ph-1', budget_allocated: 1000, start_date: '2026-01-01', end_date: '2026-03-31' }),
-      phase({ id: 'ph-2', budget_allocated: 0, start_date: '2026-04-01', end_date: '2026-12-31' }),
+      phase({ id: 'ph-1', budget_allocated: null, start_date: '2026-01-01', end_date: '2026-03-31' }),
+      phase({ id: 'ph-2', budget_allocated: null, start_date: '2026-04-01', end_date: '2026-12-31' }),
     ]
+    const tic = 1000
     // Phase 1 is finished and paid; phase 2 is a quarter paid.
     const contracts = [
       contract({ id: 'c1', phaseId: 'ph-1', contract_amount: 200, budget_realized: 200 }),
@@ -274,7 +275,7 @@ describe('calculateProjectEVM', () => {
     ]
 
     it('does not count the whole budget as earned because the first phase is finished', () => {
-      const m = calculateProjectEVM(phases, contracts, [], now)
+      const m = calculateProjectEVM(phases, contracts, [], now, tic)
       // (200×100% + 600×25%) / 800 = 43,75% of the 1000 plan
       expect(m.EV).toBeCloseTo(437.5)
       expect(m.AC).toBe(350)
@@ -285,7 +286,7 @@ describe('calculateProjectEVM', () => {
     })
 
     it('measures the schedule over the whole project, not over the first phase', () => {
-      const m = calculateProjectEVM(phases, contracts, [], now)
+      const m = calculateProjectEVM(phases, contracts, [], now, tic)
       // 1 Jan to 31 Dec, seen on 1 Jul: about half the plan should be done, not all of it
       expect(m.scheduleAvailable).toBe(true)
       expect(m.PV).toBeGreaterThan(480)
@@ -293,7 +294,7 @@ describe('calculateProjectEVM', () => {
     })
 
     it('uses the project span for the schedule even before the later phases have contracts', () => {
-      const m = calculateProjectEVM(phases, [contracts[0]], [], now)
+      const m = calculateProjectEVM(phases, [contracts[0]], [], now, tic)
       expect(m.PV).toBeGreaterThan(480)
       expect(m.PV).toBeLessThan(520)
     })
@@ -303,9 +304,43 @@ describe('calculateProjectEVM', () => {
         phase({ id: 'ph-1', budget_allocated: 400, start_date: '2026-01-01', end_date: '2026-03-31' }),
         phase({ id: 'ph-2', budget_allocated: 600, start_date: '2026-04-01', end_date: '2026-12-31' }),
       ]
-      const m = calculateProjectEVM(phased, contracts, [], now)
+      const m = calculateProjectEVM(phased, contracts, [], now, tic)
       // 400×100% + 600×25%
       expect(m.EV).toBeCloseTo(550)
     })
+
+    // The client used to guess an unphased plan from "one funded phase among several", which
+    // also caught a phased TIC that plans nothing for one phase.
+    it('measures a phased plan with an unfunded phase phase by phase', () => {
+      const phased = [
+        phase({ id: 'ph-1', budget_allocated: 1000, start_date: '2026-01-01', end_date: '2026-03-31' }),
+        phase({ id: 'ph-2', budget_allocated: 0, start_date: '2026-04-01', end_date: '2026-12-31' }),
+      ]
+      const m = calculateProjectEVM(phased, contracts, [], now, tic)
+      // 1000×100% + 0×25%
+      expect(m.EV).toBeCloseTo(1000)
+    })
+
+    it('has no plan to earn against when the project budget is unknown', () => {
+      const m = calculateProjectEVM(phases, contracts, [], now)
+      expect(m.EV).toBe(0)
+      expect(m.AC).toBe(350)
+    })
+  })
+})
+
+describe('indexAxisTop', () => {
+  it('keeps the axis at 2 while every index fits', () => {
+    expect(indexAxisTop(1.4)).toBe(2)
+    expect(indexAxisTop(2)).toBe(2)
+  })
+
+  it('rounds a larger index up to the next half', () => {
+    expect(indexAxisTop(2.527306968)).toBe(3)
+    expect(indexAxisTop(3.2)).toBe(3.5)
+  })
+
+  it('falls back to 2 when there is no point to fit', () => {
+    expect(indexAxisTop(-Infinity)).toBe(2)
   })
 })

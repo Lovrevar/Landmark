@@ -42,3 +42,5 @@ U **Uredi** se ugovoru mijenja **Status**: **Aktivan**, **Završeno** ili **Rask
 Zato postavljanje i uređivanje faza traže samo naziv i datume. **Budžet po klasifikaciji troška** na fazi pokazuje **TIC plan**, koliko su uzele **Druge faze** i koliko pripada ovoj fazi; iznos koji nije raspodijeljen prikazuje se kao **Neraspoređeno**.
 
 Ako projekt nema TIC, ugovori se svejedno mogu dodavati — provjera da iznos ugovora ne premašuje raspoloživi budžet vrijedi samo kad budžet postoji.
+
+Ako TIC nije raspoređen po fazama, a projekt ima više faza, ispod sažetka projekta piše **TIC nije raspoređen po fazama — budžet … vrijedi za cijeli projekt**. Kartice faza tada za budžet, preostali budžet i neraspoređeno pokazuju „—”, a ograničenja po fazi i klasifikaciji ne vrijede. Vidi [[term-budzet-iz-tic]].

@@ -461,6 +461,7 @@ const SiteManagement: React.FC = () => {
             setEditingPhase(null)
           }}
           phase={editingPhase}
+          projectBudget={selectedProject?.tic_total ?? null}
           onSubmit={handleUpdatePhase}
         />
 

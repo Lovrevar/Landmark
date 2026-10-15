@@ -296,6 +296,31 @@ export function phaseSplitCheck(item: LineItem): PhaseSplitCheck {
 export const hasPhaseSplitMismatch = (item: LineItem): boolean =>
   isPhased(item) && !phaseSplitCheck(item).balanced
 
+/** The one field these two read from a `project_phases` row. */
+export interface PhaseBudget {
+  budget_allocated: number | null
+}
+
+/**
+ * True when the TIC is not split by phase and the project has several phases. The sync then
+ * leaves every phase's `budget_allocated` NULL rather than putting the whole plan on phase 1
+ * (`apply_unphased_tic_budget`, GEN-22): the project budget covers the phases together, and no
+ * phase has a share — or a cap — of its own. 0 is different: the TIC plans nothing for that phase.
+ */
+export const budgetNotSplitByPhase = (phases: PhaseBudget[]): boolean =>
+  phases.some(phase => phase.budget_allocated === null)
+
+/**
+ * What the project's phases plan between them: the sum of their shares, or, when the TIC is not
+ * split by phase, the TIC itself. Summing NULLs would read as a project with no plan at all.
+ * A phased TIC with project-level lines (land, fees) plans more than its phases; this is the
+ * phases' part, as before.
+ */
+export const plannedOnPhases = (phases: PhaseBudget[], ticTotal: number | null): number =>
+  budgetNotSplitByPhase(phases)
+    ? (ticTotal ?? 0)
+    : phases.reduce((sum, phase) => sum + Number(phase.budget_allocated ?? 0), 0)
+
 /** How many phases the plan spans — its highest ordinal, so an empty middle phase still counts. */
 export const ticPhaseCount = (lineItems: LineItem[]): number =>
   lineItems.reduce(

@@ -6,6 +6,7 @@ import { exportFileName } from '../../../utils/downloadFile'
 import { pdfMoney } from './pdfText'
 import { PROJECT_STATUS, UNIT_STATUS, CUSTOMER_STATUS, statusLabel } from '../../../utils/statusDisplay'
 import { logActivity } from '../../../lib/activityLog'
+import { fetchOrgName, orgHeading } from '../../../lib/orgName'
 import type { ProjectSalesReport, CustomerReport } from '../types'
 
 export async function generateSalesReportPDF(
@@ -21,6 +22,9 @@ export async function generateSalesReportPDF(
   // re-encoding the whole string as UCS-2BE, so a Croatian customer name came out as noise. A
   // failure here means the font asset did not ship; let it reach `useAsyncExport`.
   await loadUnicodeFont(pdf)
+
+  // From `organization_settings`; a failed read fails the export like any other (GEN-19).
+  const organizationName = await fetchOrgName()
 
   // Exports are Croatian whatever the UI language is set to (docs/REPORTS.md) — these documents
   // go to buyers, banks and the accountant, not to whoever clicked Export.
@@ -42,6 +46,28 @@ export async function generateSalesReportPDF(
 
   const footerHeight = 15
 
+  /**
+   * The text in the blue band at the top of the first page: the organisation's name over the
+   * report title, or the title alone when the database has no name set (GEN-19).
+   */
+  const drawHeaderBand = (title: string) => {
+    const heading = orgHeading(organizationName)
+    pdf.setTextColor(255, 255, 255)
+    if (heading) {
+      pdf.setFontSize(20)
+      pdf.setFont(PDF_FONT_FAMILY, 'bold')
+      pdf.text(heading, margin, 20)
+      pdf.setFontSize(12)
+      pdf.setFont(PDF_FONT_FAMILY, 'normal')
+      pdf.text(title, margin, 28)
+    } else {
+      // A long project name wraps onto a second line; the band has room for two.
+      pdf.setFontSize(14)
+      pdf.setFont(PDF_FONT_FAMILY, 'bold')
+      pdf.text(pdf.splitTextToSize(title, contentWidth).slice(0, 2), margin, 18)
+    }
+  }
+
   const addFooter = () => {
     const reportTitle = reportType === 'project'
       ? t('reports.sales.project_sales_report')
@@ -52,7 +78,7 @@ export async function generateSalesReportPDF(
       pdf.setFontSize(8)
       pdf.setFont(PDF_FONT_FAMILY, 'normal')
       pdf.setTextColor(107, 114, 128)
-      pdf.text(`${t('reports.general.landmark_group')} — ${reportTitle}`, margin, pageHeight - 10)
+      pdf.text(organizationName ? `${organizationName} — ${reportTitle}` : reportTitle, margin, pageHeight - 10)
       pdf.text(
         t('pagination.page_info', { current: i, total: totalPages }),
         pageWidth - margin,
@@ -106,14 +132,7 @@ export async function generateSalesReportPDF(
     pdf.setFillColor(37, 99, 235)
     pdf.rect(0, 0, pageWidth, 35, 'F')
 
-    pdf.setTextColor(255, 255, 255)
-    pdf.setFontSize(20)
-    pdf.setFont(PDF_FONT_FAMILY, 'bold')
-    pdf.text(t('reports.general.landmark_group'), margin, 20)
-
-    pdf.setFontSize(12)
-    pdf.setFont(PDF_FONT_FAMILY, 'normal')
-    pdf.text(`${t('reports.sales.project_sales_report')} · ${projectReport.project.name}`, margin, 28)
+    drawHeaderBand(`${t('reports.sales.project_sales_report')} · ${projectReport.project.name}`)
 
     pdf.setTextColor(0, 0, 0)
     yPosition = 45
@@ -208,14 +227,7 @@ export async function generateSalesReportPDF(
     pdf.setFillColor(37, 99, 235)
     pdf.rect(0, 0, pageWidth, 35, 'F')
 
-    pdf.setTextColor(255, 255, 255)
-    pdf.setFontSize(20)
-    pdf.setFont(PDF_FONT_FAMILY, 'bold')
-    pdf.text(t('reports.general.landmark_group'), margin, 20)
-
-    pdf.setFontSize(12)
-    pdf.setFont(PDF_FONT_FAMILY, 'normal')
-    pdf.text(t('reports.sales.customer_report'), margin, 28)
+    drawHeaderBand(t('reports.sales.customer_report'))
 
     pdf.setTextColor(0, 0, 0)
     yPosition = 45

@@ -26,12 +26,24 @@ kliknite **Spremi**. Time se odmah postavljaju:
 - faze projekta i budžet svake faze
 - budžet po klasifikaciji troška unutar svake faze
 
+## „TIC nije raspoređen po fazama”
+
+Ako TIC nema nijedan fazirani redak, a projekt ima više faza, budžet pripada projektu kao
+cjelini, a ne pojedinoj fazi. Tada popis faza, [[site-management]] i obrasci faze umjesto iznosa
+faze pokazuju poruku **TIC nije raspoređen po fazama — budžet … vrijedi za cijeli projekt**, a
+iznosi koji ovise o budžetu faze (preostali budžet, neraspoređeno, iskorištenost) prikazuju se
+kao „—”. To nije greška: TIC jednostavno ne kaže koliko pripada kojoj fazi. Ako to želite,
+otvorite [[tic]] i rasporedite retke po fazama.
+
+[[budget-control]] takav projekt mjeri kao jednu cjelinu, od početka prve do kraja posljednje faze.
+
 ## Što je i dalje moguće bez TIC-a
 
 Projekt se može stvoriti, faze se mogu postaviti i preimenovati, a ugovori i podugovaratelji se
 mogu dodavati normalno. Provjere **Iznos ugovora premašuje raspoloživi budžet faze** i **Iznos
 ugovora premašuje raspoloživi budžet klasifikacije troška** primjenjuju se samo kada budžet
-postoji, pa nedostatak plana ne blokira rad na gradilištu.
+postoji, pa nedostatak plana ne blokira rad na gradilištu. Isto vrijedi kad TIC nije raspoređen
+po fazama: faze i klasifikacije tada nemaju vlastiti budžet pa ni ograničenje.
 
 ## Zašto se budžet ne može promijeniti izravno
 

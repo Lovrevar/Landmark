@@ -1,12 +1,12 @@
 ---
 id: cashflow-companies
 title: Moje firme
-keywords: [moje firme, my companies, accounting companies, Landmark, OIB, dobit, gubitak, promet, financiranje]
+keywords: [moje firme, my companies, accounting companies, grupa, OIB, dobit, gubitak, promet, financiranje]
 routes: [/accounting-companies]
 roles: [Director, Accounting]
 ---
 
-Stranica **Moje firme** prikazuje financijski pregled svih firmi pod grupom Landmark. Podnaslov: **Financijski pregled svih firmi pod Landmarkom**.
+Stranica **Moje firme** prikazuje financijski pregled svih firmi u grupi. Podnaslov: **Financijski pregled svih firmi u grupi**.
 
 ![Stranica Moje firme: zbirne kartice i kartice firmi](img/moje-firme.png)
 

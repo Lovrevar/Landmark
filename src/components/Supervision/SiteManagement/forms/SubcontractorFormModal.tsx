@@ -159,7 +159,11 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
   // A phase with no plan has no headroom to report — showing "available budget €0" invites the
   // reader to think the money ran out, when the TIC that would set it simply does not exist yet.
-  const availableBudget = phase.budget_allocated > 0 ? phase.budget_allocated - phase.budget_used : null
+  // NULL is a plan that is not split by phase (GEN-22): no headroom of its own, but not "not set".
+  const notSplit = phase.budget_allocated === null
+  const availableBudget = phase.budget_allocated !== null && phase.budget_allocated > 0
+    ? phase.budget_allocated - phase.budget_used
+    : null
 
   const funderSelect = banks.length > 0 ? (
     <FormField label={t('supervision.subcontractor_form.financed_by')} helperText={t('supervision.subcontractor_form.financed_by_help')}>
@@ -186,7 +190,9 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
       <Modal.Header
         title={t('supervision.subcontractor_form.title')}
         subtitle={
-          availableBudget === null
+          notSplit
+            ? phase.phase_name
+            : availableBudget === null
             ? `${phase.phase_name} • ${t('general_projects.budget_not_set')}`
             : `${phase.phase_name} • ${t('supervision.subcontractor_form.available_budget')} ${formatEuro(availableBudget)}`
         }
