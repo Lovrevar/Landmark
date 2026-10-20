@@ -1,10 +1,39 @@
 # Backlog — Sales
 
 Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (next free:
-`SALES-21`). Entry format and rules are in [README.md](./README.md). Retail is in
+`SALES-23`). Entry format and rules are in [README.md](./README.md). Retail is in
 [retail.md](./retail.md).
 
 ## Open
+
+### SALES-21 · Medium · Apartment import matches unit numbers exactly; the unique indexes do not
+- **Check:** Code reading (pre-release review, 2026-10-20)
+- **Where:** `Sales/SalesProjects/services/apartmentImportService.ts` — the apartment, garage and
+  storage lookups `.eq('number', …)` (around lines 44, 90, 120); the error message in
+  `modals/ExcelImportApartmentsModal.tsx:222`; `services/garageImportService.ts:88-94`
+- **What happens:** since `20261012100200` numbers are unique per building ignoring case and
+  surrounding spaces, but the import looks them up exactly and does not trim the parking and
+  storage labels. A file with "pm-1" or "PM-1 " where garage "PM-1" exists misses it, tries to
+  insert a new garage and fails with 23505 — after the apartment row was already inserted or
+  updated, since the steps are not one transaction. The row is reported as "unit number exists",
+  naming the apartment rather than the garage, and every re-run fails the same way. The garage
+  import's update path has no `.select('id')` + `assertRowsAffected`, so a repeated number whose
+  first insert failed counts as "updated" with nothing written.
+- **Fix direction:** look units up with `ilike` on the trimmed value (or normalise both sides in a
+  small RPC), trim the labels on read, name the unit that collided in the message, and assert the
+  garage update hit a row.
+
+### SALES-22 · Low · Demo seed marks apartments Sold without a sale
+- **Check:** Confirmed on LandmarkDemo (2026-10-20): 8 apartments `Sold` with no `sales` row;
+  production had none
+- **Where:** `scripts/seed-demo-data.mjs` — units are created with status `'Sold'` (around line
+  538) but `sales` rows are inserted only for some of them (`saleFor`, around line 606)
+- **What happens:** since SALES-10 the UI cannot put such an apartment back: Edit Apartment
+  disables the status for a Sold unit, UnitsGrid hides the status buttons, and "Poništi prodaju"
+  needs a sale row. On the demo they stay Sold for good, and the Sales figures (which count `sales`
+  rows) disagree with the unit statuses.
+- **Fix direction:** give every Sold unit a `saleFor(...)`, or seed the rest as Available or
+  Reserved; re-seed the demo.
 
 ### SALES-17 · Low · Bulk building creation always gives ten floors
 - **Where:** `createBulkBuildings` (`total_floors: 10`); `BuildingQuantityModal` asks only for a

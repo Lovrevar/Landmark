@@ -1,12 +1,24 @@
 # Backlog — Supervision
 
 Site management, subcontractors, contracts, phases and work logs. Ids: `SUP-n` (next free:
-`SUP-17`). Entry format and rules are in [README.md](./README.md).
+`SUP-18`). Entry format and rules are in [README.md](./README.md).
 
 Supervision is used on phones on site; the mobile problems are UI-8 in [ui.md](./ui.md). The
 payment gate being screen-only is SEC-004 in [security.md](./security.md).
 
 ## Open
+
+### SUP-17 · Medium · Subcontractor documents offer delete to users who cannot delete
+- **Check:** Code reading (pre-release review, 2026-10-20)
+- **Where:** `Supervision/SiteManagement/ContractDocumentViewer.tsx:139` shows the delete button
+  whenever `!readOnly`; used without `readOnly` from `Subcontractors/SubcontractorDocumentsSection.tsx:41`
+  and `SiteManagement/modals/EditSubcontractorModal.tsx:422`
+- **What happens:** since SEC-A12 only the uploader, Director and Accounting may delete a document.
+  A Supervision or Sales user sees the bin on every document, including e-mailed ones and other
+  people's uploads; RLS refuses, `assertRowsAffected` throws and they get the generic
+  "delete_error" toast. No data is lost. `Documents/index.tsx:44` already gates it correctly.
+- **Fix direction:** reuse the Documents screen's rule (uploader, Director or Accounting) per row
+  inside the viewer, or move it to `src/utils/permissions.ts` and use it in both.
 
 ### SUP-16 · Low · Site management card: the "kasni" badge runs past the card edge
 - **Check:** Confirmed (in `help-kb/img/upravljanje-gradilistem.png`, before and after 2026-10-20)

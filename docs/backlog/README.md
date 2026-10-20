@@ -9,13 +9,13 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 |---|---|---|
 | [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 10 steps |
 | [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 1 defect, 3 accepted risks |
-| [sales.md](./sales.md) | Units, the sale flow, customers | 3 |
+| [sales.md](./sales.md) | Units, the sale flow, customers | 5 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
-| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 6 |
+| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 7 |
 | [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 8, plus 4 waiting on the ERP |
-| [funding.md](./funding.md) | Credits, investors, allocations, TIC | 7 |
+| [funding.md](./funding.md) | Credits, investors, allocations, TIC | 8 |
 | [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 8 |
-| [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 10 |
+| [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 12 |
 | [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 10 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
 | [archive/](./archive/) | The four audits, with every fixed entry | Closed, do not update |

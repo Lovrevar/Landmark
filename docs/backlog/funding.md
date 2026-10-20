@@ -1,9 +1,19 @@
 # Backlog — Funding and TIC
 
 Bank credits, investors, drawdowns, allocations and the TIC cost structure. Ids: `FUND-n` (next
-free: `FUND-20`). Entry format and rules are in [README.md](./README.md).
+free: `FUND-21`). Entry format and rules are in [README.md](./README.md).
 
 ## Open
+
+### FUND-20 · Low · Help says Investment can open Funding payments; the app redirects them
+- **Check:** Confirmed (pre-release review, 2026-10-20)
+- **Where:** `help-kb/funding-payments.md:19` and `help-kb/role-cannot-see-cashflow.md:16`; the code
+  in `Funding/Payments/index.tsx:66` and `Common/Layout.tsx:189`
+- **What happens:** both articles say an Investment user can open the page and sees an empty list.
+  Since `1693baf1` the menu item is hidden and the route redirects them. The first article
+  contradicts itself two lines earlier, and the AI assistant repeats the stale claim.
+- **Fix direction:** reword both lines (Investment has no access to Funding payments), then
+  `npm run kb:build`.
 
 ### FUND-18 · Low · Funding labels and hardcoded strings
 - **Check:** Code reading
