@@ -162,7 +162,15 @@ export default function BudgetControl() {
    * "forecast" is then just the budget again.
    */
   const forecastAvailable = costAvailable && data.metrics.CPI !== 0
-  const noForecastLabel = t(costAvailable || !hasBudgetData ? 'budget_control.no_forecast' : 'budget_control.no_cost')
+  // Money paid but nothing measurable: only suppliers without a contract were paid, or the paid
+  // contracts have no milestones. Earned then equals paid and CPI is 1 by construction (GEN-23).
+  const NO_COST_LABEL = {
+    nothing_paid: 'budget_control.no_cost',
+    no_contract: 'budget_control.no_contracted_cost',
+    no_milestones: 'budget_control.no_milestones',
+  } as const
+  const noCostLabel = t(NO_COST_LABEL[data?.metrics.costUnavailableReason ?? 'nothing_paid'])
+  const noForecastLabel = costAvailable || !hasBudgetData ? t('budget_control.no_forecast') : noCostLabel
   const forecastUnderBudget = forecastAvailable && data.metrics.VAC >= 0
   if (forecastAvailable && barData[0]) barData[0][t('budget_control.forecast_eac')] = data.metrics.EAC
 
@@ -348,7 +356,7 @@ export default function BudgetControl() {
                 <IndexCard
                   label={t('budget_control.cpi')}
                   value={cpiStatus ? data.metrics.CPI : null}
-                  sublabel={cpiStatus ? t(cpiStatus.labelKey) : t('budget_control.no_cost')}
+                  sublabel={cpiStatus ? t(cpiStatus.labelKey) : noCostLabel}
                   status={cpiStatus ? cpiStatus.status : 'unknown'}
                   hint={<EvmHint metric="cpi" />}
                 />
