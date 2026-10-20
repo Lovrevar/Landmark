@@ -99,7 +99,7 @@ Izvan opsega: modul Retail (`src/components/Retail/`), `RetailDashboard`, `Retai
 
 | Sloj | Tehnologija |
 |---|---|
-| Frontend | React 18.3, TypeScript 5.5, Vite 5.4 |
+| Frontend | React 18.3, TypeScript 5.5, Vite 7.3 |
 | Usmjeravanje | React Router DOM 7 (`<BrowserRouter>`) |
 | Stilovi | Tailwind CSS 3.4 (`darkMode: 'class'`) |
 | Backend | Supabase: PostgreSQL s Row Level Security, Auth, Storage, Realtime, Edge Functions (Deno) |
@@ -3304,7 +3304,7 @@ petlje AI asistenta s lažnim Anthropic i Supabase klijentima. Pokretanje:
 ### 26.4 CI (GitHub Actions)
 
 - `test.yml` — na push u `main` i PR prema `main`/`development`: `npm test` i
-  `npm run test:functions` (Node 20, Deno 2).
+  `npm run test:functions` (Node 24, Deno 2).
 - `e2e.yml` — Playwright s tajnama za testni Supabase projekt.
 - Ručne testne liste: `docs/test/` i [`MANUAL_TESTSHEET.md`](./MANUAL_TESTSHEET.md).
 
