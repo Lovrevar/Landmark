@@ -2922,6 +2922,24 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_settings: {
+        Row: {
+          id: boolean
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       phase_classification_budgets: {
         Row: {
           budget_allocated: number

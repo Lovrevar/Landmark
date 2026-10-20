@@ -8,6 +8,8 @@ roles: [Director, Accounting, Sales, Investment]
 
 Detaljni prikaz projekta otvara se klikom na karticu na stranici **Projekti** (ili na projekt u tablici na nadzornoj ploči). Na vrhu je gumb **Natrag na projekte**; gumb **Uredi projekt** vidi samo **Director**.
 
+![Detalji projekta, kartica Faze i ugovori](img/projekt-faze-i-ugovori.png)
+
 Ispod naziva projekta su četiri pločice: **Budžet** (s iznosom **Utrošeno**), **Vremenski okvir** (dana preostalo ili dana kašnjenja), **Napredak** (udio završenih prekretnica) i **Tim** (broj aktivnih ugovora).
 
 Prikazano je šest kartica (tabova):
@@ -19,6 +21,6 @@ Prikazano je šest kartica (tabova):
 - **Financiranje** — **Izvori financiranja**: krediti dodijeljeni projektu, s dodijeljenim i iskorištenim iznosom.
 - **Prekretnice** — popis prekretnica grupiran po fazama. **Dodaj prekretnicu** i **Koristi predložak** dodaju nove; prekretnicu možete označiti završenom, urediti ili obrisati. Te akcije vidi **Director**.
 
-Budžet projekta i budžeti faza dolaze iz [[tic]] projekta i ovdje se ne mogu mijenjati. Projekt bez TIC-a prikazuje **Budžet nije postavljen**.
+Budžet projekta i budžeti faza dolaze iz [[tic]] projekta i ovdje se ne mogu mijenjati. Projekt bez TIC-a prikazuje **Budžet nije postavljen**. Ako TIC nije raspoređen po fazama, a projekt ima više faza, iznad popisa faza piše **TIC nije raspoređen po fazama — budžet … vrijedi za cijeli projekt** i faze nemaju vlastiti budžet.
 
 **Faza** i **prekretnica** nisu isto — pogledajte [[term-faza-vs-prekretnica]].

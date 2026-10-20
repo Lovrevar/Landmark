@@ -23,6 +23,7 @@ import SupervisionWeekView from './sections/SupervisionWeekView'
 import SupervisionStatusView from './sections/SupervisionStatusView'
 import SupervisionIssuesView from './sections/SupervisionIssuesView'
 import PageHelpLink from '../ui/PageHelpLink'
+import { isDueThisWeek } from './utils/supervisionDeadlines'
 
 const defaultStats: WeeklyStats = {
   completed_this_week: 0,
@@ -60,9 +61,7 @@ const SupervisionDashboard: React.FC = () => {
   }
 
   const overdueTasks = subcontractorStatus.filter(s => s.is_overdue)
-  const criticalDeadlines = subcontractorStatus.filter(
-    s => s.days_until_deadline >= 0 && s.days_until_deadline <= 7 && s.progress < 100
-  )
+  const criticalDeadlines = subcontractorStatus.filter(isDueThisWeek)
   const needsAttention = subcontractorStatus.filter(s => s.recent_work_logs === 0 && s.progress < 100)
 
   const tabClass = (view: 'week' | 'status' | 'issues') =>

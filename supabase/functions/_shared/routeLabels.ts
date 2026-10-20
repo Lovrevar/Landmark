@@ -69,6 +69,7 @@ const PATTERNS: RouteEntry[] = [
   { re: /^\/calendar$/,               pattern: '/calendar',              label: 'Kalendar' },
   { re: /^\/activity-log$/,           pattern: '/activity-log',          label: 'Dnevnik aktivnosti' },
   { re: /^\/general-reports$/,        pattern: '/general-reports',       label: 'Opći izvještaji' },
+  { re: /^\/help(\/[^/]+)?$/,         pattern: '/help/:articleId?',      label: 'Pomoć (upute)' },
   { re: /^\/$/,                       pattern: '/',                      label: 'Nadzorna ploča' },
 ]
 

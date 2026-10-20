@@ -68,9 +68,13 @@ docs/erp-samples/
 # templates), in every subfolder. Regenerable and large. The README.md beside them holds the
 # findings and stays tracked.
 docs/screenshots/**/*.png
+docs/screenshots/**/findings.txt
 docs/screenshots/**/*.jpg
 docs/screenshots/**/*.jpeg
 docs/screenshots/**/*.webp
 docs/screenshots/**/*.gif
 docs/screenshots/**/*.pdf
 docs/screenshots/**/*.xlsx
+
+# Frontend built against LandmarkDemo for the help screenshots (npm run help:shots)
+dist-demo

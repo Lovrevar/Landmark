@@ -8,8 +8,9 @@ import { SubcontractorSummary } from './types'
 interface Props {
   sub: SubcontractorSummary
   onSelect: () => void
-  onEdit: (e: React.MouseEvent) => void
-  onDelete: (e: React.MouseEvent) => void
+  /** Omitted when the role may not edit / delete: the button is then not drawn. */
+  onEdit?: (e: React.MouseEvent) => void
+  onDelete?: (e: React.MouseEvent) => void
 }
 
 export const SubcontractorCard: React.FC<Props> = ({ sub, onSelect, onEdit, onDelete }) => {
@@ -26,20 +27,24 @@ export const SubcontractorCard: React.FC<Props> = ({ sub, onSelect, onEdit, onDe
           {sub.contact && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{sub.contact}</p>}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            onClick={onEdit}
-            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-            title={t('supervision.subcontractors.edit')}
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-            title={t('supervision.subcontractors.delete_title')}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+              title={t('supervision.subcontractors.edit')}
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              title={t('supervision.subcontractors.delete_title')}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 

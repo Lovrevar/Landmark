@@ -171,7 +171,7 @@ exactly what kept regressing.
 #### Tabs
 
 ### tabs/PhasesContractsTab.tsx
-- Phases & contracts view: collapsible per-phase cards (header shows contract count, summed contract value, and a progress bar of paid / `phase.budget_allocated`, where paid is the sum of the phase's contracts' `budget_realized`; when the project has no TIC plan or the phase has no allocation, the bar is replaced by the paid figure and "budget not set"). Contracts are bucketed by `phase_id` (not `phase_name`, which is not unique), then grouped by cost classification inside the phase (classification `sort_order`, unclassified last), each group with its contracted and paid subtotals and a dense table (subcontractor, job description, contract amount, paid). A single-phase project renders no phase level; contracts whose `phase_id` is null are listed in a separate block. Expand/collapse persists via `usePhaseCollapseState` (namespace `'phase_contracts_collapse_v2'`)
+- Phases & contracts view: collapsible per-phase cards (header shows contract count, summed contract value, and a progress bar of paid / `phase.budget_allocated`, where paid is the sum of the phase's contracts' `budget_realized`; when the project has no TIC plan or the phase has no allocation, the bar is replaced by the paid figure and "budget not set"; when the TIC is not split by phase (every phase NULL, `budgetNotSplitByPhase`), one info note above the list names the TIC total and no phase says "budget not set"). Contracts are bucketed by `phase_id` (not `phase_name`, which is not unique), then grouped by cost classification inside the phase (classification `sort_order`, unclassified last), each group with its contracted and paid subtotals and a dense table (subcontractor, job description, contract amount, paid). A single-phase project renders no phase level; contracts whose `phase_id` is null are listed in a separate block. Expand/collapse persists via `usePhaseCollapseState` (namespace `'phase_contracts_collapse_v2'`)
 - **Props:** phases, contracts, projectId, ticTotal
 - **Uses hooks:** usePhaseCollapseState
 - **Uses Ui:** EmptyState, Table
@@ -209,7 +209,7 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 #### Hooks
 
 ### hooks/useBudgetControl.ts
-- `useBudgetControl()` — loads the projects list on mount and auto-selects the first; on selection fetches budget data and computes `plannedBudget` (sum of phase `budget_allocated`), `committed` (sum of `contract_amount`), `paid` (sum of `budget_realized`), `completionPct` (paid / committed), `tic` (project budget), and the EVM `metrics`
+- `useBudgetControl()` — loads the projects list on mount and auto-selects the first; on selection fetches budget data and computes `plannedBudget` (`plannedOnPhases`: the sum of phase `budget_allocated`, or the TIC total when the TIC is not split by phase), `committed` (sum of `contract_amount`), `paid` (sum of `budget_realized`), `completionPct` (paid / committed), `tic` (project budget), and the EVM `metrics`
 - **Returns (`BudgetControlData`):** `projects`, `selectedProjectId`, `setSelectedProjectId`, `data` (`tic`, `plannedBudget`, `committed`, `paid`, `completionPct`, `metrics`), `loading`, `error`, `refetch`
 - `refetch` re-runs both loads (a reload counter both effects depend on) and preserves the selected project
 - A failed project-data load now **clears `data`**. Leaving the previous project's EVM figures standing attributed one project's numbers to whichever project the selector named

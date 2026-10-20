@@ -8,6 +8,8 @@ roles: [Director, Accounting]
 
 **Kalendar dospijeća** (Cashflow profil) prikazuje račune po datumu dospijeća u mjesečnom prikazu. Stranica nema zaseban naslov — iznad kalendara stoji naziv mjeseca i godina.
 
+![Kalendar dospijeća za jedan mjesec: kartice, zbrojevi i mjesečni prikaz](img/kalendar-dospijeca.png)
+
 Kartice statistike za odabrani mjesec (broj računa): **Ukupno računa**, **Plaćeno**, **Neplaćeno**, **Dospjelo**. Djelomično plaćen račun broji se pod **Neplaćeno**.
 
 Sažetak mjeseca (iznad kalendara):

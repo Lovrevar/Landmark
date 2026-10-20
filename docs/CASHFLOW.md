@@ -966,6 +966,7 @@ Shared utilities used across multiple Cashflow sub-modules.
 
 ### paymentTotals.ts
 - `paymentTotalsByDirection(rows)` → `{ inflow, outflow, net, count }`. Sums by direction, never
+- `paymentTotalsByCategory(rows)` → `{ operating, financing }`, each a `PaymentTotals`. The Cashflow payments cards and the "Filtrirano" line show `operating` as Prihod / Rashod / Neto and `financing` on its own line (`common.financing_received_repaid`): credit principal is neither income nor expense (CASH-29). The Funding register keeps `paymentTotalsByDirection` — its cards are worded as drawdowns and repayments.
   across it: one summed amount put a €500k drawdown and its €500k repayment at €1.000.000, and a
   month's sales receipts on top of that month's supplier payments. Sums in whole cents so equal
   flows net to exactly 0 rather than printing "−€0,00". Rows carry `{ amount, direction }`, the

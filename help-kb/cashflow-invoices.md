@@ -8,6 +8,8 @@ roles: [Director, Accounting]
 
 **Računi** u Cashflow profilu je središnja knjiga ulaznih i izlaznih računa. Podnaslov: **Upravljanje ulaznim i izlaznim računima**.
 
+![Stranica Računi u profilu Cashflow](img/racuni.png)
+
 U zaglavlju je pet zasebnih gumba za unos: **Kupoprodaja Zemljišta**, **Novi Office Račun**, **Novi Retail Račun**, **Investicije** (račun banke ili kredita — otvara obrazac **Novi Račun Banka**) i **Novi račun**. Gumb **Polja** uključuje i isključuje stupce tablice.
 
 Filtri: tekstualna pretraga (**Pretraži račune...**), **Svi tipovi** (kratice odabranog smjera), **Svi statusi** (Plaćeno, Neplaćeno, Djelomično, Neplaćeno + Djelomično), **Sve firme** te prekidač **Ulazni / Izlazni**. Prekidač uvijek ima odabran jedan smjer (zadano **Ulazni**), pa tablica nikad ne prikazuje oba smjera zajedno. Gumb **Očisti** pojavljuje se kad je neki filter aktivan.

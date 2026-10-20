@@ -7,6 +7,7 @@ import { ProjectWithPhases, SubcontractorWithPhase, SiteGrouping, VIEW_DIMENSION
 import { PhaseCard } from './PhaseCard'
 import { ClassificationCard } from './ClassificationCard'
 import { buildContractTree } from './utils/contractTree'
+import { budgetNotSplitByPhase } from '../../Funding/TIC/utils/ticBudget'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
 import { formatEuroRounded } from '../../../utils/formatters'
 import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
@@ -16,7 +17,7 @@ import { TreeGroup } from './TreeGroup'
 import { HideClosedContractsContext } from './hideClosedContracts'
 import { isClosedContract } from '../../../utils/contractRollup'
 import { fetchCreditAllocations, type CreditAllocation } from './services/siteService'
-import { Button, Badge, EmptyState } from '../../ui'
+import { Alert, Button, Badge, EmptyState } from '../../ui'
 import InlineLoadError from '../../ui/InlineLoadError'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 
@@ -327,6 +328,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       {/* The project totalled, above the detail. Same five tiles as a phase card, so the two
           read the same way and the project total is visibly the sum of what is below it. */}
       <ProjectSummaryBanner project={project} canManagePayments={canManagePayments} />
+
+      {/* An unphased TIC over several phases gives none of them a budget (GEN-22). Said once here,
+          so the phase cards' "—" reads as "the plan is the project's", not "missing". */}
+      {project.phases.length > 1 && project.tic_total !== null && project.tic_total > 0
+        && budgetNotSplitByPhase(project.phases) && (
+        <Alert variant="info" className="mb-6">
+          {t('common.phase_budget_not_split', { amount: formatEuroRounded(project.tic_total) })}
+        </Alert>
+      )}
 
       {project.has_phases ? (
         grouping === 'byPhase' ? (

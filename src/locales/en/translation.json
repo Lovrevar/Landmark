@@ -176,6 +176,7 @@
     "option_name_unavailable": "Name not loaded",
     "projects_load_error": "The project list could not be loaded",
     "users_load_error": "The user list could not be loaded",
+    "list_load_error": "The list could not be loaded",
     "generated": "Generated:",
     "pdf": {
       "confidential": "CONFIDENTIAL",
@@ -203,7 +204,15 @@
       "November",
       "December"
     ],
-    "no_results_description": "Clear the search or change the filters."
+    "no_results_description": "Clear the search or change the filters.",
+    "financing_received_repaid": "Financing (received / repaid):",
+    "budget_not_set": "Budget not set",
+    "phase_budget_not_split": "The TIC is not split by phase — the {{amount}} budget covers the whole project",
+    "hints": {
+      "no_contract_title": "No contract",
+      "no_contract_what": "The work is based on a verbal agreement, so there is no contracted amount to compare payments with.",
+      "no_contract_tracking": "The cost is tracked through invoices only, and the engagement carries the NO CONTRACT badge."
+    }
   },
   "confirm": {
     "delete_title": "Confirm Deletion",
@@ -702,7 +711,10 @@
     "hints": {
       "type_title": "Invoice type",
       "type_intro": "The abbreviation in brackets says what the invoice relates to:",
-      "type_colour": "Red marks invoices we pay (every incoming one), green marks invoices we are paid on (every outgoing one)."
+      "type_colour": "Red marks invoices we pay (every incoming one), green marks invoices we are paid on (every outgoing one).",
+      "multi_vat_title": "Several VAT rates",
+      "multi_vat_fields": "One invoice can carry up to four VAT rates. Enter the base amount in the field of each rate that appears on the invoice and leave the others empty.",
+      "multi_vat_calc": "VAT and the total are calculated for you, separately for each rate, and shown in the preview in the form."
     }
   },
   "payments": {
@@ -886,6 +898,7 @@
       "source_bank": "Bank Account",
       "source_credit": "Credit",
       "source_kompenzacija": "Compensation",
+      "source_cesija": "Cesija",
       "source_cash": "Cash"
     },
     "hints": {
@@ -994,7 +1007,7 @@
     "link": {
       "title": "Link Supplier",
       "description": "Add existing supplier to a project phase",
-      "info": "Supplier will be added to the selected phase without a contract (has_contract = false)",
+      "info": "Supplier will be added to the selected phase without a contract",
       "supplier_label": "Supplier",
       "project_label": "Project",
       "phase_label": "Phase",
@@ -1020,7 +1033,7 @@
       "delete_in_use": "The company has invoices or other linked records, so it cannot be deleted"
     },
     "title": "My Companies",
-    "subtitle": "Financial overview of all companies under Landmark",
+    "subtitle": "Financial overview of all companies in the group",
     "add": "Add New Company",
     "add_new": "Add New Company",
     "edit": "Edit Company",
@@ -1046,8 +1059,7 @@
       "revenue_label": "Revenue:",
       "profit_loss_label": "Profit/Loss:",
       "unpaid_income": "Unpaid (income):",
-      "unpaid_expense": "Unpaid (expense):",
-      "financing_label": "Financing (received / repaid):"
+      "unpaid_expense": "Unpaid (expense):"
     },
     "table": {
       "name": "Name",
@@ -1058,6 +1070,7 @@
     },
     "form": {
       "name": "Company Name",
+      "name_placeholder": "e.g. Primjer d.o.o.",
       "oib": "Tax ID (OIB)",
       "oib_helper": "Enter 11-digit Tax ID (OIB)",
       "oib_title": "OIB must be exactly 11 digits",
@@ -1070,6 +1083,7 @@
       "bank_accounts_heading": "Bank Accounts",
       "account_label": "Account #{{number}}",
       "bank_name": "Bank Name",
+      "bank_name_placeholder": "e.g. Erste banka",
       "current_balance": "Current Balance (€)",
       "balance_date": "Balance Date",
       "balance_date_helper": "Payments from this date are included in the balance calculation",
@@ -1851,7 +1865,18 @@
     "no_projects_description": "All of the company's projects are listed here. Add the first one with the \"New Project\" button.",
     "no_projects_description_readonly": "All of the company's projects are listed here. Only a user with the Director role can add a new project.",
     "no_phases_description": "Phases are set up in the Supervision profile, on the Site Management page, with the \"Setup Phases\" button. Contracts are then listed here by phase.",
-    "no_contracts_description": "Subcontractor contracts appear here once they are added to the project's phases in the Supervision profile, on the Site Management page."
+    "no_contracts_description": "Subcontractor contracts appear here once they are added to the project's phases in the Supervision profile, on the Site Management page.",
+    "hints": {
+      "phases_title": "Project phases",
+      "phases_what": "A phase is a period of construction with its own budget and contracts. A milestone is a key date of the project and is kept separately, on the Milestones tab.",
+      "phases_budget": "A phase's budget is not entered here: it comes from the project's TIC.",
+      "realized_title": "Realized",
+      "realized_what": "Realized is the amount actually paid under the contract, not the contracted amount.",
+      "realized_update": "It changes by itself when a payment is recorded against an invoice under that contract.",
+      "budget_title": "Project budget",
+      "budget_what": "The planned budget is not typed in: it is derived from the project's TIC each time the TIC is saved.",
+      "budget_missing": "\"Budget not set\" means the project has no TIC yet, or every amount in it is zero."
+    }
   },
   "sales_projects": {
     "default_building_name": "Building {{n}}",
@@ -1950,7 +1975,14 @@
       "repository_link_error": "The storage unit could not be linked",
       "garage_unlink_error": "The garage could not be unlinked",
       "repository_unlink_error": "The storage unit could not be unlinked",
-      "sale_complete_error": "The sale could not be completed. Please try again."
+      "sale_complete_error": "The sale could not be completed. Please try again.",
+      "unit_number_exists": "A unit with that number already exists in this building.",
+      "building_name_exists": "A building with that name already exists in this project.",
+      "sale_cancel_success": "The sale was cancelled",
+      "sale_cancel_error": "The sale could not be cancelled. Please try again.",
+      "sale_cancel_has_invoices": "The sale cannot be cancelled while invoices to the buyer exist for the apartment. Deal with them in the Cashflow profile first.",
+      "sale_cancel_not_allowed": "Only the Director and Accounting roles can cancel a sale.",
+      "sale_cancel_no_sale": "No sale is recorded for this apartment."
     },
     "building_quantity_modal": {
       "title": "Bulk Create Buildings",
@@ -2056,6 +2088,7 @@
       "download_template": "Download template",
       "template_failed": "The template could not be downloaded. Please try again.",
       "template_sheet_data": "Apartments",
+      "garage_template_sheet_data": "Garages",
       "template_sheet_notes": "Notes",
       "format": {
         "layout": "Only the first sheet is read. Headers are on row 1 and data starts on row 2; the column order matters, not the header names.",
@@ -2132,7 +2165,13 @@
     "no_projects_title": "No projects in this category",
     "no_projects_description": "Projects in the stambeno and retail categories are listed here. Projects are added in the General profile, on the Projects page, with the \"New Project\" button.",
     "no_buildings_title": "This project has no buildings yet",
-    "no_buildings_description": "Add them with the \"Create Buildings\" or \"Add Building\" button, or import them with the \"Import from Excel\" button in the page header."
+    "no_buildings_description": "Add them with the \"Create Buildings\" or \"Add Building\" button, or import them with the \"Import from Excel\" button in the page header.",
+    "cancel_sale": {
+      "action": "Cancel sale",
+      "title": "Cancel the sale",
+      "message": "Cancel the sale of apartment {{number}} to {{buyer}} ({{price}})? The apartment and its linked garage and storage unit go back to Available, and the sale is removed from the reports. A record stays in the activity log.",
+      "confirm": "Cancel sale"
+    }
   },
   "apartments": {
     "title": "Apartments",
@@ -2146,7 +2185,8 @@
       "update_error": "Failed to save the apartment",
       "delete_error": "Failed to delete the apartment",
       "payments_load_error": "Failed to load the payment history",
-      "link_units_error": "The unit links could not be saved"
+      "link_units_error": "The unit links could not be saved",
+      "number_exists": "An apartment with that number already exists in this building."
     },
     "confirm_delete_message": "Are you sure you want to delete {{label}}? This action cannot be undone.",
     "confirm_delete_fallback": "this apartment",
@@ -2200,7 +2240,8 @@
         "saleable_area": "Saleable area is required",
         "price": "Price is required",
         "status": "Status is required"
-      }
+      },
+      "status_sold_hint": "The apartment is sold. Cancel the sale on the Sales projects page, with the \"Cancel sale\" button."
     },
     "statuses": {
       "available": "Available",
@@ -2261,7 +2302,12 @@
       "credit_amount": "Kredit etažiranje 90% (EUR)"
     },
     "empty_title": "No apartments",
-    "empty_description": "Apartments from all projects are listed here. Add them with the \"Add Apartment\" or \"Bulk Create\" button."
+    "empty_description": "Apartments from all projects are listed here. Add them with the \"Add Apartment\" or \"Bulk Create\" button.",
+    "hints": {
+      "link_units_title": "Linked units",
+      "link_units_package": "Garages and storage units linked to an apartment are sold to the buyer together with it, as a package.",
+      "link_units_price": "Such an apartment also shows a \"Total Package\" price: the apartment and its linked units together."
+    }
   },
   "sale_form": {
     "title": "Complete Sale for",
@@ -3409,6 +3455,7 @@
       "error_add_bank": "Error adding bank. Please try again.",
       "error_update_bank": "Error updating bank.",
       "error_credit_fields_required": "Please fill in the required fields (Bank, Credit Name, Amount, Start Date)",
+      "error_disbursement_account_required": "Choose the bank account the credit was disbursed to.",
       "error_add_credit": "Error adding credit facility.",
       "error_update_credit": "Error updating credit facility.",
       "investor_form": {
@@ -3516,7 +3563,8 @@
         "payment_amount": "Payment Amount",
         "total_amount": "Total Amount",
         "status": "Status"
-      }
+      },
+      "drawdown": "Credit drawdown"
     },
     "credit_invoice_section": {
       "loading": "Loading...",
@@ -3822,12 +3870,12 @@
       "last_updated": "Last updated",
       "sales_performance": "Sales Performance",
       "view_details": "View Details",
-      "sold_units": "Sold Units",
+      "sold_units": "Apartments sold",
       "reserved": "Reserved",
       "available": "Available",
-      "sales_rate": "Sales Rate",
-      "total_sales_revenue": "Total Sales Revenue",
-      "avg_price_per_unit": "Avg Price per Unit",
+      "sales_rate": "Apartment sales rate",
+      "total_sales_revenue": "Contracted sales",
+      "avg_price_per_unit": "Avg contracted price",
       "monthly_sales": "Monthly Sales ({{month}})",
       "units": "units",
       "construction_site": "Construction & Site Management",
@@ -3908,7 +3956,7 @@
       "no_projects": "No projects available",
       "credit_utilization": "Credit Utilization",
       "total_credit_facilities": "Total Credit",
-      "revenue_amount": "{{amount}} revenue"
+      "revenue_amount": "{{amount}} contracted"
     },
     "accounting": {
       "title": "Accounting Dashboard",
@@ -3954,9 +4002,9 @@
       "title": "Sales Dashboard",
       "subtitle": "Overview of sales performance and metrics",
       "loading": "Loading sales dashboard...",
-      "total_revenue": "Total Revenue",
+      "total_revenue": "Collected from sales",
       "units_sold": "units sold",
-      "sales_rate": "Sales Rate",
+      "sales_rate": "Sales rate (all units)",
       "avg_sale_price": "Avg Sale Price",
       "per_unit": "Per unit",
       "active_leads": "Active Leads",
@@ -4097,7 +4145,8 @@
           "description_one": "{{name}} usage expires in {{count}} day",
           "description_other": "{{name}} usage expires in {{count}} days"
         }
-      }
+      },
+      "projects_without_budget": "Projects without a budget: {{count}}"
     },
     "retail": {
       "title": "Retail Dashboard",
@@ -4136,7 +4185,6 @@
       "title": "General Reports",
       "loading": "Generating comprehensive report...",
       "no_data": "No data available for report generation",
-      "landmark_group": "LANDMARK GROUP",
       "exec_report": "Comprehensive Executive Report",
       "generated": "Generated:",
       "export_pdf": "Export PDF",
@@ -5264,6 +5312,7 @@
       "customer.update": "Customer updated",
       "customer.delete": "Customer deleted",
       "sale.create": "Sale created",
+      "sale.cancel": "Sale cancelled",
       "sale_payment.create": "Sale payment created",
       "invoice.create": "Invoice created",
       "invoice.update": "Invoice updated",
@@ -5425,7 +5474,9 @@
       "erp_import.reclassify": "ERP import reclassified",
       "help.view": "Help opened",
       "help.page_link_click": "Page help link clicked",
-      "help.hint_open": "Hint opened"
+      "help.hint_open": "Hint opened",
+      "help.search_no_results": "Help search with no results",
+      "help.ask_assistant": "Help question passed to the AI assistant"
     },
     "show_help_events": "Also show help usage"
   },
@@ -5547,8 +5598,14 @@
     "results_count": "Articles found: {{count}}",
     "no_results_title": "No results",
     "no_results_description": "Try another term, or ask the AI assistant.",
+    "ask_assistant": "Ask the AI assistant",
     "for_this_page": "For the page you came from",
+    "whats_new": {
+      "lead": "What's new:",
+      "read": "Read"
+    },
     "groups": {
+      "news": "What's new",
       "pages": "Page guides",
       "terms": "Terms",
       "roles": "Roles and access"

@@ -312,6 +312,18 @@ which reads the `.md` files directly — so an edit is visible there on the next
 `kb:build` was forgotten, and the two can then disagree. An article with `assistant_only: true` in
 its frontmatter stays in this index but is hidden from the Help page.
 
+Each article is returned to the model as `## title`, a line `Članak u Pomoći: /help/<id>`, and the
+body. The system prompt tells the model to end an answer taken from an article with a markdown
+link to that path, and never to build one itself. The line is left out when the user has no such
+page to open: the article is `assistant_only`, or it names roles and the caller's is not among
+them (`helpLinkFor` in `help-search.ts`; stricter than the Help page, which also shows an article
+to a role that can open a page it is tagged to). Screenshots are stripped from the index. In the
+panel a `/help/…` link navigates in place; below `sm`, where the panel is full-screen, following
+one closes the panel. Covered by `_shared/help-search.test.ts`.
+
+The Help page hands a search that found nothing to the assistant through
+`askInNewConversation(text)` on the store: a fresh conversation, the panel opened, the text sent.
+
 `search_help` does **not** read `help-kb/*.md` at runtime. It reads
 `supabase/functions/_shared/help-kb-index.json`, a build-time bundle of every entry's title,
 keywords, routes, roles and body. Build it with `npm run kb:build` after any KB edit — a pure file

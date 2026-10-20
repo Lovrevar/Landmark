@@ -74,6 +74,13 @@ for the sync itself. Three consequences for this module:
 - The phase-budget cap on a new contract applies **only when a plan exists**
   (`exceedsPhaseBudget` in `utils/contractTree.ts`). Without that guard, every phase of a
   TIC-less project sits at 0 and no contract could be recorded at all.
+- **An unphased TIC over several phases leaves every phase at NULL** (GEN-22, migration
+  `20261015100000`): the plan is the project's, not any one phase's. `ProjectDetail` says so once
+  under the banner (`common.phase_budget_not_split`); phase cards show "—" for budget, remaining
+  and unallocated in grey, with no utilisation bar; `EditPhaseModal`, `PhaseClassificationBudgetsModal`
+  and the subcontractor form show the note instead of "budget not set". There is no phase or
+  classification cap on such a project. `budgetNotSplitByPhase` / `plannedOnPhases`
+  (`Funding/TIC/utils/ticBudget.ts`) are the two helpers every reader uses.
 
 #### Project screen layout
 
@@ -133,8 +140,8 @@ Closed contracts **stay on the site and keep counting**:
 
 #### The payment gate
 
-`canManagePayments(user)` (`src/utils/permissions.ts`) is true for **Director**, **Accounting**
-and **Investment**, false for **Supervision** and **Sales**. Site Management threads it through
+`canManagePayments(user)` (`src/utils/permissions.ts`) is true for **Director** and
+**Accounting**, false for **Supervision**, **Sales** and **Investment** (SEC-A10). Site Management threads it through
 the whole tree and hides *everything derived from payments*, not just the figures:
 
 `index.tsx` → `ProjectDetail` (default **`false`**, so a screen that forgets to pass it leaks
@@ -170,8 +177,10 @@ Since `20260526084700_tighten_cashflow_rls.sql` that role has no `accounting_pay
 statement about the reader's rights. The Supervision *profile* keeps both, because a Director or
 Accounting user can switch into it and does have the rows.
 
-> This is a **screen-only** restriction, not a data boundary — `contracts` is readable by any
-> authenticated user, so `budget_realized` is one console call away. See
+> This is a **screen-only** restriction, not a data boundary. Since migration `20261012100000` a
+> Supervision user reads and writes only the contracts and milestones of the projects they are
+> assigned to (`app_can_access_project`, the rule projects and phases already followed) — but on
+> those projects `budget_realized` is still one console call away. See
 > [backlog/security.md](./backlog/security.md) SEC-004.
 
 #### One definition of "overdue"
@@ -212,7 +221,7 @@ Read-only by design — `sync_project_from_tic()` owns this table and rebuilds i
 so a client write would survive only until the next one.
 - `fetchPhaseClassificationBudgets(phaseIds?)` — per-(phase, classification) sub-allocations
 - `fetchClassificationBudgetStatus(phaseId, classificationId, excludeContractId?)` — allocated vs committed (every contract, by `committedAmount`); the binding limit when adding or editing a contract, since the phase budget is the sum of its classifications. With `excludeContractId` that contract is left out of `used` and its current amount in the bucket comes back as `excludedAmount` (0 when it is not in the bucket)
-- `fetchPhaseBudgetStatus(phaseId, excludeContractId?)` — the same check for the whole phase (`project_phases.budget_allocated` against every contract's `committedAmount`), used by the edit path
+- `fetchPhaseBudgetStatus(phaseId, excludeContractId?)` — the same check for the whole phase (`project_phases.budget_allocated` against every contract's `committedAmount`), used by the edit path. A NULL budget (TIC not split by phase) comes back as 0, i.e. no cap
 - `fetchTICClassificationTotals(projectId)` — the project's TIC plan per classification, for the read-only comparison in `PhaseClassificationBudgetsModal`
 
 ### services/phaseService.ts
@@ -376,9 +385,9 @@ phase to a user goes through it.
 ### utils/contractTree.ts
 - `buildContractTree(contracts, dimensions, ctx)` — the grouping used by both Site Management views. `dimensions` comes from `VIEW_DIMENSIONS`: `['phase','classification','contractType']` or `['classification','phase','contractType']`. Contract type is always innermost; only the top two levels swap
 - `rollupContracts(contracts)` — contracted / paid / unpaid money for any subset. A row counts as contracted only when it has a contract AND a non-zero amount. The arithmetic itself lives in [`src/utils/contractRollup.ts`](../src/utils/contractRollup.ts), shared with Retail's phase card; what stays here is the mapping from a subcontractor row onto it — `budget_realized` is "paid", `invoice_total_owed` is "owed"
-- `remainingBudget(budget, rollup)` — re-exported from `contractRollup` so importers keep one path; `unallocatedBudget(phase, budgets)` is the phase budget not yet given to any classification, shown as "Neraspoređeno"
+- `remainingBudget(budget, rollup)` — re-exported from `contractRollup` so importers keep one path; `unallocatedBudget(phase, budgets)` is the phase budget not yet given to any classification, shown as "Neraspoređeno" — null for a phase with a NULL budget
 - `isFullySettled(sub)` — the "paid in full" predicate, different for contracted and uncontracted rows
-- `exceedsPhaseBudget(phase, cost)` — whether a new contract overruns the phase plan. **False when the phase has no budget at all**: a project without a TIC has every phase at 0, and reading that as "a budget of zero, which everything overruns" would block every contract on the project while blaming the amount
+- `exceedsPhaseBudget(phase, cost)` — whether a new contract overruns the phase plan. **False when the phase has no budget at all**: a project without a TIC has every phase at 0, and reading that as "a budget of zero, which everything overruns" would block every contract on the project while blaming the amount. Also false for a NULL budget (TIC not split by phase)
 - Pure module, covered by `contractTree.test.ts` (grouping, and the field mapping onto the shared rollup) plus `src/utils/contractRollup.test.ts` (the money rules themselves). The logic used to be inline in PhaseCard where it could not be tested
 
 ### ProjectSummaryBanner.tsx
@@ -461,7 +470,7 @@ the orchestrator does the writes and re-fetches.
 - The sort-order input (`aria-label` = `sort_order_label`) keeps a draft while typing and saves on blur only when the value changed, then reloads without the spinner so the list re-sorts and focus is not lost. Failures go to the modal's error `Alert`
 
 #### EditPhaseModal.tsx
-- Edits a single phase's name, dates and status. The budget is **not** editable: it is shown read-only (`phase.budget_allocated`, the phase's share of the TIC, or "budget not set"), and `EditPhaseFormData` carries no budget field
+- Edits a single phase's name, dates and status. The budget is **not** editable: it is shown read-only (`phase.budget_allocated`, the phase's share of the TIC; the "not split by phase" note with the project's TIC total when it is NULL, using the `projectBudget` prop; otherwise "budget not set"), and `EditPhaseFormData` carries no budget field
 - Props: `visible`, `onClose`, `phase` (`ProjectPhase | null`), `onSubmit(updates: EditPhaseFormData)`
 
 #### EditSubcontractorModal.tsx

@@ -27,7 +27,8 @@ import { useBudgetControl } from './hooks/useBudgetControl'
 import LoadingSpinner from '../../ui/LoadingSpinner'
 import ErrorState from '../../ui/ErrorState'
 import InfoHint from '../../ui/InfoHint'
-import { formatEuro, formatEuroCompact, NO_VALUE } from '../../../utils/formatters'
+import { formatEuro, formatEuroCompact, formatIndex, NO_VALUE } from '../../../utils/formatters'
+import { indexAxisTop } from '../../../utils/evm'
 import PageHelpLink from '../../ui/PageHelpLink'
 import { OpenTICLink } from '../../Funding/TIC/OpenTICLink'
 
@@ -72,7 +73,7 @@ function IndexCard({ label, value, sublabel, status, hint }: IndexCardProps) {
   return (
     <div className={`rounded-xl border p-4 ${c.bg}`}>
       <p className={`flex items-center gap-1.5 text-sm font-medium mb-1 ${c.label}`}>{label}{hint}</p>
-      <p className={`text-2xl font-bold ${c.text}`}>{value === null ? NO_VALUE : value.toFixed(2)}</p>
+      <p className={`text-2xl font-bold ${c.text}`}>{value === null ? NO_VALUE : formatIndex(value)}</p>
       <div className={`flex items-center gap-1 mt-1 text-xs ${c.sub}`}>
         <Icon className="w-3 h-3" />
         <span>{sublabel}</span>
@@ -307,9 +308,13 @@ export default function BudgetControl() {
                     tick={{ fill: '#6b7280', fontSize: 12 }}
                     allowDuplicatedCategory={false}
                   />
-                  <YAxis domain={[0, 2]} tick={{ fill: '#6b7280', fontSize: 11 }} />
+                  <YAxis
+                    domain={[0, indexAxisTop]}
+                    tickFormatter={formatIndex}
+                    tick={{ fill: '#6b7280', fontSize: 11 }}
+                  />
                   <Tooltip
-                    formatter={(value) => Number(value).toFixed(2)}
+                    formatter={(value) => formatIndex(Number(value))}
                     contentStyle={tooltipStyle}
                   />
                   <Legend />
@@ -458,12 +463,19 @@ function MetricCard({ label, sublabel, value, icon: Icon, variant }: MetricCardP
   const s = styles[variant]
 
   return (
-    <div className={`rounded-xl border p-4 shadow-sm ${s.container}`}>
+    // `stat-card` / `stat-card__value` (index.css): the figure shrinks with the card and then
+    // wraps, instead of running past the edge when five cards share a laptop window (UI-11).
+    <div className={`stat-card rounded-xl border p-4 shadow-sm ${s.container}`}>
       <div className="flex items-start justify-between mb-2">
         <p className={`text-sm font-medium ${s.label}`}>{label}</p>
         <Icon className={`w-4 h-4 ${s.icon} flex-shrink-0`} />
       </div>
-      <p className={`text-lg font-bold ${s.value} leading-tight`}>{value}</p>
+      <p
+        className={`stat-card__value font-bold ${s.value}`}
+        style={{ '--stat-value-size': '1.125rem' } as React.CSSProperties}
+      >
+        {value}
+      </p>
       <p className={`text-xs mt-1 ${s.label} opacity-80`}>{sublabel}</p>
     </div>
   )

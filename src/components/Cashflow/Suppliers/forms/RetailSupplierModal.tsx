@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import InlineLoadError from '../../../ui/InlineLoadError'
 import { Modal, Button, Input, Select, FormField, Alert, Form } from '../../../ui'
 import {
   fetchRetailSupplierTypes,
@@ -43,6 +44,12 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
   const [projects, setProjects] = useState<RetailProject[]>([])
   const [phases, setPhases] = useState<RetailPhase[]>([])
   const [supplierTypes, setSupplierTypes] = useState<SupplierType[]>([])
+  // A failed lookup is not an empty list: say so beside the control, with a retry (UI-4).
+  const [phasesFailed, setPhasesFailed] = useState(false)
+  // A failed lookup is not an empty list: say so beside the control, with a retry (UI-4).
+  const [projectsFailed, setProjectsFailed] = useState(false)
+  // A failed lookup is not an empty list: say so beside the control, with a retry (UI-4).
+  const [typesFailed, setTypesFailed] = useState(false)
   const [loadingProjects, setLoadingProjects] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -65,6 +72,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
 
   const loadSupplierTypes = async () => {
     try {
+      setTypesFailed(false)
       const types = await fetchRetailSupplierTypes()
       setSupplierTypes(types)
       if (types.length > 0) {
@@ -72,15 +80,18 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
         setFormData(prev => ({ ...prev, supplier_type_id: otherType?.id || types[0].id }))
       }
     } catch (err) {
+      setTypesFailed(true)
       console.error('Error loading supplier types:', err)
     }
   }
 
   const loadRetailProjects = async () => {
     try {
+      setProjectsFailed(false)
       setLoadingProjects(true)
       setProjects(await fetchRetailProjectsForSupplier())
     } catch (err) {
+      setProjectsFailed(true)
       console.error('Error loading retail projects:', err)
     } finally {
       setLoadingProjects(false)
@@ -89,8 +100,10 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
 
   const loadRetailPhases = async (projectId: string) => {
     try {
+      setPhasesFailed(false)
       setPhases(await fetchRetailPhasesForProject(projectId))
     } catch (err) {
+      setPhasesFailed(true)
       console.error('Error loading retail phases:', err)
       setPhases([])
     }
@@ -161,6 +174,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
                 <option key={type.id} value={type.id}>{type.name}</option>
               ))}
             </Select>
+            {typesFailed && <InlineLoadError message={t('common.list_load_error')} onRetry={() => { void loadSupplierTypes() }} className="mt-1" />}
           </FormField>
 
           <FormField label={t('suppliers.form.contact_person_label')}>
@@ -208,6 +222,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
                     </option>
                   ))}
                 </Select>
+                {projectsFailed && <InlineLoadError message={t('common.list_load_error')} onRetry={() => { void loadRetailProjects() }} className="mt-1" />}
               </FormField>
 
               {formData.project_id && (
@@ -223,6 +238,7 @@ const RetailSupplierModal: React.FC<RetailSupplierModalProps> = ({ onClose, onSu
                       </option>
                     ))}
                   </Select>
+                  {phasesFailed && <InlineLoadError message={t('common.list_load_error')} onRetry={() => { void loadRetailPhases(formData.project_id) }} className="mt-1" />}
                 </FormField>
               )}
             </div>

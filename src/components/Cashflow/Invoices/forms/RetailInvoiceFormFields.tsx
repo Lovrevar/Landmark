@@ -14,6 +14,7 @@ import {
   Refund,
   RetailInvoiceFormData
 } from '../retailInvoiceTypes'
+import { MultiVatHint } from '../../components/MultiVatHint'
 
 interface RetailInvoiceFormFieldsProps {
   formData: RetailInvoiceFormData
@@ -235,7 +236,7 @@ export const RetailInvoiceFormFields: React.FC<RetailInvoiceFormFieldsProps> = (
         />
       </FormField>
 
-      <FormField label={t('invoices.retail.base_25')} error={errors.base_amount_1}>
+      <FormField label={t('invoices.retail.base_25')} hint={<MultiVatHint />} error={errors.base_amount_1}>
         <CurrencyInput
           value={formData.base_amount_1}
           onChange={(value) => setFormData({ ...formData, base_amount_1: value })}

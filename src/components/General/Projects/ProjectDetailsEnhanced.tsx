@@ -15,7 +15,7 @@ import {
   Target,
   LayoutTemplate
 } from 'lucide-react'
-import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table, ConfirmDialog } from '../../ui'
+import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, ErrorState, Table, ConfirmDialog } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import MilestoneTimeline from './MilestoneTimeline'
 import ProjectFormModal from './forms/ProjectFormModal'
@@ -57,6 +57,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [investments, setInvestments] = useState<CreditAllocationItem[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
@@ -67,6 +68,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
     if (!id) return
     try {
       setLoading(true)
+      setLoadFailed(false)
       const data = await fetchProjectDataEnhanced(id)
       setProject(data.project)
       setMilestones(data.milestones)
@@ -77,6 +79,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
       setInvestments(data.investments)
     } catch (error) {
       console.error('Error fetching project:', error)
+      setLoadFailed(true)
     } finally {
       setLoading(false)
     }
@@ -150,6 +153,9 @@ const ProjectDetailsEnhanced: React.FC = () => {
   // then would unmount the inline form and the delete dialog mid-action. A different project id
   // still spins, so another project's data is never shown under this URL.
   if (loading && project?.id !== id) return <LoadingSpinner message={t('general_projects.loading')} />
+  // A failed load is not a missing project: the page used to say "not found" for both (UI-4).
+  // After a failed refresh the project already on screen stays, so an edit is not thrown away.
+  if (loadFailed && project?.id !== id) return <ErrorState onRetry={() => { void loadData() }} />
   if (!project) return <EmptyState icon={Building2} title={t('general_projects.not_found')} />
 
   // contracts.budget_realized is the app's single "paid" figure — a trigger-kept cache of

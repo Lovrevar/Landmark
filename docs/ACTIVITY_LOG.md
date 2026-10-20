@@ -217,6 +217,7 @@ logActivity({
 | `customer.update` | L | `Sales/Customers/services/customerService.ts` + `Sales/SalesProjects/services/salesService.ts` |
 | `customer.delete` | M | `Sales/Customers/services/customerService.ts` |
 | `sale.create` | H | `Sales/SalesProjects/services/salesService.ts` |
+| `sale.cancel` | H | `Sales/SalesProjects/services/salesService.ts` (`cancelSale`; the sale row is deleted, so the metadata — buyer, price, sale date, unit — is the record of it) |
 | `export.sales_payments_excel` | L | `Sales/Payments/services/salesPaymentsService.ts` (metadata carries `row_count`) |
 
 ### Supervision (20)

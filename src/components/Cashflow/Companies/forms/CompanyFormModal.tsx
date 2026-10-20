@@ -39,7 +39,7 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
               type="text"
               value={formData.name}
               onChange={(e) => onFormDataChange('name', e.target.value)}
-              placeholder="npr. Landmark d.o.o."
+              placeholder={t('companies.form.name_placeholder')}
             />
           </FormField>
 
@@ -79,7 +79,7 @@ const CompanyFormModal: React.FC<CompanyFormModalProps> = ({
                     compact
                     value={account.bank_name}
                     onChange={(e) => onBankAccountChange(index, 'bank_name', e.target.value)}
-                    placeholder="npr. Erste banka"
+                    placeholder={t('companies.form.bank_name_placeholder')}
                     disabled={editingCompany !== null}
                   />
                 </FormField>

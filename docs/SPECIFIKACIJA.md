@@ -777,7 +777,7 @@ plaćeni stupci milestoneova. Iznosi ugovora, rokovi i budžeti ostaju vidljivi.
 `status` (`Planning`, `In Progress`, `Completed`, `On Hold`), `category`.
 
 **`project_phases`** — `project_id` (CASCADE), `phase_number` (jedinstven u projektu),
-`phase_name`, `budget_allocated` (iz TIC-a), `budget_used` (Σ preuzetih iznosa ugovora faze, v. 8.7 „Status ugovora”),
+`phase_name`, `budget_allocated` (iz TIC-a; NULL kad TIC nije raspoređen po fazama, a faza je više), `budget_used` (Σ preuzetih iznosa ugovora faze, v. 8.7 „Status ugovora”),
 `start_date`, `end_date`, `status` (`planning`, `active`, `completed`, `on_hold`).
 
 **`cost_classifications`** — `code`, `name` (jedinstven), `description`, `sort_order`,
@@ -2178,8 +2178,11 @@ Nakon spremanja trigger `trg_sync_project_budget_from_tic` pokreće `sync_projec
 
 1. ukupno = Σ (vlastita + kreditna) svih stavki; ako je 0, ništa se ne mijenja;
 2. `projects.budget` = ukupno;
-3. **TIC bez faza:** ako projekt nema faza, kreira se „Faza 1" s cijelim budžetom (status
-   `planning`); inače faza 1 dobiva cijeli budžet, a ostale 0;
+3. **TIC bez faza** (`apply_unphased_tic_budget`): ako projekt nema faza, kreira se „Faza 1"
+   (status `planning`). Ako projekt ima jednu fazu, ona dobiva cijeli budžet i raspodjelu po
+   klasifikacijama; ako ih ima više, `budget_allocated` je NULL na svima i nema redaka u
+   `phase_classification_budgets` — budžet projekta vrijedi za sve faze zajedno. Trigger
+   `trg_project_phases_unphased_tic` to ponovno primjenjuje kad se faza doda ili obriše;
 4. **TIC s fazama:** svaka faza dobiva svoj zbroj (nedostajuće „Faza n" se kreiraju); faze
    iznad broja TIC faza brišu se, osim ako imaju ugovore ili dnevnike rada (tada se
    postavljaju na 0);

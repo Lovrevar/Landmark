@@ -13,6 +13,8 @@ import { ContractFormFields } from './ContractFormFields'
 import { ContractTypeFormModal } from '../modals/ContractTypeFormModal'
 import { CostClassificationFormModal } from '../modals/CostClassificationFormModal'
 import { formatEuro } from '../../../../utils/formatters'
+import InlineLoadError from '../../../ui/InlineLoadError'
+import { NoContractHint } from '../../../Common/NoContractHint'
 
 interface SubcontractorFormModalProps {
   visible: boolean
@@ -67,6 +69,8 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
   const { classifications, loading: loadingClassifications, error: classificationsError, load: loadClassifications } = useCostClassifications()
   const { vatAmount, totalAmount } = useVATCalculation(formData.base_amount, formData.vat_rate)
   const [banks, setBanks] = useState<Funder[]>([])
+  // A failed lookup is not an empty list: say so beside the control, with a retry (UI-4).
+  const [fundersFailed, setFundersFailed] = useState(false)
   const [loadingFunders, setLoadingFunders] = useState(false)
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false)
   const [showNewClassificationModal, setShowNewClassificationModal] = useState(false)
@@ -79,10 +83,12 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
   const loadFunders = useCallback(async () => {
     try {
+      setFundersFailed(false)
       setLoadingFunders(true)
       const funders = await fetchProjectFunders(projectId)
       setBanks(funders.banks)
     } catch (error) {
+      setFundersFailed(true)
       console.error('Error loading funders:', error)
     } finally {
       setLoadingFunders(false)
@@ -153,7 +159,11 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
   // A phase with no plan has no headroom to report — showing "available budget €0" invites the
   // reader to think the money ran out, when the TIC that would set it simply does not exist yet.
-  const availableBudget = phase.budget_allocated > 0 ? phase.budget_allocated - phase.budget_used : null
+  // NULL is a plan that is not split by phase (GEN-22): no headroom of its own, but not "not set".
+  const notSplit = phase.budget_allocated === null
+  const availableBudget = phase.budget_allocated !== null && phase.budget_allocated > 0
+    ? phase.budget_allocated - phase.budget_used
+    : null
 
   const funderSelect = banks.length > 0 ? (
     <FormField label={t('supervision.subcontractor_form.financed_by')} helperText={t('supervision.subcontractor_form.financed_by_help')}>
@@ -169,6 +179,10 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
         {banks.map(bank => <option key={bank.id} value={bank.id}>{bank.name}</option>)}
       </Select>
     </FormField>
+  ) : fundersFailed ? (
+    // The field only appears when the project has funders; a failed load must not look like
+    // a project with none.
+    <InlineLoadError message={t('common.list_load_error')} onRetry={() => { void loadFunders() }} />
   ) : null
 
   return (
@@ -176,7 +190,9 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
       <Modal.Header
         title={t('supervision.subcontractor_form.title')}
         subtitle={
-          availableBudget === null
+          notSplit
+            ? phase.phase_name
+            : availableBudget === null
             ? `${phase.phase_name} • ${t('general_projects.budget_not_set')}`
             : `${phase.phase_name} • ${t('supervision.subcontractor_form.available_budget')} ${formatEuro(availableBudget)}`
         }
@@ -185,15 +201,19 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
 
       <Modal.Body>
         <Alert variant="warning">
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={!hasContract}
-              onChange={(e) => setHasContract(!e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-            />
-            <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">{t('supervision.subcontractor_form.no_contract')}</span>
-          </label>
+          {/* The hint sits outside the label: inside it, opening the hint would tick the box. */}
+          <div className="flex items-center gap-1.5">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!hasContract}
+                onChange={(e) => setHasContract(!e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">{t('supervision.subcontractor_form.no_contract')}</span>
+            </label>
+            <NoContractHint />
+          </div>
           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 ml-6">
             {hasContract
               ? t('supervision.subcontractor_form.with_contract_help')

@@ -8,6 +8,8 @@ roles: [Director, Supervision]
 
 **Upravljanje gradilištem** je glavna stranica nadzora. Podnaslov: **Pregled svih gradilišnih projekata**. Korisnici s ulogom **Supervision** dolaze ovamo odmah nakon prijave i vide samo projekte koji su im dodijeljeni; ako ih nema, piše **Nemate dodijeljenih projekata**.
 
+![Upravljanje gradilištem: kartice projekata](img/upravljanje-gradilistem.png)
+
 Prikaz: mreža kartica projekata (faze, alokacija budžeta, budžet, podugovaratelji, vremenski okvir) i gumb **Osvježi**. Klik na karticu otvara stranicu projekta; povratak je **Natrag na projekte**.
 
 ## Stranica projekta
@@ -40,3 +42,5 @@ U **Uredi** se ugovoru mijenja **Status**: **Aktivan**, **Završeno** ili **Rask
 Zato postavljanje i uređivanje faza traže samo naziv i datume. **Budžet po klasifikaciji troška** na fazi pokazuje **TIC plan**, koliko su uzele **Druge faze** i koliko pripada ovoj fazi; iznos koji nije raspodijeljen prikazuje se kao **Neraspoređeno**.
 
 Ako projekt nema TIC, ugovori se svejedno mogu dodavati — provjera da iznos ugovora ne premašuje raspoloživi budžet vrijedi samo kad budžet postoji.
+
+Ako TIC nije raspoređen po fazama, a projekt ima više faza, ispod sažetka projekta piše **TIC nije raspoređen po fazama — budžet … vrijedi za cijeli projekt**. Kartice faza tada za budžet, preostali budžet i neraspoređeno pokazuju „—”, a ograničenja po fazi i klasifikaciji ne vrijede. Vidi [[term-budzet-iz-tic]].

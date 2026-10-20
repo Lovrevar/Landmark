@@ -6,7 +6,7 @@ routes: [/accounting-loans]
 roles: [Director, Accounting]
 ---
 
-**Pozajmice i prijenosi** evidentira interne pozajmice i prijenose sredstava između vlastitih firmi (firmi grupe Landmark). Podnaslov: **Evidencija pozajmica i prijenosa između firmi**.
+**Pozajmice i prijenosi** evidentira interne pozajmice i prijenose sredstava između vlastitih firmi (firmi u grupi). Podnaslov: **Evidencija pozajmica i prijenosa između firmi**.
 
 Glavna akcija: **Nova Pozajmica**. Tražilica **Pretraži pozajmice i prijenose...** radi po nazivu firme.
 

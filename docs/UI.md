@@ -18,7 +18,7 @@ Shared primitive component library. Always check here before building new UI —
 ### Alert.tsx
 - Styled alert banner with dismiss button
 - Props: `variant` ('info' | 'success' | 'warning' | 'error'), `title?`, `children`, `onDismiss?`, `className?`
-- ⚠️ An `onClose` prop is also declared but **never rendered** — use `onDismiss` for the X button
+- ⚠️ An `onClose` prop is also declared but **never rendered** — use `onDismiss` for the X button (labelled `common.close` for screen readers)
 - Use it for a failure over data that is still on screen; use `ErrorState` when there is nothing to show
 - **Uses Ui:** (none — standalone primitive)
 
@@ -124,7 +124,8 @@ Shared primitive component library. Always check here before building new UI —
 - Renders a Markdown string with the app's typography, via `react-markdown` + `remark-gfm` (so tables, strikethrough and task lists work)
 - Props: `content`, `className?`
 - Used by AI chat message bodies, task descriptions and the Help page. Prefer this over hand-rolling a Markdown renderer
-- A link whose `href` starts with `/` is an app route and navigates in place (`<Link>`); every other link opens in a new tab
+- A link whose `href` starts with `/` (not `//`) is an app route and navigates in place (`<Link>`); every other link opens in a new tab
+- An image is drawn only when its address is the app's own (`/…`, a help article's screenshot); any other image is replaced by its alt text, since this also renders assistant replies and task text and a remote image would be fetched from every reader's browser
 
 ### Modal.tsx
 - Full-featured modal dialog with portal rendering and body scroll lock
@@ -184,7 +185,7 @@ Shared primitive component library. Always check here before building new UI —
 
 ### StatCard.tsx
 - Single KPI metric card with icon, optional trend indicator, and colour scheme
-- Props: `label?`, `title?`, `value` (string | number), `subtitle?`, `trend?`, `icon?` (LucideIcon), `color?` (8 colour schemes), `size?` ('sm' | 'md' | 'lg'), `className?`
+- Props: `label?`, `title?`, `value` (string | number), `subtitle?`, `trend?`, `icon?` (LucideIcon), `color?` (8 colour schemes), `size?` ('sm' | 'md' | 'lg'), `className?`, `hint?` (an `InfoHint` shown after the label — the place for a hint about a figure, since a table header disappears on a phone)
 - **The value never runs out of its card, and is never truncated.** On a narrow card (two-column grid on a phone) the value takes the full width under the label and icon; its font size follows the card's width from the `size`'s maximum down to 0.8rem; if it still does not fit it wraps. The layout is a small CSS grid with a container query — `.stat-card*` in `src/index.css` — because Tailwind has no container-query variant here. Do not add `truncate`, `overflow-hidden` or `whitespace-nowrap` to it: a money amount with a missing digit is a wrong amount (`statCardFit.test.ts`)
 - The card sets `container-type: inline-size`, so its width must come from its parent (a grid cell, a `flex-1`); every current use is inside a grid
 

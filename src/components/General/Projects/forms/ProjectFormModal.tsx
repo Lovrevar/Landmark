@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Modal, FormField, Input, Select, Button, Alert, Form, ConfirmDialog } from '../../../ui'
 import { ProjectCategory, PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS } from '../../../../lib/supabase'
 import { useProjectForm } from '../hooks/useProjectForm'
+import { BudgetFromTicHint } from '../ProjectHints'
 
 interface ProjectFormModalProps {
   projectId?: string | null
@@ -97,6 +98,7 @@ const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ projectId, onClose,
                 TIC has no plan yet, and saying so is more honest than a typed placeholder. */}
             <FormField group
               label={t('general_projects.form_budget_eur')}
+              hint={<BudgetFromTicHint />}
               helperText={t('general_projects.budget_from_tic_hint')}
             >
               <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">

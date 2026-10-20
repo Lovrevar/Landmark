@@ -12,7 +12,7 @@ import { SubcontractorWithPhase, VIEW_DIMENSIONS, TreeNode } from '../types'
 import { formatPhaseLabel } from '../../../../utils/phaseLabel'
 import { ProjectPhase, CostClassification, PhaseClassificationBudget } from '../../../../lib/supabase'
 
-const phase = (id: string, number: number, name: string, budget = 0): ProjectPhase => ({
+const phase = (id: string, number: number, name: string, budget: number | null = 0): ProjectPhase => ({
   id, project_id: 'p1', phase_number: number, phase_name: name,
   budget_allocated: budget, budget_used: 0, start_date: null, end_date: null,
   status: 'planning', created_at: ''
@@ -217,6 +217,23 @@ describe('buildContractTree — the two views agree', () => {
     const tree = buildContractTree(contracts, VIEW_DIMENSIONS.byPhase, context)
     expect(tree.find(n => n.id === 'ph1')!.budget).toBe(1000)
   })
+
+  // GEN-22: an unphased TIC over several phases leaves them NULL and writes no pair budgets.
+  describe('when the TIC is not split by phase', () => {
+    const unsplit = ctx({ phases: [phase('ph1', 1, 'Faza 1', null), phase('ph2', 2, 'Faza 2', null)] })
+
+    it('gives a phase no budget rather than zero', () => {
+      const tree = buildContractTree(contracts, VIEW_DIMENSIONS.byPhase, unsplit)
+      expect(tree.find(n => n.id === 'ph1')!.budget).toBeNull()
+      expect(tree.find(n => n.id === 'ph1')!.children.find(n => n.id === 10)!.budget).toBeNull()
+    })
+
+    it('gives a classification no budget rather than zero', () => {
+      const tree = buildContractTree(contracts, VIEW_DIMENSIONS.byClassification, unsplit)
+      expect(tree.find(n => n.id === 10)!.budget).toBeNull()
+      expect(tree.find(n => n.id === 10)!.children.find(n => n.id === 'ph1')!.budget).toBeNull()
+    })
+  })
 })
 
 describe('node keys', () => {
@@ -260,6 +277,10 @@ describe('unallocatedBudget', () => {
 
   it('goes negative if sub-allocations exceed the phase budget', () => {
     expect(unallocatedBudget(phase('ph1', 1, 'Faza 1', 100), [budget('ph1', 10, 250)])).toBe(-150)
+  })
+
+  it('is not a figure for a phase the TIC does not split out (GEN-22)', () => {
+    expect(unallocatedBudget(phase('ph1', 1, 'Faza 1', null), [])).toBeNull()
   })
 })
 
@@ -308,6 +329,10 @@ describe('exceedsPhaseBudget', () => {
     // The case that matters: without a TIC every phase sits at 0, and treating that as a
     // budget of zero would block every contract on the project.
     expect(exceedsPhaseBudget({ budget_allocated: 0, budget_used: 0 }, 1_000_000)).toBe(false)
+  })
+
+  it('allows any contract on a phase the TIC does not split out (GEN-22)', () => {
+    expect(exceedsPhaseBudget({ budget_allocated: null, budget_used: 0 }, 1_000_000)).toBe(false)
   })
 
   it('still blocks once a plan exists, even if it is fully consumed', () => {

@@ -12,8 +12,9 @@
 //          excludes the caller's role. Soft signal only — the model may still
 //          legitimately need to explain *why* a user can't see something.
 //   4. Return the top-K above SCORE_THRESHOLD, formatted as concatenated
-//      markdown (`## title` + body). If nothing crosses the threshold, return
-//      a short Croatian "no matches" string so the model can refuse cleanly.
+//      markdown (`## title`, the article's Help-page link, body). If nothing
+//      crosses the threshold, return a short Croatian "no matches" string so
+//      the model can refuse cleanly.
 //   5. Log the call to `ai_help_searches` (fire-and-forget, never blocks the
 //      response). The DB row records the raw current_route the client sent.
 //
@@ -37,6 +38,8 @@ interface KbEntry {
   keywords: string[]
   routes: string[]
   roles: string[]
+  /** Kept off the Help page, so it has no `/help/<id>` to link to. */
+  assistant_only?: boolean
   body: string
 }
 
@@ -99,6 +102,26 @@ function logSearch(
     })
 }
 
+/**
+ * The Help-page path of an article, or null when this user has no such page to open: the article
+ * is `assistant_only`, or it names roles and the caller's is not among them. The Help page is
+ * more generous (it also shows an article to a role that can open a page it is tagged to), but
+ * the router's guards are not available here, and a missing link costs less than one that opens
+ * "article not available".
+ */
+export function helpLinkFor(entry: Pick<KbEntry, 'id' | 'roles' | 'assistant_only'>, role: string): string | null {
+  if (entry.assistant_only) return null
+  if (entry.roles.length > 0 && !entry.roles.includes(role)) return null
+  return `/help/${encodeURIComponent(entry.id)}`
+}
+
+/** One article as the model reads it: title, where the user can open it, text. */
+export function formatHelpEntry(entry: KbEntry, role: string): string {
+  const link = helpLinkFor(entry, role)
+  const linkLine = link ? `Članak u Pomoći: ${link}\n\n` : ''
+  return `## ${entry.title}\n\n${linkLine}${entry.body}`
+}
+
 // Synchronous since retrieval stopped calling an embeddings API, but the return type stays a
 // Promise: every tool handler in tools.ts is dispatched as one, and the caller awaits it.
 export function handleSearchHelp(
@@ -154,7 +177,7 @@ export function handleSearchHelp(
   logSearch(ctx, helpCtx, query, returnedIds, topSimilarity)
 
   const markdown = top
-    .map((s) => `## ${s.entry.title}\n\n${s.entry.body}`)
+    .map((s) => formatHelpEntry(s.entry, ctx.role))
     .join('\n\n---\n\n')
 
   return Promise.resolve({ markdown, matches: top.length })

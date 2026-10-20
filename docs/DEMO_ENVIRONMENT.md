@@ -136,7 +136,9 @@ Wipes every business table and inserts the demo dataset across General, Supervis
 Sales, Cashflow, Funding, Retail, Tasks, Documents, Chat and Calendar. Users,
 `document_categories` and `cost_classifications` survive. Derived values (invoice
 status, contract realizacija, account balances) are left to the database triggers,
-so the numbers reconcile the way they would in real use.
+so the numbers reconcile the way they would in real use. It also sets the organisation's
+name in `organization_settings` to "Adriatic Development", which the reports print on their
+covers, headers and footers — the name lives in each database, not in the build (GEN-19).
 
 Re-run it before any demo — Chat and Calendar are anchored to the **real current
 week**, so a dataset seeded a month ago opens on a calendar full of history and

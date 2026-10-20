@@ -8,6 +8,8 @@ roles: [Director, Accounting, Investment]
 
 **TIC** (**Troškovna Informatička Struktura**) je matrica troškova investicije po projektu. Naslov stranice: **TIC - Struktura Troškova Investicije**.
 
+![Stranica TIC, kartica Investicija](img/tic.png)
+
 Projekt se odabire iz padajućeg izbornika **Odaberi projekt:**. Svi iznosi su bez PDV-a.
 
 ## Dvije kartice
@@ -77,6 +79,8 @@ Klikom na ćeliju faze otvara se prozor **Raspodjela po fazama** za taj redak, s
   *Vrijednost zemljišta*), računa se jednom i **ne pripada nijednoj fazi**. U stupcima faza
   prikazuje se kao „—”.
 
+![Prozor Raspodjela po fazama za jedan redak TIC-a, raspodijeljen na dvije faze](img/tic-faze.png)
+
 „—” nije propust: u izvornoj tablici takav redak često ponavlja isti puni iznos u svakom stupcu
 faze, a zbrajanje bi izmislilo novac koji ne postoji. Taj se iznos u [[site-management]] prikazuje
 kao **Nije fazirano**.
@@ -89,8 +93,11 @@ sprema kako je upisana.
 Ikona koša u zaglavlju faze uklanja tu fazu iz svih redaka (uz potvrdu); faze nakon nje se
 prenumeriraju.
 
-TIC bez ijednog faziranog retka opisuje projekt kao cjelinu: cijeli budžet dobiva Faza 1 (stvara
-se ako projekt nema faza), a ostale postojeće faze ostaju s budžetom 0.
+TIC bez ijednog faziranog retka opisuje projekt kao cjelinu. Ako projekt nema faza, stvara se
+Faza 1; ako ima jednu fazu, ona dobiva cijeli budžet. Ako ima više faza, budžet se ne dijeli
+među njima: popis faza i [[site-management]] pišu **TIC nije raspoređen po fazama — budžet …
+vrijedi za cijeli projekt**, a pojedina faza nema vlastiti budžet. Kad se faza doda ili obriše,
+to se odmah ponovno primjenjuje. Da bi svaka faza imala svoj budžet, rasporedite retke po fazama.
 
 ## Uređivanje stavki
 
@@ -107,7 +114,7 @@ Uklanjanje skupine briše i sve njezine stavke, pa se traži potvrda. Nijedna iz
 
 - **Spremi** — pohrana izmjena
 - **Uvoz iz Excela** — učitavanje strukture iz Excel datoteke (vidi niže)
-- **Export Excel** — izvoz obje kartice u `.xlsx` datoteku s listovima INVESTICIJA i GRAĐENJE
+- **Export Excel** — izvoz obje kartice u `.xlsx` datoteku s listovima INVESTICIJA i GRAĐENJE; ako TIC planira faze, list INVESTICIJA sadrži i stupce **FAZA n**, a zadnji stupac **KLASIFIKACIJA** nosi klasifikaciju troška svakog retka, pa se izvezena datoteka može ponovno uvesti bez gubitka podjele po fazama i klasifikacija
 - **Export PDF** — izvoz u PDF, po jedna stranica za svaku karticu
 
 Izvoz ne sadrži stupce faza — raspodjela po fazama ostaje samo u aplikaciji.

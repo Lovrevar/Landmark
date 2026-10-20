@@ -64,6 +64,9 @@ export interface BankCredit {
 
 export interface FinancialSummary {
   total_portfolio_value: number
+  /** Projects with no TIC, and so no budget; left out of `total_portfolio_value`. */
+  projects_without_budget: number
+  unbudgeted_project_ids: string[]
   total_debt: number
   total_equity: number
   debt_to_equity_ratio: number

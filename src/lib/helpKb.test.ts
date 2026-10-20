@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   parseHelpArticle, helpGroup, isVisibleToRole, routeMatches, articlesForRoute,
-  searchArticles, resolveWikiLinks, type HelpArticle,
+  searchArticles, resolveWikiLinks, newsArticles, unseenNews,
+  helpImageNames, resolveHelpImages, type HelpArticle,
 } from './helpKb'
 
 const article = (over: Partial<HelpArticle>): HelpArticle => ({
@@ -76,7 +77,12 @@ describe('the real knowledge base', () => {
 
   it('has an article behind every id an in-app hint links to', () => {
     const ids = new Set(articles.map(parsed => parsed.id))
-    for (const id of ['term-evm', 'term-invoice-types', 'term-kompenzacija', 'term-cesija', 'tic', 'funding-investments']) {
+    const hintArticles = [
+      'term-evm', 'term-invoice-types', 'term-kompenzacija', 'term-cesija', 'tic', 'funding-investments',
+      'term-multi-vat', 'term-unit-types', 'term-has-contract', 'term-faza-vs-prekretnica',
+      'term-realised-budget', 'term-budzet-iz-tic',
+    ]
+    for (const id of hintArticles) {
       expect(ids.has(id), id).toBe(true)
     }
   })
@@ -156,5 +162,65 @@ describe('resolveWikiLinks', () => {
     const titles = new Map([['term-cesija', 'Što je cesija?']])
     expect(resolveWikiLinks('Vidi [[term-cesija]] i [[cashflow-unlock]].', titles))
       .toBe('Vidi [Što je cesija?](/help/term-cesija) i cashflow-unlock.')
+  })
+})
+
+describe('release notes', () => {
+  const note = (id: string, date?: string): HelpArticle => ({ id, title: id, keywords: [], routes: [], roles: [], body: 'x', date })
+
+  it('reads a valid date and ignores anything else', () => {
+    expect(parseHelpArticle('help-kb/news-a.md', '---\ndate: 2026-10-12\n---\nTekst')?.date).toBe('2026-10-12')
+    expect(parseHelpArticle('help-kb/news-a.md', '---\ndate: listopad 2026\n---\nTekst')?.date).toBeUndefined()
+  })
+
+  it('groups by the news- prefix and lists newest first, dated notes only', () => {
+    expect(helpGroup(note('news-2026-10'))).toBe('news')
+    const listed = newsArticles([note('news-a', '2026-09-01'), note('tic', '2026-12-01'), note('news-b', '2026-10-12'), note('news-c')])
+    expect(listed.map(article => article.id)).toEqual(['news-b', 'news-a'])
+  })
+
+  it('offers the newest note until it has been seen', () => {
+    const articles = [note('news-a', '2026-09-01'), note('news-b', '2026-10-12')]
+    expect(unseenNews(articles, null)?.id).toBe('news-b')
+    expect(unseenNews(articles, '2026-09-01')?.id).toBe('news-b')
+    expect(unseenNews(articles, '2026-10-12')).toBeNull()
+    expect(unseenNews([note('tic')], null)).toBeNull()
+  })
+
+  it('every release note in the knowledge base carries a date', () => {
+    const dir = join(process.cwd(), 'help-kb')
+    const notes = readdirSync(dir)
+      .filter(file => file.startsWith('news-') && file.endsWith('.md'))
+      .map(file => parseHelpArticle(file, readFileSync(join(dir, file), 'utf8')))
+    expect(notes.length).toBeGreaterThan(0)
+    for (const parsed of notes) expect(parsed?.date, parsed?.id).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})
+
+describe('screenshots', () => {
+  const dir = join(process.cwd(), 'help-kb')
+  const imgDir = join(dir, 'img')
+  const files = existsSync(imgDir) ? readdirSync(imgDir).filter(file => /\.(png|jpg|webp)$/.test(file)) : []
+  const referenced = new Map<string, string>()
+  for (const file of readdirSync(dir).filter(name => name.endsWith('.md'))) {
+    for (const name of helpImageNames(readFileSync(join(dir, file), 'utf8'))) referenced.set(name, file)
+  }
+
+  it('points a reference at the bundled file and drops one with no file', () => {
+    const body = 'Prije\n\n![TIC](img/tic.png)\n\n![Nema](img/nema.png)'
+    expect(helpImageNames(body)).toEqual(['tic.png', 'nema.png'])
+    expect(resolveHelpImages(body, { 'tic.png': '/assets/tic-abc.png' })).toBe('Prije\n\n![TIC](/assets/tic-abc.png)\n\n')
+  })
+
+  it('has a file for every screenshot an article shows', () => {
+    for (const [name, article] of referenced) expect(files, `${name} in ${article}`).toContain(name)
+  })
+
+  it('has no screenshot that no article shows', () => {
+    for (const file of files) expect(referenced.has(file), file).toBe(true)
+  })
+
+  it('keeps every screenshot small enough to open on a phone connection', () => {
+    for (const file of files) expect(statSync(join(imgDir, file)).size, file).toBeLessThan(300 * 1024)
   })
 })

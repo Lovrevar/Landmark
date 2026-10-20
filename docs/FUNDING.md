@@ -498,13 +498,20 @@ plan. Nothing else writes one — the project form, the phase setup modal and th
 budgets modal all display budget read-only, and a project with no TIC reads **"budget not set"**
 rather than showing a zero that looks like a real figure.
 
+A screen that prints a project's budget asks `budgetIsSet(lineItems)` (`TIC/utils/ticBudget.ts`), or
+`fetchBudgetedProjectIds()` (`Supervision/SiteManagement/services/siteService.ts`) for a whole
+list — never `projects.budget > 0`, which is true for a project whose figure was typed or seeded
+without a TIC. The Director and Investment dashboards, the Sales report and Investment projects
+use it; on Investment projects the shares of budget and the funding status become "—", the
+progress bar is hidden and risk rests on the schedule alone (GEN-5, FUND-10).
+
 Saving `tic_cost_structures` fires `sync_project_from_tic(project_id)`, which derives:
 
 | Target | From |
 |---|---|
 | `projects.budget` | the Investicija grand total |
 | `project_phases` | the phases the TIC itself names |
-| `project_phases.budget_allocated` | that phase's share of the plan |
+| `project_phases.budget_allocated` | that phase's share of the plan; NULL when the TIC is unphased and the project has several phases |
 | `phase_classification_budgets` | the (phase × classification) grid |
 
 Three rules the function encodes, each protecting against a way this could destroy data:
@@ -517,6 +524,18 @@ Three rules the function encodes, each protecting against a way this could destr
 - **Only Investicija rows feed budgets.** Građenje is a breakdown of the single `Građenje` line —
   in both real workbooks its `SVEUKUPNO` equals that line exactly — so counting it too would
   double the largest item in the plan.
+
+**An unphased TIC is split by `apply_unphased_tic_budget`** (migration `20261015100000`, GEN-22).
+A project with no phase gets "Faza 1"; a single phase holds the whole plan and its classification
+split; several phases all get NULL and no classification rows, because the plan does not say how
+much of it each phase gets. It used to put the whole plan on phase 1 and 0 on the rest, which the
+phase list, Site Management and Budget Control's EVM all read as phase 1 owning the project.
+Phases are added and removed after the TIC is saved, so `trg_project_phases_unphased_tic`
+(AFTER INSERT/DELETE/UPDATE OF `project_id` on `project_phases`) re-applies that split. It never
+re-runs the full sync: for a phased TIC that would delete a phase a user just added above the
+TIC's count, which keeps the column default of 0 ("the TIC plans nothing for it"). Readers tell
+NULL from 0 with `budgetNotSplitByPhase` and total the plan with `plannedOnPhases`
+(`TIC/utils/ticBudget.ts`).
 
 `phase_classification_budgets` is replaced wholesale on each sync rather than merged: the TIC is
 the only author, so a row it no longer contains no longer exists. There are deliberately **no
@@ -538,7 +557,8 @@ Each Investicija row carries two optional fields beyond its amounts:
   three phase columns, and summing those would invent 8.000.000 of budget. An unphased line is
   shown as "—" in each phase column and counted once in the project total.
 
-A TIC with no phased line at all is *unphased* and describes one undifferentiated project.
+A TIC with no phased line at all is *unphased* and describes one undifferentiated project — so
+its phases, if the project has several, carry no budget of their own (NULL, see above).
 
 #### Editing the phase split
 
@@ -591,6 +611,7 @@ zeroed split reads as "planned at nothing", which is not what "not attributed to
 - `exportToExcel(data: TICExportData)` — async; writes a real `.xlsx` with two sheets (`INVESTICIJA`, `GRAĐENJE`) laid out in the source workbook's shape, so an export re-imports cleanly (covered by `ticExport.test.ts`)
 - `exportToPDF(data: TICExportData)` — two-page landscape A4 PDF, one page per tab; row height is derived from the row count so a long Građenje breakdown is not clipped
 - `buildInvestmentSheet(data)` / `buildConstructionSheet(data)` — pure AOA builders, exported for the round-trip test
+- A phased TIC is exported with one `FAZA n` column group per phase (own funds / % / credit / %) to the right of the project block, in the shape `ticImport.detectPhaseColumns` reads; an unphased TIC keeps the six-column layout. The phased round-trip is pinned in `ticExport.test.ts` (FUND-13). The last column, `KLASIFIKACIJA`, holds each line's classification **code** (ids differ between databases); `applyImportedClassifications` in `ticClassificationMap.ts` maps it back on import, an empty cell meaning "unmapped" and an unknown code falling back to the name default.
 - **Depends on:** `@e965/xlsx` (dynamic import), jsPDF, activityLog
 - _Note: this previously emitted an HTML table blob named `.xls`, which the docs already described as `.xlsx`; it now genuinely is `.xlsx`._
 

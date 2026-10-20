@@ -20,6 +20,7 @@ import { loadUnicodeFont, PDF_FONT_FAMILY } from '../../../utils/pdfFont'
 import { RISK_LEVEL, statusLabel } from '../../../utils/statusDisplay'
 import { exportFileName } from '../../../utils/downloadFile'
 import { logActivity } from '../../../lib/activityLog'
+import { orgHeading } from '../../../lib/orgName'
 
 /** Whole euros, for the aggregate figures this report is made of. */
 const money = pdfMoneyRounded
@@ -147,8 +148,11 @@ export async function generateGeneralReportPDF(
 
   pdf.setTextColor(255, 255, 255)
   pdf.setFont(fontFamily, 'bold')
-  centered('LANDMARK', 80, 48)
-  centered('GROUP', 95, 48)
+  // The organisation's name, when its database has one (GEN-19). `centered` shrinks a long name
+  // to fit the line.
+  const organizationName = report.organization_name ?? null
+  const heading = orgHeading(organizationName)
+  if (heading) centered(heading, 90, 48)
 
   pdf.setFont(fontFamily, 'normal')
   centered(t('reports.general.exec_report'), 120, 24)
@@ -184,11 +188,16 @@ export async function generateGeneralReportPDF(
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(32)
   pdf.setFont(fontFamily, 'bold')
-  pdf.text(t('reports.general.landmark_group'), margin, 22)
-
-  pdf.setFontSize(16)
-  pdf.setFont(fontFamily, 'normal')
-  pdf.text(t('reports.general.exec_report'), margin, 33)
+  if (heading) {
+    pdf.text(heading, margin, 22)
+    pdf.setFontSize(16)
+    pdf.setFont(fontFamily, 'normal')
+    pdf.text(t('reports.general.exec_report'), margin, 33)
+  } else {
+    // No name to head the band: the report title takes its place rather than leaving it empty.
+    pdf.setFontSize(24)
+    pdf.text(t('reports.general.exec_report'), margin, 28)
+  }
 
   pdf.setFontSize(10)
   pdf.setTextColor(200, 200, 200)
@@ -1035,7 +1044,7 @@ export async function generateGeneralReportPDF(
     pdf.setFontSize(8)
     pdf.setTextColor(100, 100, 100)
     pdf.setFont(fontFamily, 'normal')
-    pdf.text(t('reports.general.landmark_group'), margin, pageHeight - 10)
+    if (organizationName) pdf.text(organizationName, margin, pageHeight - 10)
     pdf.text(t('reports.general.pdf.footer'), margin, pageHeight - 6)
 
     pdf.setFont(fontFamily, 'bold')

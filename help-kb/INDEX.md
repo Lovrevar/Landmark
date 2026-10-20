@@ -5,6 +5,12 @@ Files live alongside this index; each is self-contained markdown with frontmatte
 
 ---
 
+## What's new
+
+Release notes, one per release: `news-YYYY-MM.md` with a `date` in the frontmatter. The Help page lists them newest first and announces the newest in a banner.
+
+- [news-2026-10](news-2026-10.md) — **Što je novo — listopad 2026** — Pomoć i objašnjenja uz polja, AI asistent i Pomoć, uvoz stanova, profil Cashflow, promjene u financijskim prikazima.
+
 ## Construction core
 
 - [projects-list](projects-list.md) — **Stranica Projekti (popis projekata)** — Pregled svih gradilišnih projekata kao mreže kartica, s filtriranjem po statusu.
@@ -39,7 +45,7 @@ Files live alongside this index; each is self-contained markdown with frontmatte
 - [cashflow-payments](cashflow-payments.md) — **Plaćanja (Cashflow)** — Sva plaćanja s podrškom za cesiju i kompenzaciju.
 - [cashflow-suppliers](cashflow-suppliers.md) — **Dobavljači (Cashflow)** — Isti zapisi kao podugovaratelji, prikazani iz računovodstvene perspektive.
 - [office-suppliers](office-suppliers.md) — **Office Dobavljači** — Zasebna tablica vendora za uredske/administrativne troškove.
-- [cashflow-companies](cashflow-companies.md) — **Moje firme** — Financijski pregled svih firmi pod grupom Landmark.
+- [cashflow-companies](cashflow-companies.md) — **Moje firme** — Financijski pregled svih firmi u grupi.
 - [cashflow-banks](cashflow-banks.md) — **Investicije (Cashflow)** — Read-only pregled bankovnih računa, kredita i alokacija.
 - [cashflow-customers](cashflow-customers.md) — **Kupci (Cashflow)** — Pregled kupaca s računima i dugovanjima iz računovodstvene perspektive.
 - [cashflow-calendar](cashflow-calendar.md) — **Kalendar dospijeća** — Mjesečni kalendar dospijeća računa s planiranim budžetom.
@@ -52,7 +58,7 @@ Files live alongside this index; each is self-contained markdown with frontmatte
 - [retail-projects](retail-projects.md) — **Retail projekti** — Projekti razvoja zemljišta s tabovima Pregled, Čestice, Kupci, Prodaja, Računi.
 - [retail-land-plots](retail-land-plots.md) — **Zemljišne čestice** — Popis kupljenih parcela s površinom, ulaganjima i statusom plaćanja.
 - [retail-customers](retail-customers.md) — **Retail kupci** — Kupci zemljišnih čestica, zaseban modul od kupaca stanova.
-- [retail-sales](retail-sales.md) — **Retail prodaje i plaćanja kupaca** — Registar plaćanja kupaca čestica (stavka izbornika Prodaje) i stranica prodaja čestica.
+- [retail-sales](retail-sales.md) — **Retail prodaje i plaćanja kupaca** — Prodaja čestica kupcima (stavka Prodaje) i registar plaćanja kupaca (stavka Plaćanja).
 - [retail-invoices](retail-invoices.md) — **Računi (Retail)** — Računi retail strane s filterima tipa i odobrenja; CSV izvoz.
 - [retail-reports](retail-reports.md) — **Retail izvještaji** — PDF izvještaji za retail portfelj s tabovima Pregled/Projekti/Prodaja/Troškovi.
 

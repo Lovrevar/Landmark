@@ -26,7 +26,9 @@ Gumb **Namjena Investicije** (nema ga na kreditima isplaćenima izravno na raču
 
 ## Proširena kartica
 
-Proširena kartica prikazuje **Vrsta kredita**, **Kamatna stopa**, **Preostali dug**, **Vraćeno**, datume (**Datum početka**, **Datum dospijeća**, **Istek korištenja**), popis **Namjene kredita** te odjeljke **Isplate kredita**, **Uplate kredita** i **Troškovi kredita**.
+Proširena kartica prikazuje **Vrsta kredita**, **Kamatna stopa**, **Preostali dug**, **Vraćeno**, datume (**Datum početka**, **Datum dospijeća**, **Istek korištenja**), popis **Namjene kredita** te odjeljke **Isplate kredita**, **Uplate kredita** i **Troškovi kredita**. Te odjeljke i popis **Računi plaćeni ovom alokacijom** vide samo uloge **Director** i **Accounting**.
+
+![Proširena kartica kredita s detaljima i popisom Namjene kredita](img/investicije-namjene.png)
 
 Svaka namjena nosi naziv projekta, **OPEX (Bez projekta)** ili **Refinanciranje -** i naziv firme ili banke (uz oznaku **FIRMA** / **BANKA**). Uz nju pišu tri iznosa, koje objašnjava i „?” pored naslova **Namjene kredita**:
 
@@ -36,4 +38,4 @@ Svaka namjena nosi naziv projekta, **OPEX (Bez projekta)** ili **Refinanciranje 
 
 Kod kredita isplaćenog izravno na račun firme cijela se namjena vodi kao iskorištena, pa se **Dostupno** ne prikazuje.
 
-Klik na namjenu otvara njezin opis i popis **Računi plaćeni ovom alokacijom**. Ikona koša briše namjenu, uz potvrdu.
+Klik na namjenu otvara njezin opis i popis **Računi plaćeni ovom alokacijom**. Popis sadrži plaćanja s te namjene i isplate kredita knjižene na nju (u stupcu dobavljača piše **Isplata kredita**), pa zajedno objašnjavaju iznos **Iskorišteno**. Ikona koša briše namjenu, uz potvrdu.

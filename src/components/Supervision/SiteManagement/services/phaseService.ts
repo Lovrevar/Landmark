@@ -65,7 +65,8 @@ export const createPhases = async (projectId: string, phases: PhaseFormInput[]) 
     phase_number: index + 1,
     phase_name: phase.phase_name,
     // budget_allocated is left to its column default of 0; sync_project_from_tic fills it in
-    // when a TIC plans this phase.
+    // when a TIC plans this phase. For an unphased TIC the phase trigger re-splits the plan as
+    // soon as phases are added or removed: one phase holds it all, several hold NULL (GEN-22).
     budget_used: 0,
     start_date: phase.start_date || null,
     end_date: phase.end_date || null,

@@ -114,6 +114,7 @@ export async function fetchPhaseBudgetStatus(
     else used += amount
   }
 
+  // NULL — the TIC is not split by phase (GEN-22) — reads as 0, which callers take as no cap.
   return { allocated: phase.data?.budget_allocated ?? 0, used, excludedAmount }
 }
 

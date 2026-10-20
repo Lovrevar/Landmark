@@ -90,6 +90,17 @@ export const formatEuroCompact = (value: Money): string => {
   return formatEuroRounded(value)
 }
 
+/**
+ * A ratio such as CPI or SPI: two decimals, Croatian separators, like the money helpers.
+ *
+ * Chart axes need it most — Recharts prints a tick as the raw float, so an axis stretched to fit
+ * a CPI of 2.527306968 used that as its top label (GEN-7).
+ */
+export const formatIndex = (value: Money): string => {
+  if (!isRenderable(value)) return NO_VALUE
+  return value.toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 // ----------------------------------------------------------------------------
 // Dates
 //

@@ -10,6 +10,10 @@ import { useAuth } from '../../../contexts/AuthContext'
 import { isDirectorRole } from '../../../utils/permissions'
 import { formatEuro } from '../../../utils/formatters'
 
+// The Izdano / Plaćeno tiles sit two to a company card, three cards to a row: at laptop width
+// an eight-digit amount is wider than its tile. `stat-card__value` shrinks it, then wraps (UI-11).
+const TILE_VALUE_SIZE = { '--stat-value-size': '0.875rem' } as React.CSSProperties
+
 const AccountingCompanies: React.FC = () => {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -124,21 +128,21 @@ const AccountingCompanies: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  <div className="stat-card bg-green-50 dark:bg-green-900/20 p-2 rounded-lg">
                     <div className="flex items-center mb-1">
                       <ArrowUpCircle className="w-4 h-4 text-green-600 mr-1" />
                       <p className="text-xs text-green-700 dark:text-green-400">{t('companies.card.issued')}</p>
                     </div>
-                    <p className="text-sm font-bold text-green-900 dark:text-green-300">{formatEuro(company.total_income_paid)}</p>
+                    <p className="stat-card__value font-bold text-green-900 dark:text-green-300" style={TILE_VALUE_SIZE}>{formatEuro(company.total_income_paid)}</p>
                     <p className="text-xs text-gray-600 dark:text-gray-400">{t('companies.card.invoices_count', { count: company.total_income_invoices })}</p>
                   </div>
 
-                  <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                  <div className="stat-card bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
                     <div className="flex items-center mb-1">
                       <ArrowDownCircle className="w-4 h-4 text-red-600 mr-1" />
                       <p className="text-xs text-red-700 dark:text-red-400">{t('companies.card.paid_out')}</p>
                     </div>
-                    <p className="text-sm font-bold text-red-900 dark:text-red-300">{formatEuro(company.total_expense_paid)}</p>
+                    <p className="stat-card__value font-bold text-red-900 dark:text-red-300" style={TILE_VALUE_SIZE}>{formatEuro(company.total_expense_paid)}</p>
                     <p className="text-xs text-gray-600 dark:text-gray-400">{t('companies.card.invoices_count', { count: company.total_expense_invoices })}</p>
                   </div>
                 </div>
@@ -159,7 +163,7 @@ const AccountingCompanies: React.FC = () => {
                   {company.financing_received !== null && company.financing_repaid !== null &&
                     (company.financing_received !== 0 || company.financing_repaid !== 0) && (
                     <div className="flex justify-between gap-2 text-sm mt-1">
-                      <span className="text-gray-600 dark:text-gray-400">{t('companies.card.financing_label')}</span>
+                      <span className="text-gray-600 dark:text-gray-400">{t('common.financing_received_repaid')}</span>
                       <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
                         {formatEuro(company.financing_received)} / {formatEuro(company.financing_repaid)}
                       </span>

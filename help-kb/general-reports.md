@@ -6,7 +6,7 @@ routes: [/general-reports]
 roles: [Director]
 ---
 
-**Opći izvještaj** je sveobuhvatni izvještaj za rukovodstvo s naslovom **LANDMARK GROUP — Sveobuhvatni izvještaj za rukovodstvo**. Otvara se stavkom **Izvještaji** u General profilu i dostupan je samo ulozi **Director**.
+**Opći izvještaj** je sveobuhvatni izvještaj za rukovodstvo s naslovom **Sveobuhvatni izvještaj za rukovodstvo**, iznad kojeg stoji naziv vaše grupe ako je postavljen za vašu instalaciju. Otvara se stavkom **Izvještaji** u General profilu i dostupan je samo ulozi **Director**.
 
 U zaglavlju su vrijeme generiranja te gumbi **Osvježi** i **Izvoz PDF** (PDF je uvijek na hrvatskom).
 

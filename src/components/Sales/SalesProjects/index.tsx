@@ -4,6 +4,8 @@ import { Plus, Building2, FileUp } from 'lucide-react'
 import { LoadingSpinner, PageHeader, Button, ConfirmDialog, Tabs, ErrorState, Alert } from '../../ui'
 import { useToast } from '../../../contexts/ToastContext'
 import { toErrorMessage } from '../../../lib/errorMessage'
+import { isUniqueViolation } from '../../../lib/dbErrors'
+import { formatEuro } from '../../../utils/formatters'
 import { Apartment, Garage, Repository, PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { useSalesData } from './hooks/useSalesData'
 import * as salesService from './services/salesService'
@@ -35,9 +37,13 @@ import { SaleFormModal } from './forms/SaleFormModal'
 import { BulkPriceUpdateModal } from './modals/BulkPriceUpdateModal'
 import { ExcelImportApartmentsModal } from './modals/ExcelImportApartmentsModal'
 import { ExcelImportGaragesModal } from './modals/ExcelImportGaragesModal'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canEditSalesUnits, canCancelSales } from '../../../utils/permissions'
 
 const SalesProjectsEnhanced: React.FC = () => {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const canEdit = canEditSalesUnits(user)
   const toast = useToast()
   const { projects, garages, repositories, customers, loading, error, dismissError, refetch } = useSalesData()
 
@@ -84,6 +90,8 @@ const SalesProjectsEnhanced: React.FC = () => {
   const [deletingBuilding, setDeletingBuilding] = useState(false)
   const [pendingDeleteUnit, setPendingDeleteUnit] = useState<{ id: string; unitType: UnitType } | null>(null)
   const [deletingUnit, setDeletingUnit] = useState(false)
+  const [pendingCancelSale, setPendingCancelSale] = useState<{ id: string; number: string; buyer: string; price: number } | null>(null)
+  const [cancellingSale, setCancellingSale] = useState(false)
 
   const handleSelectProject = (project: ProjectWithBuildings) => {
     setSelectedProject(project)
@@ -116,6 +124,11 @@ const SalesProjectsEnhanced: React.FC = () => {
     }
   }
 
+  // The unique indexes refuse a number already used in the building and a name already used in
+  // the project (SALES-9). Say that, rather than the generic "try again" — trying again fails too.
+  const createErrorMessage = (error: unknown, fallbackKey: string, duplicateKey: string): string =>
+    isUniqueViolation(error) ? t(duplicateKey) : toErrorMessage(error, t(fallbackKey))
+
   const handleCreateBulkBuildings = async (quantity: number) => {
     if (!selectedProject) return
 
@@ -125,7 +138,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating buildings:', error)
-      toast.error(toErrorMessage(error, t('sales_projects.toast.buildings_create_error')))
+      toast.error(createErrorMessage(error, 'sales_projects.toast.buildings_create_error', 'sales_projects.toast.building_name_exists'))
     }
   }
 
@@ -138,7 +151,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating building:', error)
-      toast.error(toErrorMessage(error, t('sales_projects.toast.building_create_error')))
+      toast.error(createErrorMessage(error, 'sales_projects.toast.building_create_error', 'sales_projects.toast.building_name_exists'))
     }
   }
 
@@ -159,7 +172,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error creating unit:', error)
-      toast.error(toErrorMessage(error, t('sales_projects.toast.unit_create_error')))
+      toast.error(createErrorMessage(error, 'sales_projects.toast.unit_create_error', 'sales_projects.toast.unit_number_exists'))
     }
   }
 
@@ -172,7 +185,7 @@ const SalesProjectsEnhanced: React.FC = () => {
       await refetch()
     } catch (error) {
       console.error('Error bulk creating units:', error)
-      toast.error(toErrorMessage(error, t('sales_projects.toast.units_create_error')))
+      toast.error(createErrorMessage(error, 'sales_projects.toast.units_create_error', 'sales_projects.toast.unit_number_exists'))
     }
   }
 
@@ -325,6 +338,29 @@ const SalesProjectsEnhanced: React.FC = () => {
     }
   }
 
+  const confirmCancelSale = async () => {
+    if (!pendingCancelSale) return
+    setCancellingSale(true)
+    try {
+      await salesService.cancelSale(
+        { id: pendingCancelSale.id, number: pendingCancelSale.number },
+        selectedBuilding?.project_id ?? selectedProject?.id ?? null,
+      )
+      setPendingCancelSale(null)
+      toast.success(t('sales_projects.toast.sale_cancel_success'))
+      await refetch()
+    } catch (error) {
+      console.error('Error cancelling sale:', error)
+      // The dialog closes either way: none of the three refusals is fixed by pressing again.
+      setPendingCancelSale(null)
+      toast.error(error instanceof salesService.CancelSaleError
+        ? t(`sales_projects.toast.sale_cancel_${error.reason}`)
+        : toErrorMessage(error, t('sales_projects.toast.sale_cancel_error')))
+    } finally {
+      setCancellingSale(false)
+    }
+  }
+
   const getUnitLabel = (unitType: UnitType) => {
     if (unitType === 'apartment') return t('sales_projects.units.apartments')
     if (unitType === 'garage') return t('sales_projects.units.garages')
@@ -358,7 +394,7 @@ const SalesProjectsEnhanced: React.FC = () => {
         className="mb-6"
         actions={
           <>
-            {viewMode === 'buildings' && selectedProject && (
+            {canEdit && viewMode === 'buildings' && selectedProject && (
               <>
                 <Button
                   variant="info"
@@ -382,7 +418,7 @@ const SalesProjectsEnhanced: React.FC = () => {
                 </Button>
               </>
             )}
-            {viewMode === 'units' && selectedBuilding && (
+            {canEdit && viewMode === 'units' && selectedBuilding && (
               <>
                 {activeUnitType === 'garage' && (
                   <Button
@@ -467,6 +503,7 @@ const SalesProjectsEnhanced: React.FC = () => {
           onDeleteUnit={handleDeleteUnit}
           onUpdateUnitStatus={handleUpdateUnitStatus}
           onSellUnit={handleSellUnit}
+          onCancelSale={canCancelSales(user) ? setPendingCancelSale : undefined}
           onLinkApartment={(apartment) => {
             setSelectedApartmentForLinking(apartment)
             setShowLinkingModal(true)
@@ -595,6 +632,24 @@ const SalesProjectsEnhanced: React.FC = () => {
         onConfirm={confirmDeleteUnit}
         onCancel={() => setPendingDeleteUnit(null)}
         loading={deletingUnit}
+      />
+
+      <ConfirmDialog
+        show={!!pendingCancelSale}
+        title={t('sales_projects.cancel_sale.title')}
+        message={pendingCancelSale
+          ? t('sales_projects.cancel_sale.message', {
+              number: pendingCancelSale.number,
+              buyer: pendingCancelSale.buyer,
+              price: formatEuro(pendingCancelSale.price),
+            })
+          : ''}
+        confirmLabel={t('sales_projects.cancel_sale.confirm')}
+        cancelLabel={t('confirm.cancel')}
+        variant="danger"
+        onConfirm={confirmCancelSale}
+        onCancel={() => setPendingCancelSale(null)}
+        loading={cancellingSale}
       />
     </div>
   )

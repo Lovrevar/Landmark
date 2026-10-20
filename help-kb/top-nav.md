@@ -18,6 +18,8 @@ Gornja traka prisutna je na svim stranicama i sadrži:
 - **Ikona sunca/mjeseca** — prebacivanje između svijetle i tamne teme
 - **Odjava** — gumb s ikonom izlaza; završava sesiju
 
+Kad izađe nova obavijest o promjenama u aplikaciji, iznad sadržaja stranice pojavi se plavi redak **Što je novo** s poveznicom **Pročitajte**. Nestaje kad obavijest otvorite ili redak zatvorite križićem; sve obavijesti ostaju na stranici **Pomoć**, u skupini **Što je novo**.
+
 Lijevo se nalazi bočni izbornik (**Izbornik**) koji se može sažeti gumbom strelice; sažme se i sam kad odaberete stranicu. Njegov sadržaj ovisi o aktivnom profilu.
 
 Na mobitelu gornja traka sadrži samo gumb izbornika, logo te ikone Chat, Zadaci, Kalendar i Pomoć; profil, jezik, tema i **Odjava** nalaze se u bočnom izborniku (odjeljci **Profil** i **Račun**).

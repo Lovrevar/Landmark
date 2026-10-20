@@ -1,7 +1,7 @@
 # Backlog — app-wide UI
 
 Problems that repeat across modules: formatting, status display, failed loads, translations, the
-shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-11`). Entry format and
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-12`). Entry format and
 rules are in [README.md](./README.md).
 
 A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
@@ -18,18 +18,29 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
   labels. Grep before deleting.
 - English literals left on screen: "TBD", "Mixed", "Retail", "Site".
 
-### UI-8 · Medium · Mobile
-- Non-wrapping header rows in Supervision, which is used on phones on site.
-- Hover-only actions (AI chat edit and regenerate, and others) cannot be reached by touch.
-- The Cashflow invoice table is 1400px wide.
-- Calendar opens on the month view on phones.
+### UI-8 · Low · Mobile
+- **Done** on `fix/mobile-pass-ui8` (2026-10-09), measured at 390px on 45 pages as Director and
+  7 as Supervision: no page scrolls sideways and nothing is cut off any more. Fixed: the phase
+  card header and the group rows on Site management, the work log cards, the Investment project
+  cards, the calendar toolbar and the General report's project header (all pushed their right
+  half off the card); the assistant's edit and regenerate buttons (hover-only); the calendar,
+  which now opens on the agenda on a phone.
+- **Left:** tap targets under 32px — the icon buttons on Documents (expand, open, paging; 43 on
+  one screen) and the calendar's type chips and month arrows. Wide tables on desktop
+  (Cashflow invoices, the TIC with phases) scroll inside their card by design.
+- **How to re-measure:** load each page at 390px and look for elements whose right edge passes
+  the viewport or a clipping ancestor; the page's own scroll container hides a plain
+  `document.scrollWidth` check.
 
-### UI-4 · Medium · Failed loads that still read as "no data"
+### UI-4 · Low · Failed loads that still read as "no data"
 - **Done:** ~60 hook-shaped loaders expose `error` + `refetch` and render `ErrorState`; services
-  throw; all silent mutations report.
-- **Left:** ~39 `load`/`fetch` functions written inline in 33 `.tsx` files, 12 silent
-  `.catch(() => set…([]))` fallbacks, and the full-page spinner on refetch on 9 Cashflow pages
-  (the search box loses focus).
+  throw; all silent mutations report. On `fix/failed-loads-ui4` (2026-10-08) the remaining inline
+  loaders were fixed: 17 in 14 files, mostly dropdown lookups in form modals, now showing
+  `InlineLoadError` with a retry (`common.list_load_error`); the Sales report and project details
+  show `ErrorState` instead of an empty picker and "not found".
+- **Left:** the full-page spinner on refetch on 9 Cashflow pages (the search box loses focus);
+  the lookup in the unreachable `BankCreditFormModal` (CASH-15); the Projects list shows a failed
+  load as an `Alert` (GEN-21).
 - **Rule:** never render zeros or an empty state on a failed load.
 
 ### UI-3 · Medium · Status colours and labels
@@ -78,3 +89,8 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
 ### UI-6 · Low · Shared library props that do nothing
 - `Alert` ignores `onClose`; `StatCard` ignores `trend`; `DateInput` ignores `min` / `max`.
 - **Fix direction:** implement the props or remove them.
+
+## Resolved
+
+### UI-11 · Low · Amounts run past their card at laptop width on Budget Control and Companies
+- Fixed on `feat/user-guidance-phase-3` (2026-10-12): both use the `.stat-card` / `.stat-card__value` sizing from `index.css`; measured at 1280×800 on the demo, no figure overflows or wraps.

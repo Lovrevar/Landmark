@@ -8,6 +8,8 @@ roles: [Director, Accounting, Sales, Investment]
 
 Stranica **Projekti** (profil **General**) prikazuje sve projekte kao mrežu kartica. Kartica pokazuje status i vrstu projekta, **Budžet**, **Utrošeno**, **Preostalo**, **Napredak** u postotku, koliko je dana preostalo ili kašnjenja te broj završenih prekretnica.
 
+![Stranica Projekti s karticama projekata](img/projekti.png)
+
 Budžet se ne upisuje ovdje. U obrascu projekta polje **Budžet (EUR)** je samo za čitanje jer budžet
 dolazi iz [[tic]] projekta; dok TIC ne postoji, piše **Budžet nije postavljen**, a red **Preostalo** se ne prikazuje. Novi projekt se
 zato može stvoriti i prije nego što plan troškova postoji — to je uobičajen redoslijed posla.

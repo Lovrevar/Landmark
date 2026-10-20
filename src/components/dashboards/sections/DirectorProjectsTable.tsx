@@ -72,7 +72,9 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                     </Badge>
                   </td>
                   <td data-label={t('dashboards.director.budget_col')} className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                    {formatEuroCompact(project.budget)}
+                    {project.budget_set
+                      ? formatEuroCompact(project.budget)
+                      : <span className="font-normal text-orange-600 dark:text-orange-400">{t('common.budget_not_set')}</span>}
                   </td>
                   <td data-label={t('dashboards.director.expenses_col')} className="px-6 py-4 text-sm font-medium text-red-600">
                     {formatEuroCompact(project.total_expenses)}

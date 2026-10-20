@@ -1,8 +1,15 @@
 import { User } from '../contexts/AuthContext'
 
+/**
+ * Who sees payments and invoices: the paid figures on Site management, the Funding payments
+ * register and the drawdown, repayment and fee sections of a credit. Mirrors the RLS on
+ * `accounting_payments` and `accounting_invoices` (Director and Accounting). Investment used to be
+ * included here while the database returned it no rows, so every one of those screens read as
+ * "never paid" or empty (SEC-A10, decided 2026-10-09: hide them rather than widen the policy).
+ */
 export const canManagePayments = (user: User | null): boolean => {
   if (!user) return false
-  return user.role === 'Director' || user.role === 'Accounting' || user.role === 'Investment'
+  return user.role === 'Director' || user.role === 'Accounting'
 }
 
 export const canViewAllProjects = (user: User | null): boolean => {
@@ -10,11 +17,41 @@ export const canViewAllProjects = (user: User | null): boolean => {
   return user.role === 'Director' || user.role === 'Accounting' || user.role === 'Investment' || user.role === 'Sales'
 }
 
+/** Mirrors the subcontractors INSERT and UPDATE policies. Deleting is `canDeleteSubcontractors`. */
 export const canManageSubcontractors = (user: User | null): boolean => {
   if (!user) return false
-  return user.role === 'Director' || user.role === 'Supervision'
+  return user.role === 'Director' || user.role === 'Supervision' || user.role === 'Accounting'
 }
 
+/** Mirrors the subcontractors DELETE policy: Director only. */
+export const canDeleteSubcontractors = (user: User | null): boolean => user?.role === 'Director'
+
+/**
+ * Sales inventory — apartments, garages, storage units and buildings. Mirrors their INSERT and
+ * UPDATE policies; any other role's create or edit is refused by RLS.
+ */
+export const canEditSalesUnits = (user: User | null): boolean => {
+  if (!user) return false
+  return user.role === 'Director' || user.role === 'Sales' || user.role === 'Accounting'
+}
+
+/**
+ * Who may cancel a sale. Decided 2026-10-12 and enforced by `cancel_apartment_sale`, which checks
+ * the role itself: a cancellation removes revenue from every report, so it is not the Sales
+ * role's to make.
+ */
+export const canCancelSales = (user: User | null): boolean => {
+  if (!user) return false
+  return user.role === 'Director' || user.role === 'Accounting'
+}
+
+/** Mirrors the DELETE policies on the same four tables: Accounting may edit but not delete. */
+export const canDeleteSalesUnits = (user: User | null): boolean => {
+  if (!user) return false
+  return user.role === 'Director' || user.role === 'Sales'
+}
+
+/** Mirrors the work_logs INSERT, UPDATE and DELETE policies. */
 export const canManageWorkLogs = (user: User | null): boolean => {
   if (!user) return false
   return user.role === 'Director' || user.role === 'Supervision'

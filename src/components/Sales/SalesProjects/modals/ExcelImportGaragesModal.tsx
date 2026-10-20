@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import * as XLSX from '@e965/xlsx'
-import { Upload, CheckCircle } from 'lucide-react'
+import { Upload, CheckCircle, Download } from 'lucide-react'
 import { Modal, Button } from '../../../ui'
-import { importGaragesFromExcel, fetchExistingGarageNumbers } from '../services/garageImportService'
+import { importGaragesFromExcel, fetchExistingGarageNumbers, markExistingGarages } from '../services/garageImportService'
+import { GARAGE_IMPORT_FORMAT_KEYS, downloadGarageImportTemplate } from '../services/garageImportTemplate'
 import { useToast } from '../../../../contexts/ToastContext'
 import { parseNumber } from '../../../../utils/excelParsers'
 import { ImportOutcomeSummary } from './ImportOutcomeSummary'
@@ -30,6 +31,15 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
   onComplete
 }) => {
   const toast = useToast()
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadGarageImportTemplate()
+    } catch (error) {
+      console.error('Error building garage import template:', error)
+      toast.error(t('sales_projects.excel_import.template_failed'))
+    }
+  }
   const { t } = useTranslation()
   const [step, setStep] = useState(1)
   const [file, setFile] = useState<File | null>(null)
@@ -60,18 +70,22 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
 
       const existingNumbers = await fetchExistingGarageNumbers(selectedBuilding.id)
 
-      const parsed: ParsedGarageRow[] = rows
-        .slice(1)
-        .filter(row => row[0])
-        .map((row, idx) => ({
-          rowIndex: idx + 2,
-          number: String(row[0]),
-          // Same parser as importGaragesFromExcel, so the preview shows the values that will be
-          // written: Number() reads a European "3.000,00" as NaN and previewed it as 0.
-          size_m2: parseNumber(row[1]),
-          price: parseNumber(row[2]),
-          exists: existingNumbers.has(String(row[0]))
-        }))
+      // Marked by the same function the import uses, so the preview's "new / update" matches
+      // what will happen — including a number that appears twice in the file.
+      const parsed: ParsedGarageRow[] = markExistingGarages(
+        rows
+          .slice(1)
+          .filter(row => row[0])
+          .map((row, idx) => ({
+            rowIndex: idx + 2,
+            number: String(row[0]).trim(),
+            // Same parser as importGaragesFromExcel, so the preview shows the values that will be
+            // written: Number() reads a European "3.000,00" as NaN and previewed it as 0.
+            size_m2: parseNumber(row[1]),
+            price: parseNumber(row[2]),
+          })),
+        existingNumbers,
+      )
 
       setParsedRows(parsed)
       setStep(2)
@@ -86,7 +100,7 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
 
     setImporting(true)
     try {
-      const result = await importGaragesFromExcel(file, selectedBuilding.id)
+      const result = await importGaragesFromExcel(file, selectedBuilding.id, t('sales_projects.toast.unit_number_exists'))
       setImportResults({
         created: result.created,
         updated: result.updated,
@@ -152,11 +166,16 @@ export const ExcelImportGaragesModal: React.FC<ExcelImportGaragesModalProps> = (
               )}
             </div>
             <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 rounded-lg p-4">
-              <h4 className="font-medium text-orange-900 dark:text-orange-400 mb-2">{t('sales_projects.excel_import.expected_format')}</h4>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <h4 className="font-medium text-orange-900 dark:text-orange-400">{t('sales_projects.excel_import.expected_format')}</h4>
+                <Button variant="secondary" size="sm" icon={Download} onClick={handleDownloadTemplate}>
+                  {t('sales_projects.excel_import.download_template')}
+                </Button>
+              </div>
               {/* The spreadsheet's own column names (parking oznaka, parking m2, parking cijena)
                   stay Croatian in both languages — they name real cells in the uploaded file. */}
               <ul className="text-sm text-orange-800 dark:text-orange-300 space-y-1 list-disc list-inside">
-                {(['layout', 'label', 'size', 'price'] as const).map(key => (
+                {GARAGE_IMPORT_FORMAT_KEYS.map(key => (
                   <li key={key}>{t(`sales_projects.excel_import.garage_format.${key}`)}</li>
                 ))}
               </ul>

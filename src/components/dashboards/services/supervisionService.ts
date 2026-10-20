@@ -1,3 +1,4 @@
+import { isDueThisWeek } from '../utils/supervisionDeadlines'
 import { supabase } from '../../../lib/supabase'
 import { format, startOfWeek, endOfWeek } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
@@ -34,7 +35,6 @@ export async function fetchSupervisionDashboard(): Promise<SupervisionDashboardD
   const [
     { data: weekLogsData, error: weekLogsError },
     { data: contractsData, error: contractsError },
-    { data: invoicesData, error: invoicesError },
     { data: recentLogsData, error: recentLogsError },
   ] = await Promise.all([
     supabase
@@ -52,10 +52,6 @@ export async function fetchSupervisionDashboard(): Promise<SupervisionDashboardD
       )
       .in('status', ['draft', 'active'])
       .order('end_date', { ascending: true }),
-    supabase
-      .from('accounting_invoices')
-      .select('contract_id, paid_amount')
-      .eq('invoice_category', 'SUBCONTRACTOR'),
     // Recent-activity logs use the SAME calendar week as everything else, so the
     // "weekly logs" / "no work logs this week" labels match the header range.
     supabase
@@ -68,7 +64,6 @@ export async function fetchSupervisionDashboard(): Promise<SupervisionDashboardD
 
   if (weekLogsError) throw weekLogsError
   if (contractsError) throw contractsError
-  if (invoicesError) throw invoicesError
   if (recentLogsError) throw recentLogsError
 
   // Crews that logged finished work this week. subcontractors.completed_at, the previous source,
@@ -93,7 +88,7 @@ export async function fetchSupervisionDashboard(): Promise<SupervisionDashboardD
     else recentLogsBySubcontractor.set(log.subcontractor_id, [log])
   }
 
-  const contractsStatus = deriveContractStatus(contractsData || [], invoicesData || [])
+  const contractsStatus = deriveContractStatus(contractsData || [])
   const subcontractorStatus = deriveSubcontractorStatus(contractsStatus, recentLogsBySubcontractor)
   const stats = buildWeeklyStats(contractsStatus, subcontractorStatus, weekLogs, completedThisWeek)
 
@@ -102,29 +97,15 @@ export async function fetchSupervisionDashboard(): Promise<SupervisionDashboardD
 
 function deriveContractStatus(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  contracts: any[],
-  invoices: Array<{ contract_id: string | null; paid_amount: number | string | null }>
+  contracts: any[]
 ): ContractStatus[] {
-  const invoicesByContract = new Map<string, typeof invoices>()
-  for (const inv of invoices) {
-    if (!inv.contract_id) continue
-    const bucket = invoicesByContract.get(inv.contract_id)
-    if (bucket) bucket.push(inv)
-    else invoicesByContract.set(inv.contract_id, [inv])
-  }
-
   return contracts.map(c => {
     const cost = parseFloat(c.contract_amount || 0)
-    const contractInvoices = invoicesByContract.get(c.id) || []
-    let budgetRealized = 0
-    if (contractInvoices.length > 0) {
-      budgetRealized = contractInvoices.reduce(
-        (sum, inv) => sum + parseFloat(String(inv.paid_amount || 0)),
-        0
-      )
-    } else if (c.has_contract && cost > 0) {
-      budgetRealized = parseFloat(c.budget_realized || 0)
-    }
+    // `contracts.budget_realized` is the one paid figure, kept by the payment triggers. This
+    // used to sum `paid_amount` over the contract's invoices when it had any, which is a
+    // different number whenever a payment is not tied to an invoice of the same contract
+    // (GEN-10).
+    const budgetRealized = parseFloat(c.budget_realized || 0)
     const progress = cost > 0 ? Math.round(Math.min(100, (budgetRealized / cost) * 100)) : 0
 
     return {
@@ -147,8 +128,8 @@ function deriveSubcontractorStatus(
 ): SubcontractorStatus[] {
   return contracts.map(sub => {
     const recentLogs = recentLogsBySubcontractor.get(sub.subcontractor_id) || []
-    const daysUntilDeadline = sub.deadline ? daysFromToday(sub.deadline) : 999
-    const isOverdue = sub.deadline ? daysUntilDeadline < 0 && sub.progress < 100 : false
+    const daysUntilDeadline = sub.deadline ? daysFromToday(sub.deadline) : null
+    const isOverdue = daysUntilDeadline !== null && daysUntilDeadline < 0 && sub.progress < 100
     const lastActivity = recentLogs.length > 0 ? recentLogs[0].date : null
 
     return {
@@ -183,9 +164,7 @@ function buildWeeklyStats(
     contracts.filter(sub => sub.progress < 100 && sub.phase_id).map(sub => sub.phase_id)
   )
   const overdueCount = subcontractorStatus.filter(s => s.is_overdue).length
-  const criticalDeadlines = subcontractorStatus.filter(
-    s => s.days_until_deadline >= 0 && s.days_until_deadline <= 7 && s.progress < 100
-  ).length
+  const criticalDeadlines = subcontractorStatus.filter(isDueThisWeek).length
 
   return {
     completed_this_week: completedThisWeek,

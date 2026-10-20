@@ -38,7 +38,8 @@ export interface Phase {
   id: string
   phase_number: number
   phase_name: string
-  budget_allocated: number
+  /** NULL when the TIC is not split by phase and the project has several (`budgetNotSplitByPhase`). */
+  budget_allocated: number | null
   budget_used: number
   start_date: string | null
   end_date: string | null
@@ -133,6 +134,8 @@ export interface CreditAllocation {
 }
 
 export interface ProjectWithFinancials extends Project {
+  /** False for a project with no TIC: it has no budget, so `budget` and the ratios against it must not be shown. */
+  budget_set?: boolean
   total_investment: number
   total_debt: number
   debt_allocations: CreditAllocation[]

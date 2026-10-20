@@ -23,7 +23,7 @@ import { formatCreditType } from '../Funding/Investors/utils/creditCalculations'
 import PageHelpLink from '../ui/PageHelpLink'
 
 const defaultFinancialSummary: FinancialSummary = {
-  total_portfolio_value: 0, total_debt: 0, total_equity: 0,
+  total_portfolio_value: 0, projects_without_budget: 0, unbudgeted_project_ids: [], total_debt: 0, total_equity: 0,
   debt_to_equity_ratio: 0, weighted_avg_interest: 0, upcoming_maturities: 0,
   total_credit_lines: 0, available_credit: 0, total_used_credit: 0, total_repaid_credit: 0
 }

@@ -10,8 +10,7 @@ import PaymentStatsCards from './PaymentStatsCards'
 import PaymentTable from './PaymentTable'
 import { PaymentDetailView } from './PaymentDetailView'
 import { columnLabels } from '../services/paymentHelpers'
-import { paymentDirection } from '../services/invoiceHelpers'
-import { paymentTotalsByDirection, formatSignedEuro } from '../services/paymentTotals'
+import { paymentTotalsByCategory, formatSignedEuro } from '../services/paymentTotals'
 import { formatEuro } from '../../../utils/formatters'
 import type { FilterMethod, FilterInvoiceType } from './types'
 
@@ -75,8 +74,9 @@ const AccountingPayments: React.FC = () => {
   // description of an empty table. Say the load failed instead.
   const loadFailedEmpty = !!error && payments.length === 0
 
-  const filteredTotals = paymentTotalsByDirection(
-    filteredPayments.map(p => ({ amount: p.amount, direction: paymentDirection(p.accounting_invoices?.invoice_type) }))
+  // Operating money only; financing has its own figure, as in the cards above (CASH-29).
+  const { operating: filteredTotals, financing: filteredFinancing } = paymentTotalsByCategory(
+    filteredPayments.map(p => ({ amount: p.amount, invoiceType: p.accounting_invoices?.invoice_type }))
   )
 
   return (
@@ -230,6 +230,11 @@ const AccountingPayments: React.FC = () => {
             <span className="font-semibold text-gray-900 dark:text-white">
               {t('payments.stats.net')} {formatSignedEuro(filteredTotals.net)}
             </span>
+            {filteredFinancing.count > 0 && (
+              <span className="text-gray-600 dark:text-gray-400">
+                {t('common.financing_received_repaid')} {formatEuro(filteredFinancing.inflow)} / {formatEuro(filteredFinancing.outflow)}
+              </span>
+            )}
           </span>
         }
       />

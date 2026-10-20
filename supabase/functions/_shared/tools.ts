@@ -130,6 +130,9 @@ export const TOOLS: ToolDefinition[] = [
       'start/end dates, status, and the `budget_allocated` figure. ' +
       '`budget_allocated` is derived from the project TIC, not typed by anyone; it reads 0 for a ' +
       'project that has no TIC, which means "not planned yet", not "planned to be zero". ' +
+      'It is null when the TIC is not split by phase and the project has several phases: the ' +
+      'project budget covers them together, so do not divide it between the phases or attribute ' +
+      'it to any one of them. ' +
       'A phase is a TIME division of the project (Faza 1, Faza 2). It is NOT a cost category: ' +
       'most projects have only one phase, so per-phase figures are effectively whole-project ' +
       'figures. For "how much did we spend on land / on preparation", use `list_cost_classifications` ' +

@@ -219,7 +219,7 @@ export const ExcelImportApartmentsModal: React.FC<ExcelImportApartmentsModalProp
         } catch (error) {
           console.error(`Error importing row ${row.rowIndex}:`, error)
           failedCount++
-          errors.push(t('sales_projects.excel_import.row_error', { row: row.rowIndex, message: importErrorMessage(error) }))
+          errors.push(t('sales_projects.excel_import.row_error', { row: row.rowIndex, message: importErrorMessage(error, t('sales_projects.toast.unit_number_exists')) }))
         }
       }
 

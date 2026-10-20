@@ -2,6 +2,7 @@ import { supabase } from '../../../lib/supabase'
 import type { Project } from '../../../lib/supabase'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import type { ProjectSalesReport, CustomerReport, SalesData } from '../types'
+import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
 
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
@@ -137,8 +138,12 @@ export async function generateProjectReport(
     }
   })
 
+  // Only a TIC sets a budget; without one the report says so instead of printing €0 (GEN-5).
+  const budget_set = (await fetchBudgetedProjectIds()).has(selectedProject)
+
   return {
     project: projectWithFunding,
+    budget_set,
     total_units,
     sold_units,
     available_units,

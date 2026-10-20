@@ -24,11 +24,17 @@ Filtar statusa: **Svi / Dostupno / Rezervirano / Prodano**.
 
 Na kartici jedinice su gumbi **Rezerviraj** (dostupna jedinica) odnosno **Dostupno** (rezervirana), a na stanovima i **Prodaj**, koji otvara prozor **Završi prodaju** s odabirom postojećeg ili unosom novog kupca. Ikona lanca **Poveži garažu/repozitorij** na stanu povezuje ga s dostupnom garažom ili repozitorijem iz iste zgrade. Garaže i repozitoriji prodaju se uz stan: prodajom stana prodanima postaju i povezane jedinice.
 
+Prodaju poništava gumb **Poništi prodaju** na kartici prodanog stana, uz potvrdu. Vide ga uloge **Director** i **Accounting**. Poništavanjem se stan te povezana garaža i repozitorij vraćaju u status **Dostupno**, kupac se uklanja s jedinica, a prodaja nestaje iz nadzornih ploča i izvještaja; zapis ostaje u dnevniku aktivnosti. Dok za stan postoje računi kupcu, prodaju nije moguće poništiti — račune najprije treba riješiti u profilu Cashflow.
+
+Oznaka jedinice mora biti jedinstvena u zgradi, a naziv zgrade u projektu (velika i mala slova se ne razlikuju). **Kreiraj zgrade** zato nastavlja numeraciju od prvog slobodnog naziva.
+
 Za promjenu cijena označite jedinice (kvadratić na kartici ili **Odaberi sve**) i kliknite **Postavi cijenu** — otvara se **Masovno ažuriranje cijena** (**Povećaj cijenu** / **Smanji cijenu** za iznos po m²). Prodane jedinice se preskaču.
 
 ## Uvoz stanova iz Excela
 
 Gumb **Uvezi iz Excela** u prikazu zgrada otvara prozor **Uvezi stanove iz Excela**. Gumb **Preuzmi predložak** u tom prozoru daje praznu tablicu s ispravnim redoslijedom stupaca i listom **Upute**.
+
+![Prozor Uvezi stanove iz Excela s uputama o stupcima i gumbom Preuzmi predložak](img/uvoz-stanova.png)
 
 Datoteka se učitava gumbom **Analiziraj datoteku**. Čita se samo prvi list; zaglavlje je u 1. retku, a podaci počinju od 2. retka. Važan je redoslijed stupaca, ne nazivi u zaglavlju:
 
@@ -41,6 +47,10 @@ Datoteka se učitava gumbom **Analiziraj datoteku**. Čita se samo prvi list; za
 
 Stan koji već postoji (ista zgrada i oznaka) ažurira se umjesto da se doda ponovno, a status mu se ne mijenja. Prije uvoza prikazuje se pregled s brojem valjanih i nevaljanih redaka i razlogom za svaki nevaljani.
 
+## Tko što može
+
+Zgrade i jedinice dodaju, uređuju, povezuju, rezerviraju i prodaju uloge **Director**, **Sales** i **Accounting**; brisati mogu samo **Director** i **Sales**. Ostale uloge stranicu samo pregledavaju i te gumbe ne vide.
+
 ## Uvoz garaža iz Excela
 
-Gumb **Uvezi garaže iz Excela** na tabu **Garaže** uvozi garaže u otvorenu zgradu. Zaglavlje je u 1. retku, podaci od 2. retka: A – oznaka garaže, B – površina u m², C – cijena u EUR. Postojeća garaža s istim brojem se ažurira. Repozitoriji nemaju zaseban uvoz — dolaze uz stanove (stupci P–R).
+Gumb **Uvezi garaže iz Excela** na tabu **Garaže** uvozi garaže u otvorenu zgradu. Zaglavlje je u 1. retku, podaci od 2. retka: A – oznaka garaže, B – površina u m², C – cijena u EUR. Gumb **Preuzmi predložak** u prozoru uvoza preuzima praznu tablicu s tim zaglavljima. Postojeća garaža s istim brojem se ažurira. Repozitoriji nemaju zaseban uvoz — dolaze uz stanove (stupci P–R).

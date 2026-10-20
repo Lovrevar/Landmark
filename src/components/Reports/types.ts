@@ -34,6 +34,8 @@ export interface CashFlowAmounts {
 }
 
 export interface ComprehensiveReport {
+  /** The organisation's name from `organization_settings`; null when none is set (GEN-19). */
+  organization_name: string | null
   executive_summary: {
     total_projects: number
     active_projects: number
@@ -220,6 +222,8 @@ export interface SalesData {
 
 export interface ProjectSalesReport {
   project: Project
+  /** False for a project with no TIC: `project.budget` is then not a budget and must not be shown. */
+  budget_set: boolean
   total_units: number
   sold_units: number
   available_units: number

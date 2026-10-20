@@ -44,11 +44,12 @@ import {
   X,
   HelpCircle
 } from 'lucide-react'
-import { canUseCashflow, canViewActivityLog, isDirectorRole } from '../../utils/permissions'
+import { canManagePayments, canUseCashflow, canViewActivityLog, isDirectorRole } from '../../utils/permissions'
 import Input from '../ui/Input'
 import { useChatNotifications } from '../Chat/hooks/useChatNotifications'
 import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
 import AiChatWidget from '../AiChat/AiChatWidget'
+import WhatsNewBanner from '../Help/WhatsNewBanner'
 import { useCalendarNotifications } from '../Calendar/hooks/useCalendarNotifications'
 import PageFallback from './PageFallback'
 import { ERP_INTEGRATION_ENABLED } from '../../lib/featureFlags'
@@ -184,7 +185,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.investors'), icon: Building2, path: '/banks' },
         { name: t('nav.investments'), icon: CreditCard, path: '/funding-credits' },
         { name: t('nav.projects'), icon: Building2, path: '/investment-projects' },
-        { name: t('nav.payments'), icon: DollarSign, path: '/funding-payments' },
+        // Payments are readable by Director and Accounting only; for anyone else the register is empty.
+        ...(canManagePayments(user) ? [{ name: t('nav.payments'), icon: DollarSign, path: '/funding-payments' }] : []),
         { name: t('nav.tic'), icon: Calculator, path: '/tic' },
         { name: t('nav.documents'), icon: Files, path: '/documents' }
       ],
@@ -216,7 +218,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.projects'), icon: FolderKanban, path: '/retail-projects' },
         { name: t('nav.land_plots'), icon: MapPin, path: '/retail-land-plots' },
         { name: t('nav.customers'), icon: Users, path: '/retail-customers' },
-        { name: t('nav.retail_sales'), icon: ShoppingCart, path: '/retail-sales-payments' },
+        // "Prodaje" opens the page that creates a sale. It used to open the read-only payments list,
+        // which left the sales page reachable by URL only (RETAIL-5).
+        { name: t('nav.retail_sales'), icon: ShoppingCart, path: '/retail-sales' },
+        { name: t('nav.payments'), icon: DollarSign, path: '/retail-sales-payments' },
         { name: t('nav.invoices'), icon: FileText, path: '/retail-invoices' },
         { name: t('nav.documents'), icon: Files, path: '/documents' },
         { name: t('nav.reports'), icon: BarChart3, path: '/retail-reports' }
@@ -575,6 +580,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </aside>
 
         <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 overflow-x-auto">
+          <WhatsNewBanner />
           <Suspense fallback={<PageFallback />}>
             {children}
           </Suspense>

@@ -1,37 +1,53 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, BookOpen, FileQuestion, SearchX } from 'lucide-react'
-import { Alert, Card, EmptyState, ErrorState, LoadingSpinner, PageHeader, SearchInput } from '../ui'
+import { ArrowLeft, BookOpen, FileQuestion, SearchX, Sparkles } from 'lucide-react'
+import { Alert, Button, Card, EmptyState, ErrorState, LoadingSpinner, PageHeader, SearchInput } from '../ui'
 import MarkdownView from '../ui/MarkdownView'
 import {
   articlesForRoute,
   helpArticlePath,
   helpGroup,
+  newsArticles,
   resolveWikiLinks,
   searchArticles,
   type HelpArticle,
   type HelpGroup,
 } from '../../lib/helpKb'
 import { logHelpEvent } from '../../lib/helpEvents'
+import { formatDate } from '../../utils/formatters'
+import { parseLocalDate } from '../../utils/dateOnly'
+import { useAiChat } from '../AiChat/AiChatProvider'
 import { useHelpArticles } from './hooks/useHelpArticles'
 
-const GROUP_ORDER: HelpGroup[] = ['pages', 'terms', 'roles']
+const GROUP_ORDER: HelpGroup[] = ['news', 'pages', 'terms', 'roles']
 
-const ArticleList: React.FC<{ articles: HelpArticle[] }> = ({ articles }) => (
-  <ul className="divide-y divide-gray-100 dark:divide-gray-700">
-    {articles.map(article => (
-      <li key={article.id}>
-        <Link
-          to={helpArticlePath(article.id)}
-          className="block py-2 text-sm text-blue-700 dark:text-blue-300 hover:underline"
-        >
-          {article.title}
-        </Link>
-      </li>
-    ))}
-  </ul>
-)
+/** How long the search box must rest on a query before "found nothing" is worth recording. */
+const NO_RESULTS_LOG_DELAY_MS = 1500
+const NO_RESULTS_LOG_MIN_LENGTH = 3
+
+const ArticleList: React.FC<{ articles: HelpArticle[] }> = ({ articles }) => {
+  const { i18n } = useTranslation()
+  return (
+    <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+      {articles.map(article => (
+        <li key={article.id}>
+          <Link
+            to={helpArticlePath(article.id)}
+            className="flex items-baseline justify-between gap-3 py-2 text-sm text-blue-700 dark:text-blue-300 hover:underline"
+          >
+            <span>{article.title}</span>
+            {article.date && (
+              <span className="flex-shrink-0 text-xs text-gray-500 dark:text-gray-400">
+                {formatDate(parseLocalDate(article.date), i18n.language)}
+              </span>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 const HelpPage: React.FC = () => {
   const { t, i18n } = useTranslation()
@@ -40,6 +56,7 @@ const HelpPage: React.FC = () => {
   const fromPage = searchParams.get('page')
   const [query, setQuery] = useState('')
   const { articles, loading, error, refetch } = useHelpArticles()
+  const { askInNewConversation } = useAiChat()
 
   // One entry per thing looked at: the index (with the page that sent the user here, if any) or
   // a single article.
@@ -51,6 +68,25 @@ const HelpPage: React.FC = () => {
   const forPage = useMemo(() => (fromPage ? articlesForRoute(articles, fromPage) : []), [articles, fromPage])
   const results = useMemo(() => searchArticles(articles, query), [articles, query])
   const searching = query.trim() !== ''
+  const noResults = searching && !loading && !error && results.length === 0
+
+  // A search that finds nothing names a missing article or keyword. Logged once the typing has
+  // stopped, so "ces", "cesi", "cesij" on the way to a word do not each leave a row.
+  useEffect(() => {
+    const settled = query.trim()
+    if (!noResults || settled.length < NO_RESULTS_LOG_MIN_LENGTH) return
+    const timer = window.setTimeout(
+      () => logHelpEvent({ action: 'help.search_no_results', query: settled }),
+      NO_RESULTS_LOG_DELAY_MS,
+    )
+    return () => window.clearTimeout(timer)
+  }, [noResults, query])
+
+  const askAssistant = () => {
+    const question = query.trim()
+    logHelpEvent({ action: 'help.ask_assistant', query: question })
+    askInNewConversation(question)
+  }
 
   // The articles are written in Croatian only; say so rather than leave an English reader guessing.
   const languageNote = i18n.language.startsWith('hr') ? null : (
@@ -70,7 +106,10 @@ const HelpPage: React.FC = () => {
         </Link>
         {article ? (
           <>
-            <PageHeader title={article.title} />
+            <PageHeader
+              title={article.title}
+              description={article.date ? formatDate(parseLocalDate(article.date), i18n.language) : undefined}
+            />
             {languageNote}
             <Card padding="lg">
               <MarkdownView content={resolveWikiLinks(article.body, titles)} />
@@ -101,7 +140,16 @@ const HelpPage: React.FC = () => {
 
       {searching ? (
         results.length === 0 ? (
-          <EmptyState icon={SearchX} title={t('help.no_results_title')} description={t('help.no_results_description')} />
+          <EmptyState
+            icon={SearchX}
+            title={t('help.no_results_title')}
+            description={t('help.no_results_description')}
+            action={
+              <Button variant="secondary" icon={Sparkles} onClick={askAssistant}>
+                {t('help.ask_assistant')}
+              </Button>
+            }
+          />
         ) : (
           <Card>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('help.results_count', { count: results.length })}</p>
@@ -120,7 +168,8 @@ const HelpPage: React.FC = () => {
             </Card>
           )}
           {GROUP_ORDER.map(group => {
-            const inGroup = articles.filter(article => helpGroup(article) === group)
+            // Release notes read newest first; everything else stays in title order.
+            const inGroup = group === 'news' ? newsArticles(articles) : articles.filter(article => helpGroup(article) === group)
             if (inGroup.length === 0) return null
             return (
               <Card key={group}>

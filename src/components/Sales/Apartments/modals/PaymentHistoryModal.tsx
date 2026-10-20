@@ -5,6 +5,7 @@ import type { TFunction } from 'i18next'
 import { ApartmentWithDetails, PaymentWithCustomer } from '../types'
 import { Modal, Button, EmptyState } from '../../../ui'
 import { formatDate } from '../../../../utils/formatters'
+import { packageTotal } from '../../utils/packageTotal'
 
 const getPaymentUnitInfo = (
   payment: PaymentWithCustomer,
@@ -35,6 +36,8 @@ interface PaymentHistoryModalProps {
   payments: PaymentWithCustomer[]
   linkedGarages?: Array<{ id: string; number: string; price: number }>
   linkedStorages?: Array<{ id: string; number: string; price: number }>
+  /** The apartment's sale price, when sold: the package total starts from it (SALES-6). */
+  salePrice?: number | null
 }
 
 export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
@@ -44,6 +47,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   payments,
   linkedGarages = [],
   linkedStorages = [],
+  salePrice,
 }) => {
   const { t, i18n } = useTranslation()
 
@@ -60,10 +64,14 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
     const totalPaid = aptPaid + garagePaid + storagePaid
     const garagesTotalPrice = linkedGarages.reduce((sum, g) => sum + (g.price || 0), 0)
     const storagesTotalPrice = linkedStorages.reduce((sum, s) => sum + (s.price || 0), 0)
-    const totalPrice = apartment.price + garagesTotalPrice + storagesTotalPrice
+    const totalPrice = packageTotal({
+      listPrice: apartment.price,
+      salePrice,
+      linkedPrices: [...linkedGarages, ...linkedStorages].map(linked => linked.price),
+    })
     const remainingBalance = totalPrice - totalPaid
     return { aptPaid, totalPaid, remainingBalance, garagesTotalPrice, storagesTotalPrice, totalPrice }
-  }, [payments, linkedGarages, linkedStorages, apartment])
+  }, [payments, linkedGarages, linkedStorages, apartment, salePrice])
 
   if (!visible || !apartment) return null
 

@@ -143,7 +143,7 @@ const RetailDashboard: React.FC = () => {
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.per_customer')}</span>
               <span className="font-semibold text-gray-900 dark:text-white">
-                {stats.total_customers > 0 ? fmt(stats.total_revenue / stats.total_customers) : NO_VALUE}
+                {stats.buying_customers > 0 ? fmt(stats.total_revenue / stats.buying_customers) : NO_VALUE}
               </span>
             </div>
           </div>

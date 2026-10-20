@@ -9,6 +9,7 @@
 
 import { supabase } from '../../../../lib/supabase'
 import type { LineItem } from '../../../Funding/TIC/utils/ticFormatters'
+import { budgetIsSet } from '../../../Funding/TIC/utils/ticBudget'
 
 export const fetchAllProjects = async () => {
   const { data: projectsData, error: projectsError } = await supabase
@@ -127,6 +128,12 @@ export const fetchTICTotalsByProject = async (): Promise<Map<string, LineItem[]>
     byProject.set(row.project_id as string, (row.line_items || []) as LineItem[])
   }
   return byProject
+}
+
+/** Ids of the projects whose budget is set — the ones with a TIC that totals above zero. */
+export const fetchBudgetedProjectIds = async (): Promise<Set<string>> => {
+  const tics = await fetchTICTotalsByProject()
+  return new Set([...tics].filter(([, lineItems]) => budgetIsSet(lineItems)).map(([projectId]) => projectId))
 }
 
 // Re-exports — preserved for backward compatibility with existing consumers.
