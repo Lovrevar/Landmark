@@ -118,7 +118,7 @@ describe('calculateProjectEVM', () => {
 
   it('returns guarded zeros for an empty project', () => {
     const m = calculateProjectEVM([], [])
-    expect(m).toEqual({ PV: 0, EV: 0, AC: 0, CPI: 1, SPI: 1, EAC: 0, VAC: 0, CV: 0, SV: 0, scheduleAvailable: false, costAvailable: false })
+    expect(m).toEqual({ PV: 0, EV: 0, AC: 0, CPI: 1, SPI: 1, EAC: 0, VAC: 0, CV: 0, SV: 0, scheduleAvailable: false, costAvailable: false, costUnavailableReason: 'nothing_paid' })
   })
 
   it('derives physical completion from milestones (not money spent)', () => {
@@ -215,16 +215,33 @@ describe('calculateProjectEVM', () => {
 
     expect(m.AC).toBe(0)
     expect(m.costAvailable).toBe(false)
+    expect(m.costUnavailableReason).toBe('nothing_paid')
     // CPI 1 and EAC = budget are conventions here, not measurements — callers must check
     // costAvailable before presenting them as "under budget".
     expect(m.CPI).toBe(1)
     expect(m.VAC).toBe(0)
   })
 
-  it('reports the cost side as available once something is paid', () => {
+  // GEN-23: available once something is paid on a contract whose progress is measured by its
+  // milestones. Before, any payment made it available, also when progress was only paid/amount.
+  it('reports the cost side as available once a contract with milestones is paid', () => {
     const phases = [phase({ id: 'ph1', phase_name: 'Foundation', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
     const contracts = [contract({ id: 'c1', phaseId: 'ph1', contract_amount: 100000, budget_realized: 1 })]
-    expect(calculateProjectEVM(phases, contracts).costAvailable).toBe(true)
+    const milestones: MilestoneProgress[] = [{ contract_id: 'c1', percentage: 10, status: 'completed' }]
+    const m = calculateProjectEVM(phases, contracts, milestones)
+    expect(m.costAvailable).toBe(true)
+    expect(m.costUnavailableReason).toBeUndefined()
+  })
+
+  it('GEN-23: does not measure CPI when no paid contract has milestones', () => {
+    // Progress is then paid/amount, so earned equals paid and CPI is 1 by construction: an
+    // overpriced contract would read "within plan". Every paid contract on production was like this.
+    const phases = [phase({ id: 'ph1', budget_allocated: 1000, start_date: PAST_START, end_date: PAST_END })]
+    const contracts = [contract({ id: 'c1', phaseId: 'ph1', contract_amount: 600, budget_realized: 300 })]
+    const m = calculateProjectEVM(phases, contracts)
+    expect(m.AC).toBe(300)
+    expect(m.costAvailable).toBe(false)
+    expect(m.costUnavailableReason).toBe('no_milestones')
   })
 
   it('marks the schedule unavailable when no phase is dated, rather than implying on-track', () => {
@@ -260,6 +277,39 @@ describe('calculateProjectEVM', () => {
     expect(m.EV).toBe(100000)
   })
 
+  // GEN-23 follow-up. A supplier paid without a contract (has_contract false, amount 0) is spent
+  // money that could never be earned, so measuring against the plan sank CPI: Precko Zapad on
+  // production read CPI 0,29 and a forecast of about €2,1 billion from €1,27M of such payments.
+  it('counts work bought without a contract as done for what was paid', () => {
+    const phases = [phase({ id: 'ph1', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
+    const contracts = [
+      contract({ id: 'c1', phaseId: 'ph1', contract_amount: 20000, budget_realized: 10000 }),
+      contract({ id: 'c2', phaseId: 'ph1', contract_amount: 0, budget_realized: 30000, has_contract: false }),
+    ]
+    const milestones: MilestoneProgress[] = [{ contract_id: 'c1', percentage: 50, status: 'paid' }]
+
+    const m = calculateProjectEVM(phases, contracts, milestones)
+
+    // 20000×50% + 30000 paid for work received
+    expect(m.EV).toBe(40000)
+    expect(m.AC).toBe(40000)
+    expect(m.CPI).toBeCloseTo(1)
+    expect(m.EAC).toBeCloseTo(100000)
+    expect(m.costAvailable).toBe(true)
+  })
+
+  it('has no cost performance when everything paid went to suppliers without a contract', () => {
+    // CPI is then 1 by construction, not measured — four production projects were in this state.
+    const phases = [phase({ id: 'ph1', budget_allocated: 100000, start_date: PAST_START, end_date: PAST_END })]
+    const contracts = [contract({ id: 'c1', phaseId: 'ph1', contract_amount: 0, budget_realized: 30000, has_contract: false })]
+
+    const m = calculateProjectEVM(phases, contracts)
+
+    expect(m.AC).toBe(30000)
+    expect(m.costAvailable).toBe(false)
+    expect(m.costUnavailableReason).toBe('no_contract')
+  })
+
   // GEN-22. An unphased TIC leaves every phase NULL; the plan is the project's TIC total.
   describe('an unphased plan over several phases', () => {
     const now = new Date('2026-07-01T00:00:00.000Z')
@@ -276,12 +326,13 @@ describe('calculateProjectEVM', () => {
 
     it('does not count the whole budget as earned because the first phase is finished', () => {
       const m = calculateProjectEVM(phases, contracts, [], now, tic)
-      // (200×100% + 600×25%) / 800 = 43,75% of the 1000 plan
-      expect(m.EV).toBeCloseTo(437.5)
+      // 200×100% + 600×25% = 350 of the 1000 plan. The 200 not yet contracted is not started
+      // (GEN-23); it used to be credited at the contracts' average, 437,5.
+      expect(m.EV).toBeCloseTo(350)
       expect(m.AC).toBe(350)
-      expect(m.CPI).toBeCloseTo(1.25)
+      expect(m.CPI).toBeCloseTo(1)
       // and so the forecast is not simply what has been paid so far
-      expect(m.EAC).toBeCloseTo(800)
+      expect(m.EAC).toBeCloseTo(1000)
       expect(m.EAC).not.toBeCloseTo(m.AC)
     })
 
@@ -299,14 +350,49 @@ describe('calculateProjectEVM', () => {
       expect(m.PV).toBeLessThan(520)
     })
 
+    // GEN-23. The test above fed this case but checked only PV; EV, CPI and the forecast were
+    // still the GEN-22 symptom (EV 1000, CPI 5, EAC 200 = paid to date).
+    it('GEN-23: a phase with nothing contracted yet counts as not started, not as done', () => {
+      // Phase 1 is finished and paid (200 of the 1000 plan); phase 2 has no contracts.
+      const m = calculateProjectEVM(phases, [contracts[0]], [], now, tic)
+      expect(m.EV).toBeCloseTo(200)
+      expect(m.CPI).toBeCloseTo(1)
+      expect(m.EAC).toBeCloseTo(1000)
+    })
+
+    it('GEN-23: an undated later phase makes the schedule unknown instead of ending it early', () => {
+      // Taking the span from the dated phases only had the whole plan due by 31 March.
+      const partlyDated = [phases[0], phase({ id: 'ph-2', budget_allocated: null, start_date: null, end_date: null })]
+      const m = calculateProjectEVM(partlyDated, contracts, [], now, tic)
+      expect(m.scheduleAvailable).toBe(false)
+      expect(m.PV).toBe(0)
+    })
+
     it('leaves a phased plan alone', () => {
+      // Budgets chosen so phase by phase and whole-project give different answers: phase 1's
+      // contract (200) exceeds its plan (100), so it can earn only that plan.
+      const phased = [
+        phase({ id: 'ph-1', budget_allocated: 100, start_date: '2026-01-01', end_date: '2026-03-31' }),
+        phase({ id: 'ph-2', budget_allocated: 900, start_date: '2026-04-01', end_date: '2026-12-31' }),
+      ]
+      const m = calculateProjectEVM(phased, contracts, [], now, tic)
+      // 100 (phase 1, capped at its plan) + 600×25% = 250; as one project it would be 350
+      expect(m.EV).toBeCloseTo(250)
+    })
+
+    it('GEN-23: in a phased plan, work not yet contracted is not started either', () => {
+      // Phase 2 is planned at 600 but only 300 of it is contracted, a quarter done.
       const phased = [
         phase({ id: 'ph-1', budget_allocated: 400, start_date: '2026-01-01', end_date: '2026-03-31' }),
         phase({ id: 'ph-2', budget_allocated: 600, start_date: '2026-04-01', end_date: '2026-12-31' }),
       ]
-      const m = calculateProjectEVM(phased, contracts, [], now, tic)
-      // 400×100% + 600×25%
-      expect(m.EV).toBeCloseTo(550)
+      const partial = [contracts[0], contract({ id: 'c3', phaseId: 'ph-2', contract_amount: 300, budget_realized: 75 })]
+      const m = calculateProjectEVM(phased, partial, [], now, tic)
+      // 200×100% + 300×25% = 275. Spreading the progress over each phase's plan gave
+      // 400 + 150 = 550, and a CPI of 2 for work paid at exactly its contract price.
+      expect(m.EV).toBeCloseTo(275)
+      expect(m.AC).toBe(275)
+      expect(m.CPI).toBeCloseTo(1)
     })
 
     // The client used to guess an unphased plan from "one funded phase among several", which
@@ -317,8 +403,9 @@ describe('calculateProjectEVM', () => {
         phase({ id: 'ph-2', budget_allocated: 0, start_date: '2026-04-01', end_date: '2026-12-31' }),
       ]
       const m = calculateProjectEVM(phased, contracts, [], now, tic)
-      // 1000×100% + 0×25%
-      expect(m.EV).toBeCloseTo(1000)
+      // 200×100% of phase 1's plan + nothing for phase 2, which the TIC does not plan. Measured
+      // as one project it would be 350.
+      expect(m.EV).toBeCloseTo(200)
     })
 
     it('has no plan to earn against when the project budget is unknown', () => {

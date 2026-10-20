@@ -1,28 +1,29 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-24`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-26`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
 
-### GEN-23 · Medium · Unphased plan: earned value counts phases with no contracts as done
-- **Check:** Code reading; the figure is visible on LandmarkDemo (Rezidencija Jarun) and in
-  `help-kb/img/kontrola-proracuna.png`
-- **Where:** `src/utils/evm.ts` `calculateProjectEVM`, the unphased branch (around lines 119-159)
-- **What happens:** for an unphased TIC over several phases, EV is the whole TIC total times the
-  contract-weighted completion of the contracts that exist so far. With phase 1's contracts done
-  and later phases not yet contracted, completion reads 100%, EV equals the whole TIC, and CPI and
-  the forecast show the GEN-22 symptom again. Jarun on 2026-10-20: forecast (EAC) €4.980.839,06
-  "Ispod proračuna", below the €5.735.000 already contracted. `evm.test.ts:296` feeds this exact
-  case (`[contracts[0]]`) but asserts only PV. Same branch: the schedule span uses only phases
-  that have dates, so with phases 2+ undated the whole plan is due by phase 1's end date and SPI
-  reads "behind schedule". Nothing on production is affected yet (no unphased TIC with several
-  phases on 2026-10-20).
-- **Fix direction:** weight completion against the plan, not against what is contracted, e.g. EV =
-  Σ(contract amount × physical %) capped at the TIC, so uncontracted scope counts as not started;
-  treat an undated phase as making the schedule unavailable rather than shortening it. Assert EV,
-  CPI and EAC in the test.
+### GEN-24 · Low · Phased plan with some undated phases overstates SPI
+- **Check:** Code reading (convention review of GEN-23, 2026-10-20)
+- **Where:** `src/utils/evm.ts` `calculateProjectEVM`, the PV/EV accumulation
+- **What happens:** in a phased plan, PV comes only from the dated phases while EV comes from all
+  of them, so an undated phase with progress pushes SPI up. The "—" note appears only when no
+  phase is dated. Existed before GEN-23.
+- **Fix direction:** as for the unphased plan, report the schedule unavailable when any phase with
+  a budget is undated, or leave undated phases out of EV for SPI only.
+
+### GEN-25 · Low · Payments without a contract are scaled down when contracts exceed the plan
+- **Check:** Code reading (convention review of GEN-23, 2026-10-20)
+- **Where:** `src/utils/evm.ts`, `completionBase = max(committed, budget)`
+- **What happens:** once a phase's commitments exceed its plan, every row's progress is scaled to
+  the plan, including payments to suppliers without a contract, which are meant to count as done
+  for what was paid. Plan 100, a 200 contract unpaid, 50 paid without a contract: EV 20, AC 50,
+  CPI 0,4. Moot on production while no paid contract has milestones (GEN-8).
+- **Fix direction:** add the no-contract rows to EV outside the scaling, or accept and say so in
+  `help-kb/term-evm.md`.
 
 ### GEN-21 · Low · Projects list shows a failed load as an Alert in the content area
 - **Where:** `General/Projects/index.tsx:117`.
@@ -39,6 +40,10 @@ are in [README.md](./README.md).
 ### GEN-8 · Low · EVM "physical" progress is payment-driven in practice
 - Milestone statuses feeding EV are set by the payment trigger, so EV is not independent of AC.
   The code comment claims otherwise.
+- Since GEN-23 a contract without milestones no longer counts as measured: CPI and the forecast
+  show "—" until a paid contract has milestones. On production on 2026-10-20 only 1 of 59
+  contracts with an amount had milestones and none of the 6 paid ones did, so every project shows
+  "—". Entering milestones is a process decision for the site team, not code.
 
 ### GEN-16 · Low · Activity Log shows raw entity keys and ID fragments
 - Every entity type shows its key and a UUID fragment instead of a name. Same problem in
@@ -58,6 +63,13 @@ are in [README.md](./README.md).
   the chart.
 
 ## Resolved
+
+### GEN-23 · Medium · Earned value counted work with no contract as done
+- Fixed on `fix/gen-23-evm-uncontracted` (2026-10-20), for phased and unphased plans: completion is
+  the contract-weighted progress over the larger of the plan and the committed total, so
+  uncontracted work is not started; a row with no contract value counts as done for what was paid;
+  `costAvailable` needs a payment on a contract with milestones; an unphased plan has a schedule only
+  when every phase is dated. Tests named GEN-23 in `src/utils/evm.test.ts`, seen failing first.
 
 ### GEN-19 · Low · Company name is hardcoded
 - Fixed on `development` (2026-10-15): the name lives in each database, in the one row of
