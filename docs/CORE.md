@@ -242,6 +242,10 @@ read "Jan 05, 2026".
 - `monthKey(str)` — `YYYY-MM` bucket key; `daysFromToday(str)`; `isValidDate(str)`; `startOfTodayLocal()`
 - **Use these for every date-only column.** `new Date('2026-09-01')` parses as UTC and compares wrong against a local `new Date()` — Croatia is UTC+1/+2, so month buckets and overdue detection drift by a day at boundaries. Added during the June 2026 dashboard audit (see [`DASHBOARD_AUDIT.md`](./backlog/archive/DASHBOARD_AUDIT.md) DASH-001)
 
+### appPath.ts
+- `isAppPath(url)` — whether a markdown link or image address is one of the app's own paths; `MarkdownView` uses it to choose between `<Link>` and a new tab
+- Resolves the address with the URL parser and requires the same origin. A `startsWith('/') && !startsWith('//')` check lets `/\host` and `/<tab>/host` through, which browsers read as `//host` — an open redirect from task text or an assistant reply (SEC-A13)
+
 ### pdfFont.ts
 - `loadUnicodeFont(doc)` + `PDF_FONT_FAMILY` — registers the embedded Noto Sans on a jsPDF document. Every generator calls it before drawing
 - **Why it is not optional.** jsPDF's built-in fonts are WinAnsi, which has `š` and `ž` but **no mapping for `č`, `ć` or `đ`** — and one unmapped character makes jsPDF re-encode the *whole string* as UCS-2BE, which the built-in font draws as two garbage glyphs per character. `Račun` came out as `R a u n`; the `hr-HR` minus sign (U+2212) did the same to any line holding a negative number

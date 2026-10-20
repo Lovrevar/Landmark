@@ -2,7 +2,7 @@
 
 Open defects in RLS, storage policies, edge-function auth and role gating, followed by the
 security limitations the team has accepted for now. Ids: `SEC-An` for defects (next free:
-`SEC-A13`), `SEC-00n` for accepted risks (next free: `SEC-005`). Entry format and rules are in
+`SEC-A14`), `SEC-00n` for accepted risks (next free: `SEC-005`). Entry format and rules are in
 [README.md](./README.md).
 
 An item moves from "Open defects" to "Accepted risks" only after the team decides to live with
@@ -168,6 +168,14 @@ dashboards, the reports and the assistant's tools. That is a project of its own.
   **not applied yet** — see [release.md](./release.md)): the DELETE policies on the `documents`
   and `contract-documents` buckets allow the file's owner, Director and Accounting. There was no
   UPDATE policy on either bucket, so files could not be overwritten; the entry was wrong on that.
+
+### SEC-A13 · Medium · Markdown links like `/\evil.com` passed as app routes (open redirect)
+- Fixed on `chore/npm-audit-zero` (2026-10-20): `MarkdownView` (task descriptions, AI chat
+  replies, help articles) took any href starting with `/` but not `//` for an app route, so
+  `/\evil.com` and `/<tab>/evil.com`, which browsers read as `//evil.com`, became a `<Link>` that
+  left the app (react-router before 7.18.0, GHSA-wrjc-x8rr-h8h6). Hrefs and image sources are now
+  resolved with the URL parser and must stay on the app's origin (`isAppPath`); react-router is
+  7.18.4.
 
 - **SEC-003** (RLS on `project_managers`): never present in the applied schema. Record in
   [archive/SECURITY_BACKLOG.md](./archive/SECURITY_BACKLOG.md).
