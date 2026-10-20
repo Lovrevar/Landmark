@@ -156,8 +156,8 @@ Done for `main` (2026-10-20): **Tests / test** and **Database tests / db** are r
 those pushes too, but a red one only shows afterwards: check the commit's status before building
 on it.
 
-CI now runs typecheck, lint, unit tests and the edge-function tests on every push and pull
-request. Nothing stops a red pull request from being merged, though.
+CI now runs the production-dependency audit (`npm audit --omit=dev --audit-level=high`),
+typecheck, lint, unit tests and the edge-function tests on every push and pull request. Nothing stops a red pull request from being merged, though.
 
 1. GitHub → the repository → **Settings → Branches** (or **Rules → Rulesets**) → add a rule for
    `main` and one for `development`.

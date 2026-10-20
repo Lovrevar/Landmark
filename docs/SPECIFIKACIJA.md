@@ -3303,7 +3303,8 @@ petlje AI asistenta s lažnim Anthropic i Supabase klijentima. Pokretanje:
 
 ### 26.4 CI (GitHub Actions)
 
-- `test.yml` — na push u `main` i PR prema `main`/`development`: `npm test` i
+- `test.yml` — na push i PR u `main` i `development`: `npm audit --omit=dev
+  --audit-level=high` (ranjivosti u paketima koji idu u preglednik), `npm test` i
   `npm run test:functions` (Node 24, Deno 2).
 - `e2e.yml` — Playwright s tajnama za testni Supabase projekt.
 - Ručne testne liste: `docs/test/` i [`MANUAL_TESTSHEET.md`](./MANUAL_TESTSHEET.md).
