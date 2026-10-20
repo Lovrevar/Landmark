@@ -355,6 +355,9 @@ Items 1–4 done (2026-10-20). How to run and write the tests is now in
 
 ### 6b. In CI
 
+~~Create the workflow~~ — done (2026-10-20): **[`.github/workflows/db-tests.yml`](../.github/workflows/db-tests.yml)**,
+as drafted below. Still open: make it a required check (Step 2) and trim the services.
+
 Create **`.github/workflows/db-tests.yml`**:
 
 ```yaml

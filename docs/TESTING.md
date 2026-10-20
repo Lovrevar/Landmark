@@ -85,6 +85,8 @@ npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 
 **Files:** `supabase/tests/database/*.test.sql`. **Runner:** `supabase test db` (`npm run test:db`), which runs [pgTAP](https://pgtap.org/) through `pg_prove` against the local database.
 
+**CI:** [`.github/workflows/db-tests.yml`](../.github/workflows/db-tests.yml) (job **Database tests / db**) runs them on every push and pull request to `main` and `development`. It needs no secrets.
+
 `supabase start` builds that database from nothing by applying every migration in `supabase/migrations/`, so a green run also proves the migrations still apply from scratch. Each test file opens a transaction and rolls it back, so the tests leave no data behind and never touch LandmarkDev, LandmarkDemo or production.
 
 | File | Checks |
