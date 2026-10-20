@@ -8,15 +8,15 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | File | Covers | Open |
 |---|---|---|
 | [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 9 steps |
-| [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 4 defects, 3 accepted risks |
-| [sales.md](./sales.md) | Units, the sale flow, customers | 7 |
+| [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 1 defect, 3 accepted risks |
+| [sales.md](./sales.md) | Units, the sale flow, customers | 3 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
-| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 5 |
-| [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 7, plus 4 waiting on the ERP |
-| [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
+| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 6 |
+| [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 8, plus 4 waiting on the ERP |
+| [funding.md](./funding.md) | Credits, investors, allocations, TIC | 7 |
 | [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 7 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 10 |
-| [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 9 |
+| [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 10 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
 | [archive/](./archive/) | The four audits, with every fixed entry | Closed, do not update |
 
@@ -64,14 +64,15 @@ it from the ranking. Never reuse an id: code comments and migrations quote them 
 
 ## Open work, ranked
 
-Ranked on 2026-10-05, last revised 2026-10-09, by what goes wrong if the item is left, then by how small the job is.
+Ranked on 2026-10-05, last revised 2026-10-20, by what goes wrong if the item is left, then by how small the job is.
 
 ### 1. Do first
 
-Everything in [release.md](./release.md): apply the four written migrations in order (document
-files, contracts by project, sale cancellation, unique unit numbers) with the check under each,
-assign the production Supervision user to their projects, walk the pre-merge sheet, and try TIC
-saves on dev.
+Everything in [release.md](./release.md): apply the six written migrations in order (document
+files, contracts by project, sale cancellation, unique unit numbers, unphased TIC phase budgets,
+organization settings) with the check under each — the last two before the client from
+2026-10-15 ships — assign the production Supervision user to their projects, walk the pre-merge
+sheet, and try TIC saves on dev.
 
 ### 2. Open defects that need code or a decision
 
@@ -94,7 +95,7 @@ saves on dev.
 ### 4. Small and low-risk
 
 Everything else marked Low in the area files. Pick these up when working nearby. The ones with
-visible effect: [FUND-13](./funding.md) (TIC export drops classifications), [GEN-16](./projects-dashboards-reports.md) and
+visible effect: [GEN-18](./projects-dashboards-reports.md) (General report PDF chart filled black), [GEN-16](./projects-dashboards-reports.md) and
 [COLLAB-11](./collaboration.md) (UUID fragments instead of names), [CASH-9](./cashflow.md) (loans with no checks).
 
 ### 5. Parked with their feature

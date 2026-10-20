@@ -60,8 +60,9 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   account and check the balance follows.
 - [x] **Check bank accounts that were already wiped** (2026-10-09, read-only on production).
   See "Bank accounts check" below: no account matches the CASH-1 pattern; four balances are stale.
-- [ ] **Try TIC saves on dev** once `20260930100400` is applied: a first-time save, and a save as
-  Accounting and as Investment (FUND-2). The fix was made from reading the code.
+- [ ] **Try TIC saves on dev** (FUND-2): a first-time save, and a save as Accounting and as
+  Investment. The fix was made from reading the code; its migration `20260930100400` is applied
+  everywhere since 2026-10-06, so nothing blocks this.
 - [ ] **Run drift check 2 from migration `20260917100000`** after the cesija sign is decided
   (CASH-6 in [cashflow.md](./cashflow.md)).
 

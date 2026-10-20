@@ -24,17 +24,16 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
   title "Projekti".
 - Icon-only buttons without labels in `BuildingsGrid` and `UnitsGrid`; both hand-build money (UI-1).
 
-### SALES-13 · Low · Delete dialog on the Apartments page is half Croatian, half English
-- **Where:** `src/components/Sales/Apartments/index.tsx`. Title is a literal "Potvrda brisanja",
-  message is English.
-- **Fix direction:** the `confirm.*` keys.
-
 ### SALES-14 · Low · Mixed money formats on customer cards and two modals
 - **Where:** `CustomerCard.tsx` mixes a compact figure with full totals; `SingleUnitModal.tsx` and
   `BulkPriceUpdateModal.tsx` hand-roll their formatting.
 - **Fix direction:** `formatEuro` / `formatEuroRounded`. Part of UI-1 in [ui.md](./ui.md).
 
 ## Resolved
+
+### SALES-13 · Low · Delete dialog on the Apartments page is half Croatian, half English
+- Fixed in `920ffec7` (2026-09-21), found still open on 2026-10-20: the dialog takes
+  `common.confirm_delete` and `apartments.confirm_delete_message` from the locale files.
 
 ### SALES-9 · Low · No unique constraint on unit numbers
 - Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): unique indexes on unit numbers per building and building names per
