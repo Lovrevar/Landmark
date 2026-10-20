@@ -1,6 +1,6 @@
 # Stopping fixed bugs from coming back
 
-**Written:** 2026-10-20 · **Status:** plan, nothing below is implemented yet unless ticked
+**Written:** 2026-10-20 · **Status:** in progress — see the [checklist](#checklist)
 
 Fixed problems keep resurfacing after later fixes. This plan finds the gaps in how changes are
 checked and closes them one at a time. Each step is independent, ordered by value for effort, and
@@ -122,8 +122,9 @@ regression names itself when it fails.
      repeat offenders are visible. Before closing an item, check its test fails without the fix
    ```
 
-3. **A new path-scoped rule, `.claude/rules/testing.md`.** It loads only when tests or `src/` are
-   touched, which keeps CLAUDE.md short:
+3. **A new path-scoped rule, [`.claude/rules/testing.md`](../.claude/rules/testing.md)** (done; the
+   version in the repository grew two more rules from the GEN-23 work). It loads only when `src/`
+   or migrations are touched, which keeps CLAUDE.md short. First draft:
 
    ```markdown
    ---
@@ -179,68 +180,11 @@ and the tests related to the changed files (`vitest related`, a few seconds). It
 nothing changed since the last green run, and it blocks only once per turn, so it cannot loop. CI
 remains the full check.
 
-1. Create **`.claude/hooks/stop-verify.mjs`**:
-
-   ```js
-   #!/usr/bin/env node
-   // Stop hook: before Claude ends a turn that changed src/, run the typecheck and the tests
-   // related to the changed files. On failure, exit 2 — Claude receives stderr and carries on.
-   // Blocks at most once per turn (stop_hook_active); CI is the full check.
-   import { execSync, spawnSync } from 'node:child_process'
-   import { createHash } from 'node:crypto'
-   import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-
-   const input = JSON.parse(readFileSync(0, 'utf8') || '{}')
-   if (input.stop_hook_active) process.exit(0)
-
-   const git = (args) => execSync(`git ${args}`, { encoding: 'utf8' })
-   const changed = [
-     ...git('diff --name-only HEAD').split('\n'),
-     ...git('ls-files --others --exclude-standard').split('\n'),
-   ].filter((f) => /^src\/.*\.(ts|tsx)$/.test(f) && existsSync(f))
-   if (changed.length === 0) process.exit(0)
-
-   // Skip when nothing changed since the last green run.
-   const stampDir = 'node_modules/.cache'
-   const stampFile = `${stampDir}/stop-verify`
-   const hash = createHash('sha1').update(git('diff HEAD -- src')).update(changed.join('\n')).digest('hex')
-   if (existsSync(stampFile) && readFileSync(stampFile, 'utf8') === hash) process.exit(0)
-
-   const tail = (s, n = 60) => s.split('\n').slice(-n).join('\n')
-   const run = (cmd, args) => spawnSync(cmd, args, { encoding: 'utf8', shell: process.platform === 'win32' })
-
-   const tsc = run('npm', ['run', '-s', 'typecheck'])
-   if (tsc.status !== 0) {
-     process.stderr.write(`Typecheck fails — fix it before finishing:\n${tail(tsc.stdout + tsc.stderr)}\n`)
-     process.exit(2)
-   }
-
-   const tests = run('npx', ['vitest', 'related', '--run', ...changed])
-   if (tests.status !== 0) {
-     process.stderr.write(`Tests related to your changes fail — fix the code, not the test, unless the test is wrong (then say why):\n${tail(tests.stdout + tests.stderr)}\n`)
-     process.exit(2)
-   }
-
-   mkdirSync(stampDir, { recursive: true })
-   writeFileSync(stampFile, hash)
-   process.exit(0)
-   ```
-
-2. Register it in **`.claude/settings.json`**, as a new top-level `"hooks"` key next to
-   `"permissions"`:
-
-   ```json
-   "hooks": {
-     "Stop": [
-       {
-         "hooks": [
-           { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-verify.mjs\"", "timeout": 300 }
-         ]
-       }
-     ]
-   }
-   ```
-
+1. ~~Create the script and register it~~ — done (2026-10-20): **[`.claude/hooks/stop-verify.mjs`](../.claude/hooks/stop-verify.mjs)**,
+   registered under `"hooks" → "Stop"` in `.claude/settings.json` with a 300 s timeout. It
+   keeps a stamp of the last green run in `node_modules/.cache/stop-verify`, so an unchanged tree
+   costs under 0,1 s. On its first run it caught a real type error in a new test file.
+2. To switch it off for one session, use `/hooks`; to remove it, delete the `Stop` entry.
 3. Test it. In a scratch session, ask Claude to add `const x: number = 'a'` to any file in `src/`
    and stop. The turn should continue with the typecheck error. Then ask it to revert.
 
@@ -257,53 +201,10 @@ A check the agent cannot get around does (see Sources). The hook below doesn't f
 adding new tests to an existing file is the normal case. It **asks you** whenever an edit
 *removes or changes* an existing assertion, or adds `.skip`/`.only`.
 
-1. Create **`.claude/hooks/guard-tests.mjs`**:
-
-   ```js
-   #!/usr/bin/env node
-   // PreToolUse hook (Edit|Write): if an edit to an existing test file removes or rewrites an
-   // assertion, or adds .skip/.only, ask the user before it is applied. Additions pass silently.
-   import { existsSync, readFileSync } from 'node:fs'
-
-   const input = JSON.parse(readFileSync(0, 'utf8') || '{}')
-   const file = input.tool_input?.file_path ?? ''
-   if (!/\.test\.(ts|tsx)$|\/supabase\/tests\/.*\.sql$/.test(file) || !existsSync(file)) process.exit(0)
-
-   const before = input.tool_name === 'Edit' ? input.tool_input.old_string ?? '' : readFileSync(file, 'utf8')
-   const after = input.tool_name === 'Edit' ? input.tool_input.new_string ?? '' : input.tool_input.content ?? ''
-
-   const assertion = /\b(expect|it|test|describe|ok|is|isnt|results_eq|throws_ok|lives_ok|is_empty)\b[\w.]*\s*\(/
-   const lines = (s) => s.split('\n').map((l) => l.trim()).filter((l) => assertion.test(l))
-   const kept = new Set(lines(after))
-   const removed = lines(before).filter((l) => !kept.has(l))
-   const skipped = /\.(skip|only|todo)\s*\(/.test(after) && !/\.(skip|only|todo)\s*\(/.test(before)
-
-   if (removed.length === 0 && !skipped) process.exit(0)
-
-   const reason = [
-     `This edit to ${file.replace(process.env.CLAUDE_PROJECT_DIR + '/', '')} ${skipped ? 'adds .skip/.only/.todo' : 'removes or changes existing assertions'}:`,
-     ...removed.slice(0, 6).map((l) => `  - ${l}`),
-     'Approve only if the old expectation was wrong, not because it was failing.',
-   ].join('\n')
-   process.stdout.write(JSON.stringify({
-     hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: reason },
-   }))
-   process.exit(0)
-   ```
-
-2. Add to the `"hooks"` block in `.claude/settings.json`:
-
-   ```json
-   "PreToolUse": [
-     {
-       "matcher": "Edit|Write",
-       "hooks": [
-         { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-tests.mjs\"" }
-       ]
-     }
-   ]
-   ```
-
+1. ~~Create the script and register it~~ — done (2026-10-20): **[`.claude/hooks/guard-tests.mjs`](../.claude/hooks/guard-tests.mjs)**,
+   registered under `"hooks" → "PreToolUse"` with matcher `Edit|Write`. It returns
+   `permissionDecision: "ask"` with the removed lines quoted, so you approve or refuse each one.
+2. It also covers pgTAP files in `supabase/tests/` once Step 6 adds them.
 3. Test it. Ask Claude to delete one `expect(...)` line from `src/utils/evm.test.ts`. You should
    get a permission prompt that quotes the line. Ask it to add a new `it(...)` at the end of the
    same file: no prompt.
@@ -323,60 +224,13 @@ migration redefines a function, or changes the policies on a table that a text t
 and say which file to look at. The fix is deliberate: re-point the text test at the new file, after
 checking the new definition still does what the old test demanded.
 
-1. Create **`src/lib/migrationSupersession.test.ts`**:
-
-   ```ts
-   import { describe, it, expect } from 'vitest'
-   import { readdirSync, readFileSync } from 'node:fs'
-   import { resolve } from 'node:path'
-
-   /**
-    * The *.test.ts files under src/lib read a migration's text. That only proves something while
-    * the migration is the LAST one to define what it tests. When a newer migration replaces the
-    * function or the table's policies, this fails: read the new definition, check it still does
-    * what the old test asserts, then point the old test (and the entry here) at the new file.
-    */
-   const dir = resolve(process.cwd(), 'supabase/migrations')
-   const migrations = readdirSync(dir)
-     .filter((f) => f.endsWith('.sql'))
-     .sort()
-     .map((f) => ({ f, sql: readFileSync(resolve(dir, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/--.*$/gm, '') }))
-
-   const lastTouching = (pattern: RegExp) => migrations.filter((m) => pattern.test(m.sql)).at(-1)?.f
-
-   const fn = (name: string) =>
-     new RegExp(`(create\\s+(or\\s+replace\\s+)?|alter\\s+|drop\\s+)function\\s+(if\\s+exists\\s+)?("?public"?\\.)?"?${name}"?\\s*\\(`, 'i')
-   const policiesOn = (table: string) =>
-     new RegExp(`(create|alter|drop)\\s+policy\\s+(if\\s+exists\\s+)?"[^"]+"\\s+on\\s+("?public"?\\.)?"?${table}"?\\b`, 'i')
-
-   // What each text test covers → the migration it reads. Update both together.
-   const COVERED: Array<[string, RegExp, string]> = [
-     ['cancel_apartment_sale()', fn('cancel_apartment_sale'), '20261012100100_cancel_apartment_sale.sql'],
-     ['app_can_access_project()', fn('app_can_access_project'), '20261012100000_contracts_project_scope.sql'],
-     ['policies on contracts', policiesOn('contracts'), '20261012100000_contracts_project_scope.sql'],
-     ['policies on subcontractor_milestones', policiesOn('subcontractor_milestones'), '20261012100000_contracts_project_scope.sql'],
-     ['apply_unphased_tic_budget()', fn('apply_unphased_tic_budget'), '20261015100000_unphased_tic_phase_budgets.sql'],
-     ['sync_project_from_tic()', fn('sync_project_from_tic'), '20261015100000_unphased_tic_phase_budgets.sql'],
-     ['policies on organization_settings', policiesOn('organization_settings'), '20261015100100_organization_settings.sql'],
-   ]
-
-   describe('text-tested migrations are still the latest definition', () => {
-     it.each(COVERED)('%s', (_label, pattern, file) => {
-       expect(lastTouching(pattern), `a newer migration redefines this — re-check its test`).toBe(file)
-     })
-   })
-   ```
-
-2. Run `npx vitest run src/lib/migrationSupersession.test.ts`. All entries should pass today. If
-   one fails right away, a later migration already redefines it, which is exactly the case to
-   look at.
-3. Add the rows for `storageDocumentPolicies.test.ts`, `uniqueUnitNumbers.test.ts` and
-   `invoiceCashDirection.test.ts`. Their objects are storage policies, indexes and a view: use a
-   pattern for `create policy … on storage.objects` restricted to the policy names, `create …
-   index … apartments_unique_number_per_building`, and `create … view … company_statistics`.
-4. Add a line to the new-migration skill (`.claude/skills/new-migration/SKILL.md`): "If the
-   migration replaces a function, view or policy, run `npx vitest run src/lib` — a
-   supersession failure means an older test needs re-pointing."
+1. ~~Write the test~~ — done (2026-10-20): **[`src/lib/migrationSupersession.test.ts`](../src/lib/migrationSupersession.test.ts)**.
+   It covers every object the seven text tests read (functions, policies, indexes, the trigger,
+   the `company_statistics` view), 19 rows, plus a check that each pattern really matches its
+   own file so a typo cannot pass for ever. A throwaway migration redefining
+   `cancel_apartment_sale` and a `contracts` policy turned exactly those two rows red.
+2. ~~Add the step to the new-migration skill~~ — done.
+3. Every new text test adds its row there; `.claude/rules/testing.md` says so.
 
 **Done when:** redefining any text-tested function in a new migration makes `npm test` fail with
 the name of the file to look at.
@@ -629,12 +483,12 @@ From the Claude Code best-practice collection and its sources:
 ## Checklist
 
 - [x] 0. CI on every push to `development` (PR #63, 2026-10-20)
-- [ ] 1a. GEN-23 test written, seen failing, fixed, closed
-- [ ] 1b. `/done`, `rules/backlog.md`, `rules/testing.md` updated
+- [x] 1a. GEN-23 test written, seen failing, fixed, closed (`fix/gen-23-evm-uncontracted`, 2026-10-20)
+- [x] 1b. `/done`, `rules/backlog.md`, `rules/testing.md`, new-migration skill updated (2026-10-20)
 - [ ] 2. Required status checks on `main` and `development`
-- [ ] 3. Stop hook installed and tried
-- [ ] 4. Test-guard hook installed and tried
-- [ ] 5. `migrationSupersession.test.ts` covering every text test
+- [x] 3. Stop hook installed and tried (2026-10-20)
+- [x] 4. Test-guard hook installed and tried (2026-10-20)
+- [x] 5. `migrationSupersession.test.ts` covering every text test (2026-10-20)
 - [ ] 6a. `supabase start` applies all migrations locally; first two pgTAP tests green
 - [ ] 6b. `db-tests.yml` green in CI and required
 - [ ] 6c. Four text tests replaced by pgTAP; new-migration skill updated

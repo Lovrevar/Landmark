@@ -60,6 +60,15 @@ The edge functions have their own Deno tests, outside Vitest: `npm run test:func
 - Targets are **pure functions** — deterministic, dependency-free, no Supabase/React. If a helper needs a DB row or a rendered component, it belongs in E2E, not here.
 - Croatian domain terms (`vlastita`, `kreditna`, the 4 VAT slots) stay in Croatian in the test data, matching the codebase.
 - Assertions are anchored to the code's **actual** output, not the textbook ideal — several specs document real quirks (e.g. the `calculatePaymentSchedule` 119-vs-120 monthly-payment off-by-one, hr-HR's U+2212 minus sign).
+- **A bug fix is the exception:** its test asserts the *correct* output, is named after the backlog id (`it('GEN-23: …')`), and must fail before the fix. It checks what the user saw — the figure on the card, not an intermediate value. Rules: [`.claude/rules/testing.md`](../.claude/rules/testing.md); why: [`REGRESSION_PREVENTION.md`](./REGRESSION_PREVENTION.md).
+- Tests that read a migration's text (`src/lib/*Policies.test.ts`, `cancelSaleFunction.test.ts`, …) are guarded by `src/lib/migrationSupersession.test.ts`, which fails when a newer migration redefines what they read.
+
+### Claude Code hooks
+
+Two hooks in `.claude/settings.json` run for every Claude Code session in this repository:
+
+- **Stop** — [`.claude/hooks/stop-verify.mjs`](../.claude/hooks/stop-verify.mjs). When Claude is about to end a turn with uncommitted changes in `src/`, it runs `npm run typecheck` and `vitest related` on the changed files; a failure is sent back to Claude instead of ending the turn. It blocks once per turn and skips a tree that already passed. CI stays the full check.
+- **PreToolUse (Edit|Write)** — [`.claude/hooks/guard-tests.mjs`](../.claude/hooks/guard-tests.mjs). An edit to an existing test file that removes or changes an assertion, or adds `.skip`/`.only`/`.todo`, asks you first and quotes the lines. Adding new tests passes silently.
 
 ### Running
 
