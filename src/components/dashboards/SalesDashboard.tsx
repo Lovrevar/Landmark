@@ -99,7 +99,7 @@ const SalesDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center mb-6">
             <BarChart3 className="w-5 h-5 text-blue-600 mr-2" />
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.sales.six_month_trend')}</h2>
@@ -124,7 +124,7 @@ const SalesDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center mb-6">
             <PieChart className="w-5 h-5 text-green-600 mr-2" />
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.sales.inventory_status')}</h2>
@@ -158,7 +158,7 @@ const SalesDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center mb-6">
           <Building2 className="w-5 h-5 text-blue-600 mr-2" />
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.sales.project_performance')}</h2>
@@ -206,7 +206,7 @@ const SalesDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center mb-6">
             <Euro className="w-5 h-5 text-green-600 mr-2" />
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.sales.payment_methods')}</h2>
@@ -238,7 +238,7 @@ const SalesDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center mb-6">
             <CheckCircle className="w-5 h-5 text-blue-600 mr-2" />
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.sales.recent_sales')}</h2>

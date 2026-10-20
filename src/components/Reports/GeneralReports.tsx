@@ -44,7 +44,7 @@ const GeneralReports: React.FC = () => {
   // "generated at" line and the PDF export only appear with a report behind them — exporting
   // a report nobody could load would produce a PDF full of zeros.
   const header = (
-    <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
+    <div className="bg-linear-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           {/* The organisation's name heads the page when its database has one (GEN-19);
@@ -77,7 +77,7 @@ const GeneralReports: React.FC = () => {
               loading={generatingPDF}
               // `!`: the default variant's own `text-white` outranks a plain text colour here, which left
               // the label white on white.
-              className="bg-white dark:bg-gray-800 !text-blue-600 dark:!text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
+              className="bg-white dark:bg-gray-800 text-blue-600! dark:text-blue-400! hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
             >
               {t('reports.general.export_pdf')}
             </Button>
@@ -116,7 +116,7 @@ const GeneralReports: React.FC = () => {
     <div className="space-y-6">
       {header}
 
-      <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/30 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-linear-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/30 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center mb-4">
           <FileText className="w-6 h-6 text-blue-600 mr-2" />
           <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-100">{t('reports.general.exec_summary')}</h2>
@@ -152,45 +152,45 @@ const GeneralReports: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-6">{t('reports.general.kpi_title')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 p-6 rounded-xl text-center border border-blue-200 dark:border-blue-700">
+          <div className="bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 p-6 rounded-xl text-center border border-blue-200 dark:border-blue-700">
             <p className="text-3xl font-bold text-blue-600">{formatEuroCompact(report.kpis.portfolio_value)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.portfolio_value')}</p>
           </div>
-          <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 p-6 rounded-xl text-center border border-green-200 dark:border-green-700">
+          <div className="bg-linear-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 p-6 rounded-xl text-center border border-green-200 dark:border-green-700">
             <p className="text-3xl font-bold text-green-600">{formatEuroCompact(report.kpis.total_revenue)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.total_revenue')}</p>
           </div>
-          <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 p-6 rounded-xl text-center border border-teal-200 dark:border-teal-700">
+          <div className="bg-linear-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 p-6 rounded-xl text-center border border-teal-200 dark:border-teal-700">
             <p className="text-3xl font-bold text-teal-600">{formatEuroCompact(report.kpis.net_profit)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.net_profit')}</p>
           </div>
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10 p-6 rounded-xl text-center border border-orange-200 dark:border-orange-700">
+          <div className="bg-linear-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10 p-6 rounded-xl text-center border border-orange-200 dark:border-orange-700">
             <p className="text-3xl font-bold text-orange-600">{report.kpis.roi.toFixed(1)}%</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.roi')}</p>
           </div>
-          <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 p-6 rounded-xl text-center border border-teal-200 dark:border-teal-700">
+          <div className="bg-linear-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 p-6 rounded-xl text-center border border-teal-200 dark:border-teal-700">
             <p className="text-3xl font-bold text-teal-600">{report.kpis.sales_rate.toFixed(1)}%</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.sales_rate')}</p>
           </div>
-          <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-900/10 p-6 rounded-xl text-center border border-pink-200 dark:border-pink-700">
+          <div className="bg-linear-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-900/10 p-6 rounded-xl text-center border border-pink-200 dark:border-pink-700">
             <p className="text-3xl font-bold text-pink-600">{report.kpis.debt_equity_ratio.toFixed(2)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.de_ratio')}</p>
           </div>
-          <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 p-6 rounded-xl text-center border border-slate-200 dark:border-slate-600">
+          <div className="bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 p-6 rounded-xl text-center border border-slate-200 dark:border-slate-600">
             <p className="text-3xl font-bold text-slate-600 dark:text-slate-300">{report.kpis.active_projects}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.active_projects')}</p>
           </div>
-          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-900/10 p-6 rounded-xl text-center border border-yellow-200 dark:border-yellow-700">
+          <div className="bg-linear-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-900/10 p-6 rounded-xl text-center border border-yellow-200 dark:border-yellow-700">
             <p className="text-3xl font-bold text-yellow-600">{report.kpis.total_customers}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.total_customers')}</p>
           </div>
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 rounded-xl shadow-sm border border-green-200 dark:border-green-700 p-6">
+      <div className="bg-linear-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 rounded-xl shadow-xs border border-green-200 dark:border-green-700 p-6">
         <div className="flex items-center mb-4">
           <Home className="w-6 h-6 text-green-600 mr-2" />
           <h2 className="text-2xl font-bold text-green-900 dark:text-green-300">{t('reports.general.sales_performance')}</h2>
@@ -210,7 +210,7 @@ const GeneralReports: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 rounded-xl shadow-sm border border-teal-200 dark:border-teal-700 p-6">
+        <div className="bg-linear-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 rounded-xl shadow-xs border border-teal-200 dark:border-teal-700 p-6">
           <div className="flex items-center mb-4">
             <Wallet className="w-6 h-6 text-teal-600 mr-2" />
             <h2 className="text-xl font-bold text-teal-900 dark:text-teal-100">{t('reports.general.funding_structure')}</h2>
@@ -236,7 +236,7 @@ const GeneralReports: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10 rounded-xl shadow-sm border border-orange-200 dark:border-orange-700 p-6">
+        <div className="bg-linear-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10 rounded-xl shadow-xs border border-orange-200 dark:border-orange-700 p-6">
           <div className="flex items-center mb-4">
             <Activity className="w-6 h-6 text-orange-600 mr-2" />
             <h2 className="text-xl font-bold text-orange-900 dark:text-orange-100">{t('reports.general.construction_status')}</h2>
@@ -265,7 +265,7 @@ const GeneralReports: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-900/10 rounded-xl shadow-sm border border-cyan-200 dark:border-cyan-700 p-6">
+      <div className="bg-linear-to-br from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-900/10 rounded-xl shadow-xs border border-cyan-200 dark:border-cyan-700 p-6">
         <div className="flex items-center mb-4">
           <FileText className="w-6 h-6 text-cyan-600 mr-2" />
           <h2 className="text-2xl font-bold text-cyan-900 dark:text-cyan-100">{t('reports.general.accounting_overview')}</h2>
@@ -281,7 +281,7 @@ const GeneralReports: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 rounded-xl shadow-sm border border-amber-200 dark:border-amber-700 p-6">
+        <div className="bg-linear-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 rounded-xl shadow-xs border border-amber-200 dark:border-amber-700 p-6">
           <div className="flex items-center mb-4">
             <Building2 className="w-6 h-6 text-amber-600 mr-2" />
             <h2 className="text-xl font-bold text-amber-900 dark:text-amber-100">{t('reports.general.office_expenses')}</h2>
@@ -301,7 +301,7 @@ const GeneralReports: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-900/10 rounded-xl shadow-sm border border-rose-200 dark:border-rose-700 p-6">
+        <div className="bg-linear-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-900/10 rounded-xl shadow-xs border border-rose-200 dark:border-rose-700 p-6">
           <div className="flex items-center mb-4">
             <CreditCard className="w-6 h-6 text-rose-600 mr-2" />
             <h2 className="text-xl font-bold text-rose-900 dark:text-rose-100">{t('reports.general.company_investments')}</h2>
@@ -327,7 +327,7 @@ const GeneralReports: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
+        <div className="bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-xl shadow-xs border border-slate-200 dark:border-slate-600 p-6">
           <div className="flex items-center mb-4">
             <Wallet className="w-6 h-6 text-slate-600 dark:text-slate-300 mr-2" />
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t('reports.general.bank_accounts')}</h2>
@@ -340,7 +340,7 @@ const GeneralReports: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 rounded-xl shadow-sm border border-teal-200 dark:border-teal-700 p-6">
+        <div className="bg-linear-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 rounded-xl shadow-xs border border-teal-200 dark:border-teal-700 p-6">
           <div className="flex items-center mb-4">
             <Building2 className="w-6 h-6 text-teal-600 mr-2" />
             <h2 className="text-xl font-bold text-teal-900 dark:text-teal-100">{t('reports.general.buildings_units')}</h2>
@@ -364,7 +364,7 @@ const GeneralReports: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 rounded-xl shadow-sm border border-green-200 dark:border-green-700 p-6">
+      <div className="bg-linear-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 rounded-xl shadow-xs border border-green-200 dark:border-green-700 p-6">
         <div className="flex items-center mb-4">
           <Home className="w-6 h-6 text-green-600 mr-2" />
           <h2 className="text-2xl font-bold text-green-900 dark:text-green-300">{t('reports.general.retail_portfolio')}</h2>
@@ -384,7 +384,7 @@ const GeneralReports: React.FC = () => {
       </div>
 
       {report.contract_types.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center mb-4">
             <FileText className="w-6 h-6 text-gray-600 dark:text-gray-400 mr-2" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('reports.general.contract_types')}</h2>
@@ -400,7 +400,7 @@ const GeneralReports: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center mb-4">
           <BarChart3 className="w-6 h-6 text-blue-600 mr-2" />
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('reports.general.cash_flow')}</h2>
@@ -452,7 +452,7 @@ const GeneralReports: React.FC = () => {
       </div>
 
       {report.projects.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t('reports.general.project_breakdown')}</h2>
           <div className="space-y-4">
             {report.projects.map((project) => (
@@ -488,7 +488,7 @@ const GeneralReports: React.FC = () => {
       )}
 
       {report.risks.length > 0 && (
-        <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10 rounded-xl shadow-sm border border-red-200 dark:border-red-800 p-6">
+        <div className="bg-linear-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10 rounded-xl shadow-xs border border-red-200 dark:border-red-800 p-6">
           <div className="flex items-center mb-4">
             <AlertTriangle className="w-6 h-6 text-red-600 mr-2" />
             <h2 className="text-2xl font-bold text-red-900 dark:text-red-300">{t('reports.general.risk_assessment')}</h2>
@@ -507,7 +507,7 @@ const GeneralReports: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 rounded-xl shadow-sm border border-green-200 dark:border-green-700 p-6">
+      <div className="bg-linear-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 rounded-xl shadow-xs border border-green-200 dark:border-green-700 p-6">
         <div className="flex items-center mb-4">
           <Target className="w-6 h-6 text-green-600 mr-2" />
           <h2 className="text-2xl font-bold text-green-900 dark:text-green-300">{t('reports.general.insights')}</h2>

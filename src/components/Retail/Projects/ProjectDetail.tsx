@@ -191,7 +191,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
         </Button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 mb-6">
         <div className="flex justify-between items-start mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{project.name}</h1>
@@ -279,13 +279,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
       {loading ? (
         <LoadingSpinner message={t('retail_projects.loading_details')} />
       ) : error ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
           <ErrorState compact onRetry={() => { void loadProjectDetails() }} />
         </div>
       ) : (
         <div className="space-y-6">
           {project.phases.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-12">
               <EmptyState
                 title={t('retail_projects.no_phases')}
                 description={t('retail_projects.phases_auto_created')}
@@ -315,7 +315,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
       )}
 
       {project.notes && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mt-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 mt-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('common.notes')}</h3>
           <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{project.notes}</p>
         </div>
@@ -349,14 +349,14 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project: initialPr
       )}
 
       {showMilestoneManagement && milestoneContext && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div
             ref={milestoneOverlayRef}
             role="dialog"
             aria-modal="true"
             aria-label={t('retail_projects.milestones.title')}
             tabIndex={-1}
-            className="max-w-6xl w-full my-8 outline-none"
+            className="max-w-6xl w-full my-8 outline-hidden"
           >
             <MilestoneList
               contractId={milestoneContext.contract.id}

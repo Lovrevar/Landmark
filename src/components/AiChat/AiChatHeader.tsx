@@ -97,7 +97,7 @@ export default function AiChatHeader() {
           <span className="truncate text-left">
             {loadingSessions ? 'Učitavanje...' : currentLabel}
           </span>
-          <ChevronDown className="w-4 h-4 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+          <ChevronDown className="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400" />
         </button>
 
         {dropdownOpen && (
@@ -140,7 +140,7 @@ export default function AiChatHeader() {
                         }
                       }}
                       onBlur={() => handleCommitRename(s.id)}
-                      className="flex-1 min-w-0 bg-white dark:bg-gray-700 border border-blue-400 dark:border-blue-500 rounded px-2 py-0.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 min-w-0 bg-white dark:bg-gray-700 border border-blue-400 dark:border-blue-500 rounded-sm px-2 py-0.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     />
                   ) : (
                     <>
@@ -159,7 +159,7 @@ export default function AiChatHeader() {
                         }}
                         aria-label="Preimenuj razgovor"
                         title="Preimenuj"
-                        className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                        className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
@@ -171,7 +171,7 @@ export default function AiChatHeader() {
                         }}
                         aria-label="Obriši razgovor"
                         title="Obriši"
-                        className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                        className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -188,7 +188,7 @@ export default function AiChatHeader() {
         type="button"
         onClick={() => close()}
         aria-label="Zatvori AI asistenta"
-        className="p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+        className="p-1 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-sm transition-colors"
       >
         <X className="w-5 h-5" />
       </button>

@@ -16,7 +16,7 @@ function TableRoot({ children, className = '', dense = false, fitContent = false
   // `responsive-table` enables the card-view layout on mobile (see index.css).
   return (
     <DensityContext.Provider value={dense}>
-      <div className={`responsive-table bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
+      <div className={`responsive-table bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
         <div className="overflow-x-auto">
           <table className={fitContent ? 'min-w-max' : 'w-full min-w-max'}>
             {children}

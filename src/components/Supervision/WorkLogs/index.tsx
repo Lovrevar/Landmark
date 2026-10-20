@@ -244,7 +244,7 @@ const WorkLogs: React.FC = () => {
                     {/* Wraps: on a phone the date and the edit and delete buttons were pushed past
                         the card's right edge (UI-8). */}
                     <div className="flex flex-wrap justify-between items-start gap-x-4 gap-y-2 mb-3">
-                      <div className="flex-1 min-w-[12rem]">
+                      <div className="flex-1 min-w-48">
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                           <h3 className="font-semibold text-gray-900 dark:text-white">{log.subcontractors?.name}</h3>
                           <StatusBadge status={log.status} />

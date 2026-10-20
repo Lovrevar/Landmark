@@ -290,7 +290,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 safe-top">
+      <nav className="bg-white dark:bg-gray-800 shadow-xs border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 safe-top">
         <div className="w-full px-3 lg:px-6">
           <div className="flex justify-between h-16">
             <div className="flex items-center gap-1 lg:pl-8">
@@ -435,17 +435,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         )}
 
         <aside
-          className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0
+          className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shrink-0
             fixed top-16 bottom-0 left-0 z-40 w-64 overflow-y-auto lg:overflow-visible shadow-lg
             transform transition-transform duration-300 ease-in-out
-            lg:static lg:top-0 lg:bottom-auto lg:z-auto lg:min-h-screen lg:shadow-sm lg:translate-x-0 lg:transition-all
+            lg:static lg:top-0 lg:bottom-auto lg:z-auto lg:min-h-screen lg:shadow-xs lg:translate-x-0 lg:transition-all
             ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}
             ${sidebarOpen ? 'lg:w-64' : 'lg:w-16'}`}
         >
           {/* Desktop-only collapse toggle */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10"
+            className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-xs items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10"
             title={sidebarOpen ? t('common.collapse_sidebar') : t('common.expand_sidebar')}
             aria-label={sidebarOpen ? t('common.collapse_sidebar') : t('common.expand_sidebar')}
           >
@@ -500,7 +500,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           }`}
                         title={!sidebarExpanded ? item.name : undefined}
                       >
-                        <item.icon className="w-5 h-5 flex-shrink-0 min-w-[1.25rem]" />
+                        <item.icon className="w-5 h-5 shrink-0 min-w-5" />
                         <span
                           className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${sidebarExpanded ? 'max-w-xs opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0'}`}
                         >
@@ -590,17 +590,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <AiChatWidget />
 
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-50">
           <div
             ref={passwordDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="cashflow-unlock-title"
             tabIndex={-1}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 outline-none"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 outline-hidden"
           >
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
                 <Lock className="w-6 h-6 text-blue-600" />
               </div>
               <div>

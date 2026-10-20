@@ -67,7 +67,7 @@ const ResetPasswordForm: React.FC = () => {
     `pl-10 pr-4 py-3 transition-all duration-200 ${hasError ? 'border-red-500 focus:ring-red-500' : ''}`
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-blue-900 via-blue-800 to-blue-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
           <div className="text-center mb-8">

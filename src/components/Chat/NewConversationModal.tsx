@@ -146,7 +146,7 @@ const NewConversationModal: React.FC<NewConversationModalProps> = ({
                   }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                       isSelected
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'

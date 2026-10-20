@@ -141,7 +141,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
                 }`}
               >
                 <div
-                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                  className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
                     isActive
                       ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
@@ -166,18 +166,18 @@ const ConversationList: React.FC<ConversationListProps> = ({
                       {displayName}
                     </p>
                     {lastMsg && (
-                      <span className="text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0 ml-2">
+                      <span className="text-[11px] text-gray-400 dark:text-gray-500 shrink-0 ml-2">
                         {formatLastMessageTime(lastMsg.created_at, dateLocale, nowLabel)}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center justify-between mt-0.5">
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
-                      {lastMsgHasFile && <Paperclip className="w-3 h-3 flex-shrink-0" />}
+                      {lastMsgHasFile && <Paperclip className="w-3 h-3 shrink-0" />}
                       {lastMsgPreview}
                     </p>
                     {conv.unread_count > 0 && (
-                      <span className="flex-shrink-0 ml-2 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      <span className="shrink-0 ml-2 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                         {conv.unread_count > 99 ? '99+' : conv.unread_count}
                       </span>
                     )}

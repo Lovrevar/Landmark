@@ -79,7 +79,7 @@ const ProjectsManagement: React.FC = () => {
         }
       />
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <SearchInput
             className="flex-1"

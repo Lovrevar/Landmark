@@ -197,7 +197,7 @@ const SubcontractorManagement: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 p-4 space-y-3">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -222,7 +222,7 @@ const SubcontractorManagement: React.FC = () => {
               aria-label={t('common.project')}
               value={prefs.projectFilter}
               onChange={(e) => setPrefs({ projectFilter: e.target.value })}
-              className="py-1.5 px-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[200px]"
+              className="py-1.5 px-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-blue-500 max-w-[200px]"
             >
               <option value="">{t('common.all_projects')}</option>
               {availableProjects.map(p => <option key={p} value={p}>{p}</option>)}

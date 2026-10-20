@@ -130,7 +130,7 @@ const AccountingPayments: React.FC = () => {
           describe a different set from the one below them. */}
       {!loadFailedEmpty && <PaymentStatsCards payments={filteredPayments} />}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <SearchInput
             value={searchTerm}
@@ -190,7 +190,7 @@ const AccountingPayments: React.FC = () => {
       </div>
 
       {loadFailedEmpty ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
           <ErrorState onRetry={() => void refetch()} />
         </div>
       ) : (

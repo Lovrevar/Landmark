@@ -115,13 +115,13 @@ export const CreditUsageTiles: React.FC<CreditUsageTilesProps> = ({
             <span className="font-medium text-gray-700 dark:text-gray-200">{t('banks.index.credit.allocation_progress')}</span>
             {usage.usedPercent > 0 && (
               <span className="flex items-center gap-1">
-                <span className="inline-block w-3 h-3 rounded-sm bg-orange-500"></span>
+                <span className="inline-block w-3 h-3 rounded-xs bg-orange-500"></span>
                 {t('banks.index.credit.used_percent', { percent: usage.usedPercent.toFixed(1) })}
               </span>
             )}
             {usage.remainingAllocatedPercent > 0 && (
               <span className="flex items-center gap-1">
-                <span className="inline-block w-3 h-3 rounded-sm bg-slate-500"></span>
+                <span className="inline-block w-3 h-3 rounded-xs bg-slate-500"></span>
                 {t('banks.index.credit.allocated_percent', { percent: usage.remainingAllocatedPercent.toFixed(1) })}
               </span>
             )}

@@ -93,7 +93,7 @@ export const PhaseCard: React.FC<PhaseCardProps> = ({
   ])
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
       <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         {/* Wraps: on a phone the budget and the four buttons ran off the right edge of the card,
             out of reach (UI-8). */}

@@ -41,7 +41,7 @@ export default function Alert({
   return (
     <div className={`border rounded-lg p-4 ${variantStyles[variant]} ${className}`}>
       <div className="flex">
-        <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+        <Icon className="w-5 h-5 shrink-0 mt-0.5" />
         <div className="ml-3 flex-1">
           {title && <p className="text-sm font-semibold mb-1">{title}</p>}
           <div className="text-sm">{children}</div>
@@ -51,7 +51,7 @@ export default function Alert({
             type="button"
             onClick={onDismiss}
             aria-label={t('common.close')}
-            className="ml-3 flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
+            className="ml-3 shrink-0 opacity-70 hover:opacity-100 transition-opacity"
           >
             <X className="w-4 h-4" />
           </button>

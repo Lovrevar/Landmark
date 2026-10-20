@@ -230,7 +230,7 @@ const AccountingInvoices: React.FC = () => {
       />
 
       {loadFailedEmpty ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
           <ErrorState onRetry={() => void refetch()} />
         </div>
       ) : (

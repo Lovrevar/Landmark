@@ -41,7 +41,7 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center gap-2 mb-5">
             <Briefcase className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('reports.costs.cost_structure')}</h3>
@@ -81,7 +81,7 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center gap-2 mb-5">
             <Hammer className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('reports.costs.by_supplier_type')}</h3>
@@ -102,7 +102,7 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
         <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
           <Users className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           <div>

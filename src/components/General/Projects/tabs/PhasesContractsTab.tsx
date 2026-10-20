@@ -162,7 +162,7 @@ const PhasesContractsTab: React.FC<PhasesContractsTabProps> = ({
           <button
             type="button"
             onClick={collapse.allExpanded ? collapse.collapseAll : collapse.expandAll}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline focus:outline-none focus:underline"
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline focus:outline-hidden focus:underline"
           >
             {collapse.allExpanded
               ? t('general_projects.milestone_template.collapse_all')

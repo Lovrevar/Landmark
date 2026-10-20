@@ -124,7 +124,7 @@ const SalesReports: React.FC = () => {
       />
 
       {/* Report Configuration */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('reports.sales.config_title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <FormField label={t('reports.sales.report_type')}>
@@ -181,7 +181,7 @@ const SalesReports: React.FC = () => {
       {/* Project Report */}
       {reportType === 'project' && projectReport && !generatingReport && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('reports.sales.project_overview')}</h2>
               <Badge variant={statusVariant(PROJECT_STATUS, projectReport.project.status)}>
@@ -218,7 +218,7 @@ const SalesReports: React.FC = () => {
             <StatCard label={t('reports.sales.sales_rate_stat')} value={`${projectReport.sales_rate.toFixed(1)}%`} icon={Activity} color="orange" />
           </StatGrid>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.unit_status')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -230,7 +230,7 @@ const SalesReports: React.FC = () => {
                   ].map(({ labelKey, color, count }) => (
                     <div key={labelKey} className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <div className={`w-4 h-4 ${color} rounded mr-3`}></div>
+                        <div className={`w-4 h-4 ${color} rounded-sm mr-3`}></div>
                         <span className="text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
                       </div>
                       <span className="font-semibold text-gray-900 dark:text-white">{count} {t('reports.sales.units_label')}</span>
@@ -262,7 +262,7 @@ const SalesReports: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.monthly_trend')}</h2>
             <Table>
               <Table.Head>
@@ -286,7 +286,7 @@ const SalesReports: React.FC = () => {
             </Table>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.summary')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
@@ -326,7 +326,7 @@ const SalesReports: React.FC = () => {
             <StatCard label={t('reports.sales.avg_purchase_stat')} value={formatEuro(customerReport.average_purchase)} icon={Activity} color="orange" />
           </StatGrid>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.customer_distribution')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -338,7 +338,7 @@ const SalesReports: React.FC = () => {
                   ].map(({ labelKey, color, count }) => (
                     <div key={labelKey} className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <div className={`w-4 h-4 ${color} rounded mr-3`}></div>
+                        <div className={`w-4 h-4 ${color} rounded-sm mr-3`}></div>
                         <span className="text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
                       </div>
                       <span className="font-semibold text-gray-900 dark:text-white">{count} {t('reports.sales.customers_label')}</span>
@@ -369,7 +369,7 @@ const SalesReports: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.customer_summary')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">

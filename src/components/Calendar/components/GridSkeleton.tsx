@@ -23,8 +23,8 @@ export default function GridSkeleton() {
               <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700/60 animate-pulse" />
             </div>
             <div className="mt-2 space-y-1.5">
-              <div className="h-4 rounded bg-gray-100 dark:bg-gray-700/50 animate-pulse" />
-              {i % 3 === 0 && <div className="h-4 rounded bg-gray-100 dark:bg-gray-700/40 animate-pulse w-2/3" />}
+              <div className="h-4 rounded-sm bg-gray-100 dark:bg-gray-700/50 animate-pulse" />
+              {i % 3 === 0 && <div className="h-4 rounded-sm bg-gray-100 dark:bg-gray-700/40 animate-pulse w-2/3" />}
             </div>
           </div>
         ))}

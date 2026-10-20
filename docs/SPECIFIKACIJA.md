@@ -101,7 +101,7 @@ Izvan opsega: modul Retail (`src/components/Retail/`), `RetailDashboard`, `Retai
 |---|---|
 | Frontend | React 18.3, TypeScript 5.5, Vite 7.3 |
 | Usmjeravanje | React Router DOM 7 (`<BrowserRouter>`) |
-| Stilovi | Tailwind CSS 3.4 (`darkMode: 'class'`) |
+| Stilovi | Tailwind CSS 4.3 (`@tailwindcss/vite`; tamni način klasom `dark` na `<html>`) |
 | Backend | Supabase: PostgreSQL s Row Level Security, Auth, Storage, Realtime, Edge Functions (Deno) |
 | PDF | jsPDF 4 (isključivo u pregledniku) s ugrađenim fontom NotoSans |
 | Excel | `@e965/xlsx` 0.20 (održavani fork SheetJS-a, ne paket `xlsx`) |

@@ -19,7 +19,7 @@ export default function PageHeader({
       {/* The title block keeps a readable width and the actions wrap around it. Before, the
           actions never shrank, so a page with five buttons squeezed its title and description
           into a ~90px column (Cashflow → Invoices at 1440px). */}
-      <div className="min-w-0 sm:min-w-[14rem] sm:flex-1">
+      <div className="min-w-0 sm:min-w-56 sm:flex-1">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
           {title}
           <PageHelpLink />

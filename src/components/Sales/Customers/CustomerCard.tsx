@@ -49,7 +49,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           onViewDetails(customer)
         }
       }}
-      className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 p-6 hover:shadow-md transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+      className={`bg-white dark:bg-gray-800 rounded-xl shadow-xs border-2 p-6 hover:shadow-md transition-all cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 ${
         isSelected ? 'border-blue-400 shadow-blue-100' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
       }`}
     >
@@ -62,7 +62,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           }}
           aria-pressed={isSelected}
           aria-label={t('customers.card.select_customer', { name: fullName })}
-          className="p-1 -ml-1 mr-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="p-1 -ml-1 mr-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           {isSelected ? (
             <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
@@ -119,7 +119,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
               const totalPackage = unitPackageTotal(unit)
 
               return (
-                <div key={unit.id} className="bg-white dark:bg-gray-700 rounded p-2 space-y-1">
+                <div key={unit.id} className="bg-white dark:bg-gray-700 rounded-sm p-2 space-y-1">
                   <div className="flex justify-between items-start">
                     {unit.type === 'apartment' && (
                       <span className="text-xs font-medium text-green-800 dark:text-green-200">

@@ -32,7 +32,7 @@ const SupplierCard: React.FC<Props> = ({ supplier, onSelect, onEdit, onDelete })
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{supplier.contact}</p>
           )}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {supplier.source === 'site' && (
             <button
               onClick={onEdit}

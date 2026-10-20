@@ -118,7 +118,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-              <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-sm">
                 <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                   <Home className="w-3 h-3 mr-1 text-blue-600" />
                   {t('common.apartment')}
@@ -126,7 +126,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                 <p className="text-sm font-bold text-blue-600">€{apartment.price.toLocaleString('hr-HR')}</p>
               </div>
               {linkedGarages.length > 0 && (
-                <div className="bg-orange-50 dark:bg-orange-900/20 p-2 rounded">
+                <div className="bg-orange-50 dark:bg-orange-900/20 p-2 rounded-sm">
                   <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                     <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
                     Garages ({linkedGarages.length})
@@ -135,7 +135,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                 </div>
               )}
               {linkedStorages.length > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-sm">
                   <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                     <Package className="w-3 h-3 mr-1 text-gray-600 dark:text-gray-400" />
                     Storages ({linkedStorages.length})
@@ -170,7 +170,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                           <span className="font-bold text-green-600 text-lg">
                             €{payment.amount.toLocaleString('hr-HR')}
                           </span>
-                          <span className={`ml-3 px-2 py-0.5 rounded text-xs font-medium ${unitInfo.bgColor} ${unitInfo.color} flex items-center`}>
+                          <span className={`ml-3 px-2 py-0.5 rounded-sm text-xs font-medium ${unitInfo.bgColor} ${unitInfo.color} flex items-center`}>
                             <UnitIcon className="w-3 h-3 mr-1" />
                             {unitInfo.label}
                           </span>

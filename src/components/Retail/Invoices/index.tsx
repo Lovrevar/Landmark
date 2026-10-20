@@ -70,7 +70,7 @@ const RetailInvoicesManagement: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
             <SearchInput
@@ -125,7 +125,7 @@ const RetailInvoicesManagement: React.FC = () => {
           description={t('retail_invoices.no_invoices_desc')}
         />
       ) : (
-        <div className="responsive-table overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="responsive-table overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs">
           <table className="w-full min-w-[1200px] bg-white dark:bg-gray-800">
             <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
               <tr>
@@ -177,7 +177,7 @@ const RetailInvoicesManagement: React.FC = () => {
                   </td>
                   <td data-label={t('common.company')} className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
-                      <Building2 className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                      <Building2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                       <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{invoice.company_name}</span>
                     </div>
                   </td>

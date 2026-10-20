@@ -240,7 +240,7 @@ const AccountingPaymentFormModal: React.FC<AccountingPaymentFormModalProps> = ({
                       cesija_credit_id: '',
                       cesija_credit_allocation_id: ''
                     })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded-sm focus:ring-blue-500"
                   />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     {t('payments.form.cesija_checkbox')}

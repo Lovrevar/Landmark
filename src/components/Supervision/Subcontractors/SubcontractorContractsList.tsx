@@ -40,11 +40,11 @@ export const SubcontractorContractsList: React.FC<Props> = ({ contracts, onViewD
                 )}
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{contract.job_description}</p>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+              <div className="flex items-center gap-2 shrink-0 ml-2">
                 {hasValidContract && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onViewDocuments(contract) }}
-                    className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                    className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-sm transition-colors"
                     title={t('supervision.subcontractors.view_contract_docs')}
                   >
                     <Eye className="w-4 h-4" />
@@ -112,7 +112,7 @@ export const SubcontractorContractsList: React.FC<Props> = ({ contracts, onViewD
             )}
 
             {isOverdue && (
-              <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm text-red-700 dark:text-red-400">
+              <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-sm text-sm text-red-700 dark:text-red-400">
                 ⚠️ {t('supervision.subcontractors.overdue_by', { days: Math.abs(daysUntilDeadline) })}
               </div>
             )}

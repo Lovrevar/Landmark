@@ -21,7 +21,7 @@ export default function SortDropdown<T extends string>({ value, options, onChang
         aria-label={ariaLabel}
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
-        className="pl-8 pr-8 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="pl-8 pr-8 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 appearance-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-blue-500"
       >
         {options.map(o => (
           <option key={o.value} value={o.value}>{o.label}</option>

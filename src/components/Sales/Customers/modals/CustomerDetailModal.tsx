@@ -117,7 +117,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                   {unit.type === 'apartment' && ((unit.garages?.length ?? 0) > 0 || (unit.repositories?.length ?? 0) > 0) && (
                                     <div className="pl-6 space-y-1 text-xs">
                                       {(unit.garages ?? []).map(garage => (
-                                        <div key={garage.id} className="flex items-center justify-between text-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded px-2 py-1">
+                                        <div key={garage.id} className="flex items-center justify-between text-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded-sm px-2 py-1">
                                           <span className="flex items-center">
                                             <Warehouse className="w-3 h-3 mr-1" />
                                             {t('common.garage')} {garage.number}
@@ -126,7 +126,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                         </div>
                                       ))}
                                       {(unit.repositories ?? []).map(repository => (
-                                        <div key={repository.id} className="flex items-center justify-between text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
+                                        <div key={repository.id} className="flex items-center justify-between text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-sm px-2 py-1">
                                           <span className="flex items-center">
                                             <Package className="w-3 h-3 mr-1" />
                                             {t('common.storage')} {repository.number}

@@ -53,12 +53,12 @@ const MarkdownView: React.FC<Props> = ({ content, className }) => {
             <span>{alt}</span>
           ),
           code: ({ children }) => (
-            <code className="px-1 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-pink-700 dark:text-pink-300">
+            <code className="px-1 py-0.5 rounded-sm text-xs bg-gray-100 dark:bg-gray-800 text-pink-700 dark:text-pink-300">
               {children}
             </code>
           ),
           pre: ({ children }) => (
-            <pre className="my-2 p-3 rounded bg-gray-100 dark:bg-gray-800 overflow-x-auto text-xs">
+            <pre className="my-2 p-3 rounded-sm bg-gray-100 dark:bg-gray-800 overflow-x-auto text-xs">
               {children}
             </pre>
           ),

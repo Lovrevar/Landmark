@@ -30,14 +30,14 @@ export default function ToggleSwitch({ checked, onChange, label, description, di
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
         className={[
-          'relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors',
-          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
+          'relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors',
+          'focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
           track,
         ].join(' ')}
       >
         <span
           className={[
-            'inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform',
+            'inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform',
             'mt-0.5',
             knob,
           ].join(' ')}

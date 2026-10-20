@@ -208,7 +208,7 @@ export const SubcontractorFormModal: React.FC<SubcontractorFormModalProps> = ({
                 type="checkbox"
                 checked={!hasContract}
                 onChange={(e) => setHasContract(!e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded-sm focus:ring-blue-500"
               />
               <span className="ml-2 text-sm font-medium text-gray-900 dark:text-white">{t('supervision.subcontractor_form.no_contract')}</span>
             </label>

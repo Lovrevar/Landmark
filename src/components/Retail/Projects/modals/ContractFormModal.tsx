@@ -169,7 +169,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
                   type="checkbox"
                   checked={formData.has_contract}
                   onChange={(e) => setFormData({ ...formData, has_contract: e.target.checked })}
-                  className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+                  className="w-4 h-4 text-teal-600 rounded-sm focus:ring-teal-500"
                 />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('retail_projects.contract_form.has_contract_label')}</span>
               </label>

@@ -104,7 +104,7 @@ const OfficeSuppliers: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -114,11 +114,11 @@ const OfficeSuppliers: React.FC = () => {
       </div>
 
       {error && suppliers.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
           <ErrorState onRetry={() => void refetch()} />
         </div>
       ) : filteredSuppliers.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
           <EmptyState
             icon={Building2}
             title={searchTerm ? t('office_suppliers.empty.title_search') : t('office_suppliers.empty.title_empty')}
@@ -130,7 +130,7 @@ const OfficeSuppliers: React.FC = () => {
           {filteredSuppliers.map((supplier) => (
             <div
               key={supplier.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
               onClick={() => handleViewInvoices(supplier)}
             >
               <div className="flex items-start justify-between mb-4">

@@ -209,7 +209,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 onClick={() => setProjectType('projects')}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   projectType === 'projects'
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-700 dark:text-gray-200 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -220,7 +220,7 @@ export const LandPurchaseFormModal: React.FC<LandPurchaseFormModalProps> = ({
                 onClick={() => setProjectType('retail')}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   projectType === 'retail'
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-700 dark:text-gray-200 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >

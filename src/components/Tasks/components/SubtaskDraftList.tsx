@@ -66,7 +66,7 @@ const SubtaskDraftList: React.FC<Props> = ({ value, onChange, disabled }) => {
       <div className="space-y-1">
         {value.map((title, index) => (
           <div key={index} className="group flex items-start gap-2">
-            <GripVertical className="w-4 h-4 mt-1 flex-shrink-0 text-gray-300 dark:text-gray-600" />
+            <GripVertical className="w-4 h-4 mt-1 shrink-0 text-gray-300 dark:text-gray-600" />
 
             {editingIndex === index ? (
               <div className="flex-1 flex gap-2">
@@ -79,7 +79,7 @@ const SubtaskDraftList: React.FC<Props> = ({ value, onChange, disabled }) => {
                     if (e.key === 'Escape') { e.preventDefault(); setEditingIndex(null) }
                   }}
                   autoFocus
-                  className="flex-1 px-2 py-1 text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="flex-1 px-2 py-1 text-base border border-gray-300 dark:border-gray-600 rounded-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
                 <button
                   type="button"
@@ -97,8 +97,8 @@ const SubtaskDraftList: React.FC<Props> = ({ value, onChange, disabled }) => {
                   setEditingIndex(index)
                   setEditDraft(title)
                 }}
-                className={`flex-1 min-w-0 text-base whitespace-pre-wrap break-words text-gray-700 dark:text-gray-200 ${
-                  disabled ? '' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded px-1 -mx-1'
+                className={`flex-1 min-w-0 text-base whitespace-pre-wrap wrap-break-word text-gray-700 dark:text-gray-200 ${
+                  disabled ? '' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-sm px-1 -mx-1'
                 }`}
               >
                 {title}
@@ -143,7 +143,7 @@ const SubtaskDraftList: React.FC<Props> = ({ value, onChange, disabled }) => {
         ))}
 
         <div className="flex items-center gap-2 pt-1">
-          <Plus className="w-5 h-5 flex-shrink-0 text-gray-400" />
+          <Plus className="w-5 h-5 shrink-0 text-gray-400" />
           <input
             value={draft}
             onChange={e => setDraft(e.target.value)}
@@ -153,7 +153,7 @@ const SubtaskDraftList: React.FC<Props> = ({ value, onChange, disabled }) => {
             onBlur={add}
             disabled={disabled}
             placeholder={t('tasks.subtasks.add_placeholder')}
-            className="flex-1 px-2 py-1 text-base bg-transparent border-b border-dashed border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+            className="flex-1 px-2 py-1 text-base bg-transparent border-b border-dashed border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-hidden focus:border-blue-500 disabled:opacity-50"
           />
         </div>
       </div>

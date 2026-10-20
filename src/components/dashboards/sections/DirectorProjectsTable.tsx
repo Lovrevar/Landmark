@@ -17,7 +17,7 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
   const { t } = useTranslation()
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.projects_portfolio')}</h2>

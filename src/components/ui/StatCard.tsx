@@ -5,12 +5,12 @@ type StatColorScheme = 'white' | 'blue' | 'green' | 'red' | 'yellow' | 'gray' | 
 
 const containerStyles: Record<StatColorScheme, string> = {
   white: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
-  blue: 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/30 border border-blue-200 dark:border-blue-800',
+  blue: 'bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/30 border border-blue-200 dark:border-blue-800',
   green: 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800',
   red: 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800',
   yellow: 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800',
   gray: 'bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700',
-  teal: 'bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/30 border border-teal-200 dark:border-teal-800',
+  teal: 'bg-linear-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/30 border border-teal-200 dark:border-teal-800',
   orange: 'bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800',
 }
 
@@ -87,7 +87,7 @@ export default function StatCard({
   const signPrefix = typeof value === 'string' ? (value.match(/^[\u2212-]€/)?.[0] ?? null) : null
 
   const classes = [
-    'stat-card rounded-xl shadow-sm',
+    'stat-card rounded-xl shadow-xs',
     containerStyles[color],
     cfg.container,
     className,

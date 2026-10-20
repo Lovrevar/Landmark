@@ -163,7 +163,7 @@ const TICManagement: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-12">
           <LoadingSpinner message={t('tic.loading')} />
         </div>
       ) : !selectedProjectId ? (

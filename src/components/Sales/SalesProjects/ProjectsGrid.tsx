@@ -28,7 +28,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
       {projects.map((project) => (
         <div
           key={project.id}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
           onClick={() => onSelectProject(project)}
         >
           <div className="flex items-start justify-between mb-4">

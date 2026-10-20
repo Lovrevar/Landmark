@@ -41,9 +41,9 @@ function ToastEntry({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: st
         visible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0',
       ].join(' ')}
     >
-      <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+      <Icon className="w-5 h-5 shrink-0 mt-0.5" />
       <p className="flex-1 text-sm leading-snug">{toast.message}</p>
-      <X className="w-4 h-4 flex-shrink-0 opacity-70 hover:opacity-100 mt-0.5" />
+      <X className="w-4 h-4 shrink-0 opacity-70 hover:opacity-100 mt-0.5" />
     </div>
   )
 }
@@ -57,7 +57,7 @@ export default function ToastContainer({ toasts, onDismiss }: ToastContainerProp
   if (!toasts.length) return null
 
   return ReactDOM.createPortal(
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">
+    <div className="fixed bottom-6 right-6 z-9999 flex flex-col gap-2 pointer-events-none">
       {toasts.map(toast => (
         <div key={toast.id} className="pointer-events-auto">
           <ToastEntry toast={toast} onDismiss={onDismiss} />
