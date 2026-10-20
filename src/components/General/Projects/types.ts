@@ -38,7 +38,8 @@ export interface Phase {
   id: string
   phase_number: number
   phase_name: string
-  budget_allocated: number
+  /** NULL when the TIC is not split by phase and the project has several (`budgetNotSplitByPhase`). */
+  budget_allocated: number | null
   budget_used: number
   start_date: string | null
   end_date: string | null
@@ -52,6 +53,13 @@ export interface ContractWithDetails {
   job_description: string
   contract_amount: number
   budget_realized: number
+  /**
+   * `contracts.has_contract` (boolean, default true). False for a supplier engaged without a
+   * formal contract, whose `contract_amount` is stored as 0 — see `isContracted` in
+   * utils/contractRollup.ts before doing arithmetic on the amount. Already in the row: the query
+   * selects `*`.
+   */
+  has_contract?: boolean
   status: string
   start_date: string | null
   end_date: string | null
@@ -126,6 +134,8 @@ export interface CreditAllocation {
 }
 
 export interface ProjectWithFinancials extends Project {
+  /** False for a project with no TIC: it has no budget, so `budget` and the ratios against it must not be shown. */
+  budget_set?: boolean
   total_investment: number
   total_debt: number
   debt_allocations: CreditAllocation[]

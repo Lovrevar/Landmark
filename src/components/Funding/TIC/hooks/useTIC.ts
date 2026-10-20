@@ -12,7 +12,7 @@ import {
   toSectionCode,
 } from '../utils/ticFormatters'
 import { defaultLineItems, defaultConstructionSections } from '../constants'
-import { applyDefaultClassifications } from '../utils/ticClassificationMap'
+import { applyDefaultClassifications, applyImportedClassifications } from '../utils/ticClassificationMap'
 import { totalsByClassification, ticPhaseCount, normalizePhaseNumbers } from '../utils/ticBudget'
 // cost_classifications is a global lookup, not a Supervision-owned one — the service simply
 // lives next to its first consumer. Imported directly rather than duplicated here.
@@ -95,8 +95,11 @@ export function useTIC() {
       setProjects(data)
 
       if (data.length > 0) {
-        const funtanaProject = data.find((p) => p.name.toLowerCase().includes('funtana'))
-        setSelectedProjectId(funtanaProject?.id || data[0].id)
+        // `?project=<id>` comes from the "open TIC" links on screens that show a project without
+        // a budget; otherwise the first project. (It used to prefer any project with "funtana"
+        // in its name, a leftover hard-code — FUND-13.)
+        const requested = new URLSearchParams(window.location.search).get('project')
+        setSelectedProjectId(data.find(project => project.id === requested)?.id ?? data[0].id)
       }
     } catch (error) {
       console.error('Error loading projects:', error)
@@ -332,10 +335,14 @@ export function useTIC() {
     const sheets: string[] = []
 
     if (parsed.investment) {
-      // Parsed rows carry no classification. Stamping the defaults here is what stops an import
-      // from emptying the mapping — and with it the per-classification totals and any phase
+      // A workbook we exported carries each line's classification; any other carries none.
+      // Lines still without one get the default for their name — which is what stops an import
+      // from emptying the mapping, and with it the per-classification totals and any phase
       // budget populated from them.
-      setLineItems(applyDefaultClassifications(parsed.investment.lineItems, classifications))
+      setLineItems(applyDefaultClassifications(
+        applyImportedClassifications(parsed.investment.lineItems, parsed.investment.classificationCodes, classifications),
+        classifications
+      ))
       sheets.push(parsed.investment.sheetName)
     }
     if (parsed.construction) {

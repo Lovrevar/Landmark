@@ -16,6 +16,7 @@ export interface ProjectWithPhases extends Project {
   total_subcontractor_cost: number
   overdue_subcontractors: number
   has_phases: boolean
+  /** What the phases plan between them, or the TIC total when it is not split by phase (`plannedOnPhases`). */
   total_budget_allocated: number
   total_paid_out: number
   total_contracted: number

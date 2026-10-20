@@ -1,23 +1,21 @@
 ---
 id: tasks
 title: Zadaci
-keywords: [zadaci, tasks, todo, u tijeku, gotovo, due date, dodijeljeni meni]
+keywords: [zadaci, tasks, todo, gotovo, rok, dodijeljeni meni, privatni, podzadaci, kontrolna lista, boja, komentari, privici]
 routes: [/tasks]
 roles: [Director, Accounting, Sales, Supervision, Investment]
 ---
 
-**Zadaci** je modul za praćenje zadataka među korisnicima. Naslov stranice: **Zadaci**.
+**Zadaci** je zajednička lista zadataka cijele firme. Otvara se ikonom u gornjoj traci; broj na ikoni pokazuje zadatke dodijeljene vama koje još niste pogledali.
 
-Tabovi: **Dodijeljeni meni**, **Kreirani od mene**, **Privatni**.
+Tabovi: **Svi zadaci** (zadano), **Dodijeljeni meni**, **Dodijelio sam**, **Privatni**. Svi vide sve zadatke koji nisu privatni; privatni zadatak vidi samo onaj tko ga je stvorio i on se nalazi samo u tabu **Privatni**.
 
-Glavna akcija: **Dodaj zadatak** (+ gumb).
+Zadatak je ili otvoren ili gotov — kvačica ga označava gotovim. Zadatak s podzadacima postaje gotov sam kad su gotovi svi podzadaci; njegovu kvačicu tada ne možete mijenjati ručno. Kvačicu mogu mijenjati autor i osobe kojima je zadatak dodijeljen; ostalima je **Samo za čitanje**.
 
-Statusi: **todo** (Za napraviti), **in_progress** (U tijeku), **done** (Gotovo).
+Zadaci su uvijek grupirani po projektu (**Bez projekta** kao zasebna grupa). Grupa pokazuje broj zadataka i koliko ih kasni. Unutar grupe otvoreni su poredani po roku, a gotovi na kraju. Prekidač **Prikaži gotove** skriva ili prikazuje gotove zadatke; **Pretraži zadatke** traži po naslovu i opisu.
 
-Sortiranje: po datumu dospijeća, datumu kreiranja ili nazivu. Grupiranje: bez grupiranja, po projektu, statusu ili datumu dospijeća. Prekidač **Prikaži/sakrij završene** kontrolira vidljivost gotovih zadataka.
+Novi zadatak: gumb **Novi zadatak** (naslov, opis, rok, boja, projekt, **Privatno**, osobe kojima je dodijeljen, podzadaci) ili brzi unos u grupi projekta — upišite naslov i pritisnite Enter.
 
-Filtri: tekstualna pretraga (s debounce), multi-select statusa, padajući izbornik projekta, multi-select dodjelitelja.
+Klik na zadatak otvara detalje; izmjene se spremaju automatski. Tu su podzadaci, privici (do 25 MB po datoteci, najviše 10), komentari s @spominjanjem kolega i **Obriši zadatak**. Uređivati mogu autor i osobe kojima je zadatak dodijeljen; obrisati ga može samo autor.
 
-Zadaci su grupirani u kategorije po datumu: **Overdue**, **Today**, **Tomorrow**, **This week**, **Later**, **No due date**. Detaljni modal sadrži opis, privitke, dodijeljene osobe i vrijeme dospijeća.
-
-Ikona zvona u gornjoj navigaciji pokazuje broj nepročitanih obavijesti o zadacima.
+**Označi sve kao pročitano** (prikazuje se dok ima nepročitanih) uklanja oznaku nepročitanog sa svih zadataka dodijeljenih vama.

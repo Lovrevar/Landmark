@@ -7,6 +7,8 @@ interface FormFieldProps {
   label: string
   required?: boolean
   helperText?: React.ReactNode
+  /** Sits beside the label — an `InfoHint` for a field whose options need explaining. */
+  hint?: React.ReactNode
   error?: string
   compact?: boolean
   /**
@@ -42,6 +44,7 @@ export default function FormField({
   label,
   required = false,
   helperText,
+  hint,
   error,
   compact = false,
   group = false,
@@ -76,19 +79,22 @@ export default function FormField({
   }, [error])
 
   const labelText = <>{label}{required ? ' *' : ''}</>
+  // The hint is a button, so it sits next to the <label>, never inside it.
+  const withHint = (labelElement: React.ReactElement) =>
+    hint ? <div className="flex items-center gap-1.5 [&>:first-child]:mb-0 mb-1">{labelElement}{hint}</div> : labelElement
 
   return (
     <div ref={rootRef} className={className} data-form-error={error ? 'true' : undefined}>
       {group ? (
         <>
-          <span id={labelId} className={labelClasses}>{labelText}</span>
+          {withHint(<span id={labelId} className={labelClasses}>{labelText}</span>)}
           <div role="group" aria-labelledby={labelId} aria-describedby={describedBy}>
             {children}
           </div>
         </>
       ) : (
         <FormFieldContext.Provider value={{ controlId, describedBy, invalid: !!error, required }}>
-          <label htmlFor={controlId} className={labelClasses}>{labelText}</label>
+          {withHint(<label htmlFor={controlId} className={labelClasses}>{labelText}</label>)}
           {children}
         </FormFieldContext.Provider>
       )}

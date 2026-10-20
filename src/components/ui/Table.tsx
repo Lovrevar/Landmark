@@ -55,6 +55,13 @@ function TableBody({ children }: TableBodyProps) {
   )
 }
 
+/**
+ * A soft edge on the left of a sticky cell. Columns scroll underneath it, and without an edge a
+ * value cut by the cell read as a clipped figure — "€145.00(" — rather than as something to
+ * scroll to (CASH-30).
+ */
+const STICKY_EDGE = 'shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.25)] dark:shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.6)]'
+
 interface ThProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
   sortable?: boolean
   sticky?: boolean
@@ -67,7 +74,7 @@ function Th({ sortable = false, sticky = false, children, className = '', ...pro
     dense ? 'px-3 py-2' : 'px-4 py-3',
     'text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider',
     sortable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 select-none' : '',
-    sticky ? 'sticky right-0 bg-gray-50 dark:bg-gray-900' : '',
+    sticky ? `sticky right-0 bg-gray-50 dark:bg-gray-900 ${STICKY_EDGE}` : '',
     className,
   ].filter(Boolean).join(' ')
 
@@ -86,7 +93,7 @@ function Td({ sticky = false, label, children, className = '', ...props }: TdPro
   const classes = [
     dense ? 'px-3 py-2.5' : 'px-4 py-4',
     'whitespace-nowrap text-sm',
-    sticky ? 'sticky right-0 bg-white dark:bg-gray-800' : '',
+    sticky ? `sticky right-0 bg-white dark:bg-gray-800 ${STICKY_EDGE}` : '',
     className,
   ].filter(Boolean).join(' ')
 

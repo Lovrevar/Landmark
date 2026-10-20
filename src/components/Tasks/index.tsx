@@ -40,6 +40,7 @@ import type { Task } from '../../types/tasks'
 import TaskRow from './TaskRow'
 import TaskModal from './TaskModal'
 import TaskDetail from './TaskDetail'
+import PageHelpLink from '../ui/PageHelpLink'
 
 type TabKey = TaskTabKey
 
@@ -426,7 +427,7 @@ const TasksPage: React.FC = () => {
             <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('tasks.title')}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('tasks.title')}<PageHelpLink /></h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">{t('tasks.subtitle')}</p>
           </div>
         </div>

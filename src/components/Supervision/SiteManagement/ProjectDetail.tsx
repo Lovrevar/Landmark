@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Building2, Settings, CreditCard, Layers, Tags } from 'lucide-react'
+import { PageHelpLink } from '../../ui'
+import { ArrowLeft, Building2, Settings, CreditCard, Layers, Tags, Eye, EyeOff } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { ProjectWithPhases, SubcontractorWithPhase, SiteGrouping, VIEW_DIMENSIONS, CostClassification } from './types'
 import { PhaseCard } from './PhaseCard'
 import { ClassificationCard } from './ClassificationCard'
 import { buildContractTree } from './utils/contractTree'
+import { budgetNotSplitByPhase } from '../../Funding/TIC/utils/ticBudget'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
 import { formatEuroRounded } from '../../../utils/formatters'
 import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import { TICBudgetBadge } from './TICBudgetBadge'
 import { ProjectSummaryBanner } from './ProjectSummaryBanner'
 import { TreeGroup } from './TreeGroup'
+import { HideClosedContractsContext } from './hideClosedContracts'
+import { isClosedContract } from '../../../utils/contractRollup'
 import { fetchCreditAllocations, type CreditAllocation } from './services/siteService'
-import { Button, Badge, EmptyState } from '../../ui'
+import { Alert, Button, Badge, EmptyState } from '../../ui'
+import InlineLoadError from '../../ui/InlineLoadError'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 
 interface ProjectDetailProps {
@@ -22,7 +27,7 @@ interface ProjectDetailProps {
   onOpenPhaseSetup: () => void
   onEditPhaseSetup?: () => void
   onEditPhase: (phase: ProjectPhase) => void
-  onDeletePhase: (phase: ProjectPhase) => void
+  onDeletePhase?: (phase: ProjectPhase) => void
   onAddSubcontractor: (phase: ProjectPhase, classificationId?: number | null) => void
   onEditClassificationBudgets: (phase: ProjectPhase) => void
   onEditClassificationBudget: (phaseId: string, classificationId: number) => void
@@ -34,7 +39,7 @@ interface ProjectDetailProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor: (subcontractorId: string) => void
+  onDeleteSubcontractor?: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /**
    * Whether this user may see money already paid. Defaults to **false**: every figure derived
@@ -111,18 +116,31 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
     ),
     [project.subcontractors, treeContext]
   )
+  const [hideClosed, setHideClosed] = useState(false)
+  const hasClosedContracts = project.subcontractors.some(sub => isClosedContract(sub.contract_status))
   const [creditAllocations, setCreditAllocations] = useState<CreditAllocation[]>([])
   const [, setLoadingCredits] = useState(false)
+  // A failed load used to hide the section, which reads as "no credit is allocated" (SUP-8).
+  const [creditsLoadFailed, setCreditsLoadFailed] = useState(false)
 
-  useEffect(() => {
+  const loadCreditAllocations = React.useCallback(() => {
     setLoadingCredits(true)
+    setCreditsLoadFailed(false)
     fetchCreditAllocations(project.id)
       .then(setCreditAllocations)
-      .catch(err => console.error('Error fetching project credit allocations:', err))
+      .catch(err => {
+        console.error('Error fetching project credit allocations:', err)
+        setCreditsLoadFailed(true)
+      })
       .finally(() => setLoadingCredits(false))
   }, [project.id])
 
+  useEffect(() => {
+    loadCreditAllocations()
+  }, [loadCreditAllocations])
+
   return (
+    <HideClosedContractsContext.Provider value={hideClosed}>
     <div>
       <div className="mb-6">
         <div className="mb-3">
@@ -135,9 +153,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
             {t('supervision.site_management.project_detail.back_to_projects')}
           </Button>
         </div>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{project.name}</h1>
+        {/* Wraps: with every button present the row is wider than a laptop screen, and squeezing
+            it cut the labels off (SUP-15). */}
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <div className="min-w-0">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{project.name}<PageHelpLink /></h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">{project.location}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {t('supervision.site_management.project_detail.budget_label')}:{' '}
@@ -154,7 +174,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               )}
             </p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-3">
             <ProjectCategoryBadge category={project.category} size="md" />
             <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="md">
               {statusLabel(PROJECT_STATUS, project.status, t)}
@@ -163,7 +183,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               <div className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
                 <button
                   onClick={() => onChangeGrouping('byPhase')}
-                  className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${
+                  className={`px-3 py-2 text-sm whitespace-nowrap flex items-center gap-1.5 transition-colors ${
                     grouping === 'byPhase'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -174,7 +194,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 </button>
                 <button
                   onClick={() => onChangeGrouping('byClassification')}
-                  className={`px-3 py-2 text-sm flex items-center gap-1.5 transition-colors ${
+                  className={`px-3 py-2 text-sm whitespace-nowrap flex items-center gap-1.5 transition-colors ${
                     grouping === 'byClassification'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -184,6 +204,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   {t('supervision.site_management.grouping.by_classification')}
                 </button>
               </div>
+            )}
+            {hasClosedContracts && (
+              <Button
+                variant="secondary"
+                onClick={() => setHideClosed(h => !h)}
+                icon={hideClosed ? Eye : EyeOff}
+              >
+                {hideClosed
+                  ? t('supervision.site_management.show_closed_contracts')
+                  : t('supervision.site_management.hide_closed_contracts')}
+              </Button>
             )}
             <Button variant="secondary" onClick={onManageClassifications} icon={Tags}>
               {t('supervision.cost_classification.manage_title')}
@@ -210,6 +241,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       </div>
 
       {/* Project Credits Section */}
+      {creditsLoadFailed && (
+        <InlineLoadError
+          className="mb-6"
+          message={t('supervision.site_management.project_detail.allocations_load_error')}
+          onRetry={loadCreditAllocations}
+        />
+      )}
       {creditAllocations.length > 0 && (
         <div className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/30 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
           <div className="flex items-center mb-4">
@@ -290,6 +328,15 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       {/* The project totalled, above the detail. Same five tiles as a phase card, so the two
           read the same way and the project total is visibly the sum of what is below it. */}
       <ProjectSummaryBanner project={project} canManagePayments={canManagePayments} />
+
+      {/* An unphased TIC over several phases gives none of them a budget (GEN-22). Said once here,
+          so the phase cards' "—" reads as "the plan is the project's", not "missing". */}
+      {project.phases.length > 1 && project.tic_total !== null && project.tic_total > 0
+        && budgetNotSplitByPhase(project.phases) && (
+        <Alert variant="info" className="mb-6">
+          {t('common.phase_budget_not_split', { amount: formatEuroRounded(project.tic_total) })}
+        </Alert>
+      )}
 
       {project.has_phases ? (
         grouping === 'byPhase' ? (
@@ -401,5 +448,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       )}
 
     </div>
+    </HideClosedContractsContext.Provider>
   )
 }

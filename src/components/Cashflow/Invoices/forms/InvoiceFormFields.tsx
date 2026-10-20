@@ -5,6 +5,7 @@ import CurrencyInput from '../../../Common/CurrencyInput'
 import { InvoiceEntityFields } from '../../components/InvoiceEntityFields'
 import { Select, Input, Textarea, FormField } from '../../../ui'
 import type { Company, Supplier, OfficeSupplier, Customer, Project, Contract, Milestone, Refund, Invoice } from '../types'
+import { MultiVatHint } from '../../components/MultiVatHint'
 
 interface Bank {
   id: string
@@ -198,7 +199,7 @@ export const InvoiceFormFields: React.FC<InvoiceFormFieldsProps> = ({
           />
         </FormField>
 
-        <FormField label={t('invoices.form.base_25')} error={errors.base_amount_1}>
+        <FormField label={t('invoices.form.base_25')} hint={<MultiVatHint />} error={errors.base_amount_1}>
           <CurrencyInput
             value={formData.base_amount_1}
             onChange={(value) => onFormChange({ ...formData, base_amount_1: value })}

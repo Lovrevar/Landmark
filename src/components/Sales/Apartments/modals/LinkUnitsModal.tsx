@@ -7,6 +7,7 @@ import { useLinkUnits } from '../hooks/useLinkUnits'
 import { useToast } from '../../../../contexts/ToastContext'
 import { toErrorMessage } from '../../../../lib/errorMessage'
 import { UNIT_STATUS, statusLabel } from '../../../../utils/statusDisplay'
+import { LinkedUnitsHint } from '../../components/LinkedUnitsHint'
 
 interface LinkUnitsModalProps {
   visible: boolean
@@ -89,7 +90,10 @@ export const LinkUnitsModal: React.FC<LinkUnitsModalProps> = ({
         ) : (
           <div className="space-y-6">
             <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-              <h5 className="font-medium text-gray-900 dark:text-white mb-2">{t('apartments.link_units_modal.linked')}</h5>
+              <h5 className="flex items-center gap-1.5 font-medium text-gray-900 dark:text-white mb-2">
+                {t('apartments.link_units_modal.linked')}
+                <LinkedUnitsHint />
+              </h5>
               {selectedGarages.length === 0 && selectedStorages.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t('apartments.link_units_modal.no_linked')}</p>
               ) : (

@@ -1,8 +1,10 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Trash2, ArrowLeft } from 'lucide-react'
+import { Trash2, ArrowLeft, Building2 } from 'lucide-react'
 import { ProjectWithBuildings, OnSelectBuildingCallback, OnDeleteBuildingCallback } from './types'
-import { Button } from '../../ui'
+import { Button, EmptyState } from '../../ui'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canDeleteSalesUnits } from '../../../utils/permissions'
 
 interface BuildingsGridProps {
   project: ProjectWithBuildings
@@ -18,11 +20,21 @@ export const BuildingsGrid: React.FC<BuildingsGridProps> = ({
   onBack
 }) => {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const canDelete = canDeleteSalesUnits(user)
   return (
     <div>
       <Button variant="ghost" icon={ArrowLeft} onClick={onBack}>
         {t('sales_projects.back_to_projects')}
       </Button>
+
+      {project.buildings.length === 0 && (
+        <EmptyState
+          icon={Building2}
+          title={t('sales_projects.no_buildings_title')}
+          description={t('sales_projects.no_buildings_description')}
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {project.buildings.map((building) => (
@@ -35,12 +47,16 @@ export const BuildingsGrid: React.FC<BuildingsGridProps> = ({
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{building.name}</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{building.total_floors} {t('sales_projects.floors')}</p>
               </div>
-              <button
-                onClick={() => onDeleteBuilding(building.id)}
-                className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {canDelete && (
+                <button
+                  onClick={() => onDeleteBuilding(building.id)}
+                  title={t('common.delete')}
+                  aria-label={t('common.delete')}
+                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600"
+                >
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">

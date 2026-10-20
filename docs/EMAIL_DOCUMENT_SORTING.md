@@ -44,7 +44,10 @@ Confirmed behaviour (from the requirements gathering):
 - **Low confidence:** the document is still stored, but with `category_id = null`, so it
   stays in the **All documents** view and is tallied into the **Uncategorized** count
   (there is no dedicated Uncategorized filter node); Claude's best-guess reasoning is
-  saved in the `description` field.
+  saved in the `description` field. Director and Accounting fix it with the row's **Edit**
+  action on the Documents page (category, links and description; the upload modal in edit
+  mode, saved through `updateDocument`). Email imports have no uploader, so only those two
+  roles can edit or delete them.
 - **Email scope:** PDF, image, XML (e-Računi/UBL), DOCX, XLSX/XLS, CSV, TXT, and legacy
   DOC attachments are processed; the email subject + body are always passed to Claude
   as extra classification context. PDFs/images go to Claude as-is; the office/text

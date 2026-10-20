@@ -144,6 +144,8 @@ Core retail module. Tracks development projects through phases (development, con
 
 Retail-specific sales tracking (parcel/lot sales to buyers) — distinct from the Sales module.
 
+Two pages, two menu items in the Retail profile: **Prodaje** → `/retail-sales` (`RetailSales.tsx`, where a sale is created and a payment recorded) and **Plaćanja** → `/retail-sales-payments` (`index.tsx`, the read-only payments register). Until 2026-10-08 "Prodaje" opened the register and the sales page had no menu item (RETAIL-5).
+
 #### Services
 
 ### services/retailSalesService.ts
@@ -212,7 +214,7 @@ Retail-specific invoicing separate from Cashflow invoices.
 #### Services
 
 ### services/retailInvoiceService.ts
-- Fetch and CRUD for retail invoice records; `toggleRetailInvoiceApproval` logs `invoice.approve`
+- Fetch and CRUD for retail invoice records; `toggleRetailInvoiceApproval` checks that a row changed (`assertRowsAffected` — RLS refuses every role but Director and Accounting silently) and logs `invoice.approve`; the page disables the tick unless `canApproveInvoices`
 - **Depends on:** supabase client, activityLog
 
 #### Hooks
@@ -275,8 +277,8 @@ Land plot inventory tracking.
   (`ProjectsGrid`, `ProjectDetail`), `RETAIL_CONTRACT_STATUS` for contract status (`PhaseCard`).
   `EditPhaseModal`'s status `<option>` values stay `Pending` / `In Progress` / `Completed` —
   they are written into a CHECK column; only the option label is translated
-- `payment_method` is labelled through `paymentMethodLabel` from
-  [`Sales/Payments/paymentMethod.ts`](../src/components/Sales/Payments/paymentMethod.ts), the
+- `payment_method` is labelled through `getPaymentMethodLabel` from
+  [`Cashflow/services/paymentHelpers.ts`](../src/components/Cashflow/services/paymentHelpers.ts), the
   same way invoice status comes from `Cashflow/services/invoiceHelpers`
 - `exportRetailSalesPaymentsExcel` and `exportRetailInvoicesExcel` write real `.xlsx` files
   through `src/lib/xlsxExport.ts`, not CSVs. Amounts are **numbers** (a dot decimal is text to

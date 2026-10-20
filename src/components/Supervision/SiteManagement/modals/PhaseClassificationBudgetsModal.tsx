@@ -82,7 +82,10 @@ export const PhaseClassificationBudgetsModal: React.FC<Props> = ({
   if (!visible || !phase) return null
 
   const totalAllocated = Object.values(amounts).reduce((sum, v) => sum + (v || 0), 0)
-  const difference = phase.budget_allocated - totalAllocated
+  // NULL: the TIC is not split by phase, so this phase has no budget to break down and no
+  // classification rows (GEN-22). The TIC column still shows the project's plan per classification.
+  const notSplit = phase.budget_allocated === null
+  const difference = (phase.budget_allocated ?? 0) - totalAllocated
 
   const takenElsewhere = (classificationId: number) =>
     allPhaseRows
@@ -95,7 +98,9 @@ export const PhaseClassificationBudgetsModal: React.FC<Props> = ({
     <Modal show={visible} onClose={onClose} size="lg">
       <Modal.Header
         title={t('supervision.site_management.classification_budgets.title')}
-        subtitle={`${formatPhaseLabel(phase, t('common.phase'))} — ${money(phase.budget_allocated)}`}
+        subtitle={notSplit
+          ? formatPhaseLabel(phase, t('common.phase'))
+          : `${formatPhaseLabel(phase, t('common.phase'))} — ${money(phase.budget_allocated)}`}
         onClose={onClose}
       />
       <Modal.Body>
@@ -155,6 +160,11 @@ export const PhaseClassificationBudgetsModal: React.FC<Props> = ({
           </>
         )}
 
+        {notSplit ? (
+          <Alert variant="info" className="mt-6">
+            {t('common.phase_budget_not_split', { amount: money(ticTotals?.total ?? null) })}
+          </Alert>
+        ) : (
         <div className="mt-6 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -191,6 +201,7 @@ export const PhaseClassificationBudgetsModal: React.FC<Props> = ({
             </p>
           )}
         </div>
+        )}
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onClose}>

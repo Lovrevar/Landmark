@@ -22,6 +22,8 @@ import DashboardError from './DashboardError'
 import SupervisionWeekView from './sections/SupervisionWeekView'
 import SupervisionStatusView from './sections/SupervisionStatusView'
 import SupervisionIssuesView from './sections/SupervisionIssuesView'
+import PageHelpLink from '../ui/PageHelpLink'
+import { isDueThisWeek } from './utils/supervisionDeadlines'
 
 const defaultStats: WeeklyStats = {
   completed_this_week: 0,
@@ -59,9 +61,7 @@ const SupervisionDashboard: React.FC = () => {
   }
 
   const overdueTasks = subcontractorStatus.filter(s => s.is_overdue)
-  const criticalDeadlines = subcontractorStatus.filter(
-    s => s.days_until_deadline >= 0 && s.days_until_deadline <= 7 && s.progress < 100
-  )
+  const criticalDeadlines = subcontractorStatus.filter(isDueThisWeek)
   const needsAttention = subcontractorStatus.filter(s => s.recent_work_logs === 0 && s.progress < 100)
 
   const tabClass = (view: 'week' | 'status' | 'issues') =>
@@ -75,7 +75,7 @@ const SupervisionDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.supervision.site_supervision')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.supervision.site_supervision')}<PageHelpLink /></h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.supervision.subtitle')}</p>
         </div>
         <div className="sm:text-right">

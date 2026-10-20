@@ -26,7 +26,21 @@ export interface ContractRollupRow {
    * agreed amount to measure what has been paid against.
    */
   owed?: number
+  /**
+   * `contracts.status`. A **terminated** contract commits only what was paid on it — the unspent
+   * remainder is released back to the budget. Draft, active and completed contracts commit their
+   * full value. Rows without a status (Retail) are unaffected.
+   */
+  status?: string | null
 }
+
+/** Completed or terminated: no longer expected to have work done or be late. */
+export const isClosedContract = (status: string | null | undefined): boolean =>
+  status === 'completed' || status === 'terminated'
+
+/** What a contract commits against the budget: its value, or for a terminated one what was paid. */
+export const committedAmount = (row: Pick<ContractRollupRow, 'cost' | 'paid' | 'status'>): number =>
+  row.status === 'terminated' ? (row.paid || 0) : (row.cost ?? 0)
 
 export interface ContractRollup {
   contracted: number
@@ -38,10 +52,22 @@ export interface ContractRollup {
 }
 
 /**
+ * Whether a row has an agreed amount to measure payments against: a contract AND a non-zero value.
+ *
+ * A supplier engaged without a formal contract is stored with `contract_amount = 0`
+ * (`useSubcontractorManagement` writes `hasContract ? cost : 0`), and a contract row nobody ever
+ * filled in is a zero too. Neither has anything for "remaining" to be measured against — a view
+ * that subtracts payments from that zero prints a negative "remaining" that is really just money
+ * paid on an invoice. Exported so a table row and the totals above it use one definition.
+ */
+export const isContracted = (row: Pick<ContractRollupRow, 'hasContract' | 'cost'>): boolean =>
+  row.hasContract !== false && (row.cost ?? 0) > 0
+
+/**
  * Reproduces the split both phase cards have always used: a row counts as "contracted" only when
- * it has a contract AND a non-zero amount. Everything else — including a contract row with a zero
- * amount — is treated as uncontracted, where the amount owed comes from invoices rather than from
- * a contract value.
+ * it has a contract AND a non-zero amount (`isContracted`). Everything else — including a contract
+ * row with a zero amount — is treated as uncontracted, where the amount owed comes from invoices
+ * rather than from a contract value.
  */
 export function rollupContracts(rows: ContractRollupRow[]): ContractRollup {
   let contracted = 0
@@ -50,13 +76,12 @@ export function rollupContracts(rows: ContractRollupRow[]): ContractRollup {
   let unpaidWithoutContract = 0
 
   for (const row of rows) {
-    const cost = row.cost ?? 0
-    const isContracted = row.hasContract !== false && cost > 0
+    const cost = committedAmount(row)
     const rowPaid = row.paid || 0
 
     paid += rowPaid
 
-    if (isContracted) {
+    if (isContracted(row)) {
       contracted += cost
       unpaid += Math.max(0, cost - rowPaid)
     } else {

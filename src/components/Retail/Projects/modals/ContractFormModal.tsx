@@ -5,6 +5,7 @@ import type { RetailContract, RetailSupplier, RetailProjectPhase } from '../../.
 import { Button, Modal, FormField, Input, Select, Textarea, Form } from '../../../ui'
 import { SupplierFormModal } from '../forms/SupplierFormModal'
 import DateInput from '../../../Common/DateInput'
+import InlineLoadError from '../../../ui/InlineLoadError'
 
 interface ContractFormModalProps {
   phase: RetailProjectPhase
@@ -21,6 +22,8 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
 }) => {
   const { t } = useTranslation()
   const [suppliers, setSuppliers] = useState<RetailSupplier[]>([])
+  // A failed lookup is not an empty list: say so beside the control, with a retry (UI-4).
+  const [suppliersFailed, setSuppliersFailed] = useState(false)
   const [showAddSupplier, setShowAddSupplier] = useState(false)
   const [formData, setFormData] = useState({
     supplier_id: contract?.supplier_id || '',
@@ -42,9 +45,11 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
 
   const loadSuppliers = async () => {
     try {
+      setSuppliersFailed(false)
       const data = await retailProjectService.fetchSuppliers()
       setSuppliers(data)
     } catch (err) {
+      setSuppliersFailed(true)
       console.error('Error loading suppliers:', err)
     }
   }
@@ -146,6 +151,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
                         </option>
                       ))}
                     </Select>
+                    {suppliersFailed && <InlineLoadError message={t('common.list_load_error')} onRetry={() => { void loadSuppliers() }} className="mt-1" />}
                     <Button
                       type="button"
                       variant="success"

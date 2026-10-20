@@ -19,9 +19,11 @@ import * as investmentService from './services/investmentDashboardService'
 import DashboardError from './DashboardError'
 import InvestmentSummaryCards from './sections/InvestmentSummaryCards'
 import InvestmentCreditsTable from './sections/InvestmentCreditsTable'
+import { formatCreditType } from '../Funding/Investors/utils/creditCalculations'
+import PageHelpLink from '../ui/PageHelpLink'
 
 const defaultFinancialSummary: FinancialSummary = {
-  total_portfolio_value: 0, total_debt: 0, total_equity: 0,
+  total_portfolio_value: 0, projects_without_budget: 0, unbudgeted_project_ids: [], total_debt: 0, total_equity: 0,
   debt_to_equity_ratio: 0, weighted_avg_interest: 0, upcoming_maturities: 0,
   total_credit_lines: 0, available_credit: 0, total_used_credit: 0, total_repaid_credit: 0
 }
@@ -58,7 +60,8 @@ const InvestmentDashboard: React.FC = () => {
     if (activity.type === 'credit') {
       const params = {
         ...activity.params,
-        company: activity.params.company || t('dashboards.investment.unknown_company')
+        company: activity.params.company || t('dashboards.investment.unknown_company'),
+        creditType: formatCreditType(t, String(activity.params.creditType ?? ''))
       }
       return activity.params.project
         ? t('dashboards.investment.activity.credit.description_with_project', params)
@@ -84,7 +87,7 @@ const InvestmentDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.investment.title')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.investment.title')}<PageHelpLink /></h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.investment.subtitle')}</p>
         </div>
         <Button variant="danger" icon={FileDown} onClick={handleExportPDF} disabled={bankCredits.length === 0}>

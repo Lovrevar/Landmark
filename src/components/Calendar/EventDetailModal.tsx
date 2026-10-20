@@ -8,7 +8,6 @@ import {
   X,
   Trash2,
   Repeat,
-  Bell,
   Briefcase,
   CircleDot,
   Circle,
@@ -179,13 +178,6 @@ const EventDetailModal: React.FC<Props> = ({
     await onChanged()
   }
 
-  const reminderLabel = (minutes: number): string => {
-    if (minutes === 0) return t('calendar.modal.reminder.at_time')
-    if (minutes < 60) return t('calendar.modal.reminder.minutes', { count: minutes })
-    if (minutes < 60 * 24) return t('calendar.modal.reminder.hours', { count: Math.round(minutes / 60) })
-    return t('calendar.modal.reminder.days', { count: Math.round(minutes / 1440) })
-  }
-
   const responsePill = (response: EventResponse) => (
     <span
       className={`text-xs px-2 py-0.5 rounded ${
@@ -256,24 +248,6 @@ const EventDetailModal: React.FC<Props> = ({
           {projectName && (
             <div className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1">
               <Briefcase className="w-4 h-4 text-gray-500" /> {projectName}
-            </div>
-          )}
-
-          {event.reminder_offsets && event.reminder_offsets.length > 0 && (
-            <div className="text-sm text-gray-700 dark:text-gray-300">
-              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 mb-1">
-                <Bell className="w-4 h-4" /> {t('calendar.detail.reminders')}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {event.reminder_offsets.map(m => (
-                  <span
-                    key={m}
-                    className="text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 px-2 py-0.5 rounded"
-                  >
-                    {reminderLabel(m)}
-                  </span>
-                ))}
-              </div>
             </div>
           )}
 

@@ -11,10 +11,11 @@ import { useTranslation } from 'react-i18next'
 import { Modal, Badge, StatGrid, EmptyState } from '../../../ui'
 import { differenceInDays } from 'date-fns'
 import { daysFromToday } from '../../../../utils/dateOnly'
-import { formatDate } from '../../../../utils/formatters'
+import { formatDate, NO_VALUE } from '../../../../utils/formatters'
 import { RISK_LEVEL, statusLabelKey } from '../../../../utils/statusDisplay'
 import {
   utilisationTone,
+  formatCreditType,
   getCreditTypeLabelKey,
   getCreditTypeBadgeVariant
 } from '../../Investors/utils/creditCalculations'
@@ -27,6 +28,11 @@ interface Props {
 
 const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
   const { t, i18n } = useTranslation()
+  // A project with no TIC has no budget: say so, and show no share of it (FUND-10).
+  const hasBudget = project.budget_set !== false
+  const budgetText = hasBudget ? `€${project.budget.toLocaleString('hr-HR')}` : t('common.budget_not_set')
+  const shareOfBudget = (amount: number): string =>
+    hasBudget && project.budget > 0 ? `${((amount / project.budget) * 100).toFixed(1)}%` : NO_VALUE
   // The colour bands here are the modal's own; only the word comes from the shared map.
   const riskLabelKey = statusLabelKey(RISK_LEVEL, project.risk_level)
   const [activeTab, setActiveTab] = useState<'overview' | 'funding'>('overview')
@@ -63,7 +69,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
     <Modal show={true} onClose={onClose} size="xl">
       <Modal.Header
         title={project.name}
-        subtitle={`${project.location} | ${t('funding.projects.modal.budget_label')} €${project.budget.toLocaleString('hr-HR')}`}
+        subtitle={`${project.location} | ${t('funding.projects.modal.budget_label')} ${budgetText}`}
         onClose={onClose}
       />
 
@@ -101,7 +107,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                   <span className="text-sm text-blue-700 dark:text-blue-300">{t('funding.projects.modal.total_budget_label')}</span>
                   <DollarSign className="w-4 h-4 text-blue-600" />
                 </div>
-                <p className="text-xl font-bold text-blue-900 dark:text-blue-100">€{project.budget.toLocaleString('hr-HR')}</p>
+                <p className="text-xl font-bold text-blue-900 dark:text-blue-100">{budgetText}</p>
                 <p className="text-xs text-blue-600">{t('funding.projects.modal.project_value')}</p>
               </div>
 
@@ -121,7 +127,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                 </div>
                 <p className="text-xl font-bold text-red-900 dark:text-red-300">€{project.total_debt.toLocaleString('hr-HR')}</p>
                 <p className="text-xs text-red-600">
-                  {project.budget > 0 ? ((project.total_debt / project.budget) * 100).toFixed(1) : '0'}% {t('funding.projects.of_budget')}
+                  {shareOfBudget(project.total_debt)} {t('funding.projects.of_budget')}
                 </p>
               </div>
 
@@ -154,7 +160,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                               {allocation.credit?.bank?.name || t('funding.investments.unknown_bank')}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {allocation.credit?.credit_name} • {allocation.credit?.credit_type.replace(/_/g, ' ')} • {allocation.credit?.interest_rate}% APR
+                              {allocation.credit?.credit_name} • {formatCreditType(t, allocation.credit?.credit_type)} • {allocation.credit?.interest_rate}% APR
                             </p>
                           </div>
                           <div className="text-right">
@@ -203,13 +209,13 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.equity_ratio_label')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {project.budget > 0 ? ((project.total_investment / project.budget) * 100).toFixed(1) : '0'}%
+                      {shareOfBudget(project.total_investment)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">{t('funding.projects.modal.debt_ratio_label')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {project.budget > 0 ? ((project.total_debt / project.budget) * 100).toFixed(1) : '0'}%
+                      {shareOfBudget(project.total_debt)}
                     </span>
                   </div>
                 </div>
@@ -284,7 +290,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                       {t('funding.projects.modal.high_leverage', { ratio: project.debt_to_equity.toFixed(2) })}
                     </div>
                   )}
-                  {project.funding_ratio < 90 && (
+                  {hasBudget && project.funding_ratio < 90 && (
                     <div className="flex items-center text-orange-800 dark:text-orange-300">
                       <span className="w-2 h-2 bg-orange-600 rounded-full mr-2"></span>
                       {t('funding.projects.modal.underfunded', { ratio: project.funding_ratio.toFixed(1) })}
@@ -306,7 +312,11 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
           <div>
             <h4 className="font-semibold text-gray-900 dark:text-white mb-4">{t('funding.projects.modal.funding_sources_heading')}</h4>
             {fundingUtilization.length === 0 ? (
-              <EmptyState icon={DollarSign} title={t('funding.projects.modal.no_funding_sources_title')} />
+              <EmptyState
+                icon={DollarSign}
+                title={t('funding.projects.modal.no_funding_sources_title')}
+                description={t('funding.projects.modal.no_funding_sources_description')}
+              />
             ) : (
               <div className="space-y-4">
                 {fundingUtilization.map((source) => {

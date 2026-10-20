@@ -22,6 +22,8 @@ export interface ParsedInvestmentSheet {
    * given and listed for review — never silently reconciled.
    */
   inconsistentRows: string[]
+  /** Classification code per line when the sheet has a `KLASIFIKACIJA` column, else `null`. */
+  classificationCodes: (string | null)[] | null
 }
 
 export interface ParsedConstructionSheet {
@@ -46,6 +48,8 @@ export interface ParsedWorkbook {
 }
 
 const NAME_HEADER = 'NAMJENA'
+/** Same text as `CLASSIFICATION_HEADER` in ticExport; kept here so the importer stays free of the exporter's jsPDF import. */
+const CLASSIFICATION_HEADER = 'KLASIFIKACIJA'
 const OWN_FUNDS_HEADER = 'VLASTITA SREDSTVA'
 const SECTION_CODE_RE = /^[A-Z]{1,2}\)$/
 const ROMAN_NUMERAL_RE = /^[IVXLCDM]+\.?$/
@@ -167,6 +171,12 @@ const RECONCILE_TOLERANCE = 0.05
 
 export interface InvestmentParseResult {
   lineItems: LineItem[]
+  /**
+   * Each line's classification code, aligned with `lineItems`, when the sheet has a
+   * `KLASIFIKACIJA` column (our own export writes one); `null` when it has none. An empty cell is
+   * `null`: the line was exported unmapped and stays so.
+   */
+  classificationCodes: (string | null)[] | null
   phaseNumbers: number[]
   unphasedRows: string[]
   inconsistentRows: string[]
@@ -175,6 +185,10 @@ export interface InvestmentParseResult {
 function parseInvestmentRows(rows: SheetRow[], layout: SheetLayout): InvestmentParseResult {
   const { nameCol, ownFundsCol } = layout
   const phaseColumns = detectPhaseColumns(rows, layout)
+  // Our own export's last column. Searched on the header row only, right of the money block.
+  const headerCells = Array.isArray(rows[layout.headerRow]) ? rows[layout.headerRow] : []
+  const classificationCol = headerCells.findIndex((cell, col) => col > ownFundsCol && normalize(cell) === CLASSIFICATION_HEADER)
+  const classificationCodes: (string | null)[] | null = classificationCol === -1 ? null : []
   const lineItems: LineItem[] = []
   const unphasedRows: string[] = []
   const inconsistentRows: string[] = []
@@ -225,10 +239,12 @@ function parseInvestmentRows(rows: SheetRow[], layout: SheetLayout): InvestmentP
     }
 
     lineItems.push(item)
+    classificationCodes?.push(cellText(row[classificationCol]) || null)
   }
 
   return {
     lineItems,
+    classificationCodes,
     phaseNumbers: phaseColumns.map(p => p.phaseNumber),
     unphasedRows,
     inconsistentRows,

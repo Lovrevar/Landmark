@@ -4,6 +4,7 @@ import { Warehouse, Package } from 'lucide-react'
 import { Apartment } from '../../../../lib/supabase'
 import { BuildingWithUnits } from '../types'
 import { Button, Modal } from '../../../ui'
+import { LinkedUnitsHint } from '../../components/LinkedUnitsHint'
 
 interface LinkingModalProps {
   visible: boolean
@@ -36,6 +37,7 @@ export const LinkingModal: React.FC<LinkingModalProps> = ({
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
               <Warehouse className="w-5 h-5 mr-2 text-orange-600" />
               {t('sales_projects.linking_modal.link_garage')}
+              <span className="ml-1.5 inline-flex"><LinkedUnitsHint /></span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {availableGarages.map((garage) => (

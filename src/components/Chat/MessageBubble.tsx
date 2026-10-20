@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Download, FileText, FileSpreadsheet, Image as ImageIcon, File } from 'lucide-react'
 import type { ChatMessage } from '../../types/chat'
 import { intlLocale } from '../../utils/locale'
+import { getChatAttachmentUrl } from './services/chatService'
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -78,7 +79,21 @@ function FileAttachment({
   isOwn: boolean
 }) {
   const { t } = useTranslation()
-  if (!message.file_url) return null
+  const fileUrl = message.file_url
+  // The bucket is private, so every render needs a signed URL; undefined while it is minted.
+  const [href, setHref] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    if (!fileUrl) return
+    let cancelled = false
+    setHref(undefined)
+    getChatAttachmentUrl(fileUrl)
+      .then(url => { if (!cancelled) setHref(url) })
+      .catch(err => console.warn('Chat attachment URL could not be signed:', err))
+    return () => { cancelled = true }
+  }, [fileUrl])
+
+  if (!fileUrl) return null
 
   const Icon = getFileIcon(message.file_type)
   const isImage = isImageFile(message.file_type)
@@ -86,13 +101,13 @@ function FileAttachment({
   if (isImage) {
     return (
       <a
-        href={message.file_url}
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         className="block mt-1 mb-1"
       >
         <img
-          src={message.file_url}
+          src={href}
           alt={message.file_name || t('chat.image_fallback')}
           className="max-w-[240px] max-h-[200px] rounded-lg object-cover"
           loading="lazy"
@@ -103,7 +118,7 @@ function FileAttachment({
 
   return (
     <a
-      href={message.file_url}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       className={`flex items-center gap-2.5 mt-1 mb-1 px-3 py-2 rounded-lg transition-colors ${

@@ -8,6 +8,7 @@ import {
 } from '../types'
 import { ProjectPhase } from '../../../../lib/supabase'
 import { rollupContracts as rollupRows } from '../../../../utils/contractRollup'
+import { budgetNotSplitByPhase } from '../../../Funding/TIC/utils/ticBudget'
 
 /**
  * Grouping and money math for the Site Management contract tree.
@@ -52,7 +53,8 @@ export function rollupContracts(contracts: SubcontractorWithPhase[]): GroupRollu
     hasContract: sub.has_contract,
     cost: sub.cost ?? 0,
     paid: sub.budget_realized || 0,
-    owed: sub.invoice_total_owed || 0
+    owed: sub.invoice_total_owed || 0,
+    status: sub.contract_status,
   })))
 }
 
@@ -75,11 +77,17 @@ export const isFullySettled = (sub: SubcontractorWithPhase): boolean =>
  * TIC is the only writer of planned budget, so every phase of a project without one sits at 0.
  * Reading that as "a budget of zero, which everything overruns" would make it impossible to
  * record a single contract — and would blame the contract amount for a missing cost plan.
+ *
+ * NULL is the same for this purpose: the TIC is not split by phase, so the plan is the project's
+ * and no phase has a cap of its own (GEN-22).
  */
 export const exceedsPhaseBudget = (
-  phase: { budget_allocated: number; budget_used: number },
+  phase: { budget_allocated: number | null; budget_used: number },
   cost: number
-): boolean => phase.budget_allocated > 0 && cost > phase.budget_allocated - phase.budget_used
+): boolean => {
+  const allocated = phase.budget_allocated ?? 0
+  return allocated > 0 && cost > allocated - phase.budget_used
+}
 
 // -------------------------------------------------------------------------- context
 
@@ -138,6 +146,9 @@ function valueFor(dimension: GroupDimension, sub: SubcontractorWithPhase, ctx: T
  * the same amount in both views — whichever of the two is the outer level. A phase on its own
  * carries its stored budget; a classification on its own is a derived sum across the phases in
  * scope and is not editable there.
+ *
+ * A phase whose budget is NULL — the TIC is not split by phase — has no budget, and neither has
+ * any pair it is part of: there are no classification rows to read.
  */
 function budgetFor(
   path: Array<{ dimension: GroupDimension; id: string | number | null }>,
@@ -150,17 +161,21 @@ function budgetFor(
 
   if (last.dimension === 'contractType') return null
 
+  const phase = phaseId != null ? ctx.phases.find(p => p.id === phaseId) : undefined
+  if (phase && phase.budget_allocated === null) return null
+
   if (phaseId != null && classificationId != null) {
     const row = ctx.budgets.find(b => b.phase_id === phaseId && b.classification_id === classificationId)
     return row?.budget_allocated ?? 0
   }
 
   if (last.dimension === 'phase' && phaseId != null) {
-    return ctx.phases.find(p => p.id === phaseId)?.budget_allocated ?? 0
+    return phase ? phase.budget_allocated : 0
   }
 
   if (last.dimension === 'classification') {
     if (classificationId == null) return null // unclassified bucket has no budget
+    if (budgetNotSplitByPhase(ctx.phases.filter(p => phaseIdsInScope.includes(p.id)))) return null
     return ctx.budgets
       .filter(b => b.classification_id === classificationId && phaseIdsInScope.includes(b.phase_id))
       .reduce((sum, b) => sum + b.budget_allocated, 0)
@@ -261,8 +276,12 @@ export function buildContractTree(
 /**
  * Phase budget not yet handed to any classification. Shown as "Neraspoređeno" so the phase-first
  * and classification-first views visibly reconcile: they otherwise differ by exactly this amount.
+ *
+ * Null for a phase with no budget of its own (the TIC is not split by phase): there is nothing to
+ * hand out, and "−€0" or the negative of what was allocated elsewhere would both be wrong.
  */
-export function unallocatedBudget(phase: ProjectPhase, budgets: PhaseClassificationBudget[]): number {
+export function unallocatedBudget(phase: ProjectPhase, budgets: PhaseClassificationBudget[]): number | null {
+  if (phase.budget_allocated === null) return null
   const allocated = budgets
     .filter(b => b.phase_id === phase.id)
     .reduce((sum, b) => sum + b.budget_allocated, 0)

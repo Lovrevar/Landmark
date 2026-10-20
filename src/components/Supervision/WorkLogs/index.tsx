@@ -15,9 +15,14 @@ import { statusConfig, stripeClass } from './workLogStatus'
 import { StatusBadge } from './StatusBadge'
 import { formatPhaseLabel } from '../../../utils/phaseLabel'
 import { formatDate, formatDateTime } from '../../../utils/formatters'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canManageWorkLogs } from '../../../utils/permissions'
 
 const WorkLogs: React.FC = () => {
   const { t, i18n } = useTranslation()
+  // Director and Supervision write work logs; everyone else reads them (SUP-13).
+  const { user } = useAuth()
+  const canManage = canManageWorkLogs(user)
   const {
     workLogs,
     projects,
@@ -69,7 +74,7 @@ const WorkLogs: React.FC = () => {
       <PageHeader
         title={t('supervision.work_logs.title')}
         description={t('supervision.work_logs.subtitle')}
-        actions={<Button icon={Plus} onClick={openNewForm}>{t('supervision.work_logs.new_log')}</Button>}
+        actions={canManage ? <Button icon={Plus} onClick={openNewForm}>{t('supervision.work_logs.new_log')}</Button> : undefined}
       />
 
       {error && workLogs.length > 0 && !errorDismissed && (
@@ -236,9 +241,11 @@ const WorkLogs: React.FC = () => {
                   className={`border-l-4 rounded-lg hover:shadow-md transition-shadow bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 ${stripeClass(log.status)}`}
                 >
                   <Card variant="bordered" padding="md">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
+                    {/* Wraps: on a phone the date and the edit and delete buttons were pushed past
+                        the card's right edge (UI-8). */}
+                    <div className="flex flex-wrap justify-between items-start gap-x-4 gap-y-2 mb-3">
+                      <div className="flex-1 min-w-[12rem]">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                           <h3 className="font-semibold text-gray-900 dark:text-white">{log.subcontractors?.name}</h3>
                           <StatusBadge status={log.status} />
                         </div>
@@ -250,7 +257,7 @@ const WorkLogs: React.FC = () => {
                         </p>
                       </div>
                       <div className="flex items-start space-x-2">
-                        <div className="text-right mr-2">
+                        <div className="sm:text-right mr-2">
                           <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm mb-1">
                             <Calendar className="w-4 h-4 mr-1" />
                             {formatDate(log.date, i18n.language)}
@@ -259,8 +266,12 @@ const WorkLogs: React.FC = () => {
                             {t('supervision.work_logs.logged')} {formatDateTime(new Date(log.created_at), i18n.language)}
                           </p>
                         </div>
-                        <Button size="icon-md" variant="ghost-primary" icon={Edit2} onClick={() => openEditForm(log)} title={t('common.edit')} />
-                        <Button size="icon-md" variant="ghost-danger" icon={Trash2} onClick={() => handleDelete(log.id)} title={t('common.delete')} />
+                        {canManage && (
+                          <>
+                            <Button size="icon-md" variant="ghost-primary" icon={Edit2} onClick={() => openEditForm(log)} title={t('common.edit')} />
+                            <Button size="icon-md" variant="ghost-danger" icon={Trash2} onClick={() => handleDelete(log.id)} title={t('common.delete')} />
+                          </>
+                        )}
                       </div>
                     </div>
 

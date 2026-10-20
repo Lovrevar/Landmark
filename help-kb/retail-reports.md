@@ -6,12 +6,12 @@ routes: [/retail-reports]
 roles: [Director, Accounting, Investment]
 ---
 
-**Retail izvještaji** generira izvještaje samo za retail (zemljišni) portfelj. Naslov: **Retail izvještaji**.
+Stavka **Izvještaji** u profilu **Retail** otvara **Retail izvještaji** — izvještaj samo za retail (zemljišni) portfelj. U podnaslovu stoji broj projekata, kupaca i dobavljača obuhvaćenih izvještajem.
 
-Glavne akcije: **Osvježi** i **Izvezi PDF**.
+Glavne akcije: **Osvježi** i **PDF izvještaj**. PDF se preuzima na računalo i uvijek je na hrvatskom. Izvoza u Excel na ovoj stranici nema.
 
-Tabovi: **Pregled**, **Projekti**, **Prodaja**, **Troškovi**.
+Tabovi: **Pregled** (cijeli portfelj), **Projekti** (učinak po projektu), **Prodaja** (kupci i računi) i **Troškovi**.
 
-Stranica nema interaktivne filtre — izvještaj se automatski generira iz svih retail projekata. Sadržaj svakog taba prikazuje brojeve projekata, kupaca i dobavljača, prihode od prodaje čestica te raščlanu troškova.
+Stranica nema filtre — izvještaj se uvijek izrađuje iz svih retail projekata.
 
-Za općenitije korporativne KPI-jeve koristite [[general-reports]].
+Izvještaji gradilišnih projekata nalaze se u [[general-reports]].

@@ -8,10 +8,12 @@ roles: [Director, Accounting, Sales, Supervision, Investment]
 
 U sustavu postoji **5 uloga**, svaka s različitim ovlastima:
 
-- **Director** — vidi sve module, sve projekte i sve financijske podatke. Jedina uloga koja vidi [[dashboard]] s direktorskim KPI-jevima i ima pristup Activity Logu.
-- **Accounting** — vidi sve module i sve financije; jedina osim Director uloge koja može u Cashflow profil.
-- **Sales** — vidi prodajni modul (Stanovi, Sales projekti, Kupci, Sales plaćanja). Ima pristup pregledu svih projekata, ali ne i financijskim rollupima.
-- **Supervision** — vidi samo svoj fiksni Supervision izbornik, ograničen na dodijeljene projekte. Pogledajte [[role-supervision-restrictions]].
-- **Investment** — vidi investicijski (Funding) modul, sve projekte, plaćanja i nadzornu ploču, ali ne i Cashflow.
+- **Director** — vidi sve module, sve projekte i sve financijske podatke. Jedina uloga s pristupom stranicama **Dnevnik aktivnosti** i **Izvještaji** u General profilu.
+- **Accounting** — vidi sve module i sve financije osim Dnevnika aktivnosti i General izvještaja; jedina osim Director uloge kojoj se nudi Cashflow profil.
+- **Sales** — radi u prodajnom modulu (Stanovi, Sales projekti, Kupci, Plaćanja, Dokumenti, Izvještaji). Ima pristup pregledu svih projekata, ali ne i financijskim rollupima; od plaćanja vidi samo prodajne uplate.
+- **Supervision** — vidi samo svoj fiksni izbornik (Upravljanje gradilištem, Dnevnici radova, Dokumenti), ograničen na dodijeljene projekte. Pogledajte [[role-supervision-restrictions]].
+- **Investment** — vidi investicijski (Funding) modul, sve projekte i nadzornu ploču, ali ne i Cashflow ni podatke o plaćanjima.
 
-Detaljne razlike po stranicama navedene su u svakom KB članku u polju **roles:**. Ako pokušate pristupiti stranici izvan svojih ovlasti, sustav vas preusmjerava na početnu stranicu.
+Sve uloge osim Supervision mogu mijenjati profil ([[role-profile-vs-role]]); Cashflow se u popisu profila nudi samo ulogama Director i Accounting.
+
+Cashflow stranice, General izvještaji i Dnevnik aktivnosti preusmjeravaju neovlaštene uloge na početnu stranicu; ostale stranice se otvore, ali prikazuju samo podatke koje vaša uloga smije vidjeti. Na stranici **Pomoć** prikazuju se samo upute namijenjene vašoj ulozi.

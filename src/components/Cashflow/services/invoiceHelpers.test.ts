@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { TFunction } from 'i18next'
 import {
+  paymentKind,
   INVOICE_CATEGORIES_BY_DIRECTION,
   isInvoiceCategoryValidForDirection,
   getInvoiceTypeLabelKey,
@@ -179,5 +180,43 @@ describe('getInvoiceCategoryLabel', () => {
     expect(getInvoiceCategoryLabel('SUBCONTRACTOR', t)).toBe('t(invoice_category.subcontractor)')
     expect(getInvoiceCategoryLabel('SUPERVISION', t)).toBe('SUPERVISION')
     expect(getInvoiceCategoryLabel(null, t)).toBe('—')
+  })
+})
+
+describe('spelled-out invoice type labels', () => {
+  it('has a short and a long label in both locales for every database invoice type', async () => {
+    const { getInvoiceTypeLongLabelKey, ALL_INVOICE_TYPES } = await import('./invoiceHelpers')
+    const hr = (await import('../../../locales/hr/translation.json')).default as unknown as Record<string, Record<string, string>>
+    const en = (await import('../../../locales/en/translation.json')).default as unknown as Record<string, Record<string, string>>
+    expect([...ALL_INVOICE_TYPES].sort()).toEqual([...DB_INVOICE_TYPES].sort())
+    for (const type of DB_INVOICE_TYPES) {
+      const short = (getInvoiceTypeLabelKey(type) as string).split('.')
+      const long = (getInvoiceTypeLongLabelKey(type) as string).split('.')
+      expect(long[0]).toBe('invoice_type_long')
+      for (const bundle of [hr, en]) {
+        expect(bundle[short[0]][short[1]], `${type} short`).toBeTruthy()
+        expect(bundle[long[0]][long[1]], `${type} long`).toBeTruthy()
+      }
+    }
+  })
+})
+
+describe('paymentKind', () => {
+  // Credit principal is financing, neither income nor expense (CASH-7). The payment registers
+  // filed a drawdown under PRIHOD and a repayment under RASHOD (FUND-17).
+  it('names credit principal as financing in both directions', () => {
+    expect(paymentKind('OUTGOING_BANK')).toEqual({ labelKey: 'payments.table.credit_drawdown', financing: true })
+    expect(paymentKind('INCOMING_BANK')).toEqual({ labelKey: 'payments.table.principal_repayment', financing: true })
+  })
+
+  it('keeps credit fees and every other invoice as expense or income', () => {
+    expect(paymentKind('INCOMING_BANK_EXPENSES')).toEqual({ labelKey: 'payments.table.expense', financing: false })
+    expect(paymentKind('INCOMING_SUPPLIER')?.labelKey).toBe('payments.table.expense')
+    expect(paymentKind('OUTGOING_SALES')).toEqual({ labelKey: 'payments.table.income', financing: false })
+  })
+
+  it('has no answer for a type the cash map does not know', () => {
+    expect(paymentKind(null)).toBeNull()
+    expect(paymentKind('SOMETHING_NEW')).toBeNull()
   })
 })

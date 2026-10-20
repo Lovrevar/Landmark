@@ -88,7 +88,10 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
           </div>
 
           {supplier_types.length === 0 ? (
-            <EmptyState title={t('common.no_data')} />
+            <EmptyState
+              title={t('reports.costs.no_supplier_types')}
+              description={t('reports.costs.no_supplier_types_description')}
+            />
           ) : (
             <div className="space-y-3">
               {supplier_types.map(st => (
@@ -109,7 +112,10 @@ export const CostAnalysis: React.FC<Props> = ({ data, formatCurrency }) => {
         </div>
 
         {suppliers.length === 0 ? (
-          <EmptyState title={t('reports.costs.no_suppliers')} />
+          <EmptyState
+            title={t('reports.costs.no_suppliers')}
+            description={t('reports.costs.no_suppliers_description')}
+          />
         ) : (
           <Table className="rounded-none shadow-none border-0">
             <Table.Head>

@@ -5,6 +5,7 @@ import { CustomerWithApartments } from '../types'
 import { Modal } from '../../../ui'
 import { groupCustomerPurchasesByProject } from '../../utils/customerUtils'
 import { formatEuroCompact, formatDate } from '../../../../utils/formatters'
+import { unitPackageTotal } from '../../utils/packageTotal'
 
 interface CustomerDetailModalProps {
   show: boolean
@@ -87,11 +88,7 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
 
                           <div className="space-y-3">
                             {units.map((unit) => {
-                              const apartmentPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
-                              const garagePrice = unit.garage?.price || 0
-                              const repositoryPrice = unit.repository?.price || 0
-                              const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
-                              const totalPackage = apartmentPrice + garagePrice + repositoryPrice + standalonePrice
+                              const totalPackage = unitPackageTotal(unit)
 
                               return (
                                 <div key={unit.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
@@ -117,26 +114,26 @@ export const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ show, 
                                     </div>
                                   </div>
 
-                                  {unit.type === 'apartment' && (unit.garage || unit.repository) && (
+                                  {unit.type === 'apartment' && ((unit.garages?.length ?? 0) > 0 || (unit.repositories?.length ?? 0) > 0) && (
                                     <div className="pl-6 space-y-1 text-xs">
-                                      {unit.garage && (
-                                        <div className="flex items-center justify-between text-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded px-2 py-1">
+                                      {(unit.garages ?? []).map(garage => (
+                                        <div key={garage.id} className="flex items-center justify-between text-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded px-2 py-1">
                                           <span className="flex items-center">
                                             <Warehouse className="w-3 h-3 mr-1" />
-                                            {t('common.garage')} {unit.garage.number}
+                                            {t('common.garage')} {garage.number}
                                           </span>
-                                          <span className="font-semibold">€{unit.garage.price.toLocaleString('hr-HR')}</span>
+                                          <span className="font-semibold">€{garage.price.toLocaleString('hr-HR')}</span>
                                         </div>
-                                      )}
-                                      {unit.repository && (
-                                        <div className="flex items-center justify-between text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
+                                      ))}
+                                      {(unit.repositories ?? []).map(repository => (
+                                        <div key={repository.id} className="flex items-center justify-between text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
                                           <span className="flex items-center">
                                             <Package className="w-3 h-3 mr-1" />
-                                            {t('common.storage')} {unit.repository.number}
+                                            {t('common.storage')} {repository.number}
                                           </span>
-                                          <span className="font-semibold">€{unit.repository.price.toLocaleString('hr-HR')}</span>
+                                          <span className="font-semibold">€{repository.price.toLocaleString('hr-HR')}</span>
                                         </div>
-                                      )}
+                                      ))}
                                     </div>
                                   )}
 

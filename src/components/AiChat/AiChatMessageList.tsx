@@ -1,11 +1,17 @@
 import { useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Sparkles } from 'lucide-react'
 import LoadingSpinner from '../ui/LoadingSpinner'
 import { useAiChat } from './AiChatProvider'
 import AiChatMessage from './AiChatMessage'
+import { useHelpArticles } from '../Help/hooks/useHelpArticles'
+import { starterQuestions } from './lib/starterQuestions'
 
 export default function AiChatMessageList() {
-  const { messages, loadingMessages, currentSessionId, isStreaming } = useAiChat()
+  const { messages, loadingMessages, currentSessionId, isStreaming, sendMessage } = useAiChat()
+  const { pathname } = useLocation()
+  const { articles } = useHelpArticles()
+  const starters = starterQuestions(articles, pathname)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -33,6 +39,21 @@ export default function AiChatMessageList() {
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Pitajte me o projektima, izvođačima, računima ili plaćanjima.
         </p>
+        {/* Opening questions for the page behind the panel, so an empty box is not the only way
+            in. They come from the help articles the assistant answers from. */}
+        <div className="mt-4 flex flex-col items-stretch gap-2 w-full max-w-xs">
+          {starters.map(question => (
+            <button
+              key={question}
+              type="button"
+              disabled={isStreaming}
+              onClick={() => void sendMessage(question)}
+              className="rounded-lg border border-gray-200 dark:border-gray-600 px-3 py-2 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+            >
+              {question}
+            </button>
+          ))}
+        </div>
       </div>
     )
   }

@@ -1,5 +1,6 @@
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
+import { assertRowsAffected } from '../../../../lib/dbErrors'
 import type { LineItem, ConstructionSection } from '../utils/ticFormatters'
 
 export interface TICProject {
@@ -58,12 +59,15 @@ export async function updateTIC(ticId: string, payload: TICUpsertPayload, projec
   // Never overwrite the original creator on update
   const rest: Omit<TICUpsertPayload, 'created_by'> = { ...payload }
   delete (rest as Partial<TICUpsertPayload>).created_by
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('tic_cost_structures')
     .update({ ...rest, updated_at: new Date().toISOString() })
     .eq('id', ticId)
+    .select('id')
 
   if (error) throw error
+  // Only Director, Accounting and Investment may change a TIC; RLS drops anyone else's update.
+  assertRowsAffected(data)
 
   logActivity({
     action: 'tic.update',

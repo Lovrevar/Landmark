@@ -58,7 +58,10 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
         </div>
 
         {customers.length === 0 ? (
-          <EmptyState title={t('reports.sales_analysis.no_customers')} />
+          <EmptyState
+            title={t('reports.sales_analysis.no_customers')}
+            description={t('reports.sales_analysis.no_customers_description')}
+          />
         ) : (
           <Table className="rounded-none shadow-none border-0">
             <Table.Head>

@@ -1,5 +1,7 @@
+import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
 import { supabase, type ProjectCategory } from '../../../lib/supabase'
 import { startOfMonth } from 'date-fns'
+import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
 import {
   countOverdueMilestones,
@@ -113,15 +115,16 @@ export interface DirectorDashboardData {
 export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const [
     { data: projectsData, error: projectsError },
-    { data: apartmentsData },
-    { data: contractsData },
-    { data: invoicesData },
-    { data: paymentsData },
-    { data: salesRowsData },
-    { data: allocationsData },
-    { data: creditsData },
-    { data: subcontractorsData },
-    { data: milestonesData }
+    { data: apartmentsData, error: apartmentsError },
+    { data: contractsData, error: contractsError },
+    { data: invoicesData, error: invoicesError },
+    { data: paymentsData, error: paymentsError },
+    { data: salesRowsData, error: salesRowsError },
+    { data: allocationsData, error: allocationsError },
+    { data: creditsData, error: creditsError },
+    { data: subcontractorsData, error: subcontractorsError },
+    { data: milestonesData, error: milestonesError },
+    budgetedProjectIds
   ] = await Promise.all([
     supabase
       .from('projects')
@@ -145,10 +148,22 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
     supabase.from('subcontractors').select('id'),
     supabase
       .from('subcontractor_milestones')
-      .select('id, milestone_name, due_date, status, contract_id')
+      .select('id, milestone_name, due_date, status, contract_id'),
+    // Which projects have a budget at all: only a TIC sets one (GEN-5).
+    fetchBudgetedProjectIds()
   ])
 
+  // Every read is checked: a failure shows the error panel instead of a dashboard of zeros.
   if (projectsError) throw projectsError
+  if (apartmentsError) throw apartmentsError
+  if (contractsError) throw contractsError
+  if (invoicesError) throw invoicesError
+  if (paymentsError) throw paymentsError
+  if (salesRowsError) throw salesRowsError
+  if (allocationsError) throw allocationsError
+  if (creditsError) throw creditsError
+  if (subcontractorsError) throw subcontractorsError
+  if (milestonesError) throw milestonesError
 
   const projects = (projectsData || []) as ProjectRow[]
   const apartments = (apartmentsData || []) as ApartmentRow[]
@@ -161,7 +176,7 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const subcontractors = (subcontractorsData || []) as SubcontractorRow[]
   const milestones = (milestonesData || []) as MilestoneRow[]
 
-  const projectStats = deriveProjects(projects, apartments, contracts, invoices, allocations, credits)
+  const projectStats = deriveProjects(projects, apartments, contracts, invoices, allocations, credits, budgetedProjectIds)
   const financial = deriveFinancial(invoices, payments, salesRows, credits)
   const sales = deriveSales(apartments, salesRows)
   const construction = deriveConstruction(contracts, subcontractors, milestones, invoices)
@@ -196,7 +211,8 @@ function deriveProjects(
   contracts: ContractRow[],
   invoices: InvoiceRow[],
   allocations: AllocationRow[],
-  credits: CreditRow[]
+  credits: CreditRow[],
+  budgetedProjectIds: ReadonlySet<string>
 ): ProjectStats[] {
   const apartmentsByProject = groupBy(apartments, a => a.project_id)
   const contractsByProject = groupBy(contracts, c => c.project_id)
@@ -214,17 +230,13 @@ function deriveProjects(
     // contracts by reporting the full planned amount as if already spent.)
     const contractExpenses = projectContracts.map(c => {
       const contractInvoices = (invoicesByContract.get(c.id) || []).filter(
-        inv => inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE'
+        inv => isCostInvoiceType(inv.invoice_type)
       )
       return contractInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
     })
 
     const invoicesWithoutContract = (invoicesByProject.get(project.id) || [])
-      .filter(
-        inv =>
-          !inv.contract_id &&
-          (inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE')
-      )
+      .filter(inv => !inv.contract_id && isCostInvoiceType(inv.invoice_type))
       .reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
 
     const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
@@ -251,6 +263,7 @@ function deriveProjects(
       status: project.status ?? '',
       category: project.category ?? null,
       budget: project.budget ?? 0,
+      budget_set: budgetedProjectIds.has(project.id),
       total_expenses: totalExpenses,
       apartment_sales: apartmentSales,
       total_investment: totalInvestment,
@@ -271,8 +284,7 @@ function deriveFinancial(
     invoices.filter(inv => inv.invoice_category === 'CUSTOMER').map(inv => inv.id)
   )
   const apartmentPayments = payments.filter(p => p.invoice_id && customerInvoiceIds.has(p.invoice_id))
-  const isCostInvoice = (inv: InvoiceRow) =>
-    inv.invoice_type === 'INCOMING_SUPPLIER' || inv.invoice_type === 'INCOMING_OFFICE'
+  const isCostInvoice = (inv: InvoiceRow) => isCostInvoiceType(inv.invoice_type)
 
   const totalRevenue = salesRows.reduce((sum, s) => sum + s.sale_price, 0)
   // Expenses = cash paid out on genuine cost invoices only. (Previously summed

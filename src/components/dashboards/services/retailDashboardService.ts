@@ -10,7 +10,7 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
     supabase.from('retail_projects').select('id, status'),
     supabase.from('retail_customers').select('id'),
     supabase.from('retail_project_phases').select('id, phase_type'),
-    supabase.from('retail_contracts').select('id, phase_id, contract_amount, budget_realized'),
+    supabase.from('retail_contracts').select('id, phase_id, contract_amount, budget_realized, customer_id'),
     supabase.from('retail_land_plots').select('total_price'),
     supabase
       .from('accounting_invoices')

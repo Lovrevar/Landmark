@@ -1,4 +1,5 @@
 import React from 'react'
+import PageHelpLink from '../ui/PageHelpLink'
 import {
   Download,
   RefreshCw,
@@ -21,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { formatEuroCompact, formatEuroRounded, formatDateTime, formatMonthYear } from '../../utils/formatters'
 import { PROJECT_STATUS, RISK_LEVEL, statusLabel, statusVariant } from '../../utils/statusDisplay'
 import { exportT, EXPORT_LANGUAGE } from '../../utils/exportLanguage'
+import { orgHeading } from '../../lib/orgName'
 
 const GeneralReports: React.FC = () => {
   const { t, i18n } = useTranslation()
@@ -45,8 +47,16 @@ const GeneralReports: React.FC = () => {
     <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-8 text-white">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold mb-2">{t('reports.general.landmark_group')}</h1>
-          <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
+          {/* The organisation's name heads the page when its database has one (GEN-19);
+              otherwise — and until the report has loaded — the report title does. */}
+          {orgHeading(report?.organization_name) ? (
+            <>
+              <h1 className="text-4xl font-bold mb-2">{orgHeading(report?.organization_name)}<PageHelpLink tone="light" /></h1>
+              <p className="text-xl font-light mb-1">{t('reports.general.exec_report')}</p>
+            </>
+          ) : (
+            <h1 className="text-3xl font-bold mb-2">{t('reports.general.exec_report')}<PageHelpLink tone="light" /></h1>
+          )}
           {fetchedAt && (
             <p className="text-sm opacity-90">{t('reports.general.generated')} {formatDateTime(new Date(fetchedAt), i18n.language)}</p>
           )}
@@ -65,7 +75,9 @@ const GeneralReports: React.FC = () => {
               icon={Download}
               onClick={handleGeneratePDF}
               loading={generatingPDF}
-              className="bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
+              // `!`: the default variant's own `text-white` outranks a plain text colour here, which left
+              // the label white on white.
+              className="bg-white dark:bg-gray-800 !text-blue-600 dark:!text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 shadow-lg font-semibold"
             >
               {t('reports.general.export_pdf')}
             </Button>
@@ -89,7 +101,13 @@ const GeneralReports: React.FC = () => {
         {header}
         {error
           ? <ErrorState onRetry={refetch} />
-          : <EmptyState icon={FileText} title={t('reports.general.no_data')} />}
+          : (
+            <EmptyState
+              icon={FileText}
+              title={t('reports.general.no_data')}
+              description={t('reports.general.no_data_description')}
+            />
+          )}
       </div>
     )
   }
@@ -374,7 +392,7 @@ const GeneralReports: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {report.contract_types.map((ct, index) => (
               <div key={index} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <p className="font-bold text-gray-700 dark:text-gray-200 text-sm">{ct.name}</p>
+                <p className="font-bold text-gray-700 dark:text-gray-200 text-sm">{ct.name || t('common.uncategorized')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{ct.count}</p>
               </div>
             ))}
@@ -387,35 +405,49 @@ const GeneralReports: React.FC = () => {
           <BarChart3 className="w-6 h-6 text-blue-600 mr-2" />
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('reports.general.cash_flow')}</h2>
         </div>
-        <Table>
-          <Table.Head>
-            <Table.Tr>
-              <Table.Th>{t('reports.general.month_col')}</Table.Th>
-              <Table.Th>{t('reports.general.inflow_col')}</Table.Th>
-              <Table.Th>{t('reports.general.outflow_col')}</Table.Th>
-              <Table.Th>{t('reports.general.net_col')}</Table.Th>
-            </Table.Tr>
-          </Table.Head>
-          <Table.Body>
-            {report.cash_flow.map((month, index) => (
-              <Table.Tr key={index}>
-                <Table.Td label={t('reports.general.month_col')} className="font-medium text-gray-900 dark:text-white">{formatMonthYear(month.month_key, i18n.language)}</Table.Td>
-                <Table.Td label={t('reports.general.inflow_col')}>{formatEuroCompact(month.inflow)}</Table.Td>
-                <Table.Td label={t('reports.general.outflow_col')}>{formatEuroCompact(month.outflow)}</Table.Td>
-                <Table.Td label={t('reports.general.net_col')} className={`font-bold ${month.net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {formatEuroCompact(month.net)}
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Body>
-        </Table>
+        {(['operating', 'financing'] as const).map(activity => (
+          <div key={activity} className="mb-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t(`reports.general.cash_flow_${activity}`)}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t(`reports.general.cash_flow_${activity}_note`)}</p>
+            <Table>
+              <Table.Head>
+                <Table.Tr>
+                  <Table.Th>{t('reports.general.month_col')}</Table.Th>
+                  <Table.Th>{t('reports.general.inflow_col')}</Table.Th>
+                  <Table.Th>{t('reports.general.outflow_col')}</Table.Th>
+                  <Table.Th>{t('reports.general.net_col')}</Table.Th>
+                </Table.Tr>
+              </Table.Head>
+              <Table.Body>
+                {report.cash_flow.map((month, index) => (
+                  <Table.Tr key={index}>
+                    <Table.Td label={t('reports.general.month_col')} className="font-medium text-gray-900 dark:text-white">{formatMonthYear(month.month_key, i18n.language)}</Table.Td>
+                    <Table.Td label={t('reports.general.inflow_col')}>{formatEuroCompact(month[activity].inflow)}</Table.Td>
+                    <Table.Td label={t('reports.general.outflow_col')}>{formatEuroCompact(month[activity].outflow)}</Table.Td>
+                    <Table.Td label={t('reports.general.net_col')} className={`font-bold ${month[activity].net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {formatEuroCompact(month[activity].net)}
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Body>
+            </Table>
+          </div>
+        ))}
         <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
           <p className="font-bold text-gray-900 dark:text-white">{t('reports.general.six_month_totals')}</p>
-          <p className="text-sm text-gray-700 dark:text-gray-200">
-            {t('reports.general.inflow_col')}: {formatEuroCompact(report.cash_flow.reduce((sum, m) => sum + m.inflow, 0))} |
-            {t('reports.general.outflow_col')}: {formatEuroCompact(report.cash_flow.reduce((sum, m) => sum + m.outflow, 0))} |
-            {t('reports.general.net_col')}: {formatEuroCompact(report.cash_flow.reduce((sum, m) => sum + m.net, 0))}
-          </p>
+          {([
+            ['reports.general.cash_flow_operating', report.cash_flow.map(m => m.operating)],
+            ['reports.general.cash_flow_financing', report.cash_flow.map(m => m.financing)],
+            ['reports.general.cash_flow_total', report.cash_flow],
+          ] as const).map(([labelKey, rows]) => (
+            <p key={labelKey} className={`text-sm text-gray-700 dark:text-gray-200 ${labelKey.endsWith('_total') ? 'font-semibold' : ''}`}>
+              {t(labelKey)}:{' '}
+              {/* Each figure stays with its label: a narrow screen used to break "€" from "−3,0M". */}
+              <span className="whitespace-nowrap">{t('reports.general.inflow_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.inflow, 0))}</span> |{' '}
+              <span className="whitespace-nowrap">{t('reports.general.outflow_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.outflow, 0))}</span> |{' '}
+              <span className="whitespace-nowrap">{t('reports.general.net_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.net, 0))}</span>
+            </p>
+          ))}
         </div>
       </div>
 
@@ -425,7 +457,7 @@ const GeneralReports: React.FC = () => {
           <div className="space-y-4">
             {report.projects.map((project) => (
               <div key={project.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4">
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">{project.name}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{project.location}</p>

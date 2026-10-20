@@ -17,6 +17,8 @@ import { SubcontractorBasicFormModal } from './forms/SubcontractorBasicFormModal
 import { ContractDocumentViewer } from '../SiteManagement/ContractDocumentViewer'
 import { SubcontractorSummary, SubcontractorContract } from './types'
 import { useToast } from '../../../contexts/ToastContext'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canManageSubcontractors, canDeleteSubcontractors } from '../../../utils/permissions'
 
 type StatusFilter = 'all' | 'active' | 'paid' | 'outstanding' | 'no_contracts'
 type SortKey = 'name' | 'remaining' | 'value' | 'paid'
@@ -35,6 +37,11 @@ const paymentPct = (sub: SubcontractorSummary) =>
 
 const SubcontractorManagement: React.FC = () => {
   const { t } = useTranslation()
+  // Buttons follow the RLS policies: Director, Supervision and Accounting add and edit; only a
+  // Director deletes (SUP-13).
+  const { user } = useAuth()
+  const canManage = canManageSubcontractors(user)
+  const canDelete = canDeleteSubcontractors(user)
   const toast = useToast()
   const { subcontractors, loading, error, fetchData, refetch, deleteSubcontractor } = useSubcontractorData()
   const [errorDismissed, setErrorDismissed] = useState(false)
@@ -163,9 +170,11 @@ const SubcontractorManagement: React.FC = () => {
               <p className="text-sm text-gray-600 dark:text-gray-400">{isFiltered ? t('supervision.subcontractors.showing') : t('supervision.subcontractors.total')} {t('common.subcontractors')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{displayCount}</p>
             </div>
-            <Button onClick={() => { setEditingSubcontractor(null); setShowFormModal(true) }} icon={Plus}>
-              {t('supervision.subcontractors.add')}
-            </Button>
+            {canManage && (
+              <Button onClick={() => { setEditingSubcontractor(null); setShowFormModal(true) }} icon={Plus}>
+                {t('supervision.subcontractors.add')}
+              </Button>
+            )}
           </div>
         }
       />
@@ -249,8 +258,8 @@ const SubcontractorManagement: React.FC = () => {
               key={sub.id}
               sub={sub}
               onSelect={() => setSelectedSubcontractor(sub)}
-              onEdit={(e) => { e.stopPropagation(); openEdit(sub) }}
-              onDelete={(e) => { e.stopPropagation(); setDeleteConfirm({ show: true, id: sub.id, name: sub.name }) }}
+              onEdit={canManage ? (e) => { e.stopPropagation(); openEdit(sub) } : undefined}
+              onDelete={canDelete ? (e) => { e.stopPropagation(); setDeleteConfirm({ show: true, id: sub.id, name: sub.name }) } : undefined}
             />
           ))}
         </div>
@@ -289,8 +298,8 @@ const SubcontractorManagement: React.FC = () => {
                   </Table.Td>
                   <Table.Td sticky className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="inline-flex items-center gap-1">
-                      <Button variant="ghost" size="icon-sm" icon={Pencil} title={t('supervision.subcontractors.edit')} onClick={() => openEdit(sub)} />
-                      <Button variant="outline-danger" size="icon-sm" icon={Trash2} title={t('supervision.subcontractors.delete_title')} onClick={() => setDeleteConfirm({ show: true, id: sub.id, name: sub.name })} />
+                      {canManage && <Button variant="ghost" size="icon-sm" icon={Pencil} title={t('supervision.subcontractors.edit')} onClick={() => openEdit(sub)} />}
+                      {canDelete && <Button variant="outline-danger" size="icon-sm" icon={Trash2} title={t('supervision.subcontractors.delete_title')} onClick={() => setDeleteConfirm({ show: true, id: sub.id, name: sub.name })} />}
                     </div>
                   </Table.Td>
                 </Table.Tr>

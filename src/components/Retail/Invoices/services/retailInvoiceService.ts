@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
+import { assertRowsAffected } from '../../../../lib/dbErrors'
 import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
 import { exportT } from '../../../../utils/exportLanguage'
 import { getInvoiceStatusLabel, getInvoiceTypeLabelKey } from '../../../Cashflow/services/invoiceHelpers'
@@ -78,13 +79,18 @@ export function calculateRetailInvoiceStats(invoices: RetailInvoiceWithDetails[]
 }
 
 export async function toggleRetailInvoiceApproval(invoiceId: string, currentApproved: boolean): Promise<void> {
-  const { error } = await supabase
+  // RLS lets only Director and Accounting update an invoice, and refuses everyone else without an
+  // error: zero rows, reported as success. Without the check the tick flipped on screen and was
+  // back on the next load (RETAIL-4).
+  const { data, error } = await supabase
     .from('accounting_invoices')
     .update({ approved: !currentApproved })
     .eq('id', invoiceId)
+    .select('id')
   if (error) throw error
+  assertRowsAffected(data)
 
-  logActivity({ action: 'invoice.approve', entity: 'invoice', entityId: invoiceId, metadata: { severity: 'high', approved: !currentApproved } })
+  logActivity({ action: 'invoice.approve', entity: 'invoice', entityId: invoiceId, severity: 'high', metadata: { approved: !currentApproved } })
 }
 
 const SHEET_NAME = 'Računi'

@@ -6,6 +6,7 @@ import SearchInput from '../ui/SearchInput'
 import LoadingSpinner from '../ui/LoadingSpinner'
 import ErrorState from '../ui/ErrorState'
 import { intlLocale } from '../../utils/locale'
+import PageHelpLink from '../ui/PageHelpLink'
 
 interface ConversationListProps {
   conversations: ChatConversation[]
@@ -79,7 +80,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('chat.title')}</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('chat.title')}<PageHelpLink /></h2>
           <button
             onClick={onNewConversation}
             className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"

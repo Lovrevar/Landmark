@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -20,7 +21,13 @@ const MarkdownView: React.FC<Props> = ({ content, className }) => {
           ul: ({ children }) => <ul className="list-disc pl-5 my-1.5">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal pl-5 my-1.5">{children}</ol>,
           li: ({ children }) => <li className="my-0.5">{children}</li>,
-          a: ({ href, children }) => (
+          a: ({ href, children }) => href?.startsWith('/') && !href.startsWith('//') ? (
+            // An app route (the Help page's article links): navigate in place, no reload.
+            // "//host" is another site, not a route.
+            <Link to={href} className="text-blue-600 dark:text-blue-400 hover:underline">
+              {children}
+            </Link>
+          ) : (
             <a
               href={href}
               target="_blank"
@@ -29,6 +36,21 @@ const MarkdownView: React.FC<Props> = ({ content, className }) => {
             >
               {children}
             </a>
+          ),
+          // Only the app's own files (a help article's screenshots). Markdown here also comes from
+          // the assistant and from task text, and an image address elsewhere would be fetched
+          // from every reader's browser.
+          img: ({ src, alt }) => src?.startsWith('/') && !src.startsWith('//') ? (
+            <a href={src} target="_blank" rel="noopener noreferrer" className="block my-3">
+              <img
+                src={src}
+                alt={alt ?? ''}
+                loading="lazy"
+                className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700"
+              />
+            </a>
+          ) : (
+            <span>{alt}</span>
           ),
           code: ({ children }) => (
             <code className="px-1 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-pink-700 dark:text-pink-300">

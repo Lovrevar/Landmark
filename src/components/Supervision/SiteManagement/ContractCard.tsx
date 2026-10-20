@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Calendar, DollarSign, FileText, Trash2 } from 'lucide-react'
 import { ProjectPhase, Subcontractor } from '../../../lib/supabase'
 import { daysFromToday } from '../../../utils/dateOnly'
+import { isClosedContract } from '../../../utils/contractRollup'
 import { ProjectWithPhases } from './types'
 import { Button, Badge } from '../../ui'
 import { isFullySettled } from './utils/contractTree'
@@ -17,7 +18,7 @@ interface ContractCardProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor: (subcontractorId: string) => void
+  onDeleteSubcontractor?: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /**
    * False hides everything on this card that is derived from payments: the paid, remaining and
@@ -51,7 +52,10 @@ export const ContractCard: React.FC<ContractCardProps> = ({
   // `daysFromToday` compares calendar days in local time, so a contract due today is not
   // overdue. `new Date('YYYY-MM-DD')` parsed as UTC midnight and made it overdue from 01:00.
   // A missing deadline yields NaN, which is not < 0 — never overdue.
-  const isPastDue = daysFromToday(subcontractor.deadline) < 0
+  const status = subcontractor.contract_status
+  const closed = isClosedContract(status)
+  // A completed or terminated contract is not late, whatever its deadline.
+  const isPastDue = !closed && daysFromToday(subcontractor.deadline) < 0
   const isOverdue = isPastDue && actualPaid < subcontractor.cost
 
   // Site Management lists only draft and active contracts, so "settled" here can only mean paid
@@ -61,7 +65,7 @@ export const ContractCard: React.FC<ContractCardProps> = ({
     : { kind: 'none' as const }
   const isOverrun = variance.kind === 'overrun'
   const isPaid = hasValidContract && actualPaid >= subcontractor.cost
-  const remainingToPay = hasValidContract ? Math.max(0, subcontractor.cost - actualPaid) : 0
+  const remainingToPay = hasValidContract && status !== 'terminated' ? Math.max(0, subcontractor.cost - actualPaid) : 0
 
   // Every tint and badge below is a payment fact. Without payment rights the card keeps its
   // neutral ground rather than a colour a reader could decode back into an amount.
@@ -83,6 +87,11 @@ export const ContractCard: React.FC<ContractCardProps> = ({
             {subcontractor.has_contract === false && (
               <Badge variant="yellow" size="sm">
                 {t('supervision.subcontractor_details.no_contract_badge')}
+              </Badge>
+            )}
+            {closed && (
+              <Badge variant={status === 'terminated' ? 'red' : 'gray'} size="sm">
+                {t(`status.${status}`)}
               </Badge>
             )}
           </div>
@@ -213,15 +222,18 @@ export const ContractCard: React.FC<ContractCardProps> = ({
               onClick={() => onManageMilestones(subcontractor, phase, project)}
             />
           )}
-          <Button
-            variant="danger"
-            size="sm"
-            icon={Trash2}
-            fullWidth
-            onClick={() => onDeleteSubcontractor(subcontractor.id)}
-          >
-            {t('common.delete')}
-          </Button>
+          {/* Undefined for roles RLS does not let delete contracts (Director only). */}
+          {onDeleteSubcontractor && (
+            <Button
+              variant="danger"
+              size="sm"
+              icon={Trash2}
+              fullWidth
+              onClick={() => onDeleteSubcontractor(subcontractor.id)}
+            >
+              {t('common.delete')}
+            </Button>
+          )}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { TrendingUp, CheckCircle2, XCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { formatDayMonth } from '../../../utils/formatters'
 import type { SubcontractorStatus } from '../types/supervisionTypes'
+import { isDeadlineNear } from '../utils/supervisionDeadlines'
 
 interface Props {
   subcontractorStatus: SubcontractorStatus[]
@@ -10,7 +11,7 @@ interface Props {
 
 const getCardClass = (sub: SubcontractorStatus): string => {
   if (sub.is_overdue) return 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20'
-  if (sub.days_until_deadline <= 7 && sub.progress < 100) return 'border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20'
+  if (isDeadlineNear(sub)) return 'border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20'
   if (sub.progress === 100) return 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20'
   return 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
 }
@@ -74,12 +75,12 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => {
                     <p className="text-xs text-gray-600 dark:text-gray-400">{t('dashboards.supervision.deadline')}</p>
                     <p className={`text-sm font-medium ${
                       sub.is_overdue ? 'text-red-600' :
-                      sub.days_until_deadline <= 7 ? 'text-orange-600' :
+                      sub.days_until_deadline !== null && sub.days_until_deadline <= 7 ? 'text-orange-600' :
                       'text-gray-900 dark:text-white'
                     }`}>
                       {sub.deadline ? formatDayMonth(sub.deadline, i18n.language) : t('dashboards.supervision.na')}
-                      {sub.is_overdue && <span className="ml-1">({t('dashboards.supervision.days_over_short', { count: Math.abs(sub.days_until_deadline) })})</span>}
-                      {!sub.is_overdue && sub.deadline && sub.days_until_deadline <= 7 && (
+                      {sub.is_overdue && <span className="ml-1">({t('dashboards.supervision.days_over_short', { count: Math.abs(sub.days_until_deadline ?? 0) })})</span>}
+                      {!sub.is_overdue && sub.days_until_deadline !== null && sub.days_until_deadline <= 7 && (
                         <span className="ml-1">({t('dashboards.supervision.days_left_short', { count: sub.days_until_deadline })})</span>
                       )}
                     </p>

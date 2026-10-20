@@ -15,7 +15,7 @@ import {
   Target,
   LayoutTemplate
 } from 'lucide-react'
-import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, Table, ConfirmDialog } from '../../ui'
+import { LoadingSpinner, Badge, Button, FormField, Input, EmptyState, ErrorState, Table, ConfirmDialog } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import MilestoneTimeline from './MilestoneTimeline'
 import ProjectFormModal from './forms/ProjectFormModal'
@@ -32,14 +32,20 @@ import { formatDate } from '../../../utils/formatters'
 import { PROJECT_STATUS, UNIT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, TabType, ProjectDisplay } from './types'
 import { useAuth } from '../../../contexts/AuthContext'
+import { isClosedContract } from '../../../utils/contractRollup'
+import { formatCreditType } from '../../Funding/Investors/utils/creditCalculations'
+import PageHelpLink from '../../ui/PageHelpLink'
+import { OpenTICLink } from '../../Funding/TIC/OpenTICLink'
 
 const ProjectDetailsEnhanced: React.FC = () => {
   const { t, i18n } = useTranslation()
   // Editing a project is Director-only at the RLS level; hide the entry point
   // for everyone else instead of letting the save fail with a 403.
-  const { user } = useAuth()
+  const { user, hasProjectAccess } = useAuth()
   const canManageProjects = user?.role === 'Director'
   const { id } = useParams<{ id: string }>()
+  // Mirrors the project_milestones write policy: Directors, and Supervision on assigned projects.
+  const canManageMilestones = !!id && hasProjectAccess(id)
   const navigate = useNavigate()
   const [project, setProject] = useState<ProjectDisplay | null>(null)
   const [milestones, setMilestones] = useState<Milestone[]>([])
@@ -51,6 +57,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [investments, setInvestments] = useState<CreditAllocationItem[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
@@ -61,6 +68,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
     if (!id) return
     try {
       setLoading(true)
+      setLoadFailed(false)
       const data = await fetchProjectDataEnhanced(id)
       setProject(data.project)
       setMilestones(data.milestones)
@@ -71,6 +79,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
       setInvestments(data.investments)
     } catch (error) {
       console.error('Error fetching project:', error)
+      setLoadFailed(true)
     } finally {
       setLoading(false)
     }
@@ -144,10 +153,15 @@ const ProjectDetailsEnhanced: React.FC = () => {
   // then would unmount the inline form and the delete dialog mid-action. A different project id
   // still spins, so another project's data is never shown under this URL.
   if (loading && project?.id !== id) return <LoadingSpinner message={t('general_projects.loading')} />
+  // A failed load is not a missing project: the page used to say "not found" for both (UI-4).
+  // After a failed refresh the project already on screen stays, so an edit is not thrown away.
+  if (loadFailed && project?.id !== id) return <ErrorState onRetry={() => { void loadData() }} />
   if (!project) return <EmptyState icon={Building2} title={t('general_projects.not_found')} />
 
   // contracts.budget_realized is the app's single "paid" figure — a trigger-kept cache of
   // accounting_payments, repaired and sealed by migration 20260910120000.
+  // Draft and active only: completed and terminated contracts are no longer "active" (GEN-6).
+  const activeContractCount = contracts.filter(c => !isClosedContract(c.status)).length
   const totalSpent = contracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
   const hasPlan = ticTotal !== null && ticTotal > 0
   const totalRevenue = apartments.filter(a => a.status === 'Sold').reduce((sum, a) => sum + Number(a.price), 0)
@@ -178,7 +192,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{project.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{project.name}<PageHelpLink /></h1>
             <p className="text-gray-600 dark:text-gray-400">{project.location}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -201,7 +215,10 @@ const ProjectDetailsEnhanced: React.FC = () => {
             {hasPlan ? (
               <p className="text-2xl font-bold text-gray-900 dark:text-white">€{project.budget.toLocaleString('hr-HR')}</p>
             ) : (
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{t('general_projects.budget_not_set')}</p>
+              <>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{t('general_projects.budget_not_set')}</p>
+                <OpenTICLink projectId={project.id} />
+              </>
             )}
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('general_projects.card_spent')}: €{totalSpent.toLocaleString('hr-HR')}</p>
           </div>
@@ -251,7 +268,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <span className="text-sm text-orange-700 dark:text-orange-400">{t('general_projects.team')}</span>
               <Users className="w-5 h-5 text-orange-400" />
             </div>
-            <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{contracts.length}</p>
+            <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{activeContractCount}</p>
             <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">{t('general_projects.stat_active_contracts')}</p>
           </div>
         </div>
@@ -404,7 +421,11 @@ const ProjectDetailsEnhanced: React.FC = () => {
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('general_projects.funding_sources')}</h3>
               {investments.length === 0 ? (
-                <EmptyState icon={DollarSign} title={t('general_projects.no_credit_allocations')} />
+                <EmptyState
+                  icon={DollarSign}
+                  title={t('general_projects.no_credit_allocations')}
+                  description={t('general_projects.no_credit_allocations_description')}
+                />
               ) : (
                 <div className="space-y-4">
                   {investments.map((investment) => (
@@ -415,7 +436,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                             {investment.bank_credits?.banks?.name || t('general_projects.unknown_bank')}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            {investment.bank_credits?.credit_name} • {investment.bank_credits?.credit_type?.replace(/_/g, ' ')}
+                            {investment.bank_credits?.credit_name} • {formatCreditType(t, investment.bank_credits?.credit_type)}
                             {investment.bank_credits?.start_date ? ` • ${formatDate(investment.bank_credits.start_date, i18n.language)}` : ''}
                           </p>
                           {investment.description && (
@@ -450,28 +471,32 @@ const ProjectDetailsEnhanced: React.FC = () => {
                         : t('general_projects.milestone_template.expand_all')}
                     </button>
                   )}
-                  <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
-                    {t('general_projects.use_template')}
-                  </Button>
-                  <Button
-                    icon={Plus}
-                    onClick={() => {
-                      // While editing, Add switches the open form back to add mode instead of closing it.
-                      if (editingMilestone) {
-                        setEditingMilestone(null)
-                        setNewMilestone({ name: '', due_date: '', completed: false })
-                        setShowMilestoneForm(true)
-                      } else {
-                        setShowMilestoneForm(!showMilestoneForm)
-                      }
-                    }}
-                  >
-                    {t('general_projects.add_milestone')}
-                  </Button>
+                  {canManageMilestones && (
+                    <>
+                      <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
+                        {t('general_projects.use_template')}
+                      </Button>
+                      <Button
+                        icon={Plus}
+                        onClick={() => {
+                          // While editing, Add switches the open form back to add mode instead of closing it.
+                          if (editingMilestone) {
+                            setEditingMilestone(null)
+                            setNewMilestone({ name: '', due_date: '', completed: false })
+                            setShowMilestoneForm(true)
+                          } else {
+                            setShowMilestoneForm(!showMilestoneForm)
+                          }
+                        }}
+                      >
+                        {t('general_projects.add_milestone')}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {showMilestoneForm && (
+              {canManageMilestones && showMilestoneForm && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                   <h4 className="font-medium text-gray-900 dark:text-white mb-4">
                     {editingMilestone ? t('general_projects.milestone_edit') : t('general_projects.new_milestone')}
@@ -513,7 +538,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
                   icon={Target}
                   title={t('general_projects.milestones_empty_title')}
                   description={t('general_projects.milestones_empty_desc')}
-                  action={
+                  action={canManageMilestones ? (
                     <div className="flex items-center gap-2">
                       <Button variant="secondary" icon={LayoutTemplate} onClick={() => setShowTemplateModal(true)}>
                         {t('general_projects.use_template')}
@@ -522,15 +547,15 @@ const ProjectDetailsEnhanced: React.FC = () => {
                         {t('general_projects.add_first_milestone')}
                       </Button>
                     </div>
-                  }
+                  ) : undefined}
                 />
               ) : (
                 <MilestoneTimeline
                   milestones={milestones}
-                  onToggleComplete={handleToggleMilestone}
-                  onEdit={handleEditMilestone}
-                  onDelete={handleDeleteMilestone}
-                  editable={true}
+                  onToggleComplete={canManageMilestones ? handleToggleMilestone : undefined}
+                  onEdit={canManageMilestones ? handleEditMilestone : undefined}
+                  onDelete={canManageMilestones ? handleDeleteMilestone : undefined}
+                  editable={canManageMilestones}
                   groupByPhase
                   isPhaseExpanded={phaseCollapse.isExpanded}
                   onTogglePhase={phaseCollapse.toggle}

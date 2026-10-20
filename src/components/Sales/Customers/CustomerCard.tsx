@@ -4,6 +4,7 @@ import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Building2, Square, Ch
 import { CustomerWithApartments, CustomerCategory } from './types'
 import { Button } from '../../ui'
 import { formatEuroCompact, formatDate } from '../../../utils/formatters'
+import { unitPackageTotal } from '../utils/packageTotal'
 
 interface CustomerCardProps {
   customer: CustomerWithApartments
@@ -14,7 +15,7 @@ interface CustomerCardProps {
   onToggleSelect: (id: string) => void
   onViewDetails: (customer: CustomerWithApartments) => void
   onEdit: (customer: CustomerWithApartments) => void
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
   onUpdateContact: (id: string) => void
 }
 
@@ -83,7 +84,9 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
         <div className="flex space-x-1" onClick={e => e.stopPropagation()}>
           <Button variant="ghost" size="icon-sm" icon={Eye} onClick={() => onViewDetails(customer)} title={t('customers.card.view_details')} aria-label={t('customers.card.view_details')} />
           <Button variant="ghost" size="icon-sm" icon={Edit2} onClick={() => onEdit(customer)} title={t('common.edit')} aria-label={t('common.edit')} />
-          <Button variant="danger" size="icon-sm" icon={Trash2} onClick={() => onDelete(customer.id)} title={t('common.delete')} aria-label={t('common.delete')} />
+          {onDelete && (
+            <Button variant="danger" size="icon-sm" icon={Trash2} onClick={() => onDelete(customer.id)} title={t('common.delete')} aria-label={t('common.delete')} />
+          )}
         </div>
       </div>
 
@@ -113,11 +116,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
           <p className="text-xs font-semibold text-green-800 dark:text-green-200 mb-2">{t('customers.card.purchased_units')}</p>
           <div className="space-y-2">
             {customer.apartments.map((unit) => {
-              const apartmentPrice = (unit.type === 'apartment' ? (unit.price || 0) : 0)
-              const garagePrice = (unit.garage?.price || 0)
-              const repositoryPrice = (unit.repository?.price || 0)
-              const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
-              const totalPackage = apartmentPrice + garagePrice + repositoryPrice + standalonePrice
+              const totalPackage = unitPackageTotal(unit)
 
               return (
                 <div key={unit.id} className="bg-white dark:bg-gray-700 rounded p-2 space-y-1">
@@ -142,20 +141,20 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
                     </span>
                   </div>
 
-                  {unit.type === 'apartment' && (unit.garage || unit.repository) && (
+                  {unit.type === 'apartment' && ((unit.garages?.length ?? 0) > 0 || (unit.repositories?.length ?? 0) > 0) && (
                     <div className="text-xs text-gray-600 dark:text-gray-400 pl-2 space-y-0.5">
-                      {unit.garage && (
-                        <div className="flex justify-between">
-                          <span className="text-orange-600">+ {t('common.garage')} {unit.garage.number}</span>
-                          <span>{formatEuroCompact(unit.garage.price)}</span>
+                      {(unit.garages ?? []).map(garage => (
+                        <div key={garage.id} className="flex justify-between">
+                          <span className="text-orange-600">+ {t('common.garage')} {garage.number}</span>
+                          <span>{formatEuroCompact(garage.price)}</span>
                         </div>
-                      )}
-                      {unit.repository && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600 dark:text-gray-400">+ {t('common.storage')} {unit.repository.number}</span>
-                          <span>{formatEuroCompact(unit.repository.price)}</span>
+                      ))}
+                      {(unit.repositories ?? []).map(repository => (
+                        <div key={repository.id} className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">+ {t('common.storage')} {repository.number}</span>
+                          <span>{formatEuroCompact(repository.price)}</span>
                         </div>
-                      )}
+                      ))}
                     </div>
                   )}
                 </div>
@@ -165,13 +164,7 @@ export const CustomerCard: React.FC<CustomerCardProps> = ({
 
           {(() => {
             const totalPaid = customer.apartments.reduce((sum, unit) => sum + (unit.total_paid || 0), 0)
-            const totalPrice = customer.apartments.reduce((sum, unit) => {
-              const aptPrice = unit.type === 'apartment' ? (unit.price || 0) : 0
-              const garPrice = unit.garage?.price || 0
-              const repPrice = unit.repository?.price || 0
-              const standalonePrice = (unit.type === 'garage' || unit.type === 'repository') ? (unit.price || 0) : 0
-              return sum + aptPrice + garPrice + repPrice + standalonePrice
-            }, 0)
+            const totalPrice = customer.apartments.reduce((sum, unit) => sum + unitPackageTotal(unit), 0)
             const remaining = totalPrice - totalPaid
 
             return (

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rollupContracts, remainingBudget, ContractRollupRow } from './contractRollup'
+import { rollupContracts, remainingBudget, ContractRollupRow, committedAmount } from './contractRollup'
 
 const row = (over: Partial<ContractRollupRow> = {}): ContractRollupRow => ({
   cost: 1000,
@@ -75,3 +75,23 @@ describe('remainingBudget', () => {
     expect(remainingBudget(500, rollupContracts([row({ cost: 900 })]))).toBe(-400)
   })
 })
+
+describe('terminated contracts', () => {
+  it('commit only what was paid, so the rest returns to the budget', () => {
+    const rollup = rollupContracts([
+      { cost: 100_000, paid: 40_000, status: 'terminated' },
+      { cost: 50_000, paid: 50_000, status: 'completed' },
+    ])
+    expect(rollup.contracted).toBe(90_000)
+    expect(rollup.paid).toBe(90_000)
+    expect(rollup.unpaid).toBe(0)
+  })
+
+  it('committedAmount is the value for every other status', () => {
+    expect(committedAmount({ cost: 100, paid: 10, status: 'active' })).toBe(100)
+    expect(committedAmount({ cost: 100, paid: 10, status: 'completed' })).toBe(100)
+    expect(committedAmount({ cost: 100, paid: 10 })).toBe(100)
+    expect(committedAmount({ cost: 100, paid: 10, status: 'terminated' })).toBe(10)
+  })
+})
+

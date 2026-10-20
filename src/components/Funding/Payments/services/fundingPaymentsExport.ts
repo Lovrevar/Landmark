@@ -4,6 +4,7 @@ import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../..
 import { exportT } from '../../../../utils/exportLanguage'
 import { getCreditTypeLabelKey } from '../../Investors/utils/creditCalculations'
 import type { BankPaymentWithDetails } from './bankPaymentsService'
+import { paymentKind } from '../../../Cashflow/services/invoiceHelpers'
 
 /**
  * The funding payments register as a spreadsheet.
@@ -17,11 +18,10 @@ const SHEET_NAME = 'Plaćanja'
 const COLUMN_WIDTHS = [12, 10, 28, 24, 22, 16, 40]
 const MONEY_COLUMNS = [5]
 
-/** The direction column, in the same words as the screen's badge: PRIHOD / RASHOD. */
+/** The "Tip" column, in the same words as the screen's badge (`paymentKind`). */
 const directionLabel = (payment: BankPaymentWithDetails, t: TFunction): string => {
-  if (payment.direction === 'IN') return t('payments.table.income')
-  if (payment.direction === 'OUT') return t('payments.table.expense')
-  return ''
+  const kind = paymentKind(payment.invoice_type)
+  return kind ? t(kind.labelKey) : ''
 }
 
 /** The credit type, translated. An unknown one keeps its raw text with *every* underscore

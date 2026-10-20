@@ -9,6 +9,7 @@
 
 import { supabase } from '../../../../lib/supabase'
 import type { LineItem } from '../../../Funding/TIC/utils/ticFormatters'
+import { budgetIsSet } from '../../../Funding/TIC/utils/ticBudget'
 
 export const fetchAllProjects = async () => {
   const { data: projectsData, error: projectsError } = await supabase
@@ -61,7 +62,8 @@ export const fetchSubcontractorsWithPhases = async () => {
         sort_order
       )
     `)
-    .in('status', ['draft', 'active'])
+    // Every status: completed and terminated contracts stay on the site and keep counting
+    // (terminated ones with what was paid — see committedAmount in utils/contractRollup).
 
   if (contractError) {
     console.error('Error fetching subcontractors with phases:', contractError)
@@ -95,6 +97,7 @@ export const fetchSubcontractorsWithPhases = async () => {
       created_at: contract.subcontractor.created_at,
       project_phases: contract.phase,
       has_contract: contract.has_contract !== false,
+      contract_status: contract.status ?? null,
       contract_type_id: contract.contract_type_id,
       contract_type_name: contract.contract_type?.name || null,
       classification_id: contract.classification_id,
@@ -125,6 +128,12 @@ export const fetchTICTotalsByProject = async (): Promise<Map<string, LineItem[]>
     byProject.set(row.project_id as string, (row.line_items || []) as LineItem[])
   }
   return byProject
+}
+
+/** Ids of the projects whose budget is set — the ones with a TIC that totals above zero. */
+export const fetchBudgetedProjectIds = async (): Promise<Set<string>> => {
+  const tics = await fetchTICTotalsByProject()
+  return new Set([...tics].filter(([, lineItems]) => budgetIsSet(lineItems)).map(([projectId]) => projectId))
 }
 
 // Re-exports — preserved for backward compatibility with existing consumers.

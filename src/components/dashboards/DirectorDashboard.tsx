@@ -24,6 +24,7 @@ import DashboardError from './DashboardError'
 import DirectorAlertsSection from './sections/DirectorAlertsSection'
 import DirectorFinancialSection from './sections/DirectorFinancialSection'
 import DirectorProjectsTable from './sections/DirectorProjectsTable'
+import PageHelpLink from '../ui/PageHelpLink'
 
 const defaultFinancial: FinancialMetrics = {
   total_revenue: 0, total_expenses: 0, total_profit: 0, profit_margin: 0,
@@ -74,7 +75,7 @@ const DirectorDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.general_dashboard')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.general_dashboard')}<PageHelpLink /></h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.director.comprehensive_overview')}</p>
         </div>
         <div className="sm:text-right">

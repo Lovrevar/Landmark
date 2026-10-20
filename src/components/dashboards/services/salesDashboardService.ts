@@ -196,9 +196,10 @@ export async function fetchRecentSales(sales: Array<{ apartment_id?: string; cus
 
     return {
       ...sale,
-      apartment_number: apt?.number || 'N/A',
-      project_name: proj?.name || 'Unknown',
-      customer_name: cust ? `${cust.name} ${cust.surname}` : 'Unknown'
+      // Empty when the row is missing; the dashboard renders the localised fallback.
+      apartment_number: apt?.number || '',
+      project_name: proj?.name || '',
+      customer_name: cust ? `${cust.name} ${cust.surname}` : ''
     }
   }) as unknown as RecentSale[]
 }

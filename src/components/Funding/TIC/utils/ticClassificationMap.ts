@@ -102,3 +102,30 @@ export function applyDefaultClassifications<T extends { name: string; classifica
     return { ...item, classification_id: code ? idByCode.get(code) ?? null : null }
   })
 }
+
+/**
+ * Stamps the classifications a workbook carries in its `KLASIFIKACIJA` column onto its lines.
+ *
+ * `codes` is aligned with `lineItems` (`InvestmentParseResult.classificationCodes`). A code that
+ * names a classification sets it; an empty cell sets `null` — the line was exported unmapped and
+ * must not be re-guessed from its name. A code this database does not know leaves the line
+ * undefined, so `applyDefaultClassifications` can still fall back to the name. With no column at
+ * all (`codes` is null — a workbook that is not our own export) every line is left undefined.
+ */
+export function applyImportedClassifications<T extends { name: string; classification_id?: number | null }>(
+  lineItems: T[],
+  codes: ReadonlyArray<string | null> | null,
+  classifications: Array<{ id: number; code: string | null }>
+): T[] {
+  if (!codes) return lineItems
+  const idByCode = new Map<string, number>()
+  for (const c of classifications) {
+    if (c.code) idByCode.set(c.code, c.id)
+  }
+  return lineItems.map((item, index) => {
+    const code = codes[index]
+    if (code == null) return { ...item, classification_id: null }
+    const id = idByCode.get(code)
+    return id === undefined ? item : { ...item, classification_id: id }
+  })
+}

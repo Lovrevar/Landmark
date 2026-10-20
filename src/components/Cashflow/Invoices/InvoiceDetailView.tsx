@@ -4,14 +4,12 @@ import { formatDate, formatDateTime } from '../../../utils/formatters'
 import { Check, X } from 'lucide-react'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Invoice } from './types'
-import { Modal, Button } from '../../ui'
+import { Modal, Button, Badge } from '../../ui'
+import { getTypeColor, getInvoiceTypeLongLabel, getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 interface InvoiceDetailViewProps {
   invoice: Invoice | null
   onClose: () => void
-  getTypeColor: (type: string) => string
-  getTypeLabel: (type: string) => string
-  getStatusColor: (status: string) => string
   getSupplierCustomerName: (invoice: Invoice) => string
   isOverdue: (dueDate: string, status: string) => boolean
 }
@@ -19,9 +17,6 @@ interface InvoiceDetailViewProps {
 export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
   invoice,
   onClose,
-  getTypeColor,
-  getTypeLabel,
-  getStatusColor,
   getSupplierCustomerName,
   isOverdue
 }) => {
@@ -44,16 +39,15 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('invoices.detail.type')}</span>
                 <p className={`text-sm font-semibold ${getTypeColor(invoice.invoice_type)}`}>
-                  {getTypeLabel(invoice.invoice_type)}
+                  {getInvoiceTypeLongLabel(invoice.invoice_type, t)}
                 </p>
               </div>
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('invoices.detail.status')}</span>
                 <p>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
-                    {invoice.status === 'UNPAID' ? t('invoices.detail.status_unpaid') :
-                     invoice.status === 'PARTIALLY_PAID' ? t('invoices.detail.status_partial') : t('invoices.detail.status_paid')}
-                  </span>
+                  <Badge variant={getInvoiceStatusVariant(invoice.status)}>
+                    {getInvoiceStatusLabel(invoice.status, t)}
+                  </Badge>
                 </p>
               </div>
               <div>

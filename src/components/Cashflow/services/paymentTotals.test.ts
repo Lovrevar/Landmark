@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { paymentTotalsByDirection } from './paymentTotals'
+import { formatSignedEuro, paymentTotalsByCategory, paymentTotalsByDirection } from './paymentTotals'
 
 describe('paymentTotalsByDirection', () => {
   it('nets a drawdown against its repayment instead of adding them', () => {
@@ -57,5 +57,45 @@ describe('paymentTotalsByDirection', () => {
 
   it('returns zeros for no rows', () => {
     expect(paymentTotalsByDirection([])).toEqual({ inflow: 0, outflow: 0, net: 0, count: 0 })
+  })
+})
+
+describe('formatSignedEuro', () => {
+  // The net figures on both payment screens. The plus is added here; the minus comes from the
+  // shared formatter, which now puts it in the same place: before the euro sign.
+  it('puts either sign before the euro sign', () => {
+    expect(formatSignedEuro(1500)).toBe('+€1.500,00')
+    expect(formatSignedEuro(-1500)).toBe('\u2212€1.500,00')
+  })
+
+  it('gives zero no sign', () => {
+    expect(formatSignedEuro(0)).toBe('€0,00')
+  })
+})
+
+
+describe('paymentTotalsByCategory', () => {
+  // Credit principal is financing, neither income nor expense (CASH-7). The Cashflow payments
+  // cards counted a drawdown as "Prihod" and a repayment as "Rashod" (CASH-29).
+  it('keeps credit principal out of income and expense', () => {
+    const { operating, financing } = paymentTotalsByCategory([
+      { amount: 1_000, invoiceType: 'OUTGOING_SALES' },
+      { amount: 400, invoiceType: 'INCOMING_SUPPLIER' },
+      { amount: 500_000, invoiceType: 'OUTGOING_BANK' },
+      { amount: 20_000, invoiceType: 'INCOMING_BANK' },
+    ])
+    expect(operating).toEqual({ inflow: 1_000, outflow: 400, net: 600, count: 2 })
+    expect(financing).toEqual({ inflow: 500_000, outflow: 20_000, net: 480_000, count: 2 })
+  })
+
+  it('counts credit fees as an expense, not as financing', () => {
+    const { operating, financing } = paymentTotalsByCategory([{ amount: 75.5, invoiceType: 'INCOMING_BANK_EXPENSES' }])
+    expect(operating.outflow).toBe(75.5)
+    expect(financing.count).toBe(0)
+  })
+
+  it('leaves a payment of unknown type out of every sum', () => {
+    const { operating, financing } = paymentTotalsByCategory([{ amount: 10, invoiceType: null }])
+    expect(operating.inflow + operating.outflow + financing.inflow + financing.outflow).toBe(0)
   })
 })

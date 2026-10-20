@@ -76,7 +76,13 @@ generated types.
 
 1. Branch off `development`.
 2. Check that nothing on `development` has redefined anything the parked SQL
-   replaces — above all `calculate_invoice_amounts()`.
+   replaces — above all `calculate_invoice_amounts()`. As of the
+   `fix/defect-backlog` migrations (`20260930100000`–`20260930100400`) nothing has;
+   see [KNOWN_ISSUES.md §2](./KNOWN_ISSUES.md#2-interaction-with-the-fixdefect-backlog-branch).
+   **Fix ERP-1 to ERP-5 in [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) before step 4**:
+   one bank invoice or one storno fails a whole run as the code stands, the
+   Komitenti tab does not work against the migrated schema, and no BANK payment
+   can resolve its account.
 3. Move the six files back into `supabase/migrations/` **with fresh timestamps**
    later than the newest migration there, keeping their order. Update the
    filenames quoted in the phase sections below.
@@ -254,6 +260,12 @@ settling its invoice through the existing triggers.
 - **Reference replacement is still not atomic** (carried over from phase 2).
 
 ## Notes for whoever picks this up
+
+- **Read [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) first.** The September 2026 audit found
+  defects the smoke test does not reach (no bank-partner, storno, kompenzacija or
+  cesija document in it), and lists what phase 5 should remove from the
+  `fix/defect-backlog` work: the balance-reset RPC and company-form balance fields,
+  the invoice-edit approval fix, and the hidden invoice delete.
 
 - **`erp` is now exposed to PostgREST** (`20260831150000`). It had to be: the
   restriction is in the API layer, so `.schema('erp')` failed with `PGRST106`
