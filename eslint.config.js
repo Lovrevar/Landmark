@@ -34,6 +34,17 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      // Confirmations go through ConfirmDialog (CLAUDE.md "Architecture and
+      // Conventions"). Separate rules from no-restricted-syntax, which the
+      // hooks block below overrides per file.
+      'no-restricted-globals': [
+        'error',
+        { name: 'confirm', message: 'Use ConfirmDialog from src/components/ui, never the native confirm().' },
+      ],
+      'no-restricted-properties': [
+        'error',
+        { object: 'window', property: 'confirm', message: 'Use ConfirmDialog from src/components/ui, never window.confirm().' },
+      ],
     },
   },
   {
@@ -56,7 +67,7 @@ export default tseslint.config(
         'error',
         {
           selector: "ImportDeclaration[source.value=/lib\\u002Fsupabase$/] ImportSpecifier[imported.name='supabase']",
-          message: 'Hooks must call services, not supabase directly. Move queries/mutations to a services/ file and import the function from there. See CLAUDE.md "Architecture Pattern".',
+          message: 'Hooks must call services, not supabase directly. Move queries/mutations to a services/ file and import the function from there. See CLAUDE.md "Architecture and Conventions".',
         },
       ],
     },
