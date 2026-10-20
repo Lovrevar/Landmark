@@ -25,5 +25,5 @@ Why these rules exist, and the rest of the plan: [`docs/REGRESSION_PREVENTION.md
   with `npm run test:db` after `supabase start`), acting as a real user of each role. How to
   write one: `docs/TESTING.md` → Database tests. Undo the fix in a scratch migration and see
   the test fail, then delete the scratch migration
-- Tests that read a migration's text only hold while that migration is the latest definition —
-  `src/lib/migrationSupersession.test.ts` checks it. Add a row there for every new text test
+- No new tests that read a migration's text. The two that remain only hold while that migration
+  is the latest definition — `src/lib/migrationSupersession.test.ts` checks it

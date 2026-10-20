@@ -11,7 +11,8 @@ Latest migrations:
 !`ls supabase/migrations | tail -5`
 
 **Write the file; never apply it.** Do not run `supabase db push`, `migration up`, `psql` or any
-SQL against a project unless the user asks for exactly that.
+SQL against a project unless the user asks for exactly that. The local Docker stack
+(`supabase start`, `supabase db reset`, `npm run test:db`) is not a project: use it freely.
 
 ## Before writing
 
@@ -36,6 +37,22 @@ SQL against a project unless the user asks for exactly that.
   explicit `REVOKE`/`GRANT` so the grants say the same as the policies
 - `COMMENT ON` new tables and non-obvious columns
 - `SECURITY DEFINER` functions set `search_path` and check the role themselves
+
+## Test it in SQL
+
+Every new function, policy or trigger gets a pgTAP test in `supabase/tests/database/`, named after
+its backlog id (`sales_10_cancel_sale.test.sql`), in the same commit. How to write one:
+`docs/TESTING.md` → Database tests; the existing files there are the examples.
+
+1. Write the test first. With the migration moved out of `supabase/migrations/`, run
+   `supabase db reset && npm run test:db` and see it fail
+2. Put the migration back, `supabase db reset && npm run test:db`, see it pass
+3. Test as each role that matters (set the role and JWT claims), and assert the outcome a user
+   would see: the rows they get back, the error code, what is left after a refused delete
+4. Do not write a new test that reads the migration's text
+
+The local stack needs Docker and `supabase start`. Resetting it is local only; it never touches a
+linked project. If Docker is not available, say so and leave the test for the user to run.
 
 ## After writing
 

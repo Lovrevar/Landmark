@@ -151,6 +151,11 @@ tests.
 
 ## Step 2 — Make CI a required check on GitHub
 
+Done for `main` (2026-10-20): **Tests / test** and **Database tests / db** are required there.
+`development` deliberately has no rule, so small fixes can still go straight in. CI runs on
+those pushes too, but a red one only shows afterwards: check the commit's status before building
+on it.
+
 CI now runs typecheck, lint, unit tests and the edge-function tests on every push and pull
 request. Nothing stops a red pull request from being merged, though.
 
@@ -353,6 +358,18 @@ Items 1–4 done (2026-10-20). How to run and write the tests is now in
    When all four exist, delete the matching text tests and their rows in
    `migrationSupersession.test.ts`.
 
+   ~~Done~~ (2026-10-20, as 6c): all four written, each seen red against a scratch migration
+   that undid its fix. The SEC-004 file was extended to cover the rest of its text test:
+   - updates and moves;
+   - milestones;
+   - Director-only delete;
+   - the dropped AUTH-4 overload;
+   - each function's SECURITY DEFINER, search path and grants.
+
+   The five text tests and their 16 supersession rows are deleted. Two text tests remain
+   (`organizationSettings`, `invoiceCashDirection`), and the supersession check still covers
+   them.
+
 ### 6b. In CI
 
 ~~Create the workflow~~ — done (2026-10-20): **[`.github/workflows/db-tests.yml`](../.github/workflows/db-tests.yml)**,
@@ -403,6 +420,9 @@ jobs:
 - After it has run once, add **Database tests / db** to the required checks (Step 2).
 
 ### 6c. Make it the habit
+
+~~Done~~ (2026-10-20): the new-migration skill has a "Test it in SQL" section, and
+`.claude/rules/testing.md` no longer allows new text tests. First draft:
 
 Add to `.claude/skills/new-migration/SKILL.md`: "Every new function, policy or trigger gets a
 pgTAP test in `supabase/tests/database/`, named after its backlog id, in the same commit. Write
@@ -494,13 +514,13 @@ From the Claude Code best-practice collection and its sources:
 - [x] 0. CI on every push to `development` (PR #63, 2026-10-20)
 - [x] 1a. GEN-23 test written, seen failing, fixed, closed (`fix/gen-23-evm-uncontracted`, 2026-10-20)
 - [x] 1b. `/done`, `rules/backlog.md`, `rules/testing.md`, new-migration skill updated (2026-10-20)
-- [ ] 2. Required status checks on `main` and `development`
+- [x] 2. Required status checks on `main`; `development` deliberately left open (2026-10-20)
 - [x] 3. Stop hook installed and tried (2026-10-20)
 - [x] 4. Test-guard hook installed and tried (2026-10-20)
 - [x] 5. `migrationSupersession.test.ts` covering every text test (2026-10-20)
 - [x] 6a. `supabase start` applies all migrations locally; first two pgTAP tests green, and seen red (2026-10-20)
-- [ ] 6b. `db-tests.yml` green in CI and required
-- [ ] 6c. Four text tests replaced by pgTAP; new-migration skill updated
+- [x] 6b. `db-tests.yml` green in CI and required on `main` (2026-10-20)
+- [x] 6c. Four text tests replaced by pgTAP (five deleted, with SEC-004's); new-migration skill updated (2026-10-20)
 - [ ] 7. Shared, tested figures for reports, sales, site management, units
 - [ ] 8–9. Habits: one fix per commit, squash merges, fresh-context review, one task per session
 

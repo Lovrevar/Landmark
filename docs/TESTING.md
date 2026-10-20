@@ -62,7 +62,7 @@ The edge functions have their own Deno tests, outside Vitest: `npm run test:func
 - Croatian domain terms (`vlastita`, `kreditna`, the 4 VAT slots) stay in Croatian in the test data, matching the codebase.
 - Assertions are anchored to the code's **actual** output, not the textbook ideal — several specs document real quirks (e.g. the `calculatePaymentSchedule` 119-vs-120 monthly-payment off-by-one, hr-HR's U+2212 minus sign).
 - **A bug fix is the exception:** its test asserts the *correct* output, is named after the backlog id (`it('GEN-23: …')`), and must fail before the fix. It checks what the user saw — the figure on the card, not an intermediate value. Rules: [`.claude/rules/testing.md`](../.claude/rules/testing.md); why: [`REGRESSION_PREVENTION.md`](./REGRESSION_PREVENTION.md).
-- Tests that read a migration's text (`src/lib/*Policies.test.ts`, `cancelSaleFunction.test.ts`, …) are guarded by `src/lib/migrationSupersession.test.ts`, which fails when a newer migration redefines what they read.
+- Two tests still read a migration's text (`organizationSettings.test.ts` and the "database agrees" part of `invoiceCashDirection.test.ts`). They are guarded by `src/lib/migrationSupersession.test.ts`, which fails when a newer migration redefines what they read. New SQL is tested with pgTAP instead (below).
 
 ### Claude Code hooks
 
@@ -92,7 +92,11 @@ npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 | File | Checks |
 |---|---|
 | `00_rls_enabled` | Every table in `public` has row level security on |
-| `sec_004_contracts_scope` | SEC-004: a Supervision user reads and writes contracts only on projects it is assigned to; a Director sees all |
+| `sec_004_contracts_scope` | SEC-004: a Supervision user reads, adds, updates and moves contracts, and reads milestones, only on projects it is assigned to; only a Director deletes; AUTH-4's overload stays dropped |
+| `sec_a12_document_delete` | SEC-A12: a file in `documents` / `contract-documents` is deleted only by its uploader, a Director or Accounting; no UPDATE policy on those buckets |
+| `sales_10_cancel_sale` | SALES-10: only Director and Accounting cancel; refused while a sales invoice exists; the apartment, its garage and storage unit become Available; the customer becomes interested only after their last sale; one sale per apartment |
+| `sales_9_unique_numbers` | SALES-9 / SALES-17: one unit number per building (trimmed, case-insensitive, also for apartments without a building), one building name per project |
+| `gen_22_unphased_tic` | GEN-22: an unphased TIC leaves several phases NULL, gives a single phase the whole plan and its classification split, and re-applies when phases are added or removed |
 
 ### Writing one
 
@@ -100,6 +104,9 @@ npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 - Fixtures are inserted as the database owner, so RLS does not get in the way. Insert into `auth.users` with the role in `raw_app_meta_data` (`{"provider":"email","role":"Supervision"}`). The sign-up trigger (`handle_new_user`) creates the `public.users` row.
 - To act as that user: `set local role authenticated;` then `set local request.jwt.claims = '{"sub":"<auth user id>","role":"authenticated"}';`. `reset role;` goes back to the owner, for example to check nothing was written.
 - RLS refusing an INSERT raises `42501`. An UPDATE or DELETE it refuses raises nothing and touches 0 rows, so assert the row count afterwards.
+- An UPDATE with a `WHERE` clause is also checked against the SELECT policy, which can hide a broken UPDATE policy. Test the UPDATE policy with a blanket `update … set` (no `WHERE`) and count what changed.
+- Deleting from `storage.objects` in SQL needs `set local storage.allow_delete_query = 'true'` first, or Storage's own trigger refuses every delete with `42501`.
+- `results_eq` on a `name` or `proconfig` column fails with "could not determine which collation"; compare those with `is()` instead.
 - Watch it fail: undo the fix in a scratch migration, `supabase db reset && supabase test db`, then delete the scratch migration and reset again.
 
 ### Running
