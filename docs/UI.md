@@ -124,8 +124,8 @@ Shared primitive component library. Always check here before building new UI —
 - Renders a Markdown string with the app's typography, via `react-markdown` + `remark-gfm` (so tables, strikethrough and task lists work)
 - Props: `content`, `className?`
 - Used by AI chat message bodies, task descriptions and the Help page. Prefer this over hand-rolling a Markdown renderer
-- A link whose `href` starts with `/` (not `//`) is an app route and navigates in place (`<Link>`); every other link opens in a new tab
-- An image is drawn only when its address is the app's own (`/…`, a help article's screenshot); any other image is replaced by its alt text, since this also renders assistant replies and task text and a remote image would be fetched from every reader's browser
+- A link whose `href` is an app path (`isAppPath`, `src/utils/appPath.ts`) navigates in place (`<Link>`); every other link opens in a new tab
+- An image is drawn only when its address is the app's own (`isAppPath`, a help article's screenshot); any other image is replaced by its alt text, since this also renders assistant replies and task text and a remote image would be fetched from every reader's browser
 
 ### Modal.tsx
 - Full-featured modal dialog with portal rendering and body scroll lock

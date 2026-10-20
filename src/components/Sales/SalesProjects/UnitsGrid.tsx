@@ -199,7 +199,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
           return (
             <div
               key={unit.id}
-              className={`rounded-xl shadow-sm border p-4 transition-all duration-200 ${
+              className={`rounded-xl shadow-xs border p-4 transition-all duration-200 ${
                 isSelected
                   ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-md'
                   : unit.status === 'Sold'
@@ -215,7 +215,7 @@ export const UnitsGrid: React.FC<UnitsGridProps> = ({
                     <button
                       onClick={() => onToggleUnitSelection(unit.id)}
                       disabled={unit.status === 'Sold' && !isSelected}
-                      className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                      className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded-sm transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                     >
                       {isSelected ? (
                         <CheckSquare className="w-5 h-5 text-blue-600" />

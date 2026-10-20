@@ -94,7 +94,7 @@ export default function AiChatInput() {
           disabled={inputDisabled || atAttachmentCap}
           aria-label={UI_LABELS_HR.paperclipTooltip}
           title={atAttachmentCap ? UI_LABELS_HR.attachmentLimitReached : UI_LABELS_HR.paperclipTooltip}
-          className="flex-shrink-0 p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
+          className="shrink-0 p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Paperclip className="w-4 h-4" />
         </button>
@@ -117,14 +117,14 @@ export default function AiChatInput() {
           disabled={inputDisabled}
           rows={1}
           placeholder="Pošaljite poruku..."
-          className="flex-1 resize-none overflow-y-auto bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+          className="flex-1 resize-none overflow-y-auto bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
         />
         {isStreaming ? (
           <button
             type="button"
             onClick={stopStreaming}
             aria-label="Zaustavi"
-            className="flex-shrink-0 bg-gray-700 hover:bg-gray-800 text-white rounded-md p-2 transition-colors"
+            className="shrink-0 bg-gray-700 hover:bg-gray-800 text-white rounded-md p-2 transition-colors"
           >
             <Square className="w-4 h-4 fill-current" />
           </button>
@@ -134,7 +134,7 @@ export default function AiChatInput() {
             onClick={handleSend}
             disabled={!canSend}
             aria-label="Pošalji"
-            className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-md p-2 transition-colors"
+            className="shrink-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-md p-2 transition-colors"
           >
             <Send className="w-4 h-4" />
           </button>

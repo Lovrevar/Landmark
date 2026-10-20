@@ -16,7 +16,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 8 |
 | [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 8 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 12 |
-| [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 10 |
+| [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 12 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
 | [archive/](./archive/) | The four audits, with every fixed entry | Closed, do not update |
 

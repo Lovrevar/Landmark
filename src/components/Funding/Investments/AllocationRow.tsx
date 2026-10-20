@@ -147,7 +147,7 @@ const AllocationRow: React.FC<AllocationRowProps> = ({
               }}
               title={t('common.delete')}
               aria-label={t('common.delete')}
-              className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+              className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-sm transition-colors"
             >
               <Trash2 className="w-4 h-4" aria-hidden="true" />
             </button>

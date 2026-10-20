@@ -170,7 +170,7 @@ const ApartmentManagement: React.FC = () => {
         }
       />
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="md:col-span-2">
             <SearchInput
@@ -302,7 +302,7 @@ const ApartmentManagement: React.FC = () => {
             return (
               <div
                 key={apartment.id}
-                className={`rounded-xl shadow-sm border p-4 transition-all duration-200 ${
+                className={`rounded-xl shadow-xs border p-4 transition-all duration-200 ${
                   apartment.status === 'Sold'
                     ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
                     : apartment.status === 'Reserved'

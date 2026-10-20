@@ -32,7 +32,7 @@ const SupervisionStatusView: React.FC<Props> = ({ subcontractorStatus }) => {
   const { t, i18n } = useTranslation()
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
           <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />

@@ -1,7 +1,7 @@
 # Backlog — app-wide UI
 
 Problems that repeat across modules: formatting, status display, failed loads, translations, the
-shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-12`). Entry format and
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-14`). Entry format and
 rules are in [README.md](./README.md).
 
 A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
@@ -76,6 +76,28 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
 - **Left:** the three PDF generators and the CSV headers (policy in
   [../REPORTS.md](../REPORTS.md)), `DateInput`'s third format (`DD/MM/YYYY`), and 59 native
   `type="date"` inputs.
+
+### UI-12 · Low · `help:shots` can capture a dialog while it is still loading
+- **Check:** Confirmed (2026-10-20: `stan-povezi-jedinice.png` came out as the "Učitavanje
+  dostupnih jedinica..." spinner in two of three full runs, and fully loaded when taken alone)
+- **Where:** `scripts/help-screenshots/capture.spec.ts` (fixed `waitForTimeout(400)`) and
+  `openDialog` in `shots.ts`, which waits only for the dialog to appear
+- **What happens:** a dialog that loads its own data after opening is photographed half-loaded
+  when LandmarkDemo answers slowly, and the article gets a spinner instead of the form. The run
+  still passes, so it is only caught by looking at the picture
+- **Fix direction:** after `before`, wait until no `[aria-busy="true"]` / `.animate-spin` is left
+  inside the target (or give such shots a `ready` locator to wait for)
+
+### UI-13 · Low · `help:check` fails on requests cancelled by its own navigation
+- **Check:** Runtime check needed (2026-10-20: two of four variant runs failed only on this)
+- **Where:** `scripts/help-screenshots/check.spec.ts`, the `hint-no-contract-supplier-link` step,
+  which `page.goto`s away from the Supervision screen of the step before
+- **What happens:** a cost-classification request still in flight is cancelled by the
+  navigation; `useCostClassifications` logs "Error loading cost classifications: TypeError: Failed
+  to fetch", and the check reports it as a console error of the new screen, so a clean run fails
+  at random
+- **Fix direction:** wait for `networkidle` before each step's `goto`, or ignore console errors
+  logged before the step's page has loaded
 
 ### UI-9 · Low · Dark-mode contrast
 - 441 lines carry a `-600` accent with no `dark:text-` of their own (~230 sit beside a sibling

@@ -27,7 +27,7 @@ const AccountingCashFlowSection: React.FC<Props> = ({ cashFlowStats }) => {
 
   return (
     <StatGrid columns={3} className="gap-6">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xs border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -57,7 +57,7 @@ const AccountingCashFlowSection: React.FC<Props> = ({ cashFlowStats }) => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xs border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
             <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
@@ -87,7 +87,7 @@ const AccountingCashFlowSection: React.FC<Props> = ({ cashFlowStats }) => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-xs border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
             <div className={`p-2 rounded-lg ${cashFlowStats.netCashFlow >= 0 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-orange-100 dark:bg-orange-900/20'}`}>

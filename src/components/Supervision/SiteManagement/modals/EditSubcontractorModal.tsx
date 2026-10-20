@@ -242,7 +242,7 @@ export const EditSubcontractorModal: React.FC<EditSubcontractorModalProps> = ({
                       type="checkbox"
                       checked={hasContract}
                       onChange={(e) => setHasContract(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded-sm focus:ring-blue-500"
                     />
                     <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">
                       {hasContract ? t('supervision.edit_subcontractor.with_contract') : t('supervision.edit_subcontractor.no_contract')}

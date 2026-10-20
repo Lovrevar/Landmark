@@ -43,7 +43,7 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
     filterCompany !== 'ALL'
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <SearchInput
           value={searchTerm}

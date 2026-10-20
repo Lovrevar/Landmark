@@ -37,7 +37,7 @@ export const ImportOutcomeSummary: React.FC<ImportOutcomeSummaryProps> = ({ succ
           <h4 className="font-medium text-red-900 dark:text-red-300 mb-2">
             {t('sales_projects.excel_import.errors_heading')}
           </h4>
-          <ul className="space-y-1 text-sm text-red-700 dark:text-red-400 break-words">
+          <ul className="space-y-1 text-sm text-red-700 dark:text-red-400 wrap-break-word">
             {listed.map((message, index) => (
               <li key={index}>{message}</li>
             ))}

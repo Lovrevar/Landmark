@@ -153,7 +153,7 @@ const InvestmentProjectModal: React.FC<Props> = ({ project, onClose }) => {
                 ) : (
                   <div className="space-y-3">
                     {project.debt_allocations.map((allocation) => (
-                      <div key={allocation.id} className="bg-white dark:bg-gray-800 p-3 rounded border border-red-200 dark:border-red-800">
+                      <div key={allocation.id} className="bg-white dark:bg-gray-800 p-3 rounded-sm border border-red-200 dark:border-red-800">
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <p className="font-medium text-gray-900 dark:text-white">

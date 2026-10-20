@@ -34,7 +34,7 @@ export const CategoryRow: React.FC<CategoryRowProps> = ({
       <div
         onClick={handleRowClick}
         className={[
-          'flex items-center gap-1 pr-2 py-1.5 rounded text-sm cursor-pointer transition-colors select-none',
+          'flex items-center gap-1 pr-2 py-1.5 rounded-sm text-sm cursor-pointer transition-colors select-none',
           isSelected
             ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',

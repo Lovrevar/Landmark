@@ -130,7 +130,7 @@ const AccountingBanks: React.FC = () => {
             const bankOutstanding = bankCredits.reduce((s, c) => s + c.outstanding_balance, 0)
 
             return (
-              <div key={bank.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div key={bank.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => toggleBank(bank.id)}
                   className="w-full p-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-xl"

@@ -346,7 +346,7 @@ const NewEventModal: React.FC<Props> = ({
         )}
         {timingLocked && (
           <p className="-mt-2 flex items-start gap-1.5 text-xs text-gray-600 dark:text-gray-400">
-            <Info className="w-3.5 h-3.5 mt-px flex-shrink-0" />
+            <Info className="w-3.5 h-3.5 mt-px shrink-0" />
             {t('calendar.modal.series_timing_readonly')}
           </p>
         )}
@@ -406,12 +406,12 @@ const NewEventModal: React.FC<Props> = ({
                     min={1}
                     value={recurrence.customInterval}
                     onChange={e => updateRecurrence('customInterval', Math.max(1, parseInt(e.target.value || '1', 10)))}
-                    className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                    className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-sm bg-white dark:bg-gray-700"
                   />
                   <select
                     value={recurrence.customFreq}
                     onChange={e => updateRecurrence('customFreq', e.target.value as RecurrenceState['customFreq'])}
-                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-sm bg-white dark:bg-gray-700"
                   >
                     <option value="daily">{t('calendar.modal.recurrence.freq.daily')}</option>
                     <option value="weekly">{t('calendar.modal.recurrence.freq.weekly')}</option>
@@ -474,7 +474,7 @@ const NewEventModal: React.FC<Props> = ({
                       type="date"
                       value={recurrence.endDate}
                       onChange={e => updateRecurrence('endDate', e.target.value)}
-                      className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     />
                   )}
                   {recurrence.endKind === 'after' && (
@@ -484,7 +484,7 @@ const NewEventModal: React.FC<Props> = ({
                         min={1}
                         value={recurrence.endCount}
                         onChange={e => updateRecurrence('endCount', Math.max(1, parseInt(e.target.value || '1', 10)))}
-                        className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                        className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-sm bg-white dark:bg-gray-700"
                       />
                       <span>{t('calendar.modal.recurrence.occurrences')}</span>
                     </div>

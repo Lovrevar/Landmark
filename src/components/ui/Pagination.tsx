@@ -36,7 +36,7 @@ export default function Pagination({
   if (totalCount === 0) return null
 
   return (
-    <div className={`bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 ${className}`}>
       <div className="flex justify-between items-center gap-4 flex-wrap">
         <div className="flex items-center gap-6 text-sm">
           <span className="text-gray-600 dark:text-gray-400">
@@ -48,7 +48,7 @@ export default function Pagination({
           <button
             onClick={() => onPageChange(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="inline-flex items-center px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
             {t('pagination.previous')}
@@ -59,7 +59,7 @@ export default function Pagination({
           <button
             onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage >= totalPages}
-            className="inline-flex items-center px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:text-gray-300 rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {t('pagination.next')}
             <ChevronRight className="w-4 h-4 ml-1" />

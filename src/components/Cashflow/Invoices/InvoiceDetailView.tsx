@@ -181,7 +181,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
               invoice.base_amount_3 > 0 || invoice.base_amount_4 > 0) ? (
               <div>
                 <span className="text-sm text-gray-500 mb-2 block">{t('invoices.detail.base_by_vat')}</span>
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded space-y-2">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-sm space-y-2">
                   {invoice.base_amount_1 > 0 && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700 dark:text-gray-200">{t('invoices.vat_rate_line', { rate: 25 })}</span>
@@ -237,13 +237,13 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
               <p className="text-lg font-bold text-gray-900 dark:text-white">&euro;{formatCurrency(invoice.total_amount)}</p>
             </div>
 
-            <div className="flex justify-between items-center bg-green-50 dark:bg-green-900/20 p-2 rounded">
+            <div className="flex justify-between items-center bg-green-50 dark:bg-green-900/20 p-2 rounded-sm">
               <span className="text-sm text-green-700 dark:text-green-400">{t('invoices.detail.paid_amount')}</span>
               <p className="text-sm font-semibold text-green-700 dark:text-green-400">&euro;{formatCurrency(invoice.paid_amount)}</p>
             </div>
 
             {invoice.remaining_amount > 0 && (
-              <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 p-2 rounded">
+              <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 p-2 rounded-sm">
                 <span className="text-sm text-red-700 dark:text-red-400">{t('invoices.detail.remaining')}</span>
                 <p className="text-sm font-semibold text-red-700 dark:text-red-400">&euro;{formatCurrency(invoice.remaining_amount)}</p>
               </div>

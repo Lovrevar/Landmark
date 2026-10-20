@@ -127,7 +127,7 @@ function FileAttachment({
           : 'bg-gray-200/60 dark:bg-gray-600/40 hover:bg-gray-200 dark:hover:bg-gray-600/60'
       }`}
     >
-      <Icon className={`w-5 h-5 flex-shrink-0 ${
+      <Icon className={`w-5 h-5 shrink-0 ${
         isOwn ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'
       }`} />
       <div className="flex-1 min-w-0">
@@ -144,7 +144,7 @@ function FileAttachment({
           </p>
         )}
       </div>
-      <Download className={`w-3.5 h-3.5 flex-shrink-0 ${
+      <Download className={`w-3.5 h-3.5 shrink-0 ${
         isOwn ? 'text-blue-200' : 'text-gray-400 dark:text-gray-500'
       }`} />
     </a>
@@ -173,7 +173,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn, showSende
         >
           {hasFile && <FileAttachment message={message} isOwn={isOwn} />}
           {hasText && (
-            <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+            <p className="text-sm whitespace-pre-wrap wrap-break-word leading-relaxed">
               {message.content}
             </p>
           )}

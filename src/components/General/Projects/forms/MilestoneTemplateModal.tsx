@@ -198,7 +198,7 @@ function MilestoneTemplateModal({ show, onClose, projectStartDate, onSubmit }: P
                         checked={allSelected}
                         ref={el => { if (el) el.indeterminate = !allSelected && someSelected }}
                         onChange={() => togglePhaseSelectAll(phase.id)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded-sm"
                       />
                       <span className="ml-2 text-sm font-semibold text-gray-900 dark:text-white">{phase.phaseLabel}</span>
                     </label>
@@ -215,7 +215,7 @@ function MilestoneTemplateModal({ show, onClose, projectStartDate, onSubmit }: P
                             type="checkbox"
                             checked={pickedItems.has(key)}
                             onChange={() => togglePicked(phase.id, idx)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded-sm"
                           />
                           <span className="ml-2">{item.name}</span>
                         </label>

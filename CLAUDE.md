@@ -22,7 +22,8 @@ Cognilion is a full-lifecycle real estate and construction project management pl
 | `npm run db:types` | Regenerates the database types — use `/db-types`, it checks the linked project first |
 
 Before calling work done, run `/done`: typecheck, `npm test`, lint on the changed files, and the
-housekeeping below. CI runs typecheck, lint and the unit tests on every push to `development`.
+housekeeping below. CI runs typecheck, lint, the unit tests and `npm audit --omit=dev --audit-level=high` on every
+push to `development`.
 
 ## Git Workflow
 

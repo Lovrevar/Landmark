@@ -192,18 +192,18 @@ const AttachmentList: React.FC<Props> = ({
             return (
               <div
                 key={a.id}
-                className="flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                className="flex items-center gap-2 px-2 py-1.5 rounded-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
               >
                 {thumb ? (
                   <img
                     src={thumb}
                     alt={a.file_name}
-                    className="w-9 h-9 rounded object-cover flex-shrink-0"
+                    className="w-9 h-9 rounded-sm object-cover shrink-0"
                   />
                 ) : isImage(a.mime_type) ? (
-                  <ImageIcon className="w-9 h-9 p-2 text-gray-400 flex-shrink-0" />
+                  <ImageIcon className="w-9 h-9 p-2 text-gray-400 shrink-0" />
                 ) : (
-                  <FileText className="w-9 h-9 p-2 text-gray-400 flex-shrink-0" />
+                  <FileText className="w-9 h-9 p-2 text-gray-400 shrink-0" />
                 )}
                 <button
                   type="button"
@@ -234,7 +234,7 @@ const AttachmentList: React.FC<Props> = ({
           {uploading.map(k => (
             <div
               key={k}
-              className="flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+              className="flex items-center gap-2 px-2 py-1.5 rounded-sm border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
             >
               <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
               <div className="text-sm text-gray-700 dark:text-gray-200">

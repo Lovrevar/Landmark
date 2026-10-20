@@ -102,6 +102,7 @@ Two companion rules that follow from the same change, and that every module is e
 | `src/contexts/UnsavedChangesContext.tsx` | App-wide "you have unsaved work" guard. A screen arms it with `useUnsavedChanges(isDirty, save?)` — passing `save` adds a "save and leave" button to the dialog; every navigation in `Layout` runs through `useLeaveGuard()`'s `requestLeave`, and reloads fall to `beforeunload`. See `docs/UI.md` |
 | `src/utils/permissions.ts` | Role-based access control |
 | `src/utils/formatters.ts` | Shared date/currency/number formatters (unit-tested) |
+| `src/utils/appPath.ts` | `isAppPath(url)` — whether a markdown link or image address stays on the app's origin (resolved with the URL parser, so `/\host` is another site — SEC-A13). Used by `MarkdownView`; unit-tested |
 | `src/utils/phaseLabel.ts` | `formatPhaseLabel(phase, phaseWord)` — the **only** way to render a phase to a user. Since the split, phases are stored as literally "Faza 1", so concatenating number and name gives "Faza 1 · Faza 1"; this collapses it. Matched structurally, so it works with a Croatian name under an English UI. Unit-tested |
 | `src/utils/evm.ts` | EVM calculation utilities (calculatePhaseEVM, calculateProjectEVM) |
 | `src/utils/vatCalculations.ts` | Croatian 4-slot VAT breakdown (`calculateVatBreakdown`, `CROATIAN_VAT_RATES` 25/13/0/5%); unit-tested |

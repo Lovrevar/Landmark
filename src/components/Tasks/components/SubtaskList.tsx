@@ -146,7 +146,7 @@ const SubtaskList: React.FC<Props> = ({ taskId, subtasks, actor, canEdit, onChan
               type="button"
               disabled={!canEdit}
               onClick={() => toggle(s)}
-              className={`flex-shrink-0 mt-0.5 transition-colors ${
+              className={`shrink-0 mt-0.5 transition-colors ${
                 s.completed
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400'
@@ -166,7 +166,7 @@ const SubtaskList: React.FC<Props> = ({ taskId, subtasks, actor, canEdit, onChan
                     if (e.key === 'Escape') { e.preventDefault(); setEditingId(null) }
                   }}
                   autoFocus
-                  className="flex-1 px-2 py-1 text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="flex-1 px-2 py-1 text-base border border-gray-300 dark:border-gray-600 rounded-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
                 <button
                   type="button"
@@ -185,11 +185,11 @@ const SubtaskList: React.FC<Props> = ({ taskId, subtasks, actor, canEdit, onChan
                   setEditingId(s.id)
                   setEditDraft(s.title)
                 }}
-                className={`flex-1 min-w-0 text-base whitespace-pre-wrap break-words ${
+                className={`flex-1 min-w-0 text-base whitespace-pre-wrap wrap-break-word ${
                   s.completed
                     ? 'line-through text-gray-400 dark:text-gray-500'
                     : 'text-gray-700 dark:text-gray-200'
-                } ${canEdit ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded px-1 -mx-1' : ''}`}
+                } ${canEdit ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-sm px-1 -mx-1' : ''}`}
               >
                 {s.title}
               </span>
@@ -238,7 +238,7 @@ const SubtaskList: React.FC<Props> = ({ taskId, subtasks, actor, canEdit, onChan
 
         {canEdit && (
           <div className="flex items-center gap-2 pt-1">
-            <Plus className="w-5 h-5 flex-shrink-0 text-gray-400" />
+            <Plus className="w-5 h-5 shrink-0 text-gray-400" />
             <input
               value={draft}
               onChange={e => setDraft(e.target.value)}
@@ -248,7 +248,7 @@ const SubtaskList: React.FC<Props> = ({ taskId, subtasks, actor, canEdit, onChan
               onBlur={add}
               disabled={busy}
               placeholder={t('tasks.subtasks.add_placeholder')}
-              className="flex-1 px-2 py-1 text-base bg-transparent border-b border-dashed border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+              className="flex-1 px-2 py-1 text-base bg-transparent border-b border-dashed border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-hidden focus:border-blue-500 disabled:opacity-50"
             />
           </div>
         )}
@@ -256,7 +256,7 @@ const SubtaskList: React.FC<Props> = ({ taskId, subtasks, actor, canEdit, onChan
 
       {error && (
         <div className="mt-2 flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
           {error}
         </div>
       )}

@@ -203,7 +203,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
           </button>
         )}
         <div
-          className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400"
+          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400"
         >
           {conversation.is_group ? (
             <Users className="w-4 h-4" />
@@ -224,7 +224,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
             >
               <span className="truncate">{participantsLabel}</span>
               <ChevronDown
-                className={`w-3 h-3 flex-shrink-0 transition-transform ${showMembers ? 'rotate-180' : ''}`}
+                className={`w-3 h-3 shrink-0 transition-transform ${showMembers ? 'rotate-180' : ''}`}
               />
             </button>
           )}
@@ -234,7 +234,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
             type="button"
             onClick={() => setShowMembers(v => !v)}
             aria-label={t('chat.members', { count: conversation.participants.length })}
-            className="flex-shrink-0 hidden sm:block"
+            className="shrink-0 hidden sm:block"
           >
             <AvatarStack users={memberUsers} max={4} size="sm" />
           </button>
@@ -282,7 +282,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
         {pendingFile && (
           <div className="px-4 pt-3">
             <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
                   {pendingFile.name}
@@ -293,7 +293,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
               </div>
               <button
                 onClick={clearPendingFile}
-                className="p-0.5 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                className="p-0.5 text-gray-400 hover:text-red-500 transition-colors shrink-0"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -322,7 +322,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={sending}
-            className="flex-shrink-0 p-2.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 disabled:opacity-40 transition-colors"
+            className="shrink-0 p-2.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 disabled:opacity-40 transition-colors"
           >
             <Paperclip className="w-4 h-4" />
           </button>
@@ -341,7 +341,7 @@ const MessagePanel: React.FC<MessagePanelProps> = ({
           <button
             type="submit"
             disabled={!canSend || sending}
-            className="flex-shrink-0 p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="shrink-0 p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {sending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

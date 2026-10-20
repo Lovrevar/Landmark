@@ -98,7 +98,7 @@ const InvestmentDashboard: React.FC = () => {
       <InvestmentSummaryCards financialSummary={financialSummary} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.investment.investment_overview')}</h3>
             <Banknote className="w-5 h-5 text-blue-600" />
@@ -123,7 +123,7 @@ const InvestmentDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.investment.investment_partners')}</h3>
             <CreditCard className="w-5 h-5 text-green-600" />
@@ -150,29 +150,29 @@ const InvestmentDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.investment.critical_alerts')}</h3>
             <AlertTriangle className="w-5 h-5 text-orange-600" />
           </div>
           <div className="space-y-3">
             {financialSummary.upcoming_maturities > 0 && (
-              <div className="flex items-center p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded">
-                <Clock className="w-4 h-4 text-orange-600 mr-2 flex-shrink-0" />
+              <div className="flex items-center p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-sm">
+                <Clock className="w-4 h-4 text-orange-600 mr-2 shrink-0" />
                 <span className="text-sm text-orange-800 dark:text-orange-300">
                   {t('dashboards.investment.investments_maturing', { count: financialSummary.upcoming_maturities })}
                 </span>
               </div>
             )}
             {expiringUsageCount > 0 && (
-              <div className="flex items-center p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
-                <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2 flex-shrink-0" />
+              <div className="flex items-center p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-sm">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2 shrink-0" />
                 <span className="text-sm text-yellow-800 dark:text-yellow-400">{t('dashboards.investment.usage_periods_expiring', { count: expiringUsageCount })}</span>
               </div>
             )}
             {noCriticalIssues && (
-              <div className="flex items-center p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
-                <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+              <div className="flex items-center p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-sm">
+                <CheckCircle className="w-4 h-4 text-green-600 mr-2 shrink-0" />
                 <span className="text-sm text-green-800 dark:text-green-300">{t('dashboards.investment.no_critical_issues')}</span>
               </div>
             )}
@@ -182,7 +182,7 @@ const InvestmentDashboard: React.FC = () => {
 
       <InvestmentCreditsTable bankCredits={bankCredits} />
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('dashboards.investment.recent_activity')}</h2>
         </div>

@@ -18,7 +18,7 @@ const InvestorCard: React.FC<InvestorCardProps> = ({ bank, onSelect, onEdit, onD
   const tone = utilisationTone(bank.credit_utilization)
   return (
     <div
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
       onClick={() => onSelect(bank)}
     >
       <div className="flex items-start justify-between mb-4">
