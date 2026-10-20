@@ -18,6 +18,10 @@ SQL against a project unless the user asks for exactly that.
 - `task*` tables, RPCs or policies → read `docs/SHARED_SCHEMA.md` first (shared with the mobile app)
 - Invoices, payments, bank balances → read `docs/erp-integration/` first
 - Check the existing policies on the tables you touch in the latest migration that defines them
+- Replacing a function, view, trigger, index or policy that an older migration created: run
+  `npx vitest run src/lib/migrationSupersession.test.ts`. A failure names the older test that
+  reads the old file — check the new definition still does what it asserts, then re-point the
+  test and its row
 
 ## The file
 

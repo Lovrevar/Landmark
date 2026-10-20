@@ -24,6 +24,15 @@ while one is red.
 
 ## 2. Housekeeping — check each that applies to the diff
 
+- **Regression test:** a fix for a backlog id has a test named after the id (`it('GEN-23: …')`)
+  that asserts what the user saw — the figure, the row count, the refusal — not a helper's
+  intermediate value, and that **failed before the fix**. Say in the report that you saw it fail.
+  If no test could be written (a layout bug; SQL before pgTAP exists), say what was checked
+  instead and where
+- **Changed tests:** every existing assertion that was removed, loosened or re-pointed is listed in
+  the report with the reason. "It was failing" is not a reason. `git diff -- '*.test.ts'` shows them
+- **Same figure elsewhere:** a fix to a total, balance, budget or index — the other places that
+  compute it were searched for (`grep`) and fixed too, or logged
 - **Mutations:** every new insert/update/delete calls `logActivity()`; updates and deletes that
   must hit a row use `.select('id')` + `assertRowsAffected`
 - **Lists** that can pass 1000 rows go through `fetchAllRows`

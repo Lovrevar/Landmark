@@ -35,5 +35,22 @@
       "Read(./.env.demo)",
       "Read(./.env.test)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-tests.mjs\"" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-verify.mjs\"", "timeout": 300 }
+        ]
+      }
+    ]
   }
 }
