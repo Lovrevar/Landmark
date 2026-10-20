@@ -13,6 +13,7 @@ Cognilion is a full-lifecycle real estate and construction project management pl
 | `npm run lint` | ESLint |
 | `npm test` | Vitest unit tests (`src/**/*.test.ts`, no `.env` needed) |
 | `npm run test:functions` | Deno tests for the edge functions (needs `deno`) |
+| `npm run test:db` | pgTAP tests in `supabase/tests/database/` against the local stack (`supabase start` first, needs Docker) — see [`docs/TESTING.md`](./docs/TESTING.md) |
 | `npm run test:e2e` | Playwright; refuses to run unless `VITE_SUPABASE_URL` equals `E2E_ALLOWED_SUPABASE_URL` — see [`docs/TESTING.md`](./docs/TESTING.md) |
 | `npm run build` | Production build |
 | `npm run kb:build` | Rebuilds the AI assistant's help index from `help-kb/*.md` |

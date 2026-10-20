@@ -1,10 +1,11 @@
 # Cognilion — Testing
 
-Three complementary layers:
+Four complementary layers:
 
 1. **Unit suite** — Vitest, runs in-process with no DB, fast feedback. Covers pure functions across every module (formatters, VAT and credit math, TIC, export rows, calendar recurrence, task rules, dashboard figures…).
-2. **Automated E2E suite** — Playwright, runs against the dev Supabase project, green suite required before release. Covers critical paths across Auth, Cashflow, Sales, Funding, Retail, Supervision and Reports.
-3. **Manual testing cheat sheet** — module-by-module walkable checklists under [./test/](./test/). Source of truth for edge cases, uncommon flows, and UX regressions not yet worth automating.
+2. **Database tests** — pgTAP, against a local database built from every migration. Covers RLS policies, functions and triggers as they stand after the last migration. See [below](#database-tests-pgtap).
+3. **Automated E2E suite** — Playwright, runs against the dev Supabase project, green suite required before release. Covers critical paths across Auth, Cashflow, Sales, Funding, Retail, Supervision and Reports.
+4. **Manual testing cheat sheet** — module-by-module walkable checklists under [./test/](./test/). Source of truth for edge cases, uncommon flows, and UX regressions not yet worth automating.
 
 Run the unit suite for instant feedback on the logic you touched, then E2E to catch the blunt-force regressions, and finally walk the relevant manual sheet for the module you touched.
 
@@ -77,6 +78,39 @@ npm test               # one-shot run (vitest run)
 npm run test:watch     # watch mode (vitest)
 npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 ```
+
+---
+
+## Database tests (pgTAP)
+
+**Files:** `supabase/tests/database/*.test.sql`. **Runner:** `supabase test db` (`npm run test:db`), which runs [pgTAP](https://pgtap.org/) through `pg_prove` against the local database.
+
+`supabase start` builds that database from nothing by applying every migration in `supabase/migrations/`, so a green run also proves the migrations still apply from scratch. Each test file opens a transaction and rolls it back, so the tests leave no data behind and never touch LandmarkDev, LandmarkDemo or production.
+
+| File | Checks |
+|---|---|
+| `00_rls_enabled` | Every table in `public` has row level security on |
+| `sec_004_contracts_scope` | SEC-004: a Supervision user reads and writes contracts only on projects it is assigned to; a Director sees all |
+
+### Writing one
+
+- Name the file after the backlog id (`sales_10_cancel_sale.test.sql`) and the assertions too (`'SEC-004: …'`).
+- Fixtures are inserted as the database owner, so RLS does not get in the way. Insert into `auth.users` with the role in `raw_app_meta_data` (`{"provider":"email","role":"Supervision"}`). The sign-up trigger (`handle_new_user`) creates the `public.users` row.
+- To act as that user: `set local role authenticated;` then `set local request.jwt.claims = '{"sub":"<auth user id>","role":"authenticated"}';`. `reset role;` goes back to the owner, for example to check nothing was written.
+- RLS refusing an INSERT raises `42501`. An UPDATE or DELETE it refuses raises nothing and touches 0 rows, so assert the row count afterwards.
+- Watch it fail: undo the fix in a scratch migration, `supabase db reset && supabase test db`, then delete the scratch migration and reset again.
+
+### Running
+
+```bash
+supabase start     # needs Docker; the first run pulls the images (several minutes)
+npm run test:db    # supabase test db
+supabase db reset  # after adding or changing a migration: rebuild from every migration
+supabase stop      # when finished
+```
+
+- **Docker in WSL:** Docker Desktop must be running *and* have WSL integration on for Ubuntu (Settings → Resources → WSL integration). If `docker info` fails in WSL while `docker.exe info` works, toggle that integration off and on, or run `wsl --shutdown` and restart Docker Desktop.
+- **Ports:** this project's local stack uses 5442x (API 54421, database 54422, Studio 54423, Inbucket 54424), set in `supabase/config.toml`, so it can run beside another local Supabase project on the default 5432x ports.
 
 ---
 

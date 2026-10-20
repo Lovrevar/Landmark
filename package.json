@@ -14,6 +14,7 @@
     "erp:smoke": "node --env-file=.env scripts/erp-pipeline-smoke.mjs",
     "test": "vitest run",
     "test:functions": "cd supabase/functions && deno task test",
+    "test:db": "supabase test db",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",

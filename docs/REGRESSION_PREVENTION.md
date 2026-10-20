@@ -247,16 +247,17 @@ proves the migrations still apply from scratch.
 
 ### 6a. Locally first
 
-1. Start Docker Desktop on Windows (it is installed in WSL but not running by default), then:
+Items 1–4 done (2026-10-20). How to run and write the tests is now in
+[`TESTING.md` → Database tests](./TESTING.md#database-tests-pgtap); `npm run test:db` runs them.
 
-   ```bash
-   supabase start          # applies all migrations to a local database; first run pulls images
-   ```
-
-   If a migration fails here, stop and fix that first. It means a fresh project (a new test or
-   demo environment) can't be built from the repository either. Note the baseline gap in
-   `docs/` (non-`public` objects were not dumped). It is the likeliest cause.
-2. Create the folder and a first, schema-wide test, **`supabase/tests/database/00_rls_enabled.test.sql`**:
+1. ~~Start the local stack~~ — done. All 369 migrations apply from scratch with no error, so a
+   fresh project can be built from the repository. Two snags, both fixed and documented in
+   `TESTING.md`:
+   - Docker Desktop was running but WSL couldn't reach it: its WSL integration proxy wasn't
+     running in Ubuntu until Docker Desktop's WSL side was restarted.
+   - Another local Supabase project (`bi-platform`) held the default ports 5432x. This
+     project's local stack now uses 5442x (`supabase/config.toml`).
+2. ~~Create the folder and a first, schema-wide test~~ — done, **[`supabase/tests/database/00_rls_enabled.test.sql`](../supabase/tests/database/00_rls_enabled.test.sql)**:
 
    ```sql
    begin;
@@ -274,7 +275,7 @@ proves the migrations still apply from scratch.
    rollback;
    ```
 
-3. Turn the strongest text test into a real one: **`supabase/tests/database/sec_004_contracts_scope.test.sql`**.
+3. ~~Turn the strongest text test into a real one~~ — done, **[`supabase/tests/database/sec_004_contracts_scope.test.sql`](../supabase/tests/database/sec_004_contracts_scope.test.sql)**, as drafted below.
    - It relies on the sign-up trigger (`handle_new_user`): inserting into `auth.users` with a role
      in `raw_app_meta_data` creates the `public.users` row.
    - To act as a user, switch to the `authenticated` role and set the JWT claims, as Supabase's
@@ -333,10 +334,13 @@ proves the migrations still apply from scratch.
    rollback;
    ```
 
-4. Run `supabase test db`. Then break it on purpose to see it go red: in a scratch migration,
-   recreate the old `USING (true)` SELECT policy on `contracts` and run `supabase db reset &&
-   supabase test db`. Delete the scratch migration afterwards.
-5. Write the next ones in this order. Each replaces or backs a text test:
+4. ~~Run it, then break it on purpose~~ — done. Both files green (5 tests). A scratch migration
+   then recreated the old `USING (true)` SELECT policy on `contracts` and switched RLS off on
+   `subcontractors`. After `supabase db reset && supabase test db`, both files went red for the
+   right reason: Supervision saw the `on other` contract, and the RLS check failed. The same
+   scratch file also turned Step 5's `migrationSupersession.test.ts` red on "policies on
+   contracts". The scratch migration was deleted and the database reset; green again.
+5. Write the next ones in this order (tracked as 6c in the checklist). Each replaces or backs a text test:
    - `sales_10_cancel_sale.test.sql`: Sales gets `42501`; a sale with an `OUTGOING_SALES` invoice
      gets `P0001`; a successful cancel frees the linked garage and storage unit.
    - `sec_a12_document_delete.test.sql`: a Sales user cannot delete another user's object in
@@ -489,7 +493,7 @@ From the Claude Code best-practice collection and its sources:
 - [x] 3. Stop hook installed and tried (2026-10-20)
 - [x] 4. Test-guard hook installed and tried (2026-10-20)
 - [x] 5. `migrationSupersession.test.ts` covering every text test (2026-10-20)
-- [ ] 6a. `supabase start` applies all migrations locally; first two pgTAP tests green
+- [x] 6a. `supabase start` applies all migrations locally; first two pgTAP tests green, and seen red (2026-10-20)
 - [ ] 6b. `db-tests.yml` green in CI and required
 - [ ] 6c. Four text tests replaced by pgTAP; new-migration skill updated
 - [ ] 7. Shared, tested figures for reports, sales, site management, units
