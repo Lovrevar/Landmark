@@ -11,10 +11,10 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 4 defects, 3 accepted risks |
 | [sales.md](./sales.md) | Units, the sale flow, customers | 7 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
-| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 4 |
+| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 5 |
 | [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 7, plus 4 waiting on the ERP |
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
-| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 6 |
+| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 7 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 10 |
 | [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 9 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |

@@ -1,12 +1,20 @@
 # Backlog — Supervision
 
 Site management, subcontractors, contracts, phases and work logs. Ids: `SUP-n` (next free:
-`SUP-16`). Entry format and rules are in [README.md](./README.md).
+`SUP-17`). Entry format and rules are in [README.md](./README.md).
 
 Supervision is used on phones on site; the mobile problems are UI-8 in [ui.md](./ui.md). The
 payment gate being screen-only is SEC-004 in [security.md](./security.md).
 
 ## Open
+
+### SUP-16 · Low · Site management card: the "kasni" badge runs past the card edge
+- **Check:** Confirmed (in `help-kb/img/upravljanje-gradilistem.png`, before and after 2026-10-20)
+- **Where:** `Supervision/SiteManagement/ProjectsGrid.tsx:90`, the badge row
+- **What happens:** at 1280px a card with status, category, phase count and overdue badges
+  (Rezidencija Jarun on LandmarkDemo) pushes the red "1 kasni" past the card's right edge.
+- **Fix direction:** `flex flex-wrap items-center gap-2` instead of `flex items-center space-x-2`,
+  then retake the `upravljanje-gradilistem` help shot.
 
 ### SUP-14 · Low · Supervision wording
 - The subtitles of Supervision payments and invoices describe something the pages do not do.

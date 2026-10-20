@@ -1,10 +1,28 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-23`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-24`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
+
+### GEN-23 · Medium · Unphased plan: earned value counts phases with no contracts as done
+- **Check:** Code reading; the figure is visible on LandmarkDemo (Rezidencija Jarun) and in
+  `help-kb/img/kontrola-proracuna.png`
+- **Where:** `src/utils/evm.ts` `calculateProjectEVM`, the unphased branch (around lines 119-159)
+- **What happens:** for an unphased TIC over several phases, EV is the whole TIC total times the
+  contract-weighted completion of the contracts that exist so far. With phase 1's contracts done
+  and later phases not yet contracted, completion reads 100%, EV equals the whole TIC, and CPI and
+  the forecast show the GEN-22 symptom again. Jarun on 2026-10-20: forecast (EAC) €4.980.839,06
+  "Ispod proračuna", below the €5.735.000 already contracted. `evm.test.ts:296` feeds this exact
+  case (`[contracts[0]]`) but asserts only PV. Same branch: the schedule span uses only phases
+  that have dates, so with phases 2+ undated the whole plan is due by phase 1's end date and SPI
+  reads "behind schedule". Nothing on production is affected yet (no unphased TIC with several
+  phases on 2026-10-20).
+- **Fix direction:** weight completion against the plan, not against what is contracted, e.g. EV =
+  Σ(contract amount × physical %) capped at the TIC, so uncontracted scope counts as not started;
+  treat an undated phase as making the schedule unavailable rather than shortening it. Assert EV,
+  CPI and EAC in the test.
 
 ### GEN-21 · Low · Projects list shows a failed load as an Alert in the content area
 - **Where:** `General/Projects/index.tsx:117`.
