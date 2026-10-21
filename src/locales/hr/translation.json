@@ -4019,7 +4019,7 @@
       "units_sold": "prodanih jedinica",
       "sales_rate": "Stopa prodaje (sve jedinice)",
       "avg_sale_price": "Prosječna cijena prodaje",
-      "per_unit": "Po jedinici",
+      "per_unit": "Po prodaji (s garažama i spremištima)",
       "active_leads": "Aktivni potencijalni kupci",
       "of_customers": "Od {{total}} kupaca",
       "sold_of_total": "{{sold}} od {{total}}",

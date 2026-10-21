@@ -4006,7 +4006,7 @@
       "units_sold": "units sold",
       "sales_rate": "Sales rate (all units)",
       "avg_sale_price": "Avg Sale Price",
-      "per_unit": "Per unit",
+      "per_unit": "Per sale (incl. garages and storage)",
       "active_leads": "Active Leads",
       "of_customers": "Of {{total}} customers",
       "sold_of_total": "{{sold}} of {{total}}",
