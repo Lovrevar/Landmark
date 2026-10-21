@@ -22,6 +22,7 @@ import { generateSalesReportPDF } from './pdf/salesReportPdf'
 import type { ProjectSalesReport, CustomerReport } from './types'
 import { formatEuro, formatEuroCompact, formatDate, formatMonthYear } from '../../utils/formatters'
 import { PROJECT_STATUS, statusLabel, statusVariant } from '../../utils/statusDisplay'
+import { conversionRate } from '../../utils/salesFigures'
 
 const SalesReports: React.FC = () => {
   const { t, i18n } = useTranslation()
@@ -377,7 +378,7 @@ const SalesReports: React.FC = () => {
                 <ul className="space-y-2 text-blue-800 dark:text-blue-200">
                   <li>• {t('reports.sales.highlight_total_customers', { count: customerReport.total_customers })}</li>
                   <li>• {t('reports.sales.highlight_conversions', { count: customerReport.buyers })}</li>
-                  <li>• {t('reports.sales.highlight_conversion_rate', { rate: customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0' })}</li>
+                  <li>• {t('reports.sales.highlight_conversion_rate', { rate: customerReport.total_customers > 0 ? conversionRate(customerReport.buyers, customerReport.total_customers).toFixed(1) : '0' })}</li>
                   <li>• {t('reports.sales.highlight_avg_purchase', { amount: formatEuro(customerReport.average_purchase) })}</li>
                 </ul>
               </div>

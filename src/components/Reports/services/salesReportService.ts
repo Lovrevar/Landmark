@@ -3,6 +3,7 @@ import type { Project } from '../../../lib/supabase'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import type { ProjectSalesReport, CustomerReport, SalesData } from '../types'
 import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
+import { averagePer, customerFunnel, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
@@ -99,16 +100,19 @@ export async function generateProjectReport(
     return sum + sale.sale_price + garagePrice + repoPrice
   }, 0)
 
-  const total_units = apartments.length
-  const sold_units = apartments.filter(apt => apt.status === 'Sold').length
-  const available_units = apartments.filter(apt => apt.status === 'Available').length
-  const reserved_units = apartments.filter(apt => apt.status === 'Reserved').length
+  const {
+    total: total_units,
+    sold: sold_units,
+    available: available_units,
+    reserved: reserved_units,
+  } = unitStatusCounts(apartments)
 
   const totalValue = apartments.reduce((sum, apt) => {
     return sum + apt.price + (aptGaragePriceMap.get(apt.id) || 0) + (aptRepoPriceMap.get(apt.id) || 0)
   }, 0)
-  const average_price = total_units > 0 ? totalValue / total_units : 0
-  const sales_rate = total_units > 0 ? (sold_units / total_units) * 100 : 0
+  // Over every unit, sold or not, with its linked garage and storage (GEN-38).
+  const average_price = averagePer(totalValue, total_units)
+  const sales_rate = salesRate(sold_units, total_units)
 
   const startDate = new Date(dateRange.start)
   const endDate = new Date(dateRange.end)
@@ -177,12 +181,9 @@ export async function generateCustomerReport(
   const customers = customersData || []
   const sales = salesData || []
 
-  const total_customers = customers.length
-  const buyers = customers.filter(c => c.status === 'buyer').length
-  const interested = customers.filter(c => c.status === 'interested').length
-  const leads = customers.filter(c => c.status === 'lead').length
+  const { total: total_customers, buyers, interested, leads } = customerFunnel(customers)
   const total_revenue = sales.reduce((sum, sale) => sum + sale.sale_price, 0)
-  const average_purchase = sales.length > 0 ? total_revenue / sales.length : 0
+  const average_purchase = averagePer(total_revenue, sales.length)
 
   return {
     total_customers,

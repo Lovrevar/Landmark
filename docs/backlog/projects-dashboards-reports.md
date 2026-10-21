@@ -1,7 +1,7 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-38`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-39`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
@@ -98,7 +98,9 @@ fix's own commit, with a test named after the id that fails first.
 
 ### GEN-34 · Low · General report cash-flow months parse dates as UTC
 - **Check:** Confirmed (the characterization test fails under `TZ=America/New_York`)
-- **Where:** `generalReportService.ts`: `new Date(dateRange.start)` and `new Date(p.payment_date)`
+- **Where:** `generalReportService.ts`: `new Date(dateRange.start)` and `new Date(p.payment_date)`.
+  `Reports/services/salesReportService.ts` buckets its monthly sales with `new Date(sale.sale_date)`
+  the same way
 - **What happens:** harmless in Croatia and in UTC. West of UTC the first of the month reads as the
   last day of the month before, so the table gains a seventh month and edge payments move. It is
   against the CLAUDE.md date rule.
@@ -127,6 +129,32 @@ fix's own commit, with a test named after the id that fails first.
   and `executive_summary.roi` (copies of `kpis`)
 - **What happens:** dead output. The loans section was never rendered.
 - **Fix direction:** render the loans or drop them, and drop the two copies.
+
+### GEN-38 · Low · "Sales revenue" and "average price" have six definitions
+- **Check:** Code reading (Step 7 item 1, 2026-10-21). The counting itself is now shared:
+  `unitStatusCounts`, `salesRate`, `customerFunnel` in `src/utils/salesFigures.ts`, called by the
+  General report, the Director and Sales dashboards, the Sales report and Project details
+- **Where / what happens:**
+  - Revenue:
+    - Σ **list price** of sold apartments (`soldRevenue`): General report, Director per project,
+      Project details.
+    - Σ `sales.sale_price`: Director portfolio.
+    - Sale price + linked garage and storage, sales dated in the range:
+      `Reports/services/salesReportService.ts`.
+    - Cash collected on sales invoices: `dashboards/services/salesDashboardService.ts`
+      ("Naplaćeno od prodaje", by GEN-9's decision).
+    - Σ `total_paid` per building: `Sales/SalesProjects/hooks/useSalesData.ts`.
+    - Sale price or list price plus linked units: `Sales/utils/packageTotal.ts` (SALES-6).
+  - Average price:
+    - Σ list / sold units: General report.
+    - Σ sale price / sold units: Director.
+    - Σ (list + linked) over **all** units / all units: Sales report.
+    - Σ sale price / sale rows: Sales dashboard.
+  - Units: the Sales dashboard counts garages and storage as units, by decision ("sve jedinice");
+    the others count apartments.
+- **Fix direction:** Step 7 item 2 (GEN-9's follow-up). Decide one "sale" and one "sales revenue"
+  in `salesFigures.ts`, give any figure that stays different its own name on screen, and fold in
+  GEN-26.
 
 ### GEN-24 · Low · Phased plan with some undated phases overstates SPI
 - **Check:** Code reading (convention review of GEN-23, 2026-10-20)

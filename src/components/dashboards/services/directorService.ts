@@ -3,6 +3,7 @@ import { supabase, type ProjectCategory } from '../../../lib/supabase'
 import { startOfMonth } from 'date-fns'
 import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
+import { averagePer, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
 import {
   countOverdueMilestones,
   countCriticalDeadlines,
@@ -240,8 +241,7 @@ function deriveProjects(
       .reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
 
     const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
-    const soldApts = projectApartments.filter(a => a.status === 'Sold')
-    const apartmentSales = soldApts.reduce((sum, a) => sum + a.price, 0)
+    const apartmentSales = soldRevenue(projectApartments)
     const totalInvestment = (allocationsByProject.get(project.id) || []).reduce(
       (sum, alloc) => sum + (alloc.allocated_amount || 0),
       0
@@ -250,9 +250,8 @@ function deriveProjects(
       (sum, bc) => sum + (bc.outstanding_balance || 0),
       0
     )
-    const totalUnits = projectApartments.length
-    const soldUnits = soldApts.length
-    const completionPercentage = totalUnits > 0 ? Math.min(100, (soldUnits / totalUnits) * 100) : 0
+    const { total: totalUnits, sold: soldUnits } = unitStatusCounts(projectApartments)
+    const completionPercentage = Math.min(100, salesRate(soldUnits, totalUnits))
     const profit = apartmentSales - totalExpenses
     const profitMargin = apartmentSales > 0 ? (profit / apartmentSales) * 100 : 0
 
@@ -331,13 +330,16 @@ function deriveFinancial(
 }
 
 function deriveSales(apartments: ApartmentRow[], salesRows: SaleRow[]): SalesMetrics {
-  const totalUnits = apartments.length
-  const soldUnits = apartments.filter(a => a.status === 'Sold').length
-  const reservedUnits = apartments.filter(a => a.status === 'Reserved').length
-  const availableUnits = apartments.filter(a => a.status === 'Available').length
-  const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
+  const {
+    total: totalUnits,
+    sold: soldUnits,
+    reserved: reservedUnits,
+    available: availableUnits,
+  } = unitStatusCounts(apartments)
+  const unitSalesRate = salesRate(soldUnits, totalUnits)
+  // Sale prices here, list prices in the General report (GEN-38).
   const totalSalesRevenue = salesRows.reduce((sum, s) => sum + s.sale_price, 0)
-  const avgPricePerUnit = soldUnits > 0 ? totalSalesRevenue / soldUnits : 0
+  const avgPricePerUnit = averagePer(totalSalesRevenue, soldUnits)
   const currentMonth = startOfMonth(new Date())
   const monthlySales = salesRows.filter(s => s.sale_date && parseLocalDate(s.sale_date) >= currentMonth)
 
@@ -346,7 +348,7 @@ function deriveSales(apartments: ApartmentRow[], salesRows: SaleRow[]): SalesMet
     sold_units: soldUnits,
     reserved_units: reservedUnits,
     available_units: availableUnits,
-    sales_rate: salesRate,
+    sales_rate: unitSalesRate,
     total_sales_revenue: totalSalesRevenue,
     avg_price_per_unit: avgPricePerUnit,
     monthly_sales_count: monthlySales.length,

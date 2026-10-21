@@ -6,6 +6,7 @@ import { daysFromToday } from '../../../utils/dateOnly'
 import { isCashIn, isCashOut, isCostInvoiceType, invoiceCashCategory, type CashCategory } from '../../../utils/invoiceCashDirection'
 import type { CashFlowAmounts, ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
+import { averagePer, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -167,9 +168,8 @@ export async function fetchGeneralReportData(
     ? projectsArray
     : projectsArray.filter(p => p.id === selectedProject)
 
-  const totalRevenue = apartmentsArray
-    .filter(a => a.status === 'Sold')
-    .reduce((sum, a) => sum + (a.price || 0), 0)
+  // List prices of the sold apartments; linked garages and storage are not in the portfolio total.
+  const totalRevenue = soldRevenue(apartmentsArray)
 
   const totalExpenses = accountingPaymentsArray
     // Expenses are costs: every operating invoice the company pays, credit fees included (see
@@ -197,17 +197,16 @@ export async function fetchGeneralReportData(
   const activeFundersCount = activeFunderIds.size
   const roi = totalEquity > 0 ? (totalProfit / totalEquity) * 100 : 0
 
-  const totalUnits = apartmentsArray.length
-  const soldUnits = apartmentsArray.filter(a => a.status === 'Sold').length
-  const reservedUnits = apartmentsArray.filter(a => a.status === 'Reserved').length
-  const availableUnits = apartmentsArray.filter(a => a.status === 'Available').length
-  const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
-  const avgSalePrice = soldUnits > 0 ? totalRevenue / soldUnits : 0
+  const {
+    total: totalUnits,
+    sold: soldUnits,
+    reserved: reservedUnits,
+    available: availableUnits,
+  } = unitStatusCounts(apartmentsArray)
+  const portfolioSalesRate = salesRate(soldUnits, totalUnits)
+  const avgSalePrice = averagePer(totalRevenue, soldUnits)
 
-  const buyers = customersArray.filter(c => c.status === 'buyer').length
-  const leads = customersArray.filter(c => c.status === 'lead').length
-  const interested = customersArray.filter(c => c.status === 'interested').length
-  const conversionRate = customersArray.length > 0 ? (buyers / customersArray.length) * 100 : 0
+  const customerCounts = customerFunnel(customersArray)
 
   // Weighted by facility size, like the Director dashboard; a small credit no longer moves it as
   // much as a large one.
@@ -294,18 +293,14 @@ export async function fetchGeneralReportData(
         .filter(p => projectInvoiceIds.has(p.invoice_id))
         .reduce((sum, p) => sum + (p.amount || 0), 0)
 
-      const soldApts = projectApartments.filter(a => a.status === 'Sold')
-      const projectRevenue = soldApts.reduce((sum, a) => {
-        let total = a.price
-        if (a.garage_id) total += garageMap.get(a.garage_id) || 0
-        if (a.repository_id) total += storageMap.get(a.repository_id) || 0
-        return sum + total
-      }, 0)
+      const projectUnits = unitStatusCounts(projectApartments)
+      // `garage_id` and `repository_id` are not columns of apartments, so this adds nothing (GEN-26).
+      const projectRevenue = soldRevenue(projectApartments, a =>
+        (a.garage_id ? garageMap.get(a.garage_id) || 0 : 0) +
+        (a.repository_id ? storageMap.get(a.repository_id) || 0 : 0))
       const projectProfit = projectRevenue - projectExpenses
       const projectProfitMargin = projectRevenue > 0 ? (projectProfit / projectRevenue) * 100 : 0
-      const projectSalesRate = projectApartments.length > 0
-        ? (soldApts.length / projectApartments.length) * 100
-        : 0
+      const projectSalesRate = salesRate(projectUnits.sold, projectUnits.total)
 
       let riskLevel: 'Low' | 'Medium' | 'High' = 'Low'
       if (projectSalesRate < 20 || projectProfitMargin < 0) riskLevel = 'High'
@@ -322,8 +317,8 @@ export async function fetchGeneralReportData(
         has_budget: plannedBudget(project.id) > 0,
         revenue: projectRevenue,
         expenses: projectExpenses,
-        units_sold: soldApts.length,
-        total_units: projectApartments.length,
+        units_sold: projectUnits.sold,
+        total_units: projectUnits.total,
         contracts: projectContracts.length,
         phases_done: projectPhases.filter(p => p.status === 'completed').length,
         total_phases: projectPhases.length,
@@ -353,7 +348,7 @@ export async function fetchGeneralReportData(
 
   // Keys, for the same reason as the risks above. Both readers translate them at the render site.
   const recommendationKeys: string[] = []
-  if (salesRate < 50) recommendationKeys.push('reports.general.recs.marketing')
+  if (portfolioSalesRate < 50) recommendationKeys.push('reports.general.recs.marketing')
   if (availableUnits > soldUnits) recommendationKeys.push('reports.general.recs.inventory')
   recommendationKeys.push('reports.general.recs.budgets')
   recommendationKeys.push('reports.general.recs.partners')
@@ -471,10 +466,10 @@ export async function fetchGeneralReportData(
       total_revenue: totalRevenue,
       net_profit: totalProfit,
       roi: roi,
-      sales_rate: salesRate,
+      sales_rate: portfolioSalesRate,
       debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
       active_projects: projectsArray.filter(p => p.status === 'In Progress').length,
-      total_customers: customersArray.length
+      total_customers: customerCounts.total
     },
     sales_performance: {
       total_units: totalUnits,
@@ -484,9 +479,9 @@ export async function fetchGeneralReportData(
       total_revenue: totalRevenue,
       avg_sale_price: avgSalePrice,
       total_sales: salesArray.length,
-      buyers: buyers,
-      active_leads: leads + interested,
-      conversion_rate: conversionRate
+      buyers: customerCounts.buyers,
+      active_leads: customerCounts.activeLeads,
+      conversion_rate: customerCounts.conversionRate
     },
     funding_structure: {
       total_equity: totalEquity,

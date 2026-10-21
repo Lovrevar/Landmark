@@ -218,9 +218,8 @@ export async function generateGeneralReportPDF(
   pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
-  const salesRatePercent = report.sales_performance.total_units > 0
-    ? (report.sales_performance.units_sold / report.sales_performance.total_units) * 100
-    : 0
+  // The service's figure, not a second division of the same two counts.
+  const salesRatePercent = report.kpis.sales_rate
 
   // Whole sentences, not `t()` output with English glue welded on: Croatian word order differs,
   // so each line has to be translatable as a unit. The screen renders these same five keys.
