@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase'
+import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
 import { subMonths, startOfMonth, format } from 'date-fns'
 import { collectedByMonth, collectedByProject, collectedFromSales, collectedSince, contractedSales, customerFunnel, salesByMonth, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from '../types/salesDashboardTypes'
@@ -22,9 +23,10 @@ export async function fetchSalesDashboardData(): Promise<{
     salesData,
     customersData,
     projectsData,
-    paymentsData
+    paymentsData,
+    linkedPrices
   ] = await Promise.all([
-    supabase.from('apartments').select('id, status, project_id'),
+    supabase.from('apartments').select('id, status, project_id, price'),
     supabase.from('garages').select('status, building_id'),
     supabase.from('repositories').select('status, building_id'),
     supabase.from('buildings').select('id, project_id'),
@@ -38,7 +40,8 @@ export async function fetchSalesDashboardData(): Promise<{
         apartment_id,
         invoice_type
       )
-    `).eq('invoice.invoice_type', 'OUTGOING_SALES').not('invoice.apartment_id', 'is', null)
+    `).eq('invoice.invoice_type', 'OUTGOING_SALES').not('invoice.apartment_id', 'is', null),
+    fetchLinkedPrices()
   ])
 
   if (apartmentsData.error) throw apartmentsData.error
@@ -78,8 +81,9 @@ export async function fetchSalesDashboardData(): Promise<{
     reserved: reservedUnits,
     available: availableUnits,
   } = unitStatusCounts(allUnits)
-  // Σ sale_price over the sale rows; linked garages and storage play no part (GEN-38).
-  const avgSalePrice = contractedSales(sales).average
+  // The average contracted sale, each at its package value (GEN-38).
+  const listPrices = new Map(apartments.map(a => [a.id, a.price as number | null]))
+  const avgSalePrice = contractedSales(sales, { linked: linkedPrices, listPrice: id => listPrices.get(id) }).average
   const unitSalesRate = salesRate(soldUnits, totalUnits)
   const { total: totalCustomers, activeLeads } = customerFunnel(customers)
   const currentMonth = startOfMonth(new Date())

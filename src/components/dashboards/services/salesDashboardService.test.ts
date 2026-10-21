@@ -74,6 +74,12 @@ const PORTFOLIO: Record<string, unknown[]> = {
     { id: 'r1', building_id: 'bd1', status: 'Sold' },
     { id: 'r2', building_id: 'bd2', status: 'Available' },
   ],
+  // a1 is sold with g1 and r1, a5 with g2.
+  apartment_garages: [
+    { id: 'l1', apartment_id: 'a1', garages: { price: 15_000 } },
+    { id: 'l2', apartment_id: 'a5', garages: { price: 20_000 } },
+  ],
+  apartment_repositories: [{ id: 'l3', apartment_id: 'a1', repositories: { price: 5_000 } }],
   sales: SALES,
   customers: [
     { id: 'cu1', name: 'Ana', surname: 'Horvat', status: 'buyer' },
@@ -122,8 +128,9 @@ describe('fetchSalesDashboardData: a realistic portfolio', () => {
       soldUnits: 8,
       // Cash collected on the apartments' sales invoices ("Naplaćeno od prodaje", GEN-9).
       totalRevenue: COLLECTED,
-      // Σ sale_price over the sale rows; linked garages and storage play no part (GEN-38).
-      avgSalePrice: (198_000 + 150_000.5 + 295_000 + 250_000) / 4,
+      // The four sales at their package values (GEN-38, changed on purpose: it was the sale
+      // prices alone, with a1's and a5's garages and storage left out).
+      avgSalePrice: (198_000 + 15_000 + 5_000 + 150_000.5 + 295_000 + 20_000 + 250_000) / 4,
       salesRate: pct(8, 14),
       totalCustomers: 6,
       activeLeads: 3,
@@ -182,7 +189,7 @@ describe('fetchSalesDashboardData: no rows at all', () => {
 })
 
 describe('fetchSalesDashboardData: a failed load', () => {
-  it.each(['apartments', 'garages', 'repositories', 'buildings', 'sales', 'customers', 'projects', 'accounting_payments'])(
+  it.each(['apartments', 'garages', 'repositories', 'buildings', 'sales', 'customers', 'projects', 'accounting_payments', 'apartment_garages', 'apartment_repositories'])(
     'rejects when the %s read fails, rather than showing zeros',
     async table => {
       db.failing = { [table]: `permission denied for table ${table}` }
