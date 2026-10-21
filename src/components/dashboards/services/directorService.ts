@@ -4,6 +4,7 @@ import { startOfMonth } from 'date-fns'
 import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
 import { averagePer, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
+import { allocationTotals, debtToEquity, isLiveDebt, liveDebtFigures, totalEquity as equityOf } from '../../../utils/fundingFigures'
 import {
   countOverdueMilestones,
   countCriticalDeadlines,
@@ -86,11 +87,6 @@ interface CreditRow {
   credit_name: string | null
   company: { id: string; name: string } | null
 }
-
-// A bank_credits row counts as debt only if it is not an equity facility and
-// is still live (not repaid or defaulted).
-const isLiveDebt = (c: CreditRow): boolean =>
-  c.credit_type !== 'equity' && c.status !== 'paid' && c.status !== 'defaulted'
 
 interface SubcontractorRow {
   id: string
@@ -242,10 +238,8 @@ function deriveProjects(
 
     const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
     const apartmentSales = soldRevenue(projectApartments)
-    const totalInvestment = (allocationsByProject.get(project.id) || []).reduce(
-      (sum, alloc) => sum + (alloc.allocated_amount || 0),
-      0
-    )
+    const totalInvestment = allocationTotals(allocationsByProject.get(project.id) || []).allocated
+    // Outstanding on every credit of the project, equity included (FUND-21).
     const totalDebt = (creditsByProject.get(project.id) || []).reduce(
       (sum, bc) => sum + (bc.outstanding_balance || 0),
       0
@@ -296,11 +290,9 @@ function deriveFinancial(
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
   // Debt excludes equity facilities and repaid/defaulted credits; equity is the
   // sum of equity-type facilities (real capital), not credit allocations.
-  const totalDebt = credits.filter(isLiveDebt).reduce((sum, bc) => sum + Number(bc.outstanding_balance || 0), 0)
-  const totalEquity = credits
-    .filter(bc => bc.credit_type === 'equity')
-    .reduce((sum, bc) => sum + Number(bc.amount || 0), 0)
-  const debtToEquityRatio = totalEquity > 0 ? totalDebt / totalEquity : 0
+  const totalDebt = liveDebtFigures(credits).outstanding
+  const totalEquity = equityOf(credits)
+  const debtToEquityRatio = debtToEquity(totalDebt, totalEquity)
   const currentMonth = startOfMonth(new Date())
   const cashFlowCurrentMonth = apartmentPayments
     .filter(p => p.payment_date && parseLocalDate(p.payment_date) >= currentMonth)
@@ -417,15 +409,14 @@ function deriveFunding(
 
   // Debt KPIs exclude equity facilities and repaid/defaulted credits.
   const debtCredits = credits.filter(isLiveDebt)
-  const totalBankCredit = debtCredits.reduce((sum, bc) => sum + Number(bc.amount || 0), 0)
-  const outstandingDebt = debtCredits.reduce((sum, bc) => sum + Number(bc.outstanding_balance || 0), 0)
-  const totalUsedCredit = debtCredits.reduce((sum, bc) => sum + Number(bc.used_amount || 0), 0)
+  const {
+    facilityAmount: totalBankCredit,
+    outstanding: outstandingDebt,
+    used: totalUsedCredit,
+    avgInterestRate,
+    monthlyDebtService,
+  } = liveDebtFigures(credits)
   const creditUtilization = totalBankCredit > 0 ? (totalUsedCredit / totalBankCredit) * 100 : 0
-  // Amount-weighted average rate (a simple mean is skewed by tiny facilities).
-  const avgInterestRate = totalBankCredit > 0
-    ? debtCredits.reduce((sum, bc) => sum + Number(bc.interest_rate || 0) * Number(bc.amount || 0), 0) / totalBankCredit
-    : 0
-  const monthlyDebtService = debtCredits.reduce((sum, bc) => sum + Number(bc.monthly_payment || 0), 0)
   const upcomingMaturities = debtCredits.filter(bc => {
     if (!bc.maturity_date) return false
     const daysUntil = daysFromToday(bc.maturity_date)

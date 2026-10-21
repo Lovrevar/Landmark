@@ -13,7 +13,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
 | [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 7 |
 | [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 8, plus 4 waiting on the ERP |
-| [funding.md](./funding.md) | Credits, investors, allocations, TIC | 8 |
+| [funding.md](./funding.md) | Credits, investors, allocations, TIC | 9 |
 | [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 21 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 12 |
 | [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 12 |

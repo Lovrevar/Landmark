@@ -7,6 +7,16 @@ import { isCashIn, isCashOut, isCostInvoiceType, invoiceCashCategory, type CashC
 import type { CashFlowAmounts, ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
 import { averagePer, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
+import {
+  activeFunderCount,
+  allocationTotals,
+  creditLineTotals,
+  debtToEquity,
+  liveDebtFigures,
+  loanTotals,
+  projectFunding,
+  totalEquity as equityOf,
+} from '../../../utils/fundingFigures'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -181,20 +191,12 @@ export async function fetchGeneralReportData(
 
   const portfolioValue = projectsArray.reduce((sum, p) => sum + plannedBudget(p.id), 0)
   // Same definitions as the Director dashboard: debt is what is still owed on live, non-equity
-  // credits; equity is the equity facilities. (Equity used to be the credit allocations and debt
-  // the face value of every credit, repaid and equity ones included.)
-  const liveDebtCredits = bankCreditsArray.filter(bc =>
-    bc.credit_type !== 'equity' && bc.status !== 'paid' && bc.status !== 'defaulted')
-  const totalEquity = bankCreditsArray
-    .filter(bc => bc.credit_type === 'equity')
-    .reduce((sum, bc) => sum + (bc.amount || 0), 0)
-  const totalDebt = liveDebtCredits.reduce((sum, bc) => sum + (bc.outstanding_balance || 0), 0)
-  const activeFunderIds = new Set(
-    creditAllocationsArray
-      .map(alloc => bankCreditsArray.find(bc => bc.id === alloc.credit_id)?.bank_id)
-      .filter(Boolean)
-  )
-  const activeFundersCount = activeFunderIds.size
+  // credits; equity is the equity facilities (GEN-2).
+  const liveDebt = liveDebtFigures(bankCreditsArray)
+  const totalEquity = equityOf(bankCreditsArray)
+  const totalDebt = liveDebt.outstanding
+  const debtEquityRatio = debtToEquity(totalDebt, totalEquity)
+  const creditLines = creditLineTotals(bankCreditsArray)
   const roi = totalEquity > 0 ? (totalProfit / totalEquity) * 100 : 0
 
   const {
@@ -207,14 +209,6 @@ export async function fetchGeneralReportData(
   const avgSalePrice = averagePer(totalRevenue, soldUnits)
 
   const customerCounts = customerFunnel(customersArray)
-
-  // Weighted by facility size, like the Director dashboard; a small credit no longer moves it as
-  // much as a large one.
-  const liveDebtAmount = liveDebtCredits.reduce((sum, bc) => sum + (bc.amount || 0), 0)
-  const avgInterestRate = liveDebtAmount > 0
-    ? liveDebtCredits.reduce((sum, bc) => sum + (bc.interest_rate || 0) * (bc.amount || 0), 0) / liveDebtAmount
-    : 0
-  const monthlyDebtService = liveDebtCredits.reduce((sum, bc) => sum + (bc.monthly_payment || 0), 0)
 
   const totalContractValue = contractsArray.reduce((sum, c) => sum + c.contract_amount, 0)
   const budgetRealized = contractsArray.reduce((sum, c) => sum + c.budget_realized, 0)
@@ -274,12 +268,8 @@ export async function fetchGeneralReportData(
       const projectApartments = apartmentsArray.filter(a => a.project_id === project.id)
       const projectContracts = contractsArray.filter(c => c.project_id === project.id)
       const projectPhases = projectPhasesArray.filter(p => p.project_id === project.id)
-      const projectInvestment = creditAllocationsArray
-        .filter(alloc => alloc.project_id === project.id)
-        .reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
-
-      const projectBankCredits = bankCreditsArray.filter(bc => bc.project_id === project.id)
-      const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.amount, 0)
+      // Not the portfolio's definitions (GEN-27).
+      const funding = projectFunding(project.id, creditAllocationsArray, bankCreditsArray)
 
       const projectInvoiceIds = new Set(
         accountingInvoicesArray
@@ -322,8 +312,8 @@ export async function fetchGeneralReportData(
         contracts: projectContracts.length,
         phases_done: projectPhases.filter(p => p.status === 'completed').length,
         total_phases: projectPhases.length,
-        equity: projectInvestment,
-        debt: projectDebt,
+        equity: funding.equity,
+        debt: funding.debt,
         sales_rate: projectSalesRate,
         profit: projectProfit,
         profit_margin: projectProfitMargin,
@@ -404,10 +394,6 @@ export async function fetchGeneralReportData(
   const totalOfficeSpent = officeInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
   const avgOfficeInvoice = totalOfficeInvoices > 0 ? totalOfficeSpent / totalOfficeInvoices : 0
 
-  const totalCredits = bankCreditsArray.length
-  const totalCreditValue = bankCreditsArray.reduce((sum, cr) => sum + (cr.amount || 0), 0)
-  const creditsUsed = bankCreditsArray.reduce((sum, cr) => sum + (cr.used_amount || 0), 0)
-  const creditsAvailable = bankCreditsArray.reduce((sum, cr) => sum + ((cr.amount || 0) - (cr.used_amount || 0)), 0)
   const cesijaPayments = accountingPaymentsArray.filter(p => p.cesija_credit_id).length
   const cesijaValue = accountingPaymentsArray
     .filter(p => p.cesija_credit_id)
@@ -418,13 +404,8 @@ export async function fetchGeneralReportData(
   const positiveBalanceAccounts = companyBankAccountsArray.filter(acc => (acc.current_balance || 0) > 0).length
   const negativeBalanceAccounts = companyBankAccountsArray.filter(acc => (acc.current_balance || 0) < 0).length
 
-  const totalLoans = companyLoansArray.length
-  const totalLoanAmount = companyLoansArray.reduce((sum, loan) => sum + (loan.amount || 0), 0)
-  const totalLoanOutstanding = companyLoansArray.reduce((sum, loan) => sum + (loan.current_balance || 0), 0)
-  const activeLoans = companyLoansArray.filter(loan => (loan.current_balance || 0) > 0).length
-
-  const totalAllocations = creditAllocationsArray.length
-  const allocatedAmount = creditAllocationsArray.reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
+  const loans = loanTotals(companyLoansArray)
+  const allocations = allocationTotals(creditAllocationsArray)
 
   const totalBuildings = buildingsArray.length
   const totalGarages = garagesArray.length
@@ -467,7 +448,7 @@ export async function fetchGeneralReportData(
       net_profit: totalProfit,
       roi: roi,
       sales_rate: portfolioSalesRate,
-      debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
+      debt_equity_ratio: debtEquityRatio,
       active_projects: projectsArray.filter(p => p.status === 'In Progress').length,
       total_customers: customerCounts.total
     },
@@ -486,15 +467,15 @@ export async function fetchGeneralReportData(
     funding_structure: {
       total_equity: totalEquity,
       total_debt: totalDebt,
-      debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
-      total_credit_lines: bankCreditsArray.reduce((sum, bc) => sum + (bc.amount || 0), 0),
+      debt_equity_ratio: debtEquityRatio,
+      total_credit_lines: creditLines.total,
       // Undrawn headroom. It read available_balance/drawn_amount, which bank_credits does not have.
-      available_credit: bankCreditsArray.reduce((sum, bc) => sum + ((bc.amount || 0) - (bc.used_amount || 0)), 0),
-      active_investors: activeFundersCount,
+      available_credit: creditLines.available,
+      active_investors: activeFunderCount(creditAllocationsArray, bankCreditsArray),
       active_banks: banksArray.length,
-      bank_credits: bankCreditsArray.length,
-      avg_interest_rate: avgInterestRate,
-      monthly_debt_service: monthlyDebtService
+      bank_credits: creditLines.count,
+      avg_interest_rate: liveDebt.avgInterestRate,
+      monthly_debt_service: liveDebt.monthlyDebtService
     },
     construction_status: {
       total_contracts: contractsArray.length,
@@ -533,20 +514,20 @@ export async function fetchGeneralReportData(
       avg_office_invoice: avgOfficeInvoice
     },
     company_credits: {
-      total_credits: totalCredits,
-      total_credit_value: totalCreditValue,
-      credits_available: creditsAvailable,
-      credits_used: creditsUsed,
+      total_credits: creditLines.count,
+      total_credit_value: creditLines.total,
+      credits_available: creditLines.available,
+      credits_used: creditLines.used,
       cesija_payments: cesijaPayments,
       cesija_value: cesijaValue,
-      total_allocations: totalAllocations,
-      allocated_amount: allocatedAmount
+      total_allocations: allocations.count,
+      allocated_amount: allocations.allocated
     },
     company_loans: {
-      total_loans: totalLoans,
-      total_loan_amount: totalLoanAmount,
-      total_outstanding: totalLoanOutstanding,
-      active_loans: activeLoans
+      total_loans: loans.count,
+      total_loan_amount: loans.amount,
+      total_outstanding: loans.outstanding,
+      active_loans: loans.active
     },
     bank_accounts: {
       total_accounts: totalBankAccounts,
