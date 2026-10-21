@@ -12,7 +12,7 @@ Manages the real estate sales pipeline: projects, buildings, apartment/garage/st
 
 An apartment is sold as a package with its linked garages and storage units, but a `sales` row
 holds one price, and it is the apartment's. Every screen that puts a total beside "paid" takes it
-from `packageTotal` in `Sales/utils/packageTotal.ts` (decided 2026-10-08, SALES-6):
+from `packageTotal` in `src/utils/salesFigures.ts` (decided 2026-10-08, SALES-6):
 
 - **sold:** `sales.sale_price` plus the list prices of the linked units;
 - **not sold:** list prices throughout.

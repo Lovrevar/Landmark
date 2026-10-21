@@ -205,7 +205,7 @@ names the backlog id, and so does the pinned expectation.
 
 | Module | Functions | Called by |
 |---|---|---|
-| `salesFigures.ts` | `unitStatusCounts`, `salesRate`, `averagePer`, `soldRevenue` (list price of sold units, optional linked price), `customerFunnel`, `conversionRate` | General and Sales reports, Director and Sales dashboards, Project details. Revenue definitions that differ: GEN-38 |
+| `salesFigures.ts` | `unitStatusCounts`, `salesRate`, `averagePer`, `soldRevenue` (list price of sold units, optional linked price), `customerFunnel`, `conversionRate`, `packageTotal` / `unitPackageTotal` (SALES-6, moved from `Sales/utils/`) | General and Sales reports, Director and Sales dashboards, Project details; the package total on the Sales unit cards, Apartments and Customers screens. Revenue definitions that differ: GEN-38 |
 | `fundingFigures.ts` | `isLiveDebt`, `liveDebtFigures` (outstanding, facility amount, used, weighted rate, debt service), `totalEquity`, `debtToEquity`, `creditLineTotals`, `allocationTotals`, `activeFunderCount`, `projectFunding` (GEN-27), `loanTotals` | General report, Director and Investment dashboards. Differences: FUND-21 |
 | `paymentFigures.ts` | `costPaid` (payments on cost invoices, optionally narrowed), `cesijaFromCredit` (GEN-29), `bankAccountTotals` | General report. The Director dashboard's expense basis: GEN-39 |
 | `paymentTotals.ts` | `paymentTotalsByDirection`, `paymentTotalsByCategory` (cent sums), `DIRECTION_AMOUNT_CLASS`, `formatSignedEuro` — moved from `Cashflow/services/` | Cashflow and Funding payment registers, `cashFlowFigures` |

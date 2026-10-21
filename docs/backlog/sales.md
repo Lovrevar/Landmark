@@ -149,9 +149,9 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 
 ### SALES-6 · Medium · The package total is still computed per screen
 - Decided 2026-10-08: a sold package totals its sale price plus the list prices of the linked
-  garages and storage units; an unsold one, list prices throughout. `packageTotal` in
-  `Sales/utils/packageTotal.ts` is the one implementation, used by the Sales project cards, the
-  Apartments page and its payment history, and the Customers card, detail modal and per-project
+  garages and storage units; an unsold one, list prices throughout. `packageTotal`
+  (`src/utils/salesFigures.ts` since Step 7 item 2) is the one implementation, used by the Sales
+  project cards, the Apartments page and its payment history, and the Customers card, detail modal and per-project
   sums (`fix/figures-and-tic-export`). The stale `sales.total_paid` / `remaining_amount` columns
   are still there, unread by any screen; dropping them needs a migration.
 

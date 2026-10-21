@@ -1,5 +1,5 @@
 import { CustomerWithApartments } from '../Customers/types'
-import { unitPackageTotal } from './packageTotal'
+import { unitPackageTotal } from '../../../utils/salesFigures'
 
 type UnitItem = {
   id: string

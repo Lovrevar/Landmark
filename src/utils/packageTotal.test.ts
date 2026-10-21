@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { packageTotal, unitPackageTotal } from './packageTotal'
+import { packageTotal, unitPackageTotal } from './salesFigures'
 
 describe('packageTotal', () => {
   it('is list prices throughout before a sale', () => {

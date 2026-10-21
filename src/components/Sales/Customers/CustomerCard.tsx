@@ -4,7 +4,7 @@ import { Mail, Phone, Clock, Calendar, Eye, Edit2, Trash2, Building2, Square, Ch
 import { CustomerWithApartments, CustomerCategory } from './types'
 import { Button } from '../../ui'
 import { formatEuroCompact, formatDate } from '../../../utils/formatters'
-import { unitPackageTotal } from '../utils/packageTotal'
+import { unitPackageTotal } from '../../../utils/salesFigures'
 
 interface CustomerCardProps {
   customer: CustomerWithApartments
