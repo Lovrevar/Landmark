@@ -1,10 +1,8 @@
 import { supabase } from '../../../lib/supabase'
 import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
-import { isCashIn, isCashOut, invoiceCashCategory, type CashCategory } from '../../../utils/invoiceCashDirection'
-import type { CashFlowAmounts, ComprehensiveReport, ProjectData, ReportRisk } from '../types'
+import type { ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
 import { averagePer, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
 import {
@@ -18,6 +16,7 @@ import {
   totalEquity as equityOf,
 } from '../../../utils/fundingFigures'
 import { bankAccountTotals, cesijaFromCredit, costPaid } from '../../../utils/paymentFigures'
+import { monthlyCashFlow } from '../../../utils/cashFlowFigures'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -142,16 +141,6 @@ export async function fetchGeneralReportData(
   const retailCustomersArray = retailCustomers || []
   const retailSuppliersArray = retailSuppliers || []
 
-  // The cash-flow table is cash: every payment, on the side the shared direction map puts it —
-  // the same rule as the bank balance. It used to count ULAZNI (INV) as inflow, and to leave
-  // credit drawdowns, repayments and credit fees out altogether, so its net could not be
-  // reconciled with the accounts. Drawdowns and repayments of principal are now counted under
-  // "financing", apart from operations, so a drawdown does not read as a good month's trading;
-  // credit fees are an operating cost.
-  const invoiceTypeById = new Map(accountingInvoicesArray.map(inv => [inv.id, inv.invoice_type]))
-  const inflowPaymentsArray = accountingPaymentsArray.filter(p => isCashIn(invoiceTypeById.get(p.invoice_id)))
-  const outflowPaymentsArray = accountingPaymentsArray.filter(p => isCashOut(invoiceTypeById.get(p.invoice_id)))
-
   // Fetch garages and repositories for calculating total revenue
   const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
   const storageIds = apartmentsArray.map(apt => apt.repository_id).filter(Boolean)
@@ -224,43 +213,13 @@ export async function fetchGeneralReportData(
   // 'completed' is the trigger's word for *partly* paid; a milestone is done when it is 'paid'.
   const completedMilestones = subcontractorMilestonesArray.filter(m => m.status === 'paid').length
 
-  const months = eachMonthOfInterval({
-    start: new Date(dateRange.start),
-    end: new Date(dateRange.end)
-  })
-
-  const cashFlow = months.map(month => {
-    const monthStart = startOfMonth(month)
-    const monthEnd = endOfMonth(month)
-    const inMonth = (p: { payment_date: string }) => {
-      const date = new Date(p.payment_date)
-      return date >= monthStart && date <= monthEnd
-    }
-
-    // Each payment lands in exactly one of four cells: in or out, operating or financing.
-    const amounts = (category: CashCategory): CashFlowAmounts => {
-      const sum = (payments: typeof inflowPaymentsArray) =>
-        payments
-          .filter(p => inMonth(p) && invoiceCashCategory(invoiceTypeById.get(p.invoice_id)) === category)
-          .reduce((total, p) => total + p.amount, 0)
-      const inflow = sum(inflowPaymentsArray)
-      const outflow = sum(outflowPaymentsArray)
-      return { inflow, outflow, net: inflow - outflow }
-    }
-
-    const operating = amounts('operating')
-    const financing = amounts('financing')
-
-    return {
-      // A machine key, not a label. Both readers format it in the language they are rendering in.
-      month_key: format(startOfMonth(month), 'yyyy-MM-dd'),
-      inflow: operating.inflow + financing.inflow,
-      outflow: operating.outflow + financing.outflow,
-      net: operating.net + financing.net,
-      operating,
-      financing,
-    }
-  })
+  // Cash, month by month: every payment on the side the shared direction map puts it, and
+  // drawdowns and repayments of principal under financing, apart from operations.
+  const invoiceTypeById = new Map(accountingInvoicesArray.map(inv => [inv.id, inv.invoice_type]))
+  const cashFlow = monthlyCashFlow(
+    accountingPaymentsArray.map(p => ({ ...p, invoiceType: invoiceTypeById.get(p.invoice_id) })),
+    dateRange,
+  )
 
   const projectDetails: ProjectData[] = await Promise.all(
     filteredProjects.map(async (project) => {

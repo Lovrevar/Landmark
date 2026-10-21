@@ -96,19 +96,22 @@ fix's own commit, with a test named after the id that fails first.
 - **Fix direction:** ask accounting whether a kompenzacija belongs in a cash-flow statement. Then
   either filter by source or reword the doc and the screen.
 
-### GEN-34 · Low · General report cash-flow months parse dates as UTC
-- **Check:** Confirmed (the characterization test fails under `TZ=America/New_York`)
-- **Where:** `generalReportService.ts`: `new Date(dateRange.start)` and `new Date(p.payment_date)`.
-  `Reports/services/salesReportService.ts` buckets its monthly sales with `new Date(sale.sale_date)`
-  the same way
-- **What happens:** harmless in Croatia and in UTC. West of UTC the first of the month reads as the
-  last day of the month before, so the table gains a seventh month and edge payments move. It is
-  against the CLAUDE.md date rule.
-- **Fix direction:** `parseLocalDate` (`src/utils/dateOnly.ts`).
+### GEN-34 · Low · Sales report buckets its monthly sales by UTC dates
+- **Check:** Confirmed for the General report, which had the same bug: its characterization test
+  failed under `TZ=America/New_York` until 2026-10-21. Code reading for the Sales report
+- **Where:** `Reports/services/salesReportService.ts`, monthly sales: `new Date(dateRange.start)`
+  and `new Date(sale.sale_date)`
+- **What happens:** harmless in Croatia and in UTC. West of UTC the first of a month reads as the
+  last day of the month before, so the table gains a month and sales on a month's first day move.
+  It is against the CLAUDE.md date rule. The General report's cash flow, which did the same, now
+  buckets with `parseLocalDate` / `monthKey` in `src/utils/cashFlowFigures.ts`, and passes in
+  New York time.
+- **Fix direction:** the same helpers, or `monthlyCashFlow`'s bucketing.
 
 ### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
 - **Check:** Code reading. **Runtime check needed** on production row counts
-- **Where:** `generalReportService.ts`, the first `Promise.all`
+- **Where:** `generalReportService.ts`, the first `Promise.all`. Also
+  `dashboards/services/accountingDashboardService.ts` `fetchMonthlyTrends` (this year's payments)
 - **What happens:** PostgREST returns at most 1000 rows without saying so, and none of the reads
   uses `fetchAllRows`. Past 1000 payments or invoices every total is silently low. A payment whose
   invoice is beyond row 1000 has no type, so it drops out of expenses and the cash flow altogether.

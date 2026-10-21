@@ -21,6 +21,7 @@ import { RISK_LEVEL, statusLabel } from '../../../utils/statusDisplay'
 import { exportFileName } from '../../../utils/downloadFile'
 import { logActivity } from '../../../lib/activityLog'
 import { orgHeading } from '../../../lib/orgName'
+import { cashFlowTotals } from '../../../utils/cashFlowFigures'
 
 /** Whole euros, for the aggregate figures this report is made of. */
 const money = pdfMoneyRounded
@@ -751,10 +752,6 @@ export async function generateGeneralReportPDF(
 
   // Two tables with the same columns: operations, then financing (credit principal drawn and
   // repaid). Their sum is the total cash flow the charts above plot.
-  const sumRows = (rows: readonly CashFlowAmounts[]) => rows.reduce(
-    (total, row) => ({ inflow: total.inflow + row.inflow, outflow: total.outflow + row.outflow, net: total.net + row.net }),
-    { inflow: 0, outflow: 0, net: 0 },
-  )
   const amountsLine = (amounts: CashFlowAmounts) => [
     `${withColon('reports.general.inflow_col')} ${moneyCompact(amounts.inflow)}`,
     `${withColon('reports.general.outflow_col')} ${moneyCompact(amounts.outflow)}`,
@@ -800,7 +797,7 @@ export async function generateGeneralReportPDF(
     yPosition += rows.length * 5 + 3
 
     pdf.setFont(fontFamily, 'bold')
-    pdf.text(amountsLine(sumRows(rows)), margin + 5, yPosition)
+    pdf.text(amountsLine(cashFlowTotals(rows)), margin + 5, yPosition)
     yPosition += 9
   }
 
@@ -808,7 +805,7 @@ export async function generateGeneralReportPDF(
   pdf.setFontSize(9)
   pdf.setFont(fontFamily, 'bold')
   pdf.text(`${t('reports.general.six_month_totals')} ${t('reports.general.cash_flow_total')}`, margin + 5, yPosition)
-  pdf.text(amountsLine(sumRows(report.cash_flow)), margin + 5, yPosition + 5)
+  pdf.text(amountsLine(cashFlowTotals(report.cash_flow)), margin + 5, yPosition + 5)
   yPosition += 15
 
   // ── Project Portfolio page ────────────────────────────────────────────────

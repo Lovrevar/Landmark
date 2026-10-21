@@ -102,12 +102,17 @@ describe('screens that read the map', () => {
     for (const file of [
       'src/components/dashboards/services/accountingDashboardService.ts',
       'src/components/dashboards/services/directorService.ts',
-      'src/components/Reports/services/generalReportService.ts',
     ]) {
       const source = read(file)
       expect(source, file).toContain('utils/invoiceCashDirection')
       expect(source, file).not.toMatch(/'(INCOMING|OUTGOING)_(SUPPLIER|OFFICE|INVESTMENT|SALES)'/)
     }
+    // Since REGRESSION_PREVENTION Step 7 (2026-10-21) the General report no longer reads the map
+    // itself: its expenses and cash flow come from src/utils/paymentFigures.ts and
+    // cashFlowFigures.ts, which do — see the two tests at the end of this file.
+    const generalReport = read('src/components/Reports/services/generalReportService.ts')
+    expect(generalReport).not.toContain('utils/invoiceCashDirection')
+    expect(generalReport).not.toMatch(/'(INCOMING|OUTGOING)_[A-Z_]+'/)
   })
 
   it('the Cashflow calendar takes both sides from the map, so no type is left out of its sums', () => {
@@ -277,10 +282,13 @@ describe('operating and financing', () => {
   })
 
   it('is what the General report splits its cash-flow table by, with no list of its own', () => {
-    const source = read('src/components/Reports/services/generalReportService.ts')
-    expect(source).toContain("amounts('operating')")
-    expect(source).toContain("amounts('financing')")
-    expect(source).toContain('invoiceCashCategory(')
+    // The split moved out of the service with REGRESSION_PREVENTION Step 7 (2026-10-21): the
+    // service calls monthlyCashFlow, which sums with paymentTotalsByCategory, which asks the map.
+    // What the split does is tested in cashFlowFigures.test.ts; this pins the wiring.
+    expect(read('src/components/Reports/services/generalReportService.ts')).toContain('monthlyCashFlow(')
+    const source = read('src/utils/cashFlowFigures.ts')
+    expect(source).toContain('paymentTotalsByCategory(')
     expect(source).not.toMatch(/'(INCOMING|OUTGOING)_[A-Z_]+'/)
+    expect(read('src/utils/paymentTotals.ts')).toContain('invoiceCashCategory(')
   })
 })

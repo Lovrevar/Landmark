@@ -4,7 +4,7 @@ import { CreditCard, TrendingUp, TrendingDown, Scale, Receipt } from 'lucide-rea
 import { Payment } from './types'
 import { StatCard, StatGrid } from '../../ui'
 import { formatEuro } from '../../../utils/formatters'
-import { paymentTotalsByCategory, formatSignedEuro } from '../services/paymentTotals'
+import { paymentTotalsByCategory, formatSignedEuro } from '../../../utils/paymentTotals'
 
 interface PaymentStatsCardsProps {
   /** The **filtered** list — the rows the table below is showing. */

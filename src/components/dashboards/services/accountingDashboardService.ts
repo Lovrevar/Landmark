@@ -1,7 +1,7 @@
 import { supabase } from '../../../lib/supabase'
 import { fetchAllRows } from '../../../lib/fetchAllRows'
 import { format, startOfMonth, endOfMonth, startOfYear, subMonths } from 'date-fns'
-import { monthKey } from '../../../utils/dateOnly'
+import { monthlyCashFlow } from '../../../utils/cashFlowFigures'
 import { isCashIn, isCashOut, carriesInputVat, carriesOutputVat } from '../../../utils/invoiceCashDirection'
 import type { VATStats, CashFlowStats, TopCompany, MonthlyData, MonthlyBudget } from '../types/accountingDashboardTypes'
 
@@ -174,30 +174,16 @@ export async function fetchMonthlyTrends(): Promise<MonthlyData[]> {
 
   if (error) throw error
 
-  // Pre-seed every month from Jan to the current month with zeros, keyed by a
-  // sortable 'YYYY-MM' so the chart shows gaps as zeros and stays chronological.
-  // `label` is the month's first day, not a rendered name: only the section renders it, and
-  // only it knows the UI language.
-  const now = new Date()
-  const monthlyMap = new Map<string, { incoming: number; outgoing: number; label: string }>()
-  for (let m = 0; m <= now.getMonth(); m++) {
-    const d = new Date(now.getFullYear(), m, 1)
-    monthlyMap.set(format(d, 'yyyy-MM'), { incoming: 0, outgoing: 0, label: format(d, 'yyyy-MM-dd') })
-  }
-
-  for (const payment of payments || []) {
-    const key = monthKey(payment.payment_date)
-    const data = monthlyMap.get(key)
-    if (!data) continue
-    const invoiceType = (payment.accounting_invoices as unknown as { invoice_type: string }).invoice_type
-    const amount = parseFloat(payment.amount) || 0
-    if (isIncomingPaymentType(invoiceType)) data.incoming += amount
-    else if (isOutgoingPaymentType(invoiceType)) data.outgoing += amount
-  }
-
-  return Array.from(monthlyMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, data]) => ({ month: data.label, incoming: data.incoming, outgoing: data.outgoing }))
+  // Every month from January to this one, gaps as zeros, by the General report's cash-flow sums
+  // (operating and financing together). `month` is the month's first day, not a rendered name:
+  // only the section renders it, and only it knows the UI language.
+  const rows = (payments || []).map(payment => ({
+    amount: payment.amount,
+    payment_date: payment.payment_date,
+    invoiceType: (payment.accounting_invoices as unknown as { invoice_type: string }).invoice_type,
+  }))
+  return monthlyCashFlow(rows, { start: yearStart, end: format(new Date(), 'yyyy-MM-dd') })
+    .map(month => ({ month: month.month_key, incoming: month.inflow, outgoing: month.outflow }))
 }
 
 export async function fetchMonthlyBudget(): Promise<MonthlyBudget | null> {
