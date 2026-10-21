@@ -68,8 +68,6 @@ describe('calculateSalesPaymentStats', () => {
   })
 
   it('totals every payment, and those since the first of the month', () => {
-    // The month holds in UTC (CI) and east of it (Croatia). West of UTC '2026-10-01' reads as
-    // 30 September and drops out of "this month".
     expect(calculateSalesPaymentStats([
       payment({ payment_date: '2026-10-05', amount: 45_000 }),
       payment({ payment_date: '2026-10-01', amount: 30_000 }),
@@ -81,6 +79,20 @@ describe('calculateSalesPaymentStats', () => {
       paymentsThisMonth: 2,
       amountThisMonth: 75_000,
     })
+  })
+
+  it('"this month" holds west of UTC (the same UTC parse as GEN-34)', () => {
+    const tz = process.env.TZ
+    process.env.TZ = 'America/New_York'
+    try {
+      vi.setSystemTime(new Date(2026, 9, 20, 15, 30, 0))
+      expect(calculateSalesPaymentStats([
+        payment({ payment_date: '2026-10-01', amount: 30_000 }),
+        payment({ payment_date: '2026-09-30', amount: 50_000 }),
+      ])).toMatchObject({ paymentsThisMonth: 1, amountThisMonth: 30_000 })
+    } finally {
+      process.env.TZ = tz
+    }
   })
 
   it('no payments', () => {
