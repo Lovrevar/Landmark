@@ -128,8 +128,9 @@ describe('generateProjectReport', () => {
       reserved_units: 1,
       // Sale price plus the linked garages and storage of the sales dated in the range.
       total_revenue: s1 + s2,
-      // List price plus linked units over all five apartments, sold or not (GEN-38).
-      average_price: (200_000 + 20_000 + 150_000.5 + 20_000 + 180_000 + 170_000 + 10_000 + 160_000) / 5,
+      // The average contracted sale in the range (GEN-38, changed on purpose: it was list price
+      // plus linked units over all five apartments, sold or not).
+      average_price: (s1 + s2) / 2,
       sales_rate: 60,
       monthly_sales: months({ '2026-09-01': [1, s2], '2026-10-01': [1, s1] }),
       apartments: APARTMENTS.filter(a => a.project_id === 'p1'),
@@ -143,7 +144,8 @@ describe('generateProjectReport', () => {
     expect(r.budget_set).toBe(false)
     // s4, on the first of October; a6 has no linked units, and s6 falls after the range.
     expect(r.total_revenue).toBe(250_000)
-    expect(r.average_price).toBe((300_000 + 20_000 + 250_000 + 210_000) / 3)
+    // GEN-38, changed on purpose: it was (300.000 + 20.000 + 250.000 + 210.000) / 3.
+    expect(r.average_price).toBe(250_000)
     expect(r.monthly_sales).toEqual(months({ '2026-10-01': [1, 250_000] }))
   })
 

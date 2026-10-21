@@ -4,7 +4,7 @@ import type { Project } from '../../../lib/supabase'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import type { ProjectSalesReport, CustomerReport, SalesData } from '../types'
 import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
-import { averagePer, contractedSales, customerFunnel, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
+import { contractedSales, customerFunnel, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
@@ -63,7 +63,8 @@ export async function generateProjectReport(
 
   // Throws on a failed read, rather than leaving the garages and storage out (GEN-42).
   const linked = await fetchLinkedPrices()
-  const linkedTotal = (apartmentId: string) => (linked.get(apartmentId) ?? []).reduce((sum, price) => sum + price, 0)
+  const listPrices = new Map(apartments.map(apt => [apt.id as string, apt.price as number | null]))
+  const saleOptions = { linked, listPrice: (id: string) => listPrices.get(id) }
 
   const { data: salesData, error: salesError } = await supabase
     .from('sales')
@@ -76,9 +77,8 @@ export async function generateProjectReport(
 
   const sales = salesData || []
 
-  // Sale price plus the linked garages and storage, with no list price standing in for a 0 sale
-  // price (GEN-38).
-  const total_revenue = contractedSales(sales, { linked }).value
+  // Contracted sales dated in the range, each at its package value (GEN-38).
+  const { value: total_revenue, average: average_price } = contractedSales(sales, saleOptions)
 
   const {
     total: total_units,
@@ -87,11 +87,6 @@ export async function generateProjectReport(
     reserved: reserved_units,
   } = unitStatusCounts(apartments)
 
-  const totalValue = apartments.reduce((sum, apt) => {
-    return sum + apt.price + linkedTotal(apt.id)
-  }, 0)
-  // Over every unit, sold or not, with its linked garage and storage (GEN-38).
-  const average_price = averagePer(totalValue, total_units)
   const sales_rate = salesRate(sold_units, total_units)
 
   const startDate = new Date(dateRange.start)
@@ -107,7 +102,7 @@ export async function generateProjectReport(
       return saleDate >= monthStart && saleDate <= monthEnd
     })
 
-    const monthRevenue = contractedSales(monthSales, { linked }).value
+    const monthRevenue = contractedSales(monthSales, saleOptions).value
 
     return {
       // A machine key, not a label — both readers format it themselves. See `SalesData` in ../types.
