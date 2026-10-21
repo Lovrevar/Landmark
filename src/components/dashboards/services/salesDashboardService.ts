@@ -1,6 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { subMonths, startOfMonth, format } from 'date-fns'
-import { collectedByMonth, collectedByProject, collectedFromSales, collectedSince, contractedSales, salesByMonth, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
+import { collectedByMonth, collectedByProject, collectedFromSales, collectedSince, contractedSales, customerFunnel, salesByMonth, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from '../types/salesDashboardTypes'
 
 // A unit of any of the three saleable types (stan / garaža / repozitorij),
@@ -81,8 +81,7 @@ export async function fetchSalesDashboardData(): Promise<{
   // Σ sale_price over the sale rows; linked garages and storage play no part (GEN-38).
   const avgSalePrice = contractedSales(sales).average
   const unitSalesRate = salesRate(soldUnits, totalUnits)
-  const totalCustomers = customers.length
-  const activeLeads = customers.filter(c => c.status === 'lead' || c.status === 'interested').length
+  const { total: totalCustomers, activeLeads } = customerFunnel(customers)
   const currentMonth = startOfMonth(new Date())
   const monthlyRevenue = collectedSince(payments, currentMonth)
 
