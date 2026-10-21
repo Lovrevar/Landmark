@@ -1,7 +1,7 @@
 # Backlog — app-wide UI
 
 Problems that repeat across modules: formatting, status display, failed loads, translations, the
-shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-14`). Entry format and
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-18`). Entry format and
 rules are in [README.md](./README.md).
 
 A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
@@ -9,6 +9,50 @@ helper or a sweep. Counts were measured on 2026-09-21 to 2026-09-23 and will hav
 again before starting a sweep. Check [../UI.md](../UI.md) before adding a primitive.
 
 ## Open
+
+### UI-14 · Low · StatCard: a long word in the title runs under the icon
+- **Check:** Confirmed on LandmarkDemo at 1280 px (2026-10-21)
+- **Where:** `ui/StatCard.tsx`, `.stat-card__grid` in `index.css` (label column `minmax(0, 1fr)`
+  beside the icon)
+- **What happens:** a word wider than the label column doesn't wrap and runs under the icon:
+  "Naplaćeno od prodaje", "Naplaćeno ovaj mjesec" and "Aktivni potencijalni kupci" on the Sales
+  dashboard, "Ugovorena prodaja" and "Novčani tok (Listopad)" on the Director's. Every StatCard
+  in a five-across row at 1280 px is exposed
+- **Fix direction:** `overflow-wrap: anywhere` (or `hyphens: auto` with `lang="hr"`) on
+  `.stat-card__label`, or move the icon above the label below a container width, as the value
+  already does. Check 1280 px and phone width in both languages
+
+### UI-15 · Low · The Croatian UI says "Export Excel" and "Export PDF"
+- **Check:** Code reading, seen on Sales payments (2026-10-21)
+- **Where:** `src/locales/hr/translation.json`: `common.export_excel` ("Export Excel", 7 screens,
+  among them Sales payments), `common.export_pdf`, `tic.export_excel_button`,
+  `tic.export_pdf_button`
+- **What happens:** the hr locale holds the English text, so the buttons are English in the
+  Croatian UI. Not covered by SALES-19 or UI-5 (those are literals in code, not locale values)
+- **Fix direction:** ask for the wording first (the General report already says "Izvoz PDF"),
+  then fix the four values and grep for other English hr values
+
+### UI-16 · Low · Storage units should be "spremište", not "repozitorij", in the Croatian UI
+- **Check:** Confirmed (decision by the product owner, 2026-10-21)
+- **Where:** about 24 hr locale strings ("Repozitorij", "repozitorija", "Repozitoriji", …), the
+  help articles (`help-kb/`), and the Croatian PDF and Excel exports
+- **What happens:** the screens call a storage unit "repozitorij". The Sales dashboard's average
+  ("Po prodaji (s garažama i spremištima)", GEN-38) already says "spremište", so the UI now uses
+  both
+- **Fix direction:** a sweep of the labels only. The `repozitorij` unit type, the
+  `repositories` table and the code names stay; CLAUDE.md's "Unit types" line should then say
+  what the screens call it. Rebuild the help index and add a release note
+
+### UI-17 · Low · "Ugovorena prodaja" is the value of nine keys, with no shared one
+- **Check:** Code reading (convention review of GEN-38's follow-ups, 2026-10-21)
+- **Where:** `general_projects.revenue_from_sales`, `dashboards.director.total_revenue` /
+  `total_sales_revenue` / `revenue_col`, `reports.general.total_revenue` / `total_revenue_label` /
+  `revenue_label`, `reports.sales.total_revenue` / `total_revenue_stat`, in both locales
+- **What happens:** the i18n rule wants a string used in several components under `common.*`.
+  The next wording change has to find all nine, and keys named `*revenue*` no longer say what
+  they hold
+- **Fix direction:** `common.contracted_sales` (and a colon variant if needed), point the
+  screens and PDFs at it, delete the old keys; grep the PDF builders too
 
 ### UI-10 · Low · Shell labels that disagree or are unused
 - **Check:** Code reading (help-article audit, 2026-10-06)
@@ -55,6 +99,9 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
   browser-locale, `$`, `€0.0M` and `€`-suffix render is gone.
 - **Left:** ~256 hand-rolled `toLocaleString('hr-HR')` money renders in 68 files (ragged
   decimals), and 74 `DollarSign` icons in 29 files outside Reports and dashboards.
+  One seen on LandmarkDemo (2026-10-21): the Sales report's monthly table prints its average as
+  "€269.182,5" (`Reports/SalesReports.tsx` ~283; the revenue column beside it, ~282, is
+  hand-rolled the same way).
 - **Fix direction:** `formatEuro` / `formatEuroRounded` / `formatEuroCompact` from
   `utils/formatters.ts`.
 - **Sign order (2026-10-06):** the shared euro helpers now print a negative as "−€1.234,56". The

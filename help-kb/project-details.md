@@ -14,7 +14,7 @@ Ispod naziva projekta su četiri pločice: **Budžet** (s iznosom **Utrošeno**)
 
 Prikazano je šest kartica (tabova):
 
-- **Pregled** — **Informacije o projektu** (lokacija, investitor, vrsta projekta, datumi), **Financijski sažetak** (**Ukupna investicija**, **Ukupni rashodi**, **Prihodi od prodaje**) i **Nedavne prekretnice**.
+- **Pregled** — **Informacije o projektu** (lokacija, investitor, vrsta projekta, datumi), **Financijski sažetak** (**Ukupna investicija**, **Ukupni rashodi**, **Ugovorena prodaja** — vrijednost prodaja stanova projekta, svaka s povezanim garažama i repozitorijima) i **Nedavne prekretnice**.
 - **Faze i ugovori** — faze projekta s ugovorima po fazi.
 - **Stanovi** — broj prodanih, rezerviranih i dostupnih jedinica te tablica jedinica s cijenom, statusom i kupcem.
 - **Podugovaratelji** — ugovori s podugovarateljima, uz pretragu i zbrojeve.

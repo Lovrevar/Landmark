@@ -5,7 +5,7 @@ import { CustomerWithApartments } from '../types'
 import { Modal } from '../../../ui'
 import { groupCustomerPurchasesByProject } from '../../utils/customerUtils'
 import { formatEuroCompact, formatDate } from '../../../../utils/formatters'
-import { unitPackageTotal } from '../../utils/packageTotal'
+import { unitPackageTotal } from '../../../../utils/salesFigures'
 
 interface CustomerDetailModalProps {
   show: boolean

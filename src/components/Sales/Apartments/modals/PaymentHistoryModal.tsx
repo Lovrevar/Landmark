@@ -5,7 +5,7 @@ import type { TFunction } from 'i18next'
 import { ApartmentWithDetails, PaymentWithCustomer } from '../types'
 import { Modal, Button, EmptyState } from '../../../ui'
 import { formatDate } from '../../../../utils/formatters'
-import { packageTotal } from '../../utils/packageTotal'
+import { packageTotal } from '../../../../utils/salesFigures'
 
 const getPaymentUnitInfo = (
   payment: PaymentWithCustomer,

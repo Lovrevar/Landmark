@@ -1,7 +1,8 @@
 import { supabase } from '../../../lib/supabase'
+import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
 import type { ComprehensiveReport, ProjectData } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
-import { averagePer, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
+import { contractedSales, contractedSalesByProject, customerFunnel, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 import {
   activeFunderCount,
   allocationTotals,
@@ -152,35 +153,20 @@ export async function fetchGeneralReportData(
   const retailCustomersArray = retailCustomers || []
   const retailSuppliersArray = retailSuppliers || []
 
-  // Fetch garages and repositories for calculating total revenue
-  const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
-  const storageIds = apartmentsArray.map(apt => apt.repository_id).filter(Boolean)
-
-  const unitExtraResponses = await Promise.all([
-    supabase
-      .from('garages')
-      .select('id, price')
-      .in('id', garageIds.length > 0 ? garageIds : ['']),
-    supabase
-      .from('repositories')
-      .select('id, price')
-      .in('id', storageIds.length > 0 ? storageIds : ['']),
-  ])
-
-  // These two prices feed per-project revenue, so losing them understates it silently.
-  throwIfAnyFailed(unitExtraResponses)
-
-  const [{ data: garagesData }, { data: storagesData }] = unitExtraResponses
-
-  const garageMap = new Map((garagesData || []).map(g => [g.id, g.price]))
-  const storageMap = new Map((storagesData || []).map(s => [s.id, s.price]))
+  // A sale is worth its package: the linked garages and storage, from apartment_garages and
+  // apartment_repositories, and the list price for a 0 sale price (GEN-38, GEN-26). Throws on a
+  // failed read.
+  const listPrices = new Map(apartmentsArray.map(apt => [apt.id as string, apt.price as number | null]))
+  const saleOptions = { linked: await fetchLinkedPrices(), listPrice: (id: string) => listPrices.get(id) }
+  const projectOfApartment = new Map(apartmentsArray.map(apt => [apt.id as string, apt.project_id as string | null]))
+  const contractedByProject = contractedSalesByProject(salesArray, sale => projectOfApartment.get(sale.apartment_id), saleOptions)
 
   const filteredProjects = selectedProject === 'all'
     ? projectsArray
     : projectsArray.filter(p => p.id === selectedProject)
 
-  // List prices of the sold apartments; linked garages and storage are not in the portfolio total.
-  const totalRevenue = soldRevenue(apartmentsArray)
+  // Contracted sales: the sale rows at their package values.
+  const { value: totalRevenue, average: avgSalePrice } = contractedSales(salesArray, saleOptions)
 
   // Expenses are costs: every operating invoice the company pays, credit fees included (see
   // COST_INVOICE_TYPES). Repaying principal moves cash but is not an expense.
@@ -205,7 +191,6 @@ export async function fetchGeneralReportData(
     available: availableUnits,
   } = unitStatusCounts(apartmentsArray)
   const portfolioSalesRate = salesRate(soldUnits, totalUnits)
-  const avgSalePrice = averagePer(totalRevenue, soldUnits)
 
   const customerCounts = customerFunnel(customersArray)
 
@@ -232,10 +217,7 @@ export async function fetchGeneralReportData(
       const projectExpenses = costPaid(accountingPaymentsArray, accountingInvoicesArray, inv => inv.project_id === project.id)
 
       const projectUnits = unitStatusCounts(projectApartments)
-      // `garage_id` and `repository_id` are not columns of apartments, so this adds nothing (GEN-26).
-      const projectRevenue = soldRevenue(projectApartments, a =>
-        (a.garage_id ? garageMap.get(a.garage_id) || 0 : 0) +
-        (a.repository_id ? storageMap.get(a.repository_id) || 0 : 0))
+      const projectRevenue = contractedByProject.get(project.id)?.value ?? 0
       const { profit: projectProfit, margin: projectProfitMargin } = profitAndMargin(projectRevenue, projectExpenses)
       const projectSalesRate = salesRate(projectUnits.sold, projectUnits.total)
 

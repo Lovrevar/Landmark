@@ -15,7 +15,7 @@ import { ApartmentDetailsModal } from './modals/ApartmentDetailsModal'
 import { PaymentHistoryModal } from './modals/PaymentHistoryModal'
 import { LinkUnitsModal } from './modals/LinkUnitsModal'
 import { formatEuroRounded } from '../../../utils/formatters'
-import { packageTotal } from '../utils/packageTotal'
+import { packageTotal } from '../../../utils/salesFigures'
 import { canEditSalesUnits, canDeleteSalesUnits } from '../../../utils/permissions'
 import { isUniqueViolation } from '../../../lib/dbErrors'
 

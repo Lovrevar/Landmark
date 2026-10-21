@@ -22,7 +22,7 @@ import { generateSalesReportPDF } from './pdf/salesReportPdf'
 import type { ProjectSalesReport, CustomerReport } from './types'
 import { formatEuro, formatEuroCompact, formatDate, formatMonthYear } from '../../utils/formatters'
 import { PROJECT_STATUS, statusLabel, statusVariant } from '../../utils/statusDisplay'
-import { conversionRate } from '../../utils/salesFigures'
+import { averagePer, conversionRate } from '../../utils/salesFigures'
 
 const SalesReports: React.FC = () => {
   const { t, i18n } = useTranslation()
@@ -280,7 +280,7 @@ const SalesReports: React.FC = () => {
                     <Table.Td label={t('reports.sales.month_col')} className="font-medium text-gray-900 dark:text-white">{formatMonthYear(month.month_key, i18n.language)}</Table.Td>
                     <Table.Td label={t('reports.sales.units_sold_col')}>{month.units_sold}</Table.Td>
                     <Table.Td label={t('reports.sales.revenue_col')}>€{month.revenue.toLocaleString('hr-HR')}</Table.Td>
-                    <Table.Td label={t('reports.sales.avg_price_col')}>€{month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString('hr-HR') : '0'}</Table.Td>
+                    <Table.Td label={t('reports.sales.avg_price_col')}>€{averagePer(month.revenue, month.units_sold).toLocaleString('hr-HR')}</Table.Td>
                   </Table.Tr>
                 ))}
               </Table.Body>

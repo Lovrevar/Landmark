@@ -27,7 +27,7 @@ import { fetchProjectDataEnhanced } from './services/projectDetailsService'
 import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import { usePhaseCollapseState } from './hooks/usePhaseCollapseState'
 import { buildPhaseBuckets, computePhaseStatuses } from './utils'
-import { soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
+import { unitStatusCounts } from '../../../utils/salesFigures'
 import { projectTimeline } from '../../../utils/projectTimeline'
 import { formatDate } from '../../../utils/formatters'
 import { PROJECT_STATUS, UNIT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
@@ -54,6 +54,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const [contracts, setContracts] = useState<ContractWithDetails[]>([])
   // The project's TIC total; null means the project has no plan and no budget to show.
   const [ticTotal, setTicTotal] = useState<number | null>(null)
+  const [totalRevenue, setTotalRevenue] = useState(0)
   const [apartments, setApartments] = useState<ApartmentItem[]>([])
   const [investments, setInvestments] = useState<CreditAllocationItem[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -76,6 +77,7 @@ const ProjectDetailsEnhanced: React.FC = () => {
       setPhases(data.phases)
       setContracts(data.contracts)
       setTicTotal(data.ticTotal)
+      setTotalRevenue(data.contractedSales.value)
       setApartments(data.apartments)
       setInvestments(data.investments)
     } catch (error) {
@@ -165,7 +167,6 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const activeContractCount = contracts.filter(c => !isClosedContract(c.status)).length
   const totalSpent = contracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
   const hasPlan = ticTotal !== null && ticTotal > 0
-  const totalRevenue = soldRevenue(apartments)
   const unitCounts = unitStatusCounts(apartments)
   const completionPercentage = milestones.length > 0
     ? Math.round((milestones.filter(m => m.completed).length / milestones.length) * 100)

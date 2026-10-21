@@ -1,10 +1,82 @@
 # Backlog — Sales
 
 Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (next free:
-`SALES-23`). Entry format and rules are in [README.md](./README.md). Retail is in
+`SALES-27`). Entry format and rules are in [README.md](./README.md). Retail is in
 [retail.md](./retail.md).
 
 ## Open
+
+### SALES-26 · Low · A sale can be recorded at a negative price
+- **Check:** Code reading (Step 7 item 2 review, 2026-10-21)
+- **Where:** `sales.sale_price` is `numeric(15,2) NOT NULL` with no CHECK (baseline ~3943);
+  `complete_apartment_sale` does not validate it; `SaleFormModal.tsx` ~187 has an advisory
+  `min="0"`, and the required check rejects only 0
+- **What happens:** a negative price is accepted. `packageTotal` treats a sale price of 0 or less
+  as missing and uses the list price, so contracted sales show the list price instead.
+  Before Step 7 item 2 the negative figure was subtracted.
+- **Fix direction:** check production for any `sale_price <= 0`. Then a migration adding
+  `CHECK (sale_price > 0)`, and the same refusal in the RPC and the form.
+
+### SALES-23 · Low · Package totals, paid and unit status are each defined several ways (Step 7 item 4 work list)
+- **Check:** Code reading (Step 7 planning, 2026-10-21). `packageTotal` is shared by six screens
+  (SALES-6)
+- **Where / what happens:**
+  - Paid per unit has two bases:
+    - every `OUTGOING_SALES` payment on the apartment: `fetchActualTotalPaidByApartment`,
+      `apartmentListService`, `apartmentService`;
+    - only the buyer's invoices: `Customers/services/customerService.ts`. An apartment invoice
+      with another or no `customer_id` counts on one screen and not on the other.
+  - Remaining is computed inline and unclamped in six places: `PaymentHistoryModal`,
+    `CustomerCard`, `CustomerDetailModal`, `customerUtils`, and Cashflow Customers (twice).
+  - Cashflow Customers' `property_price` (`Cashflow/Customers/services/customerService.ts` ~71)
+    is list price plus linked units, and ignores `sale_price`. Its "paid" is Σ `paid_amount` over
+    every invoice of the customer, whatever its type.
+  - The sale form's "remaining" (`SaleFormModal.tsx` ~254) is `sale_price − down_payment`, with
+    the linked units left out.
+  - A linked Available garage or storage unit shows as Reserved only in memory (`buildSalesProjects`).
+    The grid's filters count it Reserved. `unitStatusCounts` on the raw rows, as the Sales
+    dashboard uses, counts it Available. The Apartments link modal offers it.
+  - `buildSalesProjects` looks up the sale of a garage or storage unit through `sales.garage_id`
+    and `repository_id`, which don't exist. So a sold garage never shows its buyer, and the garage
+    and storage part of a building's revenue is always 0. The same code reads the stale
+    `sales.total_paid` and `remaining_amount`, though `docs/SALES.md` says nothing reads them.
+  - The UnitsGrid paid bar is not clamped (`UnitsGrid.tsx` ~313); the Apartments page's is.
+  - "Naplaćeno" on the Sales project and building cards (`buildSalesProjects`) counts payments
+    only on Sold apartments that have a sale row and a building. The Sales dashboard's per-project
+    "Naplaćeno" (`collectedByProject`) counts every `OUTGOING_SALES` payment on the project's
+    apartments. A deposit on a Reserved apartment, or on a Sold one without a sale, shows on the
+    dashboard and not on the card (found by the Step 7 item 2 review, 2026-10-21).
+- **Fix direction:** Step 7 item 4:
+  - `packageBalance(total, paid)` and an `effectiveUnitStatus` in `src/utils/salesFigures.ts`;
+  - one per-unit paid basis;
+  - drop the garage and storage sale lookups;
+  - correct SALES.md.
+
+### SALES-24 · Low · "Available" does nothing on a linked garage or storage unit shown as Reserved
+- **Check:** Code reading (Step 7 planning, 2026-10-21)
+- **Where:** `Sales/SalesProjects/UnitsGrid.tsx` status buttons (~377); `buildSalesProjects`
+  shows a linked Available unit as Reserved
+- **What happens:** the card says Reserved and offers "Available". Pressing it writes `Available`,
+  which the row already is, so after the refetch the card still says Reserved.
+- **Fix direction:** hide the status buttons on a unit whose Reserved comes from its link, or
+  show it as linked rather than Reserved (SALES-23).
+
+### SALES-25 · Medium · One garage or storage unit can be linked to two apartments
+- **Check:** Code reading (Step 7 planning, 2026-10-21)
+- **Where:**
+  - `apartment_garages_unique` and its storage twin are on the pair `(apartment_id, garage_id)`
+    (baseline ~4249, ~4265).
+  - `linkGarageToApartment` and `linkRepositoryToApartment` (`salesService.ts` ~470) never check
+    the unit's status or existing links.
+  - The Apartments link modal (`LinkUnitsModal`, `linkUnitsService.ts`) offers units already
+    linked elsewhere.
+- **What happens:** the same garage can sit in two packages. Both apartments' package totals
+  count its price, and selling one marks it Sold under the other's buyer too. Since Step 7 item 2
+  contracted sales are package values, so the price is counted twice in the Director dashboard,
+  the General report, both Sales reports and Project details.
+- **Fix direction:** unique indexes on `apartment_garages (garage_id)` and
+  `apartment_repositories (repository_id)` after a duplicate check on production. Make the
+  modal offer only unlinked units.
 
 ### SALES-21 · Medium · Apartment import matches unit numbers exactly; the unique indexes do not
 - **Check:** Code reading (pre-release review, 2026-10-20)
@@ -95,9 +167,9 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 
 ### SALES-6 · Medium · The package total is still computed per screen
 - Decided 2026-10-08: a sold package totals its sale price plus the list prices of the linked
-  garages and storage units; an unsold one, list prices throughout. `packageTotal` in
-  `Sales/utils/packageTotal.ts` is the one implementation, used by the Sales project cards, the
-  Apartments page and its payment history, and the Customers card, detail modal and per-project
+  garages and storage units; an unsold one, list prices throughout. `packageTotal`
+  (`src/utils/salesFigures.ts` since Step 7 item 2) is the one implementation, used by the Sales
+  project cards, the Apartments page and its payment history, and the Customers card, detail modal and per-project
   sums (`fix/figures-and-tic-export`). The stale `sales.total_paid` / `remaining_amount` columns
   are still there, unread by any screen; dropping them needs a migration.
 

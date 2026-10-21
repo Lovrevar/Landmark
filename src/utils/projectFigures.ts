@@ -46,9 +46,13 @@ export function reportRisks(projects: readonly ProjectSalesSnapshot[]): { kind: 
   return slow > 0 ? [{ kind: 'slow_sales', count: slow }] : []
 }
 
-/** The `n` projects with the most revenue, highest first. The input is left as it was. */
+/**
+ * Up to `n` projects with the most revenue, highest first. A project with nothing sold is not a
+ * top project, so it is left out even when fewer than `n` remain (GEN-38). The input is left as
+ * it was.
+ */
 export const topProjectsByRevenue = <T extends { revenue: number }>(projects: readonly T[], n = 3): T[] =>
-  [...projects].sort((a, b) => b.revenue - a.revenue).slice(0, n)
+  projects.filter(p => p.revenue > 0).sort((a, b) => b.revenue - a.revenue).slice(0, n)
 
 /**
  * The strategic recommendations as i18n keys under `reports.general.recs.*`. Marketing below

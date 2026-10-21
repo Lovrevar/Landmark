@@ -1,7 +1,7 @@
 import { supabase } from '../../../lib/supabase'
+import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
 import { subMonths, startOfMonth, format } from 'date-fns'
-import { parseLocalDate, monthKey } from '../../../utils/dateOnly'
-import { averagePer, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
+import { collectedByMonth, collectedByProject, collectedFromSales, collectedSince, contractedSales, customerFunnel, salesByMonth, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from '../types/salesDashboardTypes'
 
 // A unit of any of the three saleable types (stan / garaža / repozitorij),
@@ -23,9 +23,10 @@ export async function fetchSalesDashboardData(): Promise<{
     salesData,
     customersData,
     projectsData,
-    paymentsData
+    paymentsData,
+    linkedPrices
   ] = await Promise.all([
-    supabase.from('apartments').select('id, status, project_id'),
+    supabase.from('apartments').select('id, status, project_id, price'),
     supabase.from('garages').select('status, building_id'),
     supabase.from('repositories').select('status, building_id'),
     supabase.from('buildings').select('id, project_id'),
@@ -39,7 +40,8 @@ export async function fetchSalesDashboardData(): Promise<{
         apartment_id,
         invoice_type
       )
-    `).eq('invoice.invoice_type', 'OUTGOING_SALES').not('invoice.apartment_id', 'is', null)
+    `).eq('invoice.invoice_type', 'OUTGOING_SALES').not('invoice.apartment_id', 'is', null),
+    fetchLinkedPrices()
   ])
 
   if (apartmentsData.error) throw apartmentsData.error
@@ -70,25 +72,22 @@ export async function fetchSalesDashboardData(): Promise<{
     ...(repositoriesData.data || []).map(r => ({ status: r.status, project_id: buildingToProject.get(r.building_id) ?? null }))
   ]
 
-  // Revenue is cash actually collected; only apartment sales are invoiced
-  // (accounting_invoices/sales reference apartment_id only), so garage/storage
-  // sales are not represented in the revenue figures.
-  const totalRevenue = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
-  const totalSalesValue = sales.reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0)
+  // Revenue is cash actually collected ("Naplaćeno od prodaje", GEN-9); only apartment sales are
+  // invoiced, so garage/storage sales are not represented in the revenue figures.
+  const totalRevenue = collectedFromSales(payments)
   const {
     total: totalUnits,
     sold: soldUnits,
     reserved: reservedUnits,
     available: availableUnits,
   } = unitStatusCounts(allUnits)
-  const avgSalePrice = averagePer(totalSalesValue, sales.length)
+  // The average contracted sale, each at its package value (GEN-38).
+  const listPrices = new Map(apartments.map(a => [a.id, a.price as number | null]))
+  const avgSalePrice = contractedSales(sales, { linked: linkedPrices, listPrice: id => listPrices.get(id) }).average
   const unitSalesRate = salesRate(soldUnits, totalUnits)
-  const totalCustomers = customers.length
-  const activeLeads = customers.filter(c => c.status === 'lead' || c.status === 'interested').length
+  const { total: totalCustomers, activeLeads } = customerFunnel(customers)
   const currentMonth = startOfMonth(new Date())
-  const monthlyRevenue = payments
-    .filter(p => parseLocalDate(p.payment_date) >= currentMonth)
-    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+  const monthlyRevenue = collectedSince(payments, currentMonth)
 
   const stats: SalesDashboardStats = {
     totalUnits,
@@ -107,12 +106,8 @@ export async function fetchSalesDashboardData(): Promise<{
   const apartmentToProject = new Map<string, string | null>()
   for (const a of apartments) apartmentToProject.set(a.id, a.project_id as string | null)
 
-  const revenueByProject = new Map<string, number>()
-  for (const p of payments) {
-    const projectId = p.invoice?.apartment_id ? apartmentToProject.get(p.invoice.apartment_id) : null
-    if (!projectId) continue
-    revenueByProject.set(projectId, (revenueByProject.get(projectId) || 0) + (Number(p.amount) || 0))
-  }
+  const revenueByProject = collectedByProject(payments, p =>
+    p.invoice?.apartment_id ? apartmentToProject.get(p.invoice.apartment_id) : null)
 
   const projectStatsMap = new Map<string, ProjectStats>()
   projects.forEach(project => {
@@ -135,17 +130,17 @@ export async function fetchSalesDashboardData(): Promise<{
   // 6-month trend. Bucketed by 'YYYY-MM' string keys (timezone-safe). Note:
   // sales_count is by sale_date, revenue is by payment_date — distinct events.
   const monthlyTrends: MonthlyTrend[] = []
+  const collectedPerMonth = collectedByMonth(payments)
+  const salesPerMonth = salesByMonth(sales)
   for (let i = 5; i >= 0; i--) {
     const monthDate = subMonths(new Date(), i)
     const key = format(monthDate, 'yyyy-MM')
-    const monthPayments = payments.filter(p => monthKey(p.payment_date) === key)
-    const monthSales = sales.filter(s => monthKey(s.sale_date) === key)
     monthlyTrends.push({
       // A machine key, not a label: nothing but the dashboard reads this, and it is the one
       // that knows which language to render it in.
       month: format(startOfMonth(monthDate), 'yyyy-MM-dd'),
-      sales_count: monthSales.length,
-      revenue: monthPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+      sales_count: salesPerMonth.get(key)?.length ?? 0,
+      revenue: collectedPerMonth.get(key) || 0
     })
   }
 

@@ -1,9 +1,10 @@
 import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
 import { supabase, type ProjectCategory } from '../../../lib/supabase'
+import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
 import { startOfMonth } from 'date-fns'
 import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
-import { averagePer, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
+import { contractedSales, contractedSalesByProject, salesRate, salesSince, unitStatusCounts, type SaleValueOptions } from '../../../utils/salesFigures'
 import { allocationTotals, debtToEquity, isLiveDebt, liveDebtFigures, totalEquity as equityOf } from '../../../utils/fundingFigures'
 import { profitAndMargin } from '../../../utils/projectFigures'
 import {
@@ -68,6 +69,7 @@ interface AllocationRow {
 }
 
 interface SaleRow {
+  apartment_id: string
   sale_price: number
   sale_date: string | null
 }
@@ -122,7 +124,8 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
     { data: creditsData, error: creditsError },
     { data: subcontractorsData, error: subcontractorsError },
     { data: milestonesData, error: milestonesError },
-    budgetedProjectIds
+    budgetedProjectIds,
+    linkedPrices
   ] = await Promise.all([
     supabase
       .from('projects')
@@ -136,7 +139,7 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
       .from('accounting_invoices')
       .select('id, contract_id, project_id, invoice_type, invoice_category, total_amount, paid_amount'),
     supabase.from('accounting_payments').select('amount, payment_date, invoice_id'),
-    supabase.from('sales').select('sale_price, sale_date'),
+    supabase.from('sales').select('apartment_id, sale_price, sale_date'),
     supabase.from('credit_allocations').select('project_id, allocated_amount'),
     supabase
       .from('bank_credits')
@@ -148,7 +151,9 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
       .from('subcontractor_milestones')
       .select('id, milestone_name, due_date, status, contract_id'),
     // Which projects have a budget at all: only a TIC sets one (GEN-5).
-    fetchBudgetedProjectIds()
+    fetchBudgetedProjectIds(),
+    // A sale is worth its package: the linked garages and storage count too (GEN-38).
+    fetchLinkedPrices()
   ])
 
   // Every read is checked: a failure shows the error panel instead of a dashboard of zeros.
@@ -174,9 +179,12 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const subcontractors = (subcontractorsData || []) as SubcontractorRow[]
   const milestones = (milestonesData || []) as MilestoneRow[]
 
-  const projectStats = deriveProjects(projects, apartments, contracts, invoices, allocations, credits, budgetedProjectIds)
-  const financial = deriveFinancial(invoices, payments, salesRows, credits)
-  const sales = deriveSales(apartments, salesRows)
+  const listPrices = new Map(apartments.map(a => [a.id, a.price]))
+  const saleOptions: SaleValueOptions = { linked: linkedPrices, listPrice: id => listPrices.get(id) }
+
+  const projectStats = deriveProjects(projects, apartments, contracts, invoices, allocations, credits, budgetedProjectIds, salesRows, saleOptions)
+  const financial = deriveFinancial(invoices, payments, salesRows, credits, saleOptions)
+  const sales = deriveSales(apartments, salesRows, saleOptions)
   const construction = deriveConstruction(contracts, subcontractors, milestones, invoices)
   const funding = deriveFunding(credits, allocations)
   const alerts = buildAlerts(milestones, credits, financial, sales)
@@ -210,7 +218,9 @@ function deriveProjects(
   invoices: InvoiceRow[],
   allocations: AllocationRow[],
   credits: CreditRow[],
-  budgetedProjectIds: ReadonlySet<string>
+  budgetedProjectIds: ReadonlySet<string>,
+  salesRows: SaleRow[],
+  saleOptions: SaleValueOptions
 ): ProjectStats[] {
   const apartmentsByProject = groupBy(apartments, a => a.project_id)
   const contractsByProject = groupBy(contracts, c => c.project_id)
@@ -218,6 +228,8 @@ function deriveProjects(
   const invoicesByProject = groupBy(invoices, i => i.project_id)
   const allocationsByProject = groupBy(allocations, a => a.project_id)
   const creditsByProject = groupBy(credits, c => c.project_id)
+  const projectOfApartment = new Map(apartments.map(a => [a.id, a.project_id]))
+  const salesByProject = contractedSalesByProject(salesRows, s => projectOfApartment.get(s.apartment_id), saleOptions)
 
   return projects.map(project => {
     const projectApartments = apartmentsByProject.get(project.id) || []
@@ -238,7 +250,8 @@ function deriveProjects(
       .reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
 
     const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
-    const apartmentSales = soldRevenue(projectApartments)
+    // Contracted sales of the project's apartments, not the list prices of its Sold ones (GEN-38).
+    const apartmentSales = salesByProject.get(project.id)?.value ?? 0
     const totalInvestment = allocationTotals(allocationsByProject.get(project.id) || []).allocated
     // Outstanding on every credit of the project, equity included (FUND-21).
     const totalDebt = (creditsByProject.get(project.id) || []).reduce(
@@ -271,7 +284,8 @@ function deriveFinancial(
   invoices: InvoiceRow[],
   payments: PaymentRow[],
   salesRows: SaleRow[],
-  credits: CreditRow[]
+  credits: CreditRow[],
+  saleOptions: SaleValueOptions
 ): FinancialMetrics {
   const customerInvoiceIds = new Set(
     invoices.filter(inv => inv.invoice_category === 'CUSTOMER').map(inv => inv.id)
@@ -279,7 +293,7 @@ function deriveFinancial(
   const apartmentPayments = payments.filter(p => p.invoice_id && customerInvoiceIds.has(p.invoice_id))
   const isCostInvoice = (inv: InvoiceRow) => isCostInvoiceType(inv.invoice_type)
 
-  const totalRevenue = salesRows.reduce((sum, s) => sum + s.sale_price, 0)
+  const totalRevenue = contractedSales(salesRows, saleOptions).value
   // Expenses = cash paid out on genuine cost invoices only. (Previously summed
   // paid_amount across ALL invoice types, which subtracted customer payments on
   // OUTGOING_SALES invoices as if they were company costs.)
@@ -320,7 +334,7 @@ function deriveFinancial(
   }
 }
 
-function deriveSales(apartments: ApartmentRow[], salesRows: SaleRow[]): SalesMetrics {
+function deriveSales(apartments: ApartmentRow[], salesRows: SaleRow[], saleOptions: SaleValueOptions): SalesMetrics {
   const {
     total: totalUnits,
     sold: soldUnits,
@@ -328,11 +342,8 @@ function deriveSales(apartments: ApartmentRow[], salesRows: SaleRow[]): SalesMet
     available: availableUnits,
   } = unitStatusCounts(apartments)
   const unitSalesRate = salesRate(soldUnits, totalUnits)
-  // Sale prices here, list prices in the General report (GEN-38).
-  const totalSalesRevenue = salesRows.reduce((sum, s) => sum + s.sale_price, 0)
-  const avgPricePerUnit = averagePer(totalSalesRevenue, soldUnits)
-  const currentMonth = startOfMonth(new Date())
-  const monthlySales = salesRows.filter(s => s.sale_date && parseLocalDate(s.sale_date) >= currentMonth)
+  const { value: totalSalesRevenue, average: avgPricePerUnit } = contractedSales(salesRows, saleOptions)
+  const monthlySales = contractedSales(salesSince(salesRows, startOfMonth(new Date())), saleOptions)
 
   return {
     total_units: totalUnits,
@@ -342,8 +353,8 @@ function deriveSales(apartments: ApartmentRow[], salesRows: SaleRow[]): SalesMet
     sales_rate: unitSalesRate,
     total_sales_revenue: totalSalesRevenue,
     avg_price_per_unit: avgPricePerUnit,
-    monthly_sales_count: monthlySales.length,
-    monthly_sales_revenue: monthlySales.reduce((sum, s) => sum + s.sale_price, 0)
+    monthly_sales_count: monthlySales.count,
+    monthly_sales_revenue: monthlySales.value
   }
 }
 

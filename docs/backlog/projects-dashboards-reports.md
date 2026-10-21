@@ -1,7 +1,7 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-42`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-47`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
@@ -11,17 +11,65 @@ The General report entries GEN-26 to GEN-37 were found while pinning
 2026-10-21). Each figure is pinned as it is, so a fix changes that test's expectation in the
 fix's own commit, with a test named after the id that fails first.
 
-### GEN-26 · Medium · General report: a project's revenue never includes its linked garages and storage
-- **Check:** Confirmed (schema; pinned in `src/components/Reports/services/generalReportService.test.ts`)
-- **Where:** `generalReportService.ts`, per-project revenue, and the second query batch
-- **What happens:** the per-project revenue adds `garage_id` / `repository_id` prices, but
-  `apartments` has neither column. The links live in `apartment_garages` / `apartment_repositories`.
-  So a project's revenue is its sold apartments' list prices, and the price lookup always queries
-  `in('id', [''])`. Portfolio `total_revenue` leaves linked units out on purpose. Once this is
-  fixed, the projects will no longer add up to it.
-- **Fix direction:** decide one definition of package revenue with GEN-9 / Step 7 item 2: sale or
-  list price (SALES-6 `packageTotal` uses the sale price), and whether the portfolio total includes
-  linked units. Then read the junction tables.
+GEN-42 (now resolved) to GEN-44 were found while planning Step 7 item 2 (2026-10-21) and are pinned by the
+characterization tests of the Director and Sales dashboards and the Sales report.
+
+GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 2 (2026-10-21).
+
+### GEN-45 · Low · Sales dashboard trend: "2 prodaje • €0" puts two different series in one row
+- **Check:** Confirmed on LandmarkDemo (2026-10-21): May 2026 has two sales worth €493.665, and
+  the row reads "2 prodaje • €0"
+- **Where:** `dashboards/services/salesDashboardService.ts` (~130, `monthlyTrends`),
+  `dashboards/SalesDashboard.tsx` (`dashboards.sales.trend_row`)
+- **What happens:** the count is sales by `sale_date`, the amount is money collected by
+  `payment_date` (`collectedByMonth`), and the bar width follows the amount. The row reads as two
+  sales worth nothing. Flagged as DASH-303 in the June dashboard audit, which is marked fixed,
+  but only a code comment was added
+- **Fix direction:** decide what the trend shows. Either contracted sales per month
+  (`salesByMonth` already has the sales, valued with `saleValue`), or keep collected and label
+  the two numbers so they don't read as one ("2 prodaje · naplaćeno €0")
+
+### GEN-46 · Low · General report PDF charts: rounded €M labels, cut names, and no negative bars
+- **Check:** Confirmed on LandmarkDemo (2026-10-21), PDF page 3
+- **Where:** `Reports/pdf/generalReportPdf.ts` (~355-383), `Reports/pdf/pdfCharts.ts`
+  (`drawBarChart` ~63, `drawHorizontalBarChart`)
+- **What happens:**
+  - "Najbolji projekti po ugovorenoj prodaji (€M)" labels €2,4M and €849K as "€2" and "€1"
+    (the value is passed in €M and printed as a whole number).
+  - Names are cut at 15 characters (`p.name.substring(0, 15)`), so "Rezidencija Jar".
+  - "Mjesečni neto novčani tok (€K)" is an empty box: `drawBarChart` skips every value ≤ 0, and
+    LandmarkDemo's net cash flow is negative in every month.
+- **Fix direction:** print values with `formatEuroCompact` on euros rather than whole €M; wrap
+  or shorten names with an ellipsis; draw negative bars below a zero line (or say "no positive
+  months" instead of an empty frame). GEN-18 is the line chart on the same report
+
+### GEN-43 · Medium · Director and Sales dashboards, the Sales report and Sales payments read without paging past 1000 rows
+- **Check:** Code reading (Step 7 item 2 planning, 2026-10-21). The General report's version is
+  GEN-35
+- **Where:**
+  - `dashboards/services/directorService.ts`: apartments, contracts, invoices, payments, sales,
+    credits, milestones.
+  - `dashboards/services/salesDashboardService.ts`: every read, payments included.
+  - `Reports/services/salesReportService.ts`: the customer report's customers and sales.
+  - `Sales/Payments/services/salesPaymentsService.ts`: invoices and payments.
+  - `Sales/SalesProjects/services/salesService.ts`: `fetchActualTotalPaidByApartment`, and an
+    `.in()` with every sold apartment's id in the URL.
+  - `General/Projects/services/projectDetailsService.ts`: one project's sales (added by Step 7
+    item 2; a project rarely has 1000 sales).
+- **What happens:** PostgREST returns at most 1000 rows without saying so. Past that, collected
+  from sales, contracted sales, expenses and the unit counts all go silently low.
+- **Fix direction:** `fetchAllRows` with a stable order on the tables that can grow, as for
+  GEN-35. Check production counts first.
+
+### GEN-44 · Low · Director "Novčani tok (mjesec)" counts only what customers paid
+- **Check:** Code reading (Step 7 item 2 planning, 2026-10-21)
+- **Where:** `dashboards/services/directorService.ts` `deriveFinancial`,
+  `cash_flow_current_month`: payments this month on `invoice_category === 'CUSTOMER'` invoices
+- **What happens:** the tile is labelled cash flow, but it is one side of it: what came in from
+  customers. No money out, and no other money in. The Accounting dashboard and the General report
+  each compute a real monthly cash flow (`cashFlowFigures`).
+- **Fix direction:** decide what the tile is for. Either show the month from `monthlyCashFlow`, or
+  call it "Naplaćeno od kupaca (mjesec)".
 
 ### GEN-27 · Medium · General report: per-project debt and equity still use the definitions GEN-2 replaced
 - **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`)
@@ -96,21 +144,6 @@ fix's own commit, with a test named after the id that fails first.
 - **Fix direction:** ask accounting whether a kompenzacija belongs in a cash-flow statement. Then
   either filter by source or reword the doc and the screen.
 
-### GEN-34 · Low · Sales report buckets its monthly sales by UTC dates
-- **Check:** Confirmed for the General report, which had the same bug: its characterization test
-  failed under `TZ=America/New_York` until 2026-10-21. Code reading for the Sales report
-- **Where:** `Reports/services/salesReportService.ts`, monthly sales: `new Date(dateRange.start)`
-  and `new Date(sale.sale_date)`
-- **What happens:** harmless in Croatia and in UTC. West of UTC the first of a month reads as the
-  last day of the month before, so the table gains a month and sales on a month's first day move.
-  It is against the CLAUDE.md date rule. The General report's cash flow, which did the same, now
-  buckets with `parseLocalDate` / `monthKey` in `src/utils/cashFlowFigures.ts`, and passes in
-  New York time.
-- **Fix direction:** the same helpers, or `monthlyCashFlow`'s bucketing.
-- The header comment of `generalReportService.test.ts` still says the General report adds a
-  seventh month west of UTC. That stopped being true on 2026-10-21, and the file was left unedited
-  on purpose. Correct the comment the next time that file changes.
-
 ### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
 - **Check:** Code reading. **Runtime check needed** on production row counts
 - **Where:** `generalReportService.ts`, the first `Promise.all`. Also
@@ -135,32 +168,6 @@ fix's own commit, with a test named after the id that fails first.
   and `executive_summary.roi` (copies of `kpis`)
 - **What happens:** dead output. The loans section was never rendered.
 - **Fix direction:** render the loans or drop them, and drop the two copies.
-
-### GEN-38 · Low · "Sales revenue" and "average price" have six definitions
-- **Check:** Code reading (Step 7 item 1, 2026-10-21). The counting itself is now shared:
-  `unitStatusCounts`, `salesRate`, `customerFunnel` in `src/utils/salesFigures.ts`, called by the
-  General report, the Director and Sales dashboards, the Sales report and Project details
-- **Where / what happens:**
-  - Revenue:
-    - Σ **list price** of sold apartments (`soldRevenue`): General report, Director per project,
-      Project details.
-    - Σ `sales.sale_price`: Director portfolio.
-    - Sale price + linked garage and storage, sales dated in the range:
-      `Reports/services/salesReportService.ts`.
-    - Cash collected on sales invoices: `dashboards/services/salesDashboardService.ts`
-      ("Naplaćeno od prodaje", by GEN-9's decision).
-    - Σ `total_paid` per building: `Sales/SalesProjects/hooks/useSalesData.ts`.
-    - Sale price or list price plus linked units: `Sales/utils/packageTotal.ts` (SALES-6).
-  - Average price:
-    - Σ list / sold units: General report.
-    - Σ sale price / sold units: Director.
-    - Σ (list + linked) over **all** units / all units: Sales report.
-    - Σ sale price / sale rows: Sales dashboard.
-  - Units: the Sales dashboard counts garages and storage as units, by decision ("sve jedinice");
-    the others count apartments.
-- **Fix direction:** Step 7 item 2 (GEN-9's follow-up). Decide one "sale" and one "sales revenue"
-  in `salesFigures.ts`, give any figure that stays different its own name on screen, and fold in
-  GEN-26.
 
 ### GEN-39 · Low · Director dashboard and General report measure expenses differently
 - **Check:** Code reading (Step 7 item 1, 2026-10-21)
@@ -263,6 +270,43 @@ fix's own commit, with a test named after the id that fails first.
 
 ## Resolved
 
+### GEN-38 · Low · "Sales revenue" and "average price" have six definitions
+- Fixed on `refactor/sales-figures` (2026-10-21), Step 7 item 2: one definition of a sale (a
+  `sales` row, worth its package) and two named figures, contracted sales and collected, in
+  `src/utils/salesFigures.ts` (`docs/SALES.md` → A sale and sales revenue). Every screen in the
+  list calls them. The ones that differed changed in their own commits (6e7cf1a1, 92dab90b,
+  67f30b0a, ec2ec718, fdda5c8e, c270c4e2, 8311c76b, d604e114) with a LandmarkDemo diff; the
+  labels followed in 9c35431c. Tests: the characterization tests of the Director and Sales
+  dashboards, both Sales reports, the General report and Project details, whose expectations
+  changed in those commits (commented GEN-38), and `contracted sales` in `salesFigures.test.ts`.
+- Follow-ups from the LandmarkDemo visual check: a project with nothing sold is not a top project
+  (7c94c0a9, `it('GEN-38: leaves out projects with nothing sold…')` in `projectFigures.test.ts`,
+  seen failing first), and the labels still saying "prihod" or "po jedinici" (252f6d2d,
+  46b28736, 719e7ff6).
+
+### GEN-9 · Low · Director and Sales dashboards define sales differently
+- Decided 2026-10-08 to keep both figures and name them. The follow-up, one shared definition
+  for each (GEN-38), was done on `refactor/sales-figures` (2026-10-21).
+
+### GEN-34 · Low · Sales report buckets its monthly sales by UTC dates
+- Fixed on `refactor/sales-figures` (2026-10-21): the range is parsed with `parseLocalDate` and the
+  sales are bucketed with `salesByMonth` (`monthKey`) (f9daf291). Test
+  `it('GEN-34: the months hold west of UTC')` in `salesReportService.test.ts`, which runs in New
+  York time and failed first.
+
+### GEN-26 · Medium · General report: a project's revenue never includes its linked garages and storage
+- Fixed on `refactor/sales-figures` (2026-10-21) with GEN-38's definition: a project's revenue is
+  its contracted sales, each at its package value, with the links read from `apartment_garages` /
+  `apartment_repositories` (`fetchLinkedPrices`). The portfolio total is the sum of the same sales,
+  so the projects add up to it (8311c76b). Pinned in `generalReportService.test.ts` ("projects",
+  "sales performance"), which failed before.
+
+### GEN-42 · Low · Sales report: a failed garage or storage price read is not reported
+- Fixed on `refactor/sales-figures` (2026-10-21): the report reads the links through the shared
+  `fetchLinkedPrices` (`src/lib/linkedUnitPrices.ts`), which pages and throws (3240ae3b). Tests
+  `it.each(…)('GEN-42: rejects when the %s read fails')` in `salesReportService.test.ts`, seen
+  failing first.
+
 ### GEN-23 · Medium · Earned value counted work with no contract as done
 - Fixed on `fix/gen-23-evm-uncontracted` (2026-10-20), for phased and unphased plans: completion is
   the contract-weighted progress over the larger of the plan and the committed total, so
@@ -295,11 +339,6 @@ fix's own commit, with a test named after the id that fails first.
 ### GEN-5 · Low · Budget not gated on the TIC in three places
 - Fixed on `fix/figures-and-tic-export` (2026-10-08): `budgetIsSet` / `fetchBudgetedProjectIds`; the Director table, the
   Investment dashboard's portfolio value and PDF, and the Sales report say "Budžet nije postavljen".
-
-### GEN-9 · Low · Director and Sales dashboards define sales differently
-- Decided 2026-10-08 to keep both figures and name them: the Director dashboard says
-  "Prodani stanovi" and "Ugovorena prodaja", the Sales dashboard "Naplaćeno od prodaje" and
-  "Stopa prodaje (sve jedinice)". Done on `fix/figures-and-tic-export` (2026-10-08).
 
 ### GEN-20 · Medium · Budget Control reports healthy CPI and SPI when there is nothing to measure
 - Fixed on `fix/audit-medium-findings` (2026-10-07): `calculateProjectEVM` returns `costAvailable`, and until something is

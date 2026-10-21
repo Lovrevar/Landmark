@@ -15,7 +15,7 @@ import { UNIT_STATUS, statusLabel, statusVariant } from '../../../utils/statusDi
 import { Apartment, Garage, Repository } from '../../../lib/supabase'
 import { Button, Badge } from '../../ui'
 import { filterUnitsByStatus, getSelectableUnitIds, getUnitsOfType } from './unitFilters'
-import { packageTotal } from '../utils/packageTotal'
+import { packageTotal } from '../../../utils/salesFigures'
 import { useAuth } from '../../../contexts/AuthContext'
 import { canEditSalesUnits, canDeleteSalesUnits } from '../../../utils/permissions'
 
