@@ -1,7 +1,7 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-39`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-40`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
@@ -155,6 +155,24 @@ fix's own commit, with a test named after the id that fails first.
 - **Fix direction:** Step 7 item 2 (GEN-9's follow-up). Decide one "sale" and one "sales revenue"
   in `salesFigures.ts`, give any figure that stays different its own name on screen, and fold in
   GEN-26.
+
+### GEN-39 · Low · Director dashboard and General report measure expenses differently
+- **Check:** Code reading (Step 7 item 1, 2026-10-21)
+- **Where:**
+  - `dashboards/services/directorService.ts`: portfolio expenses ~286, per-project ~226–240.
+  - `src/utils/paymentFigures.ts` `costPaid`, which the General report uses.
+- **What happens:** the same cost-invoice rule (`isCostInvoiceType`) is applied to three different
+  amounts:
+  - General report: Σ payments on cost invoices, portfolio and per project, matched by the
+    invoice's `project_id`.
+  - Director portfolio: Σ invoices' `paid_amount`. It agrees with payments only while
+    `paid_amount` is kept in step.
+  - Director per project: **invoiced** `total_amount`, matched by contract and, for invoices with
+    no contract, by project.
+
+  So "expenses" and the margin differ between the two screens for the same project.
+- **Fix direction:** decide paid against invoiced for each card and name it. Then call `costPaid`,
+  or add an invoiced twin of it beside it.
 
 ### GEN-24 · Low · Phased plan with some undated phases overstates SPI
 - **Check:** Code reading (convention review of GEN-23, 2026-10-20)

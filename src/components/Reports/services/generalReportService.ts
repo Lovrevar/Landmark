@@ -3,7 +3,7 @@ import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import { daysFromToday } from '../../../utils/dateOnly'
-import { isCashIn, isCashOut, isCostInvoiceType, invoiceCashCategory, type CashCategory } from '../../../utils/invoiceCashDirection'
+import { isCashIn, isCashOut, invoiceCashCategory, type CashCategory } from '../../../utils/invoiceCashDirection'
 import type { CashFlowAmounts, ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
 import { averagePer, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
@@ -17,6 +17,7 @@ import {
   projectFunding,
   totalEquity as equityOf,
 } from '../../../utils/fundingFigures'
+import { bankAccountTotals, cesijaFromCredit, costPaid } from '../../../utils/paymentFigures'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -181,11 +182,9 @@ export async function fetchGeneralReportData(
   // List prices of the sold apartments; linked garages and storage are not in the portfolio total.
   const totalRevenue = soldRevenue(apartmentsArray)
 
-  const totalExpenses = accountingPaymentsArray
-    // Expenses are costs: every operating invoice the company pays, credit fees included (see
-    // COST_INVOICE_TYPES). Repaying principal moves cash but is not an expense.
-    .filter(p => isCostInvoiceType(invoiceTypeById.get(p.invoice_id)))
-    .reduce((sum, p) => sum + (p.amount || 0), 0)
+  // Expenses are costs: every operating invoice the company pays, credit fees included (see
+  // COST_INVOICE_TYPES). Repaying principal moves cash but is not an expense.
+  const totalExpenses = costPaid(accountingPaymentsArray, accountingInvoicesArray)
   const totalProfit = totalRevenue - totalExpenses
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
@@ -271,17 +270,7 @@ export async function fetchGeneralReportData(
       // Not the portfolio's definitions (GEN-27).
       const funding = projectFunding(project.id, creditAllocationsArray, bankCreditsArray)
 
-      const projectInvoiceIds = new Set(
-        accountingInvoicesArray
-          .filter(inv =>
-            inv.project_id === project.id && isCostInvoiceType(inv.invoice_type)
-          )
-          .map(inv => inv.id)
-      )
-
-      const projectExpenses = accountingPaymentsArray
-        .filter(p => projectInvoiceIds.has(p.invoice_id))
-        .reduce((sum, p) => sum + (p.amount || 0), 0)
+      const projectExpenses = costPaid(accountingPaymentsArray, accountingInvoicesArray, inv => inv.project_id === project.id)
 
       const projectUnits = unitStatusCounts(projectApartments)
       // `garage_id` and `repository_id` are not columns of apartments, so this adds nothing (GEN-26).
@@ -394,15 +383,8 @@ export async function fetchGeneralReportData(
   const totalOfficeSpent = officeInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
   const avgOfficeInvoice = totalOfficeInvoices > 0 ? totalOfficeSpent / totalOfficeInvoices : 0
 
-  const cesijaPayments = accountingPaymentsArray.filter(p => p.cesija_credit_id).length
-  const cesijaValue = accountingPaymentsArray
-    .filter(p => p.cesija_credit_id)
-    .reduce((sum, p) => sum + (p.amount || 0), 0)
-
-  const totalBankAccounts = companyBankAccountsArray.length
-  const totalBalance = companyBankAccountsArray.reduce((sum, acc) => sum + (acc.current_balance || 0), 0)
-  const positiveBalanceAccounts = companyBankAccountsArray.filter(acc => (acc.current_balance || 0) > 0).length
-  const negativeBalanceAccounts = companyBankAccountsArray.filter(acc => (acc.current_balance || 0) < 0).length
+  const cesija = cesijaFromCredit(accountingPaymentsArray)
+  const bankAccounts = bankAccountTotals(companyBankAccountsArray)
 
   const loans = loanTotals(companyLoansArray)
   const allocations = allocationTotals(creditAllocationsArray)
@@ -518,8 +500,8 @@ export async function fetchGeneralReportData(
       total_credit_value: creditLines.total,
       credits_available: creditLines.available,
       credits_used: creditLines.used,
-      cesija_payments: cesijaPayments,
-      cesija_value: cesijaValue,
+      cesija_payments: cesija.count,
+      cesija_value: cesija.value,
       total_allocations: allocations.count,
       allocated_amount: allocations.allocated
     },
@@ -530,10 +512,10 @@ export async function fetchGeneralReportData(
       active_loans: loans.active
     },
     bank_accounts: {
-      total_accounts: totalBankAccounts,
-      total_balance: totalBalance,
-      positive_balance_accounts: positiveBalanceAccounts,
-      negative_balance_accounts: negativeBalanceAccounts
+      total_accounts: bankAccounts.count,
+      total_balance: bankAccounts.balance,
+      positive_balance_accounts: bankAccounts.positive,
+      negative_balance_accounts: bankAccounts.negative
     },
     buildings_units: {
       total_buildings: totalBuildings,

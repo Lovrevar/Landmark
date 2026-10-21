@@ -260,8 +260,10 @@ describe('operating and financing', () => {
     const uses: [string, number][] = [
       // Director dashboard: contract costs, uncontracted project costs, portfolio expenses.
       ['src/components/dashboards/services/directorService.ts', 3],
-      // General report: total expenses and per-project expenses.
-      ['src/components/Reports/services/generalReportService.ts', 2],
+      // General report: total and per-project expenses both go through costPaid, so the service
+      // itself classifies nothing (REGRESSION_PREVENTION Step 7; it held 2 calls until 2026-10-21).
+      ['src/utils/paymentFigures.ts', 1],
+      ['src/components/Reports/services/generalReportService.ts', 0],
     ]
     for (const [file, calls] of uses) {
       const source = read(file)
