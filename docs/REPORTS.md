@@ -61,7 +61,26 @@ Two things to know before adding a figure here:
   Zapad's leftover €1.000.000.000 made up 89% of a €1.118M "Portfolio Value" on a page headed
   Executive Report; the same figure is now €63.6M, the sum of the three real cost plans.
 - `fetchGeneralReportData(selectedProject, dateRange)` — aggregates data from 40+ tables into a ComprehensiveReport covering: executive summary, KPIs (portfolio value, sales rate, D/E ratio), sales performance, funding structure, construction status, accounting overview, TIC cost management, risk assessment, and cash flow analysis
-  - Cash-flow table: every payment, split by `invoiceCashDirection` (so it reconciles with the bank balance) and by `invoiceCashCategory` into **operating** and **financing** — credit drawdowns are financing inflow, repayments of principal financing outflow, everything else operating (ULAZNI (INV) and credit fees are operating outflow). Each `cash_flow` month carries `operating`, `financing` and their sum (`inflow` / `outflow` / `net`, which the two charts plot). Screen and PDF render one table per activity plus three total lines. Expenses and per-project expenses use `isCostInvoiceType`
+  - Cash-flow table: every payment, split by `invoiceCashDirection` and by `invoiceCashCategory` into **operating** and **financing** — credit drawdowns are financing inflow, repayments of principal financing outflow, everything else operating (ULAZNI (INV) and credit fees are operating outflow). Each `cash_flow` month carries `operating`, `financing` and their sum (`inflow` / `outflow` / `net`, which the two charts plot). Screen and PDF render one table per activity plus three total lines, totalled with `cashFlowTotals`. It uses the bank balance's direction rule, but it counts every payment, kompenzacija and payments from a credit included, so its net does not reconcile with the balance (GEN-33). Expenses and per-project expenses use `isCostInvoiceType`, through `costPaid`
+- **Every figure comes from a shared function in `src/utils/`** (REGRESSION_PREVENTION Step 7,
+  October 2026). The service reads, fails loudly, splits rows by project and assembles; every
+  sum, ratio and rule comes from a shared function. Left inline: plain row counts, the per-project
+  row split, the invoice-type lookup and `has_budget`. The figure-to-function map is in
+  `docs/CORE.md` → Business figures:
+  sales and units `salesFigures`, funding `fundingFigures`, expenses / cesija / bank accounts
+  `paymentFigures`, cash flow `cashFlowFigures`, invoices `invoiceFigures`, construction
+  `constructionFigures`, profit / ROI / risk / recommendations `projectFigures`, retail
+  `retailFigures`, planned budget `ticFigures`. Do not add a `reduce` here: add or extend the
+  function and test it
+- **Characterization tests** (`services/generalReportService.test.ts`) pin the whole report
+  over a fake Supabase client: a four-project portfolio with every invoice type, a four-rate VAT
+  invoice, kompenzacija, cesija from a credit and from a bank account, live, equity, repaid and
+  defaulted credits, and retail rows; an empty database; failed reads in both batches. They
+  pinned the output *before* the figures moved and passed unchanged after. Wrong figures are
+  pinned as they are, with their ids: GEN-26 (linked garages and storage), GEN-27 (per-project
+  debt and equity), GEN-28 (retail section), GEN-29 (cesija), GEN-30 (TIC summary), GEN-32 (0
+  for no answer), GEN-33 (kompenzacija), GEN-36 (office spend). A fix changes its expectation in
+  its own commit
 - **One failed query fails the whole report.** supabase-js resolves a failure as `{ data: null, error }` rather than rejecting, and every read here falls back to `[]`, so until September 2026 a dropped request produced an executive report of zeros — and exported it to PDF. `throwIfAnyFailed()` checks both `Promise.all` batches (the 27 top-level reads and the garage/repository price lookup) and throws, which `useCachedData` hands the page as an `error`
 - **Depends on:** supabase client
 

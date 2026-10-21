@@ -67,7 +67,7 @@ fix's own commit, with a test named after the id that fails first.
 
 ### GEN-31 · Low · General report screen shows "NaN%" units sold when there are no units
 - **Check:** Code reading
-- **Where:** `Reports/GeneralReports.tsx:200`
+- **Where:** `Reports/GeneralReports.tsx:201`, the "Units sold" line of the sales block
 - **What happens:** the screen divides `units_sold / total_units` itself, with no zero guard, next
   to `kpis.sales_rate`, which already holds the same figure guarded. The PDF had the same
   re-derivation with a guard.
@@ -107,6 +107,9 @@ fix's own commit, with a test named after the id that fails first.
   buckets with `parseLocalDate` / `monthKey` in `src/utils/cashFlowFigures.ts`, and passes in
   New York time.
 - **Fix direction:** the same helpers, or `monthlyCashFlow`'s bucketing.
+- The header comment of `generalReportService.test.ts` still says the General report adds a
+  seventh month west of UTC. That stopped being true on 2026-10-21, and the file was left unedited
+  on purpose. Correct the comment the next time that file changes.
 
 ### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
 - **Check:** Code reading. **Runtime check needed** on production row counts
@@ -180,7 +183,7 @@ fix's own commit, with a test named after the id that fails first.
 ### GEN-40 · Low · Investment dashboard's portfolio value reads `projects.budget`, the General report reads the TIC
 - **Check:** Code reading (Step 7 item 1, 2026-10-21)
 - **Where:** `dashboards/services/investmentDashboardService.ts` ~74, against `ticTotalsByProject` /
-  `portfolioValue` in `Funding/TIC/utils/ticBudget.ts`, which the General report calls
+  `portfolioValue` in `src/utils/ticFigures.ts`, which the General report calls
 - **What happens:** both count only projects with a TIC (GEN-5). The dashboard sums the
   `projects.budget` the `sync_project_from_tic` trigger writes, and the report sums the TIC itself.
   They agree only while the trigger keeps the column in step with the TIC.

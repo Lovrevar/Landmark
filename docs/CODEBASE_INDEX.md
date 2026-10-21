@@ -105,6 +105,7 @@ Two companion rules that follow from the same change, and that every module is e
 | `src/utils/appPath.ts` | `isAppPath(url)` — whether a markdown link or image address stays on the app's origin (resolved with the URL parser, so `/\host` is another site — SEC-A13). Used by `MarkdownView`; unit-tested |
 | `src/utils/phaseLabel.ts` | `formatPhaseLabel(phase, phaseWord)` — the **only** way to render a phase to a user. Since the split, phases are stored as literally "Faza 1", so concatenating number and name gives "Faza 1 · Faza 1"; this collapses it. Matched structurally, so it works with a Croatian name under an English UI. Unit-tested |
 | `src/utils/evm.ts` | EVM calculation utilities (calculatePhaseEVM, calculateProjectEVM) |
+| `src/utils/salesFigures.ts`, `fundingFigures.ts`, `paymentFigures.ts`, `paymentTotals.ts`, `cashFlowFigures.ts`, `invoiceFigures.ts`, `constructionFigures.ts`, `projectFigures.ts`, `retailFigures.ts`, `ticFigures.ts` | **Business figures**, one tested function each, called by every screen and report that shows the figure — never re-derive one inline. See `docs/CORE.md` → Business figures |
 | `src/utils/vatCalculations.ts` | Croatian 4-slot VAT breakdown (`calculateVatBreakdown`, `CROATIAN_VAT_RATES` 25/13/0/5%); unit-tested |
 | `src/utils/yieldToUI.ts` | `yieldToUI()` — yields to the next macrotask to keep the UI responsive during long PDF-builder loops |
 | `src/utils/excelParsers.ts` | Excel file import helpers |

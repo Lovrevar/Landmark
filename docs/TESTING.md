@@ -19,21 +19,22 @@ Run the unit suite for instant feedback on the logic you touched, then E2E to ca
 
 Pure functions only — the deterministic calculation and formatting helpers that back the financial/UI layers. Component rendering and integration flows are left to the E2E suite.
 
-66 test files as of 2026-10-01, each beside the code it tests. The first three rows are relative to
+99 test files as of 2026-10-21, each beside the code it tests (the utils, Cashflow and Reports rows
+were recounted that day, the others on 2026-10-01). The first three rows are relative to
 `src/`, the module rows to `src/components/<Module>/`; the `.test.ts` suffix is left off:
 
 | Area | Files |
 |---|---|
-| Shared utils — `utils/` (14) | `formatters`, `vatCalculations` (the 4-slot multi-VAT engine), `dateOnly`, `evm`, `contractRollup`, `contractVariance`, `excelParsers`, `downloadFile`, `i18nGuards`, `locale`, `pdfFont`, `phaseLabel`, `projectTimeline`, `statusDisplay` |
+| Shared utils — `utils/` (28) | `formatters`, `vatCalculations` (the 4-slot multi-VAT engine), `dateOnly`, `evm`, `contractRollup`, `contractVariance`, `excelParsers`, `downloadFile`, `i18nGuards`, `locale`, `pdfFont`, `phaseLabel`, `projectTimeline`, `statusDisplay`, `appPath`, `invoiceCashDirection`, `permissions`, `routeAccess`; the business figures `salesFigures`, `fundingFigures`, `paymentFigures`, `paymentTotals`, `cashFlowFigures`, `invoiceFigures`, `constructionFigures`, `projectFigures`, `retailFigures`, `ticFigures` |
 | Data layer — `lib/` (4) | `dbErrors`, `errorMessage`, `fetchAllRows`, `xlsxExport` |
 | Hooks — `hooks/` (2) | `useEscapeKey`, `useFocusTrap` (the pure layer-stack / focus helpers, no rendering) |
 | Calendar (6) | `utils/`: `eventEdit`, `eventTypeColors`, `monthLayout`, `pendingCount`, `recurrence`, `recurrencePresets` |
-| Cashflow (6) | `DebtStatus/services/debtExport`, `Payments/services/paymentPayload`, `Payments/services/paymentValidation`, `services/invoiceHelpers`, `services/paymentHelpers`, `services/paymentTotals` |
+| Cashflow (9) | `Calendar/calendarMoney`, `Calendar/utils/budgetDifference`, `Calendar/utils/monthStats`, `Companies/companyMoney`, `DebtStatus/services/debtExport`, `Payments/services/paymentPayload`, `Payments/services/paymentValidation`, `services/invoiceHelpers`, `services/paymentHelpers` |
 | Chat (1) | `services/chatAttachmentPath` |
 | Documents (1) | `utils/treeHelpers` |
 | Funding (10) | `Investments/utils/creditUsage`, `Investors/utils/creditCalculations`, `Investors/utils/creditStatus`, `Payments/services/fundingPaymentsExport`, `Projects/utils/weightedInterestRate`, `TIC/services/ticExport`, `TIC/services/ticImport`, `TIC/utils/ticBudget`, `TIC/utils/ticClassificationMap`, `TIC/utils/ticFormatters` |
 | General (1) | `Projects/tabs/subcontractorsSummary` |
-| Reports (1) | `pdf/pdfExportKeys` |
+| Reports (3) | `pdf/pdfExportKeys`, `pdf/pdfText`, `services/generalReportService` (characterization tests: the whole report pinned over a fake Supabase client, before its figures moved to `src/utils/` — see `docs/REPORTS.md`) |
 | Retail (2) | `Invoices/services/retailInvoiceService`, `Sales/services/retailSalesService` |
 | Sales (5) | `Payments/services/salesPaymentsService`, `SalesProjects/bulkPriceResult`, `SalesProjects/importOutcome`, `SalesProjects/unitFilters`, `utils/priceUtils` |
 | Supervision (6) | `Invoices/services/supervisionInvoiceService`, `Payments/services/supervisionPaymentService`, `SiteManagement/utils/classificationNormalization`, `SiteManagement/utils/contractTree`, `SiteManagement/utils/phaseSetup`, `WorkLogs/workLogStatus` |

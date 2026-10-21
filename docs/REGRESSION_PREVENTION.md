@@ -445,8 +445,16 @@ formula"); this step makes it systematic.
    realistic inputs. Then extract the calculation into the shared function. If a pinned output
    changes, you either found a bug (log it) or broke something.
 2. **Order of work,** by fix count since 1 September and missing tests:
-   1. `Reports/services/generalReportService.ts` (13 fix commits, 592 lines, 83 `reduce`/`filter`
-      calls): pull each figure (income, expense, financing, sales totals) into tested functions.
+   1. ✅ **Done 2026-10-21** (`refactor/general-report-figures`). `Reports/services/generalReportService.ts`
+      (13 fix commits, 592 lines, 83 `reduce`/`filter` calls): pull each figure (income, expense,
+      financing, sales totals) into tested functions. Characterization tests pinned the report
+      first and passed unchanged after. Every figure now comes from one of ten modules in
+      `src/utils/` (`docs/CORE.md` → Business figures), and the service is down to 441 lines.
+      Identical copies in the Director, Sales, Investment, Accounting and Retail dashboards, the
+      Sales and Retail reports, Budget Control, Project details, Debt status and the PDFs call the
+      same functions. Old and new code gave the same figures on LandmarkDemo. Found on the way,
+      not fixed: GEN-26 to GEN-41, FUND-21, CASH-32, SUP-18. GEN-38, FUND-21 and SUP-18 are the
+      work lists for items 2 and 3.
    2. GEN-9: one definition of "a sale" and "sales revenue" shared by the Director and Sales
       dashboards and the Sales report.
    3. Site management (`SiteManagement/index.tsx`, `ProjectDetail.tsx`): budget, committed and
@@ -521,7 +529,7 @@ From the Claude Code best-practice collection and its sources:
 - [x] 6a. `supabase start` applies all migrations locally; first two pgTAP tests green, and seen red (2026-10-20)
 - [x] 6b. `db-tests.yml` green in CI and required on `main` (2026-10-20)
 - [x] 6c. Four text tests replaced by pgTAP (five deleted, with SEC-004's); new-migration skill updated (2026-10-20)
-- [ ] 7. Shared, tested figures for reports, sales, site management, units
+- [ ] 7. Shared, tested figures for reports, sales, site management, units — item 1 (General report) done 2026-10-21; rule added to `rules/architecture.md`
 - [ ] 8–9. Habits: one fix per commit, squash merges, fresh-context review, one task per session
 
 ---
