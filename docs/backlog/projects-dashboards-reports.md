@@ -1,7 +1,7 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-42`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-45`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
@@ -10,6 +10,47 @@ The General report entries GEN-26 to GEN-37 were found while pinning
 `Reports/services/generalReportService.ts` with characterization tests (`src/components/Reports/services/generalReportService.test.ts`,
 2026-10-21). Each figure is pinned as it is, so a fix changes that test's expectation in the
 fix's own commit, with a test named after the id that fails first.
+
+GEN-42 to GEN-44 were found while planning Step 7 item 2 (2026-10-21) and are pinned by the
+characterization tests of the Director and Sales dashboards and the Sales report.
+
+### GEN-42 · Low · Sales report: a failed garage or storage price read is not reported
+- **Check:** Confirmed (pinned in `src/components/Reports/services/salesReportService.test.ts`,
+  `it('GEN-42: …')`)
+- **Where:** `Reports/services/salesReportService.ts`, `generateProjectReport`: the
+  `apartment_garages` and `apartment_repositories` reads destructure `{ data }` and never look at
+  `error`
+- **What happens:** if either read fails, the project's revenue and monthly revenue leave the
+  linked garages and storage out, and the average price the linked prices. The report looks
+  complete. Against the "a failed load is not an empty result" rule.
+- **Fix direction:** throw on the error, like the other reads in the same function. Once Step 7
+  item 2 reads the links in one shared place, fix it there.
+
+### GEN-43 · Medium · Director and Sales dashboards, the Sales report and Sales payments read without paging past 1000 rows
+- **Check:** Code reading (Step 7 item 2 planning, 2026-10-21). The General report's version is
+  GEN-35
+- **Where:**
+  - `dashboards/services/directorService.ts`: apartments, contracts, invoices, payments, sales,
+    credits, milestones.
+  - `dashboards/services/salesDashboardService.ts`: every read, payments included.
+  - `Reports/services/salesReportService.ts`: the customer report's customers and sales.
+  - `Sales/Payments/services/salesPaymentsService.ts`: invoices and payments.
+  - `Sales/SalesProjects/services/salesService.ts`: `fetchActualTotalPaidByApartment`, and an
+    `.in()` with every sold apartment's id in the URL.
+- **What happens:** PostgREST returns at most 1000 rows without saying so. Past that, collected
+  from sales, contracted sales, expenses and the unit counts all go silently low.
+- **Fix direction:** `fetchAllRows` with a stable order on the tables that can grow, as for
+  GEN-35. Check production counts first.
+
+### GEN-44 · Low · Director "Novčani tok (mjesec)" counts only what customers paid
+- **Check:** Code reading (Step 7 item 2 planning, 2026-10-21)
+- **Where:** `dashboards/services/directorService.ts` `deriveFinancial`,
+  `cash_flow_current_month`: payments this month on `invoice_category === 'CUSTOMER'` invoices
+- **What happens:** the tile is labelled cash flow, but it is one side of it: what came in from
+  customers. No money out, and no other money in. The Accounting dashboard and the General report
+  each compute a real monthly cash flow (`cashFlowFigures`).
+- **Fix direction:** decide what the tile is for. Either show the month from `monthlyCashFlow`, or
+  call it "Naplaćeno od kupaca (mjesec)".
 
 ### GEN-26 · Medium · General report: a project's revenue never includes its linked garages and storage
 - **Check:** Confirmed (schema; pinned in `src/components/Reports/services/generalReportService.test.ts`)

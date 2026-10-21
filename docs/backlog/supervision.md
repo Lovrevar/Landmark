@@ -1,12 +1,25 @@
 # Backlog — Supervision
 
 Site management, subcontractors, contracts, phases and work logs. Ids: `SUP-n` (next free:
-`SUP-19`). Entry format and rules are in [README.md](./README.md).
+`SUP-20`). Entry format and rules are in [README.md](./README.md).
 
 Supervision is used on phones on site; the mobile problems are UI-8 in [ui.md](./ui.md). The
 payment gate being screen-only is SEC-004 in [security.md](./security.md).
 
 ## Open
+
+### SUP-19 · Low · Site Management: the project card and the project banner disagree on "contracted"
+- **Check:** Code reading (Step 7 item 3 planning, 2026-10-21)
+- **Where:**
+  - `Supervision/SiteManagement/hooks/useSiteProjectData.ts` ~79-85: `total_contracted`, and the
+    "budget allocation %" in `ProjectsGrid.tsx` ~122 built on it.
+  - Compare `ProjectSummaryBanner.tsx` ~25 (`rollupContracts`).
+- **What happens:** the grid card counts a row with no contract at what was paid on it. The
+  banner, one click later, leaves such rows out, so the two show different contracted totals and
+  percentages. The card's "costs" (`total_subcontractor_cost`, ~64) count a terminated contract
+  at its full value. `completion_percentage` (~65) is computed and never read.
+- **Fix direction:** Step 7 item 3. The grid calls `rollupContracts` over the project's rows,
+  and the dead field goes.
 
 ### SUP-18 · Low · "Contract value" and "work logs this week" mean different things on different screens
 - **Check:** Code reading (Step 7 item 1, 2026-10-21). The sums are now one function,
@@ -26,6 +39,44 @@ payment gate being screen-only is SEC-004 in [security.md](./security.md).
     (known, GEN-8).
 - **Fix direction:** Step 7 item 3. Run every contract total through `committedAmount` and decide
   whether drafts count. Name the work-log window on each screen.
+- **Also found while planning item 3 (2026-10-21):**
+  - `General/Projects/tabs/PhasesContractsTab.tsx` ~82, ~198 sums raw `contract_amount`. The
+    Subcontractors tab on the same page uses `committedAmount`, so the two disagree on any
+    terminated contract.
+  - The Director dashboard's "paid" and "pending" (`directorService.ts` ~366-370) are
+    SUBCONTRACTOR invoice amounts, not `budget_realized`; GEN-10 changed only the Supervision
+    dashboard.
+  - Supervision → Subcontractors (`Subcontractors/services/subcontractorService.ts`):
+    - a row's paid comes from invoices (~50), but the company total uses invoices or
+      `budget_realized` (~85-88);
+    - `total_remaining` is not floored (~107);
+    - overdue ignores contract status (`SubcontractorContractsList.tsx` ~25).
+  - `General/Projects/ProjectCard.tsx` ~25: "remaining" is budget − **paid**. Every Supervision
+    tile computes budget − committed.
+  - Budget Control's TIC tile falls back to `projects.budget` with no TIC (`useBudgetControl.ts`
+    ~79), where every other screen says "budget not set" (GEN-5).
+  - Paid-against-plan and paid-against-committed ratios are re-derived inline in `PhaseCard`,
+    `PhasesContractsTab`, `useBudgetControl` and `BudgetControl/index.tsx` (twice, one capped
+    and one not).
+  - "Overdue contract" has four rules:
+    - `ContractCard` / `useSiteProjectData`: not closed, past the deadline, paid < cost;
+    - the Supervision dashboard rounds progress, so 99.5% paid is not overdue, and a cost-0 row
+      is;
+    - the Subcontractors list has no status check;
+    - "critical deadlines" counts milestones on the Director dashboard and contracts on the
+      Supervision one.
+  - Edit/Details modals (`EditSubcontractorModal` ~383, `SubcontractorDetailsModal` ~145) show a
+    terminated contract as still owing.
+  - Cashflow Suppliers mixes net and gross for rows with no contract (`supplierService.ts` ~63,
+    ~71; `SupplierDetailsModal.tsx` ~118).
+  - `PaymentHistoryModal` (Site Management) sums invoice `paid_amount`, while `docs/SUPERVISION.md`
+    ~98 says paid on that screen is `budget_realized`. `docs/SUPERVISION.md` ~108 still describes
+    the Supervision dashboard's paid as invoice-based (fixed by GEN-10). `docs/GENERAL.md` ~212
+    says committed is Σ `contract_amount`. `ContractCard.tsx` ~61 says Site Management lists only
+    draft and active contracts; `siteService.ts` ~65 loads every status.
+  - Dead code: `fetchSubcontractorInvoiceStats` (`siteSubcontractorService.ts` ~302) has no
+    callers and swallows errors as zeros, and `fetchInvoiceStatsForContracts` computes a
+    `totalPaid` nobody reads.
 
 ### SUP-17 · Medium · Subcontractor documents offer delete to users who cannot delete
 - **Check:** Code reading (pre-release review, 2026-10-20)
