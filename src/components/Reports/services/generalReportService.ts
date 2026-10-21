@@ -23,6 +23,7 @@ import {
   isSettledMilestone,
   recentWorkLogCount,
 } from '../../../utils/constructionFigures'
+import { retailPortfolioCounts } from '../../../utils/retailFigures'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -307,16 +308,8 @@ export async function fetchGeneralReportData(
   const totalGarages = garagesArray.length
   const totalRepositories = repositoriesArray.length
 
-  const totalRetailProjects = retailProjectsArray.length
-  const activeRetailProjects = retailProjectsArray.filter(rp => rp.status === 'active').length
-  const totalRetailContracts = retailContractsArray.length
-  const retailContractValue = retailContractsArray.reduce((sum, rc) => sum + (rc.contract_amount || 0), 0)
-  const retailBudgetRealized = retailContractsArray.reduce((sum, rc) => sum + (rc.budget_realized || 0), 0)
-  const retailPhasesCount = retailPhasesArray.length
-  const completedRetailPhases = retailPhasesArray.filter(rp => rp.status === 'completed').length
-  const totalRetailCustomers = retailCustomersArray.length
-  const totalRetailSuppliers = retailSuppliersArray.length
-  const totalLandPlots = retailLandPlotsArray.length
+  // Wrong in three ways, pinned until GEN-28 is fixed.
+  const retail = retailPortfolioCounts({ projects: retailProjectsArray, contracts: retailContractsArray, phases: retailPhasesArray })
 
 
   return {
@@ -437,16 +430,16 @@ export async function fetchGeneralReportData(
       total_repositories: totalRepositories
     },
     retail_portfolio: {
-      total_retail_projects: totalRetailProjects,
-      active_retail_projects: activeRetailProjects,
-      total_land_plots: totalLandPlots,
-      total_retail_contracts: totalRetailContracts,
-      retail_contract_value: retailContractValue,
-      retail_budget_realized: retailBudgetRealized,
-      retail_phases: retailPhasesCount,
-      completed_retail_phases: completedRetailPhases,
-      total_retail_customers: totalRetailCustomers,
-      retail_suppliers: totalRetailSuppliers
+      total_retail_projects: retail.projects,
+      active_retail_projects: retail.activeProjects,
+      total_land_plots: retailLandPlotsArray.length,
+      total_retail_contracts: retail.contracts,
+      retail_contract_value: retail.contractValue,
+      retail_budget_realized: retail.realized,
+      retail_phases: retail.phases,
+      completed_retail_phases: retail.completedPhases,
+      total_retail_customers: retailCustomersArray.length,
+      retail_suppliers: retailSuppliersArray.length
     },
     contract_types: contractTypeCounts(contractsArray),
     cash_flow: cashFlow,
