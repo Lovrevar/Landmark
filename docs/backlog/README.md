@@ -11,10 +11,10 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 1 defect, 3 accepted risks |
 | [sales.md](./sales.md) | Units, the sale flow, customers | 5 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
-| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 7 |
-| [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 8, plus 4 waiting on the ERP |
-| [funding.md](./funding.md) | Credits, investors, allocations, TIC | 8 |
-| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 8 |
+| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 8 |
+| [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 9, plus 4 waiting on the ERP |
+| [funding.md](./funding.md) | Credits, investors, allocations, TIC | 9 |
+| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 24 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 12 |
 | [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 12 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
@@ -64,7 +64,7 @@ it from the ranking. Never reuse an id: code comments and migrations quote them 
 
 ## Open work, ranked
 
-Ranked on 2026-10-05, last revised 2026-10-20, by what goes wrong if the item is left, then by how small the job is.
+Ranked on 2026-10-05, last revised 2026-10-21, by what goes wrong if the item is left, then by how small the job is.
 
 ### 1. Do first
 
@@ -80,17 +80,19 @@ sheet, and try TIC saves on dev.
 |---|---|---|
 | 1 | [CASH-6](./cashflow.md) — cesija-from-credit sign | Allocation usage is wrong for every such payment. Blocked on an accounting decision, not on code. |
 | 2 | [COLLAB-4](./collaboration.md) — AI rate limit miscounts and fails open | Deferred to the voice branch (OQ-3). Do it there. |
+| 3 | [GEN-35](./projects-dashboards-reports.md) — General report not paged past 1000 rows | Every total in the executive report goes silently low once payments or invoices pass 1000. Check production counts first. |
+| 4 | [GEN-27](./projects-dashboards-reports.md), [GEN-28](./projects-dashboards-reports.md), [GEN-26](./projects-dashboards-reports.md) — General report per-project funding, retail section, package revenue | Wrong figures in a report that goes to banks. Each has a pinned test to change; GEN-26 waits on the GEN-9 package-revenue decision. |
 
 ### 3. Larger work, schedule deliberately
 
 | # | Item | Note |
 |---|---|---|
-| 3 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
-| 4 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
-| 5 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
-| 6 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
-| 7 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
-| 8 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
+| 5 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
+| 6 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
+| 7 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
+| 8 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
+| 9 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
+| 10 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
 
 ### 4. Small and low-risk
 

@@ -20,6 +20,7 @@ import { useGeneralReportData } from './hooks/useGeneralReportData'
 import { useAsyncExport } from '../../hooks/useAsyncExport'
 import { useTranslation } from 'react-i18next'
 import { formatEuroCompact, formatEuroRounded, formatDateTime, formatMonthYear } from '../../utils/formatters'
+import { cashFlowTotals } from '../../utils/cashFlowFigures'
 import { PROJECT_STATUS, RISK_LEVEL, statusLabel, statusVariant } from '../../utils/statusDisplay'
 import { exportT, EXPORT_LANGUAGE } from '../../utils/exportLanguage'
 import { orgHeading } from '../../lib/orgName'
@@ -443,9 +444,9 @@ const GeneralReports: React.FC = () => {
             <p key={labelKey} className={`text-sm text-gray-700 dark:text-gray-200 ${labelKey.endsWith('_total') ? 'font-semibold' : ''}`}>
               {t(labelKey)}:{' '}
               {/* Each figure stays with its label: a narrow screen used to break "€" from "−3,0M". */}
-              <span className="whitespace-nowrap">{t('reports.general.inflow_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.inflow, 0))}</span> |{' '}
-              <span className="whitespace-nowrap">{t('reports.general.outflow_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.outflow, 0))}</span> |{' '}
-              <span className="whitespace-nowrap">{t('reports.general.net_col')} {formatEuroCompact(rows.reduce((sum, m) => sum + m.net, 0))}</span>
+              <span className="whitespace-nowrap">{t('reports.general.inflow_col')} {formatEuroCompact(cashFlowTotals(rows).inflow)}</span> |{' '}
+              <span className="whitespace-nowrap">{t('reports.general.outflow_col')} {formatEuroCompact(cashFlowTotals(rows).outflow)}</span> |{' '}
+              <span className="whitespace-nowrap">{t('reports.general.net_col')} {formatEuroCompact(cashFlowTotals(rows).net)}</span>
             </p>
           ))}
         </div>

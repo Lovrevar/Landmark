@@ -1,14 +1,15 @@
-import { paymentDirection, type PaymentDirection } from './invoiceHelpers'
-import { invoiceCashCategory } from '../../../utils/invoiceCashDirection'
-import { formatEuro } from '../../../utils/formatters'
+import { invoiceCashCategory, invoiceCashDirection, type CashDirection } from './invoiceCashDirection'
+import { formatEuro } from './formatters'
 
 /**
  * Totals and rendering for a list of payments, split by direction.
  *
- * Lives beside `paymentDirection` in `invoiceHelpers.ts`, which decides the direction, because
- * both payment screens need the same answer: the Funding credit-payment history (drawdowns vs
- * repayments and fees) and the Cashflow payments register (income vs expense). It started as
- * `bankPaymentTotals` under `Funding/Payments/`; the maths was never bank-specific.
+ * Shared by the Funding credit-payment history (drawdowns vs repayments and fees), the Cashflow
+ * payments register (income vs expense) and the General report's monthly cash flow
+ * (`cashFlowFigures.ts`). It started as `bankPaymentTotals` under `Funding/Payments/`, moved to
+ * `Cashflow/services/`, and moved here in October 2026 when the report needed the same sums. The
+ * direction is `invoiceCashDirection`, which `Cashflow/services/invoiceHelpers.ts` re-exports as
+ * `paymentDirection`.
  */
 
 export interface PaymentTotals {
@@ -26,7 +27,7 @@ export const EMPTY_PAYMENT_TOTALS: PaymentTotals = { inflow: 0, outflow: 0, net:
 interface TotalsRow {
   /** PostgREST returns numeric columns as numbers, but string amounts are accepted too. */
   amount: number | string | null | undefined
-  direction: PaymentDirection | null
+  direction: CashDirection | null
 }
 
 /**
@@ -75,7 +76,7 @@ interface TypedRow {
 export function paymentTotalsByCategory(rows: readonly TypedRow[]): { operating: PaymentTotals; financing: PaymentTotals } {
   const split: Record<'operating' | 'financing', TotalsRow[]> = { operating: [], financing: [] }
   for (const row of rows) {
-    split[invoiceCashCategory(row.invoiceType)].push({ amount: row.amount, direction: paymentDirection(row.invoiceType) })
+    split[invoiceCashCategory(row.invoiceType)].push({ amount: row.amount, direction: invoiceCashDirection(row.invoiceType) })
   }
   return { operating: paymentTotalsByDirection(split.operating), financing: paymentTotalsByDirection(split.financing) }
 }
@@ -85,7 +86,7 @@ export function paymentTotalsByCategory(rows: readonly TypedRow[]): { operating:
  * money out red. The Cashflow table used to paint every amount green, including the rows its own
  * type column marked RASHOD in red.
  */
-export const DIRECTION_AMOUNT_CLASS: Record<PaymentDirection, string> = {
+export const DIRECTION_AMOUNT_CLASS: Record<CashDirection, string> = {
   IN: 'text-green-600 dark:text-green-400',
   OUT: 'text-red-600 dark:text-red-400',
 }

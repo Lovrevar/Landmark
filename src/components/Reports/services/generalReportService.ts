@@ -1,11 +1,38 @@
 import { supabase } from '../../../lib/supabase'
-import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
-import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
-import { daysFromToday } from '../../../utils/dateOnly'
-import { isCashIn, isCashOut, isCostInvoiceType, invoiceCashCategory, type CashCategory } from '../../../utils/invoiceCashDirection'
-import type { CashFlowAmounts, ComprehensiveReport, ProjectData, ReportRisk } from '../types'
+import type { ComprehensiveReport, ProjectData } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
+import { averagePer, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
+import {
+  activeFunderCount,
+  allocationTotals,
+  creditLineTotals,
+  debtToEquity,
+  liveDebtFigures,
+  loanTotals,
+  projectFunding,
+  totalEquity as equityOf,
+} from '../../../utils/fundingFigures'
+import { bankAccountTotals, cesijaFromCredit, costPaid } from '../../../utils/paymentFigures'
+import { monthlyCashFlow } from '../../../utils/cashFlowFigures'
+import { invoiceStatusSummary, officeInvoiceTotals } from '../../../utils/invoiceFigures'
+import {
+  completedPhaseCount,
+  contractTotals,
+  contractTypeCounts,
+  isSettledMilestone,
+  recentWorkLogCount,
+} from '../../../utils/constructionFigures'
+import { retailPortfolioCounts } from '../../../utils/retailFigures'
+import { portfolioValue as plannedPortfolioValue, ticPlanSummary, ticTotalsByProject } from '../../../utils/ticFigures'
+import {
+  profitAndMargin,
+  projectRiskLevel,
+  projectStatusCounts,
+  recommendationKeys,
+  reportRisks,
+  returnOnEquity,
+  topProjectsByRevenue,
+} from '../../../utils/projectFigures'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -106,12 +133,7 @@ export async function fetchGeneralReportData(
   // `projects.budget` still holds whatever was typed before the TIC took over, and reporting
   // that as the plan is how Precko Zapad's leftover €1.000.000.000 ended up as 89% of a
   // €1.118M "portfolio value" on a page headed Executive Report.
-  const ticTotalByProject = new Map<string, number>()
-  for (const tic of ticCostStructuresArray) {
-    if (!tic.project_id) continue
-    const total = ticGrandTotal((tic.line_items || []) as LineItem[])
-    if (total > 0) ticTotalByProject.set(tic.project_id as string, total)
-  }
+  const ticTotalByProject = ticTotalsByProject(ticCostStructuresArray)
   const plannedBudget = (projectId: string) => ticTotalByProject.get(projectId) ?? 0
   const officeSuppliersArray = officeSuppliers || []
   const bankCreditsArray = bankCredits || []
@@ -129,16 +151,6 @@ export async function fetchGeneralReportData(
   const retailLandPlotsArray = retailLandPlots || []
   const retailCustomersArray = retailCustomers || []
   const retailSuppliersArray = retailSuppliers || []
-
-  // The cash-flow table is cash: every payment, on the side the shared direction map puts it —
-  // the same rule as the bank balance. It used to count ULAZNI (INV) as inflow, and to leave
-  // credit drawdowns, repayments and credit fees out altogether, so its net could not be
-  // reconciled with the accounts. Drawdowns and repayments of principal are now counted under
-  // "financing", apart from operations, so a drawdown does not read as a good month's trading;
-  // credit fees are an operating cost.
-  const invoiceTypeById = new Map(accountingInvoicesArray.map(inv => [inv.id, inv.invoice_type]))
-  const inflowPaymentsArray = accountingPaymentsArray.filter(p => isCashIn(invoiceTypeById.get(p.invoice_id)))
-  const outflowPaymentsArray = accountingPaymentsArray.filter(p => isCashOut(invoiceTypeById.get(p.invoice_id)))
 
   // Fetch garages and repositories for calculating total revenue
   const garageIds = apartmentsArray.map(apt => apt.garage_id).filter(Boolean)
@@ -167,149 +179,65 @@ export async function fetchGeneralReportData(
     ? projectsArray
     : projectsArray.filter(p => p.id === selectedProject)
 
-  const totalRevenue = apartmentsArray
-    .filter(a => a.status === 'Sold')
-    .reduce((sum, a) => sum + (a.price || 0), 0)
+  // List prices of the sold apartments; linked garages and storage are not in the portfolio total.
+  const totalRevenue = soldRevenue(apartmentsArray)
 
-  const totalExpenses = accountingPaymentsArray
-    // Expenses are costs: every operating invoice the company pays, credit fees included (see
-    // COST_INVOICE_TYPES). Repaying principal moves cash but is not an expense.
-    .filter(p => isCostInvoiceType(invoiceTypeById.get(p.invoice_id)))
-    .reduce((sum, p) => sum + (p.amount || 0), 0)
-  const totalProfit = totalRevenue - totalExpenses
-  const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
+  // Expenses are costs: every operating invoice the company pays, credit fees included (see
+  // COST_INVOICE_TYPES). Repaying principal moves cash but is not an expense.
+  const totalExpenses = costPaid(accountingPaymentsArray, accountingInvoicesArray)
+  const { profit: totalProfit, margin: profitMargin } = profitAndMargin(totalRevenue, totalExpenses)
 
-  const portfolioValue = projectsArray.reduce((sum, p) => sum + plannedBudget(p.id), 0)
+  const portfolioValue = plannedPortfolioValue(projectsArray.map(p => p.id), ticTotalByProject)
   // Same definitions as the Director dashboard: debt is what is still owed on live, non-equity
-  // credits; equity is the equity facilities. (Equity used to be the credit allocations and debt
-  // the face value of every credit, repaid and equity ones included.)
-  const liveDebtCredits = bankCreditsArray.filter(bc =>
-    bc.credit_type !== 'equity' && bc.status !== 'paid' && bc.status !== 'defaulted')
-  const totalEquity = bankCreditsArray
-    .filter(bc => bc.credit_type === 'equity')
-    .reduce((sum, bc) => sum + (bc.amount || 0), 0)
-  const totalDebt = liveDebtCredits.reduce((sum, bc) => sum + (bc.outstanding_balance || 0), 0)
-  const activeFunderIds = new Set(
-    creditAllocationsArray
-      .map(alloc => bankCreditsArray.find(bc => bc.id === alloc.credit_id)?.bank_id)
-      .filter(Boolean)
-  )
-  const activeFundersCount = activeFunderIds.size
-  const roi = totalEquity > 0 ? (totalProfit / totalEquity) * 100 : 0
+  // credits; equity is the equity facilities (GEN-2).
+  const liveDebt = liveDebtFigures(bankCreditsArray)
+  const totalEquity = equityOf(bankCreditsArray)
+  const totalDebt = liveDebt.outstanding
+  const debtEquityRatio = debtToEquity(totalDebt, totalEquity)
+  const creditLines = creditLineTotals(bankCreditsArray)
+  const roi = returnOnEquity(totalProfit, totalEquity)
+  const projectCounts = projectStatusCounts(projectsArray)
 
-  const totalUnits = apartmentsArray.length
-  const soldUnits = apartmentsArray.filter(a => a.status === 'Sold').length
-  const reservedUnits = apartmentsArray.filter(a => a.status === 'Reserved').length
-  const availableUnits = apartmentsArray.filter(a => a.status === 'Available').length
-  const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
-  const avgSalePrice = soldUnits > 0 ? totalRevenue / soldUnits : 0
+  const {
+    total: totalUnits,
+    sold: soldUnits,
+    reserved: reservedUnits,
+    available: availableUnits,
+  } = unitStatusCounts(apartmentsArray)
+  const portfolioSalesRate = salesRate(soldUnits, totalUnits)
+  const avgSalePrice = averagePer(totalRevenue, soldUnits)
 
-  const buyers = customersArray.filter(c => c.status === 'buyer').length
-  const leads = customersArray.filter(c => c.status === 'lead').length
-  const interested = customersArray.filter(c => c.status === 'interested').length
-  const conversionRate = customersArray.length > 0 ? (buyers / customersArray.length) * 100 : 0
+  const customerCounts = customerFunnel(customersArray)
 
-  // Weighted by facility size, like the Director dashboard; a small credit no longer moves it as
-  // much as a large one.
-  const liveDebtAmount = liveDebtCredits.reduce((sum, bc) => sum + (bc.amount || 0), 0)
-  const avgInterestRate = liveDebtAmount > 0
-    ? liveDebtCredits.reduce((sum, bc) => sum + (bc.interest_rate || 0) * (bc.amount || 0), 0) / liveDebtAmount
-    : 0
-  const monthlyDebtService = liveDebtCredits.reduce((sum, bc) => sum + (bc.monthly_payment || 0), 0)
-
-  const totalContractValue = contractsArray.reduce((sum, c) => sum + c.contract_amount, 0)
-  const budgetRealized = contractsArray.reduce((sum, c) => sum + c.budget_realized, 0)
-  const budgetUtilization = totalContractValue > 0 ? (budgetRealized / totalContractValue) * 100 : 0
-
-  const completedPhases = projectPhasesArray.filter(p => p.status === 'completed').length
-  // Today and the six days before it, in local days (subMonths(now, 0.25) was not seven days).
-  const recentWorkLogs = workLogsArray.filter(w => {
-    const days = daysFromToday(w.date)
-    return days <= 0 && days >= -6 // NaN (no date) fails both
-  }).length
-
-  const totalMilestones = subcontractorMilestonesArray.length
+  const contractStats = contractTotals(contractsArray)
   // 'completed' is the trigger's word for *partly* paid; a milestone is done when it is 'paid'.
-  const completedMilestones = subcontractorMilestonesArray.filter(m => m.status === 'paid').length
+  const settledMilestones = subcontractorMilestonesArray.filter(m => isSettledMilestone(m.status)).length
 
-  const months = eachMonthOfInterval({
-    start: new Date(dateRange.start),
-    end: new Date(dateRange.end)
-  })
-
-  const cashFlow = months.map(month => {
-    const monthStart = startOfMonth(month)
-    const monthEnd = endOfMonth(month)
-    const inMonth = (p: { payment_date: string }) => {
-      const date = new Date(p.payment_date)
-      return date >= monthStart && date <= monthEnd
-    }
-
-    // Each payment lands in exactly one of four cells: in or out, operating or financing.
-    const amounts = (category: CashCategory): CashFlowAmounts => {
-      const sum = (payments: typeof inflowPaymentsArray) =>
-        payments
-          .filter(p => inMonth(p) && invoiceCashCategory(invoiceTypeById.get(p.invoice_id)) === category)
-          .reduce((total, p) => total + p.amount, 0)
-      const inflow = sum(inflowPaymentsArray)
-      const outflow = sum(outflowPaymentsArray)
-      return { inflow, outflow, net: inflow - outflow }
-    }
-
-    const operating = amounts('operating')
-    const financing = amounts('financing')
-
-    return {
-      // A machine key, not a label. Both readers format it in the language they are rendering in.
-      month_key: format(startOfMonth(month), 'yyyy-MM-dd'),
-      inflow: operating.inflow + financing.inflow,
-      outflow: operating.outflow + financing.outflow,
-      net: operating.net + financing.net,
-      operating,
-      financing,
-    }
-  })
+  // Cash, month by month: every payment on the side the shared direction map puts it, and
+  // drawdowns and repayments of principal under financing, apart from operations.
+  const invoiceTypeById = new Map(accountingInvoicesArray.map(inv => [inv.id, inv.invoice_type]))
+  const cashFlow = monthlyCashFlow(
+    accountingPaymentsArray.map(p => ({ ...p, invoiceType: invoiceTypeById.get(p.invoice_id) })),
+    dateRange,
+  )
 
   const projectDetails: ProjectData[] = await Promise.all(
     filteredProjects.map(async (project) => {
       const projectApartments = apartmentsArray.filter(a => a.project_id === project.id)
       const projectContracts = contractsArray.filter(c => c.project_id === project.id)
       const projectPhases = projectPhasesArray.filter(p => p.project_id === project.id)
-      const projectInvestment = creditAllocationsArray
-        .filter(alloc => alloc.project_id === project.id)
-        .reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
+      // Not the portfolio's definitions (GEN-27).
+      const funding = projectFunding(project.id, creditAllocationsArray, bankCreditsArray)
 
-      const projectBankCredits = bankCreditsArray.filter(bc => bc.project_id === project.id)
-      const projectDebt = projectBankCredits.reduce((sum, bc) => sum + bc.amount, 0)
+      const projectExpenses = costPaid(accountingPaymentsArray, accountingInvoicesArray, inv => inv.project_id === project.id)
 
-      const projectInvoiceIds = new Set(
-        accountingInvoicesArray
-          .filter(inv =>
-            inv.project_id === project.id && isCostInvoiceType(inv.invoice_type)
-          )
-          .map(inv => inv.id)
-      )
-
-      const projectExpenses = accountingPaymentsArray
-        .filter(p => projectInvoiceIds.has(p.invoice_id))
-        .reduce((sum, p) => sum + (p.amount || 0), 0)
-
-      const soldApts = projectApartments.filter(a => a.status === 'Sold')
-      const projectRevenue = soldApts.reduce((sum, a) => {
-        let total = a.price
-        if (a.garage_id) total += garageMap.get(a.garage_id) || 0
-        if (a.repository_id) total += storageMap.get(a.repository_id) || 0
-        return sum + total
-      }, 0)
-      const projectProfit = projectRevenue - projectExpenses
-      const projectProfitMargin = projectRevenue > 0 ? (projectProfit / projectRevenue) * 100 : 0
-      const projectSalesRate = projectApartments.length > 0
-        ? (soldApts.length / projectApartments.length) * 100
-        : 0
-
-      let riskLevel: 'Low' | 'Medium' | 'High' = 'Low'
-      if (projectSalesRate < 20 || projectProfitMargin < 0) riskLevel = 'High'
-      else if (projectSalesRate < 50 || projectProfitMargin < 15) riskLevel = 'Medium'
+      const projectUnits = unitStatusCounts(projectApartments)
+      // `garage_id` and `repository_id` are not columns of apartments, so this adds nothing (GEN-26).
+      const projectRevenue = soldRevenue(projectApartments, a =>
+        (a.garage_id ? garageMap.get(a.garage_id) || 0 : 0) +
+        (a.repository_id ? storageMap.get(a.repository_id) || 0 : 0))
+      const { profit: projectProfit, margin: projectProfitMargin } = profitAndMargin(projectRevenue, projectExpenses)
+      const projectSalesRate = salesRate(projectUnits.sold, projectUnits.total)
 
       return {
         id: project.id,
@@ -322,70 +250,27 @@ export async function fetchGeneralReportData(
         has_budget: plannedBudget(project.id) > 0,
         revenue: projectRevenue,
         expenses: projectExpenses,
-        units_sold: soldApts.length,
-        total_units: projectApartments.length,
+        units_sold: projectUnits.sold,
+        total_units: projectUnits.total,
         contracts: projectContracts.length,
-        phases_done: projectPhases.filter(p => p.status === 'completed').length,
+        phases_done: completedPhaseCount(projectPhases),
         total_phases: projectPhases.length,
-        equity: projectInvestment,
-        debt: projectDebt,
+        equity: funding.equity,
+        debt: funding.debt,
         sales_rate: projectSalesRate,
         profit: projectProfit,
         profit_margin: projectProfitMargin,
-        risk_level: riskLevel
+        risk_level: projectRiskLevel(projectSalesRate, projectProfitMargin)
       }
     })
   )
 
-  // A risk carries its key and its count; the renderer turns that into a sentence in the language
-  // it is rendering in — `GeneralReports.tsx` on screen, `reports.general.risks.*` in the PDF.
-  // A service has no translator and must not decide anyone's language.
-  const risks: ReportRisk[] = []
-  const slowSalesProjects = projectDetails.filter(p => p.sales_rate < 40 && p.total_units > 0)
-  if (slowSalesProjects.length > 0) {
-    risks.push({ kind: 'slow_sales', count: slowSalesProjects.length })
-  }
+  // Risks and recommendations are keys and counts; the renderer turns them into sentences in the
+  // language it is rendering in. A service has no translator and must not decide anyone's language.
+  const risks = reportRisks(projectDetails)
+  const recommendations = recommendationKeys({ salesRate: portfolioSalesRate, available: availableUnits, sold: soldUnits })
 
-  const topProjects = [...projectDetails]
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 3)
-    .map(p => ({ name: p.name, revenue: p.revenue, sales_rate: p.sales_rate }))
-
-  // Keys, for the same reason as the risks above. Both readers translate them at the render site.
-  const recommendationKeys: string[] = []
-  if (salesRate < 50) recommendationKeys.push('reports.general.recs.marketing')
-  if (availableUnits > soldUnits) recommendationKeys.push('reports.general.recs.inventory')
-  recommendationKeys.push('reports.general.recs.budgets')
-  recommendationKeys.push('reports.general.recs.partners')
-
-  const totalInvoices = accountingInvoicesArray.length
-  const totalInvoiceValue = accountingInvoicesArray.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-  const paidInvoices = accountingInvoicesArray.filter(inv => inv.status === 'PAID').length
-  const paidValue = accountingInvoicesArray
-    .filter(inv => inv.status === 'PAID')
-    .reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-
-  const pendingInvoices = accountingInvoicesArray.filter(inv =>
-    inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID'
-  ).length
-  const pendingValue = accountingInvoicesArray
-    .filter(inv => inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID')
-    .reduce((sum, inv) => sum + (inv.remaining_amount || 0), 0)
-
-  const overdueInvoices = accountingInvoicesArray.filter(inv =>
-    (inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID') &&
-    inv.due_date &&
-    daysFromToday(inv.due_date) < 0
-  ).length
-  const overdueValue = accountingInvoicesArray
-    .filter(inv =>
-      (inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID') &&
-      inv.due_date &&
-      daysFromToday(inv.due_date) < 0
-    )
-    .reduce((sum, inv) => sum + (inv.remaining_amount || 0), 0)
-
-  const paymentCompletionRate = totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0
+  const invoiceStats = invoiceStatusSummary(accountingInvoicesArray)
 
   // This section printed zeros for its whole life: it summed tic.budgeted_amount and
   // tic.actual_spent, neither of which is a column on tic_cost_structures — the money lives in
@@ -396,69 +281,31 @@ export async function fetchGeneralReportData(
   // `companies_over_budget` counted companies against a per-PROJECT plan, so both were dropped
   // instead of being faked. What is left is answerable from the data: how much is planned, and
   // how many projects have no plan at all.
-  const ticTotals = ticCostStructuresArray.map(tic =>
-    ticGrandTotal((tic.line_items || []) as LineItem[])
-  )
-  const totalTicBudget = ticTotals.reduce((sum, total) => sum + total, 0)
-  const projectsWithTic = ticTotals.filter(total => total > 0).length
-  const projectsWithoutTic = projectsArray.length - projectsWithTic
+  const ticPlans = ticPlanSummary(ticCostStructuresArray, projectsArray.length)
 
-  const totalOfficeSuppliers = officeSuppliersArray.length
-  const officeInvoices = accountingInvoicesArray.filter(inv => inv.invoice_category === 'OFFICE')
-  const totalOfficeInvoices = officeInvoices.length
-  const totalOfficeSpent = officeInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-  const avgOfficeInvoice = totalOfficeInvoices > 0 ? totalOfficeSpent / totalOfficeInvoices : 0
+  // Every office-category invoice at its total, paid or not (GEN-36).
+  const officeInvoices = officeInvoiceTotals(accountingInvoicesArray)
 
-  const totalCredits = bankCreditsArray.length
-  const totalCreditValue = bankCreditsArray.reduce((sum, cr) => sum + (cr.amount || 0), 0)
-  const creditsUsed = bankCreditsArray.reduce((sum, cr) => sum + (cr.used_amount || 0), 0)
-  const creditsAvailable = bankCreditsArray.reduce((sum, cr) => sum + ((cr.amount || 0) - (cr.used_amount || 0)), 0)
-  const cesijaPayments = accountingPaymentsArray.filter(p => p.cesija_credit_id).length
-  const cesijaValue = accountingPaymentsArray
-    .filter(p => p.cesija_credit_id)
-    .reduce((sum, p) => sum + (p.amount || 0), 0)
+  const cesija = cesijaFromCredit(accountingPaymentsArray)
+  const bankAccounts = bankAccountTotals(companyBankAccountsArray)
 
-  const totalBankAccounts = companyBankAccountsArray.length
-  const totalBalance = companyBankAccountsArray.reduce((sum, acc) => sum + (acc.current_balance || 0), 0)
-  const positiveBalanceAccounts = companyBankAccountsArray.filter(acc => (acc.current_balance || 0) > 0).length
-  const negativeBalanceAccounts = companyBankAccountsArray.filter(acc => (acc.current_balance || 0) < 0).length
-
-  const totalLoans = companyLoansArray.length
-  const totalLoanAmount = companyLoansArray.reduce((sum, loan) => sum + (loan.amount || 0), 0)
-  const totalLoanOutstanding = companyLoansArray.reduce((sum, loan) => sum + (loan.current_balance || 0), 0)
-  const activeLoans = companyLoansArray.filter(loan => (loan.current_balance || 0) > 0).length
-
-  const totalAllocations = creditAllocationsArray.length
-  const allocatedAmount = creditAllocationsArray.reduce((sum, alloc) => sum + (alloc.allocated_amount || 0), 0)
+  const loans = loanTotals(companyLoansArray)
+  const allocations = allocationTotals(creditAllocationsArray)
 
   const totalBuildings = buildingsArray.length
   const totalGarages = garagesArray.length
   const totalRepositories = repositoriesArray.length
 
-  const totalRetailProjects = retailProjectsArray.length
-  const activeRetailProjects = retailProjectsArray.filter(rp => rp.status === 'active').length
-  const totalRetailContracts = retailContractsArray.length
-  const retailContractValue = retailContractsArray.reduce((sum, rc) => sum + (rc.contract_amount || 0), 0)
-  const retailBudgetRealized = retailContractsArray.reduce((sum, rc) => sum + (rc.budget_realized || 0), 0)
-  const retailPhasesCount = retailPhasesArray.length
-  const completedRetailPhases = retailPhasesArray.filter(rp => rp.status === 'completed').length
-  const totalRetailCustomers = retailCustomersArray.length
-  const totalRetailSuppliers = retailSuppliersArray.length
-  const totalLandPlots = retailLandPlotsArray.length
+  // Wrong in three ways, pinned until GEN-28 is fixed.
+  const retail = retailPortfolioCounts({ projects: retailProjectsArray, contracts: retailContractsArray, phases: retailPhasesArray })
 
-  const contractTypeCounts: { [key: string]: number } = {}
-  contractsArray.forEach(c => {
-    const typeName = (c as { contract_types?: { name?: string } | null }).contract_types?.name || ''
-    contractTypeCounts[typeName] = (contractTypeCounts[typeName] || 0) + 1
-  })
-  const contractTypesData = Object.entries(contractTypeCounts).map(([name, count]) => ({ name, count }))
 
   return {
     organization_name: normalizeOrgName(organizationSettings?.[0]?.name),
     executive_summary: {
-      total_projects: projectsArray.length,
-      active_projects: projectsArray.filter(p => p.status === 'In Progress').length,
-      completed_projects: projectsArray.filter(p => p.status === 'Completed').length,
+      total_projects: projectCounts.total,
+      active_projects: projectCounts.active,
+      completed_projects: projectCounts.completed,
       total_revenue: totalRevenue,
       total_expenses: totalExpenses,
       total_profit: totalProfit,
@@ -471,10 +318,10 @@ export async function fetchGeneralReportData(
       total_revenue: totalRevenue,
       net_profit: totalProfit,
       roi: roi,
-      sales_rate: salesRate,
-      debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
-      active_projects: projectsArray.filter(p => p.status === 'In Progress').length,
-      total_customers: customersArray.length
+      sales_rate: portfolioSalesRate,
+      debt_equity_ratio: debtEquityRatio,
+      active_projects: projectCounts.active,
+      total_customers: customerCounts.total
     },
     sales_performance: {
       total_units: totalUnits,
@@ -484,80 +331,82 @@ export async function fetchGeneralReportData(
       total_revenue: totalRevenue,
       avg_sale_price: avgSalePrice,
       total_sales: salesArray.length,
-      buyers: buyers,
-      active_leads: leads + interested,
-      conversion_rate: conversionRate
+      buyers: customerCounts.buyers,
+      active_leads: customerCounts.activeLeads,
+      conversion_rate: customerCounts.conversionRate
     },
     funding_structure: {
       total_equity: totalEquity,
       total_debt: totalDebt,
-      debt_equity_ratio: totalEquity > 0 ? totalDebt / totalEquity : 0,
-      total_credit_lines: bankCreditsArray.reduce((sum, bc) => sum + (bc.amount || 0), 0),
+      debt_equity_ratio: debtEquityRatio,
+      total_credit_lines: creditLines.total,
       // Undrawn headroom. It read available_balance/drawn_amount, which bank_credits does not have.
-      available_credit: bankCreditsArray.reduce((sum, bc) => sum + ((bc.amount || 0) - (bc.used_amount || 0)), 0),
-      active_investors: activeFundersCount,
+      available_credit: creditLines.available,
+      active_investors: activeFunderCount(creditAllocationsArray, bankCreditsArray),
       active_banks: banksArray.length,
-      bank_credits: bankCreditsArray.length,
-      avg_interest_rate: avgInterestRate,
-      monthly_debt_service: monthlyDebtService
+      bank_credits: creditLines.count,
+      avg_interest_rate: liveDebt.avgInterestRate,
+      monthly_debt_service: liveDebt.monthlyDebtService
     },
     construction_status: {
-      total_contracts: contractsArray.length,
-      active_contracts: contractsArray.filter(c => c.status === 'active').length,
-      completed_contracts: contractsArray.filter(c => c.status === 'completed').length,
-      contract_value: totalContractValue,
-      budget_realized: budgetRealized,
-      budget_utilization: budgetUtilization,
+      total_contracts: contractStats.count,
+      active_contracts: contractStats.active,
+      completed_contracts: contractStats.completed,
+      contract_value: contractStats.value,
+      budget_realized: contractStats.realized,
+      budget_utilization: contractStats.utilization,
       total_subcontractors: subcontractorsArray.length,
       total_phases: projectPhasesArray.length,
-      completed_phases: completedPhases,
-      work_logs_7days: recentWorkLogs,
-      total_milestones: totalMilestones,
-      completed_milestones: completedMilestones
+      completed_phases: completedPhaseCount(projectPhasesArray),
+      // Today and the six days before it, in local days.
+      work_logs_7days: recentWorkLogCount(workLogsArray),
+      total_milestones: subcontractorMilestonesArray.length,
+      completed_milestones: settledMilestones
     },
     accounting_overview: {
-      total_invoices: totalInvoices,
-      total_invoice_value: totalInvoiceValue,
-      paid_invoices: paidInvoices,
-      paid_value: paidValue,
-      pending_invoices: pendingInvoices,
-      pending_value: pendingValue,
-      overdue_invoices: overdueInvoices,
-      overdue_value: overdueValue,
-      payment_completion_rate: paymentCompletionRate
+      total_invoices: invoiceStats.count,
+      total_invoice_value: invoiceStats.totalValue,
+      paid_invoices: invoiceStats.paidCount,
+      paid_value: invoiceStats.paidValue,
+      pending_invoices: invoiceStats.openCount,
+      pending_value: invoiceStats.openValue,
+      overdue_invoices: invoiceStats.overdueCount,
+      overdue_value: invoiceStats.overdueValue,
+      payment_completion_rate: invoiceStats.completionRate
     },
     tic_cost_management: {
-      total_tic_budget: totalTicBudget,
-      projects_with_tic: projectsWithTic,
-      projects_without_tic: projectsWithoutTic
+      total_tic_budget: ticPlans.totalPlanned,
+      projects_with_tic: ticPlans.projectsWithPlan,
+      // Counts TIC rows, not projects (GEN-30).
+      projects_without_tic: ticPlans.projectsWithoutPlan
     },
     office_expenses: {
-      total_office_suppliers: totalOfficeSuppliers,
-      total_office_invoices: totalOfficeInvoices,
-      total_office_spent: totalOfficeSpent,
-      avg_office_invoice: avgOfficeInvoice
+      total_office_suppliers: officeSuppliersArray.length,
+      total_office_invoices: officeInvoices.count,
+      total_office_spent: officeInvoices.spent,
+      avg_office_invoice: officeInvoices.average
     },
     company_credits: {
-      total_credits: totalCredits,
-      total_credit_value: totalCreditValue,
-      credits_available: creditsAvailable,
-      credits_used: creditsUsed,
-      cesija_payments: cesijaPayments,
-      cesija_value: cesijaValue,
-      total_allocations: totalAllocations,
-      allocated_amount: allocatedAmount
+      total_credits: creditLines.count,
+      total_credit_value: creditLines.total,
+      credits_available: creditLines.available,
+      credits_used: creditLines.used,
+      cesija_payments: cesija.count,
+      cesija_value: cesija.value,
+      total_allocations: allocations.count,
+      allocated_amount: allocations.allocated
     },
     company_loans: {
-      total_loans: totalLoans,
-      total_loan_amount: totalLoanAmount,
-      total_outstanding: totalLoanOutstanding,
-      active_loans: activeLoans
+      total_loans: loans.count,
+      total_loan_amount: loans.amount,
+      total_outstanding: loans.outstanding,
+      active_loans: loans.active
     },
     bank_accounts: {
-      total_accounts: totalBankAccounts,
-      total_balance: totalBalance,
-      positive_balance_accounts: positiveBalanceAccounts,
-      negative_balance_accounts: negativeBalanceAccounts
+      total_accounts: bankAccounts.count,
+      total_balance: bankAccounts.balance,
+      positive_balance_accounts: bankAccounts.positive,
+      negative_balance_accounts: bankAccounts.negative
     },
     buildings_units: {
       total_buildings: totalBuildings,
@@ -569,24 +418,24 @@ export async function fetchGeneralReportData(
       total_repositories: totalRepositories
     },
     retail_portfolio: {
-      total_retail_projects: totalRetailProjects,
-      active_retail_projects: activeRetailProjects,
-      total_land_plots: totalLandPlots,
-      total_retail_contracts: totalRetailContracts,
-      retail_contract_value: retailContractValue,
-      retail_budget_realized: retailBudgetRealized,
-      retail_phases: retailPhasesCount,
-      completed_retail_phases: completedRetailPhases,
-      total_retail_customers: totalRetailCustomers,
-      retail_suppliers: totalRetailSuppliers
+      total_retail_projects: retail.projects,
+      active_retail_projects: retail.activeProjects,
+      total_land_plots: retailLandPlotsArray.length,
+      total_retail_contracts: retail.contracts,
+      retail_contract_value: retail.contractValue,
+      retail_budget_realized: retail.realized,
+      retail_phases: retail.phases,
+      completed_retail_phases: retail.completedPhases,
+      total_retail_customers: retailCustomersArray.length,
+      retail_suppliers: retailSuppliersArray.length
     },
-    contract_types: contractTypesData,
+    contract_types: contractTypeCounts(contractsArray),
     cash_flow: cashFlow,
     projects: projectDetails,
     risks: risks,
     insights: {
-      top_projects: topProjects,
-      recommendation_keys: recommendationKeys
+      top_projects: topProjectsByRevenue(projectDetails).map(p => ({ name: p.name, revenue: p.revenue, sales_rate: p.sales_rate })),
+      recommendation_keys: recommendations
     }
   }
 }

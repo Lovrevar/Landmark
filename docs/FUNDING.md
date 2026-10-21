@@ -395,7 +395,9 @@ Read-only history of accounting payments made against bank credits.
 > `paymentTotals.ts` **moved** to `Cashflow/services/paymentTotals.ts` and `bankPaymentTotals` was
 > renamed `paymentTotalsByDirection`: the Cashflow payments screen needed the same maths, and it
 > was never bank-specific. The direction amount classes and `formatSignedEuro` moved there with
-> it, so both payment screens render a direction identically. See `docs/CASHFLOW.md` → Services.
+> it, so both payment screens render a direction identically. In October 2026 it moved again, to
+> `src/utils/paymentTotals.ts`, when the General report's cash flow started summing with it. See
+> `docs/CORE.md` → Business figures.
 
 ### index.tsx (FundingPaymentsManagement)
 - Payment list with search, status/date filters, Excel export, and stats cards

@@ -10,7 +10,7 @@ import PaymentStatsCards from './PaymentStatsCards'
 import PaymentTable from './PaymentTable'
 import { PaymentDetailView } from './PaymentDetailView'
 import { columnLabels } from '../services/paymentHelpers'
-import { paymentTotalsByCategory, formatSignedEuro } from '../services/paymentTotals'
+import { paymentTotalsByCategory, formatSignedEuro } from '../../../utils/paymentTotals'
 import { formatEuro } from '../../../utils/formatters'
 import type { FilterMethod, FilterInvoiceType } from './types'
 

@@ -42,6 +42,25 @@ above are always **lowercase**.
 - **`forms/`, `modals/`** — delegate data logic to services; no complex logic inline
 - **`types.ts`** — module-local types. Shared types live in `src/types/`
 
+## Business figures
+
+- **A business figure (a total, a balance, a budget, EVM) is computed in one tested function in
+  `src/lib` or `src/utils`. Screens and reports call it; they never re-derive it inline** — not in
+  a service, a component, or a PDF or Excel builder. Why: a figure computed in three places gets
+  fixed in one (GEN-2 fixed the portfolio's debt and left the project cards' — GEN-27)
+- Before changing a figure, grep for the other places that compute it, and switch them to the
+  shared function in the same change or log them with `/backlog`
+- The figure modules so far, all in `src/utils/`: `salesFigures`, `fundingFigures`,
+  `paymentFigures`, `paymentTotals`, `cashFlowFigures`, `invoiceFigures`, `constructionFigures`,
+  `projectFigures`, `retailFigures`, `ticFigures`, `invoiceCashDirection`, `contractRollup`, `evm`.
+  The TIC's own plan maths (`ticGrandTotal` and the rest) stays in
+  `Funding/TIC/utils/ticBudget.ts`, which `ticFigures` and `evm` build on. Details:
+  `docs/CORE.md` → Business figures
+- A figure that has no answer (no revenue for a margin, nothing paid for CPI) returns an
+  availability flag or `null` so the screen shows "—", never a 0 that reads as a measurement
+  (`.claude/rules/testing.md`). The ratios moved out of the General report still return 0 —
+  pinned, and logged as GEN-32
+
 ## Module boundaries
 
 - Never import from another feature module's internals (e.g. `../Sales/services/salesService`)

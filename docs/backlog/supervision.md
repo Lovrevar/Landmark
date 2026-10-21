@@ -1,12 +1,31 @@
 # Backlog — Supervision
 
 Site management, subcontractors, contracts, phases and work logs. Ids: `SUP-n` (next free:
-`SUP-18`). Entry format and rules are in [README.md](./README.md).
+`SUP-19`). Entry format and rules are in [README.md](./README.md).
 
 Supervision is used on phones on site; the mobile problems are UI-8 in [ui.md](./ui.md). The
 payment gate being screen-only is SEC-004 in [security.md](./security.md).
 
 ## Open
+
+### SUP-18 · Low · "Contract value" and "work logs this week" mean different things on different screens
+- **Check:** Code reading (Step 7 item 1, 2026-10-21). The sums are now one function,
+  `contractTotals` in `src/utils/constructionFigures.ts`, called by the General report and Budget
+  Control. What differs is which contracts go in
+- **Where / what happens:**
+  - Contract value:
+    - The General report sums every contract, draft and terminated ones included.
+    - Budget Control first counts a terminated contract at what was paid on it
+      (`budgetControlService.ts` ~66, `contractRollup.committedAmount`), as Site Management does.
+    - The Director dashboard sums active and completed contracts only (`directorService.ts` ~366).
+
+    One portfolio can show three "contract values".
+  - Work logs: the General report counts today and the six days before ("7 days"). The Supervision
+    dashboard counts the calendar week, Monday to Sunday (`supervisionService.ts` ~32).
+  - Milestones: settled is `paid` everywhere except EVM, which counts `completed` as done too
+    (known, GEN-8).
+- **Fix direction:** Step 7 item 3. Run every contract total through `committedAmount` and decide
+  whether drafts count. Name the work-log window on each screen.
 
 ### SUP-17 · Medium · Subcontractor documents offer delete to users who cannot delete
 - **Check:** Code reading (pre-release review, 2026-10-20)

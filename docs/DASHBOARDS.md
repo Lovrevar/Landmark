@@ -261,7 +261,8 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
     `update_retail_contract_budget_realized_from_payments` trigger stores, not a gross figure —
     the "Razvoj i gradnja (s PDV)" subtitle was simply false and now reads "(bez PDV-a)"
   - Unit-tested in `retailTotals.test.ts` (8 tests), including the case that motivated it
-- **`utils/directorAlerts.ts`** — `isSettledMilestone`, `countOverdueMilestones`,
+- **`utils/directorAlerts.ts`** — `isSettledMilestone` (defined in `src/utils/constructionFigures.ts`
+  since October 2026, re-exported here), `countOverdueMilestones`,
   `countCriticalDeadlines` and `deriveAlerts`, pure and unit-tested (`directorAlerts.test.ts`,
   13 tests). `daysFromToday` is injected, so the tests fix "today" without fake timers. See
   `directorService.ts` above for what it fixes

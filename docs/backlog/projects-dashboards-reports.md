@@ -1,10 +1,209 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-26`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-42`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
+
+The General report entries GEN-26 to GEN-37 were found while pinning
+`Reports/services/generalReportService.ts` with characterization tests (`src/components/Reports/services/generalReportService.test.ts`,
+2026-10-21). Each figure is pinned as it is, so a fix changes that test's expectation in the
+fix's own commit, with a test named after the id that fails first.
+
+### GEN-26 · Medium · General report: a project's revenue never includes its linked garages and storage
+- **Check:** Confirmed (schema; pinned in `src/components/Reports/services/generalReportService.test.ts`)
+- **Where:** `generalReportService.ts`, per-project revenue, and the second query batch
+- **What happens:** the per-project revenue adds `garage_id` / `repository_id` prices, but
+  `apartments` has neither column. The links live in `apartment_garages` / `apartment_repositories`.
+  So a project's revenue is its sold apartments' list prices, and the price lookup always queries
+  `in('id', [''])`. Portfolio `total_revenue` leaves linked units out on purpose. Once this is
+  fixed, the projects will no longer add up to it.
+- **Fix direction:** decide one definition of package revenue with GEN-9 / Step 7 item 2: sale or
+  list price (SALES-6 `packageTotal` uses the sale price), and whether the portfolio total includes
+  linked units. Then read the junction tables.
+
+### GEN-27 · Medium · General report: per-project debt and equity still use the definitions GEN-2 replaced
+- **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`)
+- **Where:** `generalReportService.ts`, `projects[].equity` / `.debt`. Shown on screen as
+  `reports.general.funding_value`
+- **What happens:** equity is Σ credit allocations, debt and equity alike, and debt is the face value
+  of every credit of the project, equity and repaid ones included. GEN-2 changed the portfolio
+  figures to equity facilities and outstanding live debt, and the per-project ones were left behind.
+  In the test, a project with €580k outstanding shows €1.4M of debt.
+- **Fix direction:** the per-project figures on the portfolio's definitions, from the shared funding
+  function.
+
+### GEN-28 · Medium · General report retail section: two figures always 0, contract totals mix buyers and suppliers
+- **Check:** Confirmed (schema CHECKs; pinned in `src/components/Reports/services/generalReportService.test.ts`)
+- **Where:** `generalReportService.ts`, `retail_portfolio`
+- **What happens:** "active retail projects" tests `status = 'active'` and "completed retail phases"
+  tests `'completed'`. The tables allow `Planning | In Progress | Completed | On Hold` and
+  `Pending | In Progress | Completed`, so both always read 0. Contract value and realised sum every
+  `retail_contracts` row, buyers' contracts with suppliers', which is the bug
+  `dashboards/utils/retailTotals.ts` was written to fix on the dashboard.
+- **Fix direction:** the statuses the Retail screens use (`'In Progress'`, `'Completed'`), and costs
+  and sales split by phase as `computeRetailTotals` does.
+
+### GEN-29 · Low · General report counts only cesija paid from a credit
+- **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`)
+- **Where:** `generalReportService.ts`, `company_credits.cesija_payments` / `cesija_value`
+- **What happens:** it filters on `cesija_credit_id`, which is set only when the cesija is paid from
+  a credit. A cesija paid from another company's bank account is left out. `company_statistics`
+  counts `is_cesija = true`. ERP payments never set `cesija_credit_*`, so after the ERP phase 5
+  the figure would be 0.
+- **Fix direction:** `is_cesija`. Decide whether the card is meant to show "cesija" or
+  "cesija from a credit", since it sits under the company investments heading.
+
+### GEN-30 · Low · General report TIC summary counts TIC rows that belong to no project
+- **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`)
+- **Where:** `generalReportService.ts`, `tic_cost_management` (PDF only)
+- **What happens:** `total_tic_budget` and `projects_with_tic` include TIC rows with no
+  `project_id`, while `portfolio_value` and `has_budget` skip them. "Projects without a plan" is
+  projects minus TIC rows, so it undercounts. It can go negative, and two TICs on one project would
+  count twice.
+- **Fix direction:** count distinct projects whose TIC total is above 0, from the same per-project
+  map as `portfolio_value`.
+
+### GEN-31 · Low · General report screen shows "NaN%" units sold when there are no units
+- **Check:** Code reading
+- **Where:** `Reports/GeneralReports.tsx:201`, the "Units sold" line of the sales block
+- **What happens:** the screen divides `units_sold / total_units` itself, with no zero guard, next
+  to `kpis.sales_rate`, which already holds the same figure guarded. The PDF had the same
+  re-derivation with a guard.
+- **Fix direction:** render `kpis.sales_rate`.
+
+### GEN-32 · Low · General report shows 0 for ratios it cannot measure, and calls every unit-less project high risk
+- **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`)
+- **Where:** `generalReportService.ts`: profit margin, ROI, D/E, conversion, payment completion,
+  budget utilisation, and `risk_level`
+- **What happens:**
+  - With no revenue, equity, customers, invoices or contracts, the ratio is printed as 0 %, which
+    reads as a measurement (rules/testing.md, "1 by construction").
+  - A project with no units has a 0 % sales rate, so a project still in planning is "High" risk.
+  - The PDF colours project bars by margin at 20 / 10 while the risk level uses 15 / 0.
+- **Fix direction:** availability flags and "—", as GEN-20 did for EVM, and no sales-rate risk
+  for a project without units.
+
+### GEN-33 · Low · General report cash-flow table counts payments that move no bank money
+- **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`); **open decision**
+- **Where:** `generalReportService.ts`, `cash_flow`. `docs/REPORTS.md` says it reconciles with
+  the bank balance
+- **What happens:** every payment counts, whatever its `payment_source_type`: kompenzacija (a debt
+  offset, no cash), payments from a credit, and cash. `recalc_company_bank_account_balance` counts
+  only payments with a `company_bank_account_id`, so the table does not reconcile with the balance
+  the way the doc says.
+- **Fix direction:** ask accounting whether a kompenzacija belongs in a cash-flow statement. Then
+  either filter by source or reword the doc and the screen.
+
+### GEN-34 · Low · Sales report buckets its monthly sales by UTC dates
+- **Check:** Confirmed for the General report, which had the same bug: its characterization test
+  failed under `TZ=America/New_York` until 2026-10-21. Code reading for the Sales report
+- **Where:** `Reports/services/salesReportService.ts`, monthly sales: `new Date(dateRange.start)`
+  and `new Date(sale.sale_date)`
+- **What happens:** harmless in Croatia and in UTC. West of UTC the first of a month reads as the
+  last day of the month before, so the table gains a month and sales on a month's first day move.
+  It is against the CLAUDE.md date rule. The General report's cash flow, which did the same, now
+  buckets with `parseLocalDate` / `monthKey` in `src/utils/cashFlowFigures.ts`, and passes in
+  New York time.
+- **Fix direction:** the same helpers, or `monthlyCashFlow`'s bucketing.
+- The header comment of `generalReportService.test.ts` still says the General report adds a
+  seventh month west of UTC. That stopped being true on 2026-10-21, and the file was left unedited
+  on purpose. Correct the comment the next time that file changes.
+
+### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
+- **Check:** Code reading. **Runtime check needed** on production row counts
+- **Where:** `generalReportService.ts`, the first `Promise.all`. Also
+  `dashboards/services/accountingDashboardService.ts` `fetchMonthlyTrends` (this year's payments)
+- **What happens:** PostgREST returns at most 1000 rows without saying so, and none of the reads
+  uses `fetchAllRows`. Past 1000 payments or invoices every total is silently low. A payment whose
+  invoice is beyond row 1000 has no type, so it drops out of expenses and the cash flow altogether.
+- **Fix direction:** `fetchAllRows` with a stable order for the tables that can grow:
+  payments, invoices, apartments, work logs, milestones, contracts, customers.
+
+### GEN-36 · Low · General report "office expenses" counts every office-category invoice at its total
+- **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`)
+- **Where:** `generalReportService.ts`, `office_expenses`
+- **What happens:** it sums `total_amount` of every `invoice_category = 'OFFICE'` invoice, unpaid
+  ones and the ones the company *issued* (OUTGOING_OFFICE, money in) included, under the label
+  "Total office spent".
+- **Fix direction:** paid amounts on cost invoices (`isCostInvoiceType`), or rename it "invoiced".
+
+### GEN-37 · Low · General report computes six fields nothing reads
+- **Check:** Confirmed (grep of the screen, the PDF and `src/`)
+- **Where:** `generalReportService.ts`: `company_loans.*` (four fields), `executive_summary.portfolio_value`
+  and `executive_summary.roi` (copies of `kpis`)
+- **What happens:** dead output. The loans section was never rendered.
+- **Fix direction:** render the loans or drop them, and drop the two copies.
+
+### GEN-38 · Low · "Sales revenue" and "average price" have six definitions
+- **Check:** Code reading (Step 7 item 1, 2026-10-21). The counting itself is now shared:
+  `unitStatusCounts`, `salesRate`, `customerFunnel` in `src/utils/salesFigures.ts`, called by the
+  General report, the Director and Sales dashboards, the Sales report and Project details
+- **Where / what happens:**
+  - Revenue:
+    - Σ **list price** of sold apartments (`soldRevenue`): General report, Director per project,
+      Project details.
+    - Σ `sales.sale_price`: Director portfolio.
+    - Sale price + linked garage and storage, sales dated in the range:
+      `Reports/services/salesReportService.ts`.
+    - Cash collected on sales invoices: `dashboards/services/salesDashboardService.ts`
+      ("Naplaćeno od prodaje", by GEN-9's decision).
+    - Σ `total_paid` per building: `Sales/SalesProjects/hooks/useSalesData.ts`.
+    - Sale price or list price plus linked units: `Sales/utils/packageTotal.ts` (SALES-6).
+  - Average price:
+    - Σ list / sold units: General report.
+    - Σ sale price / sold units: Director.
+    - Σ (list + linked) over **all** units / all units: Sales report.
+    - Σ sale price / sale rows: Sales dashboard.
+  - Units: the Sales dashboard counts garages and storage as units, by decision ("sve jedinice");
+    the others count apartments.
+- **Fix direction:** Step 7 item 2 (GEN-9's follow-up). Decide one "sale" and one "sales revenue"
+  in `salesFigures.ts`, give any figure that stays different its own name on screen, and fold in
+  GEN-26.
+
+### GEN-39 · Low · Director dashboard and General report measure expenses differently
+- **Check:** Code reading (Step 7 item 1, 2026-10-21)
+- **Where:**
+  - `dashboards/services/directorService.ts`: portfolio expenses ~286, per-project ~226–240.
+  - `src/utils/paymentFigures.ts` `costPaid`, which the General report uses.
+- **What happens:** the same cost-invoice rule (`isCostInvoiceType`) is applied to three different
+  amounts:
+  - General report: Σ payments on cost invoices, portfolio and per project, matched by the
+    invoice's `project_id`.
+  - Director portfolio: Σ invoices' `paid_amount`. It agrees with payments only while
+    `paid_amount` is kept in step.
+  - Director per project: **invoiced** `total_amount`, matched by contract and, for invoices with
+    no contract, by project.
+
+  So "expenses" and the margin differ between the two screens for the same project.
+- **Fix direction:** decide paid against invoiced for each card and name it. Then call `costPaid`,
+  or add an invoiced twin of it beside it.
+
+### GEN-40 · Low · Investment dashboard's portfolio value reads `projects.budget`, the General report reads the TIC
+- **Check:** Code reading (Step 7 item 1, 2026-10-21)
+- **Where:** `dashboards/services/investmentDashboardService.ts` ~74, against `ticTotalsByProject` /
+  `portfolioValue` in `src/utils/ticFigures.ts`, which the General report calls
+- **What happens:** both count only projects with a TIC (GEN-5). The dashboard sums the
+  `projects.budget` the `sync_project_from_tic` trigger writes, and the report sums the TIC itself.
+  They agree only while the trigger keeps the column in step with the TIC.
+- **Fix direction:** read the TIC totals in the dashboard too, through `ticTotalsByProject`, or
+  check on LandmarkDemo and production that the two never differ and say so here.
+
+### GEN-41 · Low · A project's "risk" and "slow sales" are judged on three scales
+- **Check:** Code reading (Step 7 item 1, 2026-10-21). The General report's rules are now
+  `projectRiskLevel` and `reportRisks` in `src/utils/projectFigures.ts`
+- **Where / what happens:**
+  - Slow sales: the General report flags a project below **40 %** sold. The Director dashboard's
+    `low_sales_rate` alert fires below **30 %** (`dashboards/utils/directorAlerts.ts` ~131). The
+    marketing recommendation (General report and Sales report) starts below **50 %**.
+  - Risk level: the General report rates a project on sales rate and margin (20 / 50 %, 0 / 15 %).
+    The Funding projects list rates the same project on debt ratio, time overrun and
+    underfunding (`Funding/Projects/services/investmentService.ts` ~65). Both show a
+    "High / Medium / Low" badge.
+  - The General PDF colours its top-projects bars at 20 / 10 % margin.
+- **Fix direction:** decide whether the two risk badges are meant to differ. If they are, name
+  them on screen ("prodajni rizik", "financijski rizik"). Pick one slow-sales threshold.
 
 ### GEN-24 · Low · Phased plan with some undated phases overstates SPI
 - **Check:** Code reading (convention review of GEN-23, 2026-10-20)

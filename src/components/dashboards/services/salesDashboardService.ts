@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase'
 import { subMonths, startOfMonth, format } from 'date-fns'
 import { parseLocalDate, monthKey } from '../../../utils/dateOnly'
+import { averagePer, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from '../types/salesDashboardTypes'
 
 // A unit of any of the three saleable types (stan / garaža / repozitorij),
@@ -74,12 +75,14 @@ export async function fetchSalesDashboardData(): Promise<{
   // sales are not represented in the revenue figures.
   const totalRevenue = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
   const totalSalesValue = sales.reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0)
-  const totalUnits = allUnits.length
-  const soldUnits = allUnits.filter(u => u.status === 'Sold').length
-  const reservedUnits = allUnits.filter(u => u.status === 'Reserved').length
-  const availableUnits = allUnits.filter(u => u.status === 'Available').length
-  const avgSalePrice = sales.length > 0 ? totalSalesValue / sales.length : 0
-  const salesRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0
+  const {
+    total: totalUnits,
+    sold: soldUnits,
+    reserved: reservedUnits,
+    available: availableUnits,
+  } = unitStatusCounts(allUnits)
+  const avgSalePrice = averagePer(totalSalesValue, sales.length)
+  const unitSalesRate = salesRate(soldUnits, totalUnits)
   const totalCustomers = customers.length
   const activeLeads = customers.filter(c => c.status === 'lead' || c.status === 'interested').length
   const currentMonth = startOfMonth(new Date())
@@ -94,7 +97,7 @@ export async function fetchSalesDashboardData(): Promise<{
     soldUnits,
     totalRevenue,
     avgSalePrice,
-    salesRate,
+    salesRate: unitSalesRate,
     totalCustomers,
     activeLeads,
     monthlyRevenue
@@ -113,11 +116,7 @@ export async function fetchSalesDashboardData(): Promise<{
 
   const projectStatsMap = new Map<string, ProjectStats>()
   projects.forEach(project => {
-    const projectUnits = allUnits.filter(u => u.project_id === project.id)
-    const total = projectUnits.length
-    const sold = projectUnits.filter(u => u.status === 'Sold').length
-    const reserved = projectUnits.filter(u => u.status === 'Reserved').length
-    const available = projectUnits.filter(u => u.status === 'Available').length
+    const { total, sold, reserved, available } = unitStatusCounts(allUnits.filter(u => u.project_id === project.id))
 
     if (total > 0) {
       projectStatsMap.set(project.id, {
@@ -128,7 +127,7 @@ export async function fetchSalesDashboardData(): Promise<{
         reserved_units: reserved,
         available_units: available,
         total_revenue: revenueByProject.get(project.id) || 0,
-        sales_rate: (sold / total) * 100
+        sales_rate: salesRate(sold, total)
       })
     }
   })

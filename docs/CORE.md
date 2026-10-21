@@ -194,6 +194,31 @@ read "Jan 05, 2026".
 - Both amounts must be in the same unit — compare gross with gross. Comparing gross payments against a net `base_amount` is what made every fully-paid subcontractor contract show a 25% overrun
 - Pure; covered by `contractVariance.test.ts`
 
+### Business figures
+
+Each business figure has one pure function, and every screen, report and export calls it
+(`.claude/rules/architecture.md` → Business figures). They came out of
+`Reports/services/generalReportService.ts` in October 2026 (REGRESSION_PREVENTION Step 7). Its
+characterization tests (`generalReportService.test.ts`) pinned the report's output before the
+move and pass unchanged. Where a function keeps a figure that is known to be wrong, its comment
+names the backlog id, and so does the pinned expectation.
+
+| Module | Functions | Called by |
+|---|---|---|
+| `salesFigures.ts` | `unitStatusCounts`, `salesRate`, `averagePer`, `soldRevenue` (list price of sold units, optional linked price), `customerFunnel`, `conversionRate` | General and Sales reports, Director and Sales dashboards, Project details. Revenue definitions that differ: GEN-38 |
+| `fundingFigures.ts` | `isLiveDebt`, `liveDebtFigures` (outstanding, facility amount, used, weighted rate, debt service), `totalEquity`, `debtToEquity`, `creditLineTotals`, `allocationTotals`, `activeFunderCount`, `projectFunding` (GEN-27), `loanTotals` | General report, Director and Investment dashboards. Differences: FUND-21 |
+| `paymentFigures.ts` | `costPaid` (payments on cost invoices, optionally narrowed), `cesijaFromCredit` (GEN-29), `bankAccountTotals` | General report. The Director dashboard's expense basis: GEN-39 |
+| `paymentTotals.ts` | `paymentTotalsByDirection`, `paymentTotalsByCategory` (cent sums), `DIRECTION_AMOUNT_CLASS`, `formatSignedEuro` — moved from `Cashflow/services/` | Cashflow and Funding payment registers, `cashFlowFigures` |
+| `cashFlowFigures.ts` | `monthlyCashFlow` (per month, in/out × operating/financing, local months), `cashFlowTotals` | General report screen, PDF and service; Accounting dashboard trends. Not reconciled with the bank balance: GEN-33 |
+| `invoiceFigures.ts` | `isOpenInvoice`, `isOverdueInvoice`, `invoiceStatusSummary`, `officeInvoiceTotals` (GEN-36) | General report, Cashflow invoice list (`isOverdue`), Debt status, the Site Management and Retail invoice modals. Differences: CASH-32 |
+| `constructionFigures.ts` | `contractTotals`, `contractTypeCounts` (whole-number names first, as a plain object orders keys), `completedPhaseCount`, `phaseCompletionRate`, `isSettledMilestone`, `recentWorkLogCount` | General report and PDF, Budget Control, Director alerts. Differences: SUP-18 |
+| `projectFigures.ts` | `profitAndMargin`, `returnOnEquity`, `projectRiskLevel`, `reportRisks`, `topProjectsByRevenue`, `recommendationKeys`, `projectStatusCounts` | General report and PDF, Director, Retail dashboards, Retail report. Thresholds: GEN-41; zeros for "no answer": GEN-32 |
+| `retailFigures.ts` | `retailPortfolioCounts` — the General report's retail section, **wrong as it stands** (GEN-28) | General report |
+| `ticFigures.ts` | `ticTotalsByProject`, `portfolioValue`, `ticPlanSummary` (GEN-30), on `ticGrandTotal` from `Funding/TIC/utils/ticBudget.ts` | General report. Investment dashboard's source: GEN-40 |
+
+Row types are narrow interfaces (`{ status, price }`), amounts go through `Number(x || 0)`, and a
+figure that depends on today takes `daysFrom` (default `daysFromToday`) so tests can fix it.
+
 ### errorMessage.ts (`src/lib/`)
 - `toErrorMessage(error, fallback)` — the sentence to show a user for a rejected promise. Prefers a message written for people (a service's own "Ne možete obrisati faze koje imaju ugovore: …"), and falls back to the caller's translated string when the error is machine text (`violates … constraint`, a bare `PGRST301`) or an RLS refusal
 - `isPermissionError(error)` — Postgres `42501`

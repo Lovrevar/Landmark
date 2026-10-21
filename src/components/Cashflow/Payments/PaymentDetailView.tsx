@@ -6,7 +6,7 @@ import type { Payment } from './types'
 import { Modal, Button } from '../../ui'
 import { getPaymentMethodLabel } from '../services/paymentHelpers'
 import { getInvoiceTypeLongLabel, paymentDirection } from '../services/invoiceHelpers'
-import { DIRECTION_AMOUNT_CLASS } from '../services/paymentTotals'
+import { DIRECTION_AMOUNT_CLASS } from '../../../utils/paymentTotals'
 
 interface PaymentDetailViewProps {
   payment: Payment | null

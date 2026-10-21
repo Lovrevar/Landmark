@@ -6,7 +6,7 @@ import { Calendar, Download, Filter, TrendingUp, TrendingDown, Scale, AlertCircl
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { usePaymentsData } from './hooks/usePaymentsData'
-import { paymentTotalsByDirection, DIRECTION_AMOUNT_CLASS, formatSignedEuro } from '../../Cashflow/services/paymentTotals'
+import { paymentTotalsByDirection, DIRECTION_AMOUNT_CLASS, formatSignedEuro } from '../../../utils/paymentTotals'
 import type { BankPaymentWithDetails } from './services/bankPaymentsService'
 import { exportFundingPaymentsExcel } from './services/fundingPaymentsExport'
 import { paymentKind, type PaymentDirection } from '../../Cashflow/services/invoiceHelpers'

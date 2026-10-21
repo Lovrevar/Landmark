@@ -21,6 +21,9 @@ import { RISK_LEVEL, statusLabel } from '../../../utils/statusDisplay'
 import { exportFileName } from '../../../utils/downloadFile'
 import { logActivity } from '../../../lib/activityLog'
 import { orgHeading } from '../../../lib/orgName'
+import { cashFlowTotals } from '../../../utils/cashFlowFigures'
+import { phaseCompletionRate } from '../../../utils/constructionFigures'
+import { topProjectsByRevenue } from '../../../utils/projectFigures'
 
 /** Whole euros, for the aggregate figures this report is made of. */
 const money = pdfMoneyRounded
@@ -218,9 +221,8 @@ export async function generateGeneralReportPDF(
   pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
-  const salesRatePercent = report.sales_performance.total_units > 0
-    ? (report.sales_performance.units_sold / report.sales_performance.total_units) * 100
-    : 0
+  // The service's figure, not a second division of the same two counts.
+  const salesRatePercent = report.kpis.sales_rate
 
   // Whole sentences, not `t()` output with English glue welded on: Croatian word order differs,
   // so each line has to be translatable as a unit. The screen renders these same five keys.
@@ -364,10 +366,7 @@ export async function generateGeneralReportPDF(
   yPosition += 60
 
   checkPageBreak(60)
-  const topProjectsChart = report.projects
-    .slice()
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 5)
+  const topProjectsChart = topProjectsByRevenue(report.projects, 5)
     .map(p => ({
       label: p.name.substring(0, 15),
       value: p.revenue / 1000000,
@@ -441,9 +440,10 @@ export async function generateGeneralReportPDF(
   pdf.text(t('reports.general.pdf.construction_progress'), margin, yPosition)
   yPosition += 8
 
-  const constructionProgress = report.construction_status.total_phases > 0
-    ? (report.construction_status.completed_phases / report.construction_status.total_phases) * 100
-    : 0
+  const constructionProgress = phaseCompletionRate(
+    report.construction_status.completed_phases,
+    report.construction_status.total_phases,
+  )
   drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, constructionProgress, {
     label: bare('reports.general.completed_phases'),
     color: '#2563eb',
@@ -752,10 +752,6 @@ export async function generateGeneralReportPDF(
 
   // Two tables with the same columns: operations, then financing (credit principal drawn and
   // repaid). Their sum is the total cash flow the charts above plot.
-  const sumRows = (rows: readonly CashFlowAmounts[]) => rows.reduce(
-    (total, row) => ({ inflow: total.inflow + row.inflow, outflow: total.outflow + row.outflow, net: total.net + row.net }),
-    { inflow: 0, outflow: 0, net: 0 },
-  )
   const amountsLine = (amounts: CashFlowAmounts) => [
     `${withColon('reports.general.inflow_col')} ${moneyCompact(amounts.inflow)}`,
     `${withColon('reports.general.outflow_col')} ${moneyCompact(amounts.outflow)}`,
@@ -801,7 +797,7 @@ export async function generateGeneralReportPDF(
     yPosition += rows.length * 5 + 3
 
     pdf.setFont(fontFamily, 'bold')
-    pdf.text(amountsLine(sumRows(rows)), margin + 5, yPosition)
+    pdf.text(amountsLine(cashFlowTotals(rows)), margin + 5, yPosition)
     yPosition += 9
   }
 
@@ -809,7 +805,7 @@ export async function generateGeneralReportPDF(
   pdf.setFontSize(9)
   pdf.setFont(fontFamily, 'bold')
   pdf.text(`${t('reports.general.six_month_totals')} ${t('reports.general.cash_flow_total')}`, margin + 5, yPosition)
-  pdf.text(amountsLine(sumRows(report.cash_flow)), margin + 5, yPosition + 5)
+  pdf.text(amountsLine(cashFlowTotals(report.cash_flow)), margin + 5, yPosition + 5)
   yPosition += 15
 
   // ── Project Portfolio page ────────────────────────────────────────────────

@@ -1,9 +1,29 @@
 # Backlog — Funding and TIC
 
 Bank credits, investors, drawdowns, allocations and the TIC cost structure. Ids: `FUND-n` (next
-free: `FUND-21`). Entry format and rules are in [README.md](./README.md).
+free: `FUND-22`). Entry format and rules are in [README.md](./README.md).
 
 ## Open
+
+### FUND-21 · Low · Debt, headroom, the interest rate and funders are defined three ways across the dashboards
+- **Check:** Code reading (Step 7 item 1, 2026-10-21). The General report and the Director dashboard
+  now share one set of functions, `src/utils/fundingFigures.ts`: debt is outstanding on live,
+  non-equity credits, equity is the equity facilities, and the rate is weighted over live debt
+  (GEN-2)
+- **Where / what happens:**
+  - `dashboards/services/investmentDashboardService.ts`:
+    - Debt is `max(0, Σ used − Σ repaid)` over every credit, equity included.
+    - Available credit is clamped on the total instead of summed per credit.
+    - The weighted rate runs over every credit, equity and repaid ones included.
+    - Equity and D/E are hard-coded to 0.
+  - Investors and funders: the Director dashboard counts banks of live credits, equity included,
+    with no allocation needed. The General report counts banks of credits that have an allocation,
+    whatever their status.
+  - Per-project debt: the Director dashboard sums `outstanding_balance` over every credit of the
+    project, equity included. The General report sums face value (GEN-27).
+    `Funding/Projects/services/investmentService.ts` splits allocations by credit type.
+- **Fix direction:** one per-project and one portfolio definition in `fundingFigures.ts`, which the
+  Investment dashboard calls too. Where a figure stays different, its label says what it counts.
 
 ### FUND-20 · Low · Help says Investment can open Funding payments; the app redirects them
 - **Check:** Confirmed (pre-release review, 2026-10-20)

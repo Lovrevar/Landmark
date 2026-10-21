@@ -27,6 +27,7 @@ import { fetchProjectDataEnhanced } from './services/projectDetailsService'
 import { useMilestoneManagement } from './hooks/useMilestoneManagement'
 import { usePhaseCollapseState } from './hooks/usePhaseCollapseState'
 import { buildPhaseBuckets, computePhaseStatuses } from './utils'
+import { soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
 import { projectTimeline } from '../../../utils/projectTimeline'
 import { formatDate } from '../../../utils/formatters'
 import { PROJECT_STATUS, UNIT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
@@ -164,7 +165,8 @@ const ProjectDetailsEnhanced: React.FC = () => {
   const activeContractCount = contracts.filter(c => !isClosedContract(c.status)).length
   const totalSpent = contracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
   const hasPlan = ticTotal !== null && ticTotal > 0
-  const totalRevenue = apartments.filter(a => a.status === 'Sold').reduce((sum, a) => sum + Number(a.price), 0)
+  const totalRevenue = soldRevenue(apartments)
+  const unitCounts = unitStatusCounts(apartments)
   const completionPercentage = milestones.length > 0
     ? Math.round((milestones.filter(m => m.completed).length / milestones.length) * 100)
     : 0
@@ -371,15 +373,15 @@ const ProjectDetailsEnhanced: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
                   <span className="text-sm text-green-700 dark:text-green-400">{t('status.sold')}</span>
-                  <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-1">{apartments.filter((a) => a.status === 'Sold').length}</p>
+                  <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-1">{unitCounts.sold}</p>
                 </div>
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-700">
                   <span className="text-sm text-yellow-700 dark:text-yellow-400">{t('status.reserved')}</span>
-                  <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100 mt-1">{apartments.filter((a) => a.status === 'Reserved').length}</p>
+                  <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100 mt-1">{unitCounts.reserved}</p>
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
                   <span className="text-sm text-blue-700 dark:text-blue-300">{t('status.available')}</span>
-                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">{apartments.filter((a) => a.status === 'Available').length}</p>
+                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">{unitCounts.available}</p>
                 </div>
               </div>
               <Table>
