@@ -270,9 +270,9 @@ const SubcontractorManagement: React.FC = () => {
               <Table.Th>{t('common.name')}</Table.Th>
               <Table.Th>{t('common.contact')}</Table.Th>
               <Table.Th>{t('supervision.subcontractors.total_contracts')}</Table.Th>
-              <Table.Th className="text-right">{t('supervision.subcontractors.contract_value')}</Table.Th>
-              <Table.Th className="text-right">{t('common.total_paid')}</Table.Th>
-              <Table.Th className="text-right">{t('common.remaining')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('supervision.subcontractors.contract_value')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('common.total_paid')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('common.remaining')}</Table.Th>
               <Table.Th>{t('supervision.subcontractors.payment_progress')}</Table.Th>
               <Table.Th sticky className="text-right">{t('common.actions')}</Table.Th>
             </Table.Tr>
@@ -282,8 +282,8 @@ const SubcontractorManagement: React.FC = () => {
               const pct = paymentPct(sub)
               return (
                 <Table.Tr key={sub.id} className="cursor-pointer" onClick={() => setSelectedSubcontractor(sub)}>
-                  <Table.Td label={t('common.name')} className="font-medium">{sub.name}</Table.Td>
-                  <Table.Td label={t('common.contact')} className="text-gray-500 dark:text-gray-400">{sub.contact || '-'}</Table.Td>
+                  <Table.Td label={t('common.name')} className="font-medium"><div className="md:w-80 md:truncate" title={sub.name}>{sub.name}</div></Table.Td>
+                  <Table.Td label={t('common.contact')} className="text-gray-500 dark:text-gray-400"><div className="md:w-60 md:truncate" title={sub.contact || undefined}>{sub.contact || '-'}</div></Table.Td>
                   <Table.Td label={t('supervision.subcontractors.total_contracts')}>{sub.total_contracts} ({sub.active_contracts})</Table.Td>
                   <Table.Td label={t('supervision.subcontractors.contract_value')} className="text-right font-semibold">€{formatEuropean(sub.total_contract_value)}</Table.Td>
                   <Table.Td label={t('common.total_paid')} className="text-right text-teal-600 dark:text-teal-400">€{formatEuropean(sub.total_paid)}</Table.Td>

@@ -197,7 +197,7 @@ Shared primitive component library. Always check here before building new UI —
 ### Table.tsx
 - Semantic data table with sticky headers and row hover effects
 - Compound component: `Table.Head`, `Table.Body`, `Table.Th`, `Table.Td`, `Table.Tr`
-- Props (root): `dense?` (tighter cell padding, propagated to `Th`/`Td` via context), `fitContent?` (size to content / left-align instead of stretching to fill — avoids wide column gaps on sparse tables), `children`, `className?`
+- Props (root): `dense?` (tighter cell padding, propagated to `Th`/`Td` via context), `fitContent?` (size to content / left-align instead of stretching to fill — avoids wide column gaps on sparse tables; give text columns a fixed width, e.g. `<div className="md:w-80 md:truncate" title={…}>`, and money columns a `w-36` header, or the table resizes whenever a filter changes the rows — Subcontractors and Suppliers do this), `children`, `className?`
 - Props (`Th`): `sortable?`, `sticky?` (pins to the right edge), plus standard HTML `th` attributes
 - Props (`Td`): `sticky?`, `label?` (column label shown beside the value in the mobile card view), plus standard HTML `td` attributes
 - Props (`Tr`): `hoverable?` (default `true`), plus standard HTML `tr` attributes

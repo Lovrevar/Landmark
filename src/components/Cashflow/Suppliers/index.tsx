@@ -255,22 +255,22 @@ const AccountingSuppliers: React.FC = () => {
               <Table.Th>{t('common.contact')}</Table.Th>
               <Table.Th>{t('suppliers.stats.total_contracts')}</Table.Th>
               <Table.Th>{t('suppliers.invoices_label')}</Table.Th>
-              <Table.Th className="text-right">{t('common.value')}</Table.Th>
-              <Table.Th className="text-right">{t('common.total_paid')}</Table.Th>
-              <Table.Th className="text-right">{t('common.remaining')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('common.value')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('common.total_paid')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('common.remaining')}</Table.Th>
               <Table.Th sticky className="text-right">{t('common.actions')}</Table.Th>
             </Table.Tr>
           </Table.Head>
           <Table.Body>
             {filteredSuppliers.map(supplier => (
               <Table.Tr key={supplier.id} className="cursor-pointer" onClick={() => handleViewDetails(supplier)}>
-                <Table.Td label={t('common.name')} className="font-medium">{supplier.name}</Table.Td>
+                <Table.Td label={t('common.name')} className="font-medium"><div className="md:w-80 md:truncate" title={supplier.name}>{supplier.name}</div></Table.Td>
                 <Table.Td label={t('suppliers.source_label')}>
                   <Badge variant={supplier.source === 'retail' ? 'teal' : 'blue'} size="sm">
                     {supplier.source === 'retail' ? t('suppliers.source_retail') : t('suppliers.source_site')}
                   </Badge>
                 </Table.Td>
-                <Table.Td label={t('common.contact')} className="text-gray-500 dark:text-gray-400">{supplier.contact || '-'}</Table.Td>
+                <Table.Td label={t('common.contact')} className="text-gray-500 dark:text-gray-400"><div className="md:w-60 md:truncate" title={supplier.contact || undefined}>{supplier.contact || '-'}</div></Table.Td>
                 <Table.Td label={t('suppliers.stats.total_contracts')}>{supplier.total_contracts}</Table.Td>
                 <Table.Td label={t('suppliers.invoices_label')}>{supplier.total_invoices}</Table.Td>
                 <Table.Td label={t('common.value')} className="text-right font-semibold">€{formatEuropean(supplier.total_contract_value)}</Table.Td>
