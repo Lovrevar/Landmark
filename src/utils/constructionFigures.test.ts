@@ -44,6 +44,17 @@ describe('contractTypeCounts', () => {
       { name: 'Projektiranje', count: 1 },
     ])
   })
+
+  // The General report's order since before the move to this file: a plain object's, so a type
+  // named with a whole number sorts first. Found by fuzzing old against new (2026-10-21).
+  it('puts whole-number type names first, in numeric order, as the report always has', () => {
+    expect(contractTypeCounts([
+      contract('active', 1, 0, 'Elektro'),
+      contract('active', 1, 0, '10'),
+      contract('active', 1, 0, 'Zidarski'),
+      contract('active', 1, 0, '2'),
+    ]).map(type => type.name)).toEqual(['2', '10', 'Elektro', 'Zidarski'])
+  })
 })
 
 describe('phases', () => {

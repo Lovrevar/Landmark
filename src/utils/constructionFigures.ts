@@ -49,14 +49,19 @@ export function contractTotals(contracts: readonly ContractRow[]): ContractTotal
   }
 }
 
-/** Contracts per type name, in first-seen order; a contract with no type counts under `''`. */
+/**
+ * Contracts per type name; a contract with no type counts under `''`. The order is a plain
+ * object's key order, as the General report has always had it: names that are whole numbers
+ * ("2", "10") first, in numeric order, then the rest in first-seen order. The screen and the PDF
+ * list the types, and colour the PDF's chart by position, in that order.
+ */
 export function contractTypeCounts(contracts: readonly ContractRow[]): { name: string; count: number }[] {
-  const counts = new Map<string, number>()
+  const counts: Record<string, number> = {}
   for (const contract of contracts) {
     const name = contract.contract_types?.name || ''
-    counts.set(name, (counts.get(name) ?? 0) + 1)
+    counts[name] = (counts[name] || 0) + 1
   }
-  return [...counts].map(([name, count]) => ({ name, count }))
+  return Object.entries(counts).map(([name, count]) => ({ name, count }))
 }
 
 /** Phases (project or retail) whose status is `completed`. */
