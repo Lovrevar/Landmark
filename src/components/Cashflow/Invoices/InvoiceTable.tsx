@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { formatDate } from '../../../utils/formatters'
 import { FileText, Edit, Trash2, DollarSign, Eye, Check, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { formatCurrency } from '../../Common/CurrencyInput'
-import { Table, Button, EmptyState } from '../../ui'
+import { Table, Button, EmptyState, Badge } from '../../ui'
+import { getTypeColor, getInvoiceTypeLabel, getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
+import { InvoiceTypeHint } from './InvoiceTypeHint'
 import type { Invoice } from './types'
 
 interface InvoiceTableProps {
@@ -12,14 +14,13 @@ interface InvoiceTableProps {
   sortField: 'due_date' | 'invoice_number' | null
   sortDirection: 'asc' | 'desc'
   filterDirection: 'INCOMING' | 'OUTGOING'
+  /** A search term or a filter other than the direction is active, so an empty table means "no match". */
+  filtered?: boolean
   onSort: (field: 'due_date' | 'invoice_number') => void
   onView: (invoice: Invoice) => void
   onEdit: (invoice: Invoice) => void
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
   onPayment: (invoice: Invoice) => void
-  getTypeColor: (type: string) => string
-  getTypeLabel: (type: string) => string
-  getStatusColor: (status: string) => string
   getSupplierCustomerName: (invoice: Invoice) => string
   isOverdue: (dueDate: string, status: string) => boolean
 }
@@ -30,14 +31,12 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   sortField,
   sortDirection,
   filterDirection,
+  filtered = false,
   onSort,
   onView,
   onEdit,
   onDelete,
   onPayment,
-  getTypeColor,
-  getTypeLabel,
-  getStatusColor,
   getSupplierCustomerName,
   isOverdue
 }) => {
@@ -47,7 +46,14 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
       <Table.Head>
         <tr>
           {visibleColumns.approved && <Table.Th>{t('invoices.table.approved')}</Table.Th>}
-          {visibleColumns.type && <Table.Th>{t('invoices.table.type')}</Table.Th>}
+          {visibleColumns.type && (
+            <Table.Th>
+              <span className="inline-flex items-center gap-1">
+                {t('invoices.table.type')}
+                <InvoiceTypeHint />
+              </span>
+            </Table.Th>
+          )}
           {visibleColumns.invoice_number && (
             <Table.Th sortable onClick={() => onSort('invoice_number')}>
               <div className="flex items-center gap-1">
@@ -99,7 +105,8 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
             <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1}>
               <EmptyState
                 icon={FileText}
-                title={t('invoices.table.no_invoices')}
+                title={filtered ? t('common.no_results') : t('invoices.table.no_invoices')}
+                description={filtered ? t('common.no_results_description') : t('invoices.table.no_invoices_description')}
               />
             </td>
           </tr>
@@ -123,7 +130,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               {visibleColumns.type && (
                 <Table.Td label={t('invoices.table.type')}>
                   <span className={`text-xs font-semibold ${getTypeColor(invoice.invoice_type)}`}>
-                    {getTypeLabel(invoice.invoice_type)}
+                    {getInvoiceTypeLabel(invoice.invoice_type, t)}
                   </span>
                 </Table.Td>
               )}
@@ -220,10 +227,9 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               )}
               {visibleColumns.status && (
                 <Table.Td label={t('invoices.table.status')}>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
-                    {invoice.status === 'UNPAID' ? t('common.unpaid') :
-                     invoice.status === 'PARTIALLY_PAID' ? t('common.partial') : t('common.paid')}
-                  </span>
+                  <Badge variant={getInvoiceStatusVariant(invoice.status)}>
+                    {getInvoiceStatusLabel(invoice.status, t)}
+                  </Badge>
                 </Table.Td>
               )}
               <Table.Td sticky>
@@ -252,13 +258,15 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                     onClick={() => onEdit(invoice)}
                     title="Uredi"
                   />
-                  <Button
-                    variant="ghost-danger"
-                    size="icon-sm"
-                    icon={Trash2}
-                    onClick={() => onDelete(invoice.id)}
-                    title="Obriši"
-                  />
+                  {onDelete && (
+                    <Button
+                      variant="ghost-danger"
+                      size="icon-sm"
+                      icon={Trash2}
+                      onClick={() => onDelete(invoice.id)}
+                      title="Obriši"
+                    />
+                  )}
                 </div>
               </Table.Td>
             </Table.Tr>

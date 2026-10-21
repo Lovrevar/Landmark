@@ -3,9 +3,9 @@ import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lu
 import { useTranslation } from 'react-i18next'
 import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
-import { daysFromToday } from '../../../../utils/dateOnly'
+import { isOverdueInvoice } from '../../../../utils/invoiceFigures'
 import { Button, Modal, Badge, EmptyState, ErrorState, LoadingSpinner } from '../../../ui'
-import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel, getInvoiceTypeLongLabel } from '../../../Cashflow/services/invoiceHelpers'
 import { formatDate } from '../../../../utils/formatters'
 
 interface Invoice {
@@ -83,19 +83,15 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
         return t('retail_projects.invoices_modal.type_incoming_supplier')
       case 'OUTGOING_SUPPLIER':
         return t('retail_projects.invoices_modal.type_outgoing_supplier')
-      case 'INCOMING_INVESTMENT':
-        return t('retail_projects.invoices_modal.type_incoming_investment')
       case 'OUTGOING_SALES':
         return t('retail_projects.invoices_modal.type_outgoing_sales')
       default:
-        return type
+        // Any other type is not a retail one; show it the way Cashflow does rather than raw.
+        return getInvoiceTypeLongLabel(type, t)
     }
   }
 
-  const isOverdue = (dueDate: string, status: string) => {
-    if (status === 'PAID') return false
-    return daysFromToday(dueDate) < 0
-  }
+  const isOverdue = (dueDate: string, status: string) => isOverdueInvoice({ due_date: dueDate, status })
 
   return (
     <Modal show={isOpen && !!contract} onClose={onClose} size="full">
@@ -113,6 +109,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
           <EmptyState
             icon={FileText}
             title={t('retail_projects.invoices_modal.no_invoices')}
+            description={t('retail_projects.invoices_modal.no_invoices_description')}
           />
         ) : (
           <div className="space-y-4">

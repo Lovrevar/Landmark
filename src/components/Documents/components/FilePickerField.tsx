@@ -112,7 +112,7 @@ export const FilePickerField: React.FC<FilePickerFieldProps> = ({ files, onChang
               key={`${f.name}-${f.size}-${i}`}
               className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-lg"
             >
-              <FileText className="w-5 h-5 text-blue-500 flex-shrink-0" />
+              <FileText className="w-5 h-5 text-blue-500 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{f.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{formatFileSize(f.size)}</p>
@@ -121,7 +121,7 @@ export const FilePickerField: React.FC<FilePickerFieldProps> = ({ files, onChang
                 type="button"
                 onClick={(e) => { e.stopPropagation(); removeAt(i) }}
                 disabled={disabled}
-                className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors flex-shrink-0 disabled:opacity-50"
+                className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-sm transition-colors shrink-0 disabled:opacity-50"
                 title={t('documents.upload_modal.remove_file')}
               >
                 <X className="w-4 h-4" />

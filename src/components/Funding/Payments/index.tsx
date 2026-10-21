@@ -1,30 +1,33 @@
 import React, { useState, useEffect } from 'react'
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canManagePayments } from '../../../utils/permissions'
 import { Calendar, Download, Filter, TrendingUp, TrendingDown, Scale, AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Button, FormField, Input, Badge, EmptyState, ErrorState, Alert, Table } from '../../ui'
 import { usePaymentsData } from './hooks/usePaymentsData'
-import { paymentTotalsByDirection, DIRECTION_AMOUNT_CLASS, formatSignedEuro } from '../../Cashflow/services/paymentTotals'
+import { paymentTotalsByDirection, DIRECTION_AMOUNT_CLASS, formatSignedEuro } from '../../../utils/paymentTotals'
 import type { BankPaymentWithDetails } from './services/bankPaymentsService'
 import { exportFundingPaymentsExcel } from './services/fundingPaymentsExport'
-import type { PaymentDirection } from '../../Cashflow/services/invoiceHelpers'
+import { paymentKind, type PaymentDirection } from '../../Cashflow/services/invoiceHelpers'
 import { getCreditTypeLabelKey } from '../Investors/utils/creditCalculations'
 import { useAsyncExport } from '../../../hooks/useAsyncExport'
 import { formatEuro, formatDate, NO_VALUE } from '../../../utils/formatters'
 
-// A drawdown is money in (green), a repayment or credit fee money out (red). The amount classes
-// and the signed-net formatter are shared with the Cashflow payments screen.
+// Money in is green and money out red on the amount; the badge says what the payment is. A
+// drawdown or a principal repayment is financing and gets a neutral badge, only a credit fee is
+// an expense (FUND-17). The amount classes and the signed-net formatter are shared with the
+// Cashflow payments screen.
 const DIRECTION_BADGE: Record<PaymentDirection, 'green' | 'red'> = { IN: 'green', OUT: 'red' }
 
 const FundingPaymentsManagement: React.FC = () => {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
   const { payments, stats, loading, error, refetch } = usePaymentsData()
   const [errorDismissed, setErrorDismissed] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'recent' | 'large'>('all')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: '', end: '' })
-
-  const directionLabel = (direction: PaymentDirection | null): string =>
-    direction === 'IN' ? t('payments.table.income') : direction === 'OUT' ? t('payments.table.expense') : NO_VALUE
 
   const creditTypeLabel = (payment: BankPaymentWithDetails): string => {
     const key = getCreditTypeLabelKey(payment.credit_type, payment.credit_seniority)
@@ -59,6 +62,9 @@ const FundingPaymentsManagement: React.FC = () => {
   // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
   const { exporting, run: runExportExcel } = useAsyncExport(exportFundingPaymentsExcel, 'common.export_error')
 
+  // RLS returns payments to Director and Accounting only; anyone else would see an empty register.
+  if (!canManagePayments(user)) return <Navigate to="/" replace />
+
   if (loading && payments.length === 0) {
     return <LoadingSpinner message={t('funding.payments.loading')} />
   }
@@ -89,7 +95,7 @@ const FundingPaymentsManagement: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <SearchInput
@@ -165,11 +171,13 @@ const FundingPaymentsManagement: React.FC = () => {
                     : formatDate(new Date(payment.created_at), i18n.language)}
                 </Table.Td>
                 <Table.Td label={t('funding.payments.table.type_col')}>
-                  {payment.direction ? (
-                    <Badge variant={DIRECTION_BADGE[payment.direction]}>{directionLabel(payment.direction)}</Badge>
-                  ) : (
-                    NO_VALUE
-                  )}
+                  {(() => {
+                    const kind = paymentKind(payment.invoice_type)
+                    if (!kind || !payment.direction) return NO_VALUE
+                    return (
+                      <Badge variant={kind.financing ? 'blue' : DIRECTION_BADGE[payment.direction]}>{t(kind.labelKey)}</Badge>
+                    )
+                  })()}
                 </Table.Td>
                 <Table.Td label={t('funding.payments.table.recipient_col')} className="font-medium">{payment.bank_name || t('funding.investments.unknown_bank')}</Table.Td>
                 <Table.Td label={t('funding.payments.table.project_col')}>{payment.project_name || t('common.no_project')}</Table.Td>

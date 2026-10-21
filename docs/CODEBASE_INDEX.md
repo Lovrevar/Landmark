@@ -18,6 +18,7 @@
 | **UI** | [UI.md](./UI.md) | Primitive component library |
 | **Core** | [CORE.md](./CORE.md) | Contexts, hooks, lib, types, utils |
 | **Activity Log** | [ACTIVITY_LOG.md](./ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
+| **Help** | [HELP.md](./HELP.md) | In-app guidance: `/help` page, the "?" beside page titles, `InfoHint` popovers, usage logging, release notes with a "what's new" banner, screenshots — all reading `help-kb/` |
 | **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 15-tool catalog, fork-and-regenerate edits |
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
 | **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
@@ -30,12 +31,12 @@
 |---|---|---|
 | **Voice access** | [voice/](./voice/01-chat-assistant-analysis.md) | 🔍 **Planned; phase 1 (characterisation tests for `ai-chat`) done, the orchestrator itself unchanged.** Voice access to the existing AI chat assistant through Vapi or Retell, in Custom LLM mode on one shared backend. Phase 1 surveys today's assistant (the blocker: it does not stream tokens). Phase 2 commits to an in-app call button as v1 and defers a PIN-gated phone number to v2 (decided 2026-09-23), a default-deny voice tool allowlist, a Croatian STT/TTS go/no-go gate and a phased rollout. Phase 1 pinned the current assistant with 106 tests and logged 10 open questions |
 | **ERP Integration** | [erp-integration/](./erp-integration/README.md) | ⏸️ **On hold** — merged but switched off (flag off, migrations parked in `supabase/parked-migrations/erp/`). Rewrite of the financial section: 4D Wand becomes the source of truth for invoices, payments and bank balances; Cognilion stops authoring them and imports/classifies instead. Spec, decision log, progress and open questions |
+| **graphify** | [GRAPHIFY.md](./GRAPHIFY.md) | The code knowledge graph in `graphify-out/`: how it is rebuilt, the one edge type worth trusting, and what it cannot tell you (moved out of CLAUDE.md) |
 | **Testing** | [TESTING.md](./TESTING.md) | Vitest unit tests + Playwright e2e setup and conventions |
-| **Security Backlog** | [SECURITY_BACKLOG.md](./SECURITY_BACKLOG.md) | Tracked security items and RLS hardening status |
+| **Backlog** | [backlog/](./backlog/README.md) | Everything known to be wrong, missing or undecided, one file per area (release steps, security, sales, retail, supervision, cashflow, funding, projects/dashboards/reports, collaboration, app-wide UI), with a ranked list and the rules for adding and closing items. `backlog/archive/` keeps the four audits (September 2026 defect and UI audits, June 2026 dashboard audit, old security backlog) as closed history; `backlog/plans/` holds the supplier-unification plan |
+| **Specifikacija (HR)** | [SPECIFIKACIJA.md](./SPECIFIKACIJA.md) | Croatian-language, extremely detailed functional + technical spec of the whole platform except Retail (routes, data model, formulas, triggers, permissions, per-module behaviour). Verified against code on 2026-09-30; **frames the 4D Wand ERP integration as live** (a note at the top says it is flagged off) |
 | **Presentation Modules** | [PRESENTATION_MODULES.md](./PRESENTATION_MODULES.md) | Croatian-language module overview + talking points for pitching the platform; ERP sync presented as a built-in product capability |
 | **Presentation Deck** | [PRESENTATION_DECK.md](./PRESENTATION_DECK.md) | Slide-by-slide startup-event deck copy with speaker notes (non-technical users, modularity/integrations, multi-company analytics) |
-| **UI Audit** | [UI_AUDIT.md](./UI_AUDIT.md) | September 2026 app-wide UI/UX review (~130 findings per module: broken behaviour, colour/dark-mode overrides, misleading displays, systemic inconsistencies) with fix status. Section 1 (broken) is fixed; the rest is the open backlog |
-| **Dashboard Audit** | [DASHBOARD_AUDIT.md](./DASHBOARD_AUDIT.md) | Historical record of the June 2026 dashboard data-integrity audit. All findings were fixed; kept for the rationale and the three deferred Low items |
 | **Manual Smoke Testsheet** | [MANUAL_TESTSHEET.md](./MANUAL_TESTSHEET.md) | ~15-minute tick-box pass over the core money loop: invoice → dashboard → payment → account |
 | **Manual test sheets** | [test/](./test/) | Per-module manual test scripts (`01-foundations` … `10-appendix`), the e2e strategy write-up, and seed SQL |
 | **Scratch plans** | [rand/](./rand/) | Superseded/one-off planning docs. Historical — do not treat as current design |
@@ -71,7 +72,8 @@ Module/
 `projects.budget`, `project_phases.budget_allocated` and `phase_classification_budgets` are
 **derived from the project's TIC** by `sync_project_from_tic()`, and nothing in the client writes
 them. Any screen showing a planned figure must gate on whether a TIC exists — a project without
-one reads "budget not set", never €0. Details in
+one reads "budget not set", never €0. A phase's `budget_allocated` is NULL when the TIC is not
+split by phase and the project has several (`budgetNotSplitByPhase`). Details in
 [FUNDING.md](./FUNDING.md#the-tic-is-the-only-source-of-planned-budget).
 
 Two companion rules that follow from the same change, and that every module is expected to obey:
@@ -101,8 +103,10 @@ Two companion rules that follow from the same change, and that every module is e
 | `src/contexts/UnsavedChangesContext.tsx` | App-wide "you have unsaved work" guard. A screen arms it with `useUnsavedChanges(isDirty, save?)` — passing `save` adds a "save and leave" button to the dialog; every navigation in `Layout` runs through `useLeaveGuard()`'s `requestLeave`, and reloads fall to `beforeunload`. See `docs/UI.md` |
 | `src/utils/permissions.ts` | Role-based access control |
 | `src/utils/formatters.ts` | Shared date/currency/number formatters (unit-tested) |
+| `src/utils/appPath.ts` | `isAppPath(url)` — whether a markdown link or image address stays on the app's origin (resolved with the URL parser, so `/\host` is another site — SEC-A13). Used by `MarkdownView`; unit-tested |
 | `src/utils/phaseLabel.ts` | `formatPhaseLabel(phase, phaseWord)` — the **only** way to render a phase to a user. Since the split, phases are stored as literally "Faza 1", so concatenating number and name gives "Faza 1 · Faza 1"; this collapses it. Matched structurally, so it works with a Croatian name under an English UI. Unit-tested |
 | `src/utils/evm.ts` | EVM calculation utilities (calculatePhaseEVM, calculateProjectEVM) |
+| `src/utils/salesFigures.ts`, `fundingFigures.ts`, `paymentFigures.ts`, `paymentTotals.ts`, `cashFlowFigures.ts`, `invoiceFigures.ts`, `constructionFigures.ts`, `projectFigures.ts`, `retailFigures.ts`, `ticFigures.ts` | **Business figures**, one tested function each, called by every screen and report that shows the figure — never re-derive one inline. See `docs/CORE.md` → Business figures |
 | `src/utils/vatCalculations.ts` | Croatian 4-slot VAT breakdown (`calculateVatBreakdown`, `CROATIAN_VAT_RATES` 25/13/0/5%); unit-tested |
 | `src/utils/yieldToUI.ts` | `yieldToUI()` — yields to the next macrotask to keep the UI responsive during long PDF-builder loops |
 | `src/utils/excelParsers.ts` | Excel file import helpers |
@@ -115,6 +119,9 @@ Two companion rules that follow from the same change, and that every module is e
 | `src/contexts/ToastContext.tsx` | App-wide toast queue (`ToastProvider`, `useToast`) |
 | `src/lib/useCachedData.ts` | TTL-cached fetch hook used by every dashboard (`useCachedData`, `invalidateCachedData`); exposes `error` — never render zeros on a failed load |
 | `src/lib/dbErrors.ts` | `isForeignKeyViolation()` — distinguishes FK violations from other Supabase errors |
+| `src/lib/linkedUnitPrices.ts` | `fetchLinkedPrices()` — the list prices of the garages and storage linked to each apartment, for a sale's package value (`contractedSales`); paged, throws on a failed read |
+| `src/test/fakeSupabase.ts` | Test-only fake Supabase client for the characterization tests of services (`fakeSupabase(db)`, `emptyFakeDb()`); see `docs/TESTING.md` |
+| `src/lib/orgName.ts` | The organisation's name for report headers: `fetchOrgName()` reads the one row of `organization_settings` (set with SQL per database; null prints only the title), `orgHeading()` capitalises it (GEN-19) |
 | `src/lib/featureFlags.ts` | Compile-time flags for merged-but-unreleased work; `ERP_INTEGRATION_ENABLED` (off) hides the ERP screens |
 | `src/hooks/useMediaQuery.ts` | `useMediaQuery`, `useIsMobile`, `useIsTabletUp`, `useIsDesktop` — the responsive breakpoint hooks |
 | `src/hooks/useListPreferences.ts` | Persisted per-list view mode / sort preferences |

@@ -1,4 +1,5 @@
 import type { Project, Apartment, Customer, Sale, ProjectCategory } from '../../lib/supabase'
+import type { CashFlowAmounts } from '../../utils/cashFlowFigures'
 
 // ── General Report ──────────────────────────────────────────────────────────
 
@@ -26,7 +27,12 @@ export interface ProjectData {
   risk_level: 'Low' | 'Medium' | 'High'
 }
 
+/** One side of the cash-flow table for a month. `net` is inflow − outflow. */
+export type { CashFlowAmounts }
+
 export interface ComprehensiveReport {
+  /** The organisation's name from `organization_settings`; null when none is set (GEN-19). */
+  organization_name: string | null
   executive_summary: {
     total_projects: number
     active_projects: number
@@ -165,9 +171,14 @@ export interface ComprehensiveReport {
      * report used to carry English month names into a document sent to a bank.
      */
     month_key: string
+    /** All payments in the month: operating + financing. The charts plot this net. */
     inflow: number
     outflow: number
     net: number
+    /** Running the business: customers, suppliers, office, financier bills, credit fees. */
+    operating: CashFlowAmounts
+    /** Credit principal: drawdowns in, repayments out. */
+    financing: CashFlowAmounts
   }>
   projects: ProjectData[]
   risks: ReportRisk[]
@@ -208,6 +219,8 @@ export interface SalesData {
 
 export interface ProjectSalesReport {
   project: Project
+  /** False for a project with no TIC: `project.budget` is then not a budget and must not be shown. */
+  budget_set: boolean
   total_units: number
   sold_units: number
   available_units: number

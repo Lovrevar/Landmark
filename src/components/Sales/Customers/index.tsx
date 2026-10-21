@@ -6,6 +6,8 @@ import { CustomerCategory } from './types'
 import { useCustomerData } from './hooks/useCustomerData'
 import { useToast } from '../../../contexts/ToastContext'
 import { toErrorMessage } from '../../../lib/errorMessage'
+import { useAuth } from '../../../contexts/AuthContext'
+import { isDirectorRole } from '../../../utils/permissions'
 import { CategoryTabs } from './CategoryTabs'
 import { CustomerGrid } from './CustomerGrid'
 import { CustomerFormModal } from './forms/CustomerFormModal'
@@ -14,6 +16,7 @@ import { CustomerWithApartments } from './types'
 
 const CustomersManagement: React.FC = () => {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const toast = useToast()
   const [activeCategory, setActiveCategory] = useState<CustomerCategory | null>(null)
   const [showCustomerForm, setShowCustomerForm] = useState(false)
@@ -194,7 +197,7 @@ const CustomersManagement: React.FC = () => {
         onCategoryChange={handleCategoryChange}
       />
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <SearchInput
@@ -233,13 +236,15 @@ const CustomersManagement: React.FC = () => {
         activeCategory={activeCategory}
         loading={loading && customers.length === 0}
         loadFailed={loadFailed}
+        filtered={searchTerm.trim() !== '' || projectFilter !== ''}
         onRetry={() => { void refetch() }}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
         onSelectAll={handleSelectAll}
         onViewDetails={handleViewDetails}
         onEdit={handleEditCustomer}
-        onDelete={handleDeleteCustomer}
+        // Deleting customers is Director-only under RLS.
+        onDelete={isDirectorRole(user) ? handleDeleteCustomer : undefined}
         onUpdateContact={(id) => { void handleUpdateContact(id) }}
       />
 

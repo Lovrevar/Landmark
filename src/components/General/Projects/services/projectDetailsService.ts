@@ -1,4 +1,6 @@
 import { supabase } from '../../../../lib/supabase'
+import { fetchLinkedPrices } from '../../../../lib/linkedUnitPrices'
+import { contractedSales, type ContractedSales } from '../../../../utils/salesFigures'
 import type { Phase, ContractWithDetails, ApartmentItem, CreditAllocationItem, Milestone, ProjectDisplay } from '../types'
 import { ticGrandTotal } from '../../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../../Funding/TIC/utils/ticFormatters'
@@ -12,15 +14,19 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
   investments: CreditAllocationItem[]
   /** The project's TIC investment total; null when it has no TIC, meaning it has no planned budget. */
   ticTotal: number | null
+  /** "Prihodi od prodaje": the project's contracted sales, each at its package value (GEN-38). */
+  contractedSales: ContractedSales
 }> {
   const [
     { data: projectData, error: projectError },
-    { data: milestonesData },
-    { data: phasesData },
-    { data: contractsData },
-    { data: apartmentsData },
-    { data: investmentsData },
-    { data: ticData },
+    { data: milestonesData, error: milestonesError },
+    { data: phasesData, error: phasesError },
+    { data: contractsData, error: contractsError },
+    { data: apartmentsData, error: apartmentsError },
+    { data: investmentsData, error: investmentsError },
+    { data: ticData, error: ticError },
+    { data: salesData, error: salesError },
+    linked,
   ] = await Promise.all([
     supabase.from('projects').select('*').eq('id', id).single(),
     supabase
@@ -61,8 +67,20 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
       .eq('project_id', id)
       .order('created_at', { ascending: false }),
     supabase.from('tic_cost_structures').select('line_items').eq('project_id', id).maybeSingle(),
+    supabase
+      .from('sales')
+      .select('apartment_id, sale_price, sale_date, apartments!inner(project_id)')
+      .eq('apartments.project_id', id),
+    fetchLinkedPrices(),
   ])
   if (projectError) throw projectError
+  if (milestonesError) throw milestonesError
+  if (phasesError) throw phasesError
+  if (contractsError) throw contractsError
+  if (apartmentsError) throw apartmentsError
+  if (investmentsError) throw investmentsError
+  if (ticError) throw ticError
+  if (salesError) throw salesError
 
   const contracts = (contractsData || []) as unknown as ContractWithDetails[]
 
@@ -71,13 +89,17 @@ export async function fetchProjectDataEnhanced(id: string): Promise<{
   const ticLineItems = (ticData?.line_items || []) as LineItem[]
   const ticTotal = ticLineItems.length > 0 ? ticGrandTotal(ticLineItems) : 0
 
+  const apartments = (apartmentsData || []) as unknown as ApartmentItem[]
+  const listPrices = new Map(apartments.map(apt => [apt.id, apt.price]))
+
   return {
     project: projectData as unknown as ProjectDisplay,
     milestones: (milestonesData || []) as unknown as Milestone[],
     phases: (phasesData || []) as unknown as Phase[],
     contracts,
-    apartments: (apartmentsData || []) as unknown as ApartmentItem[],
+    apartments,
     investments: (investmentsData || []) as unknown as CreditAllocationItem[],
     ticTotal: ticTotal > 0 ? ticTotal : null,
+    contractedSales: contractedSales(salesData || [], { linked, listPrice: apartmentId => listPrices.get(apartmentId) }),
   }
 }

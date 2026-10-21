@@ -44,11 +44,11 @@ export default function TeamCalendars({
                 key={u.id}
                 type="button"
                 onClick={() => onToggle(u.id)}
-                className="w-full flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 text-left"
+                className="w-full flex items-center gap-2 px-1.5 py-1 rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 text-left"
               >
                 <span
                   className={[
-                    'w-4 h-4 rounded flex-shrink-0 border-2',
+                    'w-4 h-4 rounded-sm shrink-0 border-2',
                     enabled ? color : 'bg-transparent border-gray-300 dark:border-gray-600',
                     enabled ? 'border-transparent' : '',
                   ].join(' ')}
@@ -59,7 +59,7 @@ export default function TeamCalendars({
                 ].join(' ')}>
                   {u.username}
                 </span>
-                <span className="ml-auto text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0">
+                <span className="ml-auto text-[11px] text-gray-400 dark:text-gray-500 shrink-0">
                   {u.role}
                 </span>
               </button>

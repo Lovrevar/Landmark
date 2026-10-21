@@ -1,5 +1,6 @@
 import { supabase } from '../../../../lib/supabase'
 import { formatEuropean } from '../../../../utils/formatters'
+import { isOpenInvoice } from '../../../../utils/invoiceFigures'
 import { DebtSummary } from '../types'
 
 export const formatEuropeanNumber = (num: number): string => formatEuropean(num)
@@ -156,7 +157,7 @@ export const fetchDebtData = async (projectId?: string): Promise<DebtSummary[]> 
 
     debt.paid += paidAmount
 
-    if (invoice.status === 'UNPAID' || invoice.status === 'PARTIALLY_PAID') {
+    if (isOpenInvoice(invoice.status)) {
       debt.unpaid += remainingAmount
     }
   })

@@ -11,19 +11,22 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "e2e:serve": "vite preview --host 127.0.0.1 --port 5173 --strictPort",
-    "e2e:seed": "node scripts/seed-e2e.mjs",
     "erp:smoke": "node --env-file=.env scripts/erp-pipeline-smoke.mjs",
     "test": "vitest run",
     "test:functions": "cd supabase/functions && deno task test",
+    "test:db": "supabase test db",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "kb:build": "node scripts/build-help-kb-index.mjs"
+    "kb:build": "node scripts/build-help-kb-index.mjs",
+    "help:shots": "vite build --mode demo --outDir dist-demo && playwright test -c scripts/help-screenshots/playwright.config.ts capture",
+    "help:check": "vite build --mode demo --outDir dist-demo && playwright test -c scripts/help-screenshots/playwright.config.ts check"
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",
+    "@floating-ui/react": "^0.27.20",
     "@supabase/supabase-js": "^2.57.0",
     "@tanstack/react-virtual": "^3.13.24",
     "date-fns": "^4.1.0",
@@ -43,21 +46,20 @@
   "devDependencies": {
     "@eslint/js": "^9.9.1",
     "@playwright/test": "^1.59.1",
-    "@types/react": "^19.1.12",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "@vitest/coverage-v8": "^1.6.1",
-    "autoprefixer": "^10.4.18",
+    "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/coverage-v8": "^5.0.5",
     "dotenv": "^17.4.2",
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",
     "globals": "^15.9.0",
-    "postcss": "^8.4.35",
-    "tailwindcss": "^3.4.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.59.4",
-    "vite": "^5.4.2",
-    "vitest": "^1.6.1"
+    "vite": "^7.3.7",
+    "vitest": "^5.0.5"
   }
 }

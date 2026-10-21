@@ -71,7 +71,7 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 
 ### useCachedData.ts
 - `useCachedData(key, fetcher, ttl)` — TTL-cached fetch hook; every dashboard reads through it
-- Returns `{ data, loading, error }`. **Always render the `error` state** — the hook used to swallow fetch failures and leave dashboards showing zeros, which is indistinguishable from "this company genuinely has no revenue" (DASH-003 in [`DASHBOARD_AUDIT.md`](./DASHBOARD_AUDIT.md)). `DashboardError.tsx` is the shared renderer
+- Returns `{ data, loading, error }`. **Always render the `error` state** — the hook used to swallow fetch failures and leave dashboards showing zeros, which is indistinguishable from "this company genuinely has no revenue" (DASH-003 in [`DASHBOARD_AUDIT.md`](./backlog/archive/DASHBOARD_AUDIT.md)). `DashboardError.tsx` is the shared renderer
 - `invalidateCachedData(predicate?)` — drops matching cache entries after a mutation
 - Lives in `src/lib/`, not `src/hooks/`, despite being a hook
 
@@ -125,6 +125,7 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 ### formatters.ts
 - `formatFileSize(bytes)` — returns human-readable file size string (B / KB / MB)
 - `formatEuropean(value)` — `hr-HR` number, always 2 decimals, no symbol: `1.234,56`. Use when the `€` is supplied separately, e.g. it already sits inside a translated string
+- **Negatives:** all three euro helpers put the minus sign before the euro sign, as the locale minus U+2212 — `−€1.234,56`, `−€1.235`, `−€1,2M`, never `€−…` — and an amount that rounds to zero carries no sign (`€0,00`)
 - `formatEuro(value)` — `€1.234,56`. **Exact cents**: invoices, contracts, payments, per-record amounts
 - `formatEuroRounded(value)` — `€1.235`. **Aggregates**, where cents are noise (phase and group rollups, yearly totals). Also cures the ragged `toLocaleString('hr-HR')` output, where a whole number renders `73.125` but a fractional one renders `1.425.597,5`
 - `formatEuroCompact(value)` — `€1,2M` / `€45K` / `€9.500`. **Dashboard tiles and chart axes only.** Thousands start at 10.000, so a five-figure amount keeps its digits; every screen used to divide by a million itself, which rendered €45.000 as `€0.0M`
@@ -161,6 +162,12 @@ read "Jan 05, 2026".
 - `appLanguage` falls back to Croatian for an unknown language, mirroring what `fallbackLng: 'hr'`
   does to the strings on the same screen
 
+### invoiceCashDirection.ts
+- `INVOICE_CASH_DIRECTION` / `invoiceCashDirection(type)` → `'IN' | 'OUT' | null` — which way money moves for each of the nine invoice types: every `INCOMING_*` invoice (a bill received) is out, every `OUTGOING_*` one (issued) is in. **The only place this is decided**; do not write a type list in a service
+- `INVOICE_CASH_MAP` — per type, `{ direction, category }`. `invoiceCashCategory(type)` → `'operating' | 'financing'`. Financing is credit **principal** only (drawdown, repayment); credit fees are operating. `invoiceTypesFor(direction, category)` lists one cell of the grid. **Financing is never income or expense**: the General report shows it as its own cash-flow table, `company_statistics` as its own two columns
+- `isCashIn` / `isCashOut`; `isCostInvoiceType` / `COST_INVOICE_TYPES` — **derived**: every operating money-out type (supplier, office, ULAZNI (INV), credit fees). The only money-out type that is not a cost is the repayment of principal; `carriesInputVat` / `carriesOutputVat`
+- `invoiceCashDirection.test.ts` also reads the SQL (`recalc_company_bank_account_balance`, the `company_statistics` migration) and the calendar hook, and fails if any of them disagrees with the map
+
 ### statusDisplay.ts
 - `PROJECT_STATUS`, `CONTRACT_STATUS`, `RETAIL_CONTRACT_STATUS`, `RETAIL_PHASE_STATUS`,
   `UNIT_STATUS`, `MILESTONE_STATUS`, `RETAIL_MILESTONE_STATUS`, `RISK_LEVEL` — one label key and one
@@ -187,6 +194,33 @@ read "Jan 05, 2026".
 - Both amounts must be in the same unit — compare gross with gross. Comparing gross payments against a net `base_amount` is what made every fully-paid subcontractor contract show a 25% overrun
 - Pure; covered by `contractVariance.test.ts`
 
+### Business figures
+
+Each business figure has one pure function, and every screen, report and export calls it
+(`.claude/rules/architecture.md` → Business figures). They came out of
+`Reports/services/generalReportService.ts` in October 2026 (REGRESSION_PREVENTION Step 7 item 1),
+and the sales figures out of the dashboards and the Sales report (item 2). Characterization tests
+(`generalReportService.test.ts`, then the Director and Sales dashboards', the Sales report's and
+Project details') pinned each service's output before the move and passed unchanged through it;
+where item 2 then changed a definition on purpose, the expectation changed in that fix's commit. Where a function keeps a figure that is known to be wrong, its comment
+names the backlog id, and so does the pinned expectation.
+
+| Module | Functions | Called by |
+|---|---|---|
+| `salesFigures.ts` | Inventory: `unitStatusCounts`, `salesRate`, `averagePer`. **Contracted sales** ("Ugovorena prodaja": a sale is a `sales` row, worth its package): `contractedSales`, `contractedSalesByProject`, `saleValue`, `salesSince`, `salesByMonth`, `linkedPricesByApartment`, on `packageTotal` / `unitPackageTotal` (SALES-6, moved from `Sales/utils/`). **Collected** ("Naplaćeno od prodaje", GEN-9): `collectedFromSales`, `collectedSince`, `collectedByMonth`, `collectedByProject`. `customerFunnel`, `conversionRate` | Director and Sales dashboards, General and Sales reports, Project details, Sales payments, the Sales project cards (`buildSalesProjects`), and the package total on the Sales unit cards, Apartments and Customers screens. Garage and storage links: `fetchLinkedPrices` (`src/lib/linkedUnitPrices.ts`). Definitions: `docs/SALES.md` → A sale and sales revenue; still to do: SALES-23 (Step 7 item 4) |
+| `fundingFigures.ts` | `isLiveDebt`, `liveDebtFigures` (outstanding, facility amount, used, weighted rate, debt service), `totalEquity`, `debtToEquity`, `creditLineTotals`, `allocationTotals`, `activeFunderCount`, `projectFunding` (GEN-27), `loanTotals` | General report, Director and Investment dashboards. Differences: FUND-21 |
+| `paymentFigures.ts` | `costPaid` (payments on cost invoices, optionally narrowed), `cesijaFromCredit` (GEN-29), `bankAccountTotals` | General report. The Director dashboard's expense basis: GEN-39 |
+| `paymentTotals.ts` | `paymentTotalsByDirection`, `paymentTotalsByCategory` (cent sums), `DIRECTION_AMOUNT_CLASS`, `formatSignedEuro` — moved from `Cashflow/services/` | Cashflow and Funding payment registers, `cashFlowFigures` |
+| `cashFlowFigures.ts` | `monthlyCashFlow` (per month, in/out × operating/financing, local months), `cashFlowTotals` | General report screen, PDF and service; Accounting dashboard trends. Not reconciled with the bank balance: GEN-33 |
+| `invoiceFigures.ts` | `isOpenInvoice`, `isOverdueInvoice`, `invoiceStatusSummary`, `officeInvoiceTotals` (GEN-36) | General report, Cashflow invoice list (`isOverdue`), Debt status, the Site Management and Retail invoice modals. Differences: CASH-32 |
+| `constructionFigures.ts` | `contractTotals`, `contractTypeCounts` (whole-number names first, as a plain object orders keys), `completedPhaseCount`, `phaseCompletionRate`, `isSettledMilestone`, `recentWorkLogCount` | General report and PDF, Budget Control, Director alerts. Differences: SUP-18 |
+| `projectFigures.ts` | `profitAndMargin`, `returnOnEquity`, `projectRiskLevel`, `reportRisks`, `topProjectsByRevenue`, `recommendationKeys`, `projectStatusCounts` | General report and PDF, Director, Retail dashboards, Retail report. Thresholds: GEN-41; zeros for "no answer": GEN-32 |
+| `retailFigures.ts` | `retailPortfolioCounts` — the General report's retail section, **wrong as it stands** (GEN-28) | General report |
+| `ticFigures.ts` | `ticTotalsByProject`, `portfolioValue`, `ticPlanSummary` (GEN-30), on `ticGrandTotal` from `Funding/TIC/utils/ticBudget.ts` | General report. Investment dashboard's source: GEN-40 |
+
+Row types are narrow interfaces (`{ status, price }`), amounts go through `Number(x || 0)`, and a
+figure that depends on today takes `daysFrom` (default `daysFromToday`) so tests can fix it.
+
 ### errorMessage.ts (`src/lib/`)
 - `toErrorMessage(error, fallback)` — the sentence to show a user for a rejected promise. Prefers a message written for people (a service's own "Ne možete obrisati faze koje imaju ugovore: …"), and falls back to the caller's translated string when the error is machine text (`violates … constraint`, a bare `PGRST301`) or an RLS refusal
 - `isPermissionError(error)` — Postgres `42501`
@@ -206,13 +240,16 @@ read "Jan 05, 2026".
 - `isSupervisionRole(user)` — true if role is Supervision
 - `isDirectorRole(user)` — true if role is Director
 - `canViewActivityLog(user)` — alias for `isDirectorRole`; the activity log is Director-only
+- `canUseCashflow(user)` — Director or Accounting, the roles the finance RLS lets through. The profile switcher offers Cashflow only to them (a stored Cashflow profile falls back to General), and `CashflowRoute` uses the same check
 - `getAccessibleProjectIds(user)` — returns `[]` for roles with full access; returns assigned project IDs for Supervision; returns `[]` for others
 - **Depends on:** AuthContext User type
 
 ### evm.ts
 - `calculatePhaseEVM(plannedBudget, physicalCompletionPct, startDate, endDate, actualCost)` — computes PV, EV, AC, CPI, SPI, CV, SV, EAC, VAC for a single phase using standard EVM formulas
-- `calculateProjectEVM(phases, contracts)` — aggregates phase-level EVM across all phases of a project; derives `physicalCompletionPct` from `budget_realized / contract_amount` per phase; maps `Phase.budget_allocated → plannedBudget`, `Phase.start_date / end_date → planned dates`
-- **Returns:** `EVMMetrics` (`PV`, `EV`, `AC`, `CPI`, `SPI`, `CV`, `SV`, `EAC`, `VAC`)
+- `calculateProjectEVM(phases, contracts, milestones = [], currentDate = new Date(), projectBudget = null)` — aggregates phase-level EVM across all phases of a project; contracts join phases on `phase_id`. A phase's `physicalCompletionPct` is the contract-value-weighted average of each contract's milestone-based completion (sum of the `percentage` of its `subcontractor_milestones` that are completed or paid), falling back to `budget_realized / contract_amount` only for a contract with no milestones; maps `Phase.budget_allocated → plannedBudget`, `Phase.start_date / end_date → planned dates`. EV and AC are accumulated for every phase; PV only for dated ones
+- **Unphased plan:** an unphased TIC over several phases leaves every phase's `budget_allocated` NULL (`apply_unphased_tic_budget`). When `budgetNotSplitByPhase(phases)`, the project is measured as a single phase — `projectBudget` (the TIC total), every phase's contracts, first start date to last end date — so finishing phase 1 does not count the whole plan as earned (GEN-22). A phased plan with an unfunded phase is still measured phase by phase
+- `indexAxisTop(largest)` — the top of the CPI/SPI chart's axis: 2, or the largest index rounded up to the next 0.5, so the axis never prints a raw float (GEN-7). Ticks go through `formatIndex` (`utils/formatters.ts`)
+- **Returns:** `EVMMetrics` (`PV`, `EV`, `AC`, `CPI`, `SPI`, `CV`, `SV`, `EAC`, `VAC`, plus `scheduleAvailable` — false when no phase has both dates, so SPI = 1 means "unknown" — and `costAvailable`, false while nothing is paid, so CPI = 1 and EAC = budget mean "unknown" too)
 - **Used by:** `BudgetControl/hooks/useBudgetControl.ts`
 - **Depends on:** `Phase`, `ContractWithDetails` from `General/Projects/types.ts`
 
@@ -230,7 +267,11 @@ read "Jan 05, 2026".
 ### dateOnly.ts
 - `parseLocalDate(str)` — builds `new Date(y, m-1, d)` so a SQL `date` column is not parsed as UTC midnight
 - `monthKey(str)` — `YYYY-MM` bucket key; `daysFromToday(str)`; `isValidDate(str)`; `startOfTodayLocal()`
-- **Use these for every date-only column.** `new Date('2026-09-01')` parses as UTC and compares wrong against a local `new Date()` — Croatia is UTC+1/+2, so month buckets and overdue detection drift by a day at boundaries. Added during the June 2026 dashboard audit (see [`DASHBOARD_AUDIT.md`](./DASHBOARD_AUDIT.md) DASH-001)
+- **Use these for every date-only column.** `new Date('2026-09-01')` parses as UTC and compares wrong against a local `new Date()` — Croatia is UTC+1/+2, so month buckets and overdue detection drift by a day at boundaries. Added during the June 2026 dashboard audit (see [`DASHBOARD_AUDIT.md`](./backlog/archive/DASHBOARD_AUDIT.md) DASH-001)
+
+### appPath.ts
+- `isAppPath(url)` — whether a markdown link or image address is one of the app's own paths; `MarkdownView` uses it to choose between `<Link>` and a new tab
+- Resolves the address with the URL parser and requires the same origin. A `startsWith('/') && !startsWith('//')` check lets `/\host` and `/<tab>/host` through, which browsers read as `//host` — an open redirect from task text or an assistant reply (SEC-A13)
 
 ### pdfFont.ts
 - `loadUnicodeFont(doc)` + `PDF_FONT_FAMILY` — registers the embedded Noto Sans on a jsPDF document. Every generator calls it before drawing

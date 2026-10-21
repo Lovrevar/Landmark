@@ -57,7 +57,7 @@ export default function MiniMonth({ anchor, busyDays, onDateClick }: Props) {
           <button
             type="button"
             onClick={() => setLocalAnchor(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+            className="p-1 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
             aria-label={t('calendar.mini_month.prev')}
           >
             <ChevronLeft className="w-4 h-4" />
@@ -65,7 +65,7 @@ export default function MiniMonth({ anchor, busyDays, onDateClick }: Props) {
           <button
             type="button"
             onClick={() => setLocalAnchor(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+            className="p-1 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
             aria-label={t('calendar.mini_month.next')}
           >
             <ChevronRight className="w-4 h-4" />
@@ -90,7 +90,7 @@ export default function MiniMonth({ anchor, busyDays, onDateClick }: Props) {
               type="button"
               onClick={() => onDateClick(d)}
               className={[
-                'aspect-square relative text-xs rounded flex items-center justify-center',
+                'aspect-square relative text-xs rounded-sm flex items-center justify-center',
                 'transition-colors',
                 isSelected
                   ? 'bg-blue-600 text-white'

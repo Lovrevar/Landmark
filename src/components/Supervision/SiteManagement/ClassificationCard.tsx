@@ -19,7 +19,7 @@ interface ClassificationCardProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor: (subcontractorId: string) => void
+  onDeleteSubcontractor?: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /** False hides the paid and unpaid tiles; unpaid is contracted minus paid, so it leaks paid. */
   canManagePayments: boolean
@@ -58,7 +58,7 @@ export const ClassificationCard: React.FC<ClassificationCardProps> = ({
     'md:grid-cols-1'
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">

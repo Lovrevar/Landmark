@@ -57,6 +57,8 @@ export interface AiChatStore {
   newConversation: () => void
   selectSession: (id: string) => Promise<void>
   sendMessage: (text: string) => Promise<void>
+  /** Opens the panel on a fresh conversation and sends `text` in it. */
+  askInNewConversation: (text: string) => void
   // User-initiated stop. Aborts the in-flight stream; the edge function reads
   // req.signal, cancels the Anthropic call, and exits without further DB
   // writes. Partial assistant text already streamed stays visible.
@@ -600,6 +602,21 @@ export function useAiChatStore(): AiChatStore {
     [user, reloadActiveBranch],
   )
 
+  // Opens the panel on a fresh conversation and asks `text` in it — how another screen (the Help
+  // page's empty search) hands a question over. The refs are reset by hand because sendMessage
+  // reads them before React has re-rendered with newConversation's state.
+  const askInNewConversation = useCallback(
+    (text: string) => {
+      if (!user || !text.trim()) return
+      newConversation()
+      currentSessionIdRef.current = null
+      isStreamingRef.current = false
+      open()
+      void sendMessage(text)
+    },
+    [user, newConversation, open, sendMessage],
+  )
+
   // Fork off an alternative branch at `messageId`. The server inserts a new
   // sibling user row under the target's parent, streams the assistant
   // response, and we reload — the new branch becomes the active leaf, with
@@ -850,6 +867,7 @@ export function useAiChatStore(): AiChatStore {
     newConversation,
     selectSession,
     sendMessage,
+    askInNewConversation,
     stopStreaming,
     editMessage,
     regenerateLastTurn,

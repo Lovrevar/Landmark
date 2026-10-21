@@ -72,7 +72,7 @@ const RetailCustomers: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -94,7 +94,7 @@ const RetailCustomers: React.FC = () => {
           {filteredCustomers.map((customer) => (
             <div
               key={customer.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -208,7 +208,7 @@ const RetailCustomers: React.FC = () => {
               {selectedCustomer.address && (
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('retail_customers.form.address')}</p>
-                  <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded">{selectedCustomer.address}</p>
+                  <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded-sm">{selectedCustomer.address}</p>
                 </div>
               )}
 

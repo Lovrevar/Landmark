@@ -129,7 +129,7 @@ const DebtStatus: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center gap-4">
           <Filter className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           <div className="flex-1">
@@ -161,7 +161,7 @@ const DebtStatus: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 overflow-hidden">
         {error && debtData.length === 0 ? (
           <ErrorState onRetry={() => void refetch()} />
         ) : debtData.length === 0 ? (

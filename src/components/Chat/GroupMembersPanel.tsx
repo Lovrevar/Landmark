@@ -64,7 +64,7 @@ const GroupMembersPanel: React.FC<GroupMembersPanelProps> = ({
               key={p.id}
               className="flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50"
             >
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-semibold">
+              <span className="shrink-0 w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-semibold">
                 {name.charAt(0).toUpperCase()}
               </span>
               <div className="min-w-0">

@@ -8,6 +8,8 @@ export interface ProjectStats {
   status: string
   category: ProjectCategory | null
   budget: number
+  /** False for a project with no TIC: it has no budget, and `budget` must not be shown. */
+  budget_set: boolean
   total_expenses: number
   apartment_sales: number
   total_investment: number

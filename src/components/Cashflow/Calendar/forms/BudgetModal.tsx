@@ -2,6 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { MonthlyBudget } from '../types'
 import { Modal, Button, Select, Input, FormField } from '../../../ui'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface BudgetModalProps {
   showBudgetModal: boolean
@@ -76,7 +77,7 @@ const BudgetModal: React.FC<BudgetModalProps> = ({
           <div className="flex justify-between text-sm">
             <span className="font-medium text-blue-900 dark:text-blue-100">{t('cashflow_calendar.budget_modal.annual_total')}</span>
             <span className="font-bold text-blue-900 dark:text-blue-100 text-lg">
-              €{Object.values(budgetFormData).reduce((sum, val) => sum + (val || 0), 0).toLocaleString('hr-HR')}
+              {formatEuro(Object.values(budgetFormData).reduce((sum, val) => sum + (val || 0), 0))}
             </span>
           </div>
         </div>

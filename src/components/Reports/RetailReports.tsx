@@ -64,7 +64,12 @@ const RetailReports: React.FC = () => {
         />
         {error
           ? <ErrorState onRetry={refetch} />
-          : <EmptyState title={t('common.no_data')} />}
+          : (
+            <EmptyState
+              title={t('reports.retail.no_data')}
+              description={t('reports.retail.no_data_description')}
+            />
+          )}
       </div>
     )
   }

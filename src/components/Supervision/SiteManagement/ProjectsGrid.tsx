@@ -7,6 +7,7 @@ import { Button, Badge, EmptyState, ErrorState, Alert } from '../../ui'
 import ProjectCategoryBadge from '../../Common/ProjectCategoryBadge'
 import { formatEuroCompact } from '../../../utils/formatters'
 import { PROJECT_STATUS, statusVariant, statusLabel } from '../../../utils/statusDisplay'
+import PageHelpLink from '../../ui/PageHelpLink'
 
 interface ProjectsGridProps {
   projects: ProjectWithPhases[]
@@ -35,7 +36,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
     <div>
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('supervision.site_management.title')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('supervision.site_management.title')}<PageHelpLink /></h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">{t('supervision.site_management.projects_grid.subtitle')}</p>
         </div>
         {onRefresh && (
@@ -80,7 +81,7 @@ export const ProjectsGrid: React.FC<ProjectsGridProps> = ({ projects, onSelectPr
             <div
               key={project.id}
               onClick={() => onSelectProject(project)}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:shadow-lg transition-all duration-200"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:shadow-lg transition-all duration-200"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">

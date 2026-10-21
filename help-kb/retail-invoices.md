@@ -1,19 +1,21 @@
 ---
 id: retail-invoices
 title: Računi (Retail)
-keywords: [retail računi, retail invoices, ulazni, izlazni, odobreni, export csv]
+keywords: [retail računi, retail invoices, ulazni, izlazni, odobreno, export excel]
 routes: [/retail-invoices]
 roles: [Director, Accounting, Investment]
 ---
 
-**Računi** u Retail profilu prikazuju sve retail-strane račune (ulazne i izlazne). Naslov: **Računi**.
+Stavka **Računi** u profilu **Retail** otvara stranicu **Retail Računi** — sve ulazne i izlazne račune retail projekata. Podnaslov: **Pregled i odobravanje retail računa za slanje u cashflow**.
 
-Glavna akcija: **Export CSV**.
+Računi se ovdje ne unose; stranica služi za pregled, odobravanje i izvoz.
 
-Filtri: tražilica **Pretraži račune...**, tip računa (**Svi tipovi**, **Ulazni**, **Izlazni**), status odobrenja (**Sve**, **Odobreni**, **Neodobreni**) i raspon datuma (**od** / **do**).
+Kartice statistike: **Ukupno računa**, **Ukupni iznos**, **Ovaj mjesec** (broj računa), **Iznos ovog mjeseca**.
 
-Stupci: kvačica za odobrenje, broj računa, tip (značka), datum, datum dospijeća, projekt, dobavljač/kupac, firma, iznos (€), status.
+Filtri: tražilica **Pretraži račune...** (broj računa, dobavljač/kupac, projekt), tip (**Svi tipovi**, **Ulazni**, **Izlazni**), odobrenje (**Svi**, **Odobreno**, **Nije odobreno**) i raspon datuma (**Datum od** / **Datum do**).
 
-Tipovi (značke): **Ulazni od dobavljača**, **Izlazni od prodaje**, **Izlazni od dobavljača**, **Ulazni od investicije**. Statusi (značke): **Plaćeno**, **Djelomično**, **Neplaćeno**.
+Gumb **Export Excel** preuzima trenutno filtrirani popis kao Excel (.xlsx) datoteku; izvoz je uvijek na hrvatskom.
 
-Kartice statistike: ukupno računa, ukupni iznos (€), računi ovog mjeseca, iznos ovog mjeseca. Klikom na kvačicu prebacujete status odobrenja.
+Stupci: **Odobri** (kvačica), **Broj računa**, **Tip**, **Datum**, **Dospijeće**, **Projekt**, **Dobavljač / Kupac**, **Firma**, **Iznos**, **Status**. Klik na kvačicu odobrava račun ili poništava odobrenje; odobravati mogu samo **Director** i **Accounting**.
+
+Tipovi (značke): **Ulazni - Dobavljač**, **Izlazni - Prodaja**, **Izlazni - Dobavljač**, **Ulazni - Investicija**. Statusi: **Plaćeno**, **Djelomično**, **Neplaćeno**. Značenje tipova: [[term-invoice-types]].

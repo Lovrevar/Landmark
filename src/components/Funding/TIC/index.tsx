@@ -9,6 +9,7 @@ import { useUnsavedChanges, useLeaveGuard } from '../../../contexts/UnsavedChang
 import InvestmentTable from './components/InvestmentTable'
 import ConstructionTable from './components/ConstructionTable'
 import ExcelImportTICModal from './modals/ExcelImportTICModal'
+import PageHelpLink from '../../ui/PageHelpLink'
 
 type TICTab = 'investment' | 'construction'
 
@@ -75,6 +76,8 @@ const TICManagement: React.FC = () => {
     constructionTotals,
     constructionGrandTotal,
     projectName: selectedProject?.name,
+    // Codes travel with the lines so an export re-imports with the same mapping (FUND-13).
+    classificationCodes: new Map(classifications.flatMap(c => (c.code ? [[c.id, c.code] as [number, string]] : []))),
   })
 
   // Both exports used to fail in silence — Excel swallowed the error in a `catch` that only
@@ -92,7 +95,7 @@ const TICManagement: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
         <div className="flex-1">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('tic.heading')}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('tic.heading')}<PageHelpLink /></h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">{t('tic.description')}</p>
 
           <FormField label={t('tic.select_project_label')} className="mt-4 max-w-md">
@@ -160,7 +163,7 @@ const TICManagement: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-12">
           <LoadingSpinner message={t('tic.loading')} />
         </div>
       ) : !selectedProjectId ? (

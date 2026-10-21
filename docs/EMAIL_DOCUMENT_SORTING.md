@@ -44,7 +44,10 @@ Confirmed behaviour (from the requirements gathering):
 - **Low confidence:** the document is still stored, but with `category_id = null`, so it
   stays in the **All documents** view and is tallied into the **Uncategorized** count
   (there is no dedicated Uncategorized filter node); Claude's best-guess reasoning is
-  saved in the `description` field.
+  saved in the `description` field. Director and Accounting fix it with the row's **Edit**
+  action on the Documents page (category, links and description; the upload modal in edit
+  mode, saved through `updateDocument`). Email imports have no uploader, so only those two
+  roles can edit or delete them.
 - **Email scope:** PDF, image, XML (e-Računi/UBL), DOCX, XLSX/XLS, CSV, TXT, and legacy
   DOC attachments are processed; the email subject + body are always passed to Claude
   as extra classification context. PDFs/images go to Claude as-is; the office/text
@@ -444,7 +447,7 @@ no DB, no Claude tokens. Run `npm run test:functions` (or, from `supabase/functi
 
 1. **Happy path** — `supabase functions serve sort-document`, then:
    ```
-   curl -X POST http://localhost:54321/functions/v1/sort-document \
+   curl -X POST http://localhost:54421/functions/v1/sort-document \
      -H "Content-Type: application/json" -H "x-doc-sort-secret: <secret>" \
      -d '{"email_subject":"Ugovor","email_body":"...","attachment":{"file_name":"test.pdf","mime_type":"application/pdf","data_base64":"<base64>"}}'
    ```

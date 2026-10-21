@@ -4,14 +4,12 @@ import { formatDate, formatDateTime } from '../../../utils/formatters'
 import { Check, X } from 'lucide-react'
 import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Invoice } from './types'
-import { Modal, Button } from '../../ui'
+import { Modal, Button, Badge } from '../../ui'
+import { getTypeColor, getInvoiceTypeLongLabel, getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 interface InvoiceDetailViewProps {
   invoice: Invoice | null
   onClose: () => void
-  getTypeColor: (type: string) => string
-  getTypeLabel: (type: string) => string
-  getStatusColor: (status: string) => string
   getSupplierCustomerName: (invoice: Invoice) => string
   isOverdue: (dueDate: string, status: string) => boolean
 }
@@ -19,9 +17,6 @@ interface InvoiceDetailViewProps {
 export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
   invoice,
   onClose,
-  getTypeColor,
-  getTypeLabel,
-  getStatusColor,
   getSupplierCustomerName,
   isOverdue
 }) => {
@@ -44,16 +39,15 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('invoices.detail.type')}</span>
                 <p className={`text-sm font-semibold ${getTypeColor(invoice.invoice_type)}`}>
-                  {getTypeLabel(invoice.invoice_type)}
+                  {getInvoiceTypeLongLabel(invoice.invoice_type, t)}
                 </p>
               </div>
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('invoices.detail.status')}</span>
                 <p>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
-                    {invoice.status === 'UNPAID' ? t('invoices.detail.status_unpaid') :
-                     invoice.status === 'PARTIALLY_PAID' ? t('invoices.detail.status_partial') : t('invoices.detail.status_paid')}
-                  </span>
+                  <Badge variant={getInvoiceStatusVariant(invoice.status)}>
+                    {getInvoiceStatusLabel(invoice.status, t)}
+                  </Badge>
                 </p>
               </div>
               <div>
@@ -187,7 +181,7 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
               invoice.base_amount_3 > 0 || invoice.base_amount_4 > 0) ? (
               <div>
                 <span className="text-sm text-gray-500 mb-2 block">{t('invoices.detail.base_by_vat')}</span>
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded space-y-2">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-sm space-y-2">
                   {invoice.base_amount_1 > 0 && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700 dark:text-gray-200">{t('invoices.vat_rate_line', { rate: 25 })}</span>
@@ -243,13 +237,13 @@ export const InvoiceDetailView: React.FC<InvoiceDetailViewProps> = ({
               <p className="text-lg font-bold text-gray-900 dark:text-white">&euro;{formatCurrency(invoice.total_amount)}</p>
             </div>
 
-            <div className="flex justify-between items-center bg-green-50 dark:bg-green-900/20 p-2 rounded">
+            <div className="flex justify-between items-center bg-green-50 dark:bg-green-900/20 p-2 rounded-sm">
               <span className="text-sm text-green-700 dark:text-green-400">{t('invoices.detail.paid_amount')}</span>
               <p className="text-sm font-semibold text-green-700 dark:text-green-400">&euro;{formatCurrency(invoice.paid_amount)}</p>
             </div>
 
             {invoice.remaining_amount > 0 && (
-              <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 p-2 rounded">
+              <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 p-2 rounded-sm">
                 <span className="text-sm text-red-700 dark:text-red-400">{t('invoices.detail.remaining')}</span>
                 <p className="text-sm font-semibold text-red-700 dark:text-red-400">&euro;{formatCurrency(invoice.remaining_amount)}</p>
               </div>

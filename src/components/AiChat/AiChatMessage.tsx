@@ -33,7 +33,16 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
     editMessage,
     regenerateLastTurn,
     switchToLeaf,
+    close,
   } = useAiChat()
+
+  // Below `sm` the panel covers the whole screen, so an app link in an answer (a Help article)
+  // would open behind it. Following one there closes the panel; the conversation is kept.
+  const closeOnAppLink = (event: React.MouseEvent<HTMLDivElement>) => {
+    const link = (event.target as HTMLElement).closest('a')
+    if (!link || link.target === '_blank') return
+    if (window.matchMedia('(max-width: 639px)').matches) close()
+  }
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const editRef = useRef<HTMLTextAreaElement>(null)
@@ -81,7 +90,7 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={handleKeyDown}
                 rows={1}
-                className="w-full resize-none overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full resize-none overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               />
               <div className="flex justify-end gap-2 mt-2">
                 <button
@@ -119,12 +128,12 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
                 }}
                 aria-label="Uredi poruku"
                 title="Uredi poruku"
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                className="opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 transition-opacity p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-sm"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             )}
-            <div className="max-w-[80%] bg-blue-600 text-white rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words">
+            <div className="max-w-[80%] bg-blue-600 text-white rounded-lg px-3 py-2 text-sm whitespace-pre-wrap wrap-break-word">
               {message.text || <span className="opacity-70 italic">(prilog)</span>}
             </div>
           </div>
@@ -174,7 +183,10 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
       const canRegenerate = !isStreaming && isLastAssistant === true
       return (
         <div className="group flex justify-start items-start gap-1">
-          <div className="max-w-[90%] bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 overflow-hidden break-words">
+          <div
+            className="max-w-[90%] bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 overflow-hidden wrap-break-word"
+            onClick={closeOnAppLink}
+          >
             <MarkdownView content={message.text} />
           </div>
           {canRegenerate && (
@@ -183,7 +195,7 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
               onClick={() => void regenerateLastTurn()}
               aria-label="Generiraj ponovno"
               title="Generiraj ponovno"
-              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              className="opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100 transition-opacity p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-sm"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -198,19 +210,19 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
         <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 px-1 py-1.5">
           {message.status === 'pending' && (
             <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
               <span>{label}…</span>
             </>
           )}
           {message.status === 'done' && (
             <>
-              <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400 flex-shrink-0" />
+              <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400 shrink-0" />
               <span>{label}</span>
             </>
           )}
           {message.status === 'error' && (
             <>
-              <XCircle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 flex-shrink-0" />
+              <XCircle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0" />
               <span>{label}</span>
             </>
           )}
@@ -227,15 +239,15 @@ export default function AiChatMessage({ message, isLastAssistant }: AiChatMessag
     case 'error':
       return (
         <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md px-3 py-2 text-sm text-red-800 dark:text-red-300">
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span className="break-words">{errorLabel(message.code, message.message)}</span>
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span className="wrap-break-word">{errorLabel(message.code, message.message)}</span>
         </div>
       )
 
     case 'interrupted':
       return (
         <div className="flex items-center gap-2 text-xs italic text-gray-500 dark:text-gray-400 px-1 py-1">
-          <Square className="w-3 h-3 fill-current flex-shrink-0" />
+          <Square className="w-3 h-3 fill-current shrink-0" />
           <span>Odgovor prekinut.</span>
         </div>
       )

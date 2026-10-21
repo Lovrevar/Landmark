@@ -5,6 +5,7 @@ import type { TFunction } from 'i18next'
 import { ApartmentWithDetails, PaymentWithCustomer } from '../types'
 import { Modal, Button, EmptyState } from '../../../ui'
 import { formatDate } from '../../../../utils/formatters'
+import { packageTotal } from '../../../../utils/salesFigures'
 
 const getPaymentUnitInfo = (
   payment: PaymentWithCustomer,
@@ -35,6 +36,8 @@ interface PaymentHistoryModalProps {
   payments: PaymentWithCustomer[]
   linkedGarages?: Array<{ id: string; number: string; price: number }>
   linkedStorages?: Array<{ id: string; number: string; price: number }>
+  /** The apartment's sale price, when sold: the package total starts from it (SALES-6). */
+  salePrice?: number | null
 }
 
 export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
@@ -44,6 +47,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
   payments,
   linkedGarages = [],
   linkedStorages = [],
+  salePrice,
 }) => {
   const { t, i18n } = useTranslation()
 
@@ -60,10 +64,14 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
     const totalPaid = aptPaid + garagePaid + storagePaid
     const garagesTotalPrice = linkedGarages.reduce((sum, g) => sum + (g.price || 0), 0)
     const storagesTotalPrice = linkedStorages.reduce((sum, s) => sum + (s.price || 0), 0)
-    const totalPrice = apartment.price + garagesTotalPrice + storagesTotalPrice
+    const totalPrice = packageTotal({
+      listPrice: apartment.price,
+      salePrice,
+      linkedPrices: [...linkedGarages, ...linkedStorages].map(linked => linked.price),
+    })
     const remainingBalance = totalPrice - totalPaid
     return { aptPaid, totalPaid, remainingBalance, garagesTotalPrice, storagesTotalPrice, totalPrice }
-  }, [payments, linkedGarages, linkedStorages, apartment])
+  }, [payments, linkedGarages, linkedStorages, apartment, salePrice])
 
   if (!visible || !apartment) return null
 
@@ -110,7 +118,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-              <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-sm">
                 <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                   <Home className="w-3 h-3 mr-1 text-blue-600" />
                   {t('common.apartment')}
@@ -118,7 +126,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                 <p className="text-sm font-bold text-blue-600">€{apartment.price.toLocaleString('hr-HR')}</p>
               </div>
               {linkedGarages.length > 0 && (
-                <div className="bg-orange-50 dark:bg-orange-900/20 p-2 rounded">
+                <div className="bg-orange-50 dark:bg-orange-900/20 p-2 rounded-sm">
                   <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                     <Warehouse className="w-3 h-3 mr-1 text-orange-600" />
                     Garages ({linkedGarages.length})
@@ -127,7 +135,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                 </div>
               )}
               {linkedStorages.length > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-sm">
                   <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
                     <Package className="w-3 h-3 mr-1 text-gray-600 dark:text-gray-400" />
                     Storages ({linkedStorages.length})
@@ -144,6 +152,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
               <EmptyState
                 icon={DollarSign}
                 title={t('apartments.payment_history_modal.no_payments')}
+                description={t('apartments.payment_history_modal.no_payments_description')}
               />
             ) : (
               <div className="space-y-3">
@@ -161,7 +170,7 @@ export const PaymentHistoryModal: React.FC<PaymentHistoryModalProps> = ({
                           <span className="font-bold text-green-600 text-lg">
                             €{payment.amount.toLocaleString('hr-HR')}
                           </span>
-                          <span className={`ml-3 px-2 py-0.5 rounded text-xs font-medium ${unitInfo.bgColor} ${unitInfo.color} flex items-center`}>
+                          <span className={`ml-3 px-2 py-0.5 rounded-sm text-xs font-medium ${unitInfo.bgColor} ${unitInfo.color} flex items-center`}>
                             <UnitIcon className="w-3 h-3 mr-1" />
                             {unitInfo.label}
                           </span>

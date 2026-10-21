@@ -1,0 +1,178 @@
+# Backlog — Sales
+
+Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (next free:
+`SALES-27`). Entry format and rules are in [README.md](./README.md). Retail is in
+[retail.md](./retail.md).
+
+## Open
+
+### SALES-26 · Low · A sale can be recorded at a negative price
+- **Check:** Code reading (Step 7 item 2 review, 2026-10-21)
+- **Where:** `sales.sale_price` is `numeric(15,2) NOT NULL` with no CHECK (baseline ~3943);
+  `complete_apartment_sale` does not validate it; `SaleFormModal.tsx` ~187 has an advisory
+  `min="0"`, and the required check rejects only 0
+- **What happens:** a negative price is accepted. `packageTotal` treats a sale price of 0 or less
+  as missing and uses the list price, so contracted sales show the list price instead.
+  Before Step 7 item 2 the negative figure was subtracted.
+- **Fix direction:** check production for any `sale_price <= 0`. Then a migration adding
+  `CHECK (sale_price > 0)`, and the same refusal in the RPC and the form.
+
+### SALES-23 · Low · Package totals, paid and unit status are each defined several ways (Step 7 item 4 work list)
+- **Check:** Code reading (Step 7 planning, 2026-10-21). `packageTotal` is shared by six screens
+  (SALES-6)
+- **Where / what happens:**
+  - Paid per unit has two bases:
+    - every `OUTGOING_SALES` payment on the apartment: `fetchActualTotalPaidByApartment`,
+      `apartmentListService`, `apartmentService`;
+    - only the buyer's invoices: `Customers/services/customerService.ts`. An apartment invoice
+      with another or no `customer_id` counts on one screen and not on the other.
+  - Remaining is computed inline and unclamped in six places: `PaymentHistoryModal`,
+    `CustomerCard`, `CustomerDetailModal`, `customerUtils`, and Cashflow Customers (twice).
+  - Cashflow Customers' `property_price` (`Cashflow/Customers/services/customerService.ts` ~71)
+    is list price plus linked units, and ignores `sale_price`. Its "paid" is Σ `paid_amount` over
+    every invoice of the customer, whatever its type.
+  - The sale form's "remaining" (`SaleFormModal.tsx` ~254) is `sale_price − down_payment`, with
+    the linked units left out.
+  - A linked Available garage or storage unit shows as Reserved only in memory (`buildSalesProjects`).
+    The grid's filters count it Reserved. `unitStatusCounts` on the raw rows, as the Sales
+    dashboard uses, counts it Available. The Apartments link modal offers it.
+  - `buildSalesProjects` looks up the sale of a garage or storage unit through `sales.garage_id`
+    and `repository_id`, which don't exist. So a sold garage never shows its buyer, and the garage
+    and storage part of a building's revenue is always 0. The same code reads the stale
+    `sales.total_paid` and `remaining_amount`, though `docs/SALES.md` says nothing reads them.
+  - The UnitsGrid paid bar is not clamped (`UnitsGrid.tsx` ~313); the Apartments page's is.
+  - "Naplaćeno" on the Sales project and building cards (`buildSalesProjects`) counts payments
+    only on Sold apartments that have a sale row and a building. The Sales dashboard's per-project
+    "Naplaćeno" (`collectedByProject`) counts every `OUTGOING_SALES` payment on the project's
+    apartments. A deposit on a Reserved apartment, or on a Sold one without a sale, shows on the
+    dashboard and not on the card (found by the Step 7 item 2 review, 2026-10-21).
+- **Fix direction:** Step 7 item 4:
+  - `packageBalance(total, paid)` and an `effectiveUnitStatus` in `src/utils/salesFigures.ts`;
+  - one per-unit paid basis;
+  - drop the garage and storage sale lookups;
+  - correct SALES.md.
+
+### SALES-24 · Low · "Available" does nothing on a linked garage or storage unit shown as Reserved
+- **Check:** Code reading (Step 7 planning, 2026-10-21)
+- **Where:** `Sales/SalesProjects/UnitsGrid.tsx` status buttons (~377); `buildSalesProjects`
+  shows a linked Available unit as Reserved
+- **What happens:** the card says Reserved and offers "Available". Pressing it writes `Available`,
+  which the row already is, so after the refetch the card still says Reserved.
+- **Fix direction:** hide the status buttons on a unit whose Reserved comes from its link, or
+  show it as linked rather than Reserved (SALES-23).
+
+### SALES-25 · Medium · One garage or storage unit can be linked to two apartments
+- **Check:** Code reading (Step 7 planning, 2026-10-21)
+- **Where:**
+  - `apartment_garages_unique` and its storage twin are on the pair `(apartment_id, garage_id)`
+    (baseline ~4249, ~4265).
+  - `linkGarageToApartment` and `linkRepositoryToApartment` (`salesService.ts` ~470) never check
+    the unit's status or existing links.
+  - The Apartments link modal (`LinkUnitsModal`, `linkUnitsService.ts`) offers units already
+    linked elsewhere.
+- **What happens:** the same garage can sit in two packages. Both apartments' package totals
+  count its price, and selling one marks it Sold under the other's buyer too. Since Step 7 item 2
+  contracted sales are package values, so the price is counted twice in the Director dashboard,
+  the General report, both Sales reports and Project details.
+- **Fix direction:** unique indexes on `apartment_garages (garage_id)` and
+  `apartment_repositories (repository_id)` after a duplicate check on production. Make the
+  modal offer only unlinked units.
+
+### SALES-21 · Medium · Apartment import matches unit numbers exactly; the unique indexes do not
+- **Check:** Code reading (pre-release review, 2026-10-20)
+- **Where:** `Sales/SalesProjects/services/apartmentImportService.ts` — the apartment, garage and
+  storage lookups `.eq('number', …)` (around lines 44, 90, 120); the error message in
+  `modals/ExcelImportApartmentsModal.tsx:222`; `services/garageImportService.ts:88-94`
+- **What happens:** since `20261012100200` numbers are unique per building ignoring case and
+  surrounding spaces, but the import looks them up exactly and does not trim the parking and
+  storage labels. A file with "pm-1" or "PM-1 " where garage "PM-1" exists misses it, tries to
+  insert a new garage and fails with 23505 — after the apartment row was already inserted or
+  updated, since the steps are not one transaction. The row is reported as "unit number exists",
+  naming the apartment rather than the garage, and every re-run fails the same way. The garage
+  import's update path has no `.select('id')` + `assertRowsAffected`, so a repeated number whose
+  first insert failed counts as "updated" with nothing written.
+- **Fix direction:** look units up with `ilike` on the trimmed value (or normalise both sides in a
+  small RPC), trim the labels on read, name the unit that collided in the message, and assert the
+  garage update hit a row.
+
+### SALES-22 · Low · Demo seed marks apartments Sold without a sale
+- **Check:** Confirmed on LandmarkDemo (2026-10-20): 8 apartments `Sold` with no `sales` row;
+  production had none
+- **Where:** `scripts/seed-demo-data.mjs` — units are created with status `'Sold'` (around line
+  538) but `sales` rows are inserted only for some of them (`saleFor`, around line 606)
+- **What happens:** since SALES-10 the UI cannot put such an apartment back: Edit Apartment
+  disables the status for a Sold unit, UnitsGrid hides the status buttons, and "Poništi prodaju"
+  needs a sale row. On the demo they stay Sold for good, and the Sales figures (which count `sales`
+  rows) disagree with the unit statuses.
+- **Fix direction:** give every Sold unit a `saleFor(...)`, or seed the rest as Available or
+  Reserved; re-seed the demo.
+
+### SALES-17 · Low · Bulk building creation always gives ten floors
+- **Where:** `createBulkBuildings` (`total_floors: 10`); `BuildingQuantityModal` asks only for a
+  quantity. (The duplicate names were fixed on `fix/contracts-scope-sale-cancel-unit-numbers`:
+  numbering continues from the first free name. The "severity in metadata" point was not a
+  defect — `logActivity` stores severity there for every call.)
+- **Fix direction:** a floors field in the modal.
+
+### SALES-19 · Low · Sales labels, grammar and hardcoded strings
+- **Check:** Code reading
+- "Dodaj jednu Stan" and similar: sentences glued from a verb and a unit type.
+- `Apartments/modals/PaymentHistoryModal.tsx:122,131` print English "Garages (…)" / "Storages (…)".
+- The "all" option of the Apartments status filter is labelled "Status".
+- Double colons in `CustomerCard.tsx` and `CustomerDetailModal.tsx`; the customer delete uses the
+  generic confirmation text.
+- "Apartmani" and "Stanovi" both name the same page; the menu says "Sales projekti", the page
+  title "Projekti".
+- Icon-only buttons without labels in `BuildingsGrid` and `UnitsGrid`; both hand-build money (UI-1).
+
+### SALES-14 · Low · Mixed money formats on customer cards and two modals
+- **Where:** `CustomerCard.tsx` mixes a compact figure with full totals; `SingleUnitModal.tsx` and
+  `BulkPriceUpdateModal.tsx` hand-roll their formatting.
+- **Fix direction:** `formatEuro` / `formatEuroRounded`. Part of UI-1 in [ui.md](./ui.md).
+
+## Resolved
+
+### SALES-13 · Low · Delete dialog on the Apartments page is half Croatian, half English
+- Fixed in `920ffec7` (2026-09-21), found still open on 2026-10-20: the dialog takes
+  `common.confirm_delete` and `apartments.confirm_delete_message` from the locale files.
+
+### SALES-9 · Low · No unique constraint on unit numbers
+- Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): unique indexes on unit numbers per building and building names per
+  project (migration `20261012100200`, **not applied yet**); the create, edit and import paths say
+  so in words. No database had a duplicate on 2026-10-12.
+
+### SALES-10 · Low · No sale cancellation flow
+- Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): `cancel_apartment_sale` (migration `20261012100100`, **not applied yet** —
+  see [release.md](./release.md)) and the "Poništi prodaju" action for Director and Accounting.
+  The Edit Apartment form no longer sets or unsets Sold.
+
+### SALES-8 · Low · Customers module keeps only one garage and one storage per apartment
+- Fixed on `fix/backlog-batch-4` (2026-10-09): Customers keeps every linked garage and storage unit, shows each on the
+  card and in the detail window, and counts them all in the package total.
+
+### SALES-18 · Low · Garage and storage import has no template; import tolerance differs from the screen
+- Fixed on `fix/backlog-batch-3` (2026-10-08): the garage import has a "Preuzmi predložak" button
+  (`garageImportTemplate.ts`). The reported tolerance mismatch (0,05 against 0,02) was not found
+  in the code or the strings.
+
+### SALES-20 · Low · Sales projects unit actions are not role-gated
+- Fixed on `fix/backlog-batch-3` (2026-10-08): the unit cards and the page header use `canEditSalesUnits` /
+  `canDeleteSalesUnits`. Selling needs INSERT on `sales` and `customers` and UPDATE on the unit,
+  all three open to Director, Sales and Accounting.
+
+### SALES-16 · Low · Apartments page actions are not role-gated
+- Fixed on `fix/backlog-small-batch` (2026-10-08): `canEditSalesUnits` / `canDeleteSalesUnits` mirror the RLS policies and
+  gate the Apartments page buttons and the delete-building button. The unit cards on Sales
+  projects are not gated yet (SALES-20).
+
+### SALES-6 · Medium · The package total is still computed per screen
+- Decided 2026-10-08: a sold package totals its sale price plus the list prices of the linked
+  garages and storage units; an unsold one, list prices throughout. `packageTotal`
+  (`src/utils/salesFigures.ts` since Step 7 item 2) is the one implementation, used by the Sales
+  project cards, the Apartments page and its payment history, and the Customers card, detail modal and per-project
+  sums (`fix/figures-and-tic-export`). The stale `sales.total_paid` / `remaining_amount` columns
+  are still there, unread by any screen; dropping them needs a migration.
+
+### SALES-15 · Low · Sales project and building grids have no empty state
+- Fixed on `feat/user-guidance-phase-2` (2026-10-06): both grids render `EmptyState` with a
+  description saying where projects and buildings are added.

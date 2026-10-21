@@ -1,7 +1,9 @@
+import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
 import { supabase } from '../../../lib/supabase'
 import { daysFromToday } from '../../../utils/dateOnly'
+import { creditLineTotals } from '../../../utils/fundingFigures'
 import { formatEuroCompact } from '../../../utils/formatters'
-import type { Project, Company, Bank, BankCredit, FinancialSummary, RecentActivity } from '../../../types/investment'
+import type { Project, Company, Bank, BankCredit, CreditAllocation, FinancialSummary, RecentActivity } from '../../../types/investment'
 
 export interface InvestmentDashboardData {
   projects: Project[]
@@ -14,10 +16,10 @@ export interface InvestmentDashboardData {
 
 export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboardData> {
   const [
-    { data: projectsData },
-    { data: companiesData },
-    { data: banksData },
-    { data: creditsData }
+    { data: projectsData, error: projectsError },
+    { data: companiesData, error: companiesError },
+    { data: banksData, error: banksError },
+    { data: creditsData, error: creditsError }
   ] = await Promise.all([
     supabase.from('projects').select('*').order('start_date', { ascending: false }),
     supabase.from('accounting_companies').select('*').order('name'),
@@ -33,20 +35,49 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
         allocated_amount,
         used_amount,
         description,
+        allocation_type,
+        refinancing_entity_type,
+        refinancing_entity_id,
         project:projects(id, name, location, budget, status)
       )
     `).order('created_at', { ascending: false })
   ])
 
+  // A failed read must show the error panel, not a dashboard of zeros.
+  if (projectsError) throw projectsError
+  if (companiesError) throw companiesError
+  if (banksError) throw banksError
+  if (creditsError) throw creditsError
+
   const projects = projectsData || []
   const companies = companiesData || []
   const banks = banksData || []
-  const credits = creditsData || []
+  // Refinancing allocations point at a company or bank by id; name them from the lists already
+  // loaded so the PDF can say "Refinanciranje - X" instead of calling them OPEX (FUND-11).
+  const nameById = new Map<string, string>([
+    ...(companiesData || []).map(c => [`company:${c.id}`, c.name] as [string, string]),
+    ...(banksData || []).map(b => [`bank:${b.id}`, b.name] as [string, string]),
+  ])
+  const credits = (creditsData || []).map(credit => ({
+    ...credit,
+    credit_allocations: ((credit.credit_allocations || []) as CreditAllocation[]).map(allocation => ({
+      ...allocation,
+      refinancing_name: allocation.refinancing_entity_id
+        ? nameById.get(`${allocation.refinancing_entity_type}:${allocation.refinancing_entity_id}`) ?? null
+        : null,
+    })),
+  }))
 
-  const total_portfolio_value = projects.reduce((sum, p) => sum + Number(p.budget), 0)
-  const total_credit_lines = credits.reduce((sum, c) => sum + Number(c.amount), 0)
-  const total_used_credit = credits.reduce((sum, c) => sum + Number(c.used_amount || 0), 0)
+  // Only a TIC sets a budget (GEN-5). A project without one adds nothing to the portfolio value,
+  // and the card says how many were left out rather than counting them as €0.
+  const budgetedProjectIds = await fetchBudgetedProjectIds()
+  const budgetedProjects = projects.filter(p => budgetedProjectIds.has(p.id))
+  const total_portfolio_value = budgetedProjects.reduce((sum, p) => sum + Number(p.budget), 0)
+  const unbudgeted_project_ids = projects.filter(p => !budgetedProjectIds.has(p.id)).map(p => p.id as string)
+  const { total: total_credit_lines, used: total_used_credit } = creditLineTotals(credits)
   const total_repaid_credit = credits.reduce((sum, c) => sum + Number(c.repaid_amount || 0), 0)
+  // Debt, headroom and the rate are defined differently from the Director dashboard and the
+  // General report, which use live debt only (FUND-21).
   // Derive debt from used − repaid so the headline KPI is always consistent with
   // the Used/Repaid tiles, rather than trusting a separately-stored balance.
   const total_outstanding_debt = Math.max(0, total_used_credit - total_repaid_credit)
@@ -78,7 +109,7 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
         params: {
           company: credit.company?.name || '',
           amount: formatEuroCompact(Number(credit.amount)),
-          creditType: credit.credit_type.replace(/_/g, ' '),
+          creditType: credit.credit_type,
           project: credit.project?.name || ''
         },
         date: credit.start_date,
@@ -124,6 +155,8 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
     recentActivities: activities.slice(0, 5),
     financialSummary: {
       total_portfolio_value,
+      projects_without_budget: unbudgeted_project_ids.length,
+      unbudgeted_project_ids,
       total_debt: total_outstanding_debt,
       total_equity: 0,
       debt_to_equity_ratio: 0,

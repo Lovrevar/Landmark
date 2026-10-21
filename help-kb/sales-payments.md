@@ -1,17 +1,19 @@
 ---
 id: sales-payments
 title: Plaćanja prodaje
-keywords: [plaćanja prodaje, sales payments, prodajna plaćanja, uplate kupaca, retail-sales-payments]
-routes: [/sales-payments, /retail-sales-payments]
+keywords: [plaćanja prodaje, sales payments, uplate kupaca, stanovi, export excel]
+routes: [/sales-payments]
 roles: [Director, Accounting, Sales]
 ---
 
-Stranica **Plaćanja prodaje** prikazuje sve uplate kupaca. Ista komponenta pojavljuje se i u Retail profilu na ruti **/retail-sales-payments** kao **Prodajna plaćanja**.
+Stavka **Plaćanja** u profilu **Sales** otvara stranicu **Plaćanja prodaje** — sve uplate kupaca za stanove. Podnaslov: **Praćenje svih plaćanja kupaca za stanove**. Uplate retail kupaca imaju svoju stranicu: [[retail-sales]].
 
-Kartice statistike na vrhu: **Ukupno plaćanja**, **Ukupni iznos**, **Plaćanja ovog mjeseca**, **Iznos ovog mjeseca**.
+Kartice statistike na vrhu: **Ukupno plaćanja**, **Ukupni iznos**, **Ovaj mjesec**, **Iznos ovog mjeseca**.
 
-Filtri: tražilica po kupcu/stanu/projektu/broju plaćanja, padajući izbornik (**Sva plaćanja**, **Nedavna**, **Velika**) i raspon datuma (**Početni datum** / **Završni datum**). Gumb **Preuzmi CSV** preuzima trenutno filtrirani prikaz.
+Filtri: tražilica **Pretraži plaćanja...**, padajući izbornik (**Sva plaćanja**, **Nedavno (7 dana)**, **Veliki (> €10k)**) i raspon datuma (**Datum početka** / **Datum kraja**). Ispod tablice stoji zbroj filtriranih plaćanja.
 
-Stupci tablice: **Datum plaćanja**, **Račun**, **Kupac**, **Stan**, **Projekt**, **Ukupno računa**, **Plaćanje**, **Način plaćanja**, **Banka**.
+Gumb **Export Excel** preuzima trenutno filtrirani popis kao Excel (.xlsx) datoteku; izvoz je uvijek na hrvatskom.
 
-Stranica je samo za pregled — nove uplate dodaju se kroz povijest plaćanja iz [[apartments]] ili [[sales-projects]].
+Stupci tablice: **Datum plaćanja**, **Račun**, **Kupac**, **Stan**, **Projekt**, **Ukupno račun**, **Plaćanje**, **Metoda**, **Banka**.
+
+Stranica je samo za pregled — ovdje se uplate ne unose ni ne mijenjaju.

@@ -1,0 +1,33 @@
+name: Database tests
+
+# pgTAP tests in supabase/tests/database/ against a local database built from every migration.
+# No secrets: everything runs inside the runner and nothing touches LandmarkDev or production.
+# See docs/TESTING.md → Database tests.
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+  workflow_dispatch:
+
+concurrency:
+  group: db-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.99.0   # the version used locally; bump both together
+
+      - name: Start Supabase (applies every migration)
+        run: supabase start
+
+      - name: Run database tests
+        run: supabase test db

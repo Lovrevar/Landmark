@@ -157,7 +157,7 @@ const RetailLandPlots: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -329,7 +329,7 @@ const RetailLandPlots: React.FC = () => {
               {selectedPlot.notes && (
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('common.notes')}</p>
-                  <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded">{selectedPlot.notes}</p>
+                  <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded-sm">{selectedPlot.notes}</p>
                 </div>
               )}
 

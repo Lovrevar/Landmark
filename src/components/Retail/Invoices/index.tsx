@@ -4,9 +4,14 @@ import { LoadingSpinner, PageHeader, StatGrid, StatCard, SearchInput, Select, Bu
 import { FileText, Calendar, Download, TrendingUp, AlertCircle, Building2, CheckSquare, Square } from 'lucide-react'
 import { useRetailInvoices } from './hooks/useRetailInvoices'
 import { formatDate } from '../../../utils/formatters'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canApproveInvoices } from '../../../utils/permissions'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../Cashflow/services/invoiceHelpers'
 
 const RetailInvoicesManagement: React.FC = () => {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
+  const canApprove = canApproveInvoices(user)
   const {
     loading,
     error,
@@ -35,11 +40,6 @@ const RetailInvoicesManagement: React.FC = () => {
     INCOMING_INVESTMENT: t('retail_invoices.type.incoming_investment'),
   }), [t])
 
-  const INVOICE_STATUS_LABELS: Record<string, string> = {
-    PAID: t('common.paid'),
-    PARTIALLY_PAID: t('common.partial'),
-    UNPAID: t('common.unpaid'),
-  }
 
   if (loading && !hasData) return <LoadingSpinner message={t('retail_invoices.loading')} />
 
@@ -70,7 +70,7 @@ const RetailInvoicesManagement: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
             <SearchInput
@@ -125,7 +125,7 @@ const RetailInvoicesManagement: React.FC = () => {
           description={t('retail_invoices.no_invoices_desc')}
         />
       ) : (
-        <div className="responsive-table overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="responsive-table overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-xs">
           <table className="w-full min-w-[1200px] bg-white dark:bg-gray-800">
             <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
               <tr>
@@ -150,8 +150,11 @@ const RetailInvoicesManagement: React.FC = () => {
                   <td className="px-4 py-3 text-center">
                     <button
                       onClick={() => handleApprove(invoice.id, invoice.approved)}
-                      title={invoice.approved ? t('retail_invoices.approve_title_cancel') : t('retail_invoices.approve_title')}
-                      className={`p-1 rounded transition-colors ${
+                      disabled={!canApprove}
+                      title={!canApprove
+                        ? t('retail_invoices.approve_title_forbidden')
+                        : invoice.approved ? t('retail_invoices.approve_title_cancel') : t('retail_invoices.approve_title')}
+                      className={`p-1 rounded transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                         invoice.approved
                           ? 'text-green-600 hover:text-green-800'
                           : 'text-gray-400 dark:text-gray-500 hover:text-blue-600'
@@ -174,7 +177,7 @@ const RetailInvoicesManagement: React.FC = () => {
                   </td>
                   <td data-label={t('common.company')} className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
-                      <Building2 className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                      <Building2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                       <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{invoice.company_name}</span>
                     </div>
                   </td>
@@ -182,12 +185,8 @@ const RetailInvoicesManagement: React.FC = () => {
                     €{invoice.total_amount.toLocaleString('hr-HR', { minimumFractionDigits: 2 })}
                   </td>
                   <td data-label={t('common.status')} className="px-4 py-3 whitespace-nowrap">
-                    <Badge variant={
-                      invoice.status === 'PAID' ? 'green'
-                        : invoice.status === 'PARTIALLY_PAID' ? 'yellow'
-                        : 'red'
-                    }>
-                      {INVOICE_STATUS_LABELS[invoice.status] || invoice.status}
+                    <Badge variant={getInvoiceStatusVariant(invoice.status)}>
+                      {getInvoiceStatusLabel(invoice.status, t)}
                     </Badge>
                   </td>
                 </tr>

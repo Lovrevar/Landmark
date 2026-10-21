@@ -1,6 +1,43 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+/* v3's sans stack. v4's starts with -apple-system … Roboto, Arial, which picks the same font on
+   Windows, macOS and Android but Arial instead of the system font on Linux. */
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* Two more v3 defaults the screens rely on: v4 draws placeholders in the
+     text colour at half opacity, and gives buttons the default cursor. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 /* Paint the page background on the root elements too, so the scrollbar
    gutter / overscroll area never flashes white (especially in dark mode). */
@@ -93,6 +130,55 @@ input[type="number"] {
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/*
+ * Stat cards (<StatCard>): a value never runs out of its card.
+ *
+ * A stat card's value sat in whatever was left beside the icon. In a two-column grid on a phone
+ * that is about 90px, and an amount like "€1.287.631,05" simply ran past the card's edge
+ * (DEFECT_BACKLOG CASH-21). Three things now happen, in this order, and none of them hides a
+ * digit of a money amount:
+ *
+ *   1. On a narrow card the value takes the full width under the label and icon.
+ *   2. The value's font size follows the card's width down to a floor (cqi = 1% of the card).
+ *   3. If it still does not fit, it wraps — between digits, never between the minus sign and
+ *      the euro sign (StatCard keeps "−€" together).
+ *
+ * Wide cards are untouched: the size is capped at what the card's `size` asks for. A browser
+ * without container queries keeps the old side-by-side layout and gains only the wrapping.
+ */
+.stat-card {
+  container-type: inline-size;
+}
+.stat-card__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label icon"
+    "value icon"
+    "subtitle icon";
+  column-gap: 0.75rem;
+  align-items: start;
+}
+.stat-card__label { grid-area: label; }
+.stat-card__subtitle { grid-area: subtitle; }
+.stat-card__icon { grid-area: icon; }
+.stat-card__value {
+  grid-area: value;
+  font-size: var(--stat-value-size, 1.25rem);
+  /* 10.5cqi: a 15-character amount ("−€17.180.426,61") fits on one line of a two-column phone grid. */
+  font-size: clamp(0.8rem, 10.5cqi, var(--stat-value-size, 1.25rem));
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 13rem) {
+  .stat-card__grid {
+    grid-template-areas:
+      "label icon"
+      "value value"
+      "subtitle subtitle";
+  }
 }
 
 /*

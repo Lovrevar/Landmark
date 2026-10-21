@@ -115,6 +115,8 @@ export const fetchApartmentPayments = async (apartmentId: string) => {
       )
     `)
     .eq('invoice.apartment_id', apartmentId)
+    // Buyer payments only — the same basis as Sales Projects, the Sales dashboard and Sales Payments.
+    .eq('invoice.invoice_type', 'OUTGOING_SALES')
     .order('payment_date', { ascending: false })
 
   if (error) throw error

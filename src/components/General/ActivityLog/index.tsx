@@ -37,6 +37,8 @@ const ActivityLog: React.FC = () => {
     filterProjectId,
     dateFrom,
     dateTo,
+    showHelpEvents,
+    helpFilterAvailable,
     users,
     projects,
     selectedLog,
@@ -47,6 +49,7 @@ const ActivityLog: React.FC = () => {
     setFilterProjectId,
     setDateFrom,
     setDateTo,
+    setShowHelpEvents,
     setCurrentPage,
     setSelectedLog,
     resetFilters,
@@ -74,7 +77,7 @@ const ActivityLog: React.FC = () => {
       />
 
       {/* Filter bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 p-4 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <SearchInput
             value={searchTerm}
@@ -153,6 +156,19 @@ const ActivityLog: React.FC = () => {
             {t('activity_log.reset_filters')}
           </Button>
         </div>
+        {/* Help usage is hidden by default. Not offered when the database cannot filter it out
+            yet, or when the Help category is selected and the events are shown regardless. */}
+        {helpFilterAvailable && filterCategory !== 'help' && (
+          <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showHelpEvents}
+              onChange={(e) => setShowHelpEvents(e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded-sm focus:ring-blue-500"
+            />
+            {t('activity_log.show_help_events')}
+          </label>
+        )}
       </div>
 
       {/* Results */}

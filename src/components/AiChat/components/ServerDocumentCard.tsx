@@ -38,7 +38,7 @@ export default function ServerDocumentCard({ message }: { message: ServerDocumen
   if (status === 'pending') {
     return (
       <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 px-1 py-1.5">
-        <Loader2 className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
         <span>{UI_LABELS_HR.fetchingServerDocument}</span>
       </div>
     )
@@ -47,7 +47,7 @@ export default function ServerDocumentCard({ message }: { message: ServerDocumen
   if (status === 'error' || !filePath || !source || !fileName) {
     return (
       <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400 px-1 py-1.5">
-        <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
+        <XCircle className="w-3.5 h-3.5 shrink-0" />
         <span>{UI_LABELS_HR.serverDocumentFetchFailed}</span>
       </div>
     )
@@ -63,14 +63,14 @@ export default function ServerDocumentCard({ message }: { message: ServerDocumen
         aria-label={UI_LABELS_HR.downloadDocument}
         className="inline-flex items-center gap-2 max-w-[280px] rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-2.5 py-1.5 text-xs hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
       >
-        <FileText className="w-4 h-4 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+        <FileText className="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400" />
         <span className="flex-1 min-w-0 truncate text-gray-700 dark:text-gray-200">
           {fileName}
         </span>
         {resolving ? (
-          <Loader2 className="w-3.5 h-3.5 flex-shrink-0 animate-spin text-gray-400 dark:text-gray-500" />
+          <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-gray-400 dark:text-gray-500" />
         ) : (
-          <Download className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-gray-500" />
+          <Download className="w-3.5 h-3.5 shrink-0 text-gray-400 dark:text-gray-500" />
         )}
       </button>
       {failed && (

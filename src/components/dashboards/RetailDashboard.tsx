@@ -9,6 +9,7 @@ import { EMPTY_RETAIL_TOTALS } from './utils/retailTotals'
 import type { DashboardStats, OverdueInvoice } from './types/retailDashboardTypes'
 import { fetchRetailDashboardData } from './services/retailDashboardService'
 import DashboardError from './DashboardError'
+import PageHelpLink from '../ui/PageHelpLink'
 
 const defaultStats: DashboardStats = {
   ...EMPTY_RETAIL_TOTALS,
@@ -37,7 +38,7 @@ const RetailDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.retail.title')}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.retail.title')}<PageHelpLink /></h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.retail.subtitle')}</p>
       </div>
 
@@ -77,7 +78,7 @@ const RetailDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.retail.collection')}</h3>
             <Euro className="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -98,7 +99,7 @@ const RetailDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.retail.profit')}</h3>
             <TrendingUp className={`w-6 h-6 ${stats.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
@@ -121,7 +122,7 @@ const RetailDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboards.retail.averages')}</h3>
             <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -142,7 +143,7 @@ const RetailDashboard: React.FC = () => {
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">{t('dashboards.retail.per_customer')}</span>
               <span className="font-semibold text-gray-900 dark:text-white">
-                {stats.total_customers > 0 ? fmt(stats.total_revenue / stats.total_customers) : NO_VALUE}
+                {stats.buying_customers > 0 ? fmt(stats.total_revenue / stats.buying_customers) : NO_VALUE}
               </span>
             </div>
           </div>
@@ -152,7 +153,7 @@ const RetailDashboard: React.FC = () => {
       {overdueInvoices.length > 0 && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
           <div className="flex items-start space-x-3 mb-4">
-            <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-red-900 dark:text-red-300 mb-2">
                 {t('dashboards.retail.late_payments', { count: overdueInvoices.length })}

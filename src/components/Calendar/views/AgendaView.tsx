@@ -97,7 +97,7 @@ export default function AgendaView({
                   <button
                     key={o.occurrenceKey}
                     onClick={() => onEventClick(o)}
-                    className={`w-full text-left pl-3 pr-2 py-2 rounded border-l-[3px] bg-gray-50 dark:bg-gray-900/40 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${EVENT_TYPE_COLORS[o.event.event_type].border} ${o.isDeclined ? 'opacity-60' : ''}`}
+                    className={`w-full text-left pl-3 pr-2 py-2 rounded-sm border-l-[3px] bg-gray-50 dark:bg-gray-900/40 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${EVENT_TYPE_COLORS[o.event.event_type].border} ${o.isDeclined ? 'opacity-60' : ''}`}
                   >
                     <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                       <Clock className="w-3 h-3" />

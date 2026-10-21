@@ -114,6 +114,18 @@ const CreditFormModal: React.FC<CreditFormModalProps> = ({
               placeholder="0"
             />
           </FormField>
+          {editingCredit && (
+            <FormField label={t('common.status')}>
+              <Select
+                value={formData.status}
+                onChange={(e) => onChange({ status: e.target.value as 'active' | 'paid' | 'defaulted' })}
+              >
+                <option value="active">{t('funding.credit_status.active')}</option>
+                <option value="paid">{t('funding.credit_status.paid')}</option>
+                <option value="defaulted">{t('funding.credit_status.defaulted')}</option>
+              </Select>
+            </FormField>
+          )}
           <FormField label={t('banks.credit_form.principal_repayment_label')} helperText={t('banks.credit_form.principal_repayment_helper')}>
             <Select
               value={formData.principal_repayment_type}
@@ -182,7 +194,7 @@ const CreditFormModal: React.FC<CreditFormModalProps> = ({
                     disbursed_to_bank_account_id: checked ? formData.disbursed_to_bank_account_id : ''
                   })
                 }}
-                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
+                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded-sm"
               />
               <div className="flex-1">
                 <span className="font-medium text-gray-900 dark:text-white">{t('banks.credit_form.disbursed_to_account_label')}</span>

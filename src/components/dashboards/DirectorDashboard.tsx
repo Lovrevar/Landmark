@@ -24,6 +24,7 @@ import DashboardError from './DashboardError'
 import DirectorAlertsSection from './sections/DirectorAlertsSection'
 import DirectorFinancialSection from './sections/DirectorFinancialSection'
 import DirectorProjectsTable from './sections/DirectorProjectsTable'
+import PageHelpLink from '../ui/PageHelpLink'
 
 const defaultFinancial: FinancialMetrics = {
   total_revenue: 0, total_expenses: 0, total_profit: 0, profit_margin: 0,
@@ -74,7 +75,7 @@ const DirectorDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.general_dashboard')}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.general_dashboard')}<PageHelpLink /></h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">{t('dashboards.director.comprehensive_overview')}</p>
         </div>
         <div className="sm:text-right">
@@ -86,7 +87,7 @@ const DirectorDashboard: React.FC = () => {
       <DirectorAlertsSection alerts={alerts} />
       <DirectorFinancialSection metrics={financialMetrics} />
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <Home className="w-6 h-6 text-green-600 mr-2" />
@@ -113,7 +114,7 @@ const DirectorDashboard: React.FC = () => {
         </StatGrid>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <HardHat className="w-6 h-6 text-orange-600 mr-2" />
@@ -142,7 +143,7 @@ const DirectorDashboard: React.FC = () => {
         </StatGrid>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <Banknote className="w-6 h-6 text-blue-600 mr-2" />

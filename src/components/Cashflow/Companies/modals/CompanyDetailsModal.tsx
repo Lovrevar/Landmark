@@ -5,6 +5,7 @@ import { CompanyStats } from '../types'
 import { Modal, Button, Badge, StatCard, StatGrid } from '../../../ui'
 import { daysFromToday } from '../../../../utils/dateOnly'
 import { utilisationTone } from '../../../Funding/Investors/utils/creditCalculations'
+import { formatEuro } from '../../../../utils/formatters'
 
 interface CompanyDetailsModalProps {
   show: boolean
@@ -28,22 +29,22 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
         <StatGrid columns={4}>
           <StatCard
             label={t('companies.details.current_balance')}
-            value={`€${company.current_balance.toLocaleString('hr-HR')}`}
+            value={formatEuro(company.current_balance)}
             color={company.current_balance >= 0 ? 'green' : 'red'}
           />
           <StatCard
             label={t('companies.details.issued_invoices')}
-            value={`€${company.total_income_paid.toLocaleString('hr-HR')}`}
+            value={formatEuro(company.total_income_paid)}
             color="green"
           />
           <StatCard
             label={t('companies.details.paid_invoices')}
-            value={`€${company.total_expense_paid.toLocaleString('hr-HR')}`}
+            value={formatEuro(company.total_expense_paid)}
             color="red"
           />
           <StatCard
             label={company.profit >= 0 ? t('companies.stats.profit') : t('companies.stats.loss')}
-            value={`€${Math.abs(company.profit).toLocaleString('hr-HR')}`}
+            value={formatEuro(Math.abs(company.profit))}
             color={company.profit >= 0 ? 'green' : 'red'}
           />
         </StatGrid>
@@ -66,7 +67,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                   <div className="flex justify-between text-lg">
                     <span className="text-gray-600 dark:text-gray-400">{t('companies.details.balance_label')}</span>
                     <span className={`font-bold ${account.current_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      €{account.current_balance.toLocaleString('hr-HR')}
+                      {formatEuro(account.current_balance)}
                     </span>
                   </div>
                 </div>
@@ -102,17 +103,17 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                     <div className="space-y-1 mb-3">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">{isDisbursedToAccount ? t('companies.details.credit_amount_label') : t('companies.details.credit_limit_label')}</span>
-                        <span className="font-medium text-gray-900 dark:text-white">€{credit.amount.toLocaleString('hr-HR')}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{formatEuro(credit.amount)}</span>
                       </div>
                       {!isDisbursedToAccount && (
                         <>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600 dark:text-gray-400">{t('companies.details.credit_used')}</span>
-                            <span className="font-medium text-orange-600">€{usedAmount.toLocaleString('hr-HR')}</span>
+                            <span className="font-medium text-orange-600">{formatEuro(usedAmount)}</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600 dark:text-gray-400">{t('companies.details.credit_available')}</span>
-                            <span className="font-bold text-green-600">€{available.toLocaleString('hr-HR')}</span>
+                            <span className="font-bold text-green-600">{formatEuro(available)}</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600 dark:text-gray-400">{t('companies.details.credit_interest')}</span>
@@ -129,7 +130,7 @@ const CompanyDetailsModal: React.FC<CompanyDetailsModalProps> = ({ show, company
                           {credit.allocations.map((allocation) => (
                             <div key={allocation.id} className="flex justify-between text-xs">
                               <span className="text-gray-600 dark:text-gray-400">{allocation.project?.name || 'OPEX'}:</span>
-                              <span className="font-medium text-gray-900 dark:text-white">€{allocation.allocated_amount.toLocaleString('hr-HR')}</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{formatEuro(allocation.allocated_amount)}</span>
                             </div>
                           ))}
                         </div>

@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { formatDate } from '../../../../utils/formatters'
 import { FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-react'
 import { Subcontractor } from '../../../../lib/supabase'
-import { Modal, Button, Badge, LoadingSpinner, EmptyState } from '../../../ui'
+import { Modal, Button, Badge, LoadingSpinner, EmptyState, Alert } from '../../../ui'
 import { fetchContractInvoices, ContractInvoiceRow } from '../services/siteService'
-import { daysFromToday } from '../../../../utils/dateOnly'
+import { isOverdueInvoice } from '../../../../utils/invoiceFigures'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
 
 type Invoice = ContractInvoiceRow
@@ -31,6 +31,8 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
   const { t, i18n } = useTranslation()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  // A failed load used to fall through to "no invoices" (SUP-8).
+  const [loadFailed, setLoadFailed] = useState(false)
 
   const fetchInvoices = useCallback(async () => {
     if (!subcontractor) return
@@ -38,11 +40,13 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
     const contractId = (subcontractor as SubcontractorWithContractInfo).contract_id || subcontractor.id
 
     setLoading(true)
+    setLoadFailed(false)
     try {
       const formattedInvoices = await fetchContractInvoices(contractId)
       setInvoices(formattedInvoices)
     } catch (error) {
       console.error('Error fetching invoices:', error)
+      setLoadFailed(true)
     } finally {
       setLoading(false)
     }
@@ -65,10 +69,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
     }
   }, [isOpen])
 
-  const isOverdue = (dueDate: string, status: string) => {
-    if (status === 'PAID') return false
-    return daysFromToday(dueDate) < 0
-  }
+  const isOverdue = (dueDate: string, status: string) => isOverdueInvoice({ due_date: dueDate, status })
 
   if (!isOpen || !subcontractor) return null
 
@@ -85,6 +86,13 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
           <div className="flex items-center justify-center py-12">
             <LoadingSpinner size="lg" />
           </div>
+        ) : loadFailed ? (
+          <Alert variant="error" title={t('common.load_error_title')}>
+            {t('common.load_error_description')}{' '}
+            <button type="button" onClick={() => { void fetchInvoices() }} className="underline font-medium">
+              {t('common.retry')}
+            </button>
+          </Alert>
         ) : invoices.length === 0 ? (
           <EmptyState
             icon={FileText}

@@ -120,7 +120,7 @@ const ActivityLogDetailModal: React.FC<Props> = ({ log, onClose }) => {
               {metadataEntries.map(([key, value]) => (
                 <div key={key} className="flex justify-between">
                   <span className="text-sm text-gray-500 dark:text-gray-400">{key}</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white max-w-[60%] text-right break-words">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white max-w-[60%] text-right wrap-break-word">
                     {formatMetadataValue(value, t)}
                   </span>
                 </div>

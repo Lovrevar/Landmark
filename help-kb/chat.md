@@ -1,19 +1,19 @@
 ---
 id: chat
 title: Chat (poruke između korisnika)
-keywords: [chat, poruke, konverzacija, 1 na 1, grupni chat, attachment]
+keywords: [chat, poruke, konverzacija, 1 na 1, grupni chat, privitak, datoteka]
 routes: [/chat]
 roles: [Director, Accounting, Sales, Supervision, Investment]
 ---
 
-**Chat** je modul za komunikaciju između korisnika sustava (ljudski-na-ljudski), zaseban od AI asistenta. Stranica nema klasičan naslov — prikazuje konverzacijski layout.
+**Chat** je modul za komunikaciju između korisnika sustava, zaseban od AI asistenta. Otvara se ikonom poruke u gornjoj traci; crveni broj na ikoni pokazuje nepročitane poruke.
 
-Layout: lijeva bočna traka s popisom konverzacija, desni panel s porukama.
+Izgled: lijevo popis konverzacija (naslov **Chat**, s tražilicom), desno poruke odabrane konverzacije.
 
-Glavna akcija: **Nova konverzacija** u popisu konverzacija. Podržane su:
-- **1 na 1** — naslov pokazuje ime sugovornika
-- **Grupne konverzacije** — naslov je naziv grupe ili popis sudionika
+Gumb **Nova konverzacija** (plus pokraj naslova) otvara odabir korisnika:
+- jedan odabrani korisnik — razgovor **1 na 1** (**Započni chat**); naslov je ime sugovornika
+- više korisnika — **grupa** (**Kreiraj grupu**); možete joj dati naziv, a u zaglavlju razgovora vidi se broj sudionika i popis članova
 
-Polje za unos poruke nalazi se na dnu panela; podržano je dodavanje privitaka (file picker).
+Polje **Napiši poruku...** nalazi se na dnu; uz poruku možete priložiti jednu datoteku do 25 MB. Slike se prikazuju u razgovoru, ostale datoteke se preuzimaju.
 
-Ikona zvona u gornjoj navigaciji (ikona poruke s crvenim brojem) pokazuje broj nepročitanih poruka. Floating AI asistent (chat widget) NIJE vidljiv na ovoj stranici — sakriven je dok ste u **/chat** da bi se izbjegao vizualni sukob.
+AI asistent (plutajući gumb) nije vidljiv na ovoj stranici — pogledajte [[ai-chat-widget]].

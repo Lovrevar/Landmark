@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
-import { Button, ConfirmDialog, Input, Select } from '../../../ui'
+import { Button, ConfirmDialog, InfoHint, Input, Select } from '../../../ui'
 import {
   formatNumber,
   formatPercentage,
@@ -139,7 +139,7 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
                       className="px-2 py-1 border-gray-200 dark:border-gray-600"
                     />
                   </td>
-                  <td className={`${CELL} px-2 py-2 min-w-[12rem]`}>
+                  <td className={`${CELL} px-2 py-2 min-w-48`}>
                     <Select
                       value={item.classification_id ?? ''}
                       onChange={(e) =>
@@ -182,9 +182,15 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
                       {/* Editing a row's funds after splitting it pulls the two apart. Neither
                           side is corrected automatically — only the author knows which is wrong. */}
                       {hasPhaseSplitMismatch(item) && (
-                        <span title={t('tic.phases.row_mismatch')} aria-label={t('tic.phases.row_mismatch')}>
-                          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                        </span>
+                        <InfoHint
+                          hintId="tic.row_mismatch"
+                          label={t('tic.phases.row_mismatch')}
+                          articleId="tic"
+                          icon={AlertTriangle}
+                          className="text-amber-500 hover:text-amber-600"
+                        >
+                          <p className="font-normal">{t('tic.hints.mismatch_body')}</p>
+                        </InfoHint>
                       )}
                       {formatNumber(rowTotal)}
                     </span>
@@ -198,7 +204,7 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
                         type="button"
                         onClick={() => setEditingPhasesFor(index)}
                         title={isPhased(item) ? t('tic.phases.edit_cell_title') : t('tic.phases.unphased_cell_title')}
-                        className={`w-full px-4 py-2 text-right whitespace-nowrap hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
+                        className={`w-full px-4 py-2 text-right whitespace-nowrap hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
                           isPhased(item) ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-600'
                         }`}
                       >
@@ -275,8 +281,12 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
         <Button variant="secondary" size="sm" icon={Plus} onClick={onAddPhase}>
           {t('tic.phases.add_phase')}
         </Button>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
           {phaseNumbers.length === 0 ? t('tic.phases.unphased_hint') : t('tic.phases.edit_hint')}
+          <InfoHint hintId="tic.phases" label={t('tic.hints.phases_title')} articleId="tic">
+            <p>{t('tic.hints.phases_phased')}</p>
+            <p>{t('tic.hints.phases_unphased')}</p>
+          </InfoHint>
         </p>
       </div>
 

@@ -1,7 +1,12 @@
 import { supabase } from '../../../lib/supabase'
+import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
+import { fetchAllRows } from '../../../lib/fetchAllRows'
 import type { Project } from '../../../lib/supabase'
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
+import { format, startOfMonth, eachMonthOfInterval } from 'date-fns'
 import type { ProjectSalesReport, CustomerReport, SalesData } from '../types'
+import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
+import { contractedSales, customerFunnel, salesByMonth, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
+import { parseLocalDate } from '../../../utils/dateOnly'
 
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
@@ -57,29 +62,11 @@ export async function generateProjectReport(
   if (apartmentsError) throw apartmentsError
 
   const apartments = apartmentsData || []
-  const apartmentIds = apartments.map(apt => apt.id)
 
-  const { data: aptGaragesData } = await supabase
-    .from('apartment_garages')
-    .select('apartment_id, garage_id, garages(id, price)')
-    .in('apartment_id', apartmentIds.length > 0 ? apartmentIds : [''])
-
-  const { data: aptReposData } = await supabase
-    .from('apartment_repositories')
-    .select('apartment_id, repository_id, repositories(id, price)')
-    .in('apartment_id', apartmentIds.length > 0 ? apartmentIds : [''])
-
-  const aptGaragePriceMap = new Map<string, number>()
-  for (const row of (aptGaragesData || [])) {
-    const price = (row.garages as { price?: number } | null)?.price || 0
-    aptGaragePriceMap.set(row.apartment_id, (aptGaragePriceMap.get(row.apartment_id) || 0) + price)
-  }
-
-  const aptRepoPriceMap = new Map<string, number>()
-  for (const row of (aptReposData || [])) {
-    const price = (row.repositories as { price?: number } | null)?.price || 0
-    aptRepoPriceMap.set(row.apartment_id, (aptRepoPriceMap.get(row.apartment_id) || 0) + price)
-  }
+  // Throws on a failed read, rather than leaving the garages and storage out (GEN-42).
+  const linked = await fetchLinkedPrices()
+  const listPrices = new Map(apartments.map(apt => [apt.id as string, apt.price as number | null]))
+  const saleOptions = { linked, listPrice: (id: string) => listPrices.get(id) }
 
   const { data: salesData, error: salesError } = await supabase
     .from('sales')
@@ -92,53 +79,41 @@ export async function generateProjectReport(
 
   const sales = salesData || []
 
-  const total_revenue = sales.reduce((sum, sale) => {
-    const garagePrice = aptGaragePriceMap.get(sale.apartment_id) || 0
-    const repoPrice = aptRepoPriceMap.get(sale.apartment_id) || 0
-    return sum + sale.sale_price + garagePrice + repoPrice
-  }, 0)
+  // Contracted sales dated in the range, each at its package value (GEN-38).
+  const { value: total_revenue, average: average_price } = contractedSales(sales, saleOptions)
 
-  const total_units = apartments.length
-  const sold_units = apartments.filter(apt => apt.status === 'Sold').length
-  const available_units = apartments.filter(apt => apt.status === 'Available').length
-  const reserved_units = apartments.filter(apt => apt.status === 'Reserved').length
+  const {
+    total: total_units,
+    sold: sold_units,
+    available: available_units,
+    reserved: reserved_units,
+  } = unitStatusCounts(apartments)
 
-  const totalValue = apartments.reduce((sum, apt) => {
-    return sum + apt.price + (aptGaragePriceMap.get(apt.id) || 0) + (aptRepoPriceMap.get(apt.id) || 0)
-  }, 0)
-  const average_price = total_units > 0 ? totalValue / total_units : 0
-  const sales_rate = total_units > 0 ? (sold_units / total_units) * 100 : 0
+  const sales_rate = salesRate(sold_units, total_units)
 
-  const startDate = new Date(dateRange.start)
-  const endDate = new Date(dateRange.end)
-  const months = eachMonthOfInterval({ start: startDate, end: endDate })
+  // Local dates on both sides: `new Date('2026-05-01')` is UTC, and west of UTC it read as
+  // 30 April, which added a month and moved the first day's sales (GEN-34).
+  const months = eachMonthOfInterval({ start: parseLocalDate(dateRange.start), end: parseLocalDate(dateRange.end) })
+  const salesPerMonth = salesByMonth(sales)
 
   const monthly_sales: SalesData[] = months.map(month => {
-    const monthStart = startOfMonth(month)
-    const monthEnd = endOfMonth(month)
-
-    const monthSales = sales.filter(sale => {
-      const saleDate = new Date(sale.sale_date)
-      return saleDate >= monthStart && saleDate <= monthEnd
-    })
-
-    const monthRevenue = monthSales.reduce((sum, sale) => {
-      const garagePrice = aptGaragePriceMap.get(sale.apartment_id) || 0
-      const repoPrice = aptRepoPriceMap.get(sale.apartment_id) || 0
-      return sum + sale.sale_price + garagePrice + repoPrice
-    }, 0)
+    const monthSales = contractedSales(salesPerMonth.get(format(month, 'yyyy-MM')) ?? [], saleOptions)
 
     return {
       // A machine key, not a label — both readers format it themselves. See `SalesData` in ../types.
-      month_key: format(monthStart, 'yyyy-MM-dd'),
-      sales: monthSales.length,
-      revenue: monthRevenue,
-      units_sold: monthSales.length
+      month_key: format(startOfMonth(month), 'yyyy-MM-dd'),
+      sales: monthSales.count,
+      revenue: monthSales.value,
+      units_sold: monthSales.count
     }
   })
 
+  // Only a TIC sets a budget; without one the report says so instead of printing €0 (GEN-5).
+  const budget_set = (await fetchBudgetedProjectIds()).has(selectedProject)
+
   return {
     project: projectWithFunding,
+    budget_set,
     total_units,
     sold_units,
     available_units,
@@ -172,12 +147,17 @@ export async function generateCustomerReport(
   const customers = customersData || []
   const sales = salesData || []
 
-  const total_customers = customers.length
-  const buyers = customers.filter(c => c.status === 'buyer').length
-  const interested = customers.filter(c => c.status === 'interested').length
-  const leads = customers.filter(c => c.status === 'lead').length
-  const total_revenue = sales.reduce((sum, sale) => sum + sale.sale_price, 0)
-  const average_purchase = sales.length > 0 ? total_revenue / sales.length : 0
+  // Each sale at its package value: the linked garages and storage, and the list price for a 0
+  // sale price (GEN-38).
+  const [linked, apartments] = await Promise.all([
+    fetchLinkedPrices(),
+    fetchAllRows<{ id: string; price: number | null }>((from, to) =>
+      supabase.from('apartments').select('id, price').order('id').range(from, to)),
+  ])
+  const listPrices = new Map(apartments.map(apt => [apt.id, apt.price]))
+
+  const { total: total_customers, buyers, interested, leads } = customerFunnel(customers)
+  const { value: total_revenue, average: average_purchase } = contractedSales(sales, { linked, listPrice: id => listPrices.get(id) })
 
   return {
     total_customers,

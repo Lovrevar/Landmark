@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { ProjectPhase, Subcontractor } from '../../../../lib/supabase'
 import * as siteService from '../services/siteService'
 import { exceedsPhaseBudget } from '../utils/contractTree'
+import { committedAmount } from '../../../../utils/contractRollup'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) => {
@@ -81,9 +82,6 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         })
         newContractId = newContract.id
         newSubcontractorId = data.existing_subcontractor_id
-        if (hasContract) {
-          await siteService.recalculatePhaseBudget(phase.id)
-        }
       } else {
         if (!data.name?.trim() || !data.contact?.trim()) {
           throw new Error('Naziv tvrtke i kontakt su obavezni')
@@ -118,9 +116,6 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         })
         newContractId = newContract.id
         newSubcontractorId = newSubcontractor.id
-        if (hasContract) {
-          await siteService.recalculatePhaseBudget(phase.id)
-        }
       }
 
       if (newSubcontractorId && pendingFiles && pendingFiles.length > 0 && hasContract) {
@@ -132,7 +127,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         }
       }
 
-      await siteService.recalculatePhaseBudget(phase.id)
+      // project_phases.budget_used is kept by the trg_sync_phase_budget_used trigger on contracts.
       await fetchProjects()
     } catch (error: unknown) {
       console.error('Error adding subcontractor:', error)
@@ -150,24 +145,44 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
 
   const updateSubcontractor = async (subcontractor: Subcontractor, pendingFiles: File[] = []) => {
     try {
-      const subData = subcontractor as Subcontractor & { base_amount?: number; vat_rate?: number; vat_amount?: number; total_amount?: number; phase_id?: string; contract_type_id?: number | null; classification_id?: number | null; has_contract?: boolean; subcontractor_id?: string; contract_id?: string }
+      const subData = subcontractor as Subcontractor & { base_amount?: number; vat_rate?: number; vat_amount?: number; total_amount?: number; phase_id?: string; contract_type_id?: number | null; classification_id?: number | null; has_contract?: boolean; subcontractor_id?: string; contract_id?: string; contract_status?: string | null; budget_realized?: number }
 
       // Same classification gate as the add path. The contract's own current amount is excluded
       // from `used`, and an edit that does not raise what this contract commits to the bucket is
       // never refused — a bucket can already be over-allocated (e.g. the TIC was cut after the
       // contract was signed) and fixing a name or a date must still save.
-      if (subData.has_contract !== false && subData.phase_id && subData.classification_id) {
-        const { allocated, used, excludedAmount } = await siteService.fetchClassificationBudgetStatus(
+      const hasContract = subData.has_contract !== false
+      // What the contract will commit after the save, by the same rule the totals use (a
+      // terminated contract commits only what was paid).
+      const commitment = hasContract
+        ? committedAmount({
+            cost: subcontractor.cost || 0,
+            paid: subData.budget_realized || 0,
+            status: subData.contract_status,
+          })
+        : 0
+      // Half-cent tolerance: the modal recomputes the total from base and VAT rate, which can
+      // differ from the stored amount by float noise.
+      const overBudget = ({ allocated, used, excludedAmount }: { allocated: number; used: number; excludedAmount: number }) =>
+        allocated > 0 && commitment > excludedAmount + 0.005 && commitment > allocated - used + 0.005
+
+      if (hasContract && subData.phase_id && subData.classification_id) {
+        const status = await siteService.fetchClassificationBudgetStatus(
           subData.phase_id,
           subData.classification_id,
           subcontractor.id
         )
-        const cost = subcontractor.cost || 0
-        // Half-cent tolerance: the modal recomputes the total from base and VAT rate, which can
-        // differ from the stored amount by float noise.
-        const raisesCommitment = cost > excludedAmount + 0.005
-        if (allocated > 0 && raisesCommitment && cost > allocated - used + 0.005) {
+        if (overBudget(status)) {
           toast.error(t('supervision.subcontractor_form.errors.exceeds_classification_budget'))
+          return false
+        }
+      }
+      // The phase cap the add path applies (SUP-6). Moving a contract to another phase counts as
+      // raising its commitment there, since it commits nothing to that phase yet.
+      if (hasContract && subData.phase_id) {
+        const status = await siteService.fetchPhaseBudgetStatus(subData.phase_id, subcontractor.id)
+        if (overBudget(status)) {
+          toast.error(t('supervision.subcontractor_form.errors.exceeds_phase_budget'))
           return false
         }
       }
@@ -177,21 +192,23 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
         contact: subcontractor.contact,
         job_description: subcontractor.job_description,
         deadline: subcontractor.deadline,
-        cost: subcontractor.cost,
+        // Switching "has contract" off zeroes the amounts, as the add path does (SUP-6).
+        cost: hasContract ? subcontractor.cost : 0,
         progress: subcontractor.progress || 0,
-        base_amount: subData.base_amount,
-        vat_rate: subData.vat_rate,
-        vat_amount: subData.vat_amount,
-        total_amount: subData.total_amount,
+        base_amount: hasContract ? subData.base_amount : 0,
+        vat_rate: hasContract ? subData.vat_rate : 0,
+        vat_amount: hasContract ? subData.vat_amount : 0,
+        total_amount: hasContract ? subData.total_amount : 0,
         phase_id: subData.phase_id,
         contract_type_id: subData.contract_type_id,
         classification_id: subData.classification_id ?? null,
-        has_contract: subData.has_contract
+        has_contract: subData.has_contract,
+        status: subData.contract_status ?? undefined
       })
 
       // Files picked in the edit modal but not uploaded with its own Upload button. Same as the
       // add path: the save has already succeeded, so a failed upload only warns.
-      if (pendingFiles.length > 0 && subData.has_contract !== false) {
+      if (pendingFiles.length > 0 && hasContract) {
         try {
           await siteService.uploadSubcontractorDocuments(
             subData.subcontractor_id || subcontractor.id,
@@ -221,11 +238,7 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
     if (!pendingDeleteSubcontractor) return false
     setDeletingSubcontractor(true)
     try {
-      const subcontractor = await siteService.getSubcontractorDetails(pendingDeleteSubcontractor)
       await siteService.deleteSubcontractor(pendingDeleteSubcontractor)
-      if (subcontractor.phase_id) {
-        await siteService.recalculatePhaseBudget(subcontractor.phase_id)
-      }
       await fetchProjects()
       return true
     } catch (error) {

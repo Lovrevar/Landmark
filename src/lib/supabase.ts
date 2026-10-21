@@ -100,6 +100,8 @@ export type Subcontractor = {
   contract_id?: string
   subcontractor_id?: string
   has_contract?: boolean
+  /** `contracts.status` of the contract row: draft, active, completed or terminated. */
+  contract_status?: string | null
   invoice_total_paid?: number
   invoice_total_owed?: number
   contract_type_id?: number | null
@@ -427,7 +429,8 @@ export type ProjectPhase = {
   project_id: string
   phase_number: number
   phase_name: string
-  budget_allocated: number
+  /** NULL when the TIC is not split by phase and the project has several (`budgetNotSplitByPhase`). */
+  budget_allocated: number | null
   budget_used: number
   start_date: string | null
   end_date: string | null

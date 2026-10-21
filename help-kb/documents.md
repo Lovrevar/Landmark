@@ -6,17 +6,17 @@ routes: [/documents]
 roles: [Director, Accounting, Sales, Supervision, Investment]
 ---
 
-**Dokumenti** je središnja stranica za upravljanje datotekama. Glavna akcija: **Učitaj** (gumb za upload).
+**Dokumenti** (podnaslov **Pregled svih dokumenata**) je središnja stranica za datoteke. Glavna akcija: **Učitaj dokument**.
 
-Layout je dvodijelan:
-- **Lijevo (bočna traka):** stablo kategorija s brojem dokumenata po kategoriji; opcija **Svi dokumenti** prikazuje ukupni broj. Odabrana kategorija je istaknuta plavom bojom.
-- **Desno (glavni panel):** traka filtera i tablica.
+Stranica je dvodijelna:
+- **Lijevo:** stablo **Kategorije** s brojem dokumenata po kategoriji; **Svi dokumenti** prikazuje ukupni broj.
+- **Desno:** traka filtera i tablica.
 
 Filtri:
-- tekstualna pretraga po nazivu datoteke (s debounce)
-- padajući izbornik projekta
-- padajući izbornik podugovaratelja
-- raspon datuma uploada (**Učitano od** / **Učitano do**)
-- gumb **Očisti filtre** pojavljuje se kada je filter aktivan
+- pretraga **Pretraži po nazivu...**
+- izbornik projekta (**Svi projekti**)
+- izbornik podugovaratelja (**Svi podugovaratelji**)
+- raspon datuma učitavanja (**Od datuma** / **Do datuma**)
+- gumb **Očisti filtere** pojavljuje se kada je filter aktivan
 
-Stupci tablice: naziv, kategorija, projekt, vrijeme uploada, akcije (otvori, obriši). Proširenjem retka vidite opis, povezane entitete (projekt/faza/ugovor/kredit) i veličinu datoteke. Paginacija: 100 stavki po stranici.
+Stupci tablice: **Naziv**, **Kategorija**, **Projekt**, **Datum**, **Akcije**. Akcija **Otvori** dostupna je svima; **Uredi** i **Obriši** vidi onaj tko je dokument učitao te uloge Director i Accounting. Proširenjem retka vidite opis, ostalu povezanost dokumenta i veličinu datoteke. Prikazuje se 100 dokumenata po stranici.

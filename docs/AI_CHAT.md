@@ -307,6 +307,23 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 
 #### search_help retrieval
 
+The same articles are shown to users on the in-app Help page (`/help`, see [HELP.md](./HELP.md)),
+which reads the `.md` files directly — so an edit is visible there on the next deploy even if
+`kb:build` was forgotten, and the two can then disagree. An article with `assistant_only: true` in
+its frontmatter stays in this index but is hidden from the Help page.
+
+Each article is returned to the model as `## title`, a line `Članak u Pomoći: /help/<id>`, and the
+body. The system prompt tells the model to end an answer taken from an article with a markdown
+link to that path, and never to build one itself. The line is left out when the user has no such
+page to open: the article is `assistant_only`, or it names roles and the caller's is not among
+them (`helpLinkFor` in `help-search.ts`; stricter than the Help page, which also shows an article
+to a role that can open a page it is tagged to). Screenshots are stripped from the index. In the
+panel a `/help/…` link navigates in place; below `sm`, where the panel is full-screen, following
+one closes the panel. Covered by `_shared/help-search.test.ts`.
+
+The Help page hands a search that found nothing to the assistant through
+`askInNewConversation(text)` on the store: a fresh conversation, the panel opened, the text sent.
+
 `search_help` does **not** read `help-kb/*.md` at runtime. It reads
 `supabase/functions/_shared/help-kb-index.json`, a build-time bundle of every entry's title,
 keywords, routes, roles and body. Build it with `npm run kb:build` after any KB edit — a pure file
@@ -577,7 +594,7 @@ Why both: tool handlers benefit from RLS doing the per-row gating "for free" (e.
 Several tables that the AI chat reads have RLS policies of `USING(true)` — that is, RLS is enabled but gates nothing. These tables include `subcontractors`, `contracts`, `accounting_payments`, `accounting_companies`, and `project_milestones`. For these, access control is enforced two ways:
 
 - **Role gating** at the tool layer: `selectAvailableTools(ctx)` filters TOOLS by `requiredRoles.includes(ctx.role)`. A Sales user simply cannot invoke `list_payments_for_subcontractor` — the tool is not exposed to the model in their session.
-- **Parent-entity probing** for the two document tools. `documents` and `document_associations` are also `USING(true)`, and the `documents` / `contract-documents` storage buckets have **no `storage.objects` policies at all** — so neither the rows nor the files have a database backstop. `list_documents_for_entity` and `get_document_download_link` compensate entirely in application code: for each association they call `probeParentEntity()`, which re-reads the parent (project / phase / subcontractor / contract / unit / customer / credit / company) through the caller's `userClient` and only allows the document if that read succeeds. Director and Accounting skip the probe; documents with no associations at all are restricted to those two roles. Any new code path that reads `documents` must re-implement this gate.
+- **Parent-entity probing** for the two document tools. `documents` and `document_associations` are also `USING(true)`, and the `documents` / `contract-documents` storage buckets have `storage.objects` policies (since `20260527100000` and `20260527100100`) that check only `bucket_id` — any authenticated user may read, upload and delete any object in them — so neither the rows nor the files have a per-entity database backstop. `list_documents_for_entity` and `get_document_download_link` compensate entirely in application code: for each association they call `probeParentEntity()`, which re-reads the parent (project / phase / subcontractor / contract / unit / customer / credit / company) through the caller's `userClient` and only allows the document if that read succeeds. Director and Accounting skip the probe; documents with no associations at all are restricted to those two roles. Any new code path that reads `documents` must re-implement this gate.
 - **Explicit project scoping** for Supervision users at the handler layer: `list_contracts` calls `query.in('project_id', ctx.assignedProjects.map(p => p.project_id))`; `list_unpaid_invoices` inherits RLS scoping from `accounting_invoices`, which DOES have proper RLS (see [supabase/migrations/20251128113128_fix_all_accounting_invoices_policies.sql](../supabase/migrations/20251128113128_fix_all_accounting_invoices_policies.sql)).
 
 ### 4. Role-based tool gating
@@ -618,9 +635,9 @@ Both windows count `ai_messages` rows where `role='user'` and `ai_sessions.user_
 
 ### Cross-references to the security backlog
 
-- **[SEC-001](./SECURITY_BACKLOG.md#sec-001-cashflow-access-is-role-gated-only-password-modal-is-ui-only)** — Cashflow data access in the rest of the app is gated by role at the RLS layer only; the password modal is UI theatre. The AI chat inherits this posture intentionally. When SEC-001 is resolved (cashflow enforcement moved to a JWT claim plus RLS), the chat will inherit the new enforcement automatically.
-- **[SEC-002](./SECURITY_BACKLOG.md#sec-002-cashflow-profile-remains-selectable-in-the-dropdown-when-misconfigured)** — UX-only follow-up to SEC-001.
-- **[SEC-003](./SECURITY_BACKLOG.md#sec-003-rls-policies-on-project_managers-compare-wrong-uuid-columns)** — RLS policies on `project_managers` use `users.id = auth.uid()` where the correct bridge is `users.auth_user_id = auth.uid()`. The AI chat is unaffected because [supabase/functions/_shared/auth.ts](../supabase/functions/_shared/auth.ts) reads `project_managers` via the service client.
+- **[SEC-001](./backlog/security.md#sec-001-cashflow-access-is-role-gated-only-password-modal-is-ui-only)** — Cashflow data access in the rest of the app is gated by role at the RLS layer only; the password modal is UI theatre. The AI chat inherits this posture intentionally. When SEC-001 is resolved (cashflow enforcement moved to a JWT claim plus RLS), the chat will inherit the new enforcement automatically.
+- **[SEC-002](./backlog/security.md#sec-002-cashflow-profile-remains-selectable-in-the-dropdown-when-misconfigured)** — UX-only follow-up to SEC-001.
+- **[SEC-003](./backlog/archive/SECURITY_BACKLOG.md#sec-003-rls-policies-on-project_managers-compare-wrong-uuid-columns)** — RLS policies on `project_managers` use `users.id = auth.uid()` where the correct bridge is `users.auth_user_id = auth.uid()`. The AI chat is unaffected because [supabase/functions/_shared/auth.ts](../supabase/functions/_shared/auth.ts) reads `project_managers` via the service client.
 
 ### Why we trust JWTs but re-read role on every request
 

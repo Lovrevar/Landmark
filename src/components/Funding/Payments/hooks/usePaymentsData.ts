@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { format } from 'date-fns'
 import { monthKey } from '../../../../utils/dateOnly'
 import { fetchBankPayments, type BankPaymentWithDetails } from '../services/bankPaymentsService'
-import { paymentTotalsByDirection, EMPTY_PAYMENT_TOTALS, type PaymentTotals } from '../../../Cashflow/services/paymentTotals'
+import { paymentTotalsByDirection, EMPTY_PAYMENT_TOTALS, type PaymentTotals } from '../../../../utils/paymentTotals'
 
 type CombinedPayment = BankPaymentWithDetails
 

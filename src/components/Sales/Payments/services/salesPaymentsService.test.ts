@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { buildSalesPaymentsSheet, type SalesPaymentWithDetails } from './salesPaymentsService'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
+import { buildSalesPaymentsSheet, calculateSalesPaymentStats, type SalesPaymentWithDetails } from './salesPaymentsService'
 import { exportT } from '../../../../utils/exportLanguage'
 
 const t = exportT()
@@ -51,5 +51,53 @@ describe('buildSalesPaymentsSheet', () => {
     const [, row] = buildSalesPaymentsSheet([payment({ apartment_number: 'N/A' })], t)
     expect(row[5]).toBe('PANNONIA, d.o.o.')
     expect(row[3]).toBe('')
+  })
+})
+
+// Characterization tests: what the stat cards show today, before "collected from sales" moves
+// into a shared function (docs/REGRESSION_PREVENTION.md, Step 7 item 2). Do not edit an
+// expectation to get a refactor green.
+describe('calculateSalesPaymentStats', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 9, 20, 15, 30, 0)) // 20 October 2026, local time
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('totals every payment, and those since the first of the month', () => {
+    expect(calculateSalesPaymentStats([
+      payment({ payment_date: '2026-10-05', amount: 45_000 }),
+      payment({ payment_date: '2026-10-01', amount: 30_000 }),
+      payment({ payment_date: '2026-09-30', amount: 50_000 }),
+      payment({ payment_date: '2025-10-15', amount: 100_000.5 }),
+    ])).toEqual({
+      totalPayments: 4,
+      totalAmount: 225_000.5,
+      paymentsThisMonth: 2,
+      amountThisMonth: 75_000,
+    })
+  })
+
+  it('"this month" holds west of UTC (the same UTC parse as GEN-34)', () => {
+    const tz = process.env.TZ
+    process.env.TZ = 'America/New_York'
+    try {
+      vi.setSystemTime(new Date(2026, 9, 20, 15, 30, 0))
+      expect(calculateSalesPaymentStats([
+        payment({ payment_date: '2026-10-01', amount: 30_000 }),
+        payment({ payment_date: '2026-09-30', amount: 50_000 }),
+      ])).toMatchObject({ paymentsThisMonth: 1, amountThisMonth: 30_000 })
+    } finally {
+      // Assigning undefined would set TZ to the string "undefined", which Node reads as UTC.
+      if (tz === undefined) delete process.env.TZ
+      else process.env.TZ = tz
+    }
+  })
+
+  it('no payments', () => {
+    expect(calculateSalesPaymentStats([])).toEqual({ totalPayments: 0, totalAmount: 0, paymentsThisMonth: 0, amountThisMonth: 0 })
   })
 })

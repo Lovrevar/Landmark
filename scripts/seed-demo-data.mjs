@@ -264,6 +264,14 @@ await wipe('invoice_categories')
 
 console.log('\nInserting demo data…')
 
+// The group's name on report covers, headers and footers (GEN-19). One row, created by migration
+// 20261015100100; the demo's own name, so no screenshot ever shows the customer's.
+{
+  const { error } = await db.from('organization_settings').upsert({ id: true, name: 'Adriatic Development' })
+  if (error) throw new Error(`organization_settings: ${error.message}`)
+  console.log('  + organization_settings: Adriatic Development')
+}
+
 const C_PARENT = uid(), C_JARUN = uid(), C_MARJAN = uid(), C_GRADNJA = uid()
 await ins('accounting_companies', [
   { id: C_PARENT, name: 'Adriatic Development d.o.o.', oib: '23456789012', initial_balance: 0 },
@@ -308,12 +316,14 @@ await ins('projects', [
 const PH_J1 = uid(), PH_J2 = uid(), PH_J3 = uid(), PH_J4 = uid(), PH_J5 = uid()
 const PH_M1 = uid(), PH_M2 = uid(), PH_M3 = uid()
 const PH_T1 = uid(), PH_T2 = uid()
+// Jarun's phases carry no budget of their own: its TIC (section 7) is unphased, and saving it
+// leaves every Jarun phase at NULL — the plan covers the project, not any one phase (GEN-22).
 await ins('project_phases', [
-  { id: PH_J1, project_id: P_JARUN, phase_number: 1, phase_name: 'Pripremni radovi i iskop', status: 'completed', budget_allocated: 350000, start_date: '2025-03-01', end_date: '2025-06-15' },
-  { id: PH_J2, project_id: P_JARUN, phase_number: 2, phase_name: 'Grubi građevinski radovi', status: 'active', budget_allocated: 3300000, start_date: '2025-06-16', end_date: '2026-09-30' },
-  { id: PH_J3, project_id: P_JARUN, phase_number: 3, phase_name: 'Instalacije (elektro, ViK, grijanje)', status: 'active', budget_allocated: 1650000, start_date: '2026-03-01', end_date: '2026-12-31' },
-  { id: PH_J4, project_id: P_JARUN, phase_number: 4, phase_name: 'Završni radovi', status: 'planning', budget_allocated: 1900000, start_date: '2026-11-01', end_date: '2027-05-31' },
-  { id: PH_J5, project_id: P_JARUN, phase_number: 5, phase_name: 'Okoliš i priključci', status: 'planning', budget_allocated: 450000, start_date: '2027-03-01', end_date: '2027-06-15' },
+  { id: PH_J1, project_id: P_JARUN, phase_number: 1, phase_name: 'Pripremni radovi i iskop', status: 'completed', start_date: '2025-03-01', end_date: '2025-06-15' },
+  { id: PH_J2, project_id: P_JARUN, phase_number: 2, phase_name: 'Grubi građevinski radovi', status: 'active', start_date: '2025-06-16', end_date: '2026-09-30' },
+  { id: PH_J3, project_id: P_JARUN, phase_number: 3, phase_name: 'Instalacije (elektro, ViK, grijanje)', status: 'active', start_date: '2026-03-01', end_date: '2026-12-31' },
+  { id: PH_J4, project_id: P_JARUN, phase_number: 4, phase_name: 'Završni radovi', status: 'planning', start_date: '2026-11-01', end_date: '2027-05-31' },
+  { id: PH_J5, project_id: P_JARUN, phase_number: 5, phase_name: 'Okoliš i priključci', status: 'planning', start_date: '2027-03-01', end_date: '2027-06-15' },
   { id: PH_M1, project_id: P_MARJAN, phase_number: 1, phase_name: 'Pripremni radovi', status: 'completed', budget_allocated: 220000, start_date: '2025-09-01', end_date: '2025-12-20' },
   { id: PH_M2, project_id: P_MARJAN, phase_number: 2, phase_name: 'Grubi građevinski radovi', status: 'active', budget_allocated: 1500000, start_date: '2026-01-10', end_date: '2026-11-30' },
   { id: PH_M3, project_id: P_MARJAN, phase_number: 3, phase_name: 'Završni radovi i uređenje', status: 'planning', budget_allocated: 1100000, start_date: '2026-10-01', end_date: '2027-03-15' },
@@ -363,17 +373,13 @@ if (!CLS.izgradnja_i_uredenje) {
 }
 
 // A worked example of the phase budget split across cost classifications, so the demo data
-// exercises the "Neraspoređeno" remainder as well as fully-allocated phases.
-// PH_J2 is fully allocated (3.3M); PH_J3 leaves 150k unallocated on purpose.
+// exercises the "Neraspoređeno" remainder as well as fully-allocated phases. Marjan has no TIC,
+// so nothing overwrites these; Jarun's were wiped by its TIC's sync anyway, so it has none.
+// PH_M1 and PH_M2 are fully allocated; PH_M3 leaves 150k unallocated on purpose.
 await ins('phase_classification_budgets', [
-  { id: uid(), phase_id: PH_J1, classification_id: CLS.priprema_i_razvoj, budget_allocated: 350000 },
-  { id: uid(), phase_id: PH_J2, classification_id: CLS.izgradnja_i_uredenje, budget_allocated: 3000000 },
-  { id: uid(), phase_id: PH_J2, classification_id: CLS.priprema_i_razvoj, budget_allocated: 300000 },
-  { id: uid(), phase_id: PH_J3, classification_id: CLS.izgradnja_i_uredenje, budget_allocated: 1500000 },
-  { id: uid(), phase_id: PH_J4, classification_id: CLS.opremanje, budget_allocated: 1900000 },
   { id: uid(), phase_id: PH_M1, classification_id: CLS.priprema_i_razvoj, budget_allocated: 220000 },
   { id: uid(), phase_id: PH_M2, classification_id: CLS.izgradnja_i_uredenje, budget_allocated: 1500000 },
-  { id: uid(), phase_id: PH_M3, classification_id: CLS.opremanje, budget_allocated: 1100000 },
+  { id: uid(), phase_id: PH_M3, classification_id: CLS.opremanje, budget_allocated: 950000 },
 ])
 
 await ins('contract_types', [

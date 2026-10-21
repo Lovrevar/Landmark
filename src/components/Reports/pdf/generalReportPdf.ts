@@ -8,7 +8,7 @@ import {
   hexToRgb
 } from './pdfCharts'
 import { pdfMoneyRounded, pdfMoneyCompact } from './pdfText'
-import type { ComprehensiveReport } from '../types'
+import type { CashFlowAmounts, ComprehensiveReport } from '../types'
 import { PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import {
   formatDate,
@@ -20,6 +20,10 @@ import { loadUnicodeFont, PDF_FONT_FAMILY } from '../../../utils/pdfFont'
 import { RISK_LEVEL, statusLabel } from '../../../utils/statusDisplay'
 import { exportFileName } from '../../../utils/downloadFile'
 import { logActivity } from '../../../lib/activityLog'
+import { orgHeading } from '../../../lib/orgName'
+import { cashFlowTotals } from '../../../utils/cashFlowFigures'
+import { phaseCompletionRate } from '../../../utils/constructionFigures'
+import { topProjectsByRevenue } from '../../../utils/projectFigures'
 
 /** Whole euros, for the aggregate figures this report is made of. */
 const money = pdfMoneyRounded
@@ -147,8 +151,11 @@ export async function generateGeneralReportPDF(
 
   pdf.setTextColor(255, 255, 255)
   pdf.setFont(fontFamily, 'bold')
-  centered('LANDMARK', 80, 48)
-  centered('GROUP', 95, 48)
+  // The organisation's name, when its database has one (GEN-19). `centered` shrinks a long name
+  // to fit the line.
+  const organizationName = report.organization_name ?? null
+  const heading = orgHeading(organizationName)
+  if (heading) centered(heading, 90, 48)
 
   pdf.setFont(fontFamily, 'normal')
   centered(t('reports.general.exec_report'), 120, 24)
@@ -184,11 +191,16 @@ export async function generateGeneralReportPDF(
   pdf.setTextColor(255, 255, 255)
   pdf.setFontSize(32)
   pdf.setFont(fontFamily, 'bold')
-  pdf.text(t('reports.general.landmark_group'), margin, 22)
-
-  pdf.setFontSize(16)
-  pdf.setFont(fontFamily, 'normal')
-  pdf.text(t('reports.general.exec_report'), margin, 33)
+  if (heading) {
+    pdf.text(heading, margin, 22)
+    pdf.setFontSize(16)
+    pdf.setFont(fontFamily, 'normal')
+    pdf.text(t('reports.general.exec_report'), margin, 33)
+  } else {
+    // No name to head the band: the report title takes its place rather than leaving it empty.
+    pdf.setFontSize(24)
+    pdf.text(t('reports.general.exec_report'), margin, 28)
+  }
 
   pdf.setFontSize(10)
   pdf.setTextColor(200, 200, 200)
@@ -209,9 +221,8 @@ export async function generateGeneralReportPDF(
   pdf.setFont(fontFamily, 'normal')
   pdf.setTextColor(0, 0, 0)
 
-  const salesRatePercent = report.sales_performance.total_units > 0
-    ? (report.sales_performance.units_sold / report.sales_performance.total_units) * 100
-    : 0
+  // The service's figure, not a second division of the same two counts.
+  const salesRatePercent = report.kpis.sales_rate
 
   // Whole sentences, not `t()` output with English glue welded on: Croatian word order differs,
   // so each line has to be translatable as a unit. The screen renders these same five keys.
@@ -355,10 +366,7 @@ export async function generateGeneralReportPDF(
   yPosition += 60
 
   checkPageBreak(60)
-  const topProjectsChart = report.projects
-    .slice()
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 5)
+  const topProjectsChart = topProjectsByRevenue(report.projects, 5)
     .map(p => ({
       label: p.name.substring(0, 15),
       value: p.revenue / 1000000,
@@ -432,9 +440,10 @@ export async function generateGeneralReportPDF(
   pdf.text(t('reports.general.pdf.construction_progress'), margin, yPosition)
   yPosition += 8
 
-  const constructionProgress = report.construction_status.total_phases > 0
-    ? (report.construction_status.completed_phases / report.construction_status.total_phases) * 100
-    : 0
+  const constructionProgress = phaseCompletionRate(
+    report.construction_status.completed_phases,
+    report.construction_status.total_phases,
+  )
   drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, constructionProgress, {
     label: bare('reports.general.completed_phases'),
     color: '#2563eb',
@@ -696,7 +705,7 @@ export async function generateGeneralReportPDF(
     yPosition += 8
 
     const contractData = report.contract_types.map((ct, idx) => ({
-      label: ct.name.substring(0, 12),
+      label: (ct.name || t('common.uncategorized')).substring(0, 12),
       value: ct.count,
       color: ['#2563eb', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][idx % 6]
     }))
@@ -741,44 +750,62 @@ export async function generateGeneralReportPDF(
   pdf.text(t('reports.general.cash_flow'), margin, yPosition)
   yPosition += 10
 
-  pdf.setFillColor(240, 240, 240)
-  pdf.rect(margin, yPosition, pageWidth - 2 * margin, 8, 'F')
+  // Two tables with the same columns: operations, then financing (credit principal drawn and
+  // repaid). Their sum is the total cash flow the charts above plot.
+  const amountsLine = (amounts: CashFlowAmounts) => [
+    `${withColon('reports.general.inflow_col')} ${moneyCompact(amounts.inflow)}`,
+    `${withColon('reports.general.outflow_col')} ${moneyCompact(amounts.outflow)}`,
+    `${withColon('reports.general.net_col')} ${moneyCompact(amounts.net)}`
+  ].join(' | ')
+
+  for (const activity of ['operating', 'financing'] as const) {
+    const rows = report.cash_flow.map(month => month[activity])
+    checkPageBreak(33 + rows.length * 5)
+
+    pdf.setFontSize(11)
+    pdf.setFont(fontFamily, 'bold')
+    pdf.setTextColor(0, 0, 0)
+    pdf.text(t(`reports.general.cash_flow_${activity}`), margin, yPosition)
+    pdf.setFontSize(8)
+    pdf.setFont(fontFamily, 'normal')
+    pdf.setTextColor(100, 100, 100)
+    pdf.text(t(`reports.general.cash_flow_${activity}_note`), margin, yPosition + 4)
+    pdf.setTextColor(0, 0, 0)
+    yPosition += 8
+
+    pdf.setFillColor(240, 240, 240)
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 8, 'F')
+    pdf.setFontSize(9)
+    pdf.setFont(fontFamily, 'bold')
+    pdf.text(t('reports.general.month_col'), margin + 5, yPosition + 5)
+    pdf.text(t('reports.general.inflow_col'), margin + 50, yPosition + 5)
+    pdf.text(t('reports.general.outflow_col'), margin + 90, yPosition + 5)
+    pdf.text(t('reports.general.net_col'), margin + 130, yPosition + 5)
+    // 13, not 10: at 10 the first row's text sat on the lower edge of the header band.
+    yPosition += 13
+
+    pdf.setFont(fontFamily, 'normal')
+    rows.forEach((amounts, index) => {
+      const y = yPosition + (index * 5)
+      pdf.text(formatMonthYear(report.cash_flow[index].month_key, language), margin + 5, y)
+      pdf.text(moneyCompact(amounts.inflow), margin + 50, y)
+      pdf.text(moneyCompact(amounts.outflow), margin + 90, y)
+      pdf.setTextColor(amounts.net >= 0 ? 22 : 220, amounts.net >= 0 ? 163 : 38, amounts.net >= 0 ? 74 : 38)
+      pdf.text(moneyCompact(amounts.net), margin + 130, y)
+      pdf.setTextColor(0, 0, 0)
+    })
+    yPosition += rows.length * 5 + 3
+
+    pdf.setFont(fontFamily, 'bold')
+    pdf.text(amountsLine(cashFlowTotals(rows)), margin + 5, yPosition)
+    yPosition += 9
+  }
+
+  checkPageBreak(15)
   pdf.setFontSize(9)
   pdf.setFont(fontFamily, 'bold')
-  pdf.text(t('reports.general.month_col'), margin + 5, yPosition + 5)
-  pdf.text(t('reports.general.inflow_col'), margin + 50, yPosition + 5)
-  pdf.text(t('reports.general.outflow_col'), margin + 90, yPosition + 5)
-  pdf.text(t('reports.general.net_col'), margin + 130, yPosition + 5)
-  yPosition += 10
-
-  pdf.setFont(fontFamily, 'normal')
-  let totalInflow = 0
-  let totalOutflow = 0
-  let totalNet = 0
-
-  report.cash_flow.forEach((month, index) => {
-    totalInflow += month.inflow
-    totalOutflow += month.outflow
-    totalNet += month.net
-
-    pdf.text(formatMonthYear(month.month_key, language), margin + 5, yPosition + (index * 5))
-    pdf.text(moneyCompact(month.inflow), margin + 50, yPosition + (index * 5))
-    pdf.text(moneyCompact(month.outflow), margin + 90, yPosition + (index * 5))
-
-    pdf.setTextColor(month.net >= 0 ? 22 : 220, month.net >= 0 ? 163 : 38, month.net >= 0 ? 74 : 38)
-    pdf.text(moneyCompact(month.net), margin + 130, yPosition + (index * 5))
-    pdf.setTextColor(0, 0, 0)
-  })
-
-  yPosition += report.cash_flow.length * 5 + 5
-  pdf.setFont(fontFamily, 'bold')
-  pdf.text(t('reports.general.six_month_totals'), margin + 5, yPosition)
-  const totalsLine = [
-    `${withColon('reports.general.inflow_col')} ${moneyCompact(totalInflow)}`,
-    `${withColon('reports.general.outflow_col')} ${moneyCompact(totalOutflow)}`,
-    `${withColon('reports.general.net_col')} ${moneyCompact(totalNet)}`
-  ].join(' | ')
-  pdf.text(totalsLine, margin + 5, yPosition + 5)
+  pdf.text(`${t('reports.general.six_month_totals')} ${t('reports.general.cash_flow_total')}`, margin + 5, yPosition)
+  pdf.text(amountsLine(cashFlowTotals(report.cash_flow)), margin + 5, yPosition + 5)
   yPosition += 15
 
   // ── Project Portfolio page ────────────────────────────────────────────────
@@ -952,32 +979,35 @@ export async function generateGeneralReportPDF(
   pdf.setTextColor(0, 0, 0)
   yPosition = 55
 
-  pdf.setFillColor(220, 252, 231)
-  pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
-  pdf.setFontSize(12)
-  pdf.setFont(fontFamily, 'bold')
-  pdf.setTextColor(22, 163, 74)
-  pdf.text(bare('reports.general.top_projects'), margin + 5, yPosition + 8)
-  yPosition += 15
-
-  pdf.setFontSize(9)
-  pdf.setFont(fontFamily, 'normal')
-  pdf.setTextColor(0, 0, 0)
-
-  report.insights.top_projects.forEach((project, index) => {
-    checkPageBreak(12)
+  // Empty until a project has a sale (GEN-38): no header bar over nothing.
+  if (report.insights.top_projects.length > 0) {
+    pdf.setFillColor(220, 252, 231)
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
+    pdf.setFontSize(12)
     pdf.setFont(fontFamily, 'bold')
-    pdf.text(`${index + 1}. ${project.name}`, margin + 5, yPosition)
-    pdf.setFont(fontFamily, 'normal')
-    const detail = [
-      `${withColon('reports.general.revenue_label')} ${moneyCompact(project.revenue)}`,
-      `${withColon('reports.general.sales_rate')} ${project.sales_rate.toFixed(1)}%`
-    ].join(' | ')
-    pdf.text(detail, margin + 10, yPosition + 5)
-    yPosition += 10
-  })
+    pdf.setTextColor(22, 163, 74)
+    pdf.text(bare('reports.general.top_projects'), margin + 5, yPosition + 8)
+    yPosition += 15
 
-  yPosition += 5
+    pdf.setFontSize(9)
+    pdf.setFont(fontFamily, 'normal')
+    pdf.setTextColor(0, 0, 0)
+
+    report.insights.top_projects.forEach((project, index) => {
+      checkPageBreak(12)
+      pdf.setFont(fontFamily, 'bold')
+      pdf.text(`${index + 1}. ${project.name}`, margin + 5, yPosition)
+      pdf.setFont(fontFamily, 'normal')
+      const detail = [
+        `${withColon('reports.general.revenue_label')} ${moneyCompact(project.revenue)}`,
+        `${withColon('reports.general.sales_rate')} ${project.sales_rate.toFixed(1)}%`
+      ].join(' | ')
+      pdf.text(detail, margin + 10, yPosition + 5)
+      yPosition += 10
+    })
+
+    yPosition += 5
+  }
 
   pdf.setFillColor(220, 252, 231)
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
@@ -1013,7 +1043,7 @@ export async function generateGeneralReportPDF(
     pdf.setFontSize(8)
     pdf.setTextColor(100, 100, 100)
     pdf.setFont(fontFamily, 'normal')
-    pdf.text(t('reports.general.landmark_group'), margin, pageHeight - 10)
+    if (organizationName) pdf.text(organizationName, margin, pageHeight - 10)
     pdf.text(t('reports.general.pdf.footer'), margin, pageHeight - 6)
 
     pdf.setFont(fontFamily, 'bold')

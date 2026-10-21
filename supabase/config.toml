@@ -5,6 +5,31 @@
 project_id = "cognilion"
 
 # ----------------------------------------------------------------------------
+# Local development ports (`supabase start`, used by the pgTAP tests)
+# ----------------------------------------------------------------------------
+# Shifted from the CLI defaults (5432x) to 5442x so this stack can run beside
+# another local Supabase project. Only affects the local stack and CI.
+
+[api]
+port = 54421
+
+[db]
+port = 54422
+shadow_port = 54420
+
+[db.pooler]
+port = 54429
+
+[studio]
+port = 54423
+
+[inbucket]
+port = 54424
+
+[analytics]
+port = 54427
+
+# ----------------------------------------------------------------------------
 # Edge Functions
 # ----------------------------------------------------------------------------
 

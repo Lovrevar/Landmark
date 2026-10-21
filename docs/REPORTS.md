@@ -61,13 +61,34 @@ Two things to know before adding a figure here:
   Zapad's leftover €1.000.000.000 made up 89% of a €1.118M "Portfolio Value" on a page headed
   Executive Report; the same figure is now €63.6M, the sum of the three real cost plans.
 - `fetchGeneralReportData(selectedProject, dateRange)` — aggregates data from 40+ tables into a ComprehensiveReport covering: executive summary, KPIs (portfolio value, sales rate, D/E ratio), sales performance, funding structure, construction status, accounting overview, TIC cost management, risk assessment, and cash flow analysis
-- **One failed query fails the whole report.** supabase-js resolves a failure as `{ data: null, error }` rather than rejecting, and every read here falls back to `[]`, so until September 2026 a dropped request produced an executive report of zeros — and exported it to PDF. `throwIfAnyFailed()` checks both `Promise.all` batches (the 27 top-level reads and the garage/repository price lookup) and throws, which `useCachedData` hands the page as an `error`
+  - Cash-flow table: every payment, split by `invoiceCashDirection` and by `invoiceCashCategory` into **operating** and **financing** — credit drawdowns are financing inflow, repayments of principal financing outflow, everything else operating (ULAZNI (INV) and credit fees are operating outflow). Each `cash_flow` month carries `operating`, `financing` and their sum (`inflow` / `outflow` / `net`, which the two charts plot). Screen and PDF render one table per activity plus three total lines, totalled with `cashFlowTotals`. It uses the bank balance's direction rule, but it counts every payment, kompenzacija and payments from a credit included, so its net does not reconcile with the balance (GEN-33). Expenses and per-project expenses use `isCostInvoiceType`, through `costPaid`
+- **Every figure comes from a shared function in `src/utils/`** (REGRESSION_PREVENTION Step 7,
+  October 2026). The service reads, fails loudly, splits rows by project and assembles; every
+  sum, ratio and rule comes from a shared function. Left inline: plain row counts, the per-project
+  row split, the invoice-type lookup and `has_budget`. The figure-to-function map is in
+  `docs/CORE.md` → Business figures:
+  sales and units `salesFigures`, funding `fundingFigures`, expenses / cesija / bank accounts
+  `paymentFigures`, cash flow `cashFlowFigures`, invoices `invoiceFigures`, construction
+  `constructionFigures`, profit / ROI / risk / recommendations `projectFigures`, retail
+  `retailFigures`, planned budget `ticFigures`. Do not add a `reduce` here: add or extend the
+  function and test it
+- **Characterization tests** (`services/generalReportService.test.ts`) pin the whole report
+  over a fake Supabase client: a four-project portfolio with every invoice type, a four-rate VAT
+  invoice, kompenzacija, cesija from a credit and from a bank account, live, equity, repaid and
+  defaulted credits, and retail rows; an empty database; failed reads in both batches. They
+  pinned the output *before* the figures moved and passed unchanged after. Wrong figures are
+  pinned as they are, with their ids: GEN-26 (linked garages and storage, since fixed), GEN-27 (per-project
+  debt and equity), GEN-28 (retail section), GEN-29 (cesija), GEN-30 (TIC summary), GEN-32 (0
+  for no answer), GEN-33 (kompenzacija), GEN-36 (office spend). A fix changes its expectation in
+  its own commit
+- **One failed query fails the whole report.** supabase-js resolves a failure as `{ data: null, error }` rather than rejecting, and every read here falls back to `[]`, so until September 2026 a dropped request produced an executive report of zeros — and exported it to PDF. `throwIfAnyFailed()` checks the 27 top-level reads and throws, which `useCachedData` hands the page as an `error`; the linked garage and storage prices come from `fetchLinkedPrices`, which throws on its own. Revenue is contracted sales, the sale rows at their package values (GEN-38; SALES.md → A sale and sales revenue), so the projects add up to the portfolio
 - **Depends on:** supabase client
 
 ### services/salesReportService.ts
 - `fetchProjects()` — fetches project list for report selector
-- `generateProjectReport(selectedProject, projects, dateRange)` — fetches apartments, garage/repository prices, monthly sales trend, and unit status for a project
-- `generateCustomerReport(dateRange)` — fetches customer list with sales, payment distribution, and insights
+- `generateProjectReport(selectedProject, projects, dateRange)` — fetches apartments, the sales dated in the range and the linked garage and storage prices (`fetchLinkedPrices`, throws on failure, GEN-42); returns unit status, contracted sales ("Ugovorena prodaja", each sale at its package value), the average contracted price and the monthly trend, bucketed by local date (GEN-34)
+- `generateCustomerReport(dateRange)` — fetches the customer list and the sales in the range; contracted sales and the average purchase on the same definition
+- Characterization tests: `services/salesReportService.test.ts`, over the shared fake client `src/test/fakeSupabase.ts`
 - **Depends on:** supabase client
 
 ### services/retailReportService.ts
@@ -89,7 +110,7 @@ Two things to know before adding a figure here:
 ## Hooks
 
 ### hooks/useGeneralReportData.ts
-- `useGeneralReportData()` — fetches ComprehensiveReport data for the last 6 months on mount with loading state
+- `useGeneralReportData()` — fetches ComprehensiveReport data for the last six calendar months (this one included; `subMonths(now, 6)` used to yield seven buckets) on mount with loading state
 - **Calls:** generalReportService
 - **Returns:** report, loading, error, fetchedAt, refetch — `error` was deliberately omitted from
   the result interface until September 2026, which is why the page could only say "No data"
@@ -138,8 +159,8 @@ Two things to know before adding a figure here:
 - **Depends on:** jsPDF, pdfCharts.ts, pdfText.ts, pdfFont.ts, formatters.ts, statusDisplay.ts
 
 ### pdf/salesReportPdf.ts
-- `generateSalesReportPDF(reportType, projectReport, customerReport, dateRange)` — generates a project sales PDF (overview, units, revenue, monthly trend, apartment details) or customer report PDF (distribution, insights)
-- **Depends on:** jsPDF, pdfCharts.ts
+- `generateSalesReportPDF(reportType, projectReport, customerReport, dateRange)` — generates a project sales PDF (overview, units, revenue, monthly trend, apartment details) or customer report PDF (distribution, insights). It draws no charts — the monthly trend is a table — and does **not** use `pdfCharts.ts` (only `generalReportPdf` does)
+- **Depends on:** jsPDF, pdfFont.ts, pdfText.ts, formatters.ts, statusDisplay.ts, exportLanguage.ts, yieldToUI
 
 ### pdf/retailReportPdf.ts
 - `generateRetailReportPdf(data, t?)` — generates a retail portfolio PDF with project table, customer breakdown, and supplier-by-type analysis. `t` defaults to `exportT()`, so the caller needs no change
@@ -165,9 +186,10 @@ Two things to know before adding a figure here:
 > then unroutes and retries and asserts the report renders.
 
 ### GeneralReports.tsx
-- Full executive dashboard: 9 KPI summary cards, sales performance, funding structure, construction status, accounting overview, TIC costs, company investments, buildings summary, retail portfolio, contract distribution, cash flow analysis, per-project breakdown with project-category and risk badges, risk assessment, and PDF export
+- Full executive dashboard: 9 KPI summary cards, sales performance, funding structure, construction status, accounting overview, company investments, buildings summary, retail portfolio, contract distribution, cash flow analysis, per-project breakdown with project-category and risk badges, risk assessment, and PDF export
 - **Uses hooks:** useGeneralReportData
 - **Uses services:** generalReportPdf (for PDF export)
+- The TIC cost-management block (`report.tic_cost_management`: planned investment, projects with / without a plan) exists **only in the PDF** (`generalReportPdf`); this screen does not render it, and there is no Excel export of the executive report
 - **Uses Ui:** Card, StatGrid, Button, ErrorState, EmptyState, useToast
 - The blue gradient header is hoisted above the loading/error branches so it survives a failed
   load; the "generated at" line and the PDF export button render only with a report behind them,
@@ -290,3 +312,19 @@ Screens and exports are both Croatian-first now; they differ only in that an exp
 - The long-running PDF generators (`salesReportPdf`, `retailReportPdf`) call `yieldToUI()` (`src/utils/yieldToUI.ts`) inside their row loops so a large export does not freeze the UI; this does not change report content
 - All report views are internationalised (react-i18next, keys under `reports.*`) and dark-mode aware, and long tables expose per-cell `label` props for the mobile card layout — presentational only, the report data and sections are unchanged
 - **EVM is not surfaced in any report.** The Earned Value Management utility (`src/utils/evm.ts`) is consumed only by the Budget Control feature (`src/components/General/BudgetControl/`)
+
+## General report definitions (September 2026, DEFECT_BACKLOG GEN-1/GEN-2)
+
+The funding and construction figures follow the Director dashboard, so the same number means the
+same thing on both screens:
+
+- **Debt** = Σ `outstanding_balance` of live, non-equity credits (not repaid or defaulted); it was
+  the face value of every credit, equity and repaid ones included.
+- **Equity** = Σ `amount` of `equity` credits; it was Σ credit allocations. ROI and D/E use these.
+- **Average interest** is weighted by facility amount over live debt; it was a plain mean.
+- **Monthly debt service** sums live debt only.
+- **Available credit** = Σ (`amount` − `used_amount`); it read two columns `bank_credits` does not
+  have and was always €0.
+- **Completed milestones** counts `paid` (fully paid) milestones; `completed` is the payment
+  trigger's word for partly paid.
+- **Work logs (7 days)** counts today and the six days before in local days.

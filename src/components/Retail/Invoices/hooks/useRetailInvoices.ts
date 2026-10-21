@@ -7,9 +7,11 @@ import {
   exportRetailInvoicesExcel,
 } from '../services/retailInvoiceService'
 import { useAsyncExport } from '../../../../hooks/useAsyncExport'
+import { useTranslation } from 'react-i18next'
 import { useToast } from '../../../../contexts/ToastContext'
 
 export function useRetailInvoices() {
+  const { t } = useTranslation()
   const toast = useToast()
   const [invoices, setInvoices] = useState<RetailInvoiceWithDetails[]>([])
   const [loading, setLoading] = useState(true)
@@ -32,11 +34,11 @@ export function useRetailInvoices() {
     } catch (err) {
       console.error('Error fetching retail invoices:', err)
       setError(err instanceof Error ? err : new Error(String(err)))
-      toast.error('Greška pri učitavanju računa')
+      toast.error(t('retail_invoices.errors.load_failed'))
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [toast, t])
 
   useEffect(() => { loadInvoices() }, [loadInvoices])
 
@@ -74,7 +76,7 @@ export function useRetailInvoices() {
       )
     } catch (err) {
       console.error('Error updating approval status:', err)
-      toast.error('Greška pri ažuriranju odobrenja')
+      toast.error(t('retail_invoices.errors.approval_failed'))
     }
   }
 

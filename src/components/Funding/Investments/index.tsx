@@ -1,7 +1,7 @@
 import React from 'react'
 import { CreditCard, ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { PageHeader, LoadingSpinner, Modal, FormField, Input, Select, Textarea, Button, EmptyState, ErrorState, Alert, Form, ConfirmDialog } from '../../ui'
+import { PageHeader, LoadingSpinner, Modal, FormField, Input, Select, Textarea, Button, EmptyState, ErrorState, Alert, Form, ConfirmDialog, InfoHint } from '../../ui'
 import { formatEuro } from '../../../utils/formatters'
 import { CreditBadges, CreditUsageTiles, CreditDetailsGrid } from './CreditSummary'
 import { calculateCreditUsage } from './utils/creditUsage'
@@ -10,9 +10,13 @@ import CreditDisbursements from './CreditDisbursements'
 import CreditRepayments from './CreditRepayments'
 import CreditExpenses from './CreditExpenses'
 import { useCreditManagement } from './hooks/useCreditManagement'
+import { useAuth } from '../../../contexts/AuthContext'
+import { canManagePayments } from '../../../utils/permissions'
 
 const CreditsManagement: React.FC = () => {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const showPayments = canManagePayments(user)
   const [errorDismissed, setErrorDismissed] = React.useState(false)
   const {
     credits,
@@ -96,7 +100,7 @@ const CreditsManagement: React.FC = () => {
             const unallocatedDisbursements = disbursedAmounts.get(credit.id) || 0
 
             return (
-              <div key={credit.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+              <div key={credit.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center space-x-4">
@@ -151,7 +155,14 @@ const CreditsManagement: React.FC = () => {
 
                     {creditAllocations.length > 0 && (
                       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-4">{t('banks.index.credit.allocations_heading', { count: creditAllocations.length })}</h4>
+                        <h4 className="flex items-center gap-1.5 font-semibold text-gray-900 dark:text-white mb-4">
+                          {t('banks.index.credit.allocations_heading', { count: creditAllocations.length })}
+                          <InfoHint hintId="funding.allocations" label={t('funding.hints.allocations_title')} articleId="funding-investments">
+                            <p>{t('funding.hints.allocations_purpose')}</p>
+                            <p>{t('funding.hints.allocations_amounts')}</p>
+                            <p>{t('funding.hints.allocations_disbursed')}</p>
+                          </InfoHint>
+                        </h4>
                         <div className="space-y-3">
                           {creditAllocations.map((allocation) => {
                             const allocationKey = `${credit.id}-${allocation.id}`
@@ -164,6 +175,7 @@ const CreditsManagement: React.FC = () => {
                                 isExpanded={expandedAllocations.has(allocationKey)}
                                 onToggle={toggleAllocation}
                                 onDelete={handleDeleteAllocation}
+                                showInvoices={showPayments}
                               />
                             )
                           })}
@@ -171,9 +183,16 @@ const CreditsManagement: React.FC = () => {
                       </div>
                     )}
 
-                    <CreditDisbursements creditId={credit.id} />
-                    <CreditRepayments creditId={credit.id} />
-                    <CreditExpenses creditId={credit.id} />
+                    {/* Invoices and payments are readable by Director and Accounting only. For any
+                        other role these three came back empty and read as "nothing drawn, nothing
+                        repaid" (FUND-15). */}
+                    {showPayments && (
+                      <>
+                        <CreditDisbursements creditId={credit.id} />
+                        <CreditRepayments creditId={credit.id} />
+                        <CreditExpenses creditId={credit.id} />
+                      </>
+                    )}
 
                     {credit.purpose && (
                       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">

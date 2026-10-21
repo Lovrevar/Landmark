@@ -41,13 +41,15 @@ import {
   BookMarked,
   Upload,
   Menu as MenuIcon,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react'
-import { canViewActivityLog } from '../../utils/permissions'
+import { canManagePayments, canUseCashflow, canViewActivityLog, isDirectorRole } from '../../utils/permissions'
 import Input from '../ui/Input'
 import { useChatNotifications } from '../Chat/hooks/useChatNotifications'
 import { useTasksNotifications } from '../Tasks/hooks/useTasksNotifications'
 import AiChatWidget from '../AiChat/AiChatWidget'
+import WhatsNewBanner from '../Help/WhatsNewBanner'
 import { useCalendarNotifications } from '../Calendar/hooks/useCalendarNotifications'
 import PageFallback from './PageFallback'
 import { ERP_INTEGRATION_ENABLED } from '../../lib/featureFlags'
@@ -115,11 +117,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [showProfileDropdown])
 
   useEffect(() => {
-    if (currentProfile === 'Cashflow' && !cashflowUnlocked) {
+    // A stored Cashflow profile from before the role filter (or a role change) falls back to
+    // General instead of asking for a password the user has no use for.
+    if (currentProfile === 'Cashflow' && !canUseCashflow(user)) {
+      setCurrentProfile('General')
+      return
+    }
+    // Not on the Help page. A "?" beside a Cashflow page title opens Help in a new tab, where the
+    // profile is still Cashflow but the unlock (kept per tab) is not carried over. Asking for
+    // the password there put the prompt over the article, and cancelling it navigated away from
+    // the help the user had just asked for. Help shows no Cashflow data; the prompt comes back
+    // as soon as they leave it for any other page.
+    const onHelpPage = location.pathname.startsWith('/help')
+    if (currentProfile === 'Cashflow' && !cashflowUnlocked && !onHelpPage) {
       setPendingProfile('Cashflow')
       setShowPasswordModal(true)
     }
-  }, [currentProfile, cashflowUnlocked])
+  }, [currentProfile, cashflowUnlocked, user, setCurrentProfile, location.pathname])
 
   const getMenuItems = () => {
     // The Supervision *role* short-circuits the profile menus below: whichever profile is
@@ -144,7 +158,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.projects'), icon: FolderKanban, path: '/projects' },
         { name: t('nav.budget_control'), icon: TrendingUp, path: '/budget-control' },
         { name: t('nav.documents'), icon: Files, path: '/documents' },
-        { name: t('nav.reports'), icon: FileText, path: '/general-reports' },
+        // /general-reports is a DirectorRoute; anyone else was bounced back to the dashboard.
+        ...(isDirectorRole(user) ? [{ name: t('nav.reports'), icon: FileText, path: '/general-reports' }] : []),
         ...(canViewActivityLog(user) ? [{ name: t('nav.activity_log'), icon: ScrollText, path: '/activity-log' }] : []),
       ],
       Supervision: [
@@ -170,7 +185,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.investors'), icon: Building2, path: '/banks' },
         { name: t('nav.investments'), icon: CreditCard, path: '/funding-credits' },
         { name: t('nav.projects'), icon: Building2, path: '/investment-projects' },
-        { name: t('nav.payments'), icon: DollarSign, path: '/funding-payments' },
+        // Payments are readable by Director and Accounting only; for anyone else the register is empty.
+        ...(canManagePayments(user) ? [{ name: t('nav.payments'), icon: DollarSign, path: '/funding-payments' }] : []),
         { name: t('nav.tic'), icon: Calculator, path: '/tic' },
         { name: t('nav.documents'), icon: Files, path: '/documents' }
       ],
@@ -202,7 +218,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { name: t('nav.projects'), icon: FolderKanban, path: '/retail-projects' },
         { name: t('nav.land_plots'), icon: MapPin, path: '/retail-land-plots' },
         { name: t('nav.customers'), icon: Users, path: '/retail-customers' },
-        { name: t('nav.retail_sales'), icon: ShoppingCart, path: '/retail-sales-payments' },
+        // "Prodaje" opens the page that creates a sale. It used to open the read-only payments list,
+        // which left the sales page reachable by URL only (RETAIL-5).
+        { name: t('nav.retail_sales'), icon: ShoppingCart, path: '/retail-sales' },
+        { name: t('nav.payments'), icon: DollarSign, path: '/retail-sales-payments' },
         { name: t('nav.invoices'), icon: FileText, path: '/retail-invoices' },
         { name: t('nav.documents'), icon: Files, path: '/documents' },
         { name: t('nav.reports'), icon: BarChart3, path: '/retail-reports' }
@@ -217,6 +236,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handleProfileChange = (profile: Profile) => {
     // Switching profile lands on the dashboard, so it leaves the current screen just as a menu
     // click does — guarded as one.
+    // Not offered to other roles; refused here as well in case the request comes some other way.
+    if (profile === 'Cashflow' && !canUseCashflow(user)) return
     requestLeave(() => {
       if (profile === 'Cashflow' && !cashflowUnlocked) {
         setPendingProfile(profile)
@@ -263,11 +284,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEscapeKey(showPasswordModal, handlePasswordCancel)
   useFocusTrap(passwordDialogRef, showPasswordModal)
 
-  const profiles: Profile[] = ['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail']
+  const profiles: Profile[] = (['General', 'Supervision', 'Sales', 'Funding', 'Cashflow', 'Retail'] as Profile[])
+    .filter(profile => profile !== 'Cashflow' || canUseCashflow(user))
+  const profileLabel = (profile: Profile) => t(`profiles.${profile.toLowerCase()}`)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 safe-top">
+      <nav className="bg-white dark:bg-gray-800 shadow-xs border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 safe-top">
         <div className="w-full px-3 lg:px-6">
           <div className="flex justify-between h-16">
             <div className="flex items-center gap-1 lg:pl-8">
@@ -289,12 +312,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                   >
                     <User className="w-4 h-4" />
-                    <span className="font-medium">{currentProfile}</span>
+                    <span className="font-medium">{profileLabel(currentProfile)}</span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
 
                   {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 pt-1 pb-2 z-50">
                       {profiles.map((profile) => (
                         <button
                           key={profile}
@@ -303,10 +326,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             currentProfile === profile ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'
                           }`}
                         >
-                          <span>{profile}</span>
+                          <span>{profileLabel(profile)}</span>
                           {profile === 'Cashflow' && <Lock className="w-3 h-3" />}
                         </button>
                       ))}
+                      {/* Profile and role are easy to confuse: one changes what you look at, the
+                          other what you may do. */}
+                      <p className="px-4 pt-2 mt-1 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                        {t('profiles.hint')}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -362,6 +390,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => requestLeave(() => navigate('/help'))}
+                className={`relative p-2 transition-colors duration-200 ${
+                  location.pathname.startsWith('/help')
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+                title={t('help.title')}
+                aria-label={t('help.title')}
+              >
+                <HelpCircle className="w-5 h-5" />
+              </button>
               <div className="hidden lg:block">
                 <LanguageSwitcher />
               </div>
@@ -395,17 +435,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         )}
 
         <aside
-          className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-shrink-0
+          className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shrink-0
             fixed top-16 bottom-0 left-0 z-40 w-64 overflow-y-auto lg:overflow-visible shadow-lg
             transform transition-transform duration-300 ease-in-out
-            lg:static lg:top-0 lg:bottom-auto lg:z-auto lg:min-h-screen lg:shadow-sm lg:translate-x-0 lg:transition-all
+            lg:static lg:top-0 lg:bottom-auto lg:z-auto lg:min-h-screen lg:shadow-xs lg:translate-x-0 lg:transition-all
             ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}
             ${sidebarOpen ? 'lg:w-64' : 'lg:w-16'}`}
         >
           {/* Desktop-only collapse toggle */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10"
+            className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-xs items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors z-10"
             title={sidebarOpen ? t('common.collapse_sidebar') : t('common.expand_sidebar')}
             aria-label={sidebarOpen ? t('common.collapse_sidebar') : t('common.expand_sidebar')}
           >
@@ -460,7 +500,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           }`}
                         title={!sidebarExpanded ? item.name : undefined}
                       >
-                        <item.icon className="w-5 h-5 flex-shrink-0 min-w-[1.25rem]" />
+                        <item.icon className="w-5 h-5 shrink-0 min-w-5" />
                         <span
                           className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${sidebarExpanded ? 'max-w-xs opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0'}`}
                         >
@@ -484,6 +524,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   {t('profiles.title')}
                 </p>
+                <p className="px-3 pb-2 text-xs text-gray-500 dark:text-gray-400">{t('profiles.hint')}</p>
                 <ul className="space-y-1">
                   {profiles.map((profile) => (
                     <li key={profile}>
@@ -497,7 +538,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       >
                         <span className="flex items-center gap-2">
                           <User className="w-4 h-4" />
-                          {profile}
+                          {profileLabel(profile)}
                         </span>
                         {profile === 'Cashflow' && <Lock className="w-3 h-3" />}
                       </button>
@@ -539,6 +580,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </aside>
 
         <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-6 overflow-x-auto">
+          <WhatsNewBanner />
           <Suspense fallback={<PageFallback />}>
             {children}
           </Suspense>
@@ -548,17 +590,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <AiChatWidget />
 
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-50">
           <div
             ref={passwordDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="cashflow-unlock-title"
             tabIndex={-1}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 outline-none"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6 outline-hidden"
           >
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
                 <Lock className="w-6 h-6 text-blue-600" />
               </div>
               <div>

@@ -196,9 +196,9 @@ Bank and investor registry. Manages credit facilities and equity investments per
 - **Returns:** showBankForm, setShowBankForm, editingBank, newBank, setNewBank, handleEditBank, resetBankForm
 
 ### useCreditForm.ts
-- `useCreditForm(onSaved)` — manages credit facility add/edit form state, lazy-loads company bank accounts, computes the annuity payment, and persists create/update/delete with confirmation state
+- `useCreditForm(onSaved)` — manages credit facility add/edit form state, lazy-loads company bank accounts, computes the monthly debt service (`calculateMonthlyDebtService`, stored as `monthly_payment` with `repayment_type = 'monthly'`), and persists create/update/delete with confirmation state
 - **Calls:** creditService.ts (Investors)
-- **Uses utils:** creditCalculations (calculateAnnuityPayment, parseCreditTypeAndSeniority)
+- **Uses utils:** creditCalculations (calculateMonthlyDebtService, parseCreditTypeAndSeniority)
 - **Returns:** showCreditForm, setShowCreditForm, editingCredit, newCredit, setNewCredit, companyBankAccounts, loadingAccounts, handleEditCredit, resetCreditForm, addCredit, handleDeleteCredit, confirmDeleteCredit, cancelDeleteCredit, pendingDeleteId, pendingDeleteInvoiceCount, deleting
 
 ### useEquityForm.ts
@@ -280,6 +280,7 @@ Bank and investor registry. Manages credit facilities and equity investments per
   label in a Croatian UI. An unrecognised value keeps a neutral badge and is shown as-is rather
   than hidden
 - Labels: `funding.credit_status.active | paid | defaulted`
+- The credit form offers the status on **edit** only (a new credit starts `active`); it is the only place a credit becomes repaid or defaulted
 - Kept out of `creditCalculations.ts` on purpose: that file is financial maths, this is display
   mapping. Pure and unit-tested (`creditStatus.test.ts`, 6 tests)
 - Used by `CreditFacilityCard` and, through `Investments/CreditSummary`, by both credit pages
@@ -289,13 +290,23 @@ The module's pure-maths layer, and the most heavily unit-tested file in the code
 (42 tests in `creditCalculations.test.ts`). No Supabase, no React — extract new financial
 maths here rather than inlining it in a hook.
 
-- `calculateAnnuityPayment({...})` — standard annuity instalment
-- `calculatePaymentSchedule(params)` → `PaymentScheduleResult | null` — the full schedule
-  driving `PaymentSchedulePreview`. Its `principalFrequency` / `interestFrequency` are the
+- **The repayment model** (decided 2026-10-01, DEFECT_BACKLOG FUND-5): equal principal
+  instalments at the principal frequency, starting after the grace period; interest on the
+  outstanding balance at the interest frequency, from the start date (a grace period defers
+  principal, not interest)
+- `calculatePaymentSchedule(params)` → `PaymentScheduleResult | null` — simulates that model
+  month by month: principal per payment, first and last interest payment, total interest, payment
+  counts, principal start date and `monthlyDebtService`. Drives `PaymentSchedulePreview` and the
+  dormant Cashflow ▸ Banks credit form. Its `principalFrequency` / `interestFrequency` are the
   **stored repayment type** (`monthly` / `quarterly` / …), not a label: they were English nouns
   that `banks.credit_form.every_frequency` interpolated into "Svakih month". Croatian needs a
   whole phrase per frequency, so the preview picks one from
   `banks.credit_form.frequency_every.*`
+- `calculateMonthlyDebtService(params)` — what `monthly_payment` stores: principal per payment ÷
+  months between principal payments + amount × rate ÷ 12, i.e. the monthly-equivalent debt service
+  when principal repayment starts (the highest it gets). 0 without a maturity date. Migration
+  `20261001100100` restated existing credits with the same formula
+- `wholeMonthsBetween(from, to)` — whole calendar months, the period arithmetic for the schedule
 - `calculateEquityCashflow(equity)` / `calculateMoneyMultiple(equity)` — equity return maths.
   Both return an `EquityPreview` (`{ status: 'ok', value }` / `{ status: 'incomplete' }` /
   `{ status: 'invalid_range' }`), **not** a display string. They used to return the reason as an
@@ -320,6 +331,9 @@ maths here rather than inlining it in a hook.
   credit form's `banks.credit_form.*` option labels (a `line_of_credit` picks `loc_senior` /
   `loc_junior` by seniority; `equity` → `funding.equity`); `null` for anything else, where callers
   show the value with every `_` replaced
+- `formatCreditType(t, creditType, seniority?)` — the translated label, or that `_`-spaced fallback.
+  Used wherever a credit type is shown outside Funding too (project financing tab, Investment
+  dashboard), so no screen renders the raw value
 - Exports `PaymentScheduleParams` and `PaymentScheduleResult`
 
 > The tests assert the code's **actual** output, including a known 119-vs-120 off-by-one in the
@@ -342,10 +356,18 @@ Read-only history of accounting payments made against bank credits.
 
 > The payment-notification UI (`PaymentNotifications`, its hook and service) and the bank /
 > investor / subcontractor wire-payment modals were removed on 2026-09-14. Nothing had rendered
-> them since the November 2025 Funding overview rewrite, and migration
-> `20260518110001_deprecate_remaining_unused_tables` had already dropped the `payment_notifications`
-> table and its triggers. One orphan remains in the database: `update_overdue_notifications()`
-> still references that table and would fail if called — nothing calls it.
+> them since the November 2025 Funding overview rewrite. There is no `payment_notifications` table
+> in the database: the 2026-05-15 baseline already has none (only function bodies still name it).
+> Migration `20260518110001_deprecate_remaining_unused_tables` dropped nothing of that table; it
+> dropped the triggers on `project_investments` / `funding_payments` and their functions
+> (`trigger_generate_payment_schedule`, `trigger_update_payment_schedule`,
+> `update_bank_balance_for_investment`, `trigger_mark_notification_completed`), the dead RPCs
+> `generate_payment_schedule`, `get_bank_credit_payments`, `get_investor_payments` and
+> `count_invoices_with_search`, rewrote `get_filtered_invoices` / `get_invoice_statistics` without
+> the `investors` join, and **moved** (not dropped) `investors`, `project_investments` and
+> `funding_payments` to the `deprecated` schema. One orphan remains in the database:
+> `update_overdue_notifications()` still references the missing `payment_notifications` table and
+> would fail if called — nothing calls it.
 
 #### Services
 
@@ -373,7 +395,9 @@ Read-only history of accounting payments made against bank credits.
 > `paymentTotals.ts` **moved** to `Cashflow/services/paymentTotals.ts` and `bankPaymentTotals` was
 > renamed `paymentTotalsByDirection`: the Cashflow payments screen needed the same maths, and it
 > was never bank-specific. The direction amount classes and `formatSignedEuro` moved there with
-> it, so both payment screens render a direction identically. See `docs/CASHFLOW.md` → Services.
+> it, so both payment screens render a direction identically. In October 2026 it moved again, to
+> `src/utils/paymentTotals.ts`, when the General report's cash flow started summing with it. See
+> `docs/CORE.md` → Business figures.
 
 ### index.tsx (FundingPaymentsManagement)
 - Payment list with search, status/date filters, Excel export, and stats cards
@@ -476,13 +500,20 @@ plan. Nothing else writes one — the project form, the phase setup modal and th
 budgets modal all display budget read-only, and a project with no TIC reads **"budget not set"**
 rather than showing a zero that looks like a real figure.
 
+A screen that prints a project's budget asks `budgetIsSet(lineItems)` (`TIC/utils/ticBudget.ts`), or
+`fetchBudgetedProjectIds()` (`Supervision/SiteManagement/services/siteService.ts`) for a whole
+list — never `projects.budget > 0`, which is true for a project whose figure was typed or seeded
+without a TIC. The Director and Investment dashboards, the Sales report and Investment projects
+use it; on Investment projects the shares of budget and the funding status become "—", the
+progress bar is hidden and risk rests on the schedule alone (GEN-5, FUND-10).
+
 Saving `tic_cost_structures` fires `sync_project_from_tic(project_id)`, which derives:
 
 | Target | From |
 |---|---|
 | `projects.budget` | the Investicija grand total |
 | `project_phases` | the phases the TIC itself names |
-| `project_phases.budget_allocated` | that phase's share of the plan |
+| `project_phases.budget_allocated` | that phase's share of the plan; NULL when the TIC is unphased and the project has several phases |
 | `phase_classification_budgets` | the (phase × classification) grid |
 
 Three rules the function encodes, each protecting against a way this could destroy data:
@@ -495,6 +526,18 @@ Three rules the function encodes, each protecting against a way this could destr
 - **Only Investicija rows feed budgets.** Građenje is a breakdown of the single `Građenje` line —
   in both real workbooks its `SVEUKUPNO` equals that line exactly — so counting it too would
   double the largest item in the plan.
+
+**An unphased TIC is split by `apply_unphased_tic_budget`** (migration `20261015100000`, GEN-22).
+A project with no phase gets "Faza 1"; a single phase holds the whole plan and its classification
+split; several phases all get NULL and no classification rows, because the plan does not say how
+much of it each phase gets. It used to put the whole plan on phase 1 and 0 on the rest, which the
+phase list, Site Management and Budget Control's EVM all read as phase 1 owning the project.
+Phases are added and removed after the TIC is saved, so `trg_project_phases_unphased_tic`
+(AFTER INSERT/DELETE/UPDATE OF `project_id` on `project_phases`) re-applies that split. It never
+re-runs the full sync: for a phased TIC that would delete a phase a user just added above the
+TIC's count, which keeps the column default of 0 ("the TIC plans nothing for it"). Readers tell
+NULL from 0 with `budgetNotSplitByPhase` and total the plan with `plannedOnPhases`
+(`TIC/utils/ticBudget.ts`).
 
 `phase_classification_budgets` is replaced wholesale on each sync rather than merged: the TIC is
 the only author, so a row it no longer contains no longer exists. There are deliberately **no
@@ -516,7 +559,8 @@ Each Investicija row carries two optional fields beyond its amounts:
   three phase columns, and summing those would invent 8.000.000 of budget. An unphased line is
   shown as "—" in each phase column and counted once in the project total.
 
-A TIC with no phased line at all is *unphased* and describes one undifferentiated project.
+A TIC with no phased line at all is *unphased* and describes one undifferentiated project — so
+its phases, if the project has several, carry no budget of their own (NULL, see above).
 
 #### Editing the phase split
 
@@ -569,13 +613,14 @@ zeroed split reads as "planned at nothing", which is not what "not attributed to
 - `exportToExcel(data: TICExportData)` — async; writes a real `.xlsx` with two sheets (`INVESTICIJA`, `GRAĐENJE`) laid out in the source workbook's shape, so an export re-imports cleanly (covered by `ticExport.test.ts`)
 - `exportToPDF(data: TICExportData)` — two-page landscape A4 PDF, one page per tab; row height is derived from the row count so a long Građenje breakdown is not clipped
 - `buildInvestmentSheet(data)` / `buildConstructionSheet(data)` — pure AOA builders, exported for the round-trip test
+- A phased TIC is exported with one `FAZA n` column group per phase (own funds / % / credit / %) to the right of the project block, in the shape `ticImport.detectPhaseColumns` reads; an unphased TIC keeps the six-column layout. The phased round-trip is pinned in `ticExport.test.ts` (FUND-13). The last column, `KLASIFIKACIJA`, holds each line's classification **code** (ids differ between databases); `applyImportedClassifications` in `ticClassificationMap.ts` maps it back on import, an empty cell meaning "unmapped" and an unknown code falling back to the name default.
 - **Depends on:** `@e965/xlsx` (dynamic import), jsPDF, activityLog
 - _Note: this previously emitted an HTML table blob named `.xls`, which the docs already described as `.xlsx`; it now genuinely is `.xlsx`._
 
 #### Hooks
 
 ### useTIC.ts
-- `useTIC()` — loads projects and the selected project's line items **and construction sections**, manages edits/investor/date, computes both tabs' totals, applies Excel imports, and saves (create or update)
+- `useTIC()` — selects the first project on load (it used to prefer any project named "…funtana…"); loads projects and the selected project's line items **and construction sections**, manages edits/investor/date, computes both tabs' totals, applies Excel imports, and saves (create or update)
 - **Calls:** ticService.ts
 - **Uses utils:** ticFormatters (calculateTotals, calculateConstructionTotals, toRomanNumeral, toSectionCode)
 - **Returns:** projects, lineItems, constructionSections, investorName, documentDate, selectedProjectId, loading, saving, message, totals, grandTotal, constructionTotals, constructionGrandTotal, `isDirty`, saveTIC, `applyImport`, and the row/section/phase mutators (`addLineItem`, `updateLineItem`, `removeLineItem`, `moveLineItem`, `setLineItemPhases`, `addPhase`, `removePhase`, `addSection`, `updateSection`, `removeSection`, `moveSection`, `addConstructionItem`, `updateConstructionItem`, `removeConstructionItem`, `moveConstructionItem`)
@@ -714,3 +759,18 @@ real Savska Opatovina and Osijek figures in `ticBudget.test.ts`.
 - All service mutations log via `logActivity()` (fire-and-forget)
 - **Failed loads are not empty states.** Investments, Investors and Payments expose `error` + `refetch` and render `ErrorState` (from `src/components/ui`) in the content area with the page header kept mounted; money tiles fed by a failed read are withheld rather than shown as €0. `useTIC` was left as it is: it already reports both load failures through its own on-screen message banner, and `loadClassifications` documents why it tolerates a failure (the classification column falls back to "unmapped", which is visible and recoverable). `Projects/index.tsx` moved onto `useCachedData` (ErrorState + retry, EmptyState for a real empty list) and `useLazySection` gained `error` + `retry`, so `CreditInvoiceSection` shows a compact `ErrorState` instead of caching a failure as "(0)". `AllocationRow.tsx` still fetches inline and is what is left of the deferred in-component set
 - **Deleting a credit facility or an investor detaches invoices first.** `accounting_invoices.bank_credit_id` is the only `ON DELETE RESTRICT` reference to `bank_credits`, so a bare delete fails with Postgres `23503` whenever an invoice is attached (and, for investors, aborts the `bank_credits` cascade). `creditService.detachInvoicesFromCredits()` clears the FK — the invoices are kept, only unlinked — and both delete paths call it before deleting. The confirmation dialog reports the count via `countInvoicesForCredits()`, and the hooks fall back to `isForeignKeyViolation()` from `src/lib/dbErrors.ts` for a readable toast if some other constraint blocks the delete
+
+## September 2026 fixes (DEFECT_BACKLOG FUND-1 to FUND-4)
+
+- **Investor rename** works again: the `trigger_update_bank_in_accounting_companies` trigger, which
+  updated a dropped `accounting_companies.bank_id` column and aborted every rename, is removed
+  (migration `20260930100400`).
+- **TIC writes** are limited to Director, Accounting and Investment; the insert check compares
+  `created_by` with the caller's `public.users.id` (it compared `auth.uid()`, so a first TIC could not
+  be saved). `sync_project_from_tic` runs `SECURITY DEFINER` so the derived budget writes succeed for
+  those roles; direct `EXECUTE` on it is revoked. `updateTIC` fails loudly when RLS refuses the update.
+- **New allocation limit** is the figure the modal shows: credit amount − existing allocations −
+  direct drawdowns (`useCreditManagement.handleCreateAllocation`).
+- **Credit status** is editable in the credit form (see above).
+- **Repayment model (FUND-5, decided 2026-10-01):** the stored `monthly_payment`, the form preview
+  and the Cashflow ▸ Banks service all use one model — see `creditCalculations.ts` above.

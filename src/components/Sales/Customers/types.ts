@@ -14,8 +14,9 @@ export interface CustomerWithApartments extends Customer {
     type?: string
     price?: number
     total_paid?: number
-    garage?: { number: string; price: number } | null
-    repository?: { number: string; price: number } | null
+    /** Every garage and storage unit linked to the apartment and sold with it. */
+    garages?: { id: string; number: string; price: number }[]
+    repositories?: { id: string; number: string; price: number }[]
   }>
 }
 

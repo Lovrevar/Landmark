@@ -12,7 +12,7 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### accountingDashboardService.ts
 - `fetchVATStats()` — returns VATStats (collected, paid, net, monthly breakdown)
-- `fetchCashFlowStats()` — returns CashFlowStats (incoming, outgoing, net with YoY comparison)
+- `fetchCashFlowStats()` — returns CashFlowStats: year-to-date incoming, outgoing and net, plus current- and previous-month incoming/outgoing for a month-over-month comparison (no year-over-year figures)
 - `fetchTopCompanies()` — returns top 5 companies ranked by net balance
 - `fetchMonthlyTrends()` — returns MonthlyData[] for stacked bar chart
 - `fetchMonthlyBudget()` — returns current MonthlyBudget or null
@@ -20,8 +20,11 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### directorService.ts
 - `fetchDirectorDashboard()` — single entry point that fetches all base tables in one `Promise.all` and returns `DirectorDashboardData` (`projects`, `financial`, `sales`, `construction`, `funding`, `alerts`). Internally delegates to private `derive*` helpers (`deriveProjects`, `deriveFinancial`, `deriveSales`, `deriveConstruction`, `deriveFunding`, `deriveAlerts`) — these are no longer separately exported
-  - `projects` → ProjectStats[] with budget, expenses, revenue, profit margin, completion %
-  - `financial` → FinancialMetrics (revenue, expenses, debt, equity, receivables, payables)
+  - `projects` → ProjectStats[] with budget, expenses, contracted sales ("Ugovorena prodaja", the column and the margin), profit margin, completion %
+  - `financial` → FinancialMetrics (revenue = contracted sales, expenses, debt, equity, receivables, payables)
+  - Contracted sales are the sale rows at their package values, with the garage and storage links
+    from `fetchLinkedPrices`; the average divides by the sales (`contractedSales`, SALES.md → A sale
+    and sales revenue)
   - `sales` → SalesMetrics
   - `construction` → ConstructionMetrics
   - `funding` → FundingMetrics
@@ -68,6 +71,9 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
   the source of `totalRevenue`, `monthlyRevenue` and every per-project amount — a failed read
   showed a confident €0. `fetchRecentSales`'s three reads were unchecked too, which rendered
   every recent sale as "Unknown — N/A"
+- Collected figures come from `collectedFromSales` / `collectedSince` / `collectedByProject` /
+  `collectedByMonth`; the average sale price is `contractedSales`' average, at package values
+  (the Director's "Prosječna ugovorena cijena")
 - **Depends on:** supabase client
 
 ### supervisionService.ts
@@ -79,6 +85,7 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 - `generateInvestmentReportPDF(financialSummary, bankCredits, projects)` — generates a multi-page jsPDF investment report with donut chart, bar chart, credit details, and project summaries
 - **Croatian, whatever the UI language**, via `exportT()` + `EXPORT_LANGUAGE` (`src/utils/exportLanguage.ts`); it takes no `t` argument, so the caller cannot make it English by accident. Dates go through `formatDate` / `formatDateTime`, money through `pdfMoney` (`Reports/pdf/pdfText.ts`), and the face is the embedded Noto Sans (`loadUnicodeFont`, which **throws** rather than emitting a document in a font that cannot spell it)
 - Three bugs it shipped until September 2026, all of them invisible until the data hit them: a `⚠` (U+26A0) opened the maturity warning, which WinAnsi cannot encode, so the report's most prominent line rendered as noise every time it fired — it is now a worded `common.warning` prefix; `Available: €…` had no U+2212 guard, so an over-utilised credit (an expected state — the bar below it clamps at 100%) garbled its line; and the "and N more projects" line asked for `italic`, a face `pdfFont` does not register, which jsPDF answers by silently falling back to WinAnsi Times-Italic. **Only `'normal'` and `'bold'` exist** — asking for anything else does not throw, it reintroduces the whole bug
+- Allocations are labelled like the Funding screen's `AllocationRow`: the project name, "Refinanciranje - <company or bank>" for a refinancing allocation (named by `fetchInvestmentData` from the company and bank lists it already loads), and OPEX only for an OPEX allocation — refinancing used to print as OPEX
 - Credit types render through `getCreditTypeLabelKey` and project status through `PROJECT_STATUS`, rather than `credit_type.replace(/_/g, ' ')` (which printed `LINE OF_CREDIT`) and the raw English column value
 - Logs `export.investment_pdf` at `severity: 'low'` after the save
 - **Depends on:** jsPDF, src/types/investment.ts, `utils/pdfFont`, `utils/exportLanguage`, `Reports/pdf/pdfText`
@@ -151,8 +158,9 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### SalesDashboard.tsx
 - Renders sales pipeline metrics, 6-month trend, payment method breakdown, and recent sales list
-- Five KPI tiles: total revenue, **Naplaćeno ovaj mjesec**, sales rate, average sale price, active
-  leads. The monthly figure replaces a "Napredak prema mjesečnom cilju" panel whose target was a
+- Five KPI tiles: **Naplaćeno od prodaje** (collected, not contracted sales), **Naplaćeno ovaj
+  mjesec**, sales rate, average sale price (contracted sales per sale, "Po prodaji (s garažama i
+  spremištima)"), active leads. The monthly figure replaces a "Napredak prema mjesečnom cilju" panel whose target was a
   hardcoded €5.000.000 and whose percentage label was unclamped. It is `monthlyRevenue`: payments
   since the start of the calendar month on `OUTGOING_SALES` invoices that carry an
   `apartment_id` — **apartments only** (garages and storage units are not invoiced) and **gross,
@@ -181,7 +189,7 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 - Props: `MonthlyBudget`, `CashFlowStats`
 
 ### AccountingCashFlowSection.tsx
-- Three-card layout for incoming, outgoing, and net cashflow with YoY comparison
+- Three-card layout for year-to-date incoming, outgoing, and net cashflow. Each card's "this month" line shows the current month; incoming and outgoing add the % change against the previous month (month-over-month, hidden when the previous month is 0), net shows the current month's net only
 - Props: `CashFlowStats`
 
 ### AccountingCompaniesSection.tsx
@@ -211,9 +219,11 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 - Clickable project table with budget, expenses, revenue, profit margin, and completion %
 - The project cell carries the project-category badge (ProjectCategoryBadge) next to the name; `directorService` selects `category` for it
 - Props: `ProjectStats[]`
+- The budget column reads "Budžet nije postavljen" where `budget_set` is false (no TIC), never €0 (GEN-5)
 
 ### InvestmentSummaryCards.tsx
 - 4-card grid showing total portfolio value, total debt, available credit, and utilization
+- Portfolio value sums only projects whose budget is set (a TIC that totals above zero — `fetchBudgetedProjectIds`); the card's subtitle says how many projects were left out, and the PDF prints "Budžet nije postavljen" for them (GEN-5)
 - Props: `FinancialSummary`
 
 ### InvestmentCreditsTable.tsx
@@ -258,7 +268,8 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
     `update_retail_contract_budget_realized_from_payments` trigger stores, not a gross figure —
     the "Razvoj i gradnja (s PDV)" subtitle was simply false and now reads "(bez PDV-a)"
   - Unit-tested in `retailTotals.test.ts` (8 tests), including the case that motivated it
-- **`utils/directorAlerts.ts`** — `isSettledMilestone`, `countOverdueMilestones`,
+- **`utils/directorAlerts.ts`** — `isSettledMilestone` (defined in `src/utils/constructionFigures.ts`
+  since October 2026, re-exported here), `countOverdueMilestones`,
   `countCriticalDeadlines` and `deriveAlerts`, pure and unit-tested (`directorAlerts.test.ts`,
   13 tests). `daysFromToday` is injected, so the tests fix "today" without fake timers. See
   `directorService.ts` above for what it fixes
@@ -270,14 +281,14 @@ Each section is a self-contained panel rendered inside its parent dashboard. All
 ### Signed figures
 Net figures show their own sign; colour is reinforcement, never the only cue. Net cash flow, the current-month net and a company's net balance render signed. `Math.abs` survives in exactly three money sites, where the **label** carries the direction and a minus would double it: net VAT and current-month net VAT (`to_pay_tax` / `to_receive_tax`), and the monthly budget tile (`budget_remaining` / `budget_overage`). Monthly trends prefix `+` for positives and lets the helper print the minus.
 
-### Data-integrity conventions (enforced 2026-06-16, see `DASHBOARD_AUDIT.md`)
-- Classify invoices against the real `invoice_type` enum (9 values) — never invented strings. `INCOMING_INVESTMENT` is treated as **incoming cash**.
+### Data-integrity conventions (enforced 2026-06-16, see `backlog/archive/DASHBOARD_AUDIT.md`)
+- Classify invoices against the real `invoice_type` enum (9 values) — never invented strings. Cash direction comes from one map, `src/utils/invoiceCashDirection.ts` (`paymentDirection()` in `invoiceHelpers` is the same function): `OUTGOING_*` in, `INCOMING_*` out, `INCOMING_INVESTMENT` included — reversing the June decision below (DEFECT_BACKLOG CASH-7, decided 2026-10-01 and extended 2026-10-05). Each type also has a category: credit drawdowns and repayments of principal are *financing* and never income or expense; everything else, credit fees and `INCOMING_INVESTMENT` included, is *operating*. Cost figures use `isCostInvoiceType` (every operating invoice we pay); input VAT is every received invoice.
 - Debt KPIs exclude `credit_type='equity'` and repaid/defaulted credits; "weighted" interest is amount-weighted.
-- Sales counts cover all three unit tables (`apartments`, `garages`, `repositories`); revenue is apartment-only (only apartments are invoiced) and labelled accordingly.
+- Sales counts cover all three unit tables (`apartments`, `garages`, `repositories`) on the Sales dashboard. Collected revenue is apartment-only (only apartments are invoiced) and labelled accordingly; contracted sales count each apartment's garages and storage through its package (SALES.md → A sale and sales revenue).
 - Retail figures follow the Retail report, not the invoice table: revenue is the contracted sales
   value, collections are sales-phase `budget_realized` (net of VAT, cash basis), and outstanding /
   invoiced come from the invoices on those sales contracts. Profit is collected − costs.
-- Supervision "completed this week" = distinct subcontractors with `completed_at` in the calendar week; progress bars are a **payment** ratio ("Paid Out"), not work completion.
+- Supervision "completed this week" = distinct subcontractors with a `work_finished` work log in the calendar week (`subcontractors.completed_at`, the previous source, is never written); progress bars are a **payment** ratio ("Paid Out"), not work completion.
 
 ## Notes
 - `investmentReportPdf.ts` lives in this module (not in Reports/) — it generates the investment PDF report. It runs `yieldToUI()` (`src/utils/yieldToUI.ts`) periodically during long credit/project loops so the export does not freeze the UI
@@ -315,3 +326,11 @@ Net figures show their own sign; colour is reinforcement, never the only cue. Ne
 - **EVM is not surfaced on any dashboard.** The Earned Value Management utility (`src/utils/evm.ts`) is consumed only by the Budget Control feature (`src/components/General/BudgetControl/`)
 - Role visibility is controlled via `src/utils/permissions.ts` and `AuthContext`
 - Dashboard services are read-only aggregation — they do not mutate data
+
+## Every read is checked (September 2026, DEFECT_BACKLOG GEN-3)
+
+`directorService` checked only the projects query and `investmentDashboardService` none, so a
+failed read rendered as zeros. Both now throw on any query error, as do the Budget Control and
+Project Details services. The Accounting dashboard's top-companies payments and invoice counts are
+paged through `fetchAllRows` (a year of payments passes PostgREST's 1000-row page) and throw on
+failure. RLS-limited roles are unaffected: a table they may not read returns no rows, not an error.

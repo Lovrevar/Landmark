@@ -22,10 +22,12 @@ import { generateSalesReportPDF } from './pdf/salesReportPdf'
 import type { ProjectSalesReport, CustomerReport } from './types'
 import { formatEuro, formatEuroCompact, formatDate, formatMonthYear } from '../../utils/formatters'
 import { PROJECT_STATUS, statusLabel, statusVariant } from '../../utils/statusDisplay'
+import { averagePer, conversionRate } from '../../utils/salesFigures'
 
 const SalesReports: React.FC = () => {
   const { t, i18n } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
+  const [projectsFailed, setProjectsFailed] = useState(false)
   const [selectedProject, setSelectedProject] = useState<string>('')
   const [reportType, setReportType] = useState<'project' | 'customer'>('project')
   const [dateRange, setDateRange] = useState({
@@ -71,12 +73,14 @@ const SalesReports: React.FC = () => {
 
   const loadProjects = async () => {
     setLoading(true)
+    setProjectsFailed(false)
     try {
       const data = await fetchProjects()
       setProjects(data)
       if (data.length > 0) setSelectedProject(data[0].id)
     } catch (error) {
       console.error('Error fetching projects:', error)
+      setProjectsFailed(true)
     } finally {
       setLoading(false)
     }
@@ -99,6 +103,12 @@ const SalesReports: React.FC = () => {
     return <LoadingSpinner message={t('reports.sales.loading')} />
   }
 
+  // With no project list there is nothing to report on. The page used to render its controls
+  // over an empty picker, which read as "there are no projects" (UI-4).
+  if (projectsFailed) {
+    return <ErrorState title={t('common.projects_load_error')} onRetry={() => { void loadProjects() }} />
+  }
+
   return (
     <div>
       <PageHeader
@@ -115,7 +125,7 @@ const SalesReports: React.FC = () => {
       />
 
       {/* Report Configuration */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('reports.sales.config_title')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <FormField label={t('reports.sales.report_type')}>
@@ -172,7 +182,7 @@ const SalesReports: React.FC = () => {
       {/* Project Report */}
       {reportType === 'project' && projectReport && !generatingReport && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('reports.sales.project_overview')}</h2>
               <Badge variant={statusVariant(PROJECT_STATUS, projectReport.project.status)}>
@@ -186,7 +196,7 @@ const SalesReports: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.location')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.project.location}</span></div>
                   <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.start_date_label')}</span><span className="font-medium text-gray-900 dark:text-white">{formatDate(projectReport.project.start_date, i18n.language)}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">{formatEuro(projectReport.project.budget)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{t('reports.sales.budget')}</span><span className="font-medium text-gray-900 dark:text-white">{projectReport.budget_set ? formatEuro(projectReport.project.budget) : t('common.budget_not_set')}</span></div>
                 </div>
               </div>
 
@@ -209,7 +219,7 @@ const SalesReports: React.FC = () => {
             <StatCard label={t('reports.sales.sales_rate_stat')} value={`${projectReport.sales_rate.toFixed(1)}%`} icon={Activity} color="orange" />
           </StatGrid>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.unit_status')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -221,7 +231,7 @@ const SalesReports: React.FC = () => {
                   ].map(({ labelKey, color, count }) => (
                     <div key={labelKey} className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <div className={`w-4 h-4 ${color} rounded mr-3`}></div>
+                        <div className={`w-4 h-4 ${color} rounded-sm mr-3`}></div>
                         <span className="text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
                       </div>
                       <span className="font-semibold text-gray-900 dark:text-white">{count} {t('reports.sales.units_label')}</span>
@@ -253,7 +263,7 @@ const SalesReports: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.monthly_trend')}</h2>
             <Table>
               <Table.Head>
@@ -270,14 +280,14 @@ const SalesReports: React.FC = () => {
                     <Table.Td label={t('reports.sales.month_col')} className="font-medium text-gray-900 dark:text-white">{formatMonthYear(month.month_key, i18n.language)}</Table.Td>
                     <Table.Td label={t('reports.sales.units_sold_col')}>{month.units_sold}</Table.Td>
                     <Table.Td label={t('reports.sales.revenue_col')}>€{month.revenue.toLocaleString('hr-HR')}</Table.Td>
-                    <Table.Td label={t('reports.sales.avg_price_col')}>€{month.units_sold > 0 ? (month.revenue / month.units_sold).toLocaleString('hr-HR') : '0'}</Table.Td>
+                    <Table.Td label={t('reports.sales.avg_price_col')}>€{averagePer(month.revenue, month.units_sold).toLocaleString('hr-HR')}</Table.Td>
                   </Table.Tr>
                 ))}
               </Table.Body>
             </Table>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.summary')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
@@ -317,7 +327,7 @@ const SalesReports: React.FC = () => {
             <StatCard label={t('reports.sales.avg_purchase_stat')} value={formatEuro(customerReport.average_purchase)} icon={Activity} color="orange" />
           </StatGrid>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.customer_distribution')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -329,7 +339,7 @@ const SalesReports: React.FC = () => {
                   ].map(({ labelKey, color, count }) => (
                     <div key={labelKey} className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <div className={`w-4 h-4 ${color} rounded mr-3`}></div>
+                        <div className={`w-4 h-4 ${color} rounded-sm mr-3`}></div>
                         <span className="text-gray-700 dark:text-gray-200">{t(labelKey)}</span>
                       </div>
                       <span className="font-semibold text-gray-900 dark:text-white">{count} {t('reports.sales.customers_label')}</span>
@@ -360,7 +370,7 @@ const SalesReports: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('reports.sales.customer_summary')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
@@ -368,7 +378,7 @@ const SalesReports: React.FC = () => {
                 <ul className="space-y-2 text-blue-800 dark:text-blue-200">
                   <li>• {t('reports.sales.highlight_total_customers', { count: customerReport.total_customers })}</li>
                   <li>• {t('reports.sales.highlight_conversions', { count: customerReport.buyers })}</li>
-                  <li>• {t('reports.sales.highlight_conversion_rate', { rate: customerReport.total_customers > 0 ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1) : '0' })}</li>
+                  <li>• {t('reports.sales.highlight_conversion_rate', { rate: customerReport.total_customers > 0 ? conversionRate(customerReport.buyers, customerReport.total_customers).toFixed(1) : '0' })}</li>
                   <li>• {t('reports.sales.highlight_avg_purchase', { amount: formatEuro(customerReport.average_purchase) })}</li>
                 </ul>
               </div>

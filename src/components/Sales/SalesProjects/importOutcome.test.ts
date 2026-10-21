@@ -25,6 +25,12 @@ describe('importErrorMessage', () => {
     expect(importErrorMessage({ message: 'duplicate key value', code: '23505' })).toBe('duplicate key value')
   })
 
+  it('gives the caller\'s wording for a duplicate, when the caller has one', () => {
+    const duplicate = { message: 'duplicate key value violates unique constraint "garages_unique_number_per_building"', code: '23505' }
+    expect(importErrorMessage(duplicate, 'Oznaka već postoji')).toBe('Oznaka već postoji')
+    expect(importErrorMessage(new Error('boom'), 'Oznaka već postoji')).toBe('boom')
+  })
+
   it('falls back to String() for anything else', () => {
     expect(importErrorMessage('bad row')).toBe('bad row')
     expect(importErrorMessage({ code: '23505' })).toBe('[object Object]')

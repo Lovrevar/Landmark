@@ -12,6 +12,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
  * (navigating away and back) within a session, but is cleared on a full page
  * reload. It is shared across all consumers and keyed by a caller-provided
  * string — encode any parameters (project id, date range, profile) into the key.
+ *
+ * Entries hold RLS-scoped data, so they belong to the signed-in user: AuthContext calls
+ * `setCachedDataOwner` on every sign-in and sign-out, and a change of user clears the store.
+ * `logActivity` invalidates it after every logged mutation.
  */
 
 const DEFAULT_TTL_MS = 5 * 60 * 1000 // 5 minutes
@@ -22,6 +26,14 @@ interface CacheEntry<T> {
 }
 
 const store = new Map<string, CacheEntry<unknown>>()
+let owner: string | null = null
+
+/** Record who the cached data belongs to; switching user (or signing out) empties the cache. */
+export function setCachedDataOwner(userId: string | null): void {
+  if (userId === owner) return
+  owner = userId
+  store.clear()
+}
 
 /**
  * Drop cached entries. With no argument, clears everything. With a predicate,

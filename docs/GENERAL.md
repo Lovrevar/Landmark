@@ -46,6 +46,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - **Depends on:** supabase client
 
 ### milestoneService.ts
+- **Who may write:** the `project_milestones` write policy (migration `20260930100000`) allows Directors and Supervision on assigned projects (`user_has_project_access`). `ProjectDetailsEnhanced` mirrors it with `hasProjectAccess(id)` and hides add, template, edit, toggle and delete for everyone else
 - `addMilestone(projectId, data)` — inserts a new milestone for a project (`data` may include an optional `phase`)
 - `updateMilestone(id, data)` — updates an existing milestone (writes `phase` only when provided)
 - `deleteMilestone(id)` — removes a milestone
@@ -68,7 +69,7 @@ Core project CRUD with milestone timeline, phase/contract views, apartment table
 - **Returns:** editingMilestone, setEditingMilestone, handleAddMilestone, handleUpdateMilestone, handleDeleteMilestone, confirmDeleteMilestone, cancelDeleteMilestone, pendingDeleteMilestoneId, deletingMilestone, handleToggleMilestone, handleBulkAddMilestones
 
 ### usePhaseCollapseState.ts
-- `usePhaseCollapseState(projectId, phases, namespace?)` — per-project expand/collapse state for phase-grouped sections, persisted to `localStorage` under `cognilion.<namespace>.<projectId>`. For phases the user has never toggled it derives a smart default (overdue → expanded; fully completed or not-yet-started → collapsed; in-progress mix → expanded). The `namespace` lets multiple groupings on the same project keep independent state (e.g. milestones use the default, `PhasesContractsTab` passes `'phase_contracts_collapse'`)
+- `usePhaseCollapseState(projectId, phases, namespace?)` — per-project expand/collapse state for phase-grouped sections, persisted to `localStorage` under `cognilion.<namespace>.<projectId>`. For phases the user has never toggled it derives a smart default (overdue → expanded; fully completed or not-yet-started → collapsed; in-progress mix → expanded). The `namespace` lets multiple groupings on the same project keep independent state (e.g. milestones use the default, `PhasesContractsTab` passes `'phase_contracts_collapse_v2'`)
 - **Returns (`PhaseCollapseController`):** isExpanded, toggle, expandAll, collapseAll, allExpanded
 - **Depends on:** `PhaseStatus` (utils.ts), localStorage
 
@@ -115,7 +116,7 @@ exactly what kept regressing.
 #### Data
 
 ### data/milestoneTemplates.ts
-- Source-controlled construction milestone templates (no DB table yet). `RESIDENTIAL_HR_TEMPLATE` is the residential build with 4 ordered phases (`kupnja_zemljišta`, `ishođenje_dozvola`, `gradnja`, `uporabna_etažiranje`); each phase carries i18n `labelKey`, a literal Croatian `phaseLabel`, and items with a `name` and an `offsetDays` (days from project/template start used for auto-dating). Phase labels and item names are Croatian domain terms kept as literal strings
+- Source-controlled construction milestone templates (no DB table yet). `RESIDENTIAL_HR_TEMPLATE` is the residential build with 4 ordered phases (ids are ASCII: `kupnja_zemljista`, `ishodjenje_dozvola`, `gradnja`, `uporabna_etaziranje`); each phase carries i18n `labelKey`, a literal Croatian `phaseLabel`, and items with a `name` and an `offsetDays` (days from project/template start used for auto-dating). Phase labels and item names are Croatian domain terms kept as literal strings
 - **Exports:** `RESIDENTIAL_HR_TEMPLATE`, `MILESTONE_TEMPLATES`, types `ConstructionPhaseId`, `MilestoneTemplate`, `MilestoneTemplatePhase`, `MilestoneTemplateItem`
 
 #### Forms
@@ -160,7 +161,7 @@ exactly what kept regressing.
 - Header stat cards (budget/spent, timeline, completion %, contract count); Milestones tab combines an inline add form, the "Use template" action (MilestoneTemplateModal), an expand/collapse-all toggle, and a phase-grouped MilestoneTimeline
 - Milestone edit reuses the inline form: the timeline's Edit action fills it, switches the heading/submit to "Uredi prekretnicu"/Save, and scrolls to and focuses the name field. Cancel (or the header's Add button) returns it to add mode. Saving keeps the milestone's `phase` and reads `completed` from the live list, so a toggle made while the form was open is not reverted. Delete goes through a `ConfirmDialog` (`general_projects.milestone_delete_confirm`)
 - The full-page spinner shows only until this project has loaded (`loading && project?.id !== id`): milestone mutations reload the data, and a spinner then would unmount the form and the delete dialog
-- Computes `phaseStatuses` from milestones (`computePhaseStatuses(buildPhaseBuckets(...))`) and drives both the milestone grouping and `PhasesContractsTab` collapse via `usePhaseCollapseState`
+- Computes `phaseStatuses` from milestones (`computePhaseStatuses(buildPhaseBuckets(...))`) and drives the milestone grouping's collapse via `usePhaseCollapseState`; `PhasesContractsTab` keeps its own collapse state (keyed by phase id)
 - **Uses hooks:** useMilestoneManagement, usePhaseCollapseState
 - **Uses services:** projectDetailsService (fetchProjectDataEnhanced)
 - **Uses components:** ProjectCategoryBadge, MilestoneTimeline, ProjectFormModal, MilestoneTemplateModal, PhasesContractsTab, SubcontractorsTab
@@ -170,8 +171,8 @@ exactly what kept regressing.
 #### Tabs
 
 ### tabs/PhasesContractsTab.tsx
-- Phases & contracts view: collapsible per-phase cards (header shows contract count, summed contract value, and a budget-used progress bar from `budget_used / budget_allocated`); expanded phases list their contracts (subcontractor, job description, contract amount, realized) in a dense table. Buckets contracts by `contract.phase.phase_name`; expand/collapse persists via `usePhaseCollapseState` (namespace `'phase_contracts_collapse'`)
-- **Props:** phases, contracts, projectId
+- Phases & contracts view: collapsible per-phase cards (header shows contract count, summed contract value, and a progress bar of paid / `phase.budget_allocated`, where paid is the sum of the phase's contracts' `budget_realized`; when the project has no TIC plan or the phase has no allocation, the bar is replaced by the paid figure and "budget not set"; when the TIC is not split by phase (every phase NULL, `budgetNotSplitByPhase`), one info note above the list names the TIC total and no phase says "budget not set"). Contracts are bucketed by `phase_id` (not `phase_name`, which is not unique), then grouped by cost classification inside the phase (classification `sort_order`, unclassified last), each group with its contracted and paid subtotals and a dense table (subcontractor, job description, contract amount, paid). A single-phase project renders no phase level; contracts whose `phase_id` is null are listed in a separate block. Expand/collapse persists via `usePhaseCollapseState` (namespace `'phase_contracts_collapse_v2'`)
+- **Props:** phases, contracts, projectId, ticTotal
 - **Uses hooks:** usePhaseCollapseState
 - **Uses Ui:** EmptyState, Table
 
@@ -184,6 +185,8 @@ exactly what kept regressing.
 
 ### index.tsx (ProjectsManagement)
 - Project list with search by name/location, a status filter and a project-category filter (Interno / Retail / Stambeno), grid layout, and new project modal
+- A failed load shows an error `Alert` with a retry instead of the "no projects" empty state
+- The project detail's "Aktivni ugovori" figure counts draft and active contracts only (`isClosedContract`), and its financing tab labels credit types through `formatCreditType`
 - **Uses hooks:** (direct fetch via projectService)
 - **Uses services:** projectService
 - **Uses components:** ProjectCard, ProjectFormModal
@@ -199,14 +202,14 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 
 ### services/budgetControlService.ts
 - `fetchProjectsList()` — fetches all projects (ordered by name) for the selector
-- `fetchProjectBudgetData(projectId)` — parallel-ish fetch of the project row, `project_phases`, draft/active/completed `contracts` (with subcontractor + phase joins), and the contracts' `subcontractor_milestones` (`contract_id`, `percentage`, `status`); returns `ProjectBudgetData` (`{ project, phases, contracts, milestones }`)
+- `fetchProjectBudgetData(projectId)` — parallel-ish fetch of the project row, `project_phases`, every `contracts` row (terminated ones mapped to their paid amount via `committedAmount`) (with subcontractor + phase joins), and the contracts' `subcontractor_milestones` (`contract_id`, `percentage`, `status`); returns `ProjectBudgetData` (`{ project, phases, contracts, milestones }`)
 - **Exports types:** `ProjectBudgetData`; reuses `MilestoneProgress` from `src/utils/evm.ts`
 - **Depends on:** supabase client
 
 #### Hooks
 
 ### hooks/useBudgetControl.ts
-- `useBudgetControl()` — loads the projects list on mount and auto-selects the first; on selection fetches budget data and computes `plannedBudget` (sum of phase `budget_allocated`), `committed` (sum of `contract_amount`), `paid` (sum of `budget_realized`), `completionPct` (paid / committed), `tic` (project budget), and the EVM `metrics`
+- `useBudgetControl()` — loads the projects list on mount and auto-selects the first; on selection fetches budget data and computes `plannedBudget` (`plannedOnPhases`: the sum of phase `budget_allocated`, or the TIC total when the TIC is not split by phase), `committed` (sum of `contract_amount`), `paid` (sum of `budget_realized`), `completionPct` (paid / committed), `tic` (project budget), and the EVM `metrics`
 - **Returns (`BudgetControlData`):** `projects`, `selectedProjectId`, `setSelectedProjectId`, `data` (`tic`, `plannedBudget`, `committed`, `paid`, `completionPct`, `metrics`), `loading`, `error`, `refetch`
 - `refetch` re-runs both loads (a reload counter both effects depend on) and preserves the selected project
 - A failed project-data load now **clears `data`**. Leaving the previous project's EVM figures standing attributed one project's numbers to whichever project the selector named
@@ -225,8 +228,12 @@ Standalone EVM (Earned Value Management) dashboard for monitoring project budget
 
 #### What the EVM screen refuses to claim
 
-Three fallbacks inside `calculateProjectEVM` used to surface as confident figures:
+Four fallbacks inside `calculateProjectEVM` used to surface as confident figures:
 
+- **No cost yet.** `costAvailable` is false while nothing has been paid; CPI then falls back to 1
+  and EAC to the budget, which read as a green "Ispod proračuna ✓" on an unstarted project
+  (GEN-20). CPI, EAC and VAC now render "—" with `budget_control.no_cost`, and no CPI point is
+  plotted.
 - **No schedule baseline.** `scheduleAvailable` is false when no phase carries both a start and
   an end date; SPI then falls back to 1 (`evm.ts:135`). Nothing read the flag, so a project with
   no dates at all reported a green "On schedule ✓". SPI now renders "—" with
@@ -253,7 +260,7 @@ CPI/SPI sub-labels were hardcoded English and now come from `budget_control.cpi_
 
 The earned-value math lives in `src/utils/evm.ts` (a CORE util — see the Codebase Index; documented here as the General consumer):
 - `calculatePhaseEVM(plannedBudget, physicalCompletionPct, plannedStartDate, plannedEndDate, actualCost, currentDate?)` — computes a single phase's PV/EV/AC and the derived CPI, SPI, CV, SV, EAC, VAC. Planned completion is time-elapsed-based; EV uses physical completion
-- `calculateProjectEVM(phases, contracts, milestones?)` — aggregates phase EVM across a project. Each contract's *physical* completion is the share of its `subcontractor_milestones` marked completed/paid (falling back to the financial proxy `budget_realized / contract_amount` when a contract has no milestones); a phase's completion is the contract-value-weighted average. Keeping EV independent of money spent is what makes CPI/SPI meaningful
+- `calculateProjectEVM(phases, contracts, milestones?)` — aggregates phase EVM across a project. Each contract's *physical* completion is the share of its `subcontractor_milestones` marked completed/paid (falling back to the financial proxy `budget_realized / contract_amount` when a contract has no milestones); a phase's completion is the contract-value-weighted progress divided by the larger of the phase's plan and its committed total, so work with no contract yet counts as not started and EV never passes the plan (GEN-23). A row with no contract value (a supplier paid without a contract, `has_contract = false`) counts as worth and done what was paid. `costAvailable` is false until something is paid on a contract that has milestones: without them progress is paid/amount, earned equals paid and CPI is 1 by construction; payments without a contract alone are the same. `costUnavailableReason` (`nothing_paid` / `no_contract` / `no_milestones`) picks the note Budget Control shows. For an unphased TIC the project is measured as one phase over the TIC total, with a schedule only when every phase is dated. Keeping EV independent of money spent is what makes CPI/SPI meaningful
 - **Exports types:** `EVMMetrics`, `MilestoneProgress`
 - Surfaced in General only through BudgetControl (`useBudgetControl` → `calculateProjectEVM`). The project detail view (`ProjectDetailsEnhanced`) shows simpler budget/progress summaries and do not call the EVM utils
 

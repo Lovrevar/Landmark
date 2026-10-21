@@ -91,14 +91,14 @@ export default function MessageAttachment({ attachment }: Props) {
       aria-label={UI_LABELS_HR.downloadAttachment}
       className="inline-flex items-center gap-2 max-w-[260px] rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-2.5 py-1.5 text-xs hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
     >
-      <FileText className="w-4 h-4 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+      <FileText className="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400" />
       <span className="flex-1 min-w-0 truncate text-gray-700 dark:text-gray-200">
         {file_name}
       </span>
-      <span className="flex-shrink-0 text-gray-400 dark:text-gray-500">
+      <span className="shrink-0 text-gray-400 dark:text-gray-500">
         {formatFileSize(file_size)}
       </span>
-      <Download className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 dark:text-gray-500" />
+      <Download className="w-3.5 h-3.5 shrink-0 text-gray-400 dark:text-gray-500" />
     </button>
   )
 }
@@ -132,7 +132,7 @@ function ImageLightbox({
       aria-modal="true"
       aria-label={fileName}
       tabIndex={-1}
-      className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-6 outline-none"
+      className="fixed inset-0 z-60 bg-black/80 flex items-center justify-center p-6 outline-hidden"
       onClick={onClose}
     >
       <button
@@ -147,7 +147,7 @@ function ImageLightbox({
         <img
           src={url}
           alt={fileName}
-          className="max-w-[92vw] max-h-[92vh] object-contain rounded shadow-2xl"
+          className="max-w-[92vw] max-h-[92vh] object-contain rounded-sm shadow-2xl"
           onClick={(e) => e.stopPropagation()}
           onError={() => void onError()}
         />

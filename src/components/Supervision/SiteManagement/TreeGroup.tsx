@@ -7,6 +7,8 @@ import { remainingBudget } from './utils/contractTree'
 import { ContractCard } from './ContractCard'
 import { Button } from '../../ui'
 import { formatEuroRounded } from '../../../utils/formatters'
+import { isClosedContract } from '../../../utils/contractRollup'
+import { useHideClosedContracts } from './hideClosedContracts'
 
 interface TreeGroupProps {
   node: TreeNode
@@ -21,7 +23,7 @@ interface TreeGroupProps {
   onOpenInvoices?: (subcontractor: Subcontractor) => void
   onEditSubcontractor: (subcontractor: Subcontractor) => void
   onOpenSubDetails: (subcontractor: Subcontractor) => void
-  onDeleteSubcontractor: (subcontractorId: string) => void
+  onDeleteSubcontractor?: (subcontractorId: string) => void
   onManageMilestones?: (subcontractor: Subcontractor, phase: ProjectPhase, project: ProjectWithPhases) => void
   /** False drops the "Paid" column from every row of this subtree. */
   canManagePayments: boolean
@@ -36,7 +38,7 @@ const Metric: React.FC<{
   valueClassName?: string
   muted?: boolean
 }> = ({ label, children, className = '', valueClassName, muted }) => (
-  <div className={`flex-col items-end w-28 flex-shrink-0 ${className || 'flex'}`}>
+  <div className={`flex-col items-end w-28 shrink-0 ${className || 'flex'}`}>
     {children !== null && children !== undefined && (
       <>
         <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 leading-tight">
@@ -72,6 +74,7 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
   ...cardHandlers
 }) => {
   const { t } = useTranslation()
+  const hideClosed = useHideClosedContracts()
   const isExpanded = expandedNodes.has(node.key)
   const isLeaf = node.children.length === 0
 
@@ -92,6 +95,10 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
   // Nothing to reveal, so the row is not a toggle. Expanding it opened an empty container and
   // left a chevron pointing at nothing — the budget on the row is already the whole story.
   const isExpandable = node.children.length > 0 || node.contracts.length > 0
+  // Hidden at render only; node totals were built from every contract and still include them.
+  const visibleContracts = hideClosed
+    ? node.contracts.filter(sub => !isClosedContract(sub.contract_status))
+    : node.contracts
 
   return (
     <div className={
@@ -102,7 +109,9 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
         : 'rounded-lg overflow-hidden'
     }>
       {/* Hover highlight only where the row actually responds to a click. */}
-      <div className={`w-full flex items-center justify-between gap-4 transition-colors duration-200 ${
+      {/* On a phone the label takes its own line: beside the figures and buttons it was squeezed
+          to nothing, leaving a row that read "(1) UGOVOR €210.000" with no name (UI-8). */}
+      <div className={`w-full flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-4 transition-colors duration-200 ${
         depth <= 1 ? 'bg-gray-50 dark:bg-gray-700/50' : 'bg-gray-50/60 dark:bg-gray-800/40'
       } ${
         !isExpandable
@@ -116,21 +125,21 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
           onClick={() => onToggleNode(node.key)}
           disabled={!isExpandable}
           aria-expanded={isExpandable ? isExpanded : undefined}
-          className="flex-1 min-w-0 px-4 py-2.5 flex items-center gap-2.5 text-left disabled:cursor-default"
+          className="basis-full sm:basis-0 flex-1 min-w-0 px-4 py-2.5 flex items-center gap-2.5 text-left disabled:cursor-default"
         >
           {/* The chevron's space is held even when there is nothing to open, so labels stay on
               one vertical line whether or not a row is expandable. */}
           {isExpandable
             ? (isExpanded
-                ? <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                : <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />)
-            : <span className="w-4 h-4 flex-shrink-0" aria-hidden="true" />}
+                ? <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />
+                : <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />)
+            : <span className="w-4 h-4 shrink-0" aria-hidden="true" />}
           <span className={`font-semibold truncate ${
             isExpandable ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
           }`}>
             {node.label}
           </span>
-          <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
+          <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">
             ({node.rollup.count})
           </span>
         </button>
@@ -138,7 +147,7 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
         {/* Fixed-width right-aligned columns with the label above the value: the figures then
             line up vertically down the whole list, which is what makes a dense tree scannable.
             Mirrors the tile pattern already used on the phase header. */}
-        <div className="flex items-center gap-5 pr-2 tabular-nums">
+        <div className="flex items-center gap-5 pr-2 pb-2 sm:pb-0 ml-auto tabular-nums">
           {/* All four slots are always rendered, empty where a level has no such figure, so the
               columns line up down the whole tree rather than shifting per row. */}
           <Metric label={t('supervision.site_management.phase_card.classification_budget')} className="hidden lg:flex">
@@ -167,7 +176,7 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
           )}
 
           {/* Fixed width whether or not the buttons exist, so rows without them keep the grid. */}
-          <div className="flex items-center justify-end w-[72px] flex-shrink-0">
+          <div className="flex items-center justify-end w-[72px] shrink-0">
             {canEditBudget && (
               <Button
                 variant="ghost"
@@ -196,7 +205,14 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
       {isExpanded && isExpandable && (
         isLeaf ? (
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {node.contracts.map(subcontractor => (
+            {visibleContracts.length < node.contracts.length && (
+              <p className="col-span-full text-xs text-gray-500 dark:text-gray-400">
+                {t('supervision.site_management.closed_contracts_hidden', {
+                  count: node.contracts.length - visibleContracts.length,
+                })}
+              </p>
+            )}
+            {visibleContracts.map(subcontractor => (
               <ContractCard
                 key={subcontractor.id}
                 subcontractor={subcontractor as unknown as Subcontractor}

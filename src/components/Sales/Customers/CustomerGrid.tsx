@@ -12,13 +12,15 @@ interface CustomerGridProps {
   loading: boolean
   /** The load failed and nothing is on screen — never render this as "no customers". */
   loadFailed?: boolean
+  /** A search term or project filter is active, so an empty grid means "no match". */
+  filtered?: boolean
   onRetry?: () => void
   selectedIds: Set<string>
   onToggleSelect: (id: string) => void
   onSelectAll: () => void
   onViewDetails: (customer: CustomerWithApartments) => void
   onEdit: (customer: CustomerWithApartments) => void
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
   onUpdateContact: (id: string) => void
 }
 
@@ -28,6 +30,7 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
   activeCategory,
   loading,
   loadFailed = false,
+  filtered = false,
   onRetry,
   selectedIds,
   onToggleSelect,
@@ -56,7 +59,8 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
     return (
       <EmptyState
         icon={Users}
-        title={t('common.no_data')}
+        title={filtered ? t('common.no_results') : t('customers.empty_title')}
+        description={filtered ? t('common.no_results_description') : t('customers.empty_description')}
       />
     )
   }
@@ -74,7 +78,7 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
         <button
           type="button"
           onClick={onSelectAll}
-          className="flex items-center gap-2 rounded select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="flex items-center gap-2 rounded-sm select-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <SelectIcon
             className={`w-5 h-5 ${selectedCount > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}

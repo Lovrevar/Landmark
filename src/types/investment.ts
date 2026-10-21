@@ -29,6 +29,11 @@ export interface CreditAllocation {
   used_amount: number
   description: string | null
   project?: Project
+  allocation_type?: 'project' | 'opex' | 'refinancing'
+  refinancing_entity_type?: 'company' | 'bank' | null
+  refinancing_entity_id?: string | null
+  /** Filled by the Investment dashboard service from its company and bank lists. */
+  refinancing_name?: string | null
 }
 
 export interface BankCredit {
@@ -59,6 +64,9 @@ export interface BankCredit {
 
 export interface FinancialSummary {
   total_portfolio_value: number
+  /** Projects with no TIC, and so no budget; left out of `total_portfolio_value`. */
+  projects_without_budget: number
+  unbudgeted_project_ids: string[]
   total_debt: number
   total_equity: number
   debt_to_equity_ratio: number

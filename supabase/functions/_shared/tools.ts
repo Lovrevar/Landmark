@@ -1,9 +1,9 @@
 // AI chat tool catalog.
 //
-// This file defines the 12 tools the assistant can invoke and the role-based
-// filter that selects which tools each user is allowed to use. Each handler
-// is currently a stub that echoes its input back; real handlers move to
-// ./tool-handlers.ts in Phase 3.2.
+// This file defines the 15 tools the assistant can invoke and the role-based
+// filter that selects which tools each user is allowed to use. The handlers
+// themselves live in ./tool-handlers.ts (search_help in ./help-search.ts);
+// each entry here only wires its schema and role gate to its handler.
 //
 // Descriptions are model-facing English: they are the only signal the model
 // uses to choose tools, so they must be specific (what / when / non-obvious
@@ -69,8 +69,7 @@ const FINANCE_PLUS_SUPERVISION: Role[] = ['Director', 'Accounting', 'Supervision
 // ---------------------------------------------------------------------------
 // TOOLS
 // ---------------------------------------------------------------------------
-// Order matches the role-gating table in the spec. Phase 3.2 batches will
-// replace each stub handler with real logic.
+// Order matches the role-gating table in the spec.
 
 export const TOOLS: ToolDefinition[] = [
   {
@@ -131,6 +130,9 @@ export const TOOLS: ToolDefinition[] = [
       'start/end dates, status, and the `budget_allocated` figure. ' +
       '`budget_allocated` is derived from the project TIC, not typed by anyone; it reads 0 for a ' +
       'project that has no TIC, which means "not planned yet", not "planned to be zero". ' +
+      'It is null when the TIC is not split by phase and the project has several phases: the ' +
+      'project budget covers them together, so do not divide it between the phases or attribute ' +
+      'it to any one of them. ' +
       'A phase is a TIME division of the project (Faza 1, Faza 2). It is NOT a cost category: ' +
       'most projects have only one phase, so per-phase figures are effectively whole-project ' +
       'figures. For "how much did we spend on land / on preparation", use `list_cost_classifications` ' +

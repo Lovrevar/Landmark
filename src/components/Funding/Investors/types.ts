@@ -39,7 +39,9 @@ export const INITIAL_CREDIT_FORM = {
   principal_repayment_type: 'yearly' as 'monthly' | 'quarterly' | 'biyearly' | 'yearly',
   interest_repayment_type: 'monthly' as 'monthly' | 'quarterly' | 'biyearly' | 'yearly',
   disbursed_to_account: false,
-  disbursed_to_bank_account_id: ''
+  disbursed_to_bank_account_id: '',
+  /** Offered on edit only: a new credit starts `active` (the column default). */
+  status: 'active' as 'active' | 'paid' | 'defaulted'
 }
 
 export const INITIAL_EQUITY_FORM = {

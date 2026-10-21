@@ -25,6 +25,14 @@ export interface ClassificationTotals {
 /** A line's planned amount: own funds plus credit. The split matters to investors, not to budgets. */
 export const lineItemTotal = (item: LineItem): number => item.vlastita + item.kreditna
 
+/**
+ * Whether a project has a planned budget at all. The TIC is its only writer, so a project with no
+ * TIC (or an empty one) has none — whatever `projects.budget` happens to hold. Screens must then
+ * say "budget not set", never print €0 or a stale figure (GEN-5).
+ */
+export const budgetIsSet = (lineItems: LineItem[] | null | undefined): boolean =>
+  !!lineItems && ticGrandTotal(lineItems) > 0
+
 /** The TIC grand total — the "UKUPNO:" figure, and what a project's budget syncs to. */
 export const ticGrandTotal = (lineItems: LineItem[]): number => {
   const { vlastita, kreditna } = calculateTotals(lineItems)
@@ -287,6 +295,31 @@ export function phaseSplitCheck(item: LineItem): PhaseSplitCheck {
 /** True when the row carries a split that does not add up to it. Unphased rows are never flagged. */
 export const hasPhaseSplitMismatch = (item: LineItem): boolean =>
   isPhased(item) && !phaseSplitCheck(item).balanced
+
+/** The one field these two read from a `project_phases` row. */
+export interface PhaseBudget {
+  budget_allocated: number | null
+}
+
+/**
+ * True when the TIC is not split by phase and the project has several phases. The sync then
+ * leaves every phase's `budget_allocated` NULL rather than putting the whole plan on phase 1
+ * (`apply_unphased_tic_budget`, GEN-22): the project budget covers the phases together, and no
+ * phase has a share — or a cap — of its own. 0 is different: the TIC plans nothing for that phase.
+ */
+export const budgetNotSplitByPhase = (phases: PhaseBudget[]): boolean =>
+  phases.some(phase => phase.budget_allocated === null)
+
+/**
+ * What the project's phases plan between them: the sum of their shares, or, when the TIC is not
+ * split by phase, the TIC itself. Summing NULLs would read as a project with no plan at all.
+ * A phased TIC with project-level lines (land, fees) plans more than its phases; this is the
+ * phases' part, as before.
+ */
+export const plannedOnPhases = (phases: PhaseBudget[], ticTotal: number | null): number =>
+  budgetNotSplitByPhase(phases)
+    ? (ticTotal ?? 0)
+    : phases.reduce((sum, phase) => sum + Number(phase.budget_allocated ?? 0), 0)
 
 /** How many phases the plan spans — its highest ordinal, so an empty middle phase still counts. */
 export const ticPhaseCount = (lineItems: LineItem[]): number =>

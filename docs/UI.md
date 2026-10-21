@@ -18,7 +18,7 @@ Shared primitive component library. Always check here before building new UI —
 ### Alert.tsx
 - Styled alert banner with dismiss button
 - Props: `variant` ('info' | 'success' | 'warning' | 'error'), `title?`, `children`, `onDismiss?`, `className?`
-- ⚠️ An `onClose` prop is also declared but **never rendered** — use `onDismiss` for the X button
+- ⚠️ An `onClose` prop is also declared but **never rendered** — use `onDismiss` for the X button (labelled `common.close` for screen readers)
 - Use it for a failure over data that is still on screen; use `ErrorState` when there is nothing to show
 - **Uses Ui:** (none — standalone primitive)
 
@@ -91,11 +91,18 @@ Shared primitive component library. Always check here before building new UI —
 
 ### FormField.tsx
 - Wraps any form input with label, required marker, helper text, and error display
-- Props: `label`, `required?`, `helperText?` (ReactNode), `error?`, `compact?`, `group?`, `children`, `className?`
+- Props: `label`, `required?`, `helperText?` (ReactNode), `hint?` (ReactNode), `error?`, `compact?`, `group?`, `children`, `className?`
+- `hint` — an `InfoHint` shown beside the label (never inside the `<label>`, since it is a button). Use it for a field whose *options* need explaining; a plain sentence about the field still goes in `helperText`
 - **Links the label to its control automatically.** FormField generates an id and provides it through context; `Input`, `Select`, `Textarea` and `SearchableSelect` (and `DateInput` / `CurrencyInput`, which render `Input`) pick it up as their `id`, plus `aria-describedby` (the error, else the helper text), `aria-invalid` and `aria-required`. Clicking the label focuses the field; screen readers and Playwright's `getByLabel` find it by label. Anything passed explicitly on the control wins
 - One control per FormField — two controls would share the id
 - `group` — for a field that is a set of controls or a read-only value (a `SegmentedControl`, a category tree, "budget from TIC"): the label becomes the name of a `role="group"` wrapper instead of pointing at a single input
 - A custom control can join in with `useFormFieldControl()` (exported from `FormField.tsx`), which returns `{ controlId, describedBy, invalid, required }` or null outside a FormField
+
+### InfoHint.tsx
+- A "?" beside a label that opens a short explanation **on click** — so it works on touch and with a keyboard, which a native `title` tooltip does not. Use it instead of `title=` whenever the text is an explanation rather than a button name
+- Props: `hintId` (stable name, logged on open), `label` (accessible name + popover heading), `children` (one or two sentences), `articleId?` (adds a "more" link to `/help/<id>`, opened in a new tab), `icon?` (replaces the "?", e.g. `AlertTriangle` for a flagged value), `className?` (trigger colour), `widthClassName?` (popover width, default `w-72`; widen it for a legend — it is always capped at the viewport)
+- Positioned with `@floating-ui/react` and portalled, so tables and modal bodies cannot clip it. Escape and focus use the app's own layer stacks: inside a modal, Escape closes the hint only
+- Keep the content short and put the durable explanation in a `help-kb` article — see [HELP.md](./HELP.md)
 
 ### InlineLoadError.tsx
 - One line of "this could not be loaded", small enough to sit under a form control or inside a sidebar card. Imported by path (not in the barrel)
@@ -116,7 +123,9 @@ Shared primitive component library. Always check here before building new UI —
 ### MarkdownView.tsx
 - Renders a Markdown string with the app's typography, via `react-markdown` + `remark-gfm` (so tables, strikethrough and task lists work)
 - Props: `content`, `className?`
-- Used by AI chat message bodies and task descriptions. Prefer this over hand-rolling a Markdown renderer
+- Used by AI chat message bodies, task descriptions and the Help page. Prefer this over hand-rolling a Markdown renderer
+- A link whose `href` is an app path (`isAppPath`, `src/utils/appPath.ts`) navigates in place (`<Link>`); every other link opens in a new tab
+- An image is drawn only when its address is the app's own (`isAppPath`, a help article's screenshot); any other image is replaced by its alt text, since this also renders assistant replies and task text and a remote image would be fetched from every reader's browser
 
 ### Modal.tsx
 - Full-featured modal dialog with portal rendering and body scroll lock
@@ -136,8 +145,15 @@ Shared primitive component library. Always check here before building new UI —
 ### PageHeader.tsx
 - Page title bar with optional description and an action slot
 - Props: `title`, `description?`, `subtitle?`, `icon?` (ElementType), `actions?` (ReactNode), `className?`
+- **Help link:** renders `PageHelpLink` after the title (below)
+- **Layout from `sm` up:** the title block keeps at least 14rem and the actions wrap beside it, right-aligned. (Until October 2026 the actions never shrank, so a page with five buttons squeezed its title and description into a ~90px column.) A page with many actions now shows them on two or three rows
 - **Mobile-responsive:** title block and actions stack vertically on phones and sit on one row from `sm` up; actions wrap when they overflow
 - Note: `subtitle` and `icon` are accepted by the prop type but not currently rendered by the component — only `title`, `description`, and `actions` are displayed
+
+### PageHelpLink.tsx
+- The "?" beside a page title. Shown only when `help-kb` has an article whose `routes` match the current page and that the user's role may read; opens `/help?page=<pathname>` in a new tab (so unsaved work on the page survives) and logs `help.page_link_click`
+- Props: `tone?` (`'default'` | `'light'` for a title on a dark background), `className?`
+- `PageHeader` includes it. A page with its own title element puts `<PageHelpLink />` inside that element — the six dashboards, Budget Control, project details, the General report, TIC, the Cashflow calendar, Tasks, Calendar, Chat and Site Management do. **A new page without `PageHeader` should do the same**
 
 ### Pagination.tsx
 - Previous/next pagination controls with page info
@@ -169,7 +185,9 @@ Shared primitive component library. Always check here before building new UI —
 
 ### StatCard.tsx
 - Single KPI metric card with icon, optional trend indicator, and colour scheme
-- Props: `label?`, `title?`, `value` (string | number), `subtitle?`, `trend?`, `icon?` (LucideIcon), `color?` (8 colour schemes), `size?` ('sm' | 'md' | 'lg'), `className?`
+- Props: `label?`, `title?`, `value` (string | number), `subtitle?`, `trend?`, `icon?` (LucideIcon), `color?` (8 colour schemes), `size?` ('sm' | 'md' | 'lg'), `className?`, `hint?` (an `InfoHint` shown after the label — the place for a hint about a figure, since a table header disappears on a phone)
+- **The value never runs out of its card, and is never truncated.** On a narrow card (two-column grid on a phone) the value takes the full width under the label and icon; its font size follows the card's width from the `size`'s maximum down to 0.8rem; if it still does not fit it wraps. The layout is a small CSS grid with a container query — `.stat-card*` in `src/index.css` — because Tailwind has no container-query variant here. Do not add `truncate`, `overflow-hidden` or `whitespace-nowrap` to it: a money amount with a missing digit is a wrong amount (`statCardFit.test.ts`)
+- The card sets `container-type: inline-size`, so its width must come from its parent (a grid cell, a `flex-1`); every current use is inside a grid
 
 ### StatGrid.tsx
 - Responsive grid layout for multiple StatCards
@@ -179,7 +197,7 @@ Shared primitive component library. Always check here before building new UI —
 ### Table.tsx
 - Semantic data table with sticky headers and row hover effects
 - Compound component: `Table.Head`, `Table.Body`, `Table.Th`, `Table.Td`, `Table.Tr`
-- Props (root): `dense?` (tighter cell padding, propagated to `Th`/`Td` via context), `fitContent?` (size to content / left-align instead of stretching to fill — avoids wide column gaps on sparse tables), `children`, `className?`
+- Props (root): `dense?` (tighter cell padding, propagated to `Th`/`Td` via context), `fitContent?` (size to content / left-align instead of stretching to fill — avoids wide column gaps on sparse tables; give text columns a fixed width, e.g. `<div className="md:w-80 md:truncate" title={…}>`, and money columns a `w-36` header, or the table resizes whenever a filter changes the rows — Subcontractors and Suppliers do this), `children`, `className?`
 - Props (`Th`): `sortable?`, `sticky?` (pins to the right edge), plus standard HTML `th` attributes
 - Props (`Td`): `sticky?`, `label?` (column label shown beside the value in the mobile card view), plus standard HTML `td` attributes
 - Props (`Tr`): `hoverable?` (default `true`), plus standard HTML `tr` attributes

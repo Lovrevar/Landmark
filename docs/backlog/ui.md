@@ -1,0 +1,165 @@
+# Backlog — app-wide UI
+
+Problems that repeat across modules: formatting, status display, failed loads, translations, the
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-18`). Entry format and
+rules are in [README.md](./README.md).
+
+A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
+helper or a sweep. Counts were measured on 2026-09-21 to 2026-09-23 and will have drifted; measure
+again before starting a sweep. Check [../UI.md](../UI.md) before adding a primitive.
+
+## Open
+
+### UI-14 · Low · StatCard: a long word in the title runs under the icon
+- **Check:** Confirmed on LandmarkDemo at 1280 px (2026-10-21)
+- **Where:** `ui/StatCard.tsx`, `.stat-card__grid` in `index.css` (label column `minmax(0, 1fr)`
+  beside the icon)
+- **What happens:** a word wider than the label column doesn't wrap and runs under the icon:
+  "Naplaćeno od prodaje", "Naplaćeno ovaj mjesec" and "Aktivni potencijalni kupci" on the Sales
+  dashboard, "Ugovorena prodaja" and "Novčani tok (Listopad)" on the Director's. Every StatCard
+  in a five-across row at 1280 px is exposed
+- **Fix direction:** `overflow-wrap: anywhere` (or `hyphens: auto` with `lang="hr"`) on
+  `.stat-card__label`, or move the icon above the label below a container width, as the value
+  already does. Check 1280 px and phone width in both languages
+
+### UI-15 · Low · The Croatian UI says "Export Excel" and "Export PDF"
+- **Check:** Code reading, seen on Sales payments (2026-10-21)
+- **Where:** `src/locales/hr/translation.json`: `common.export_excel` ("Export Excel", 7 screens,
+  among them Sales payments), `common.export_pdf`, `tic.export_excel_button`,
+  `tic.export_pdf_button`
+- **What happens:** the hr locale holds the English text, so the buttons are English in the
+  Croatian UI. Not covered by SALES-19 or UI-5 (those are literals in code, not locale values)
+- **Fix direction:** ask for the wording first (the General report already says "Izvoz PDF"),
+  then fix the four values and grep for other English hr values
+
+### UI-16 · Low · Storage units should be "spremište", not "repozitorij", in the Croatian UI
+- **Check:** Confirmed (decision by the product owner, 2026-10-21)
+- **Where:** about 24 hr locale strings ("Repozitorij", "repozitorija", "Repozitoriji", …), the
+  help articles (`help-kb/`), and the Croatian PDF and Excel exports
+- **What happens:** the screens call a storage unit "repozitorij". The Sales dashboard's average
+  ("Po prodaji (s garažama i spremištima)", GEN-38) already says "spremište", so the UI now uses
+  both
+- **Fix direction:** a sweep of the labels only. The `repozitorij` unit type, the
+  `repositories` table and the code names stay; CLAUDE.md's "Unit types" line should then say
+  what the screens call it. Rebuild the help index and add a release note
+
+### UI-17 · Low · "Ugovorena prodaja" is the value of nine keys, with no shared one
+- **Check:** Code reading (convention review of GEN-38's follow-ups, 2026-10-21)
+- **Where:** `general_projects.revenue_from_sales`, `dashboards.director.total_revenue` /
+  `total_sales_revenue` / `revenue_col`, `reports.general.total_revenue` / `total_revenue_label` /
+  `revenue_label`, `reports.sales.total_revenue` / `total_revenue_stat`, in both locales
+- **What happens:** the i18n rule wants a string used in several components under `common.*`.
+  The next wording change has to find all nine, and keys named `*revenue*` no longer say what
+  they hold
+- **Fix direction:** `common.contracted_sales` (and a colon variant if needed), point the
+  screens and PDFs at it, delete the old keys; grep the PDF builders too
+
+### UI-10 · Low · Shell labels that disagree or are unused
+- **Check:** Code reading (help-article audit, 2026-10-06)
+- Menu label and page title differ on several pages (the help articles now name both).
+- The Cashflow prompt says "Lozinka" and its error "Netočna šifra".
+- Looks unused: `profiles.unlock`, `profiles.locked`, `profiles.select_profile` and some `nav.*`
+  labels. Grep before deleting.
+- English literals left on screen: "TBD", "Mixed", "Retail", "Site".
+
+### UI-8 · Low · Mobile
+- **Done** on `fix/mobile-pass-ui8` (2026-10-09), measured at 390px on 45 pages as Director and
+  7 as Supervision: no page scrolls sideways and nothing is cut off any more. Fixed: the phase
+  card header and the group rows on Site management, the work log cards, the Investment project
+  cards, the calendar toolbar and the General report's project header (all pushed their right
+  half off the card); the assistant's edit and regenerate buttons (hover-only); the calendar,
+  which now opens on the agenda on a phone.
+- **Left:** tap targets under 32px — the icon buttons on Documents (expand, open, paging; 43 on
+  one screen) and the calendar's type chips and month arrows. Wide tables on desktop
+  (Cashflow invoices, the TIC with phases) scroll inside their card by design.
+- **How to re-measure:** load each page at 390px and look for elements whose right edge passes
+  the viewport or a clipping ancestor; the page's own scroll container hides a plain
+  `document.scrollWidth` check.
+
+### UI-4 · Low · Failed loads that still read as "no data"
+- **Done:** ~60 hook-shaped loaders expose `error` + `refetch` and render `ErrorState`; services
+  throw; all silent mutations report. On `fix/failed-loads-ui4` (2026-10-08) the remaining inline
+  loaders were fixed: 17 in 14 files, mostly dropdown lookups in form modals, now showing
+  `InlineLoadError` with a retry (`common.list_load_error`); the Sales report and project details
+  show `ErrorState` instead of an empty picker and "not found".
+- **Left:** the full-page spinner on refetch on 9 Cashflow pages (the search box loses focus);
+  the lookup in the unreachable `BankCreditFormModal` (CASH-15); the Projects list shows a failed
+  load as an `Alert` (GEN-21).
+- **Rule:** never render zeros or an empty state on a failed load.
+
+### UI-3 · Medium · Status colours and labels
+- **Done:** `utils/statusDisplay.ts` holds project, contract, retail contract, retail phase, unit,
+  milestone, retail milestone and risk level, each with one label key and one colour.
+- **Left:** per-screen colour choices inside Cashflow that no shared map covers, and ~16 Croatian
+  literal maps in `invoiceHelpers` / `paymentHelpers` (see CASH-18 in
+  [cashflow.md](./cashflow.md)).
+
+### UI-1 · Low · Money formatting
+- **Done:** shared helpers cover exact cents, aggregates and compact tiles; every `en-US`,
+  browser-locale, `$`, `€0.0M` and `€`-suffix render is gone.
+- **Left:** ~256 hand-rolled `toLocaleString('hr-HR')` money renders in 68 files (ragged
+  decimals), and 74 `DollarSign` icons in 29 files outside Reports and dashboards.
+  One seen on LandmarkDemo (2026-10-21): the Sales report's monthly table prints its average as
+  "€269.182,5" (`Reports/SalesReports.tsx` ~283; the revenue column beside it, ~282, is
+  hand-rolled the same way).
+- **Fix direction:** `formatEuro` / `formatEuroRounded` / `formatEuroCompact` from
+  `utils/formatters.ts`.
+- **Sign order (2026-10-06):** the shared euro helpers now print a negative as "−€1.234,56". The
+  hand-built sites do not follow: about 59 that write "€" before `formatCurrency`, about 148 that
+  write it before a bare `toLocaleString`, and 10 locale strings of the form `€{{amount}}` still
+  print "€−…". Most never go negative; "Preostalo" after an overpayment can.
+
+### UI-5 · Low · Hardcoded strings
+- **Done:** the English strings on screen, in every module and the shell.
+- **Left:** ~93 Croatian literals that belong in the locale files; ~420 literals in the export
+  generators (PDFs ignore the UI language); TimelineColumn's "+N more"; English placeholders and
+  no language switcher on the login form; several shell strings. AiChat's 36 are Croatian-only by
+  a documented decision.
+- **Rule:** follow the i18n rules in CLAUDE.md; ask before translating anything ambiguous.
+
+### UI-2 · Low · Dates in exports and inputs
+- **Done:** every date on screen goes through `formatDate` / `formatDateTime` /
+  `formatMonthYear`, with a Vitest guard.
+- **Left:** the three PDF generators and the CSV headers (policy in
+  [../REPORTS.md](../REPORTS.md)), `DateInput`'s third format (`DD/MM/YYYY`), and 59 native
+  `type="date"` inputs.
+
+### UI-12 · Low · `help:shots` can capture a dialog while it is still loading
+- **Check:** Confirmed (2026-10-20: `stan-povezi-jedinice.png` came out as the "Učitavanje
+  dostupnih jedinica..." spinner in two of three full runs, and fully loaded when taken alone)
+- **Where:** `scripts/help-screenshots/capture.spec.ts` (fixed `waitForTimeout(400)`) and
+  `openDialog` in `shots.ts`, which waits only for the dialog to appear
+- **What happens:** a dialog that loads its own data after opening is photographed half-loaded
+  when LandmarkDemo answers slowly, and the article gets a spinner instead of the form. The run
+  still passes, so it is only caught by looking at the picture
+- **Fix direction:** after `before`, wait until no `[aria-busy="true"]` / `.animate-spin` is left
+  inside the target (or give such shots a `ready` locator to wait for)
+
+### UI-13 · Low · `help:check` fails on requests cancelled by its own navigation
+- **Check:** Runtime check needed (2026-10-20: two of four variant runs failed only on this)
+- **Where:** `scripts/help-screenshots/check.spec.ts`, the `hint-no-contract-supplier-link` step,
+  which `page.goto`s away from the Supervision screen of the step before
+- **What happens:** a cost-classification request still in flight is cancelled by the
+  navigation; `useCostClassifications` logs "Error loading cost classifications: TypeError: Failed
+  to fetch", and the check reports it as a console error of the new screen, so a clean run fails
+  at random
+- **Fix direction:** wait for `networkidle` before each step's `goto`, or ignore console errors
+  logged before the step's page has loaded
+
+### UI-9 · Low · Dark-mode contrast
+- 441 lines carry a `-600` accent with no `dark:text-` of their own (~230 sit beside a sibling
+  branch that has one). Worst: Cashflow 71, dashboards 68, Funding 65, Sales 62, Retail 53.
+
+### UI-7 · Low · Hand-rolled primitives
+- ~60 KPI tiles instead of `StatCard`; ~12 raw tables with no mobile view; six dashboards each
+  hand-roll their header and grid; four modal-footer styles; "Export PDF" styled as a red danger
+  button in three places.
+
+### UI-6 · Low · Shared library props that do nothing
+- `Alert` ignores `onClose`; `StatCard` ignores `trend`; `DateInput` ignores `min` / `max`.
+- **Fix direction:** implement the props or remove them.
+
+## Resolved
+
+### UI-11 · Low · Amounts run past their card at laptop width on Budget Control and Companies
+- Fixed on `feat/user-guidance-phase-3` (2026-10-12): both use the `.stat-card` / `.stat-card__value` sizing from `index.css`; measured at 1280×800 on the demo, no figure overflows or wraps.

@@ -1,19 +1,31 @@
 ---
 id: retail-sales
-title: Retail prodaja (čestice)
-keywords: [retail prodaja, retail sales, prodaja čestica, dodaj prodaju, prekoračenje, dospijeće]
-routes: [/retail-sales]
+title: Retail prodaje i plaćanja kupaca
+keywords: [retail prodaja, retail plaćanja, retail sales, prodaje, retail plaćanja prodaje, prodaja čestica, nova prodaja, dospjelo, export excel]
+routes: [/retail-sales, /retail-sales-payments]
 roles: [Director, Accounting, Investment]
 ---
 
-**Retail prodaja** evidentira prodaju zemljišnih čestica kupcima. Naslov stranice je **Prodajna plaćanja**.
+## Prodaje
 
-Glavna akcija: **Dodaj novu prodaju** (+ gumb).
+Stavka **Prodaje** u profilu **Retail** otvara stranicu **Prodaje** (podnaslov **Upravljanje prodajama i rokovima plaćanja**), na kojoj se evidentira prodaja zemljišnih čestica kupcima.
 
-Filtri: tražilica **Pretraži po kupcu/čestici...** i padajući izbornik statusa s vrijednostima **Svi statusi**, **Na čekanju**, **Djelomično**, **Plaćeno**, **Prekoračenje**.
+Glavna akcija: **Nova prodaja** (čestica, kupac, površina, cijena po m², rok plaćanja, broj ugovora).
 
-Stupci tablice: **Kupac**, **Čestica**, **Površina** (m² + cijena/m²), **Ukupno** (€), **Plaćeno** (€), **Rok**, **Status**.
+Kartice statistike: **Ukupno prodaja**, **Ukupni prihod**, **Plaćeno**, **Za naplatu**.
 
-Akcijske ikone po retku: **Dodaj plaćanje** (vidljivo samo ako status nije **Plaćeno**), **Uredi**, **Obriši**. Modal plaćanja prikazuje ukupno, plaćeno i preostalo te traži iznos uplate.
+Filtri: tražilica **Pretraži po kupcu, čestici ili ugovoru...** i status (**Svi statusi**, **Na čekanju**, **Djelomično**, **Plaćeno**, **Dospjelo**).
 
-Status **Prekoračenje** označava prekoračen rok dospijeća.
+Stupci: **Kupac**, **Čestica**, **Površina** (m² i cijena po m²), **Ukupno**, **Plaćeno** (s preostalim iznosom), **Rok**, **Status**, **Akcije**.
+
+Akcije po retku: **Dodaj plaćanje** (samo dok prodaja nije plaćena), **Uredi**, **Obriši**. Prozor plaćanja prikazuje ukupno, plaćeno i preostalo te traži iznos uplate. Status **Dospjelo** znači da je rok plaćanja prošao.
+
+## Plaćanja
+
+Stavka **Plaćanja** u profilu **Retail** otvara stranicu **Retail plaćanja prodaje** — pregled svih uplata retail kupaca. Podnaslov: **Praćenje svih plaćanja retail kupaca**. Stranica je samo za pregled.
+
+Kartice statistike: **Ukupno plaćanja**, **Ukupni iznos**, **Ovaj mjesec**, **Iznos ovog mjeseca**.
+
+Filtri: tražilica **Pretraži plaćanja...**, izbornik (**Sva plaćanja**, **Nedavno (7 dana)**, **Veće od €10k**) i raspon datuma (**Datum početka** / **Datum kraja**). Gumb **Export Excel** preuzima filtrirani popis kao Excel (.xlsx) datoteku, uvijek na hrvatskom.
+
+Stupci: **Datum plaćanja**, **Račun**, **Kupac**, **Ugovor**, **Projekt**, **Ukupno računa**, **Plaćanje**, **Metoda**, **Banka**.

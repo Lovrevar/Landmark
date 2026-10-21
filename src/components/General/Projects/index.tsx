@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FolderKanban, Plus } from 'lucide-react'
-import { LoadingSpinner, PageHeader, SearchInput, Select, EmptyState, Button } from '../../ui'
+import { LoadingSpinner, PageHeader, SearchInput, Select, EmptyState, Button, Alert } from '../../ui'
 import { PROJECT_CATEGORIES, PROJECT_CATEGORY_LABELS } from '../../../lib/supabase'
 import { fetchProjectsWithStats } from './services/projectService'
 import type { ProjectWithStats } from './types'
@@ -19,6 +19,8 @@ const ProjectsManagement: React.FC = () => {
   const [projects, setProjects] = useState<ProjectWithStats[]>([])
   const [filteredProjects, setFilteredProjects] = useState<ProjectWithStats[]>([])
   const [loading, setLoading] = useState(true)
+  // A failed load used to fall through to "no projects", which reads as a fact about the data.
+  const [loadFailed, setLoadFailed] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -29,8 +31,10 @@ const ProjectsManagement: React.FC = () => {
       setLoading(true)
       const data = await fetchProjectsWithStats()
       setProjects(data)
+      setLoadFailed(false)
     } catch (error) {
       console.error('Error fetching projects:', error)
+      setLoadFailed(true)
     } finally {
       setLoading(false)
     }
@@ -75,7 +79,7 @@ const ProjectsManagement: React.FC = () => {
         }
       />
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <SearchInput
             className="flex-1"
@@ -110,8 +114,34 @@ const ProjectsManagement: React.FC = () => {
 
         {loading ? (
           <LoadingSpinner message={t('general_projects.loading')} />
+        ) : loadFailed ? (
+          <Alert variant="error" title={t('common.load_error_title')}>
+            {t('common.load_error_description')}{' '}
+            <button type="button" onClick={() => { void loadProjects() }} className="underline font-medium">
+              {t('common.retry')}
+            </button>
+          </Alert>
         ) : filteredProjects.length === 0 ? (
-          <EmptyState icon={FolderKanban} title={t('general_projects.no_projects')} />
+          searchTerm.trim() || statusFilter !== 'all' || categoryFilter !== 'all' ? (
+            <EmptyState
+              icon={FolderKanban}
+              title={t('common.no_results')}
+              description={t('common.no_results_description')}
+            />
+          ) : (
+            <EmptyState
+              icon={FolderKanban}
+              title={t('general_projects.no_projects')}
+              description={canManageProjects
+                ? t('general_projects.no_projects_description')
+                : t('general_projects.no_projects_description_readonly')}
+              action={canManageProjects ? (
+                <Button icon={Plus} onClick={() => setShowNewProjectModal(true)}>
+                  {t('general_projects.new_project')}
+                </Button>
+              ) : undefined}
+            />
+          )
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project) => (

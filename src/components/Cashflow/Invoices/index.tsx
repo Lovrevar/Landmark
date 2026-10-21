@@ -2,6 +2,8 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, Button, LoadingSpinner, PageHeader, ConfirmDialog, ErrorState } from '../../ui'
 import { toErrorMessage } from '../../../lib/errorMessage'
+import { useAuth } from '../../../contexts/AuthContext'
+import { isDirectorRole } from '../../../utils/permissions'
 import { RetailInvoiceFormModal } from './forms/RetailInvoiceFormModal'
 import BankInvoiceFormModal from '../Banks/forms/BankInvoiceFormModal'
 import { LandPurchaseFormModal } from './forms/LandPurchaseFormModal'
@@ -16,9 +18,6 @@ import { ColumnMenuDropdown } from '../components/ColumnMenuDropdown'
 import { InvoiceActionButtons } from './InvoiceActionButtons'
 import { InvoicePagination } from './InvoicePagination'
 import {
-  getTypeColor,
-  getTypeLabel,
-  getStatusColor,
   getSupplierCustomerName,
   getCustomerProjects,
   getCustomerApartmentsByProject,
@@ -31,6 +30,7 @@ import {
 
 const AccountingInvoices: React.FC = () => {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const {
     invoices,
     companies,
@@ -230,7 +230,7 @@ const AccountingInvoices: React.FC = () => {
       />
 
       {loadFailedEmpty ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
           <ErrorState onRetry={() => void refetch()} />
         </div>
       ) : (
@@ -244,14 +244,13 @@ const AccountingInvoices: React.FC = () => {
           sortField={sortField}
           sortDirection={sortDirection}
           filterDirection={filterDirection}
+          filtered={searchTerm.trim() !== '' || filterCategory !== 'ALL' || filterStatus !== 'ALL' || filterCompany !== 'ALL'}
           onSort={handleSort}
           onView={handleViewInvoice}
           onEdit={handleOpenModal}
-          onDelete={handleDelete}
+          // Deleting invoices is Director-only under RLS.
+          onDelete={isDirectorRole(user) ? handleDelete : undefined}
           onPayment={handleOpenPaymentModal}
-          getTypeColor={getTypeColor}
-          getTypeLabel={getTypeLabel}
-          getStatusColor={getStatusColor}
           getSupplierCustomerName={getSupplierCustomerName}
           isOverdue={isOverdue}
         />
@@ -309,9 +308,6 @@ const AccountingInvoices: React.FC = () => {
       <InvoiceDetailView
         invoice={viewingInvoice}
         onClose={handleCloseViewModal}
-        getTypeColor={getTypeColor}
-        getTypeLabel={getTypeLabel}
-        getStatusColor={getStatusColor}
         getSupplierCustomerName={getSupplierCustomerName}
         isOverdue={isOverdue}
       />

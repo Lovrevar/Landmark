@@ -48,7 +48,7 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
         />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
         <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('common.customers')}</h3>
@@ -58,7 +58,10 @@ export const SalesAnalysis: React.FC<Props> = ({ customers, invoices, formatCurr
         </div>
 
         {customers.length === 0 ? (
-          <EmptyState title={t('reports.sales_analysis.no_customers')} />
+          <EmptyState
+            title={t('reports.sales_analysis.no_customers')}
+            description={t('reports.sales_analysis.no_customers_description')}
+          />
         ) : (
           <Table className="rounded-none shadow-none border-0">
             <Table.Head>
@@ -128,7 +131,7 @@ function StatCard({ icon, label, value, sub }: {
   sub: string
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-4">
       <div className="flex items-center gap-2 mb-2">
         {icon}
         <span className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">{label}</span>

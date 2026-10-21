@@ -26,7 +26,21 @@ export interface ContractRollupRow {
    * agreed amount to measure what has been paid against.
    */
   owed?: number
+  /**
+   * `contracts.status`. A **terminated** contract commits only what was paid on it — the unspent
+   * remainder is released back to the budget. Draft, active and completed contracts commit their
+   * full value. Rows without a status (Retail) are unaffected.
+   */
+  status?: string | null
 }
+
+/** Completed or terminated: no longer expected to have work done or be late. */
+export const isClosedContract = (status: string | null | undefined): boolean =>
+  status === 'completed' || status === 'terminated'
+
+/** What a contract commits against the budget: its value, or for a terminated one what was paid. */
+export const committedAmount = (row: Pick<ContractRollupRow, 'cost' | 'paid' | 'status'>): number =>
+  row.status === 'terminated' ? (row.paid || 0) : (row.cost ?? 0)
 
 export interface ContractRollup {
   contracted: number
@@ -62,7 +76,7 @@ export function rollupContracts(rows: ContractRollupRow[]): ContractRollup {
   let unpaidWithoutContract = 0
 
   for (const row of rows) {
-    const cost = row.cost ?? 0
+    const cost = committedAmount(row)
     const rowPaid = row.paid || 0
 
     paid += rowPaid

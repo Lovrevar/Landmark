@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { committedAmount } from '../../../../utils/contractRollup'
 import { logActivity } from '../../../../lib/activityLog'
 import { SupplierSummary, Contract, Invoice, SupplierFormData, Project, Phase } from '../types'
 
@@ -31,7 +32,8 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
     { data: retailContractsData },
     { data: retailInvoicesData }
   ] = await Promise.all([
-    supabase.from('contracts').select('id, subcontractor_id, contract_amount, has_contract, projects:project_id(name)').in('subcontractor_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['draft', 'active']),
+    // Every status; a terminated contract's value is what was paid on it (see the mapping below).
+    supabase.from('contracts').select('id, subcontractor_id, contract_amount, budget_realized, status, has_contract, projects:project_id(name)').in('subcontractor_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']),
     supabase.from('accounting_invoices').select('id, supplier_id, remaining_amount, status, base_amount, contract_id').in('supplier_id', supplierIds.length > 0 ? supplierIds : ['00000000-0000-0000-0000-000000000000']),
     supabase.from('retail_contracts').select('id, supplier_id, contract_amount, has_contract, retail_project_phases:phase_id(retail_projects:project_id(name))').in('supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000']).in('status', ['Active', 'Completed']),
     supabase.from('accounting_invoices').select('id, retail_supplier_id, remaining_amount, status, base_amount, retail_contract_id').in('retail_supplier_id', retailSupplierIds.length > 0 ? retailSupplierIds : ['00000000-0000-0000-0000-000000000000'])
@@ -69,7 +71,11 @@ export const fetchSuppliers = async (): Promise<SupplierSummary[]> => {
       if ((c as { has_contract?: boolean }).has_contract === false) {
         s.contractValue += siteContractInvoiceTotals.get(c.id) || 0
       } else {
-        s.contractValue += parseFloat(c.contract_amount?.toString() || '0')
+        s.contractValue += committedAmount({
+          cost: parseFloat(c.contract_amount?.toString() || '0'),
+          paid: parseFloat((c as { budget_realized?: number }).budget_realized?.toString() || '0'),
+          status: (c as { status?: string }).status,
+        })
       }
     }
     addProjectName(siteProjectNames, c.subcontractor_id, (c as { projects?: { name?: string } }).projects?.name)
@@ -334,7 +340,6 @@ export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{
       .from('contracts')
       .select('id, contract_number, project_id, phase_id, job_description, contract_amount, budget_realized, end_date, status, has_contract, projects:project_id (name), phases:phase_id (phase_name, phase_number)')
       .eq('subcontractor_id', supplier.id)
-      .in('status', ['draft', 'active'])
 
     const { data: invoicesData } = await supabase
       .from('accounting_invoices')

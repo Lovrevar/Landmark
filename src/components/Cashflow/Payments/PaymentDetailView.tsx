@@ -5,6 +5,8 @@ import { formatCurrency } from '../../Common/CurrencyInput'
 import type { Payment } from './types'
 import { Modal, Button } from '../../ui'
 import { getPaymentMethodLabel } from '../services/paymentHelpers'
+import { getInvoiceTypeLongLabel, paymentDirection } from '../services/invoiceHelpers'
+import { DIRECTION_AMOUNT_CLASS } from '../../../utils/paymentTotals'
 
 interface PaymentDetailViewProps {
   payment: Payment | null
@@ -20,28 +22,6 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
 
   const invoice = payment.accounting_invoices
 
-  const getInvoiceTypeLabel = (type: string) => {
-    switch (type) {
-      case 'INCOMING_SUPPLIER':
-        return t('payments.detail.type_incoming_supplier')
-      case 'OUTGOING_SUPPLIER':
-        return t('payments.detail.type_outgoing_supplier')
-      case 'INCOMING_INVESTMENT':
-        return t('payments.detail.type_incoming_investment')
-      case 'OUTGOING_SALES':
-        return t('payments.detail.type_outgoing_sales')
-      case 'INCOMING_OFFICE':
-        return t('payments.detail.type_incoming_office')
-      case 'OUTGOING_OFFICE':
-        return t('payments.detail.type_outgoing_office')
-      case 'INCOMING_BANK':
-        return t('payments.detail.type_incoming_bank')
-      case 'OUTGOING_BANK':
-        return t('payments.detail.type_outgoing_bank')
-      default:
-        return type
-    }
-  }
 
   const getSupplierCustomerName = () => {
     if (!invoice) return '-'
@@ -57,9 +37,10 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
   }
 
   const isExpense = invoice?.invoice_type.startsWith('INCOMING_') ?? false
+  const amountDirection = paymentDirection(invoice?.invoice_type)
 
   const getPaymentSourceTypeLabel = () => {
-    if (payment.is_cesija) return 'Cesija'
+    if (payment.is_cesija) return t('payments.detail.source_cesija')
     switch (payment.payment_source_type) {
       case 'bank_account': return t('payments.detail.source_bank')
       case 'credit': return t('payments.detail.source_credit')
@@ -109,7 +90,8 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
               )}
               <div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.payment_amount')}</span>
-                <p className="text-lg font-bold text-green-600">
+                {/* The direction's colour, as in the table: this was green for money out too. */}
+                <p className={`text-lg font-bold ${amountDirection ? DIRECTION_AMOUNT_CLASS[amountDirection] : 'text-gray-900 dark:text-white'}`}>
                   &euro;{formatCurrency(payment.amount)}
                 </p>
               </div>
@@ -138,7 +120,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
                   <div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">{t('payments.detail.invoice_type')}</span>
                     <p className={`text-sm font-semibold ${isExpense ? 'text-red-600' : 'text-green-600'}`}>
-                      {getInvoiceTypeLabel(invoice.invoice_type)}
+                      {getInvoiceTypeLongLabel(invoice.invoice_type, t)}
                     </p>
                   </div>
                   <div>
@@ -178,7 +160,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
         {payment.is_cesija && payment.cesija_company_name && (
           <div className="border-t pt-4">
             <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('payments.detail.cesija_section')}</h3>
-            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
+            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-sm">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-purple-700 dark:text-purple-400 font-medium">{t('payments.detail.cesija_label')}</span>
               </div>

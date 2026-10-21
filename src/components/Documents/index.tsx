@@ -7,6 +7,7 @@ import {
 } from '../ui'
 import SearchableSelect, { type SearchableOption } from '../ui/SearchableSelect'
 import { useToast } from '../../contexts/ToastContext'
+import { useAuth } from '../../contexts/AuthContext'
 
 import {
   fetchCategories, fetchCategoryCounts, fetchDocuments, getDocumentSignedUrl, deleteDocument,
@@ -36,6 +37,11 @@ const PAGE_SIZE = 100
 export default function DocumentsPage() {
   const { t } = useTranslation()
   const toast = useToast()
+  const { user } = useAuth()
+  // Mirrors the documents UPDATE/DELETE policy: the uploader, Director or Accounting. This is how an
+  // uncategorised or misfiled email import gets fixed.
+  const canModify = (doc: DocumentWithRelations) =>
+    (!!user && doc.uploaded_by === user.auth_user_id) || user?.role === 'Director' || user?.role === 'Accounting'
 
   const [categoryTree, setCategoryTree] = useState<DocumentCategoryNode[]>([])
   const [categoryById, setCategoryById] = useState<Map<string, DocumentCategory>>(new Map())
@@ -67,6 +73,7 @@ export default function DocumentsPage() {
 
   const [uploadOpen, setUploadOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<DocumentWithRelations | null>(null)
+  const [editingDoc, setEditingDoc] = useState<DocumentWithRelations | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [openingId, setOpeningId] = useState<string | null>(null)
 
@@ -288,7 +295,7 @@ export default function DocumentsPage() {
 
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Left column — category tree */}
-        <aside className="w-full lg:w-80 lg:flex-shrink-0 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3">
+        <aside className="w-full lg:w-80 lg:shrink-0 bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 p-3">
           <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-2">
             {t('documents.page.categories_header')}
           </h2>
@@ -297,7 +304,7 @@ export default function DocumentsPage() {
             type="button"
             onClick={() => setSelectedCategoryId(null)}
             className={[
-              'w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded text-sm transition-colors',
+              'w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-sm text-sm transition-colors',
               selectedCategoryId === null
                 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
@@ -329,7 +336,7 @@ export default function DocumentsPage() {
         {/* Right column — filters + list */}
         <section className="flex-1 min-w-0 space-y-4">
           {/* Filter bar */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 p-4 space-y-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -337,7 +344,7 @@ export default function DocumentsPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder={t('documents.page.search_placeholder')}
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -363,14 +370,14 @@ export default function DocumentsPage() {
                 value={uploadedFrom}
                 onChange={e => setUploadedFrom(e.target.value)}
                 aria-label={t('documents.page.uploaded_from')}
-                className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="date"
                 value={uploadedTo}
                 onChange={e => setUploadedTo(e.target.value)}
                 aria-label={t('documents.page.uploaded_to')}
-                className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -396,7 +403,9 @@ export default function DocumentsPage() {
             creditOptions={creditOptions}
             breadcrumbFor={breadcrumbFor}
             onOpen={handleOpen}
+            onEdit={(doc) => setEditingDoc(doc)}
             onDelete={(doc) => setPendingDelete(doc)}
+            canModify={canModify}
           />
 
           <Pagination
@@ -413,6 +422,13 @@ export default function DocumentsPage() {
         isOpen={uploadOpen}
         onClose={() => setUploadOpen(false)}
         onUploaded={handleUploaded}
+      />
+
+      <DocumentUploadModal
+        isOpen={!!editingDoc}
+        editDocument={editingDoc}
+        onClose={() => setEditingDoc(null)}
+        onSaved={async () => { await Promise.all([refreshList(), refreshCounts()]) }}
       />
 
       <ConfirmDialog

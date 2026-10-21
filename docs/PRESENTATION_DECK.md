@@ -152,7 +152,7 @@ Accountant enters invoice in ERP
 
 Auto Sync
 
-Automatic synchronization pulls the data within minutes
+Scheduled ERP exports are pushed into Cognilion automatically
 
 Validate
 
@@ -164,7 +164,7 @@ Projects, Contracts, Sales, Financing, Dashboards, AI
 
 Every invoice is entered only once.
 
-Within minutes, the entire company works with updated information.
+With the next export, the entire company works with updated information.
 
 No duplicate data entry.
 
@@ -206,7 +206,7 @@ ERP-agnostic by design — the sync layer speaks in cost centers, accounts, OIB 
 
 Beyond the ERP — bank statements and emailed documents flow into the same platform.
 
-Unification, not just import — incoming data is standardized, deduplicated, matched by OIB and linked to projects and contracts.
+Unification, not just import — incoming data is standardized, deduplicated, matched to your companies by OIB, to partners through a mapping kept in Cognilion, and linked to projects and contracts.
 
 Swapping or adding an ERP means a new connector, not a new platform.
 
@@ -332,7 +332,7 @@ Unlike generic software, Cognilion understands local business processes.
 
 Multi-VAT invoices
 
-Construction payment certificates
+Contractor payment milestones
 
 Cost centers
 

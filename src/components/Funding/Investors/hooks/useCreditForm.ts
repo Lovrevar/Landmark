@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { BankCredit } from '../../../../lib/supabase'
 import { INITIAL_CREDIT_FORM, type CreditFormData, type CompanyBankAccount } from '../types'
-import { calculateAnnuityPayment, parseCreditTypeAndSeniority } from '../utils/creditCalculations'
+import { calculateMonthlyDebtService, parseCreditTypeAndSeniority } from '../utils/creditCalculations'
 import { useToast } from '../../../../contexts/ToastContext'
 import { isForeignKeyViolation } from '../../../../lib/dbErrors'
 import {
@@ -64,7 +64,8 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       principal_repayment_type: credit.principal_repayment_type || 'yearly',
       interest_repayment_type: credit.interest_repayment_type || 'monthly',
       disbursed_to_account: credit.disbursed_to_account || false,
-      disbursed_to_bank_account_id: credit.disbursed_to_bank_account_id || ''
+      disbursed_to_bank_account_id: credit.disbursed_to_bank_account_id || '',
+      status: (credit.status as 'active' | 'paid' | 'defaulted') || 'active'
     })
     setShowCreditForm(true)
   }
@@ -85,20 +86,29 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       toast.warning(t('funding.investors.error_credit_fields_required'))
       return
     }
+    // The form marks the account required once "disbursed to account" is ticked, but nothing
+    // checked it: the save went to the database, whose CHECK refused it with a generic error (FUND-6).
+    if (newCredit.disbursed_to_account && !newCredit.disbursed_to_bank_account_id) {
+      toast.warning(t('funding.investors.error_disbursement_account_required'))
+      return
+    }
 
-    const monthlyPayment = calculateAnnuityPayment({
+    // Equal principal instalments with interest on the outstanding balance (FUND-5); stored as
+    // the monthly-equivalent debt service, so the credit is labelled with a monthly instalment.
+    const monthlyPayment = calculateMonthlyDebtService({
       amount: newCredit.amount,
       interest_rate: newCredit.interest_rate,
       grace_period: newCredit.grace_period,
       start_date: newCredit.start_date,
       maturity_date: newCredit.maturity_date || null,
-      repayment_type: newCredit.repayment_type,
+      principal_repayment_type: newCredit.principal_repayment_type,
+      interest_repayment_type: newCredit.interest_repayment_type,
     })
 
     const { creditType: actualCreditType, seniority } = parseCreditTypeAndSeniority(newCredit.credit_type)
 
     try {
-      await createCredit(newCredit, {
+      await createCredit({ ...newCredit, repayment_type: 'monthly' }, {
         credit_type: actualCreditType,
         credit_seniority: seniority,
         monthly_payment: monthlyPayment,
@@ -118,20 +128,29 @@ export function useCreditForm(onSaved: () => Promise<void>) {
       toast.warning(t('funding.investors.error_credit_fields_required'))
       return
     }
+    // The form marks the account required once "disbursed to account" is ticked, but nothing
+    // checked it: the save went to the database, whose CHECK refused it with a generic error (FUND-6).
+    if (newCredit.disbursed_to_account && !newCredit.disbursed_to_bank_account_id) {
+      toast.warning(t('funding.investors.error_disbursement_account_required'))
+      return
+    }
 
-    const monthlyPayment = calculateAnnuityPayment({
+    // Equal principal instalments with interest on the outstanding balance (FUND-5); stored as
+    // the monthly-equivalent debt service, so the credit is labelled with a monthly instalment.
+    const monthlyPayment = calculateMonthlyDebtService({
       amount: newCredit.amount,
       interest_rate: newCredit.interest_rate,
       grace_period: newCredit.grace_period,
       start_date: newCredit.start_date,
       maturity_date: newCredit.maturity_date || null,
-      repayment_type: newCredit.repayment_type,
+      principal_repayment_type: newCredit.principal_repayment_type,
+      interest_repayment_type: newCredit.interest_repayment_type,
     })
 
     const { creditType: actualCreditType, seniority } = parseCreditTypeAndSeniority(newCredit.credit_type)
 
     try {
-      await updateCredit(editingCredit.id, newCredit, {
+      await updateCredit(editingCredit.id, { ...newCredit, repayment_type: 'monthly' }, {
         credit_type: actualCreditType,
         credit_seniority: seniority,
         monthly_payment: monthlyPayment,

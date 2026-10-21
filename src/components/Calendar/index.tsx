@@ -55,6 +55,7 @@ import {
 } from './views/_shared/timeSlots'
 import type { SlotSelection } from './views/_shared/useClickToCreate'
 import { intlLocale } from '../../utils/locale'
+import PageHelpLink from '../ui/PageHelpLink'
 
 function rangeForView(view: string, anchor: Date): { from: Date; to: Date } {
   if (view === 'day') {
@@ -423,7 +424,7 @@ const CalendarPage: React.FC = () => {
             <CalIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('calendar.title')}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('calendar.title')}<PageHelpLink /></h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">{t('calendar.subtitle')}</p>
           </div>
         </div>
@@ -436,7 +437,7 @@ const CalendarPage: React.FC = () => {
       </div>
 
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={goPrev} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -450,7 +451,7 @@ const CalendarPage: React.FC = () => {
             {anchorLabel}
           </h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={toggleShowTasks}

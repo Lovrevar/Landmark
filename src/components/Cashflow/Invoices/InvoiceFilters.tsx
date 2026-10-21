@@ -4,6 +4,7 @@ import { X } from 'lucide-react'
 import type { Company } from './types'
 import { SearchInput, Select, Button } from '../../ui'
 import { INVOICE_CATEGORIES_BY_DIRECTION } from '../services/invoiceHelpers'
+import { InvoiceTypeHint } from './InvoiceTypeHint'
 
 interface InvoiceFiltersProps {
   searchTerm: string
@@ -42,7 +43,7 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
     filterCompany !== 'ALL'
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <SearchInput
           value={searchTerm}
@@ -51,15 +52,22 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
           onClear={() => onSearchChange('')}
         />
 
-        <Select
-          value={filterCategory}
-          onChange={(e) => onCategoryChange(e.target.value)}
-        >
-          <option value="ALL">{t('invoices.filters.all_types')}</option>
-          {INVOICE_CATEGORIES_BY_DIRECTION[filterDirection].map(category => (
-            <option key={category.value} value={category.value}>{t(category.labelKey)}</option>
-          ))}
-        </Select>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <Select
+              value={filterCategory}
+              onChange={(e) => onCategoryChange(e.target.value)}
+            >
+              <option value="ALL">{t('invoices.filters.all_types')}</option>
+              {INVOICE_CATEGORIES_BY_DIRECTION[filterDirection].map(category => (
+                <option key={category.value} value={category.value}>{t(category.labelKey)}</option>
+              ))}
+            </Select>
+          </div>
+          {/* Below md the table is a list of cards with no header row, so the type legend that
+              lives in the Type column header has nowhere to be. It moves here. */}
+          <span className="md:hidden"><InvoiceTypeHint /></span>
+        </div>
 
         <Select
           value={filterStatus}

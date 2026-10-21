@@ -21,6 +21,9 @@ type ParticipantWithUserRow = {
 const MSG_FIELDS = 'id, conversation_id, sender_id, content, created_at, file_url, file_name, file_size, file_type'
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024
+const CHAT_BUCKET = 'chat-attachments'
+const CHAT_URL_TTL_SECONDS = 3600
+const PUBLIC_URL_MARKER = `/object/public/${CHAT_BUCKET}/`
 
 export async function fetchAllUsers(): Promise<ChatUser[]> {
   const { data, error } = await supabase
@@ -145,21 +148,36 @@ export async function uploadChatFile(
   const path = `${conversationId}/${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`
 
   const { error: uploadErr } = await supabase.storage
-    .from('chat-attachments')
+    .from(CHAT_BUCKET)
     .upload(path, file)
 
   if (uploadErr) throw uploadErr
 
-  const { data: urlData } = supabase.storage
-    .from('chat-attachments')
-    .getPublicUrl(path)
-
+  // The bucket is private: store the object path and sign it when the message is shown.
   return {
-    url: urlData.publicUrl,
+    url: path,
     name: file.name,
     size: file.size,
     type: file.type || 'application/octet-stream',
   }
+}
+
+/**
+ * `chat_messages.file_url` holds the storage path. Messages sent while the bucket was public
+ * hold a full public URL instead; the path is the part after the bucket name.
+ */
+export function chatAttachmentPath(fileUrl: string): string {
+  const at = fileUrl.indexOf(PUBLIC_URL_MARKER)
+  if (at === -1) return fileUrl
+  return decodeURIComponent(fileUrl.slice(at + PUBLIC_URL_MARKER.length).split('?')[0])
+}
+
+export async function getChatAttachmentUrl(fileUrl: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(CHAT_BUCKET)
+    .createSignedUrl(chatAttachmentPath(fileUrl), CHAT_URL_TTL_SECONDS)
+  if (error) throw error
+  return data.signedUrl
 }
 
 export async function sendMessage(

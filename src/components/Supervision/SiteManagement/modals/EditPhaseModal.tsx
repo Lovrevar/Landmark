@@ -10,6 +10,8 @@ interface EditPhaseModalProps {
   visible: boolean
   onClose: () => void
   phase: ProjectPhase | null
+  /** The project's TIC total, named when the phase has no budget of its own (GEN-22). */
+  projectBudget: number | null
   onSubmit: (updates: EditPhaseFormData) => void
 }
 
@@ -17,6 +19,7 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
   visible,
   onClose,
   phase,
+  projectBudget,
   onSubmit
 }) => {
   const { t } = useTranslation()
@@ -70,9 +73,14 @@ export const EditPhaseModal: React.FC<EditPhaseModalProps> = ({
             helperText={t('general_projects.budget_from_tic_hint')}
           >
             <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
-              {phase.budget_allocated > 0 ? (
+              {phase.budget_allocated !== null && phase.budget_allocated > 0 ? (
                 <span className="font-semibold text-gray-900 dark:text-white">
                   {formatEuroRounded(phase.budget_allocated)}
+                </span>
+              ) : phase.budget_allocated === null ? (
+                // The TIC is not split by phase: the plan is the project's, not missing.
+                <span className="text-gray-700 dark:text-gray-200">
+                  {t('common.phase_budget_not_split', { amount: formatEuroRounded(projectBudget) })}
                 </span>
               ) : (
                 <span className="text-gray-500 dark:text-gray-400">

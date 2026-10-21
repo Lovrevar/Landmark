@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase'
+import { fetchAllRows } from '../../../../lib/fetchAllRows'
 import { logActivity } from '../../../../lib/activityLog'
 
 export type WorkLogStatus =
@@ -74,7 +75,8 @@ export async function fetchProjects(): Promise<WorkLogProject[]> {
 }
 
 export async function fetchWorkLogs(): Promise<WorkLog[]> {
-  const { data, error } = await supabase
+  // The diary only grows; past PostgREST's 1000-row page the oldest entries silently disappeared.
+  const rows = await fetchAllRows((from, to) => supabase
     .from('work_logs')
     .select(`
       *,
@@ -85,9 +87,9 @@ export async function fetchWorkLogs(): Promise<WorkLog[]> {
     `)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
-
-  if (error) throw error
-  return (data || []) as WorkLog[]
+    .order('id')
+    .range(from, to))
+  return rows as WorkLog[]
 }
 
 export async function fetchPhasesByProject(projectId: string): Promise<WorkLogPhase[]> {

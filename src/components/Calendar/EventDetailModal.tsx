@@ -8,7 +8,6 @@ import {
   X,
   Trash2,
   Repeat,
-  Bell,
   Briefcase,
   CircleDot,
   Circle,
@@ -179,13 +178,6 @@ const EventDetailModal: React.FC<Props> = ({
     await onChanged()
   }
 
-  const reminderLabel = (minutes: number): string => {
-    if (minutes === 0) return t('calendar.modal.reminder.at_time')
-    if (minutes < 60) return t('calendar.modal.reminder.minutes', { count: minutes })
-    if (minutes < 60 * 24) return t('calendar.modal.reminder.hours', { count: Math.round(minutes / 60) })
-    return t('calendar.modal.reminder.days', { count: Math.round(minutes / 1440) })
-  }
-
   const responsePill = (response: EventResponse) => (
     <span
       className={`text-xs px-2 py-0.5 rounded ${
@@ -216,7 +208,7 @@ const EventDetailModal: React.FC<Props> = ({
         <Modal.Header title={event.title} onClose={onClose} />
         <Modal.Body>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`px-2 py-1 text-xs rounded ${EVENT_TYPE_COLORS[event.event_type].badge}`}>
+            <span className={`px-2 py-1 text-xs rounded-sm ${EVENT_TYPE_COLORS[event.event_type].badge}`}>
               {t(`calendar.event_type.${event.event_type}`)}
             </span>
             {event.is_private && (
@@ -225,7 +217,7 @@ const EventDetailModal: React.FC<Props> = ({
               </span>
             )}
             {isRecurring && (
-              <span className="text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded flex items-center gap-1">
+              <span className="text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-sm flex items-center gap-1">
                 <Repeat className="w-3 h-3" /> {t('calendar.detail.recurring')}
               </span>
             )}
@@ -256,24 +248,6 @@ const EventDetailModal: React.FC<Props> = ({
           {projectName && (
             <div className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1">
               <Briefcase className="w-4 h-4 text-gray-500" /> {projectName}
-            </div>
-          )}
-
-          {event.reminder_offsets && event.reminder_offsets.length > 0 && (
-            <div className="text-sm text-gray-700 dark:text-gray-300">
-              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 mb-1">
-                <Bell className="w-4 h-4" /> {t('calendar.detail.reminders')}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {event.reminder_offsets.map(m => (
-                  <span
-                    key={m}
-                    className="text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 px-2 py-0.5 rounded"
-                  >
-                    {reminderLabel(m)}
-                  </span>
-                ))}
-              </div>
             </div>
           )}
 

@@ -6,6 +6,7 @@ import { Badge, Button, EmptyState, Select, SearchInput, StatCard, StatGrid, Tab
 import type { Phase, ContractWithDetails } from '../types'
 import { NO_VALUE } from '../../../../utils/formatters'
 import { contractRemaining, hasContractAmount, summariseContracts } from './subcontractorsSummary'
+import { RealizedHint } from '../ProjectHints'
 
 interface SubcontractorsTabProps {
   contracts: ContractWithDetails[]
@@ -116,12 +117,17 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('general_projects.subcontractors_contracts')}</h3>
 
       {contracts.length === 0 ? (
-        <EmptyState icon={Users} title={t('general_projects.no_contracts')} />
+        <EmptyState
+          icon={Users}
+          title={t('general_projects.no_contracts')}
+          description={t('general_projects.no_contracts_description')}
+        />
       ) : (
         <>
           <StatGrid columns={4}>
             <StatCard label={t('general_projects.total_contract_value')} value={formatEur(summary.totalValue)} color="blue" />
-            <StatCard label={t('general_projects.total_realized')} value={formatEur(summary.totalRealized)} color="teal" />
+            {/* The hint sits on the card, not the column header: below md the table is cards and has no header row. */}
+            <StatCard label={t('general_projects.total_realized')} value={formatEur(summary.totalRealized)} color="teal" hint={<RealizedHint />} />
             <StatCard label={t('general_projects.total_remaining')} value={formatEur(summary.totalRemaining)} color="green" />
             <StatCard label={t('general_projects.contract_count')} value={summary.count} color="gray" />
           </StatGrid>

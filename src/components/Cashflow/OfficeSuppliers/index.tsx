@@ -6,9 +6,15 @@ import OfficeSupplierFormModal from './forms/OfficeSupplierFormModal'
 import { Alert, PageHeader, StatGrid, LoadingSpinner, SearchInput, Button, StatCard, EmptyState, ErrorState, Modal, Table, Badge, ConfirmDialog } from '../../ui'
 import { formatEuro, formatEuropean, formatDate } from '../../../utils/formatters'
 import { toErrorMessage } from '../../../lib/errorMessage'
+import { useAuth } from '../../../contexts/AuthContext'
+import { isDirectorRole } from '../../../utils/permissions'
+import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../services/invoiceHelpers'
 
 const OfficeSuppliers: React.FC = () => {
   const { t, i18n } = useTranslation()
+  const { user } = useAuth()
+  // Deleting office suppliers is Director-only under RLS.
+  const canDelete = isDirectorRole(user)
   const {
     suppliers,
     loading,
@@ -98,7 +104,7 @@ const OfficeSuppliers: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -108,11 +114,11 @@ const OfficeSuppliers: React.FC = () => {
       </div>
 
       {error && suppliers.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
           <ErrorState onRetry={() => void refetch()} />
         </div>
       ) : filteredSuppliers.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
           <EmptyState
             icon={Building2}
             title={searchTerm ? t('office_suppliers.empty.title_search') : t('office_suppliers.empty.title_empty')}
@@ -124,7 +130,7 @@ const OfficeSuppliers: React.FC = () => {
           {filteredSuppliers.map((supplier) => (
             <div
               key={supplier.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
               onClick={() => handleViewInvoices(supplier)}
             >
               <div className="flex items-start justify-between mb-4">
@@ -202,16 +208,18 @@ const OfficeSuppliers: React.FC = () => {
                 >
                   {t('office_suppliers.card.edit')}
                 </Button>
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleDelete(supplier.id)
-                  }}
-                  variant="outline-danger"
-                  size="icon-md"
-                  icon={Trash2}
-                  title={t('office_suppliers.card.delete')}
-                />
+                {canDelete && (
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDelete(supplier.id)
+                    }}
+                    variant="outline-danger"
+                    size="icon-md"
+                    icon={Trash2}
+                    title={t('office_suppliers.card.delete')}
+                  />
+                )}
               </div>
             </div>
           ))}
@@ -294,17 +302,8 @@ const OfficeSuppliers: React.FC = () => {
                           {formatEuro(parseFloat(invoice.remaining_amount))}
                         </Table.Td>
                         <Table.Td label={t('office_suppliers.invoices_modal.table.status')} className="text-center">
-                          <Badge
-                            variant={
-                              invoice.status === 'PAID'
-                                ? 'green'
-                                : invoice.status === 'PARTIALLY_PAID'
-                                ? 'yellow'
-                                : 'red'
-                            }
-                            size="sm"
-                          >
-                            {invoice.status === 'PAID' ? t('office_suppliers.status.paid') : invoice.status === 'PARTIALLY_PAID' ? t('office_suppliers.status.partial') : t('office_suppliers.status.unpaid')}
+                          <Badge variant={getInvoiceStatusVariant(invoice.status)} size="sm">
+                            {getInvoiceStatusLabel(invoice.status, t)}
                           </Badge>
                         </Table.Td>
                       </Table.Tr>

@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   totalsByClassification, ticGrandTotal, remainingFromTIC, lineItemTotal,
   phaseTotals, budgetMatrix, phaseClassificationTotals,
-  phaseSplitCheck, hasPhaseSplitMismatch, ticPhaseCount, normalizePhaseNumbers
+  phaseSplitCheck, hasPhaseSplitMismatch, ticPhaseCount, normalizePhaseNumbers,
+  budgetIsSet, budgetNotSplitByPhase, plannedOnPhases,
 } from './ticBudget'
 import { calculateTotals, LineItem } from './ticFormatters'
 
@@ -425,5 +426,45 @@ describe('normalizePhaseNumbers', () => {
       { name: 'a', vlastita: 100, kreditna: 0, phases: [ph(2, 100, 0)] },
     ])
     expect('phases' in fixed[0]).toBe(false)
+  })
+})
+
+describe('budgetIsSet', () => {
+  // The TIC is the only writer of planned budget. Without one a project has no budget, whatever
+  // `projects.budget` holds — the demo seeds a figure there directly (GEN-5).
+  it('is false with no TIC, or one that totals nothing', () => {
+    expect(budgetIsSet(undefined)).toBe(false)
+    expect(budgetIsSet(null)).toBe(false)
+    expect(budgetIsSet([])).toBe(false)
+    expect(budgetIsSet([{ name: 'Građenje', vlastita: 0, kreditna: 0 }])).toBe(false)
+  })
+
+  it('is true once the TIC carries any amount', () => {
+    expect(budgetIsSet([{ name: 'Građenje', vlastita: 0, kreditna: 1 }])).toBe(true)
+  })
+})
+
+describe('phases of a TIC that is not split by phase (GEN-22)', () => {
+  const unsplit = [{ budget_allocated: null }, { budget_allocated: null }]
+  const phased = [{ budget_allocated: 400 }, { budget_allocated: 600 }]
+
+  it('recognises the NULL the sync leaves on every phase', () => {
+    expect(budgetNotSplitByPhase(unsplit)).toBe(true)
+    expect(budgetNotSplitByPhase(phased)).toBe(false)
+    expect(budgetNotSplitByPhase([])).toBe(false)
+  })
+
+  it('does not take a phase the TIC plans nothing for as unsplit', () => {
+    expect(budgetNotSplitByPhase([{ budget_allocated: 1000 }, { budget_allocated: 0 }])).toBe(false)
+  })
+
+  it('plans the TIC total across unsplit phases', () => {
+    expect(plannedOnPhases(unsplit, 1000)).toBe(1000)
+    expect(plannedOnPhases(unsplit, null)).toBe(0)
+  })
+
+  it('sums the phases of a phased plan', () => {
+    expect(plannedOnPhases(phased, 1200)).toBe(1000)
+    expect(plannedOnPhases([], 1000)).toBe(0)
   })
 })

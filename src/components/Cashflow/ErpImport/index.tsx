@@ -203,7 +203,7 @@ function ReviewQueue({ s }: { s: ReturnType<typeof useErpImport> }) {
             {t('erp_import.review_hint')}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 flex-shrink-0">
+        <div className="flex flex-wrap gap-2 shrink-0">
           {runIds.map(id => (
             <Button
               key={id}
