@@ -9,6 +9,8 @@
  * package with garages and storage, cash collected); GEN-38 lists them and GEN-9 decides.
  */
 
+import { monthKey, parseLocalDate } from './dateOnly'
+
 const num = (value: unknown): number => Number(value || 0)
 
 /** An apartment, garage or storage unit row, narrowed to what these figures read. */
@@ -137,3 +139,50 @@ export const unitPackageTotal = (unit: PurchasedUnit): number =>
     salePrice: unit.sale_price,
     linkedPrices: [...(unit.garages ?? []), ...(unit.repositories ?? [])].map(linked => linked.price),
   })
+
+/**
+ * A payment collected on a sale, narrowed to what these figures read: a row of
+ * `accounting_payments` on an apartment's `OUTGOING_SALES` invoice, or what was paid on one
+ * apartment altogether.
+ */
+export interface CollectedRow {
+  amount?: number | string | null
+  payment_date?: string | null
+}
+
+/**
+ * "Naplaćeno od prodaje": the cash collected on sales, which GEN-9 keeps beside contracted
+ * sales under its own name. The query decides which payments count — those on `OUTGOING_SALES`
+ * invoices that carry an apartment, since garages and storage are not invoiced — and this sums
+ * them, gross.
+ */
+export const collectedFromSales = (payments: readonly CollectedRow[]): number =>
+  payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+
+/** Collected on or after `from` (local midnight), by the payment's local date. */
+export const collectedSince = (payments: readonly CollectedRow[], from: Date): number =>
+  collectedFromSales(payments.filter(p => parseLocalDate(p.payment_date) >= from))
+
+/** Collected per `'YYYY-MM'` month of the payment date. */
+export function collectedByMonth(payments: readonly CollectedRow[]): Map<string, number> {
+  const byMonth = new Map<string, number>()
+  for (const p of payments) {
+    const key = monthKey(p.payment_date)
+    byMonth.set(key, (byMonth.get(key) || 0) + (Number(p.amount) || 0))
+  }
+  return byMonth
+}
+
+/** Collected per project; a payment whose project `projectOf` cannot name counts towards none. */
+export function collectedByProject<T extends CollectedRow>(
+  payments: readonly T[],
+  projectOf: (payment: T) => string | null | undefined,
+): Map<string, number> {
+  const byProject = new Map<string, number>()
+  for (const p of payments) {
+    const projectId = projectOf(p)
+    if (!projectId) continue
+    byProject.set(projectId, (byProject.get(projectId) || 0) + (Number(p.amount) || 0))
+  }
+  return byProject
+}

@@ -1,4 +1,5 @@
 import type { Apartment, Garage, Repository, Project, Building } from '../../../lib/supabase'
+import { collectedFromSales, unitStatusCounts } from '../../../utils/salesFigures'
 import type { BuildingWithUnits, ProjectWithBuildings } from './types'
 
 /** A `sales` row as `fetchSales` returns it, with its buyer. */
@@ -149,14 +150,17 @@ export function buildSalesProjects({
     const total_apartments = buildingApartments.length
     const total_garages = buildingGarages.length
     const total_repositories = buildingRepositories.length
-    const sold_apartments = buildingApartments.filter(apt => apt.status === 'Sold').length
-    const sold_garages = buildingGarages.filter(gar => gar.status === 'Sold').length
-    const sold_repositories = buildingRepositories.filter(rep => rep.status === 'Sold').length
+    const sold_apartments = unitStatusCounts(buildingApartments).sold
+    const sold_garages = unitStatusCounts(buildingGarages).sold
+    const sold_repositories = unitStatusCounts(buildingRepositories).sold
 
-    const total_revenue =
-      buildingApartments.filter(apt => apt.status === 'Sold').reduce((sum, apt) => sum + (apt.sale_info?.total_paid || 0), 0) +
-      buildingGarages.filter(gar => gar.status === 'Sold').reduce((sum, gar) => sum + (gar.sale_info?.total_paid || 0), 0) +
-      buildingRepositories.filter(rep => rep.status === 'Sold').reduce((sum, rep) => sum + (rep.sale_info?.total_paid || 0), 0)
+    // Collected on the building's Sold units that carry a sale: in practice its sold apartments,
+    // since a garage or storage unit never finds one (SALES-23).
+    const total_revenue = collectedFromSales(
+      [...buildingApartments, ...buildingGarages, ...buildingRepositories]
+        .filter(unit => unit.status === 'Sold')
+        .map(unit => ({ amount: unit.sale_info?.total_paid }))
+    )
 
     return {
       ...building,

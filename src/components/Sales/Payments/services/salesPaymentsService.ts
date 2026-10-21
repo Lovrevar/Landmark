@@ -4,6 +4,7 @@ import { logActivity } from '../../../../lib/activityLog'
 import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
 import { exportT } from '../../../../utils/exportLanguage'
 import { getPaymentMethodLabel } from '../../../Cashflow/services/paymentHelpers'
+import { collectedFromSales } from '../../../../utils/salesFigures'
 
 export interface SalesPaymentWithDetails {
   id: string
@@ -90,7 +91,7 @@ export async function fetchSalesPayments(): Promise<SalesPaymentWithDetails[]> {
 export function calculateSalesPaymentStats(payments: SalesPaymentWithDetails[]): SalesPaymentStats {
   const now = new Date()
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0)
+  const totalAmount = collectedFromSales(payments)
   const thisMonth = payments.filter(p => new Date(p.payment_date) >= firstDayOfMonth)
   return {
     totalPayments: payments.length,

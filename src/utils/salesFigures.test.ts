@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { averagePer, conversionRate, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from './salesFigures'
+import {
+  averagePer,
+  collectedByMonth,
+  collectedByProject,
+  collectedFromSales,
+  collectedSince,
+  conversionRate,
+  customerFunnel,
+  salesRate,
+  soldRevenue,
+  unitStatusCounts,
+} from './salesFigures'
 
 const unit = (status: string, price: number | string | null = 100_000) => ({ status, price })
 
@@ -67,5 +78,33 @@ describe('customerFunnel', () => {
   it('conversionRate is 0 with no customers', () => {
     expect(conversionRate(0, 0)).toBe(0)
     expect(conversionRate(1, 4)).toBe(25)
+  })
+})
+
+describe('collected from sales', () => {
+  const payments = [
+    { amount: 45_000, payment_date: '2026-10-05', apartment: 'a1' },
+    { amount: '30000.50', payment_date: '2026-10-01', apartment: 'a2' },
+    { amount: 50_000, payment_date: '2026-09-30', apartment: 'a1' },
+    { amount: null, payment_date: '2026-10-07', apartment: 'a3' },
+    { amount: 1_000, payment_date: null, apartment: 'a9' },
+  ]
+
+  it('sums every payment, a numeric string included and a missing amount as 0', () => {
+    expect(collectedFromSales(payments)).toBe(126_000.5)
+    expect(collectedFromSales([])).toBe(0)
+  })
+
+  it('counts from local midnight on, the first day included and an undated payment left out', () => {
+    expect(collectedSince(payments, new Date(2026, 9, 1))).toBe(75_000.5)
+  })
+
+  it('buckets by the month the payment date says', () => {
+    expect(collectedByMonth(payments)).toEqual(new Map([['2026-10', 75_000.5], ['2026-09', 50_000], ['', 1_000]]))
+  })
+
+  it('sums per project and leaves out a payment with no project', () => {
+    const projectOf = (p: { apartment: string }) => ({ a1: 'p1', a2: 'p2', a3: 'p1' } as Record<string, string>)[p.apartment]
+    expect(collectedByProject(payments, projectOf)).toEqual(new Map([['p1', 95_000], ['p2', 30_000.5]]))
   })
 })
