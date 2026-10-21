@@ -1,6 +1,5 @@
 import { supabase } from '../../../lib/supabase'
-import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
-import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
+import { portfolioValue as plannedPortfolioValue, ticPlanSummary, ticTotalsByProject } from '../../Funding/TIC/utils/ticBudget'
 import type { ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
 import { averagePer, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
@@ -124,12 +123,7 @@ export async function fetchGeneralReportData(
   // `projects.budget` still holds whatever was typed before the TIC took over, and reporting
   // that as the plan is how Precko Zapad's leftover €1.000.000.000 ended up as 89% of a
   // €1.118M "portfolio value" on a page headed Executive Report.
-  const ticTotalByProject = new Map<string, number>()
-  for (const tic of ticCostStructuresArray) {
-    if (!tic.project_id) continue
-    const total = ticGrandTotal((tic.line_items || []) as LineItem[])
-    if (total > 0) ticTotalByProject.set(tic.project_id as string, total)
-  }
+  const ticTotalByProject = ticTotalsByProject(ticCostStructuresArray)
   const plannedBudget = (projectId: string) => ticTotalByProject.get(projectId) ?? 0
   const officeSuppliersArray = officeSuppliers || []
   const bankCreditsArray = bankCredits || []
@@ -184,7 +178,7 @@ export async function fetchGeneralReportData(
   const totalProfit = totalRevenue - totalExpenses
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
-  const portfolioValue = projectsArray.reduce((sum, p) => sum + plannedBudget(p.id), 0)
+  const portfolioValue = plannedPortfolioValue(projectsArray.map(p => p.id), ticTotalByProject)
   // Same definitions as the Director dashboard: debt is what is still owed on live, non-equity
   // credits; equity is the equity facilities (GEN-2).
   const liveDebt = liveDebtFigures(bankCreditsArray)
@@ -298,12 +292,7 @@ export async function fetchGeneralReportData(
   // `companies_over_budget` counted companies against a per-PROJECT plan, so both were dropped
   // instead of being faked. What is left is answerable from the data: how much is planned, and
   // how many projects have no plan at all.
-  const ticTotals = ticCostStructuresArray.map(tic =>
-    ticGrandTotal((tic.line_items || []) as LineItem[])
-  )
-  const totalTicBudget = ticTotals.reduce((sum, total) => sum + total, 0)
-  const projectsWithTic = ticTotals.filter(total => total > 0).length
-  const projectsWithoutTic = projectsArray.length - projectsWithTic
+  const ticPlans = ticPlanSummary(ticCostStructuresArray, projectsArray.length)
 
   // Every office-category invoice at its total, paid or not (GEN-36).
   const officeInvoices = officeInvoiceTotals(accountingInvoicesArray)
@@ -405,9 +394,10 @@ export async function fetchGeneralReportData(
       payment_completion_rate: invoiceStats.completionRate
     },
     tic_cost_management: {
-      total_tic_budget: totalTicBudget,
-      projects_with_tic: projectsWithTic,
-      projects_without_tic: projectsWithoutTic
+      total_tic_budget: ticPlans.totalPlanned,
+      projects_with_tic: ticPlans.projectsWithPlan,
+      // Counts TIC rows, not projects (GEN-30).
+      projects_without_tic: ticPlans.projectsWithoutPlan
     },
     office_expenses: {
       total_office_suppliers: officeSuppliersArray.length,

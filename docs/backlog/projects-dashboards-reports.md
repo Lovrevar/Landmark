@@ -1,7 +1,7 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-40`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-41`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
@@ -176,6 +176,16 @@ fix's own commit, with a test named after the id that fails first.
   So "expenses" and the margin differ between the two screens for the same project.
 - **Fix direction:** decide paid against invoiced for each card and name it. Then call `costPaid`,
   or add an invoiced twin of it beside it.
+
+### GEN-40 · Low · Investment dashboard's portfolio value reads `projects.budget`, the General report reads the TIC
+- **Check:** Code reading (Step 7 item 1, 2026-10-21)
+- **Where:** `dashboards/services/investmentDashboardService.ts` ~74, against `ticTotalsByProject` /
+  `portfolioValue` in `Funding/TIC/utils/ticBudget.ts`, which the General report calls
+- **What happens:** both count only projects with a TIC (GEN-5). The dashboard sums the
+  `projects.budget` the `sync_project_from_tic` trigger writes, and the report sums the TIC itself.
+  They agree only while the trigger keeps the column in step with the TIC.
+- **Fix direction:** read the TIC totals in the dashboard too, through `ticTotalsByProject`, or
+  check on LandmarkDemo and production that the two never differ and say so here.
 
 ### GEN-24 · Low · Phased plan with some undated phases overstates SPI
 - **Check:** Code reading (convention review of GEN-23, 2026-10-20)
