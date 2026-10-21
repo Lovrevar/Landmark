@@ -14,7 +14,6 @@ import {
   salesByMonth,
   salesSince,
   salesRate,
-  soldRevenue,
   unitStatusCounts,
 } from './salesFigures'
 
@@ -47,27 +46,6 @@ describe('averagePer', () => {
   it('divides, and is 0 rather than NaN for a count of 0', () => {
     expect(averagePer(1_120_000.5, 5)).toBeCloseTo(224_000.1, 6)
     expect(averagePer(0, 0)).toBe(0)
-  })
-})
-
-describe('soldRevenue', () => {
-  it('sums the list price of sold units only', () => {
-    expect(soldRevenue([unit('Sold', 200_000), unit('Sold', 150_000.5), unit('Reserved', 180_000), unit('Available', 1)]))
-      .toBe(350_000.5)
-  })
-
-  it('reads numeric strings and treats a missing price as 0', () => {
-    expect(soldRevenue([unit('Sold', '120000.25'), unit('Sold', null)])).toBe(120_000.25)
-  })
-
-  it('adds what linkedPrice returns for each sold unit', () => {
-    const prices = new Map([['g1', 15_000]])
-    const units = [{ status: 'Sold', price: 200_000, garage: 'g1' }, { status: 'Available', price: 170_000, garage: 'g1' }]
-    expect(soldRevenue(units, u => prices.get(u.garage) ?? 0)).toBe(215_000)
-  })
-
-  it('is 0 for no units', () => {
-    expect(soldRevenue([])).toBe(0)
   })
 })
 

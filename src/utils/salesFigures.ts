@@ -1,22 +1,26 @@
 /**
- * Unit and customer figures: how many units are sold, reserved and available, the sales rate,
- * revenue from sold units, and the customer funnel. One definition each, for the General report,
- * the Sales report, the Director dashboard and Project details (REGRESSION_PREVENTION Step 7).
+ * Sales figures, one definition each, for every screen, report and export that shows them
+ * (REGRESSION_PREVENTION Step 7):
  *
- * What "revenue" means is not settled here. This file sums the **list price** of sold units, which
- * is what the General report and the Director dashboard's per-project table show. The Sales
- * report, the Sales dashboard and the buyer cards each use a different basis (sale price,
- * package with garages and storage, cash collected); GEN-38 lists them and GEN-9 decides.
+ * - **Inventory:** units by status, and the sales rate (sold ÷ units). The Director dashboard and
+ *   the reports count apartments; the Sales dashboard every unit type ("sve jedinice", GEN-9).
+ * - **"Ugovorena prodaja" (contracted sales):** a sale is a `sales` row, one per apartment, and it
+ *   is worth its package: the sale price (the list price when that is 0) plus the list prices of
+ *   the linked garages and storage units (`packageTotal`, SALES-6). Count, value and average all
+ *   come from the same rows (decided 2026-10-21, GEN-38).
+ * - **"Naplaćeno od prodaje" (collected):** the payments on the apartments' sales invoices, the
+ *   cash figure GEN-9 keeps beside contracted sales under its own name.
+ * - **The customer funnel.**
+ *
+ * The rows these read are loaded by the services; the garage and storage links by
+ * `fetchLinkedPrices` (`src/lib/linkedUnitPrices.ts`).
  */
 
 import { monthKey, parseLocalDate } from './dateOnly'
 
-const num = (value: unknown): number => Number(value || 0)
-
 /** An apartment, garage or storage unit row, narrowed to what these figures read. */
 export interface UnitRow {
   status?: string | null
-  price?: number | string | null
 }
 
 export interface UnitStatusCounts {
@@ -44,17 +48,6 @@ export const salesRate = (sold: number, total: number): number => (total > 0 ? (
 
 /** A total divided by a count, 0 when the count is 0 — the average sale price and the like. */
 export const averagePer = (total: number, count: number): number => (count > 0 ? total / count : 0)
-
-/**
- * Σ list price of the sold units, plus whatever `linkedPrice` adds per unit — the General report
- * passes its garage and storage lookup there for a project's revenue, and nothing for the
- * portfolio's (GEN-26).
- */
-export function soldRevenue<T extends UnitRow>(units: readonly T[], linkedPrice: (unit: T) => number = () => 0): number {
-  return units
-    .filter(unit => unit.status === 'Sold')
-    .reduce((sum, unit) => sum + num(unit.price) + linkedPrice(unit), 0)
-}
 
 /** A `customers` row, narrowed to its status. */
 export interface CustomerRow {
