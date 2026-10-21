@@ -3,7 +3,7 @@ import type { Project } from '../../../lib/supabase'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import type { ProjectSalesReport, CustomerReport, SalesData } from '../types'
 import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
-import { averagePer, contractedSales, customerFunnel, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
+import { averagePer, contractedSales, customerFunnel, linkedPricesByApartment, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
@@ -71,17 +71,12 @@ export async function generateProjectReport(
     .select('apartment_id, repository_id, repositories(id, price)')
     .in('apartment_id', apartmentIds.length > 0 ? apartmentIds : [''])
 
-  const aptGaragePriceMap = new Map<string, number>()
-  for (const row of (aptGaragesData || [])) {
-    const price = (row.garages as { price?: number } | null)?.price || 0
-    aptGaragePriceMap.set(row.apartment_id, (aptGaragePriceMap.get(row.apartment_id) || 0) + price)
-  }
-
-  const aptRepoPriceMap = new Map<string, number>()
-  for (const row of (aptReposData || [])) {
-    const price = (row.repositories as { price?: number } | null)?.price || 0
-    aptRepoPriceMap.set(row.apartment_id, (aptRepoPriceMap.get(row.apartment_id) || 0) + price)
-  }
+  // A failed read leaves the linked units out without saying so (GEN-42).
+  const linked = linkedPricesByApartment([
+    ...(aptGaragesData || []).map(row => ({ apartment_id: row.apartment_id, price: (row.garages as { price?: number } | null)?.price })),
+    ...(aptReposData || []).map(row => ({ apartment_id: row.apartment_id, price: (row.repositories as { price?: number } | null)?.price })),
+  ])
+  const linkedTotal = (apartmentId: string) => (linked.get(apartmentId) ?? []).reduce((sum, price) => sum + price, 0)
 
   const { data: salesData, error: salesError } = await supabase
     .from('sales')
@@ -94,11 +89,9 @@ export async function generateProjectReport(
 
   const sales = salesData || []
 
-  const total_revenue = sales.reduce((sum, sale) => {
-    const garagePrice = aptGaragePriceMap.get(sale.apartment_id) || 0
-    const repoPrice = aptRepoPriceMap.get(sale.apartment_id) || 0
-    return sum + sale.sale_price + garagePrice + repoPrice
-  }, 0)
+  // Sale price plus the linked garages and storage, with no list price standing in for a 0 sale
+  // price (GEN-38).
+  const total_revenue = contractedSales(sales, { linked }).value
 
   const {
     total: total_units,
@@ -108,7 +101,7 @@ export async function generateProjectReport(
   } = unitStatusCounts(apartments)
 
   const totalValue = apartments.reduce((sum, apt) => {
-    return sum + apt.price + (aptGaragePriceMap.get(apt.id) || 0) + (aptRepoPriceMap.get(apt.id) || 0)
+    return sum + apt.price + linkedTotal(apt.id)
   }, 0)
   // Over every unit, sold or not, with its linked garage and storage (GEN-38).
   const average_price = averagePer(totalValue, total_units)
@@ -127,11 +120,7 @@ export async function generateProjectReport(
       return saleDate >= monthStart && saleDate <= monthEnd
     })
 
-    const monthRevenue = monthSales.reduce((sum, sale) => {
-      const garagePrice = aptGaragePriceMap.get(sale.apartment_id) || 0
-      const repoPrice = aptRepoPriceMap.get(sale.apartment_id) || 0
-      return sum + sale.sale_price + garagePrice + repoPrice
-    }, 0)
+    const monthRevenue = contractedSales(monthSales, { linked }).value
 
     return {
       // A machine key, not a label — both readers format it themselves. See `SalesData` in ../types.
