@@ -63,6 +63,12 @@ describe('topProjectsByRevenue', () => {
     expect(topProjectsByRevenue(projects, 5).map(p => p.name)).toEqual(['b', 'c', 'a', 'd'])
     expect(projects.map(p => p.name)).toEqual(['a', 'b', 'c', 'd'])
   })
+
+  it('GEN-38: leaves out projects with nothing sold, even when that leaves fewer than n', () => {
+    const projects = [project('a', 0, 1), project('b', 30, 2), project('c', 0, 3)]
+    expect(topProjectsByRevenue(projects).map(p => p.name)).toEqual(['b'])
+    expect(topProjectsByRevenue([project('a', 0, 1)])).toEqual([])
+  })
 })
 
 describe('recommendationKeys', () => {

@@ -512,12 +512,11 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
     // is at 50 %.
     expect(r.risks).toEqual([{ kind: 'slow_sales', count: 1 }])
     expect(r.insights).toEqual(roundDeep({
-      // By contracted sales (GEN-38, changed on purpose). Sveta Nedelja and Lučko both have none;
-      // the sort keeps their order.
+      // By contracted sales (GEN-38, changed on purpose). Sveta Nedelja and Lučko have none, so
+      // they are not top projects (GEN-38, changed on purpose: Sveta Nedelja at €0 was third).
       top_projects: [
         { name: 'Precko Zapad', revenue: 565_000, sales_rate: 100 },
         { name: 'Zelena Dolina', revenue: 198_000 + 15_000 + 5_000, sales_rate: pct(2, 6) },
-        { name: 'Sveta Nedelja', revenue: 0, sales_rate: 0 },
       ],
       // Sales rate above 50 % and fewer units available than sold: only the two standing ones.
       recommendation_keys: ['reports.general.recs.budgets', 'reports.general.recs.partners'],
