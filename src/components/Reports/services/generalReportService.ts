@@ -1,5 +1,4 @@
 import { supabase } from '../../../lib/supabase'
-import { portfolioValue as plannedPortfolioValue, ticPlanSummary, ticTotalsByProject } from '../../Funding/TIC/utils/ticBudget'
 import type { ComprehensiveReport, ProjectData } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
 import { averagePer, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
@@ -24,6 +23,7 @@ import {
   recentWorkLogCount,
 } from '../../../utils/constructionFigures'
 import { retailPortfolioCounts } from '../../../utils/retailFigures'
+import { portfolioValue as plannedPortfolioValue, ticPlanSummary, ticTotalsByProject } from '../../../utils/ticFigures'
 import {
   profitAndMargin,
   projectRiskLevel,
