@@ -2,10 +2,11 @@ import { supabase } from '../../../lib/supabase'
 import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
 import { fetchAllRows } from '../../../lib/fetchAllRows'
 import type { Project } from '../../../lib/supabase'
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
+import { format, startOfMonth, eachMonthOfInterval } from 'date-fns'
 import type { ProjectSalesReport, CustomerReport, SalesData } from '../types'
 import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
-import { contractedSales, customerFunnel, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
+import { contractedSales, customerFunnel, salesByMonth, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
+import { parseLocalDate } from '../../../utils/dateOnly'
 
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
@@ -90,27 +91,20 @@ export async function generateProjectReport(
 
   const sales_rate = salesRate(sold_units, total_units)
 
-  const startDate = new Date(dateRange.start)
-  const endDate = new Date(dateRange.end)
-  const months = eachMonthOfInterval({ start: startDate, end: endDate })
+  // Local dates on both sides: `new Date('2026-05-01')` is UTC, and west of UTC it read as
+  // 30 April, which added a month and moved the first day's sales (GEN-34).
+  const months = eachMonthOfInterval({ start: parseLocalDate(dateRange.start), end: parseLocalDate(dateRange.end) })
+  const salesPerMonth = salesByMonth(sales)
 
   const monthly_sales: SalesData[] = months.map(month => {
-    const monthStart = startOfMonth(month)
-    const monthEnd = endOfMonth(month)
-
-    const monthSales = sales.filter(sale => {
-      const saleDate = new Date(sale.sale_date)
-      return saleDate >= monthStart && saleDate <= monthEnd
-    })
-
-    const monthRevenue = contractedSales(monthSales, saleOptions).value
+    const monthSales = contractedSales(salesPerMonth.get(format(month, 'yyyy-MM')) ?? [], saleOptions)
 
     return {
       // A machine key, not a label — both readers format it themselves. See `SalesData` in ../types.
-      month_key: format(monthStart, 'yyyy-MM-dd'),
-      sales: monthSales.length,
-      revenue: monthRevenue,
-      units_sold: monthSales.length
+      month_key: format(startOfMonth(month), 'yyyy-MM-dd'),
+      sales: monthSales.count,
+      revenue: monthSales.value,
+      units_sold: monthSales.count
     }
   })
 

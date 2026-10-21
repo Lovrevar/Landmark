@@ -20,8 +20,7 @@ vi.mock('../../../lib/supabase', async () => {
 import { generateCustomerReport, generateProjectReport } from './salesReportService'
 
 // Mid-afternoon on 20 October 2026, local time, and the six months the screen offers. The months
-// hold in UTC (CI) and east of it (Croatia); west of UTC the report reads '2026-05-01' as
-// 30 April (GEN-34).
+// hold in every time zone (GEN-34).
 const NOW = new Date(2026, 9, 20, 15, 30, 0)
 const RANGE = { start: '2026-05-01', end: '2026-10-20' }
 
@@ -147,6 +146,19 @@ describe('generateProjectReport', () => {
     // GEN-38, changed on purpose: it was (300.000 + 20.000 + 250.000 + 210.000) / 3.
     expect(r.average_price).toBe(250_000)
     expect(r.monthly_sales).toEqual(months({ '2026-10-01': [1, 250_000] }))
+  })
+
+  it('GEN-34: the months hold west of UTC', async () => {
+    const tz = process.env.TZ
+    process.env.TZ = 'America/New_York'
+    try {
+      vi.setSystemTime(new Date(2026, 9, 20, 15, 30, 0))
+      const r = roundDeep(await generateProjectReport('p2', PROJECTS, RANGE))
+      // Six months, May to October, and s4 (1 October) in October.
+      expect(r.monthly_sales).toEqual(months({ '2026-10-01': [1, 250_000] }))
+    } finally {
+      process.env.TZ = tz
+    }
   })
 
   it('an unknown project is an error', async () => {

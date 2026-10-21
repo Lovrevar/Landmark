@@ -113,18 +113,6 @@ characterization tests of the Director and Sales dashboards and the Sales report
 - **Fix direction:** ask accounting whether a kompenzacija belongs in a cash-flow statement. Then
   either filter by source or reword the doc and the screen.
 
-### GEN-34 · Low · Sales report buckets its monthly sales by UTC dates
-- **Check:** Confirmed for the General report, which had the same bug: its characterization test
-  failed under `TZ=America/New_York` until 2026-10-21. Code reading for the Sales report
-- **Where:** `Reports/services/salesReportService.ts`, monthly sales: `new Date(dateRange.start)`
-  and `new Date(sale.sale_date)`
-- **What happens:** harmless in Croatia and in UTC. West of UTC the first of a month reads as the
-  last day of the month before, so the table gains a month and sales on a month's first day move.
-  It is against the CLAUDE.md date rule. The General report's cash flow, which did the same, now
-  buckets with `parseLocalDate` / `monthKey` in `src/utils/cashFlowFigures.ts`, and passes in
-  New York time.
-- **Fix direction:** the same helpers, or `monthlyCashFlow`'s bucketing.
-
 ### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
 - **Check:** Code reading. **Runtime check needed** on production row counts
 - **Where:** `generalReportService.ts`, the first `Promise.all`. Also
@@ -276,6 +264,11 @@ characterization tests of the Director and Sales dashboards and the Sales report
   the chart.
 
 ## Resolved
+
+### GEN-34 · Low · Sales report buckets its monthly sales by UTC dates
+- Fixed on `refactor/sales-figures` (2026-10-21): the range is parsed with `parseLocalDate` and the
+  sales are bucketed with `salesByMonth` (`monthKey`). Test named GEN-34 in
+  `salesReportService.test.ts`, which runs in New York time and failed first.
 
 ### GEN-26 · Medium · General report: a project's revenue never includes its linked garages and storage
 - Fixed on `refactor/sales-figures` (2026-10-21) with GEN-38's definition: a project's revenue is
