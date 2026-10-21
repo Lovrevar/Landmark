@@ -125,6 +125,8 @@ const PORTFOLIO: Record<string, unknown[]> = {
 
 // Σ sale_price over the sale rows: a1, a2, a5, a6. Lučko's Sold apartment has none.
 const SALE_PRICES = 198_000 + 150_000.5 + 295_000 + 250_000
+// What those sales are worth as packages: a1's garage and storage, a5's garage (GEN-38).
+const CONTRACTED = SALE_PRICES + 15_000 + 5_000 + 20_000
 // Paid on cost invoices: i1, i2, i6, i7 (i3 is unpaid; i5 is principal).
 const EXPENSES = 40_000 + 50_000 + 1_800.8 + 10_000
 
@@ -178,11 +180,12 @@ describe('fetchDirectorDashboard: a realistic portfolio', () => {
 
   it('financial metrics', async () => {
     expect((await dashboard()).financial).toEqual(roundDeep({
-      // Σ sale_price; linked garages and storage play no part (GEN-38).
-      total_revenue: SALE_PRICES,
+      // Contracted sales, each sale at its package value (GEN-38, changed on purpose: it was
+      // Σ sale_price, with the linked garages and storage left out).
+      total_revenue: CONTRACTED,
       total_expenses: EXPENSES,
-      total_profit: SALE_PRICES - EXPENSES,
-      profit_margin: pct(SALE_PRICES - EXPENSES, SALE_PRICES),
+      total_profit: CONTRACTED - EXPENSES,
+      profit_margin: pct(CONTRACTED - EXPENSES, CONTRACTED),
       // Outstanding on the live, non-equity credits cr1 and cr4.
       total_debt: 680_000,
       total_equity: 400_000,
@@ -201,12 +204,13 @@ describe('fetchDirectorDashboard: a realistic portfolio', () => {
       reserved_units: 1,
       available_units: 2,
       sales_rate: pct(5, 8),
-      total_sales_revenue: SALE_PRICES,
-      // Σ sale_price over four sale rows, divided by five Sold apartments (GEN-38).
-      avg_price_per_unit: SALE_PRICES / 5,
-      // a1 and a6, the latter on the month's first day.
+      // Package values (GEN-38, changed on purpose: they were sale prices alone).
+      total_sales_revenue: CONTRACTED,
+      // Four sales' package values, divided by five Sold apartments (GEN-38).
+      avg_price_per_unit: CONTRACTED / 5,
+      // a1 with its garage and storage, and a6 on the month's first day.
       monthly_sales_count: 2,
-      monthly_sales_revenue: 198_000 + 250_000,
+      monthly_sales_revenue: 198_000 + 15_000 + 5_000 + 250_000,
     }))
   })
 
@@ -275,7 +279,7 @@ describe('fetchDirectorDashboard: no rows at all', () => {
 })
 
 describe('fetchDirectorDashboard: a failed load', () => {
-  it.each(['projects', 'apartments', 'sales', 'accounting_payments', 'bank_credits', 'tic_cost_structures'])(
+  it.each(['projects', 'apartments', 'sales', 'accounting_payments', 'bank_credits', 'tic_cost_structures', 'apartment_garages', 'apartment_repositories'])(
     'rejects when the %s read fails, rather than showing zeros',
     async table => {
       db.failing = { [table]: `permission denied for table ${table}` }

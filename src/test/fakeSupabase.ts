@@ -5,7 +5,8 @@
  * - `eq`, `neq`, `in`, `gte`, `lte` and `not(column, 'is', null)` compare a column, which may be a
  *   dotted path into an embedded row (`'invoice.invoice_type'`), as a filter on an `!inner` join
  *   is written. A fixture row carries its embedded rows already, under the name the query uses.
- * - `order` sorts, nulls last when ascending and first when descending (Postgres' default).
+ * - `order` sorts, nulls last when ascending and first when descending (Postgres' default), and
+ *   `range` slices, so `fetchAllRows` pages through a table.
  * - `single` and `maybeSingle` answer one row.
  * - `select`'s column list is ignored: a fixture row holds what the query would return.
  *
@@ -36,6 +37,7 @@ class FakeQuery implements PromiseLike<{ data: unknown; error: { message: string
   private sorts: Array<{ column: string; ascending: boolean }> = []
   private narrowedWithIn = false
   private shape: 'many' | 'single' | 'maybeSingle' = 'many'
+  private window: [number, number] | null = null
 
   constructor(private readonly db: FakeDb, private readonly table: string) {}
 
@@ -56,6 +58,8 @@ class FakeQuery implements PromiseLike<{ data: unknown; error: { message: string
     this.sorts.push({ column, ascending: options.ascending ?? true })
     return this
   }
+  range(from: number, to: number): this { this.window = [from, to]; return this }
+  returns(): this { return this }
   single(): this { this.shape = 'single'; return this }
   maybeSingle(): this { this.shape = 'maybeSingle'; return this }
 
@@ -87,6 +91,7 @@ class FakeQuery implements PromiseLike<{ data: unknown; error: { message: string
       })
     }
 
+    if (this.window) rows = rows.slice(this.window[0], this.window[1] + 1)
     if (this.shape === 'many') return { data: rows, error: null }
     if (rows.length === 1) return { data: rows[0], error: null }
     if (rows.length === 0 && this.shape === 'maybeSingle') return { data: null, error: null }
