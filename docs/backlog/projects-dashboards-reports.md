@@ -40,18 +40,6 @@ characterization tests of the Director and Sales dashboards and the Sales report
 - **Fix direction:** decide what the tile is for. Either show the month from `monthlyCashFlow`, or
   call it "Naplaćeno od kupaca (mjesec)".
 
-### GEN-26 · Medium · General report: a project's revenue never includes its linked garages and storage
-- **Check:** Confirmed (schema; pinned in `src/components/Reports/services/generalReportService.test.ts`)
-- **Where:** `generalReportService.ts`, per-project revenue, and the second query batch
-- **What happens:** the per-project revenue adds `garage_id` / `repository_id` prices, but
-  `apartments` has neither column. The links live in `apartment_garages` / `apartment_repositories`.
-  So a project's revenue is its sold apartments' list prices, and the price lookup always queries
-  `in('id', [''])`. Portfolio `total_revenue` leaves linked units out on purpose. Once this is
-  fixed, the projects will no longer add up to it.
-- **Fix direction:** decide one definition of package revenue with GEN-9 / Step 7 item 2: sale or
-  list price (SALES-6 `packageTotal` uses the sale price), and whether the portfolio total includes
-  linked units. Then read the junction tables.
-
 ### GEN-27 · Medium · General report: per-project debt and equity still use the definitions GEN-2 replaced
 - **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`)
 - **Where:** `generalReportService.ts`, `projects[].equity` / `.debt`. Shown on screen as
@@ -136,9 +124,6 @@ characterization tests of the Director and Sales dashboards and the Sales report
   buckets with `parseLocalDate` / `monthKey` in `src/utils/cashFlowFigures.ts`, and passes in
   New York time.
 - **Fix direction:** the same helpers, or `monthlyCashFlow`'s bucketing.
-- The header comment of `generalReportService.test.ts` still says the General report adds a
-  seventh month west of UTC. That stopped being true on 2026-10-21, and the file was left unedited
-  on purpose. Correct the comment the next time that file changes.
 
 ### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
 - **Check:** Code reading. **Runtime check needed** on production row counts
@@ -291,6 +276,12 @@ characterization tests of the Director and Sales dashboards and the Sales report
   the chart.
 
 ## Resolved
+
+### GEN-26 · Medium · General report: a project's revenue never includes its linked garages and storage
+- Fixed on `refactor/sales-figures` (2026-10-21) with GEN-38's definition: a project's revenue is
+  its contracted sales, each at its package value, with the links read from `apartment_garages` /
+  `apartment_repositories` (`fetchLinkedPrices`). The portfolio total is the sum of the same sales,
+  so the projects add up to it. Pinned in `generalReportService.test.ts`, which failed before.
 
 ### GEN-42 · Low · Sales report: a failed garage or storage price read is not reported
 - Fixed on `refactor/sales-figures` (2026-10-21): the report reads the links through the shared

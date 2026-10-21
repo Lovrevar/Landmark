@@ -14,7 +14,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 9 |
 | [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 9, plus 4 waiting on the ERP |
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
-| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 26 |
+| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 25 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 12 |
 | [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 12 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
@@ -81,7 +81,7 @@ sheet, and try TIC saves on dev.
 | 1 | [CASH-6](./cashflow.md) — cesija-from-credit sign | Allocation usage is wrong for every such payment. Blocked on an accounting decision, not on code. |
 | 2 | [COLLAB-4](./collaboration.md) — AI rate limit miscounts and fails open | Deferred to the voice branch (OQ-3). Do it there. |
 | 3 | [GEN-35](./projects-dashboards-reports.md), [GEN-43](./projects-dashboards-reports.md) — General report, Director and Sales dashboards not paged past 1000 rows | Every total goes silently low once payments or invoices pass 1000. Check production counts first. |
-| 4 | [GEN-27](./projects-dashboards-reports.md), [GEN-28](./projects-dashboards-reports.md), [GEN-26](./projects-dashboards-reports.md) — General report per-project funding, retail section, package revenue | Wrong figures in a report that goes to banks. Each has a pinned test to change; GEN-26 waits on the GEN-9 package-revenue decision. |
+| 4 | [GEN-27](./projects-dashboards-reports.md), [GEN-28](./projects-dashboards-reports.md) — General report per-project funding, retail section | Wrong figures in a report that goes to banks. Each has a pinned test to change. |
 
 ### 3. Larger work, schedule deliberately
 

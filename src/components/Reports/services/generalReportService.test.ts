@@ -10,9 +10,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * Do not edit an expectation to get a refactor green. If one moves, the refactor changed a figure.
  */
 
-// A fake Supabase client: `from(table).select()` resolves to that table's rows, and its `.in()`
-// (the garage and storage price lookup) filters them by id. A table listed in `failing` or
-// `failingLookup` answers the way supabase-js reports a failed request: `{ data: null, error }`.
+// A fake Supabase client: `from(table).select()` resolves to that table's rows, its `.in()`
+// filters them by id, and `.order().range()` pages them (the linked garage and storage prices,
+// read through fetchAllRows). A table listed in `failing` or `failingLookup` answers the way
+// supabase-js reports a failed request: `{ data: null, error }`.
 let tables: Record<string, unknown[]> = {}
 let failing: Record<string, string> = {}
 let failingLookup: Record<string, string> = {}
@@ -31,6 +32,12 @@ vi.mock('../../../lib/supabase', () => {
               (tables[table] ?? []).filter(row => ids.includes((row as { id: string }).id)),
               failingLookup[table],
             )),
+          order: () => ({
+            range: (from: number, to: number) => {
+              const page = Promise.resolve(response((tables[table] ?? []).slice(from, to + 1), failing[table]))
+              return { returns: () => page, then: page.then.bind(page) }
+            },
+          }),
         }),
       }),
     },
@@ -41,8 +48,7 @@ import { fetchGeneralReportData } from './generalReportService'
 import type { ComprehensiveReport } from '../types'
 
 // Mid-afternoon on 20 October 2026, local time. The six-month range is what the hook asks for.
-// The cash-flow months hold in UTC (CI) and east of it (Croatia). West of UTC the service reads
-// '2026-05-01' as 30 April and adds a seventh month (GEN-34).
+// The cash-flow months hold in every time zone: monthlyCashFlow buckets by local date.
 const NOW = new Date(2026, 9, 20, 15, 30, 0)
 const RANGE = { start: '2026-05-01', end: '2026-10-20' }
 
@@ -194,6 +200,14 @@ const PORTFOLIO: Record<string, unknown[]> = {
   buildings: [{ id: 'bu1' }, { id: 'bu2' }],
   garages: [{ id: 'g1', price: 15_000 }, { id: 'g2', price: 12_000 }],
   repositories: [{ id: 'r1', price: 5_000 }],
+  // a1 is sold with a garage and a storage unit, a7 with a garage. a10 is Sold with no sale, so its
+  // garage counts nowhere.
+  apartment_garages: [
+    { id: 'ag1', apartment_id: 'a1', garages: { price: 15_000 } },
+    { id: 'ag2', apartment_id: 'a7', garages: { price: 20_000 } },
+    { id: 'ag3', apartment_id: 'a10', garages: { price: 10_000 } },
+  ],
+  apartment_repositories: [{ id: 'ar1', apartment_id: 'a1', repositories: { price: 5_000 } }],
   subcontractor_milestones: [
     { id: 'm1', status: 'paid' },
     { id: 'm4', status: 'paid' },
@@ -221,7 +235,9 @@ const PORTFOLIO: Record<string, unknown[]> = {
 }
 
 // Figures the sections below share, spelled out once.
-const REVENUE = 200_000 + 150_000.5 + 300_000 + 250_000 + 220_000 + 50_000
+// Contracted sales: a1 with its garage and storage, a7 with its garage, and a8 (GEN-38, changed on
+// purpose: the list prices of the six Sold apartments, 1.170.000,5).
+const REVENUE = (198_000 + 15_000 + 5_000) + (295_000 + 20_000) + 250_000
 // Paid on cost invoices, whenever paid: kompenzacija, both cesije, office, ULAZNI (INV), credit
 // fees, Lučko's supplier.
 const EXPENSES = 5_000 + 3_500 + 1_250 + 8_000 + 900.4 + 900.4 + 70_000
@@ -277,9 +293,10 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
       units_sold: 6,
       available_units: 3,
       reserved_units: 2,
-      // List prices of the sold apartments; sale prices and linked garages play no part.
+      // Contracted sales, averaged over the three sales (GEN-38, changed on purpose: over the six
+      // Sold apartments).
       total_revenue: REVENUE,
-      avg_sale_price: REVENUE / 6,
+      avg_sale_price: REVENUE / 3,
       total_sales: 3,
       buyers: 2,
       active_leads: 3,
@@ -432,7 +449,9 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
   })
 
   it('projects', async () => {
-    const p1Revenue = 200_000 + 150_000.5
+    // a1's sale with its garage and storage; a2 is Sold with no sale (GEN-38 and GEN-26, changed on
+    // purpose: the list prices of a1 and a2).
+    const p1Revenue = 198_000 + 15_000 + 5_000
     const p1Expenses = 8_500 + 8_000 + 1_800.8
     expect((await report()).projects).toEqual(roundDeep([
       {
@@ -454,11 +473,12 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
       {
         id: 'p2', name: 'Precko Zapad', location: 'Zagreb', status: 'Completed', category: null,
         budget: 0, has_budget: false,
-        revenue: 770_000, expenses: 0,
+        // a7 with its garage, and a8; a9 has no sale (GEN-38, changed on purpose: 770.000).
+        revenue: 565_000, expenses: 0,
         units_sold: 3, total_units: 3, contracts: 1, phases_done: 1, total_phases: 1,
         // Includes the repaid term loan cr3 (GEN-27).
         equity: 200_000, debt: 800_000,
-        sales_rate: 100, profit: 770_000, profit_margin: 100,
+        sales_rate: 100, profit: 565_000, profit_margin: 100,
         risk_level: 'Low',
       },
       {
@@ -474,12 +494,14 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
       {
         id: 'p4', name: 'Lučko', location: 'Zagreb', status: 'On Hold', category: 'stambeno',
         budget: 0, has_budget: false,
-        revenue: 50_000, expenses: 70_000,
+        // a10 is Sold with no sale, so nothing is contracted (GEN-38, changed on purpose: its list
+        // price, 50.000, a margin of -40 % and a High risk).
+        revenue: 0, expenses: 70_000,
         units_sold: 1, total_units: 2, contracts: 0, phases_done: 0, total_phases: 0,
         equity: 0, debt: 0,
-        sales_rate: 50, profit: -20_000, profit_margin: -40,
-        // Half sold, so high risk on the negative margin alone.
-        risk_level: 'High',
+        // No revenue reads as a 0 % margin (GEN-32), which is Medium risk.
+        sales_rate: 50, profit: -70_000, profit_margin: 0,
+        risk_level: 'Medium',
       },
     ]))
   })
@@ -490,10 +512,12 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
     // is at 50 %.
     expect(r.risks).toEqual([{ kind: 'slow_sales', count: 1 }])
     expect(r.insights).toEqual(roundDeep({
+      // By contracted sales (GEN-38, changed on purpose). Sveta Nedelja and Lučko both have none;
+      // the sort keeps their order.
       top_projects: [
-        { name: 'Precko Zapad', revenue: 770_000, sales_rate: 100 },
-        { name: 'Zelena Dolina', revenue: 200_000 + 150_000.5, sales_rate: pct(2, 6) },
-        { name: 'Lučko', revenue: 50_000, sales_rate: 50 },
+        { name: 'Precko Zapad', revenue: 565_000, sales_rate: 100 },
+        { name: 'Zelena Dolina', revenue: 198_000 + 15_000 + 5_000, sales_rate: pct(2, 6) },
+        { name: 'Sveta Nedelja', revenue: 0, sales_rate: 0 },
       ],
       // Sales rate above 50 % and fewer units available than sold: only the two standing ones.
       recommendation_keys: ['reports.general.recs.budgets', 'reports.general.recs.partners'],
@@ -509,7 +533,7 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
       .toEqual({ ...all, projects: [], insights: { ...all.insights, top_projects: [] }, risks: [] })
     // Risks and top projects are drawn from the narrowed list.
     expect(one.risks).toEqual([])
-    expect(one.insights.top_projects).toEqual([{ name: 'Precko Zapad', revenue: 770_000, sales_rate: 100 }])
+    expect(one.insights.top_projects).toEqual([{ name: 'Precko Zapad', revenue: 565_000, sales_rate: 100 }])
   })
 })
 
@@ -585,8 +609,9 @@ describe('fetchGeneralReportData: a failed load', () => {
     },
   )
 
-  it('rejects when the garage price lookup fails', async () => {
-    failingLookup = { garages: 'canceling statement due to statement timeout' }
+  // GEN-26, changed on purpose: the lookup read garages by a garage_id apartments do not have.
+  it('rejects when the linked garages read fails', async () => {
+    failing = { apartment_garages: 'canceling statement due to statement timeout' }
     await expect(fetchGeneralReportData('all', RANGE)).rejects.toThrow('canceling statement due to statement timeout')
   })
 })
