@@ -4,7 +4,7 @@ import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
 import { startOfMonth } from 'date-fns'
 import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
-import { averagePer, contractedSales, salesRate, salesSince, soldRevenue, unitStatusCounts, type SaleValueOptions } from '../../../utils/salesFigures'
+import { contractedSales, salesRate, salesSince, soldRevenue, unitStatusCounts, type SaleValueOptions } from '../../../utils/salesFigures'
 import { allocationTotals, debtToEquity, isLiveDebt, liveDebtFigures, totalEquity as equityOf } from '../../../utils/fundingFigures'
 import { profitAndMargin } from '../../../utils/projectFigures'
 import {
@@ -337,9 +337,7 @@ function deriveSales(apartments: ApartmentRow[], salesRows: SaleRow[], saleOptio
     available: availableUnits,
   } = unitStatusCounts(apartments)
   const unitSalesRate = salesRate(soldUnits, totalUnits)
-  const totalSalesRevenue = contractedSales(salesRows, saleOptions).value
-  // Divided by the Sold apartments, not by the sales (GEN-38).
-  const avgPricePerUnit = averagePer(totalSalesRevenue, soldUnits)
+  const { value: totalSalesRevenue, average: avgPricePerUnit } = contractedSales(salesRows, saleOptions)
   const monthlySales = contractedSales(salesSince(salesRows, startOfMonth(new Date())), saleOptions)
 
   return {

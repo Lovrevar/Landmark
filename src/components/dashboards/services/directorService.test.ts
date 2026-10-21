@@ -206,8 +206,9 @@ describe('fetchDirectorDashboard: a realistic portfolio', () => {
       sales_rate: pct(5, 8),
       // Package values (GEN-38, changed on purpose: they were sale prices alone).
       total_sales_revenue: CONTRACTED,
-      // Four sales' package values, divided by five Sold apartments (GEN-38).
-      avg_price_per_unit: CONTRACTED / 5,
+      // Four sales' package values over the four sales (GEN-38, changed on purpose: it divided
+      // by the five Sold apartments, one of which has no sale).
+      avg_price_per_unit: CONTRACTED / 4,
       // a1 with its garage and storage, and a6 on the month's first day.
       monthly_sales_count: 2,
       monthly_sales_revenue: 198_000 + 15_000 + 5_000 + 250_000,
