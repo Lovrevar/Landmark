@@ -157,7 +157,9 @@ describe('generateProjectReport', () => {
       // Six months, May to October, and s4 (1 October) in October.
       expect(r.monthly_sales).toEqual(months({ '2026-10-01': [1, 250_000] }))
     } finally {
-      process.env.TZ = tz
+      // Assigning undefined would set TZ to the string "undefined", which Node reads as UTC.
+      if (tz === undefined) delete process.env.TZ
+      else process.env.TZ = tz
     }
   })
 

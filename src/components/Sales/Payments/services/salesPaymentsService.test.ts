@@ -91,7 +91,9 @@ describe('calculateSalesPaymentStats', () => {
         payment({ payment_date: '2026-09-30', amount: 50_000 }),
       ])).toMatchObject({ paymentsThisMonth: 1, amountThisMonth: 30_000 })
     } finally {
-      process.env.TZ = tz
+      // Assigning undefined would set TZ to the string "undefined", which Node reads as UTC.
+      if (tz === undefined) delete process.env.TZ
+      else process.env.TZ = tz
     }
   })
 
