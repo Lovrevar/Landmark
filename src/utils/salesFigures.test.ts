@@ -6,6 +6,7 @@ import {
   collectedFromSales,
   collectedSince,
   contractedSales,
+  contractedSalesByProject,
   conversionRate,
   customerFunnel,
   linkedPricesByApartment,
@@ -142,6 +143,13 @@ describe('contracted sales', () => {
     expect(saleValue(sales[0], { linked, listPrice })).toBe(218_000)
     expect(saleValue(sales[2], { linked, listPrice })).toBe(180_000)
     expect(contractedSales(sales, { linked, listPrice }).value).toBe(218_000 + 150_000.5 + 180_000)
+  })
+
+  it('per project, a sale with no known project left out', () => {
+    const projectOf = (sale: { apartment_id: string }) => ({ a1: 'p1', a2: 'p1' } as Record<string, string>)[sale.apartment_id]
+    expect(contractedSalesByProject(sales, projectOf, { linked })).toEqual(new Map([
+      ['p1', { count: 2, value: 218_000 + 150_000.5, average: (218_000 + 150_000.5) / 2 }],
+    ]))
   })
 
   it('no sales is zeros, not NaN', () => {

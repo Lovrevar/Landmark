@@ -250,6 +250,23 @@ export function contractedSales(sales: readonly SaleRow[], options: SaleValueOpt
   return { count: sales.length, value, average: averagePer(value, sales.length) }
 }
 
+/** Contracted sales per project; a sale whose project `projectOf` cannot name counts towards none. */
+export function contractedSalesByProject<T extends SaleRow>(
+  sales: readonly T[],
+  projectOf: (sale: T) => string | null | undefined,
+  options: SaleValueOptions = {},
+): Map<string, ContractedSales> {
+  const byProject = new Map<string, T[]>()
+  for (const sale of sales) {
+    const projectId = projectOf(sale)
+    if (!projectId) continue
+    const bucket = byProject.get(projectId)
+    if (bucket) bucket.push(sale)
+    else byProject.set(projectId, [sale])
+  }
+  return new Map([...byProject].map(([projectId, rows]) => [projectId, contractedSales(rows, options)]))
+}
+
 /** Sales dated on or after `from` (local midnight), by the sale's local date. */
 export const salesSince = <T extends SaleRow>(sales: readonly T[], from: Date): T[] =>
   sales.filter(sale => parseLocalDate(sale.sale_date) >= from)

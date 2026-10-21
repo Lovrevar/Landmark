@@ -147,32 +147,35 @@ describe('fetchDirectorDashboard: a realistic portfolio', () => {
       {
         id: 'p3', name: 'Lučko', location: '', status: 'On Hold', category: 'stambeno', budget: 0, budget_set: false,
         total_expenses: 0,
-        // List price of the Sold apartment, though it has no sale (GEN-38).
-        apartment_sales: 50_000,
+        // Its Sold apartment has no sale, so nothing is contracted (GEN-38, changed on purpose:
+        // it was that apartment's list price, and a margin of 100 %).
+        apartment_sales: 0,
         total_investment: 50_000,
         total_debt: 100_000,
-        profit_margin: 100,
+        profit_margin: 0,
         completion_percentage: 50,
       },
       {
         id: 'p1', name: 'Zelena Dolina', location: 'Zagreb', status: 'In Progress', category: 'stambeno', budget: 6_500_000, budget_set: true,
         total_expenses: p1Expenses,
-        // List prices of a1 and a2, not their sale prices and not a1's garage and storage (GEN-38).
-        apartment_sales: 350_000.5,
+        // Contracted sales: a1 with its garage and storage, and a2 (GEN-38, changed on purpose: it
+        // was the list prices of a1 and a2).
+        apartment_sales: 198_000 + 15_000 + 5_000 + 150_000.5,
         total_investment: 600_000,
         // Outstanding on the project's credits, equity included (FUND-21).
         total_debt: 580_000,
-        profit_margin: pct(350_000.5 - p1Expenses, 350_000.5),
+        profit_margin: pct(368_000.5 - p1Expenses, 368_000.5),
         completion_percentage: 50,
       },
       {
         id: 'p2', name: 'Precko Zapad', location: 'Zagreb', status: 'Completed', category: null, budget: 1_000_000_000, budget_set: false,
         // c3's invoice and the supplier invoice without a contract.
         total_expenses: 10_000 + 6_000,
-        apartment_sales: 550_000,
+        // a5 with its garage, and a6 (GEN-38, changed on purpose: list prices, 550.000).
+        apartment_sales: 295_000 + 20_000 + 250_000,
         total_investment: 0,
         total_debt: 0,
-        profit_margin: pct(550_000 - 16_000, 550_000),
+        profit_margin: pct(565_000 - 16_000, 565_000),
         completion_percentage: 100,
       },
     ]))

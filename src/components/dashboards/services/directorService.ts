@@ -4,7 +4,7 @@ import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
 import { startOfMonth } from 'date-fns'
 import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
-import { contractedSales, salesRate, salesSince, soldRevenue, unitStatusCounts, type SaleValueOptions } from '../../../utils/salesFigures'
+import { contractedSales, contractedSalesByProject, salesRate, salesSince, unitStatusCounts, type SaleValueOptions } from '../../../utils/salesFigures'
 import { allocationTotals, debtToEquity, isLiveDebt, liveDebtFigures, totalEquity as equityOf } from '../../../utils/fundingFigures'
 import { profitAndMargin } from '../../../utils/projectFigures'
 import {
@@ -182,7 +182,7 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const listPrices = new Map(apartments.map(a => [a.id, a.price]))
   const saleOptions: SaleValueOptions = { linked: linkedPrices, listPrice: id => listPrices.get(id) }
 
-  const projectStats = deriveProjects(projects, apartments, contracts, invoices, allocations, credits, budgetedProjectIds)
+  const projectStats = deriveProjects(projects, apartments, contracts, invoices, allocations, credits, budgetedProjectIds, salesRows, saleOptions)
   const financial = deriveFinancial(invoices, payments, salesRows, credits, saleOptions)
   const sales = deriveSales(apartments, salesRows, saleOptions)
   const construction = deriveConstruction(contracts, subcontractors, milestones, invoices)
@@ -218,7 +218,9 @@ function deriveProjects(
   invoices: InvoiceRow[],
   allocations: AllocationRow[],
   credits: CreditRow[],
-  budgetedProjectIds: ReadonlySet<string>
+  budgetedProjectIds: ReadonlySet<string>,
+  salesRows: SaleRow[],
+  saleOptions: SaleValueOptions
 ): ProjectStats[] {
   const apartmentsByProject = groupBy(apartments, a => a.project_id)
   const contractsByProject = groupBy(contracts, c => c.project_id)
@@ -226,6 +228,8 @@ function deriveProjects(
   const invoicesByProject = groupBy(invoices, i => i.project_id)
   const allocationsByProject = groupBy(allocations, a => a.project_id)
   const creditsByProject = groupBy(credits, c => c.project_id)
+  const projectOfApartment = new Map(apartments.map(a => [a.id, a.project_id]))
+  const salesByProject = contractedSalesByProject(salesRows, s => projectOfApartment.get(s.apartment_id), saleOptions)
 
   return projects.map(project => {
     const projectApartments = apartmentsByProject.get(project.id) || []
@@ -246,7 +250,8 @@ function deriveProjects(
       .reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
 
     const totalExpenses = contractExpenses.reduce((sum, exp) => sum + exp, 0) + invoicesWithoutContract
-    const apartmentSales = soldRevenue(projectApartments)
+    // Contracted sales of the project's apartments, not the list prices of its Sold ones (GEN-38).
+    const apartmentSales = salesByProject.get(project.id)?.value ?? 0
     const totalInvestment = allocationTotals(allocationsByProject.get(project.id) || []).allocated
     // Outstanding on every credit of the project, equity included (FUND-21).
     const totalDebt = (creditsByProject.get(project.id) || []).reduce(
