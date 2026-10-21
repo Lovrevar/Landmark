@@ -156,36 +156,36 @@ const GeneralReports: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-6">{t('reports.general.kpi_title')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 p-6 rounded-xl text-center border border-blue-200 dark:border-blue-700">
-            <p className="text-3xl font-bold text-blue-600">{formatEuroCompact(report.kpis.portfolio_value)}</p>
+          <div className="bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 p-6 rounded-xl text-center border border-blue-200 dark:border-blue-800">
+            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{formatEuroCompact(report.kpis.portfolio_value)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.portfolio_value')}</p>
           </div>
-          <div className="bg-linear-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 p-6 rounded-xl text-center border border-green-200 dark:border-green-700">
-            <p className="text-3xl font-bold text-green-600">{formatEuroCompact(report.kpis.total_revenue)}</p>
+          <div className="bg-linear-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 p-6 rounded-xl text-center border border-green-200 dark:border-green-800">
+            <p className="text-3xl font-bold text-green-600 dark:text-green-400">{formatEuroCompact(report.kpis.total_revenue)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.total_revenue')}</p>
           </div>
-          <div className="bg-linear-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 p-6 rounded-xl text-center border border-teal-200 dark:border-teal-700">
-            <p className="text-3xl font-bold text-teal-600">{formatEuroCompact(report.kpis.net_profit)}</p>
+          <div className="bg-linear-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 p-6 rounded-xl text-center border border-teal-200 dark:border-teal-800">
+            <p className="text-3xl font-bold text-teal-600 dark:text-teal-400">{formatEuroCompact(report.kpis.net_profit)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.net_profit')}</p>
           </div>
-          <div className="bg-linear-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10 p-6 rounded-xl text-center border border-orange-200 dark:border-orange-700">
-            <p className="text-3xl font-bold text-orange-600">{report.kpis.roi.toFixed(1)}%</p>
+          <div className="bg-linear-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10 p-6 rounded-xl text-center border border-orange-200 dark:border-orange-800">
+            <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{report.kpis.roi.toFixed(1)}%</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.roi')}</p>
           </div>
-          <div className="bg-linear-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 p-6 rounded-xl text-center border border-teal-200 dark:border-teal-700">
-            <p className="text-3xl font-bold text-teal-600">{report.kpis.sales_rate.toFixed(1)}%</p>
+          <div className="bg-linear-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 p-6 rounded-xl text-center border border-teal-200 dark:border-teal-800">
+            <p className="text-3xl font-bold text-teal-600 dark:text-teal-400">{report.kpis.sales_rate.toFixed(1)}%</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.sales_rate')}</p>
           </div>
-          <div className="bg-linear-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-900/10 p-6 rounded-xl text-center border border-pink-200 dark:border-pink-700">
-            <p className="text-3xl font-bold text-pink-600">{report.kpis.debt_equity_ratio.toFixed(2)}</p>
+          <div className="bg-linear-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/10 p-6 rounded-xl text-center border border-purple-200 dark:border-purple-800">
+            <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{report.kpis.debt_equity_ratio.toFixed(2)}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.de_ratio')}</p>
           </div>
           <div className="bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 p-6 rounded-xl text-center border border-slate-200 dark:border-slate-600">
             <p className="text-3xl font-bold text-slate-600 dark:text-slate-300">{report.kpis.active_projects}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.active_projects')}</p>
           </div>
-          <div className="bg-linear-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-900/10 p-6 rounded-xl text-center border border-yellow-200 dark:border-yellow-700">
-            <p className="text-3xl font-bold text-yellow-600">{report.kpis.total_customers}</p>
+          <div className="bg-linear-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-900/10 p-6 rounded-xl text-center border border-yellow-200 dark:border-yellow-800">
+            <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{report.kpis.total_customers}</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{t('reports.general.total_customers')}</p>
           </div>
         </div>
@@ -302,10 +302,10 @@ const GeneralReports: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-linear-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-900/10 rounded-xl shadow-xs border border-rose-200 dark:border-rose-700 p-6">
+        <div className="bg-linear-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/10 rounded-xl shadow-xs border border-purple-200 dark:border-purple-800 p-6">
           <div className="flex items-center mb-4">
-            <CreditCard className="w-6 h-6 text-rose-600 mr-2" />
-            <h2 className="text-xl font-bold text-rose-900 dark:text-rose-100">{t('reports.general.company_investments')}</h2>
+            <CreditCard className="w-6 h-6 text-purple-600 dark:text-purple-400 mr-2" />
+            <h2 className="text-xl font-bold text-purple-900 dark:text-purple-100">{t('reports.general.company_investments')}</h2>
           </div>
           <div className="space-y-3 text-sm">
             {([
