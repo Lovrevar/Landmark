@@ -3,7 +3,7 @@ import type { Project } from '../../../lib/supabase'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import type { ProjectSalesReport, CustomerReport, SalesData } from '../types'
 import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
-import { averagePer, customerFunnel, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
+import { averagePer, contractedSales, customerFunnel, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
@@ -182,8 +182,8 @@ export async function generateCustomerReport(
   const sales = salesData || []
 
   const { total: total_customers, buyers, interested, leads } = customerFunnel(customers)
-  const total_revenue = sales.reduce((sum, sale) => sum + sale.sale_price, 0)
-  const average_purchase = averagePer(total_revenue, sales.length)
+  // Σ sale_price; linked garages and storage play no part (GEN-38).
+  const { value: total_revenue, average: average_purchase } = contractedSales(sales)
 
   return {
     total_customers,

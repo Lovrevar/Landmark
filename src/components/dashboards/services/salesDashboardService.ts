@@ -1,7 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { subMonths, startOfMonth, format } from 'date-fns'
-import { monthKey } from '../../../utils/dateOnly'
-import { averagePer, collectedByMonth, collectedByProject, collectedFromSales, collectedSince, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
+import { collectedByMonth, collectedByProject, collectedFromSales, collectedSince, contractedSales, salesByMonth, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from '../types/salesDashboardTypes'
 
 // A unit of any of the three saleable types (stan / garaža / repozitorij),
@@ -73,14 +72,14 @@ export async function fetchSalesDashboardData(): Promise<{
   // Revenue is cash actually collected ("Naplaćeno od prodaje", GEN-9); only apartment sales are
   // invoiced, so garage/storage sales are not represented in the revenue figures.
   const totalRevenue = collectedFromSales(payments)
-  const totalSalesValue = sales.reduce((sum, s) => sum + (Number(s.sale_price) || 0), 0)
   const {
     total: totalUnits,
     sold: soldUnits,
     reserved: reservedUnits,
     available: availableUnits,
   } = unitStatusCounts(allUnits)
-  const avgSalePrice = averagePer(totalSalesValue, sales.length)
+  // Σ sale_price over the sale rows; linked garages and storage play no part (GEN-38).
+  const avgSalePrice = contractedSales(sales).average
   const unitSalesRate = salesRate(soldUnits, totalUnits)
   const totalCustomers = customers.length
   const activeLeads = customers.filter(c => c.status === 'lead' || c.status === 'interested').length
@@ -129,15 +128,15 @@ export async function fetchSalesDashboardData(): Promise<{
   // sales_count is by sale_date, revenue is by payment_date — distinct events.
   const monthlyTrends: MonthlyTrend[] = []
   const collectedPerMonth = collectedByMonth(payments)
+  const salesPerMonth = salesByMonth(sales)
   for (let i = 5; i >= 0; i--) {
     const monthDate = subMonths(new Date(), i)
     const key = format(monthDate, 'yyyy-MM')
-    const monthSales = sales.filter(s => monthKey(s.sale_date) === key)
     monthlyTrends.push({
       // A machine key, not a label: nothing but the dashboard reads this, and it is the one
       // that knows which language to render it in.
       month: format(startOfMonth(monthDate), 'yyyy-MM-dd'),
-      sales_count: monthSales.length,
+      sales_count: salesPerMonth.get(key)?.length ?? 0,
       revenue: collectedPerMonth.get(key) || 0
     })
   }

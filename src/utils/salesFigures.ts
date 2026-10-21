@@ -186,3 +186,82 @@ export function collectedByProject<T extends CollectedRow>(
   }
   return byProject
 }
+
+/** A `sales` row, narrowed to what these figures read. One per apartment (`sales_one_per_apartment`). */
+export interface SaleRow {
+  apartment_id?: string | null
+  sale_price?: number | string | null
+  sale_date?: string | null
+}
+
+/** Apartment id → the list prices of the garages and storage units linked to it. */
+export type LinkedPrices = ReadonlyMap<string, readonly number[]>
+
+/** A link row from `apartment_garages` or `apartment_repositories`, with the linked unit's list price. */
+export interface LinkedPriceRow {
+  apartment_id: string
+  price?: number | string | null
+}
+
+/** Groups the linked units' list prices by apartment; pass the garage and the storage links together. */
+export function linkedPricesByApartment(links: readonly LinkedPriceRow[]): LinkedPrices {
+  const byApartment = new Map<string, number[]>()
+  for (const link of links) {
+    const prices = byApartment.get(link.apartment_id) ?? []
+    prices.push(Number(link.price) || 0)
+    byApartment.set(link.apartment_id, prices)
+  }
+  return byApartment
+}
+
+export interface SaleValueOptions {
+  /** The linked garages' and storage units' list prices; without them a sale is its own price. */
+  linked?: LinkedPrices
+  /** The apartment's list price, which stands in for a sale price of 0 (`packageTotal`). */
+  listPrice?: (apartmentId: string) => number | null | undefined
+}
+
+/** What one sale is worth: `packageTotal` over its sale price and whatever the options supply. */
+export const saleValue = (sale: SaleRow, { linked, listPrice }: SaleValueOptions = {}): number => {
+  const apartmentId = sale.apartment_id ?? ''
+  return packageTotal({
+    listPrice: listPrice?.(apartmentId),
+    salePrice: Number(sale.sale_price) || 0,
+    linkedPrices: linked?.get(apartmentId),
+  })
+}
+
+export interface ContractedSales {
+  /** Sale rows. */
+  count: number
+  /** Σ `saleValue`. */
+  value: number
+  /** `value / count`; 0 with no sales. */
+  average: number
+}
+
+/**
+ * "Ugovorena prodaja": contracted sales. A sale is a `sales` row, written with the apartment's
+ * Sold status by `complete_apartment_sale`; unit statuses stay the inventory (Step 7 item 2,
+ * decided 2026-10-21).
+ */
+export function contractedSales(sales: readonly SaleRow[], options: SaleValueOptions = {}): ContractedSales {
+  const value = sales.reduce((sum, sale) => sum + saleValue(sale, options), 0)
+  return { count: sales.length, value, average: averagePer(value, sales.length) }
+}
+
+/** Sales dated on or after `from` (local midnight), by the sale's local date. */
+export const salesSince = <T extends SaleRow>(sales: readonly T[], from: Date): T[] =>
+  sales.filter(sale => parseLocalDate(sale.sale_date) >= from)
+
+/** Sales per `'YYYY-MM'` month of the sale date. */
+export function salesByMonth<T extends SaleRow>(sales: readonly T[]): Map<string, T[]> {
+  const byMonth = new Map<string, T[]>()
+  for (const sale of sales) {
+    const key = monthKey(sale.sale_date)
+    const bucket = byMonth.get(key)
+    if (bucket) bucket.push(sale)
+    else byMonth.set(key, [sale])
+  }
+  return byMonth
+}

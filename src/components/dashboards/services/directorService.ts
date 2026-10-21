@@ -3,7 +3,7 @@ import { supabase, type ProjectCategory } from '../../../lib/supabase'
 import { startOfMonth } from 'date-fns'
 import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
-import { averagePer, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
+import { averagePer, contractedSales, salesRate, salesSince, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
 import { allocationTotals, debtToEquity, isLiveDebt, liveDebtFigures, totalEquity as equityOf } from '../../../utils/fundingFigures'
 import { profitAndMargin } from '../../../utils/projectFigures'
 import {
@@ -279,7 +279,7 @@ function deriveFinancial(
   const apartmentPayments = payments.filter(p => p.invoice_id && customerInvoiceIds.has(p.invoice_id))
   const isCostInvoice = (inv: InvoiceRow) => isCostInvoiceType(inv.invoice_type)
 
-  const totalRevenue = salesRows.reduce((sum, s) => sum + s.sale_price, 0)
+  const totalRevenue = contractedSales(salesRows).value
   // Expenses = cash paid out on genuine cost invoices only. (Previously summed
   // paid_amount across ALL invoice types, which subtracted customer payments on
   // OUTGOING_SALES invoices as if they were company costs.)
@@ -329,10 +329,10 @@ function deriveSales(apartments: ApartmentRow[], salesRows: SaleRow[]): SalesMet
   } = unitStatusCounts(apartments)
   const unitSalesRate = salesRate(soldUnits, totalUnits)
   // Sale prices here, list prices in the General report (GEN-38).
-  const totalSalesRevenue = salesRows.reduce((sum, s) => sum + s.sale_price, 0)
+  const totalSalesRevenue = contractedSales(salesRows).value
+  // Divided by the Sold apartments, not by the sales (GEN-38).
   const avgPricePerUnit = averagePer(totalSalesRevenue, soldUnits)
-  const currentMonth = startOfMonth(new Date())
-  const monthlySales = salesRows.filter(s => s.sale_date && parseLocalDate(s.sale_date) >= currentMonth)
+  const monthlySales = contractedSales(salesSince(salesRows, startOfMonth(new Date())))
 
   return {
     total_units: totalUnits,
@@ -342,8 +342,8 @@ function deriveSales(apartments: ApartmentRow[], salesRows: SaleRow[]): SalesMet
     sales_rate: unitSalesRate,
     total_sales_revenue: totalSalesRevenue,
     avg_price_per_unit: avgPricePerUnit,
-    monthly_sales_count: monthlySales.length,
-    monthly_sales_revenue: monthlySales.reduce((sum, s) => sum + s.sale_price, 0)
+    monthly_sales_count: monthlySales.count,
+    monthly_sales_revenue: monthlySales.value
   }
 }
 
