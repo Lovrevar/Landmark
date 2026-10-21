@@ -1,7 +1,7 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-45`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-47`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
@@ -13,6 +13,35 @@ fix's own commit, with a test named after the id that fails first.
 
 GEN-42 (now resolved) to GEN-44 were found while planning Step 7 item 2 (2026-10-21) and are pinned by the
 characterization tests of the Director and Sales dashboards and the Sales report.
+
+GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 2 (2026-10-21).
+
+### GEN-45 · Low · Sales dashboard trend: "2 prodaje • €0" puts two different series in one row
+- **Check:** Confirmed on LandmarkDemo (2026-10-21): May 2026 has two sales worth €493.665, and
+  the row reads "2 prodaje • €0"
+- **Where:** `dashboards/services/salesDashboardService.ts` (~130, `monthlyTrends`),
+  `dashboards/SalesDashboard.tsx` (`dashboards.sales.trend_row`)
+- **What happens:** the count is sales by `sale_date`, the amount is money collected by
+  `payment_date` (`collectedByMonth`), and the bar width follows the amount. The row reads as two
+  sales worth nothing. Flagged as DASH-303 in the June dashboard audit, which is marked fixed,
+  but only a code comment was added
+- **Fix direction:** decide what the trend shows. Either contracted sales per month
+  (`salesByMonth` already has the sales, valued with `saleValue`), or keep collected and label
+  the two numbers so they don't read as one ("2 prodaje · naplaćeno €0")
+
+### GEN-46 · Low · General report PDF charts: rounded €M labels, cut names, and no negative bars
+- **Check:** Confirmed on LandmarkDemo (2026-10-21), PDF page 3
+- **Where:** `Reports/pdf/generalReportPdf.ts` (~355-383), `Reports/pdf/pdfCharts.ts`
+  (`drawBarChart` ~63, `drawHorizontalBarChart`)
+- **What happens:**
+  - "Najbolji projekti po ugovorenoj prodaji (€M)" labels €2,4M and €849K as "€2" and "€1"
+    (the value is passed in €M and printed as a whole number).
+  - Names are cut at 15 characters (`p.name.substring(0, 15)`), so "Rezidencija Jar".
+  - "Mjesečni neto novčani tok (€K)" is an empty box: `drawBarChart` skips every value ≤ 0, and
+    LandmarkDemo's net cash flow is negative in every month.
+- **Fix direction:** print values with `formatEuroCompact` on euros rather than whole €M; wrap
+  or shorten names with an ellipsis; draw negative bars below a zero line (or say "no positive
+  months" instead of an empty frame). GEN-18 is the line chart on the same report
 
 ### GEN-43 · Medium · Director and Sales dashboards, the Sales report and Sales payments read without paging past 1000 rows
 - **Check:** Code reading (Step 7 item 2 planning, 2026-10-21). The General report's version is
@@ -250,6 +279,10 @@ characterization tests of the Director and Sales dashboards and the Sales report
   labels followed in 9c35431c. Tests: the characterization tests of the Director and Sales
   dashboards, both Sales reports, the General report and Project details, whose expectations
   changed in those commits (commented GEN-38), and `contracted sales` in `salesFigures.test.ts`.
+- Follow-ups from the LandmarkDemo visual check: a project with nothing sold is not a top project
+  (7c94c0a9, `it('GEN-38: leaves out projects with nothing sold…')` in `projectFigures.test.ts`,
+  seen failing first), and the labels still saying "prihod" or "po jedinici" (252f6d2d,
+  46b28736, 719e7ff6).
 
 ### GEN-9 · Low · Director and Sales dashboards define sales differently
 - Decided 2026-10-08 to keep both figures and name them. The follow-up, one shared definition

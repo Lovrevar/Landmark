@@ -466,7 +466,9 @@ formula"); this step makes it systematic.
       differing figure moved the Director's, the Sales dashboard's, the Sales and General reports'
       and Project details' revenue and averages onto the definition, each with its LandmarkDemo
       diff. The General report and the Director now agree. Closed: GEN-38, GEN-26, GEN-34, GEN-42.
-      Found on the way, not fixed: GEN-43, GEN-44, SALES-23 to SALES-25, SUP-19, FUND-22.
+      Found on the way, not fixed: GEN-43, GEN-44, SALES-23 to SALES-25, SUP-19, FUND-22. The
+      LandmarkDemo visual check afterwards fixed the €0 "top project", the Director table's width
+      at 1280 px and the labels still saying "prihod", and found GEN-45, GEN-46, UI-14 to UI-17.
    3. Site management (`SiteManagement/index.tsx`, `ProjectDetail.tsx`): budget, committed and
       paid per project and phase come from one helper, the one Budget Control uses. Work list:
       SUP-18 and SUP-19 (the project card and banner disagree on "contracted").

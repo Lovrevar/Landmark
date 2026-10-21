@@ -158,8 +158,9 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### SalesDashboard.tsx
 - Renders sales pipeline metrics, 6-month trend, payment method breakdown, and recent sales list
-- Five KPI tiles: total revenue, **Naplaćeno ovaj mjesec**, sales rate, average sale price, active
-  leads. The monthly figure replaces a "Napredak prema mjesečnom cilju" panel whose target was a
+- Five KPI tiles: **Naplaćeno od prodaje** (collected, not contracted sales), **Naplaćeno ovaj
+  mjesec**, sales rate, average sale price (contracted sales per sale, "Po prodaji (s garažama i
+  spremištima)"), active leads. The monthly figure replaces a "Napredak prema mjesečnom cilju" panel whose target was a
   hardcoded €5.000.000 and whose percentage label was unclamped. It is `monthlyRevenue`: payments
   since the start of the calendar month on `OUTGOING_SALES` invoices that carry an
   `apartment_id` — **apartments only** (garages and storage units are not invoiced) and **gross,
