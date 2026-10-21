@@ -176,10 +176,10 @@ describe('generateCustomerReport', () => {
       buyers: 4,
       interested: 1,
       leads: 1,
-      // Σ sale_price of s1, s2 and s4 (s5 is before the range, s6 after it); linked garages and
-      // storage play no part (GEN-38). Divided by the sales, not the buyers.
-      total_revenue: 198_000 + 150_000.5 + 250_000,
-      average_purchase: (198_000 + 150_000.5 + 250_000) / 3,
+      // s1, s2 and s4 at their package values (s5 is before the range, s6 after it), divided by
+      // the sales, not the buyers (GEN-38, changed on purpose: it was the sale prices alone).
+      total_revenue: 198_000 + 15_000 + 5_000 + 150_000.5 + 12_000 + 8_000 + 250_000,
+      average_purchase: (198_000 + 15_000 + 5_000 + 150_000.5 + 12_000 + 8_000 + 250_000) / 3,
       customers: CUSTOMERS,
     }))
   })
@@ -191,7 +191,7 @@ describe('generateCustomerReport', () => {
     })
   })
 
-  it.each(['customers', 'sales'])('rejects when the %s read fails', async table => {
+  it.each(['customers', 'sales', 'apartments', 'apartment_garages', 'apartment_repositories'])('rejects when the %s read fails', async table => {
     db.failing = { [table]: `permission denied for table ${table}` }
     await expect(generateCustomerReport(RANGE)).rejects.toMatchObject({ message: `permission denied for table ${table}` })
   })

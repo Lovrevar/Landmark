@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
+import { fetchAllRows } from '../../../lib/fetchAllRows'
 import type { Project } from '../../../lib/supabase'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import type { ProjectSalesReport, CustomerReport, SalesData } from '../types'
@@ -152,9 +153,17 @@ export async function generateCustomerReport(
   const customers = customersData || []
   const sales = salesData || []
 
+  // Each sale at its package value: the linked garages and storage, and the list price for a 0
+  // sale price (GEN-38).
+  const [linked, apartments] = await Promise.all([
+    fetchLinkedPrices(),
+    fetchAllRows<{ id: string; price: number | null }>((from, to) =>
+      supabase.from('apartments').select('id, price').order('id').range(from, to)),
+  ])
+  const listPrices = new Map(apartments.map(apt => [apt.id, apt.price]))
+
   const { total: total_customers, buyers, interested, leads } = customerFunnel(customers)
-  // Σ sale_price; linked garages and storage play no part (GEN-38).
-  const { value: total_revenue, average: average_purchase } = contractedSales(sales)
+  const { value: total_revenue, average: average_purchase } = contractedSales(sales, { linked, listPrice: id => listPrices.get(id) })
 
   return {
     total_customers,
