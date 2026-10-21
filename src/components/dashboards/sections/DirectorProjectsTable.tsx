@@ -31,19 +31,19 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.project_col')}</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.status_col')}</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.budget_col')}</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.expenses_col')}</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.revenue_col')}</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.profit_margin_col')}</th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.completion_col')}</th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.project_col')}</th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.status_col')}</th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.budget_col')}</th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.expenses_col')}</th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.revenue_col')}</th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.profit_margin_col')}</th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('dashboards.director.completion_col')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {projects.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center">
+                <td colSpan={7} className="px-4 py-12 text-center">
                   <Building2 className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
                   <p className="text-gray-500 dark:text-gray-400">{t('dashboards.director.no_projects')}</p>
                 </td>
@@ -55,7 +55,7 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                   onClick={() => navigate(`/projects/${project.id}`)}
                 >
-                  <td data-label={t('dashboards.director.project_col')} className="px-6 py-4">
+                  <td data-label={t('dashboards.director.project_col')} className="px-4 py-4">
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-gray-900 dark:text-white">{project.name}</p>
@@ -64,25 +64,25 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                       <p className="text-sm text-gray-500 dark:text-gray-400">{project.location}</p>
                     </div>
                   </td>
-                  <td data-label={t('dashboards.director.status_col')} className="px-6 py-4">
+                  <td data-label={t('dashboards.director.status_col')} className="px-4 py-4">
                     {/* "On Hold" was red here and yellow/grey/orange on four other screens; the
                         shared map settles it on amber — paused, not failing. */}
                     <Badge variant={statusVariant(PROJECT_STATUS, project.status)}>
                       {statusLabel(PROJECT_STATUS, project.status, t)}
                     </Badge>
                   </td>
-                  <td data-label={t('dashboards.director.budget_col')} className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                  <td data-label={t('dashboards.director.budget_col')} className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
                     {project.budget_set
                       ? formatEuroCompact(project.budget)
                       : <span className="font-normal text-orange-600 dark:text-orange-400">{t('common.budget_not_set')}</span>}
                   </td>
-                  <td data-label={t('dashboards.director.expenses_col')} className="px-6 py-4 text-sm font-medium text-red-600">
+                  <td data-label={t('dashboards.director.expenses_col')} className="px-4 py-4 text-sm font-medium text-red-600">
                     {formatEuroCompact(project.total_expenses)}
                   </td>
-                  <td data-label={t('dashboards.director.revenue_col')} className="px-6 py-4 text-sm font-medium text-green-600">
+                  <td data-label={t('dashboards.director.revenue_col')} className="px-4 py-4 text-sm font-medium text-green-600">
                     {formatEuroCompact(project.apartment_sales)}
                   </td>
-                  <td data-label={t('dashboards.director.profit_margin_col')} className="px-6 py-4">
+                  <td data-label={t('dashboards.director.profit_margin_col')} className="px-4 py-4">
                     <span className={`inline-flex items-center text-sm font-semibold ${
                       project.profit_margin >= 20 ? 'text-green-600' :
                       project.profit_margin >= 10 ? 'text-blue-600' :
@@ -91,7 +91,7 @@ const DirectorProjectsTable: React.FC<Props> = ({ projects }) => {
                       {project.profit_margin >= 0 ? '+' : ''}{project.profit_margin.toFixed(1)}%
                     </span>
                   </td>
-                  <td data-label={t('dashboards.director.completion_col')} className="px-6 py-4">
+                  <td data-label={t('dashboards.director.completion_col')} className="px-4 py-4">
                     <div className="flex items-center">
                       <div className="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2 mr-2">
                         <div
