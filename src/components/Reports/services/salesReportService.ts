@@ -1,9 +1,10 @@
 import { supabase } from '../../../lib/supabase'
+import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
 import type { Project } from '../../../lib/supabase'
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns'
 import type { ProjectSalesReport, CustomerReport, SalesData } from '../types'
 import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
-import { averagePer, contractedSales, customerFunnel, linkedPricesByApartment, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
+import { averagePer, contractedSales, customerFunnel, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
@@ -59,23 +60,9 @@ export async function generateProjectReport(
   if (apartmentsError) throw apartmentsError
 
   const apartments = apartmentsData || []
-  const apartmentIds = apartments.map(apt => apt.id)
 
-  const { data: aptGaragesData } = await supabase
-    .from('apartment_garages')
-    .select('apartment_id, garage_id, garages(id, price)')
-    .in('apartment_id', apartmentIds.length > 0 ? apartmentIds : [''])
-
-  const { data: aptReposData } = await supabase
-    .from('apartment_repositories')
-    .select('apartment_id, repository_id, repositories(id, price)')
-    .in('apartment_id', apartmentIds.length > 0 ? apartmentIds : [''])
-
-  // A failed read leaves the linked units out without saying so (GEN-42).
-  const linked = linkedPricesByApartment([
-    ...(aptGaragesData || []).map(row => ({ apartment_id: row.apartment_id, price: (row.garages as { price?: number } | null)?.price })),
-    ...(aptReposData || []).map(row => ({ apartment_id: row.apartment_id, price: (row.repositories as { price?: number } | null)?.price })),
-  ])
+  // Throws on a failed read, rather than leaving the garages and storage out (GEN-42).
+  const linked = await fetchLinkedPrices()
   const linkedTotal = (apartmentId: string) => (linked.get(apartmentId) ?? []).reduce((sum, price) => sum + price, 0)
 
   const { data: salesData, error: salesError } = await supabase

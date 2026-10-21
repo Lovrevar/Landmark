@@ -11,20 +11,8 @@ The General report entries GEN-26 to GEN-37 were found while pinning
 2026-10-21). Each figure is pinned as it is, so a fix changes that test's expectation in the
 fix's own commit, with a test named after the id that fails first.
 
-GEN-42 to GEN-44 were found while planning Step 7 item 2 (2026-10-21) and are pinned by the
+GEN-42 (now resolved) to GEN-44 were found while planning Step 7 item 2 (2026-10-21) and are pinned by the
 characterization tests of the Director and Sales dashboards and the Sales report.
-
-### GEN-42 · Low · Sales report: a failed garage or storage price read is not reported
-- **Check:** Confirmed (pinned in `src/components/Reports/services/salesReportService.test.ts`,
-  `it('GEN-42: …')`)
-- **Where:** `Reports/services/salesReportService.ts`, `generateProjectReport`: the
-  `apartment_garages` and `apartment_repositories` reads destructure `{ data }` and never look at
-  `error`
-- **What happens:** if either read fails, the project's revenue and monthly revenue leave the
-  linked garages and storage out, and the average price the linked prices. The report looks
-  complete. Against the "a failed load is not an empty result" rule.
-- **Fix direction:** throw on the error, like the other reads in the same function. Once Step 7
-  item 2 reads the links in one shared place, fix it there.
 
 ### GEN-43 · Medium · Director and Sales dashboards, the Sales report and Sales payments read without paging past 1000 rows
 - **Check:** Code reading (Step 7 item 2 planning, 2026-10-21). The General report's version is
@@ -303,6 +291,11 @@ characterization tests of the Director and Sales dashboards and the Sales report
   the chart.
 
 ## Resolved
+
+### GEN-42 · Low · Sales report: a failed garage or storage price read is not reported
+- Fixed on `refactor/sales-figures` (2026-10-21): the report reads the links through the shared
+  `fetchLinkedPrices` (`src/lib/linkedUnitPrices.ts`), which pages and throws. Tests named GEN-42
+  in `salesReportService.test.ts`, seen failing first.
 
 ### GEN-23 · Medium · Earned value counted work with no contract as done
 - Fixed on `fix/gen-23-evm-uncontracted` (2026-10-20), for phased and unphased plans: completion is

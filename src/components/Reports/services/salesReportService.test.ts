@@ -159,10 +159,11 @@ describe('generateProjectReport', () => {
     },
   )
 
-  it('GEN-42: a failed linked-unit price read is not reported; revenue leaves the garages and storage out', async () => {
-    db.failingIn = { apartment_garages: 'canceling statement due to statement timeout', apartment_repositories: 'canceling statement due to statement timeout' }
-    const r = roundDeep(await generateProjectReport('p1', PROJECTS, RANGE))
-    expect(r.total_revenue).toBe(198_000 + 150_000.5)
+  // GEN-42, changed on purpose: a failed read used to leave the garages and storage out of the
+  // revenue without saying so.
+  it.each(['apartment_garages', 'apartment_repositories'])('GEN-42: rejects when the %s read fails', async table => {
+    db.failing = { [table]: 'canceling statement due to statement timeout' }
+    await expect(generateProjectReport('p1', PROJECTS, RANGE)).rejects.toMatchObject({ message: 'canceling statement due to statement timeout' })
   })
 })
 
