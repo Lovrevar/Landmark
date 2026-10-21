@@ -1,6 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { portfolioValue as plannedPortfolioValue, ticPlanSummary, ticTotalsByProject } from '../../Funding/TIC/utils/ticBudget'
-import type { ComprehensiveReport, ProjectData, ReportRisk } from '../types'
+import type { ComprehensiveReport, ProjectData } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
 import { averagePer, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
 import {
@@ -24,6 +24,15 @@ import {
   recentWorkLogCount,
 } from '../../../utils/constructionFigures'
 import { retailPortfolioCounts } from '../../../utils/retailFigures'
+import {
+  profitAndMargin,
+  projectRiskLevel,
+  projectStatusCounts,
+  recommendationKeys,
+  reportRisks,
+  returnOnEquity,
+  topProjectsByRevenue,
+} from '../../../utils/projectFigures'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -176,8 +185,7 @@ export async function fetchGeneralReportData(
   // Expenses are costs: every operating invoice the company pays, credit fees included (see
   // COST_INVOICE_TYPES). Repaying principal moves cash but is not an expense.
   const totalExpenses = costPaid(accountingPaymentsArray, accountingInvoicesArray)
-  const totalProfit = totalRevenue - totalExpenses
-  const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
+  const { profit: totalProfit, margin: profitMargin } = profitAndMargin(totalRevenue, totalExpenses)
 
   const portfolioValue = plannedPortfolioValue(projectsArray.map(p => p.id), ticTotalByProject)
   // Same definitions as the Director dashboard: debt is what is still owed on live, non-equity
@@ -187,7 +195,8 @@ export async function fetchGeneralReportData(
   const totalDebt = liveDebt.outstanding
   const debtEquityRatio = debtToEquity(totalDebt, totalEquity)
   const creditLines = creditLineTotals(bankCreditsArray)
-  const roi = totalEquity > 0 ? (totalProfit / totalEquity) * 100 : 0
+  const roi = returnOnEquity(totalProfit, totalEquity)
+  const projectCounts = projectStatusCounts(projectsArray)
 
   const {
     total: totalUnits,
@@ -227,13 +236,8 @@ export async function fetchGeneralReportData(
       const projectRevenue = soldRevenue(projectApartments, a =>
         (a.garage_id ? garageMap.get(a.garage_id) || 0 : 0) +
         (a.repository_id ? storageMap.get(a.repository_id) || 0 : 0))
-      const projectProfit = projectRevenue - projectExpenses
-      const projectProfitMargin = projectRevenue > 0 ? (projectProfit / projectRevenue) * 100 : 0
+      const { profit: projectProfit, margin: projectProfitMargin } = profitAndMargin(projectRevenue, projectExpenses)
       const projectSalesRate = salesRate(projectUnits.sold, projectUnits.total)
-
-      let riskLevel: 'Low' | 'Medium' | 'High' = 'Low'
-      if (projectSalesRate < 20 || projectProfitMargin < 0) riskLevel = 'High'
-      else if (projectSalesRate < 50 || projectProfitMargin < 15) riskLevel = 'Medium'
 
       return {
         id: project.id,
@@ -256,31 +260,15 @@ export async function fetchGeneralReportData(
         sales_rate: projectSalesRate,
         profit: projectProfit,
         profit_margin: projectProfitMargin,
-        risk_level: riskLevel
+        risk_level: projectRiskLevel(projectSalesRate, projectProfitMargin)
       }
     })
   )
 
-  // A risk carries its key and its count; the renderer turns that into a sentence in the language
-  // it is rendering in — `GeneralReports.tsx` on screen, `reports.general.risks.*` in the PDF.
-  // A service has no translator and must not decide anyone's language.
-  const risks: ReportRisk[] = []
-  const slowSalesProjects = projectDetails.filter(p => p.sales_rate < 40 && p.total_units > 0)
-  if (slowSalesProjects.length > 0) {
-    risks.push({ kind: 'slow_sales', count: slowSalesProjects.length })
-  }
-
-  const topProjects = [...projectDetails]
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 3)
-    .map(p => ({ name: p.name, revenue: p.revenue, sales_rate: p.sales_rate }))
-
-  // Keys, for the same reason as the risks above. Both readers translate them at the render site.
-  const recommendationKeys: string[] = []
-  if (portfolioSalesRate < 50) recommendationKeys.push('reports.general.recs.marketing')
-  if (availableUnits > soldUnits) recommendationKeys.push('reports.general.recs.inventory')
-  recommendationKeys.push('reports.general.recs.budgets')
-  recommendationKeys.push('reports.general.recs.partners')
+  // Risks and recommendations are keys and counts; the renderer turns them into sentences in the
+  // language it is rendering in. A service has no translator and must not decide anyone's language.
+  const risks = reportRisks(projectDetails)
+  const recommendations = recommendationKeys({ salesRate: portfolioSalesRate, available: availableUnits, sold: soldUnits })
 
   const invoiceStats = invoiceStatusSummary(accountingInvoicesArray)
 
@@ -315,9 +303,9 @@ export async function fetchGeneralReportData(
   return {
     organization_name: normalizeOrgName(organizationSettings?.[0]?.name),
     executive_summary: {
-      total_projects: projectsArray.length,
-      active_projects: projectsArray.filter(p => p.status === 'In Progress').length,
-      completed_projects: projectsArray.filter(p => p.status === 'Completed').length,
+      total_projects: projectCounts.total,
+      active_projects: projectCounts.active,
+      completed_projects: projectCounts.completed,
       total_revenue: totalRevenue,
       total_expenses: totalExpenses,
       total_profit: totalProfit,
@@ -332,7 +320,7 @@ export async function fetchGeneralReportData(
       roi: roi,
       sales_rate: portfolioSalesRate,
       debt_equity_ratio: debtEquityRatio,
-      active_projects: projectsArray.filter(p => p.status === 'In Progress').length,
+      active_projects: projectCounts.active,
       total_customers: customerCounts.total
     },
     sales_performance: {
@@ -446,8 +434,8 @@ export async function fetchGeneralReportData(
     projects: projectDetails,
     risks: risks,
     insights: {
-      top_projects: topProjects,
-      recommendation_keys: recommendationKeys
+      top_projects: topProjectsByRevenue(projectDetails).map(p => ({ name: p.name, revenue: p.revenue, sales_rate: p.sales_rate })),
+      recommendation_keys: recommendations
     }
   }
 }

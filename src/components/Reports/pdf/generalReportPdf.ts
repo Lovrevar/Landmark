@@ -23,6 +23,7 @@ import { logActivity } from '../../../lib/activityLog'
 import { orgHeading } from '../../../lib/orgName'
 import { cashFlowTotals } from '../../../utils/cashFlowFigures'
 import { phaseCompletionRate } from '../../../utils/constructionFigures'
+import { topProjectsByRevenue } from '../../../utils/projectFigures'
 
 /** Whole euros, for the aggregate figures this report is made of. */
 const money = pdfMoneyRounded
@@ -365,10 +366,7 @@ export async function generateGeneralReportPDF(
   yPosition += 60
 
   checkPageBreak(60)
-  const topProjectsChart = report.projects
-    .slice()
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 5)
+  const topProjectsChart = topProjectsByRevenue(report.projects, 5)
     .map(p => ({
       label: p.name.substring(0, 15),
       value: p.revenue / 1000000,

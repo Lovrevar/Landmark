@@ -5,6 +5,7 @@ import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
 import { averagePer, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
 import { allocationTotals, debtToEquity, isLiveDebt, liveDebtFigures, totalEquity as equityOf } from '../../../utils/fundingFigures'
+import { profitAndMargin } from '../../../utils/projectFigures'
 import {
   countOverdueMilestones,
   countCriticalDeadlines,
@@ -246,8 +247,7 @@ function deriveProjects(
     )
     const { total: totalUnits, sold: soldUnits } = unitStatusCounts(projectApartments)
     const completionPercentage = Math.min(100, salesRate(soldUnits, totalUnits))
-    const profit = apartmentSales - totalExpenses
-    const profitMargin = apartmentSales > 0 ? (profit / apartmentSales) * 100 : 0
+    const { margin: profitMargin } = profitAndMargin(apartmentSales, totalExpenses)
 
     return {
       id: project.id,
@@ -286,8 +286,7 @@ function deriveFinancial(
   const totalExpenses = invoices
     .filter(isCostInvoice)
     .reduce((sum, inv) => sum + Number(inv.paid_amount || 0), 0)
-  const totalProfit = totalRevenue - totalExpenses
-  const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
+  const { profit: totalProfit, margin: profitMargin } = profitAndMargin(totalRevenue, totalExpenses)
   // Debt excludes equity facilities and repaid/defaulted credits; equity is the
   // sum of equity-type facilities (real capital), not credit allocations.
   const totalDebt = liveDebtFigures(credits).outstanding

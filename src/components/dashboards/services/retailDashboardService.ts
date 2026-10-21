@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase'
 import { daysFromToday } from '../../../utils/dateOnly'
 import { computeRetailTotals } from '../utils/retailTotals'
+import { projectStatusCounts } from '../../../utils/projectFigures'
 import type { DashboardStats, OverdueInvoice } from '../types/retailDashboardTypes'
 
 const num = (v: unknown): number => Number(v) || 0
@@ -90,7 +91,7 @@ export async function fetchRetailDashboardData(): Promise<{ stats: DashboardStat
     // The report's rule for an active project (`retailReportService.ts:119`). The subtitle
     // said "Aktivnih projekata" while the figure counted every row, completed and cancelled
     // alike.
-    active_projects: allProjects.filter(p => p.status === 'In Progress').length,
+    active_projects: projectStatusCounts(allProjects).active,
     total_customers: (customers || []).length
   }
 

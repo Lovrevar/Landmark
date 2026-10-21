@@ -1,7 +1,7 @@
 # Backlog — projects, dashboards and reports
 
 The General module (projects, milestones, Budget Control / EVM, activity log), the per-profile
-dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-41`). Entry format and rules
+dashboards and the PDF/Excel reports. Ids: `GEN-n` (next free: `GEN-42`). Entry format and rules
 are in [README.md](./README.md).
 
 ## Open
@@ -186,6 +186,21 @@ fix's own commit, with a test named after the id that fails first.
   They agree only while the trigger keeps the column in step with the TIC.
 - **Fix direction:** read the TIC totals in the dashboard too, through `ticTotalsByProject`, or
   check on LandmarkDemo and production that the two never differ and say so here.
+
+### GEN-41 · Low · A project's "risk" and "slow sales" are judged on three scales
+- **Check:** Code reading (Step 7 item 1, 2026-10-21). The General report's rules are now
+  `projectRiskLevel` and `reportRisks` in `src/utils/projectFigures.ts`
+- **Where / what happens:**
+  - Slow sales: the General report flags a project below **40 %** sold. The Director dashboard's
+    `low_sales_rate` alert fires below **30 %** (`dashboards/utils/directorAlerts.ts` ~131). The
+    marketing recommendation (General report and Sales report) starts below **50 %**.
+  - Risk level: the General report rates a project on sales rate and margin (20 / 50 %, 0 / 15 %).
+    The Funding projects list rates the same project on debt ratio, time overrun and
+    underfunding (`Funding/Projects/services/investmentService.ts` ~65). Both show a
+    "High / Medium / Low" badge.
+  - The General PDF colours its top-projects bars at 20 / 10 % margin.
+- **Fix direction:** decide whether the two risk badges are meant to differ. If they are, name
+  them on screen ("prodajni rizik", "financijski rizik"). Pick one slow-sales threshold.
 
 ### GEN-24 · Low · Phased plan with some undated phases overstates SPI
 - **Check:** Code reading (convention review of GEN-23, 2026-10-20)

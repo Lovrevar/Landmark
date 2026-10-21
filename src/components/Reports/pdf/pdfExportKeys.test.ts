@@ -69,8 +69,10 @@ describe('the keys the general report builds at run time', () => {
   // A literal scan cannot see `t(`reports.general.risks.${risk.kind}.type`)`, and the
   // recommendations are key paths the service mints — both are exactly the kind of thing that
   // would print a raw key path into an executive report and fail no test.
+  // The risk kinds and recommendation keys moved out of the service into src/utils/projectFigures.ts
+  // with REGRESSION_PREVENTION Step 7 (2026-10-21); the service calls it.
   const service = readFileSync(
-    join(__dirname, '../services/generalReportService.ts'),
+    join(__dirname, '../../../utils/projectFigures.ts'),
     'utf8',
   )
 
