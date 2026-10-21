@@ -38,8 +38,8 @@ export interface SalesProjectsRollup {
   projects: ProjectWithBuildings[]
   buildings: BuildingWithUnits[]
   apartments: Apartment[]
-  garages: Garage[]
-  repositories: Repository[]
+  garages: Array<Garage & { sale_info?: SaleInfo }>
+  repositories: Array<Repository & { sale_info?: SaleInfo }>
 }
 
 /**
