@@ -514,17 +514,20 @@ const GeneralReports: React.FC = () => {
           <h2 className="text-2xl font-bold text-green-900 dark:text-green-300">{t('reports.general.insights')}</h2>
         </div>
 
-        <div className="mb-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">{t('reports.general.top_projects')}</h3>
-          <ul className="space-y-2">
-            {report.insights.top_projects.map((project, index) => (
-              <li key={index} className="flex items-start">
-                <span className="text-green-600 mr-2">-</span>
-                <span className="text-gray-800 dark:text-gray-100">{t('reports.general.top_project_line', { name: project.name, revenue: formatEuroCompact(project.revenue), rate: project.sales_rate.toFixed(1) })}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Empty until a project has a sale (GEN-38): no heading over nothing. */}
+        {report.insights.top_projects.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">{t('reports.general.top_projects')}</h3>
+            <ul className="space-y-2">
+              {report.insights.top_projects.map((project, index) => (
+                <li key={index} className="flex items-start">
+                  <span className="text-green-600 mr-2">-</span>
+                  <span className="text-gray-800 dark:text-gray-100">{t('reports.general.top_project_line', { name: project.name, revenue: formatEuroCompact(project.revenue), rate: project.sales_rate.toFixed(1) })}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div>
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">{t('reports.general.recommendations')}</h3>

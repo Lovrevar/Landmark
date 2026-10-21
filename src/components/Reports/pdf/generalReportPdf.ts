@@ -979,32 +979,35 @@ export async function generateGeneralReportPDF(
   pdf.setTextColor(0, 0, 0)
   yPosition = 55
 
-  pdf.setFillColor(220, 252, 231)
-  pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
-  pdf.setFontSize(12)
-  pdf.setFont(fontFamily, 'bold')
-  pdf.setTextColor(22, 163, 74)
-  pdf.text(bare('reports.general.top_projects'), margin + 5, yPosition + 8)
-  yPosition += 15
-
-  pdf.setFontSize(9)
-  pdf.setFont(fontFamily, 'normal')
-  pdf.setTextColor(0, 0, 0)
-
-  report.insights.top_projects.forEach((project, index) => {
-    checkPageBreak(12)
+  // Empty until a project has a sale (GEN-38): no header bar over nothing.
+  if (report.insights.top_projects.length > 0) {
+    pdf.setFillColor(220, 252, 231)
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
+    pdf.setFontSize(12)
     pdf.setFont(fontFamily, 'bold')
-    pdf.text(`${index + 1}. ${project.name}`, margin + 5, yPosition)
-    pdf.setFont(fontFamily, 'normal')
-    const detail = [
-      `${withColon('reports.general.revenue_label')} ${moneyCompact(project.revenue)}`,
-      `${withColon('reports.general.sales_rate')} ${project.sales_rate.toFixed(1)}%`
-    ].join(' | ')
-    pdf.text(detail, margin + 10, yPosition + 5)
-    yPosition += 10
-  })
+    pdf.setTextColor(22, 163, 74)
+    pdf.text(bare('reports.general.top_projects'), margin + 5, yPosition + 8)
+    yPosition += 15
 
-  yPosition += 5
+    pdf.setFontSize(9)
+    pdf.setFont(fontFamily, 'normal')
+    pdf.setTextColor(0, 0, 0)
+
+    report.insights.top_projects.forEach((project, index) => {
+      checkPageBreak(12)
+      pdf.setFont(fontFamily, 'bold')
+      pdf.text(`${index + 1}. ${project.name}`, margin + 5, yPosition)
+      pdf.setFont(fontFamily, 'normal')
+      const detail = [
+        `${withColon('reports.general.revenue_label')} ${moneyCompact(project.revenue)}`,
+        `${withColon('reports.general.sales_rate')} ${project.sales_rate.toFixed(1)}%`
+      ].join(' | ')
+      pdf.text(detail, margin + 10, yPosition + 5)
+      yPosition += 10
+    })
+
+    yPosition += 5
+  }
 
   pdf.setFillColor(220, 252, 231)
   pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
