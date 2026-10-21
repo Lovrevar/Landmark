@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next'
 import type { Invoice, Project, Contract, Milestone } from '../Invoices/types'
-import { daysFromToday } from '../../../utils/dateOnly'
+import { isOverdueInvoice } from '../../../utils/invoiceFigures'
 import { NO_VALUE } from '../../../utils/formatters'
 import { invoiceCashCategory, invoiceCashDirection, type CashDirection } from '../../../utils/invoiceCashDirection'
 
@@ -260,9 +260,8 @@ export const getMilestonesByContract = (
   return milestones.filter(m => m.contract_id === contractId && m.status !== 'paid')
 }
 
-export const isOverdue = (dueDate: string, status: string): boolean => {
-  return status !== 'PAID' && daysFromToday(dueDate) < 0
-}
+/** Open and due before today, by the one rule in `utils/invoiceFigures.ts`. */
+export const isOverdue = (dueDate: string, status: string): boolean => isOverdueInvoice({ due_date: dueDate, status })
 
 export const columnLabels = {
   approved: 'Odobreno',

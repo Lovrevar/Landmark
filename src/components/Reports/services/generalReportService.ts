@@ -17,6 +17,7 @@ import {
 } from '../../../utils/fundingFigures'
 import { bankAccountTotals, cesijaFromCredit, costPaid } from '../../../utils/paymentFigures'
 import { monthlyCashFlow } from '../../../utils/cashFlowFigures'
+import { invoiceStatusSummary, officeInvoiceTotals } from '../../../utils/invoiceFigures'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -291,34 +292,7 @@ export async function fetchGeneralReportData(
   recommendationKeys.push('reports.general.recs.budgets')
   recommendationKeys.push('reports.general.recs.partners')
 
-  const totalInvoices = accountingInvoicesArray.length
-  const totalInvoiceValue = accountingInvoicesArray.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-  const paidInvoices = accountingInvoicesArray.filter(inv => inv.status === 'PAID').length
-  const paidValue = accountingInvoicesArray
-    .filter(inv => inv.status === 'PAID')
-    .reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-
-  const pendingInvoices = accountingInvoicesArray.filter(inv =>
-    inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID'
-  ).length
-  const pendingValue = accountingInvoicesArray
-    .filter(inv => inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID')
-    .reduce((sum, inv) => sum + (inv.remaining_amount || 0), 0)
-
-  const overdueInvoices = accountingInvoicesArray.filter(inv =>
-    (inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID') &&
-    inv.due_date &&
-    daysFromToday(inv.due_date) < 0
-  ).length
-  const overdueValue = accountingInvoicesArray
-    .filter(inv =>
-      (inv.status === 'UNPAID' || inv.status === 'PARTIALLY_PAID') &&
-      inv.due_date &&
-      daysFromToday(inv.due_date) < 0
-    )
-    .reduce((sum, inv) => sum + (inv.remaining_amount || 0), 0)
-
-  const paymentCompletionRate = totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0
+  const invoiceStats = invoiceStatusSummary(accountingInvoicesArray)
 
   // This section printed zeros for its whole life: it summed tic.budgeted_amount and
   // tic.actual_spent, neither of which is a column on tic_cost_structures — the money lives in
@@ -336,11 +310,8 @@ export async function fetchGeneralReportData(
   const projectsWithTic = ticTotals.filter(total => total > 0).length
   const projectsWithoutTic = projectsArray.length - projectsWithTic
 
-  const totalOfficeSuppliers = officeSuppliersArray.length
-  const officeInvoices = accountingInvoicesArray.filter(inv => inv.invoice_category === 'OFFICE')
-  const totalOfficeInvoices = officeInvoices.length
-  const totalOfficeSpent = officeInvoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
-  const avgOfficeInvoice = totalOfficeInvoices > 0 ? totalOfficeSpent / totalOfficeInvoices : 0
+  // Every office-category invoice at its total, paid or not (GEN-36).
+  const officeInvoices = officeInvoiceTotals(accountingInvoicesArray)
 
   const cesija = cesijaFromCredit(accountingPaymentsArray)
   const bankAccounts = bankAccountTotals(companyBankAccountsArray)
@@ -433,15 +404,15 @@ export async function fetchGeneralReportData(
       completed_milestones: completedMilestones
     },
     accounting_overview: {
-      total_invoices: totalInvoices,
-      total_invoice_value: totalInvoiceValue,
-      paid_invoices: paidInvoices,
-      paid_value: paidValue,
-      pending_invoices: pendingInvoices,
-      pending_value: pendingValue,
-      overdue_invoices: overdueInvoices,
-      overdue_value: overdueValue,
-      payment_completion_rate: paymentCompletionRate
+      total_invoices: invoiceStats.count,
+      total_invoice_value: invoiceStats.totalValue,
+      paid_invoices: invoiceStats.paidCount,
+      paid_value: invoiceStats.paidValue,
+      pending_invoices: invoiceStats.openCount,
+      pending_value: invoiceStats.openValue,
+      overdue_invoices: invoiceStats.overdueCount,
+      overdue_value: invoiceStats.overdueValue,
+      payment_completion_rate: invoiceStats.completionRate
     },
     tic_cost_management: {
       total_tic_budget: totalTicBudget,
@@ -449,10 +420,10 @@ export async function fetchGeneralReportData(
       projects_without_tic: projectsWithoutTic
     },
     office_expenses: {
-      total_office_suppliers: totalOfficeSuppliers,
-      total_office_invoices: totalOfficeInvoices,
-      total_office_spent: totalOfficeSpent,
-      avg_office_invoice: avgOfficeInvoice
+      total_office_suppliers: officeSuppliersArray.length,
+      total_office_invoices: officeInvoices.count,
+      total_office_spent: officeInvoices.spent,
+      avg_office_invoice: officeInvoices.average
     },
     company_credits: {
       total_credits: creditLines.count,
