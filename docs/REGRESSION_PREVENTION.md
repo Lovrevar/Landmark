@@ -455,12 +455,27 @@ formula"); this step makes it systematic.
       same functions. Old and new code gave the same figures on LandmarkDemo. Found on the way,
       not fixed: GEN-26 to GEN-41, FUND-21, CASH-32, SUP-18. GEN-38, FUND-21 and SUP-18 are the
       work lists for items 2 and 3.
-   2. GEN-9: one definition of "a sale" and "sales revenue" shared by the Director and Sales
-      dashboards and the Sales report.
+   2. ✅ **Done 2026-10-21** (`refactor/sales-figures`). GEN-9: one definition of "a sale" and
+      "sales revenue" shared by the Director and Sales dashboards and the Sales report. A sale is a
+      `sales` row worth its package (sale price plus the linked garages and storage); **contracted
+      sales** ("Ugovorena prodaja") and **collected** ("Naplaćeno od prodaje", which GEN-9 keeps)
+      are two named figures in `src/utils/salesFigures.ts` (`docs/SALES.md` → A sale and sales
+      revenue). Characterization tests pinned the Director and Sales dashboards, both Sales
+      reports, Sales payments, Project details and the Sales project cards first; the refactor
+      commits passed them unchanged with no difference on LandmarkDemo. Then one fix commit per
+      differing figure moved the Director's, the Sales dashboard's, the Sales and General reports'
+      and Project details' revenue and averages onto the definition, each with its LandmarkDemo
+      diff. The General report and the Director now agree. Closed: GEN-38, GEN-26, GEN-34, GEN-42.
+      Found on the way, not fixed: GEN-43, GEN-44, SALES-23 to SALES-25, SUP-19, FUND-22.
    3. Site management (`SiteManagement/index.tsx`, `ProjectDetail.tsx`): budget, committed and
-      paid per project and phase come from one helper, the one Budget Control uses.
+      paid per project and phase come from one helper, the one Budget Control uses. Work list:
+      SUP-18 and SUP-19 (the project card and banner disagree on "contracted").
    4. `Sales/SalesProjects/UnitsGrid.tsx`: package totals and status rules, already partly
-      shared.
+      shared. Work list: SALES-23 (paid bases, remaining, the in-memory Reserved status).
+   5. Funding (added 2026-10-21): debt, headroom, the rate, equity and funders on the Investment
+      dashboard, Cashflow Banks and Investors come from `src/utils/fundingFigures.ts`, which the
+      General report and the Director already use. Work list: FUND-21; FUND-22 is a data bug to
+      fix first.
 3. **Find duplicates when you fix a figure.** When fixing any figure, first grep for the other
    places that compute it (`rg "budget_realized" src/`, for example) and fix them all in the same
    change, or log the ones you leave.
@@ -468,7 +483,7 @@ formula"); this step makes it systematic.
    is computed in one tested function in `src/lib` or `src/utils`. Screens and reports call it;
    they never re-derive it inline."
 
-**Done when:** each of the four areas above reads its figures from tested shared functions.
+**Done when:** each of the five areas above reads its figures from tested shared functions.
 
 ---
 

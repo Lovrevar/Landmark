@@ -77,17 +77,18 @@ Two things to know before adding a figure here:
   invoice, kompenzacija, cesija from a credit and from a bank account, live, equity, repaid and
   defaulted credits, and retail rows; an empty database; failed reads in both batches. They
   pinned the output *before* the figures moved and passed unchanged after. Wrong figures are
-  pinned as they are, with their ids: GEN-26 (linked garages and storage), GEN-27 (per-project
+  pinned as they are, with their ids: GEN-26 (linked garages and storage, since fixed), GEN-27 (per-project
   debt and equity), GEN-28 (retail section), GEN-29 (cesija), GEN-30 (TIC summary), GEN-32 (0
   for no answer), GEN-33 (kompenzacija), GEN-36 (office spend). A fix changes its expectation in
   its own commit
-- **One failed query fails the whole report.** supabase-js resolves a failure as `{ data: null, error }` rather than rejecting, and every read here falls back to `[]`, so until September 2026 a dropped request produced an executive report of zeros — and exported it to PDF. `throwIfAnyFailed()` checks both `Promise.all` batches (the 27 top-level reads and the garage/repository price lookup) and throws, which `useCachedData` hands the page as an `error`
+- **One failed query fails the whole report.** supabase-js resolves a failure as `{ data: null, error }` rather than rejecting, and every read here falls back to `[]`, so until September 2026 a dropped request produced an executive report of zeros — and exported it to PDF. `throwIfAnyFailed()` checks the 27 top-level reads and throws, which `useCachedData` hands the page as an `error`; the linked garage and storage prices come from `fetchLinkedPrices`, which throws on its own. Revenue is contracted sales, the sale rows at their package values (GEN-38; SALES.md → A sale and sales revenue), so the projects add up to the portfolio
 - **Depends on:** supabase client
 
 ### services/salesReportService.ts
 - `fetchProjects()` — fetches project list for report selector
-- `generateProjectReport(selectedProject, projects, dateRange)` — fetches apartments, garage/repository prices, monthly sales trend, and unit status for a project
-- `generateCustomerReport(dateRange)` — fetches customer list with sales, payment distribution, and insights
+- `generateProjectReport(selectedProject, projects, dateRange)` — fetches apartments, the sales dated in the range and the linked garage and storage prices (`fetchLinkedPrices`, throws on failure, GEN-42); returns unit status, contracted sales ("Ugovorena prodaja", each sale at its package value), the average contracted price and the monthly trend, bucketed by local date (GEN-34)
+- `generateCustomerReport(dateRange)` — fetches the customer list and the sales in the range; contracted sales and the average purchase on the same definition
+- Characterization tests: `services/salesReportService.test.ts`, over the shared fake client `src/test/fakeSupabase.ts`
 - **Depends on:** supabase client
 
 ### services/retailReportService.ts

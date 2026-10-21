@@ -6,7 +6,7 @@ routes: [/sales-projects]
 roles: [Director, Accounting, Sales, Investment]
 ---
 
-Stranica **Sales projekti** (naslov na stranici: **Projekti**) je trorazinska navigacija: **Projekti → Zgrade → Jedinice** (stanovi, garaže, repozitoriji). Projekti su podijeljeni u tabove **Stambeno** i **Retail**; natrag se vraćate gumbima **Natrag na projekte** i **Natrag na zgrade**.
+Stranica **Sales projekti** (naslov na stranici: **Projekti**) je trorazinska navigacija: **Projekti → Zgrade → Jedinice** (stanovi, garaže, repozitoriji). Projekti su podijeljeni u tabove **Stambeno** i **Retail**; natrag se vraćate gumbima **Natrag na projekte** i **Natrag na zgrade**. Kartice projekata i zgrada pokazuju broj jedinica, prodane jedinice i **Naplaćeno** — uplate kupaca za prodane stanove.
 
 ## Zgrade
 

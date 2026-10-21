@@ -198,14 +198,16 @@ read "Jan 05, 2026".
 
 Each business figure has one pure function, and every screen, report and export calls it
 (`.claude/rules/architecture.md` → Business figures). They came out of
-`Reports/services/generalReportService.ts` in October 2026 (REGRESSION_PREVENTION Step 7). Its
-characterization tests (`generalReportService.test.ts`) pinned the report's output before the
-move and pass unchanged. Where a function keeps a figure that is known to be wrong, its comment
+`Reports/services/generalReportService.ts` in October 2026 (REGRESSION_PREVENTION Step 7 item 1),
+and the sales figures out of the dashboards and the Sales report (item 2). Characterization tests
+(`generalReportService.test.ts`, then the Director and Sales dashboards', the Sales report's and
+Project details') pinned each service's output before the move and passed unchanged through it;
+where item 2 then changed a definition on purpose, the expectation changed in that fix's commit. Where a function keeps a figure that is known to be wrong, its comment
 names the backlog id, and so does the pinned expectation.
 
 | Module | Functions | Called by |
 |---|---|---|
-| `salesFigures.ts` | `unitStatusCounts`, `salesRate`, `averagePer`, `soldRevenue` (list price of sold units, optional linked price), `customerFunnel`, `conversionRate`, `packageTotal` / `unitPackageTotal` (SALES-6, moved from `Sales/utils/`) | General and Sales reports, Director and Sales dashboards, Project details; the package total on the Sales unit cards, Apartments and Customers screens. Revenue definitions that differ: GEN-38 |
+| `salesFigures.ts` | Inventory: `unitStatusCounts`, `salesRate`, `averagePer`. **Contracted sales** ("Ugovorena prodaja": a sale is a `sales` row, worth its package): `contractedSales`, `contractedSalesByProject`, `saleValue`, `salesSince`, `salesByMonth`, `linkedPricesByApartment`, on `packageTotal` / `unitPackageTotal` (SALES-6, moved from `Sales/utils/`). **Collected** ("Naplaćeno od prodaje", GEN-9): `collectedFromSales`, `collectedSince`, `collectedByMonth`, `collectedByProject`. `customerFunnel`, `conversionRate` | Director and Sales dashboards, General and Sales reports, Project details, Sales payments, the Sales project cards (`buildSalesProjects`), and the package total on the Sales unit cards, Apartments and Customers screens. Garage and storage links: `fetchLinkedPrices` (`src/lib/linkedUnitPrices.ts`). Definitions: `docs/SALES.md` → A sale and sales revenue; still to do: SALES-23 (Step 7 item 4) |
 | `fundingFigures.ts` | `isLiveDebt`, `liveDebtFigures` (outstanding, facility amount, used, weighted rate, debt service), `totalEquity`, `debtToEquity`, `creditLineTotals`, `allocationTotals`, `activeFunderCount`, `projectFunding` (GEN-27), `loanTotals` | General report, Director and Investment dashboards. Differences: FUND-21 |
 | `paymentFigures.ts` | `costPaid` (payments on cost invoices, optionally narrowed), `cesijaFromCredit` (GEN-29), `bankAccountTotals` | General report. The Director dashboard's expense basis: GEN-39 |
 | `paymentTotals.ts` | `paymentTotalsByDirection`, `paymentTotalsByCategory` (cent sums), `DIRECTION_AMOUNT_CLASS`, `formatSignedEuro` — moved from `Cashflow/services/` | Cashflow and Funding payment registers, `cashFlowFigures` |

@@ -25,6 +25,8 @@ characterization tests of the Director and Sales dashboards and the Sales report
   - `Sales/Payments/services/salesPaymentsService.ts`: invoices and payments.
   - `Sales/SalesProjects/services/salesService.ts`: `fetchActualTotalPaidByApartment`, and an
     `.in()` with every sold apartment's id in the URL.
+  - `General/Projects/services/projectDetailsService.ts`: one project's sales (added by Step 7
+    item 2; a project rarely has 1000 sales).
 - **What happens:** PostgREST returns at most 1000 rows without saying so. Past that, collected
   from sales, contracted sales, expenses and the unit counts all go silently low.
 - **Fix direction:** `fetchAllRows` with a stable order on the tables that can grow, as for
@@ -138,32 +140,6 @@ characterization tests of the Director and Sales dashboards and the Sales report
 - **What happens:** dead output. The loans section was never rendered.
 - **Fix direction:** render the loans or drop them, and drop the two copies.
 
-### GEN-38 · Low · "Sales revenue" and "average price" have six definitions
-- **Check:** Code reading (Step 7 item 1, 2026-10-21). The counting itself is now shared:
-  `unitStatusCounts`, `salesRate`, `customerFunnel` in `src/utils/salesFigures.ts`, called by the
-  General report, the Director and Sales dashboards, the Sales report and Project details
-- **Where / what happens:**
-  - Revenue:
-    - Σ **list price** of sold apartments (`soldRevenue`): General report, Director per project,
-      Project details.
-    - Σ `sales.sale_price`: Director portfolio.
-    - Sale price + linked garage and storage, sales dated in the range:
-      `Reports/services/salesReportService.ts`.
-    - Cash collected on sales invoices: `dashboards/services/salesDashboardService.ts`
-      ("Naplaćeno od prodaje", by GEN-9's decision).
-    - Σ `total_paid` per building: `Sales/SalesProjects/hooks/useSalesData.ts`.
-    - Sale price or list price plus linked units: `Sales/utils/packageTotal.ts` (SALES-6).
-  - Average price:
-    - Σ list / sold units: General report.
-    - Σ sale price / sold units: Director.
-    - Σ (list + linked) over **all** units / all units: Sales report.
-    - Σ sale price / sale rows: Sales dashboard.
-  - Units: the Sales dashboard counts garages and storage as units, by decision ("sve jedinice");
-    the others count apartments.
-- **Fix direction:** Step 7 item 2 (GEN-9's follow-up). Decide one "sale" and one "sales revenue"
-  in `salesFigures.ts`, give any figure that stays different its own name on screen, and fold in
-  GEN-26.
-
 ### GEN-39 · Low · Director dashboard and General report measure expenses differently
 - **Check:** Code reading (Step 7 item 1, 2026-10-21)
 - **Where:**
@@ -265,21 +241,38 @@ characterization tests of the Director and Sales dashboards and the Sales report
 
 ## Resolved
 
+### GEN-38 · Low · "Sales revenue" and "average price" have six definitions
+- Fixed on `refactor/sales-figures` (2026-10-21), Step 7 item 2: one definition of a sale (a
+  `sales` row, worth its package) and two named figures, contracted sales and collected, in
+  `src/utils/salesFigures.ts` (`docs/SALES.md` → A sale and sales revenue). Every screen in the
+  list calls them. The ones that differed changed in their own commits (6e7cf1a1, 92dab90b,
+  67f30b0a, ec2ec718, fdda5c8e, c270c4e2, 8311c76b, d604e114) with a LandmarkDemo diff; the
+  labels followed in 9c35431c. Tests: the characterization tests of the Director and Sales
+  dashboards, both Sales reports, the General report and Project details, whose expectations
+  changed in those commits (commented GEN-38), and `contracted sales` in `salesFigures.test.ts`.
+
+### GEN-9 · Low · Director and Sales dashboards define sales differently
+- Decided 2026-10-08 to keep both figures and name them. The follow-up, one shared definition
+  for each (GEN-38), was done on `refactor/sales-figures` (2026-10-21).
+
 ### GEN-34 · Low · Sales report buckets its monthly sales by UTC dates
 - Fixed on `refactor/sales-figures` (2026-10-21): the range is parsed with `parseLocalDate` and the
-  sales are bucketed with `salesByMonth` (`monthKey`). Test named GEN-34 in
-  `salesReportService.test.ts`, which runs in New York time and failed first.
+  sales are bucketed with `salesByMonth` (`monthKey`) (f9daf291). Test
+  `it('GEN-34: the months hold west of UTC')` in `salesReportService.test.ts`, which runs in New
+  York time and failed first.
 
 ### GEN-26 · Medium · General report: a project's revenue never includes its linked garages and storage
 - Fixed on `refactor/sales-figures` (2026-10-21) with GEN-38's definition: a project's revenue is
   its contracted sales, each at its package value, with the links read from `apartment_garages` /
   `apartment_repositories` (`fetchLinkedPrices`). The portfolio total is the sum of the same sales,
-  so the projects add up to it. Pinned in `generalReportService.test.ts`, which failed before.
+  so the projects add up to it (8311c76b). Pinned in `generalReportService.test.ts` ("projects",
+  "sales performance"), which failed before.
 
 ### GEN-42 · Low · Sales report: a failed garage or storage price read is not reported
 - Fixed on `refactor/sales-figures` (2026-10-21): the report reads the links through the shared
-  `fetchLinkedPrices` (`src/lib/linkedUnitPrices.ts`), which pages and throws. Tests named GEN-42
-  in `salesReportService.test.ts`, seen failing first.
+  `fetchLinkedPrices` (`src/lib/linkedUnitPrices.ts`), which pages and throws (3240ae3b). Tests
+  `it.each(…)('GEN-42: rejects when the %s read fails')` in `salesReportService.test.ts`, seen
+  failing first.
 
 ### GEN-23 · Medium · Earned value counted work with no contract as done
 - Fixed on `fix/gen-23-evm-uncontracted` (2026-10-20), for phased and unphased plans: completion is
@@ -313,11 +306,6 @@ characterization tests of the Director and Sales dashboards and the Sales report
 ### GEN-5 · Low · Budget not gated on the TIC in three places
 - Fixed on `fix/figures-and-tic-export` (2026-10-08): `budgetIsSet` / `fetchBudgetedProjectIds`; the Director table, the
   Investment dashboard's portfolio value and PDF, and the Sales report say "Budžet nije postavljen".
-
-### GEN-9 · Low · Director and Sales dashboards define sales differently
-- Decided 2026-10-08 to keep both figures and name them: the Director dashboard says
-  "Prodani stanovi" and "Ugovorena prodaja", the Sales dashboard "Naplaćeno od prodaje" and
-  "Stopa prodaje (sve jedinice)". Done on `fix/figures-and-tic-export` (2026-10-08).
 
 ### GEN-20 · Medium · Budget Control reports healthy CPI and SPI when there is nothing to measure
 - Fixed on `fix/audit-medium-findings` (2026-10-07): `calculateProjectEVM` returns `costAvailable`, and until something is

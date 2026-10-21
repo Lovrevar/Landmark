@@ -118,6 +118,8 @@ Two companion rules that follow from the same change, and that every module is e
 | `src/contexts/ToastContext.tsx` | App-wide toast queue (`ToastProvider`, `useToast`) |
 | `src/lib/useCachedData.ts` | TTL-cached fetch hook used by every dashboard (`useCachedData`, `invalidateCachedData`); exposes `error` — never render zeros on a failed load |
 | `src/lib/dbErrors.ts` | `isForeignKeyViolation()` — distinguishes FK violations from other Supabase errors |
+| `src/lib/linkedUnitPrices.ts` | `fetchLinkedPrices()` — the list prices of the garages and storage linked to each apartment, for a sale's package value (`contractedSales`); paged, throws on a failed read |
+| `src/test/fakeSupabase.ts` | Test-only fake Supabase client for the characterization tests of services (`fakeSupabase(db)`, `emptyFakeDb()`); see `docs/TESTING.md` |
 | `src/lib/orgName.ts` | The organisation's name for report headers: `fetchOrgName()` reads the one row of `organization_settings` (set with SQL per database; null prints only the title), `orgHeading()` capitalises it (GEN-19) |
 | `src/lib/featureFlags.ts` | Compile-time flags for merged-but-unreleased work; `ERP_INTEGRATION_ENABLED` (off) hides the ERP screens |
 | `src/hooks/useMediaQuery.ts` | `useMediaQuery`, `useIsMobile`, `useIsTabletUp`, `useIsDesktop` — the responsive breakpoint hooks |

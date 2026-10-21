@@ -13,7 +13,7 @@ U zaglavlju su vrijeme generiranja te gumbi **Osvježi** i **Izvoz PDF** (PDF je
 Izvještaj sadrži:
 - **Sažetak za rukovodstvo** (portfelj, financije, struktura kapitala, prodaja, gradnja)
 - **Ključni pokazatelji uspješnosti** — 8 kartica (Vrijednost portfelja, Ukupni prihod, Neto profit, ROI, Stopa prodaje, Omjer D/K, Aktivni projekti, Ukupno kupaca)
-- **Prodajni učinak**
+- **Prodajni učinak** — **Ugovorena prodaja** i prosječna cijena prodaje: prodaje stanova, svaka kao paket sa svojim garažama i repozitorijima. Iz iste brojke su **Ukupni prihod** u pokazateljima i prihod svakog projekta u pregledu po projektima, pa zbroj projekata odgovara ukupnom
 - **Financijska struktura i financiranje**
 - **Status gradnje i nadzora**
 - **Pregled računovodstva**, **Uredski troškovi**, **Investicije tvrtke**, **Bankovni računi**, **Zgrade i jedinice**, **Retail portfelj**, **Tipovi ugovora**

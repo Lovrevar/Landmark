@@ -20,8 +20,11 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 
 ### directorService.ts
 - `fetchDirectorDashboard()` — single entry point that fetches all base tables in one `Promise.all` and returns `DirectorDashboardData` (`projects`, `financial`, `sales`, `construction`, `funding`, `alerts`). Internally delegates to private `derive*` helpers (`deriveProjects`, `deriveFinancial`, `deriveSales`, `deriveConstruction`, `deriveFunding`, `deriveAlerts`) — these are no longer separately exported
-  - `projects` → ProjectStats[] with budget, expenses, revenue, profit margin, completion %
-  - `financial` → FinancialMetrics (revenue, expenses, debt, equity, receivables, payables)
+  - `projects` → ProjectStats[] with budget, expenses, contracted sales ("Ugovorena prodaja", the column and the margin), profit margin, completion %
+  - `financial` → FinancialMetrics (revenue = contracted sales, expenses, debt, equity, receivables, payables)
+  - Contracted sales are the sale rows at their package values, with the garage and storage links
+    from `fetchLinkedPrices`; the average divides by the sales (`contractedSales`, SALES.md → A sale
+    and sales revenue)
   - `sales` → SalesMetrics
   - `construction` → ConstructionMetrics
   - `funding` → FundingMetrics
@@ -68,6 +71,9 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
   the source of `totalRevenue`, `monthlyRevenue` and every per-project amount — a failed read
   showed a confident €0. `fetchRecentSales`'s three reads were unchecked too, which rendered
   every recent sale as "Unknown — N/A"
+- Collected figures come from `collectedFromSales` / `collectedSince` / `collectedByProject` /
+  `collectedByMonth`; the average sale price is `contractedSales`' average, at package values
+  (the Director's "Prosječna ugovorena cijena")
 - **Depends on:** supabase client
 
 ### supervisionService.ts
@@ -277,7 +283,7 @@ Net figures show their own sign; colour is reinforcement, never the only cue. Ne
 ### Data-integrity conventions (enforced 2026-06-16, see `backlog/archive/DASHBOARD_AUDIT.md`)
 - Classify invoices against the real `invoice_type` enum (9 values) — never invented strings. Cash direction comes from one map, `src/utils/invoiceCashDirection.ts` (`paymentDirection()` in `invoiceHelpers` is the same function): `OUTGOING_*` in, `INCOMING_*` out, `INCOMING_INVESTMENT` included — reversing the June decision below (DEFECT_BACKLOG CASH-7, decided 2026-10-01 and extended 2026-10-05). Each type also has a category: credit drawdowns and repayments of principal are *financing* and never income or expense; everything else, credit fees and `INCOMING_INVESTMENT` included, is *operating*. Cost figures use `isCostInvoiceType` (every operating invoice we pay); input VAT is every received invoice.
 - Debt KPIs exclude `credit_type='equity'` and repaid/defaulted credits; "weighted" interest is amount-weighted.
-- Sales counts cover all three unit tables (`apartments`, `garages`, `repositories`); revenue is apartment-only (only apartments are invoiced) and labelled accordingly.
+- Sales counts cover all three unit tables (`apartments`, `garages`, `repositories`) on the Sales dashboard. Collected revenue is apartment-only (only apartments are invoiced) and labelled accordingly; contracted sales count each apartment's garages and storage through its package (SALES.md → A sale and sales revenue).
 - Retail figures follow the Retail report, not the invoice table: revenue is the contracted sales
   value, collections are sales-phase `budget_realized` (net of VAT, cash basis), and outstanding /
   invoiced come from the invoices on those sales contracts. Profit is collected − costs.

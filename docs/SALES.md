@@ -22,6 +22,30 @@ Customers card, detail modal and per-project sums (`unitPackageTotal`). Do not a
 component. `sales.total_paid` and `sales.remaining_amount` are a sale-time snapshot that nothing
 reads; "paid" is always the payments on the apartment's `OUTGOING_SALES` invoices.
 
+## A sale and sales revenue
+
+Decided 2026-10-21 (REGRESSION_PREVENTION Step 7 item 2, GEN-38). Every sales figure on the
+dashboards, the reports and Project details is one of these, from `src/utils/salesFigures.ts`:
+
+- **A sale is a `sales` row**, one per apartment, written with the Sold status by
+  `complete_apartment_sale`. Counts, values and averages of sales come from those rows. Unit
+  statuses are the inventory: sold, reserved, available, and the sales rate.
+- **"Ugovorena prodaja" (contracted sales)** is what the sales are worth: each at its package
+  value, the sale price plus the list prices of its linked garages and storage
+  (`contractedSales`, `saleValue` on `packageTotal`). The average divides by the sales. The links
+  come from `fetchLinkedPrices` (`src/lib/linkedUnitPrices.ts`), which pages and throws. Shown
+  by the Director dashboard (tiles and project table), the Sales dashboard's average, both Sales
+  reports, the General report and Project details.
+- **"Naplaćeno od prodaje" (collected)** is the cash: payments on the apartments'
+  `OUTGOING_SALES` invoices (`collectedFromSales` and friends). GEN-9 keeps it beside contracted
+  sales under its own name: the Sales dashboard's revenue tiles, the Sales payments cards, and the
+  Sales project and building cards ("Naplaćeno", what was collected on their sold apartments).
+- **Sales rate:** apartments on the Director dashboard and in the reports, every unit type on the
+  Sales dashboard ("sve jedinice", GEN-9).
+
+An apartment marked Sold without a sale row (SALES-22, the demo seed) is sold inventory but
+contracts nothing.
+
 ## Selling and cancelling
 
 A sale is one row in `sales`, written by `complete_apartment_sale` together with the apartment's
@@ -101,7 +125,7 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 #### Hooks
 
 ### hooks/useSalesData.ts
-- `useSalesData()` — fetches projects, buildings, apartments, garages, repositories, customers, and sales; enriches apartments with sale_info; calculates totals
+- `useSalesData()` — fetches projects, buildings, apartments, garages, repositories, customers, and sales and the paid amounts of the Sold apartments; `buildSalesProjects` (`SalesProjects/salesProjectsRollup.ts`, pure and tested) enriches the units with `sale_info` and adds up the cards
 - **Calls:** salesService.ts
 - **Returns:** projects, buildings, apartments, garages, repositories, customers, loading, error, dismissError, refetch
 - One `try` wraps all seven queries plus the aggregation, so any failure used to leave every
@@ -111,11 +135,11 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 #### Views
 
 ### ProjectsGrid.tsx
-- Project card grid showing building count, unit count, sold count, revenue, and progress bar
+- Project card grid showing building count, unit count, sold count, "Naplaćeno" (collected on its sold apartments) and progress bar
 - Both sellable categories reach this screen: `fetchProjects()` filters on `SALES_PROJECT_CATEGORIES` (`stambeno`, `retail`), and `index.tsx` splits them with a Stambeno / Retail `Tabs` bar (with per-category counts) above the grid. Interno projects are company-internal and never shown
 
 ### BuildingsGrid.tsx
-- Building card grid for a selected project showing unit counts and revenue per building
+- Building card grid for a selected project showing unit counts and "Naplaćeno" per building
 
 ### unitFilters.ts
 - `getUnitsOfType(building, unitType)` — the apartments, garages or repositories of a building
