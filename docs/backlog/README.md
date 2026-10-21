@@ -11,7 +11,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 1 defect, 3 accepted risks |
 | [sales.md](./sales.md) | Units, the sale flow, customers | 5 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
-| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 7 |
+| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 8 |
 | [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 9, plus 4 waiting on the ERP |
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 9 |
 | [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 22 |

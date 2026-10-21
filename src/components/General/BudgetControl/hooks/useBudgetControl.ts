@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { calculateProjectEVM } from '../../../../utils/evm'
+import { contractTotals } from '../../../../utils/constructionFigures'
 import { plannedOnPhases } from '../../../Funding/TIC/utils/ticBudget'
 import type { EVMMetrics } from '../../../../utils/evm'
 import type { ProjectDisplay } from '../../Projects/types'
@@ -65,8 +66,7 @@ export function useBudgetControl(): UseBudgetControlReturn {
         // The TIC itself when it is not split by phase: the phases then carry NULL, and their sum
         // would hide the whole screen as "no budget" (GEN-22).
         const plannedBudget = plannedOnPhases(phases, ticTotal)
-        const committed = contracts.reduce((sum, c) => sum + Number(c.contract_amount || 0), 0)
-        const paid = contracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
+        const { value: committed, realized: paid } = contractTotals(contracts)
 
         const totalCommitted = committed
         const completionPct = totalCommitted > 0 ? Math.min(100, (paid / totalCommitted) * 100) : 0

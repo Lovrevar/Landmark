@@ -1,7 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { ticGrandTotal } from '../../Funding/TIC/utils/ticBudget'
 import type { LineItem } from '../../Funding/TIC/utils/ticFormatters'
-import { daysFromToday } from '../../../utils/dateOnly'
 import type { ComprehensiveReport, ProjectData, ReportRisk } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
 import { averagePer, customerFunnel, salesRate, soldRevenue, unitStatusCounts } from '../../../utils/salesFigures'
@@ -18,6 +17,13 @@ import {
 import { bankAccountTotals, cesijaFromCredit, costPaid } from '../../../utils/paymentFigures'
 import { monthlyCashFlow } from '../../../utils/cashFlowFigures'
 import { invoiceStatusSummary, officeInvoiceTotals } from '../../../utils/invoiceFigures'
+import {
+  completedPhaseCount,
+  contractTotals,
+  contractTypeCounts,
+  isSettledMilestone,
+  recentWorkLogCount,
+} from '../../../utils/constructionFigures'
 
 /**
  * supabase-js resolves a failed query as `{ data: null, error }` rather than rejecting, and every
@@ -199,20 +205,9 @@ export async function fetchGeneralReportData(
 
   const customerCounts = customerFunnel(customersArray)
 
-  const totalContractValue = contractsArray.reduce((sum, c) => sum + c.contract_amount, 0)
-  const budgetRealized = contractsArray.reduce((sum, c) => sum + c.budget_realized, 0)
-  const budgetUtilization = totalContractValue > 0 ? (budgetRealized / totalContractValue) * 100 : 0
-
-  const completedPhases = projectPhasesArray.filter(p => p.status === 'completed').length
-  // Today and the six days before it, in local days (subMonths(now, 0.25) was not seven days).
-  const recentWorkLogs = workLogsArray.filter(w => {
-    const days = daysFromToday(w.date)
-    return days <= 0 && days >= -6 // NaN (no date) fails both
-  }).length
-
-  const totalMilestones = subcontractorMilestonesArray.length
+  const contractStats = contractTotals(contractsArray)
   // 'completed' is the trigger's word for *partly* paid; a milestone is done when it is 'paid'.
-  const completedMilestones = subcontractorMilestonesArray.filter(m => m.status === 'paid').length
+  const settledMilestones = subcontractorMilestonesArray.filter(m => isSettledMilestone(m.status)).length
 
   // Cash, month by month: every payment on the side the shared direction map puts it, and
   // drawdowns and repayments of principal under financing, apart from operations.
@@ -259,7 +254,7 @@ export async function fetchGeneralReportData(
         units_sold: projectUnits.sold,
         total_units: projectUnits.total,
         contracts: projectContracts.length,
-        phases_done: projectPhases.filter(p => p.status === 'completed').length,
+        phases_done: completedPhaseCount(projectPhases),
         total_phases: projectPhases.length,
         equity: funding.equity,
         debt: funding.debt,
@@ -334,12 +329,6 @@ export async function fetchGeneralReportData(
   const totalRetailSuppliers = retailSuppliersArray.length
   const totalLandPlots = retailLandPlotsArray.length
 
-  const contractTypeCounts: { [key: string]: number } = {}
-  contractsArray.forEach(c => {
-    const typeName = (c as { contract_types?: { name?: string } | null }).contract_types?.name || ''
-    contractTypeCounts[typeName] = (contractTypeCounts[typeName] || 0) + 1
-  })
-  const contractTypesData = Object.entries(contractTypeCounts).map(([name, count]) => ({ name, count }))
 
   return {
     organization_name: normalizeOrgName(organizationSettings?.[0]?.name),
@@ -390,18 +379,19 @@ export async function fetchGeneralReportData(
       monthly_debt_service: liveDebt.monthlyDebtService
     },
     construction_status: {
-      total_contracts: contractsArray.length,
-      active_contracts: contractsArray.filter(c => c.status === 'active').length,
-      completed_contracts: contractsArray.filter(c => c.status === 'completed').length,
-      contract_value: totalContractValue,
-      budget_realized: budgetRealized,
-      budget_utilization: budgetUtilization,
+      total_contracts: contractStats.count,
+      active_contracts: contractStats.active,
+      completed_contracts: contractStats.completed,
+      contract_value: contractStats.value,
+      budget_realized: contractStats.realized,
+      budget_utilization: contractStats.utilization,
       total_subcontractors: subcontractorsArray.length,
       total_phases: projectPhasesArray.length,
-      completed_phases: completedPhases,
-      work_logs_7days: recentWorkLogs,
-      total_milestones: totalMilestones,
-      completed_milestones: completedMilestones
+      completed_phases: completedPhaseCount(projectPhasesArray),
+      // Today and the six days before it, in local days.
+      work_logs_7days: recentWorkLogCount(workLogsArray),
+      total_milestones: subcontractorMilestonesArray.length,
+      completed_milestones: settledMilestones
     },
     accounting_overview: {
       total_invoices: invoiceStats.count,
@@ -468,7 +458,7 @@ export async function fetchGeneralReportData(
       total_retail_customers: totalRetailCustomers,
       retail_suppliers: totalRetailSuppliers
     },
-    contract_types: contractTypesData,
+    contract_types: contractTypeCounts(contractsArray),
     cash_flow: cashFlow,
     projects: projectDetails,
     risks: risks,

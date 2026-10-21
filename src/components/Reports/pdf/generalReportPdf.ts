@@ -22,6 +22,7 @@ import { exportFileName } from '../../../utils/downloadFile'
 import { logActivity } from '../../../lib/activityLog'
 import { orgHeading } from '../../../lib/orgName'
 import { cashFlowTotals } from '../../../utils/cashFlowFigures'
+import { phaseCompletionRate } from '../../../utils/constructionFigures'
 
 /** Whole euros, for the aggregate figures this report is made of. */
 const money = pdfMoneyRounded
@@ -441,9 +442,10 @@ export async function generateGeneralReportPDF(
   pdf.text(t('reports.general.pdf.construction_progress'), margin, yPosition)
   yPosition += 8
 
-  const constructionProgress = report.construction_status.total_phases > 0
-    ? (report.construction_status.completed_phases / report.construction_status.total_phases) * 100
-    : 0
+  const constructionProgress = phaseCompletionRate(
+    report.construction_status.completed_phases,
+    report.construction_status.total_phases,
+  )
   drawProgressBar(pdf, margin, yPosition, pageWidth - 2 * margin, 8, constructionProgress, {
     label: bare('reports.general.completed_phases'),
     color: '#2563eb',
