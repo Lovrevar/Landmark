@@ -49,9 +49,10 @@ rows and applies `eq`, `in`, `gte`, `lte`, not-null, `order`, `range` and `singl
 PostgREST would, dotted paths into embedded rows included, and fails the tables a test names. The
 General report's test keeps its own smaller fake.
 
-The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs the six
-`*.test.ts` files under `supabase/functions/` (`_shared/help-score`, `_shared/tools`,
-`import-erp/feeds`, `import-erp/parse`, `sort-document/classifier`, `sort-document/extract`).
+The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs every
+`*.test.ts` file under `supabase/functions/` (`_shared/help-score`, `_shared/help-search`,
+`_shared/tools`, the four `ai-chat/tests/` files below, `import-erp/feeds`, `import-erp/parse`,
+`sort-document/classifier`, `sort-document/extract`).
 
 ### Configuration ([`vitest.config.ts`](../vitest.config.ts))
 

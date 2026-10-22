@@ -8,7 +8,12 @@ that answers money questions.
 **Status: green against the current orchestrator.** `supabase/functions/ai-chat/index.ts`
 and `_shared/` are **unmodified** by this phase. There are 106 tests in
 `supabase/functions/ai-chat/tests/`: 100 scenarios plus 6 tests of the fakes. The full function
-suite is 216/216.
+suite is 223/223 (2026-10-22).
+
+> **Until 2026-10-22 a full run did not finish.** When L30 ran after other scenarios, its hung model
+> call sometimes never received the abort (see `harness.ts` below). Deno then abandoned L30–L48,
+> exited 1 and still printed `ok`. Each file passed on its own; a combined run is green only since
+> the harness fix.
 
 Behaviour that looked like a bug was **pinned as-is, not fixed**, and is logged in
 [`open-questions.md`](./open-questions.md). The tests carry the matching `[OQ-n]` tags.
@@ -31,7 +36,7 @@ The fakes stand in for the **services**, not the client libraries:
 |---|---|
 | `fake-anthropic.ts` | Answers `POST /v1/messages` on `ANTHROPIC_BASE_URL` from a script. It returns a JSON `Message` for `messages.create`, and the same message as an SSE event stream when `stream: true`, which is what `messages.stream` sends. It enforces the real API's conversation-shape rules: first turn is a user turn, and every `tool_use` must be answered by a `tool_result` in the next user turn. |
 | `fake-supabase.ts` | Answers GoTrue `/auth/v1/user`, PostgREST `/rest/v1/*` and Storage on `SUPABASE_URL` from in-memory tables. It covers the PostgREST subset that ai-chat and its tool handlers use: embeds, `!inner`, embedded and `or` filters, counts, and `single`/`maybeSingle`. It records every request, tagged with which client sent it (service role or user JWT), and supports fault injection and hangs. |
-| `harness.ts` | Routes global `fetch` to the fakes, then imports the **real** `index.ts` while swapping out `Deno.serve`, so its handler is captured instead of bound to a port. Tests call the handler with plain `Request`s and read the SSE stream to its end. |
+| `harness.ts` | Routes global `fetch` to the fakes, then imports the **real** `index.ts` while swapping out `Deno.serve`, so its handler is captured instead of bound to a port. Tests call the handler with plain `Request`s and read the SSE stream to its end. It hands the fake Anthropic the SDK's **own** abort signal, not the copy on the `Request`: Deno can garbage-collect that copy while a call hangs, and the abort is then lost. Under `FakeTime`, `tickUntil` advances the clock until the stream ends and fails the test if it never does. |
 | `fixtures.ts` | The seeded world. It covers five roles, a TIC project, a no-TIC project with a legacy budget, a project with neither, a single-phase project whose contracts sit in two cost classifications, a phase with a stale `budget_used`, and an invoice that matches the financial summary by both of its paths. |
 
 Why this design:

@@ -14,6 +14,7 @@
 // Console output from the function is captured into `logs` (the loop logs on
 // every request). Set AI_CHAT_TEST_LOGS=1 to see it live.
 
+import type { FakeTime } from 'jsr:@std/testing@1/time'
 import { FakeAnthropic } from './fake-anthropic.ts'
 import { FakeSupabase, type RecordedRequest } from './fake-supabase.ts'
 import { SERVICE_ROLE_KEY, seedWorld, TOKENS } from './fixtures.ts'
@@ -32,7 +33,7 @@ const realFetch = globalThis.fetch
 globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const req = new Request(input, init)
   const host = new URL(req.url).host
-  if (host === 'fake-anthropic.test') return await anthropic.handle(req)
+  if (host === 'fake-anthropic.test') return await anthropic.handle(req, init?.signal ?? req.signal)
   if (host === 'fake-supabase.test') return await db.handle(req)
   return await realFetch(input, init)
 }) as typeof fetch
@@ -118,7 +119,7 @@ export async function call(body: unknown, opts: CallOptions = {}): Promise<Respo
 }
 
 // deno-lint-ignore no-explicit-any
-export type Json = any
+export type Json = any // eslint-disable-line @typescript-eslint/no-explicit-any -- test payloads are arbitrary JSON
 export interface SSE {
   raw: string
   comments: string[]
@@ -154,6 +155,20 @@ export async function readSSE(res: Response, timeoutMs = 10_000): Promise<SSE> {
     events.push({ event, data: JSON.parse(data) })
   }
   return { raw, comments, events, types: events.map((e) => e.data.type) }
+}
+
+/** Advance fake time in steps until `done` settles, or fail after `maxSteps`.
+ * A stream that never closes then fails its own test with a message. Awaiting
+ * it after a fixed number of ticks hangs instead: Deno abandons the rest of the
+ * file and the run still prints `ok`. */
+export async function tickUntil<T>(time: FakeTime, done: Promise<T>, stepMs: number, maxSteps: number): Promise<T> {
+  let settled = false
+  const watched = done.finally(() => {
+    settled = true
+  })
+  for (let i = 0; i < maxSteps && !settled; i++) await time.tickAsync(stepMs)
+  if (!settled) throw new Error(`harness: still pending after ${maxSteps} × ${stepMs} ms of fake time`)
+  return await watched
 }
 
 /** POST a chat request and read the whole stream. Fails if it is not an SSE response. */

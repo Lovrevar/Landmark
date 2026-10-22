@@ -23,6 +23,7 @@ import {
   readSSE,
   scenario,
   sessionMessages,
+  tickUntil,
   toolResultSentToModel,
 } from './harness.ts'
 import { P_TIC, TOKENS, USERS } from './fixtures.ts'
@@ -444,11 +445,9 @@ scenario('L30 the 90 s request timeout: keepalives every 15 s, then a request_ti
   try {
     anthropic.script({ hangUntilAborted: true })
     const res = await call({ session_id: null, message: 'x' })
-    const reading = readSSE(res, 0)
     // One-second steps: the heartbeat re-arms itself only after each write
     // resolves, so a single 90 s jump would skip the re-armed timers.
-    for (let s = 0; s < 90; s++) await time.tickAsync(1_000)
-    const sse = await reading
+    const sse = await tickUntil(time, readSSE(res, 0), 1_000, 200)
     assertEquals(sse.types, ['session', 'error'])
     assertEquals(sse.events[1].data, { type: 'error', code: 'request_timeout', message: 'Zahtjev je trajao predugo. Pokušajte ponovno.' })
     assert(sse.comments.filter((c) => c === 'keepalive').length >= 5)
@@ -464,9 +463,7 @@ scenario('L31 the 15 s per-tool timeout becomes an is_error tool_result and the 
     db.fault((r) => r.table === 'projects', { hang: true })
     anthropic.script(callTools(toolUse('search_projects', { query: 'Funtana' })), answer('Alat nije odgovorio.'))
     const res = await call({ session_id: null, message: 'x' })
-    const reading = readSSE(res, 0)
-    await time.tickAsync(15_000)
-    const sse = await reading
+    const sse = await tickUntil(time, readSSE(res, 0), 1_000, 60)
     const result = sse.events.find((e) => e.data.type === 'tool_result')!.data
     assertEquals([result.is_error, result.output], [true, { error: 'tool execution failed: tool_timeout' }])
     assertEquals(sse.types.at(-1), 'done')

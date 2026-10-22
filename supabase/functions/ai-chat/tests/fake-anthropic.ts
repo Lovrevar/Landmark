@@ -88,7 +88,10 @@ export class FakeAnthropic {
     return this.queue.length
   }
 
-  async handle(req: Request): Promise<Response> {
+  /** `signal` should be the caller's own signal when there is one: the copy on
+   * `req` only follows it, and Deno lets a following signal be garbage-collected
+   * while the call hangs, after which the abort never arrives. */
+  async handle(req: Request, signal: AbortSignal = req.signal): Promise<Response> {
     if (new URL(req.url).pathname !== '/v1/messages') {
       return apiError(404, 'not_found_error', 'fake-anthropic: only /v1/messages is implemented')
     }
@@ -115,8 +118,8 @@ export class FakeAnthropic {
     if ('hangUntilAborted' in next) {
       return await new Promise<Response>((_, reject) => {
         const abort = () => reject(new DOMException('The operation was aborted.', 'AbortError'))
-        if (req.signal.aborted) abort()
-        req.signal.addEventListener('abort', abort, { once: true })
+        if (signal.aborted) abort()
+        signal.addEventListener('abort', abort, { once: true })
       })
     }
 

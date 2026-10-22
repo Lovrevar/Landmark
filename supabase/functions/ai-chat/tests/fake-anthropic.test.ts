@@ -17,7 +17,9 @@ function client(fake: FakeAnthropic): Anthropic {
   return new Anthropic({
     apiKey: 'sk-ant-fake',
     baseURL: 'http://fake-anthropic.test',
-    fetch: ((input: RequestInfo | URL, init?: RequestInit) => fake.handle(new Request(input, init))) as typeof fetch,
+    // The SDK types `init` with whichever RequestInit is global: Node's once
+    // `deno task check` has installed @types/node, Deno's otherwise.
+    fetch: (input, init) => fake.handle(new Request(input, init as RequestInit)),
   })
 }
 
