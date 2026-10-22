@@ -113,9 +113,8 @@ visible effect: [GEN-18](./projects-dashboards-reports.md) (General report PDF c
   moot or turns into ERP work in phase 5.
 
 **Voice assistant (`feature/voice-assistant`).**
-- The phase 0 freeze checklist is out of date: all 160 script rows are `frozen` since commit
-  `022dcc3d`, but its six boxes are unticked and the stash it mentions still exists.
-- Next: record phase 0 and take the go/no-go.
+- Next: record phase 0 and take the go/no-go. The script is frozen (`022dcc3d`) without the
+  fragile-take dry run or a second reviewer; see the freeze checklist.
 - Phase 2 carries the decided fixes for OQ-1 and OQ-2. OQ-3 to OQ-9 are open.
 - Ten team questions are open in the implementation plan (§11), among them Vapi or Retell,
   recording, cost ceiling and whether finance data may go over the phone.

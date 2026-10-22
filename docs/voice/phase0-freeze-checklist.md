@@ -1,8 +1,11 @@
 # Phase 0 — freeze checklist
 
+> **Frozen in `022dcc3d` (2026-09-24).** All 160 rows of the five script CSVs are `review_status=frozen`,
+> so `record.html` starts real sessions. The script was frozen without the fragile-take dry run and without
+> a second reviewer; see §4.
+
 Prepared 2026-09-24 on `feature/voice-assistant`, for the freeze of the phase 0 script in
-[`tools/phase0/`](../../tools/phase0/). **Nothing here is frozen.** Every row of the five script CSVs is
-still `review_status=draft`, so `record.html` will not start a real session yet. What this pass did:
+[`tools/phase0/`](../../tools/phase0/). What this pass did:
 
 1. Replaced the 20 placeholder entities with real names from the dev database (`nxvbglegqcgxlxvyfuht`,
    read-only SELECTs, names and activity counts only).
@@ -13,11 +16,8 @@ still `review_status=draft`, so `record.html` will not start a real session yet.
 `python3 assign.py --check` and `python3 selftest.py` (105 checks) both pass. The assignment did not move,
 because it depends on item ids only.
 
-> **Before this pass**, the working tree held uncommitted `draft → frozen` flips on all 160 rows. There
-> were no text edits, and the entities were still placeholders. That contradicts "leave everything draft",
-> so it was **stashed, not discarded**: `git stash list` shows it as
-> *"uncommitted review_status draft->frozen flips found before freeze-prep"*. Drop it with
-> `git stash drop` once you've confirmed it was a test.
+Before this pass, the working tree held uncommitted `draft → frozen` flips on all 160 rows, with no text
+edits. They were stashed, and the stash was dropped on 2026-10-22, after the freeze commit made it redundant.
 
 ## 1. The 20 entities
 
@@ -219,18 +219,20 @@ oblique-case word, mid-sentence.
 
 ## 4. What only you can do
 
-Work through these in order. The script is frozen only after the last one.
+Status as of 2026-10-22. The script was frozen after the read-aloud pass and the entity check; the
+fragile-take dry run and the second reviewer were skipped. Until real scores exist, a recurring spelling
+that passes the *correct-hearing* test may still be added to `accepted_alternates`. After that, never.
 
-- [ ] **Read-aloud pass (you, reviewer 1).**
+- [x] **Read-aloud pass (you, reviewer 1).**
   - Read every sentence in all five CSVs aloud at phone pace.
   - Mark anything that doesn't come out naturally, especially the 40 new entity carriers.
   - Check the real names are **said the way the table says**: HEP Elektra without "d.o.o."; ACO as "aco";
     El Roy as "el roj"; Ceramica as "čeramika"; Nin and Jastrebarsko without "retail".
   - If a name is said differently in the office, change `target_form` and the sentence together, in both
     carrier rows.
-- [ ] **Confirm the entity choices.** Check the activity is right for production, not just dev, and that the three
+- [x] **Confirm the entity choices.** Check the activity is right for production, not just dev, and that the three
       surname names read as surnames to you. Swapping a name means keeping the mix, and editing both rows.
-- [ ] **Empirical fragile-take recording.**
+- [ ] **Empirical fragile-take recording.** *Not done: skipped at the freeze.*
   - One or two speakers, in `record.html?dryrun=1`, record just the fragile rows:
     - terms: t16, t17, t23, t24, t25;
     - entities: e03, e11, e14, e16, e20, and the one-syllable project names Tar and Nin.
@@ -238,11 +240,8 @@ Work through these in order. The script is frozen only after the last one.
   - Add any recurring spelling that passes the *correct-hearing* test to `accepted_alternates`, **before**
     freezing and never after seeing real scores.
   - Then delete the dry-run takes from `clean/`.
-- [ ] **Reviewer 2.** An independent native speaker confirms all five CSVs.
-- [ ] **Flip to frozen.** Set `review_status=frozen` on every row of the five CSVs (placeholder is already `n`).
-  - Run `python3 assign.py --check` and `python3 selftest.py`, and commit.
-  - The recorder then starts without `?dryrun=1`.
-  - `selftest.py` has a check that everything is still draft. Delete that one check in the freeze commit;
-    it is there to stop an accidental flip.
-- [ ] **Deal with the stash** (see the note at the top): drop it, or apply it if the flip was intended.
+- [ ] **Reviewer 2.** An independent native speaker confirms all five CSVs. *Not done: skipped at the freeze.*
+- [x] **Flip to frozen.** Set `review_status=frozen` on every row of the five CSVs (placeholder is already `n`).
+  Done in `022dcc3d`. `selftest.py` now checks the opposite: that every row is frozen.
+- [x] **Deal with the stash.** Dropped on 2026-10-22.
 
