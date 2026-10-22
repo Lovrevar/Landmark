@@ -348,8 +348,8 @@ def test_run_stt(tmp: Path) -> None:
     r = subprocess.run(args, capture_output=True, text=True, cwd=tmp)
     check(r.returncode == 0 and "1 results already done; 7 to run" in r.stdout, "resume: 8 tasks minus 1 done = 7")
     r = subprocess.run(args[:-3], capture_output=True, text=True, cwd=tmp)
-    check(r.returncode == 0 and "24 to run" in r.stdout,
-          "by default the six WebSocket configurations run: 2 takes x 2 conditions x 6 = 24")
+    check(r.returncode == 0 and "8 to run" in r.stdout,
+          "by default soniox and soniox_hints run: 2 takes x 2 conditions x 2 = 8")
     # A complement session's manifest merges with the primary one: its takes just add tasks.
     write_wav(tmp / "clean" / "s01_a01.wav", np.zeros(1600))
     write_wav(tmp / "noisy" / "s01_a01.wav", np.zeros(1600))

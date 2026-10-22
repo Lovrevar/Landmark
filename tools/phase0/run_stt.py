@@ -248,6 +248,7 @@ class Azure:
 # ---------------------------------------------------------------------------
 
 WS_VENDORS = ["soniox", "soniox_hints", "elevenlabs", "elevenlabs_hints", "deepgram", "deepgram_hints"]
+DEFAULT_VENDORS = ["soniox", "soniox_hints"]  # speech-to-text decided 2026-10-22; the others stay for re-comparison
 FINISH_IDLE_S = 5.0  # after the end of input, a silent socket for this long means nothing more is coming
 
 
@@ -530,7 +531,7 @@ def main() -> int:
     ap.add_argument("--clean-dir", type=Path, default=Path("clean"))
     ap.add_argument("--noisy-dir", type=Path, default=Path("noisy"))
     ap.add_argument("--out", type=Path, default=Path("transcripts.csv"))
-    ap.add_argument("--vendors", nargs="+", choices=WS_VENDORS + ["google", "azure"], default=WS_VENDORS,
+    ap.add_argument("--vendors", nargs="+", choices=WS_VENDORS + ["google", "azure"], default=DEFAULT_VENDORS,
                     help="the _hints variants send the domain terms and project names as vocabulary hints")
     ap.add_argument("--conditions", nargs="+", choices=["clean", "noisy"], default=["clean", "noisy"])
     ap.add_argument("--concurrency", type=int, default=4, help="parallel streams (each still paced in real time)")

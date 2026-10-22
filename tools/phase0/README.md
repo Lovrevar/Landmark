@@ -177,9 +177,12 @@ python3 run_stt.py                      # everything; re-run after any failure t
 python3 score.py                        # writes results.md
 ```
 
-- **Configurations:** by default `soniox`, `elevenlabs` and `deepgram`, each also as `_hints`. Pick
-  some with `--vendors`. `google` and `azure` still work, with `GOOGLE_APPLICATION_CREDENTIALS` and
-  `AZURE_SPEECH_KEY` / `AZURE_SPEECH_REGION`.
+- **Configurations:** by default `soniox` and `soniox_hints`. Speech-to-text was decided for Soniox
+  on 2026-10-22 (plan header), so the remaining runs check it against the gates.
+  - `elevenlabs`, `deepgram` (each also as `_hints`), `google` and `azure` stay available with
+    `--vendors`, to re-run a comparison.
+  - `google` needs `GOOGLE_APPLICATION_CREDENTIALS`; `azure` needs `AZURE_SPEECH_KEY` and
+    `AZURE_SPEECH_REGION`.
 - **Vocabulary hints** are what production would send: the 30 domain terms and the 10 project names,
   never the subcontractor names, which production couldn't fit within the vendors' limits. Sending
   only the scripted ones would hand over the answers. ElevenLabs' realtime limit (50 terms of at most
@@ -194,10 +197,11 @@ python3 score.py                        # writes results.md
 - **Google model fallback:** if the first model (`--google-model`, default `long`) rejects streaming
   `hr-HR`, the take is retried on `chirp_2` in `europe-west4`, and the rest of the run uses it. The
   `model` column records which model produced each transcript.
-- **Volume:** split design: 525 takes × 2 conditions × 6 configurations = 6,300 streams of about
-  5.5 s, about **2.5 hours at `--concurrency 4`**. Full design: 11,520 streams. Each vendor gets a
-  third of the streams. `--concurrency 6` stays within ElevenLabs' free-tier limit of 6 realtime
-  streams; Soniox allows 10.
+- **Volume (the two Soniox configurations):** split design: 525 takes × 2 conditions × 2 =
+  2,100 streams of about 5.5 s, about **50 minutes at `--concurrency 4`**, or under 30 at
+  `--concurrency 8`. Soniox's default limit is 10 concurrent streams. Full design: 3,840 streams.
+  - With all six configurations, multiply by 3 and keep `--concurrency` at 6 or below, which is
+    ElevenLabs' free-tier limit.
 - **The gate metric is RELAXED** (diacritics folded). STRICT is reported alongside and is never a
   gate. A match on the target or any alternate counts under both. The gates:
   - terms ≥ 90 % pass, 80–90 % review, < 80 % no-go; no term below 70 %; no speaker below 80 %;
