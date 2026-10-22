@@ -5,6 +5,25 @@
 > defences and the DTMF PIN flow belong to v2 (see [§2](#2-channels-v1-in-app-v2-pstn)). They
 > remain fully specified in [§9](#9-v2-pstn-caller-identification), **deferred until v1 ships**.
 
+> **✅ Decided 2026-10-22: speech-to-text is Soniox `stt-rt-v5`, EU region, with context hints.**
+>
+> Evidence from the phase 0 harness on the first speaker (`s02`, 87 clean takes):
+>
+> | Vendor (with hints) | Terms | Entities | Question WER | Time to final |
+> |---|---|---|---|---|
+> | **Soniox** | **98.1 % (51/52)** | **85 % (17/20)** | 5 % | about 0.25 s |
+> | ElevenLabs Scribe v2 | 76.9 % | 45 % | | |
+> | Deepgram Nova-3 | 36.5 % | 40 % | | |
+>
+> Without hints, Deepgram scored 44.2 % and 30 %.
+>
+> - **Phase 0 from here:** the remaining runs (more speakers, the noisy condition) check Soniox against
+>   the gates; they no longer compare vendors.
+> - **Retell is out:** it has no OpenAI-compatible custom LLM, no EU processing, and does not let us
+>   choose Soniox.
+> - **The platform is open:** LiveKit Agents, Pipecat or Vapi; see §11, question 2. Where §1, §3.4 and
+>   §4.3 name Vapi or Retell, read "the platform".
+
 Written 2026-09-23, amended the same day after team review. Builds directly on
 [`01-chat-assistant-analysis.md`](./01-chat-assistant-analysis.md); every recommendation here
 cites a finding there rather than re-deriving it.
@@ -792,6 +811,11 @@ implementation days are spent. It needs no backend: a dashboard-level agent on V
 Retell, with the platform's default LLM and a two-line Croatian prompt. It is tested through the
 **web call** path, since v1 is in-app.
 
+> **As run (2026-10):** the harness in [`tools/phase0/`](../../tools/phase0/) streams the recorded
+> takes straight to each vendor's speech-to-text API, not through a platform web call: Soniox,
+> ElevenLabs Scribe and Deepgram, each with and without vocabulary hints. The TTS, barge-in and
+> latency criteria below still need a live prototype.
+
 The protocol below is fixed **before any recording starts**, and it is identical for every
 vendor. Each threshold is then a count over a known number of observations, not an impression of
 a script.
@@ -1029,8 +1053,14 @@ phase 2 (+2–3) and the RLS integration test to phase 6 (+1–2).
 0. ~~**Channel order**~~ — **resolved 2026-09-23**: in-app = v1, PSTN = v2 once v1 is live.
 1. **JWT signing scheme** — the legacy HS256 secret or asymmetric keys? It decides §9's minting
    approach. *Blocks phase 8 only.*
-2. **Vapi or Retell** — which has the better Croatian result in phase 0, EU data residency and an
-   EU DPA, and which web SDK and server-side web-call registration fit §4.4?
+2. ~~**Vapi or Retell**~~ — **speech-to-text decided 2026-10-22: Soniox** (see the top of this plan).
+   Retell is out. **Still open: the platform.**
+   - LiveKit Agents or Pipecat: our own worker, EU hosting available self-serve, a Soniox plugin, and
+     about $0.01/min.
+   - Vapi: managed, with a native Soniox transcriber, but its EU region needs the Premier package.
+
+   Whichever it is must call our OpenAI-compatible endpoint and carry the opaque per-call token of
+   §4.4.
 3. **Recording** — the recommendation is no. Decide before phase 6.
 4. **May finance data go over the PSTN at all** in v2? If not, v2 is non-finance roles only and the
    PIN becomes moot.

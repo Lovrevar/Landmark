@@ -109,9 +109,9 @@ listed anyway, so the file reads as a spec.
 | t17_c1 | `R1 račun` | `er jedan račun|r jedan račun|r 1 račun` | R1 is said "er jedan" or "r jedan": both, plus the digit written apart from the R. |
 | t17_c2 | `R1 računa` | `er jedan računa|r jedan računa|r 1 računa` | R1 is said "er jedan" or "r jedan": both, plus the digit written apart from the R. |
 | t17_c3 | `R1 račun` | `er jedan račun|r jedan račun|r 1 račun` | R1 is said "er jedan" or "r jedan": both, plus the digit written apart from the R. |
-| t23_c1 | `OIB` | `o i b|o i be` | OIB is spelled out ("o-i-be"): letter-spaced forms, plus the suffix attached, detached or joined. |
-| t23_c2 | `OIB-a` | `oib-a|oiba|oib a|o i b a|o i be a` | OIB is spelled out ("o-i-be"): letter-spaced forms, plus the suffix attached, detached or joined. |
-| t23_c3 | `OIB` | `o i b|o i be` | OIB is spelled out ("o-i-be"): letter-spaced forms, plus the suffix attached, detached or joined. |
+| t23_c1 | `OIB` | `o i b|o i be` | ~~OIB is spelled out ("o-i-be")~~ **Corrected 2026-10-22:** OIB is read as a word ("o-ib", "ojb"); nobody spells it. The letter-spaced forms are harmless but never produced. See §4. |
+| t23_c2 | `OIB-a` | `oib-a|oiba|oib a|o i b a|o i be a` | As t23_c1: read as a word. The suffix forms still apply. |
+| t23_c3 | `OIB` | `o i b|o i be` | As t23_c1. |
 | t24_c1 | `IBAN` | `i b a n` | IBAN is spelled out: the letter-spaced form, plus the suffix attached, detached or joined. |
 | t24_c2 | `IBAN-a` | `iban-a|ibana|iban a|i b a n a` | IBAN is spelled out: the letter-spaced form, plus the suffix attached, detached or joined. |
 | t24_c3 | `IBAN` | `i b a n` | IBAN is spelled out: the letter-spaced form, plus the suffix attached, detached or joined. |
@@ -244,4 +244,19 @@ that passes the *correct-hearing* test may still be added to `accepted_alternate
 - [x] **Flip to frozen.** Set `review_status=frozen` on every row of the five CSVs (placeholder is already `n`).
   Done in `022dcc3d`. `selftest.py` now checks the opposite: that every row is frozen.
 - [x] **Deal with the stash.** Dropped on 2026-10-22.
+
+### Open decision: `ojb` as an alternate for OIB (2026-10-22)
+
+The alternates for t23 assumed OIB is spelled out. It is read as a word ("o-ib", "ojb"). A recogniser
+that hears it correctly writes `OIB` or `oib`, which already count, or possibly `ojb`, which does not.
+
+- **For adding `ojb` to t23's `accepted_alternates`:** it is a spelling of a correct hearing, which
+  is the rule for alternates. It follows from how the word is said, not from any score.
+- **Against:** real scores now exist (speaker `s02`, `C:\phase0\results.md`), and the README forbids
+  changing alternates after seeing them.
+- **Effect today:** none. No transcript so far contains `ojb`. `s02_t23_c1` came out as "ovaj" from
+  every vendor, which is a miss either way.
+
+The other acronyms' assumed spoken forms have not been re-checked yet: PDV "pe-de-ve", R1 "er jedan",
+IBAN and TIC as words. If one is wrong, it belongs in this decision.
 

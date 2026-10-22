@@ -113,8 +113,12 @@ visible effect: [GEN-18](./projects-dashboards-reports.md) (General report PDF c
   moot or turns into ERP work in phase 5.
 
 **Voice assistant (`feature/voice-assistant`).**
-- Next: record phase 0 and take the go/no-go. The script is frozen (`022dcc3d`) without the
-  fragile-take dry run or a second reviewer; see the freeze checklist.
+- Speech-to-text is decided: Soniox (2026-10-22, plan header). Next:
+  - confirm Soniox against the phase 0 gates with more speakers and the noisy condition;
+  - re-record `s02_e19_c1`, which is silent.
+- The script is frozen (`022dcc3d`) without the fragile-take dry run or a second reviewer. Open:
+  whether to accept `ojb` for OIB. See the freeze checklist, §4.
 - Phase 2 carries the decided fixes for OQ-1 and OQ-2. OQ-3 to OQ-9 are open.
-- Ten team questions are open in the implementation plan (§11), among them Vapi or Retell,
-  recording, cost ceiling and whether finance data may go over the phone.
+- Team questions open in the implementation plan (§11), among them:
+  - the platform: LiveKit Agents, Pipecat or Vapi (Retell is out);
+  - recording, the cost ceiling, and whether finance data may go over the phone.
