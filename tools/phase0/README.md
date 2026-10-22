@@ -256,29 +256,28 @@ order, over 20 numeric and 10 general sentences, with **0 mispronounced amounts 
 **Voices** (`tts_voices.csv`), two per vendor, one female and one male:
 - ElevenLabs `eleven_flash_v2_5` and `eleven_v4_turbo`, using the same two voices so that the model is
   the only difference;
-- Azure `hr-HR-GabrijelaNeural` and `SreckoNeural`;
-- Google Chirp 3 HD `hr-HR`.
+- Azure `hr-HR-GabrijelaNeural` and `SreckoNeural`.
+
+Google was left out (2026-10-22). `tts_panel.py` still supports a `google` row if one is added.
 
 A row with an empty `voice` is skipped. To fill the empty ones, list what each vendor offers:
 
 ```bash
 python3 tts_panel.py --list-voices elevenlabs   # Croatian voices in the Voice Library: put voice_id in `voice`
-python3 tts_panel.py --list-voices google       # hr-HR voices: pick a Chirp3-HD female and male
 python3 tts_panel.py --list-voices azure        # confirms the two hr-HR neural voices
 ```
 
 **Keys:**
-- ElevenLabs needs a key with the **text-to-speech** permission. The STT-only key used for `run_stt.py`
-  won't do.
-- Azure needs `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`, with an EU region such as `westeurope`.
-- Google needs `GOOGLE_TTS_API_KEY`, or `GOOGLE_APPLICATION_CREDENTIALS`. It defaults to the EU endpoint
-  (`--google-endpoint`).
+- **ElevenLabs:** a key with the **text-to-speech** and **voices read** permissions.
+  - The account must be on a paid plan, or have credits. Free accounts can't use library voices through
+    the API, and every natively Croatian voice is a library voice.
+- **Azure:** `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`, with an EU region such as `westeurope`.
 
 **Run** (keep the panel outside the repo, like the recordings):
 
 ```bash
 python3 tts_panel.py --out /mnt/c/phase0/tts --dry-run   # what would be generated
-python3 tts_panel.py --out /mnt/c/phase0/tts             # 8 voices x 50 sentences = 400 clips, a few cents
+python3 tts_panel.py --out /mnt/c/phase0/tts             # 6 voices x 50 sentences = 300 clips, a few cents
 python3 -m http.server 8000 --bind 127.0.0.1             # then open http://127.0.0.1:8000/rate.html
 python3 tts_score.py --panel /mnt/c/phase0/tts           # after the ratings are in the panel folder
 ```
@@ -288,7 +287,7 @@ python3 tts_score.py --panel /mnt/c/phase0/tts           # after the ratings are
 - Every clip is scaled to the same speech loudness (−20 dBFS), so no voice wins by being louder.
 
 **Raters:**
-- Three native speakers each rate the **gate** block: 8 voices × 30 = 240 clips, about 30 minutes.
+- Three native speakers each rate the **gate** block: 6 voices × 30 = 180 clips, about 20 minutes.
 - One of them also rates the **digits** block.
 - Each enters a rater ID (`r1`…), chooses the panel folder, rates, and downloads
   `ratings_<rater>_<block>.csv` into the panel folder.

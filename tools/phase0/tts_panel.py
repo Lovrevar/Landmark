@@ -3,7 +3,7 @@
 spoken by every voice in tts_voices.csv, as loudness-matched 24 kHz mono WAV
 clips with opaque names, plus panel_manifest.csv for rate.html and tts_score.py.
 
-    python3 tts_panel.py --out /mnt/c/phase0/tts [--configs az_gabrijela gc_f ...] [--dry-run]
+    python3 tts_panel.py --out /mnt/c/phase0/tts [--configs az_gabrijela el_flash_f ...] [--dry-run]
     python3 tts_panel.py --list-voices google|azure|elevenlabs
 
 Blind: a clip's file name is a hash of (config, sentence), so neither the name nor
