@@ -11,7 +11,7 @@ touches Supabase.
 | File | What it is |
 |---|---|
 | `sentences.csv` | 30 domain terms × 3 carrier sentences = 90 takes, with `accepted_alternates` |
-| `entities.csv` | 20 names (10 projects, 10 subcontractors) × 2 carrier sentences = 40 takes. **Placeholders**: see step 1 |
+| `entities.csv` | 20 names (10 projects, 10 subcontractors) × 2 carrier sentences = 40 takes |
 | `amounts.csv` | 10 euro amounts, written out in words inside a sentence |
 | `dates.csv` | 10 dates, written out in words inside a sentence |
 | `questions.csv` | 10 full questions a caller would ask |
@@ -65,6 +65,10 @@ python3 assign.py --check               # assignment.csv matches the script ids 
 ```
 
 ### 1. Freeze the script
+
+**Done:** the script was frozen in `022dcc3d` (2026-09-24), with real entity names. What was and
+wasn't reviewed is in [`phase0-freeze-checklist.md`](../../docs/voice/phase0-freeze-checklist.md).
+The rest of this step is the procedure for any future re-freeze.
 
 Every row of the five script CSVs carries `review_status`, which starts as `draft`. Reviewer 1
 corrects the text; reviewer 2 confirms it and flips the row to `frozen`. Wording changes do not

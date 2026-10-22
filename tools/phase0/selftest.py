@@ -14,6 +14,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -102,8 +103,8 @@ def test_script() -> None:
     tic = [r for r in terms if r["term_id"] == "t25"]
     check(all(not re.search(r"\b(te i ce|t i c)\b", r["accepted_alternates"]) for r in tic),
           "TIC alternates are one-syllable spellings only (it is said 'tic', never spelled out)")
-    check(all(r["review_status"] == "draft" for f in ("sentences.csv", "entities.csv", "amounts.csv", "dates.csv", "questions.csv")
-              for r in rows_of(f)), "everything is still draft (the flip to frozen is the reviewers' step)")
+    check(all(r["review_status"] == "frozen" for f in ("sentences.csv", "entities.csv", "amounts.csv", "dates.csv", "questions.csv")
+              for r in rows_of(f)), "every script row is frozen (record.html refuses a draft row)")
     amts = rows_of("amounts.csv")
     check(len(amts) == 10, "amounts.csv: 10 rows")
     check(all(any(abs(a - float(r["amount_eur"])) < 0.005 for a in parse_amounts(r["sentence"])) for r in amts),
@@ -251,7 +252,18 @@ def test_score(tmp: Path) -> None:
     check(row["datesbad"].endswith("**REVIEW** |") and "90.0 % (18/20)" in row["datesbad"],
           "amounts and dates share one pooled gate: 18/20 = 90 % < 95 % is a review")
     check("amounts/dates 90.0 % < 95 %" in md, "the pooled-gate miss is named in the reasons")
-    check("Script not frozen" in md, "an unfrozen script is flagged on the report")
+    check("Script not frozen" not in md, "the frozen script is not flagged on the report")
+    draft = tmp / "draft_script"
+    draft.mkdir(exist_ok=True)
+    for name in ("sentences.csv", "entities.csv", "amounts.csv", "dates.csv", "questions.csv", "assignment.csv"):
+        shutil.copy(HERE / name, draft / name)
+    lines = (draft / "dates.csv").read_text(encoding="utf-8").splitlines(keepends=True)
+    lines[1] = lines[1].replace(",frozen", ",draft")
+    (draft / "dates.csv").write_text("".join(lines), encoding="utf-8")
+    r = subprocess.run([PY, str(HERE / "score.py"), "--transcripts", str(tmp / "t.csv"), "--out", str(tmp / "r_draft.md"),
+                        "--script-dir", str(draft)], capture_output=True, text=True)
+    check("Script not frozen" in (tmp / "r_draft.md").read_text(encoding="utf-8"),
+          "a script with a draft row is flagged on the report")
     check(all(f"## Per {x}" in md for x in ("entity", "amount", "date", "question")), "per-section tables present")
     check("entity 160" in md and "date 40" in md, "row counts per section reported (40 entity + 10 date takes x 4 vendors)")
     check("google:long@global" in md and "## Models used" in md, "model usage reported")
