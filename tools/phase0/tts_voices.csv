@@ -5,3 +5,5 @@ el_v4t_f,elevenlabs,eleven_v4_turbo,4vkn1E85GfXGoH86xgU7,"{""language_code"": ""
 el_v4t_m,elevenlabs,eleven_v4_turbo,CgDf4YS1Sotf0h6n2vtV,"{""language_code"": ""hr""}","Martin - Conversational (Voice Library, Croatian); same voice as the Flash row, so the model is the only difference"
 az_gabrijela,azure,neural,hr-HR-GabrijelaNeural,,female
 az_srecko,azure,neural,hr-HR-SreckoNeural,,male
+el_v4t_branimir,elevenlabs,eleven_v4_turbo,WxQSzlR1UORgKEiMk1n4,"{""language_code"": ""hr""}","Branimir - Professional Croatian Studio (Voice Library, Croatian); round 2"
+el_v4t_karlo,elevenlabs,eleven_v4_turbo,pTD8166KADi6ZFJ5FEXi,"{""language_code"": ""hr""}","Karlo - Calm, Clear & Friendly (Voice Library, Croatian, Zagreb accent); round 2"

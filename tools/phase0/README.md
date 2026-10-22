@@ -294,6 +294,15 @@ python3 tts_score.py --panel /mnt/c/phase0/tts           # after the ratings are
 - Keys: `1`–`5` naturalness, `N` number or date wrong, `P` other mispronunciation, `Enter` next,
   `Space` replay.
 
+**Narrowing rounds:** after a first rater, drop the clearly weak voices and give the remaining raters a
+smaller panel in a new folder.
+- Copy the kept voices' clips and their manifest lines into the new folder.
+- Generate any new voices there with `--out <new folder> --configs …`.
+- Already-present clips are skipped, so nothing is paid for twice.
+
+Round 2 (2026-10-22) is `C:\phase0\tts2`: ElevenLabs v4 Turbo with Sara and Martin, plus Branimir and
+Karlo. After one rater, Azure and Flash were well below 3.5, and Flash also misread numerals.
+
 **Scoring:**
 - A numeric sentence counts as **mispronounced** when more than half of its raters flagged it.
   `tts_results.md` also lists sentences flagged by anyone.
