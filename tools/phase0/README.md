@@ -22,6 +22,10 @@ touches Supabase.
 | `mix_noise.py` | Makes `noisy/` from `clean/` at the frozen 10 dB SNR, deterministically |
 | `run_stt.py` | Streams every take, clean and noisy, to each vendor configuration in real time → `transcripts.csv` |
 | `score.py` | Scores `transcripts.csv` against the script → `results.md` |
+| `tts_sentences.csv`, `tts_voices.csv` | The TTS panel: 30 gate sentences + 20 with numerals, and the voices to compare |
+| `tts_panel.py` | Speaks every panel sentence with every voice → loudness-matched clips with opaque names |
+| `rate.html` | Blind rating page: naturalness 1–5, number and pronunciation flags → `ratings_<rater>_<block>.csv` |
+| `tts_score.py` | Scores the ratings against the TTS gates → `tts_results.md` |
 | `selftest.py` | Offline checks of all of the above (no microphone, no cloud) |
 
 ## The split design
@@ -234,6 +238,69 @@ merge needs nothing special:
 
 A partial complement (some speakers only) is also valid. The report shows it as **partial**, with
 the counts actually present.
+
+## TTS listening panel
+
+The plan's TTS gates (§10): mean naturalness **≥ 3.5** from **three native raters**, blind and in random
+order, over 20 numeric and 10 general sentences, with **0 mispronounced amounts or dates**.
+
+**Sentences** (`tts_sentences.csv`):
+- **Gate block:** the 10 amounts and 10 dates from the STT script, numbers written in words, plus 10
+  statements full of domain terms (TIC, R1 račun, OIB, cesija, kompenzacija, IBAN…). All 30 are the
+  native-reviewed STT sentences, word for word.
+- **Digits block:** the same 20 amounts and dates written with numerals (`12.500,50 eura`,
+  `15. listopada`), so the voice has to expand them itself. It is informational, not a gate: the voice
+  prompt asks the model to write numbers in words. It shows whether a voice can be trusted if the model
+  slips.
+
+**Voices** (`tts_voices.csv`), two per vendor, one female and one male:
+- ElevenLabs `eleven_flash_v2_5` and `eleven_v4_turbo`, using the same two voices so that the model is
+  the only difference;
+- Azure `hr-HR-GabrijelaNeural` and `SreckoNeural`;
+- Google Chirp 3 HD `hr-HR`.
+
+A row with an empty `voice` is skipped. To fill the empty ones, list what each vendor offers:
+
+```bash
+python3 tts_panel.py --list-voices elevenlabs   # Croatian voices in the Voice Library: put voice_id in `voice`
+python3 tts_panel.py --list-voices google       # hr-HR voices: pick a Chirp3-HD female and male
+python3 tts_panel.py --list-voices azure        # confirms the two hr-HR neural voices
+```
+
+**Keys:**
+- ElevenLabs needs a key with the **text-to-speech** permission. The STT-only key used for `run_stt.py`
+  won't do.
+- Azure needs `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`, with an EU region such as `westeurope`.
+- Google needs `GOOGLE_TTS_API_KEY`, or `GOOGLE_APPLICATION_CREDENTIALS`. It defaults to the EU endpoint
+  (`--google-endpoint`).
+
+**Run** (keep the panel outside the repo, like the recordings):
+
+```bash
+python3 tts_panel.py --out /mnt/c/phase0/tts --dry-run   # what would be generated
+python3 tts_panel.py --out /mnt/c/phase0/tts             # 8 voices x 50 sentences = 400 clips, a few cents
+python3 -m http.server 8000 --bind 127.0.0.1             # then open http://127.0.0.1:8000/rate.html
+python3 tts_score.py --panel /mnt/c/phase0/tts           # after the ratings are in the panel folder
+```
+
+**What makes it blind and fair:**
+- Clip names are hashes, and each rater gets their own random order (seeded by the rater ID).
+- Every clip is scaled to the same speech loudness (−20 dBFS), so no voice wins by being louder.
+
+**Raters:**
+- Three native speakers each rate the **gate** block: 8 voices × 30 = 240 clips, about 30 minutes.
+- One of them also rates the **digits** block.
+- Each enters a rater ID (`r1`…), chooses the panel folder, rates, and downloads
+  `ratings_<rater>_<block>.csv` into the panel folder.
+- Keys: `1`–`5` naturalness, `N` number or date wrong, `P` other mispronunciation, `Enter` next,
+  `Space` replay.
+
+**Scoring:**
+- A numeric sentence counts as **mispronounced** when more than half of its raters flagged it.
+  `tts_results.md` also lists sentences flagged by anyone.
+- A voice with fewer than three raters is reported **INCOMPLETE**.
+- Synthesis times are recorded, but only ElevenLabs streams. Real time-to-first-audio is measured on the
+  live prototype.
 
 ## Where this still differs from the plan's phase 0 protocol
 

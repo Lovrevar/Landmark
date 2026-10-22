@@ -22,6 +22,7 @@ import tempfile
 import time
 import unicodedata
 import wave
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -532,6 +533,159 @@ def test_ws_vendors() -> None:
     check(seen["query"]["keyterm"] == hints and model.endswith("+hints40"), "deepgram_hints: one keyterm per hint")
 
 
+def test_tts(tmp: Path) -> None:
+    """tts_sentences.csv / tts_voices.csv invariants, tts_panel.py against a local fake of the three
+    vendors, and tts_score.py verdicts."""
+    print("tts_panel.py / tts_score.py")
+    import base64
+    import io
+    import json
+    import os
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    import tts_panel as tp
+
+    sents = rows_of("tts_sentences.csv")
+    by_block = Counter((r["block"], r["kind"]) for r in sents)
+    check(by_block == Counter({("gate", "numeric"): 20, ("gate", "general"): 10, ("digits", "numeric"): 20})
+          and len({r["sentence_id"] for r in sents}) == len(sents),
+          "tts_sentences.csv: 20 numeric + 10 general gate sentences, 20 digits sentences, unique ids")
+    script = {r["amount_id"]: r["sentence"] for r in rows_of("amounts.csv")}
+    script |= {r["date_id"]: r["sentence"] for r in rows_of("dates.csv")}
+    script |= {f"{r['term_id']}_c{r['carrier_no']}": r["sentence"] for r in rows_of("sentences.csv")}
+    gate = [r for r in sents if r["block"] == "gate"]
+    check(all(script.get(r["source"]) == r["text"] for r in gate),
+          "every gate sentence is the reviewed script sentence it names, word for word")
+    digits = [r for r in sents if r["block"] == "digits"]
+    check(sorted(r["source"] for r in digits) == sorted(r["source"] for r in gate if r["kind"] == "numeric")
+          and all(re.search(r"\d", r["text"]) for r in digits),
+          "the digits block covers the same 20 amounts and dates, written with numerals")
+    voices = rows_of("tts_voices.csv")
+    check(len({v["config_id"] for v in voices}) == len(voices) and {v["vendor"] for v in voices} <= {"elevenlabs", "azure", "google"}
+          and all(not v["extra"] or isinstance(json.loads(v["extra"]), dict) for v in voices),
+          "tts_voices.csv: unique config ids, known vendors, extra is a JSON object")
+
+    cid = tp.clip_id("az_gabrijela", "n01")
+    check(cid == tp.clip_id("az_gabrijela", "n01") and re.fullmatch(r"[0-9a-f]{12}", cid) and cid != tp.clip_id("az_srecko", "n01"),
+          "clip ids are stable 12-hex hashes that differ per voice and say nothing about it")
+    t = np.arange(24000) / 24000
+    loud = (0.9 * np.sin(2 * np.pi * 220 * t) * 32767).astype("<i2")
+    level, gain_db = tp.normalized(loud)
+    x = level.astype(float) / 32768
+    rms_db = 20 * np.log10(np.sqrt(np.mean(x ** 2)))
+    check(abs(rms_db - tp.TARGET_RMS_DBFS) < 0.5 and np.max(np.abs(x)) <= 10 ** (tp.PEAK_LIMIT_DBFS / 20) + 1e-3 and gain_db < 0,
+          f"loudness matching: a loud clip is brought down to {tp.TARGET_RMS_DBFS:.0f} dBFS RMS ({rms_db:.1f})")
+    url, headers, body = tp.azure_request("https://x", "k", "hr-HR-GabrijelaNeural", "R&D <test>")
+    check(b"R&amp;D &lt;test&gt;" in body and b"name='hr-HR-GabrijelaNeural'" in body
+          and headers["X-Microsoft-OutputFormat"] == "riff-24khz-16bit-mono-pcm",
+          "azure: SSML with the voice, text XML-escaped, 24 kHz 16-bit WAV requested")
+    url, headers, body = tp.elevenlabs_request("https://x", "k", "eleven_flash_v2_5", "v1", {"language_code": "hr"}, "Tekst")
+    check(url == "https://x/v1/text-to-speech/v1/stream?output_format=pcm_24000"
+          and json.loads(body) == {"text": "Tekst", "model_id": "eleven_flash_v2_5", "language_code": "hr"},
+          "elevenlabs: streaming endpoint, raw 24 kHz PCM, model and extra fields in the body")
+    url_k, h_k, _ = tp.google_request("https://g", {"key": "K"}, "hr-HR-x", "T")
+    url_b, h_b, body = tp.google_request("https://g", {"Authorization": "Bearer B"}, "hr-HR-x", "T")
+    check(url_k.endswith("?key=K") and "Authorization" not in h_k and h_b["Authorization"] == "Bearer B"
+          and json.loads(body)["voice"] == {"languageCode": "hr-HR", "name": "hr-HR-x"},
+          "google: an API key goes in the query, a service-account token in the header")
+
+    def wav_bytes(samples):
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(24000); w.writeframes(samples.tobytes())
+        return buf.getvalue()
+
+    tone = (0.3 * np.sin(2 * np.pi * 180 * t[:12000]) * 32767).astype("<i2")
+    seen: list[str] = []
+
+    class Fake(BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            seen.append(self.path)
+            if self.path.startswith("/el/v1/text-to-speech/"):
+                payload, ctype = tone.tobytes(), "audio/pcm"
+            elif self.path == "/az/cognitiveservices/v1":
+                payload, ctype = wav_bytes(tone), "audio/wav"
+            elif self.path.startswith("/gc/v1/text:synthesize"):
+                payload = json.dumps({"audioContent": base64.b64encode(wav_bytes(tone)).decode()}).encode()
+                ctype = "application/json"
+            else:
+                self.send_response(404); self.end_headers(); return
+            self.send_response(200); self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(payload))); self.end_headers(); self.wfile.write(payload)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Fake)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{server.server_address[1]}"
+    (tmp / "tts").mkdir(exist_ok=True)
+    with open(tmp / "tts" / "voices.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["config_id", "vendor", "model", "voice", "extra", "notes"])
+        w.writerow(["el", "elevenlabs", "eleven_flash_v2_5", "VOICE", '{"language_code": "hr"}', ""])
+        w.writerow(["az", "azure", "neural", "hr-HR-GabrijelaNeural", "", ""])
+        w.writerow(["gc", "google", "chirp3-hd", "hr-HR-x", "", ""])
+        w.writerow(["unset", "google", "chirp3-hd", "", "", "no voice yet"])
+    with open(tmp / "tts" / "sentences.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["sentence_id", "block", "kind", "source", "text"])
+        w.writerow(["n01", "gate", "numeric", "a01", "Trošak dostave iznosi četrdeset pet eura."])
+        w.writerow(["g01", "gate", "general", "t25_c3", "Budžet projekta izračunava se iz TIC-a."])
+    env = {**os.environ, "ELEVENLABS_API_KEY": "k", "AZURE_SPEECH_KEY": "k", "GOOGLE_TTS_API_KEY": "k"}
+    panel = tmp / "tts" / "panel"
+    cmd = [PY, str(HERE / "tts_panel.py"), "--out", str(panel), "--voices", str(tmp / "tts" / "voices.csv"),
+           "--sentences", str(tmp / "tts" / "sentences.csv"), "--elevenlabs-url", f"{base}/el",
+           "--azure-endpoint", f"{base}/az", "--google-endpoint", f"{base}/gc"]
+    r = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    wavs = sorted(p.name for p in (panel / "clips").glob("*.wav")) if (panel / "clips").exists() else []
+    manifest = list(csv.DictReader(open(panel / "panel_manifest.csv", encoding="utf-8"))) if r.returncode == 0 else []
+    check(r.returncode == 0 and len(wavs) == 6 and len(manifest) == 6 and "skipped (no voice set" in r.stdout,
+          f"generator: 3 voices x 2 sentences = 6 clips; a voice without a voice id is skipped {r.stderr.strip()[-200:]}")
+    check(all(re.fullmatch(r"[0-9a-f]{12}\.wav", n) for n in wavs) and all(m["config_id"] in ("el", "az", "gc") for m in manifest),
+          "clips are named by hash only; the manifest keeps which voice made each")
+    with wave.open(str(panel / "clips" / wavs[0])) as wv:
+        fmt = (wv.getframerate(), wv.getnchannels(), wv.getsampwidth())
+    check(fmt == (24000, 1, 2) and {m["gain_db"] for m in manifest} and all(m["first_byte_ms"] for m in manifest),
+          "every clip is 24 kHz mono 16-bit, with its gain and timing recorded")
+    r = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    check(r.returncode == 0 and "6 clips already done; 0 to generate" in r.stdout, "re-running generates nothing new (resume)")
+    server.shutdown()
+
+    # tts_score.py: four voices with known outcomes.
+    score_dir = tmp / "tts" / "score"
+    score_dir.mkdir(exist_ok=True)
+    clips_rows = []
+    for cfg in ("good", "badnum", "flat", "short"):
+        for sid, kind in (("n01", "numeric"), ("n02", "numeric"), ("g01", "general")):
+            clips_rows.append({"clip_id": tp.clip_id(cfg, sid), "config_id": cfg, "sentence_id": sid, "block": "gate",
+                               "kind": kind, "text": "x", "vendor": "azure", "model": "m", "voice": "v",
+                               "first_byte_ms": 100, "total_ms": 300, "audio_ms": 2000, "gain_db": "0.0", "generated_at": "x"})
+    with open(score_dir / "panel_manifest.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=tp.MANIFEST_COLS); w.writeheader(); w.writerows(clips_rows)
+    for rater in ("r1", "r2", "r3"):
+        with open(score_dir / f"ratings_{rater}_gate.csv", "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(["rater", "block", "clip_id", "naturalness", "number_error", "other_error", "replays", "order_index", "rated_at"])
+            for c in clips_rows:
+                if c["config_id"] == "short" and rater == "r3":
+                    continue
+                nat = 3 if c["config_id"] == "flat" else 4
+                num = 1 if c["config_id"] == "badnum" and c["sentence_id"] == "n01" and rater != "r3" else 0
+                num = 1 if c["config_id"] == "good" and c["sentence_id"] == "n02" and rater == "r1" else num
+                w.writerow([rater, "gate", c["clip_id"], nat, num, 0, 0, 1, "x"])
+    r = subprocess.run([PY, str(HERE / "tts_score.py"), "--panel", str(score_dir)], capture_output=True, text=True)
+    md = (score_dir / "tts_results.md").read_text(encoding="utf-8") if r.returncode == 0 else ""
+    row = {v: next((ln for ln in md.splitlines() if ln.startswith(f"| {v} |")), "") for v in ("good", "badnum", "flat", "short")}
+    check(row["good"].endswith("**PASS** |") and "| 0 | 1 |" in row["good"],
+          "a voice at 4.0 passes; one rater's lone number flag is not a majority (0 wrong, 1 flagged)")
+    check(row["badnum"].endswith("**FAIL** |"), "a number flagged by 2 of 3 raters fails the voice despite 4.0 naturalness")
+    check(row["flat"].endswith("**FAIL** |"), "mean naturalness 3.0 < 3.5 fails")
+    check("INCOMPLETE (2 of 3 raters)" in row["short"], "a voice with only 2 raters gets no verdict")
+
+
 def main() -> int:
     test_script()
     test_matching()
@@ -542,6 +696,7 @@ def main() -> int:
         test_score(tmp)
         test_split_scoring(tmp)
         test_run_stt(tmp)
+        test_tts(tmp)
     test_ws_vendors()
     print(f"\n{'all checks passed' if not failures else f'{len(failures)} check(s) failed'}")
     return 1 if failures else 0
