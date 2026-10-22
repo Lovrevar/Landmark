@@ -2,8 +2,9 @@
 
 Tooling for the phase 0 go/no-go gate in
 [`docs/voice/02-voice-implementation-plan.md`](../../docs/voice/02-voice-implementation-plan.md) (§10):
-record the frozen script, add a controlled noise condition, stream every take to Google Cloud
-Speech-to-Text v2 and Azure Speech (both `hr-HR`), and score the results against the frozen gates.
+record the frozen script, add a controlled noise condition, stream every take to Croatian
+speech-to-text (Soniox, ElevenLabs Scribe and Deepgram Nova-3, each plain and with vocabulary hints;
+Google and Azure on request), and score the results against the frozen gates.
 
 This is standalone tooling. It imports nothing from the app or the edge functions, and it never
 touches Supabase.
@@ -19,7 +20,7 @@ touches Supabase.
 | `record.html` | Local recorder. Each speaker sees only their assigned takes; no playback, so it auto-advances |
 | `review.html` | Post-hoc spot-check: plays N random takes per speaker and exports the flagged ones |
 | `mix_noise.py` | Makes `noisy/` from `clean/` at the frozen 10 dB SNR, deterministically |
-| `run_stt.py` | Streams every take, clean and noisy, to both vendors in real time → `transcripts.csv` |
+| `run_stt.py` | Streams every take, clean and noisy, to each vendor configuration in real time → `transcripts.csv` |
 | `score.py` | Scores `transcripts.csv` against the script → `results.md` |
 | `selftest.py` | Offline checks of all of the above (no microphone, no cloud) |
 
@@ -168,22 +169,35 @@ sessions.
 ### 5. Transcribe and score
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json   # project read from it, or GOOGLE_CLOUD_PROJECT
-export AZURE_SPEECH_KEY=...  AZURE_SPEECH_REGION=westeurope
+# keys in a file outside the repo, e.g. ~/.config/cognilion-voice/stt.env
+set -a; source ~/.config/cognilion-voice/stt.env; set +a   # SONIOX_API_KEY, ELEVENLABS_API_KEY, DEEPGRAM_API_KEY
 python3 run_stt.py --dry-run            # shows how many streams are pending
-python3 run_stt.py --limit 4            # smoke test: 4 real streams
+python3 run_stt.py --limit 6            # smoke test: 6 real streams
 python3 run_stt.py                      # everything; re-run after any failure to resume
 python3 score.py                        # writes results.md
 ```
 
+- **Configurations:** by default `soniox`, `elevenlabs` and `deepgram`, each also as `_hints`. Pick
+  some with `--vendors`. `google` and `azure` still work, with `GOOGLE_APPLICATION_CREDENTIALS` and
+  `AZURE_SPEECH_KEY` / `AZURE_SPEECH_REGION`.
+- **Vocabulary hints** are what production would send: the 30 domain terms and the 10 project names,
+  never the subcontractor names, which production couldn't fit within the vendors' limits. Sending
+  only the scripted ones would hand over the answers. ElevenLabs' realtime limit (50 terms of at most
+  20 characters) drops 2 terms. The `model` column records the count, e.g. `+hints38`.
+- **Regions:** Soniox and Deepgram default to their EU hosts. The Soniox key must come from the EU
+  project. ElevenLabs runs on its US host; EU residency is Enterprise-only (`--elevenlabs-url`).
 - Each take streams in 100 ms chunks on a real-time clock, followed by 1.5 s of silence, so the
-  vendor's endpointing has to finalize the result by itself.
+  vendor's endpointing has to finalize the result by itself. The endpointing settings
+  (`--soniox-endpoint-delay-ms` 1000, `--elevenlabs-vad-silence-s` 0.8, `--deepgram-endpointing-ms`
+  300) stay below that silence. After it, each stream is ended the vendor's way, which also flushes
+  anything not yet final.
 - **Google model fallback:** if the first model (`--google-model`, default `long`) rejects streaming
   `hr-HR`, the take is retried on `chirp_2` in `europe-west4`, and the rest of the run uses it. The
   `model` column records which model produced each transcript.
-- **Volume:** split design: 525 takes × 2 conditions × 2 vendors = 2,100 streams of about 5.5 s,
-  about **50 minutes at `--concurrency 4`**. Full design: 3,840 streams, about 1.5 hours. Raise the
-  concurrency only within each vendor's concurrent-stream limit.
+- **Volume:** split design: 525 takes × 2 conditions × 6 configurations = 6,300 streams of about
+  5.5 s, about **2.5 hours at `--concurrency 4`**. Full design: 11,520 streams. Each vendor gets a
+  third of the streams. `--concurrency 6` stays within ElevenLabs' free-tier limit of 6 realtime
+  streams; Soniox allows 10.
 - **The gate metric is RELAXED** (diacritics folded). STRICT is reported alongside and is never a
   gate. A match on the target or any alternate counts under both. The gates:
   - terms ≥ 90 % pass, 80–90 % review, < 80 % no-go; no term below 70 %; no speaker below 80 %;
@@ -224,8 +238,10 @@ the counts actually present.
 2. **Amounts and dates are split 10 + 10, not 15 + 5.** The combined gate is the plan's: 20 items,
    ≥ 95 % pooled.
 3. **Entity recoverability is not scored.** That is a later step, as the plan says.
-4. **Engines, not platforms.** This streams straight to the Google and Azure speech APIs, not
-   through the Vapi / Retell web call, and does not include Deepgram.
+4. **Engines, not platforms.** This streams straight to each vendor's speech API, not through a
+   voice platform's web call. The TTS, barge-in and latency criteria need a live prototype.
+5. **Vendors.** The plan named Vapi / Retell with their default speech-to-text. The shortlist is now
+   Soniox, ElevenLabs Scribe and Deepgram Nova-3, each also with vocabulary hints.
 
 Known fragile targets, which are worth a look in the per-term table even with alternates:
 

@@ -5,7 +5,8 @@
 
 Checks the script files' invariants, that mix_noise.py is deterministic and hits
 the frozen SNR, the matching / alias / amount / WER rules and the verdicts in
-score.py, and the resume logic, real-time pacing and Google model fallback in
+score.py, and the resume logic, real-time pacing, Google model fallback and the
+Soniox / ElevenLabs / Deepgram protocols (against local fake servers) in
 run_stt.py. Install requirements.txt first.
 """
 
@@ -342,9 +343,13 @@ def test_run_stt(tmp: Path) -> None:
         w.writerow(["file", "vendor", "condition", "transcript", "time_to_final_ms", "model"])
         w.writerow(["s01_t01_c1.wav", "google", "clean", "x", 1, "google:long@global"])
     args = [PY, str(HERE / "run_stt.py"), "--dry-run", "--manifest", str(tmp / "clean" / "manifest.csv"),
-            "--clean-dir", str(tmp / "clean"), "--noisy-dir", str(tmp / "noisy"), "--out", str(tmp / "transcripts.csv")]
+            "--clean-dir", str(tmp / "clean"), "--noisy-dir", str(tmp / "noisy"), "--out", str(tmp / "transcripts.csv"),
+            "--vendors", "google", "azure"]
     r = subprocess.run(args, capture_output=True, text=True, cwd=tmp)
     check(r.returncode == 0 and "1 results already done; 7 to run" in r.stdout, "resume: 8 tasks minus 1 done = 7")
+    r = subprocess.run(args[:-3], capture_output=True, text=True, cwd=tmp)
+    check(r.returncode == 0 and "24 to run" in r.stdout,
+          "by default the six WebSocket configurations run: 2 takes x 2 conditions x 6 = 24")
     # A complement session's manifest merges with the primary one: its takes just add tasks.
     write_wav(tmp / "clean" / "s01_a01.wav", np.zeros(1600))
     write_wav(tmp / "noisy" / "s01_a01.wav", np.zeros(1600))
@@ -406,6 +411,127 @@ def test_run_stt(tmp: Path) -> None:
         check(calls == [("global", "long")] and not g.use_fallback, "a transient error is re-raised, with no fallback")
 
 
+def test_ws_vendors() -> None:
+    """Each WebSocket client against a local server that speaks that vendor's protocol."""
+    print("run_stt.py WebSocket vendors (local fake servers)")
+    try:
+        from websockets.sync.server import serve
+    except ImportError:
+        print("  SKIP WebSocket vendor checks: websockets not installed")
+        return
+    import base64
+    import json
+    import os
+    import threading
+    from urllib.parse import parse_qs, urlparse
+
+    from run_stt import Deepgram, ElevenLabs, Soniox, load_hints
+
+    for k in ("SONIOX_API_KEY", "ELEVENLABS_API_KEY", "DEEPGRAM_API_KEY"):
+        os.environ[k] = f"test-{k}"
+    pcm = b"\x01\x00" * 4800  # 300 ms
+    seen: dict = {}
+
+    def run(handler, make_engine):
+        seen.clear()
+        server = serve(handler, "127.0.0.1", 0)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            engine = make_engine(f"ws://127.0.0.1:{server.socket.getsockname()[1]}/stream")
+            return engine.transcribe(pcm, 100, 200)
+        finally:
+            server.shutdown()
+
+    def soniox(ws):
+        seen["auth"] = ws.request.headers.get("Authorization")
+        seen["config"] = json.loads(ws.recv())
+        seen["audio"] = 0
+        for msg in ws:
+            if msg == "":
+                break
+            seen["audio"] += len(msg)
+            if seen["audio"] == 3200:  # after 100 ms: a final part with an endpoint, and a guess
+                ws.send(json.dumps({"tokens": [{"text": "Je", "is_final": True}, {"text": " li", "is_final": True},
+                                               {"text": "<end>", "is_final": True}, {"text": " ti", "is_final": False}]}))
+        ws.send(json.dumps({"tokens": [{"text": " TIC", "is_final": True}, {"text": " unesen?", "is_final": True}]}))
+        ws.send(json.dumps({"tokens": [], "finished": True}))
+
+    text, t_final, model = run(soniox, lambda url: Soniox(url, "stt-rt-v5", 1000))
+    check(text == "Je li TIC unesen?", f"soniox: final tokens joined on their own spacing, <end> and guesses dropped ({text!r})")
+    check(seen["auth"] == "Bearer test-SONIOX_API_KEY" and seen["config"]["language_hints"] == ["hr"]
+          and seen["config"]["max_endpoint_delay_ms"] == 1000 and "context" not in seen["config"],
+          "soniox: bearer header; config with hr, strict hints, endpoint delay and no context")
+    check(seen["audio"] == len(pcm) + 2 * 3200 and t_final is not None and model == "soniox:stt-rt-v5@global",
+          "soniox: all audio plus the trailing silence is sent; time to final and model recorded")
+    hints = load_hints()
+    _, _, model = run(soniox, lambda url: Soniox(url, "stt-rt-v5", 1000, hints))
+    check(len(hints) == 40 and seen["config"]["context"]["terms"] == hints and model.endswith("+hints40"),
+          "soniox_hints: the 30 terms and 10 project names go in context.terms")
+
+    def soniox_error(ws):
+        ws.recv()
+        ws.send(json.dumps({"error_code": 401, "error_type": "unauthenticated", "error_message": "Invalid API key."}))
+
+    try:
+        run(soniox_error, lambda url: Soniox(url, "stt-rt-v5", 1000))
+        check(False, "soniox: an error message fails the take")
+    except RuntimeError as exc:
+        check("unauthenticated" in str(exc), "soniox: an error message fails the take, with its type in the log")
+
+    def elevenlabs(ws):
+        seen["auth"] = ws.request.headers.get("xi-api-key")
+        seen["query"] = parse_qs(urlparse(ws.request.path).query)
+        ws.send(json.dumps({"message_type": "session_started", "session_id": "s"}))
+        seen["chunks"] = 0
+        for raw in ws:
+            msg = json.loads(raw)
+            seen["chunks"] += 1
+            if seen["chunks"] == 2:
+                ws.send(json.dumps({"message_type": "partial_transcript", "text": "Je li"}))
+            if seen["chunks"] == 4:  # VAD commit during the trailing silence
+                ws.send(json.dumps({"message_type": "committed_transcript", "text": "Je li TIC unesen?"}))
+            if msg["commit"]:
+                seen["commit_bytes"] = len(base64.b64decode(msg["audio_base_64"]))
+                ws.send(json.dumps({"message_type": "insufficient_audio_activity", "message": "no speech"}))
+
+    text, t_final, model = run(elevenlabs, lambda url: ElevenLabs(url, "scribe_v2_realtime", 0.8))
+    q = seen["query"]
+    check(text == "Je li TIC unesen?" and t_final is not None, f"elevenlabs: the VAD commit is the transcript ({text!r})")
+    check(seen["auth"] == "test-ELEVENLABS_API_KEY" and q["language_code"] == ["hrv"] and q["commit_strategy"] == ["vad"]
+          and q["vad_silence_threshold_secs"] == ["0.8"] and "keyterms" not in q,
+          "elevenlabs: xi-api-key header; hrv, VAD commits at 0.8 s, no keyterms")
+    check(seen["chunks"] == 6 and seen["commit_bytes"] == 3200 and model == "elevenlabs:scribe_v2_realtime@us",
+          "elevenlabs: 5 chunks of audio and silence, then a 100 ms silent commit; the silent commit's reply ends the take")
+    _, _, model = run(elevenlabs, lambda url: ElevenLabs(url, "scribe_v2_realtime", 0.8, hints))
+    sent = seen["query"]["keyterms"]
+    check(sent == [h for h in hints if len(h) <= 20] and model.endswith(f"+hints{len(sent)}") and len(sent) < len(hints),
+          f"elevenlabs_hints: keyterms over 20 characters are left out ({len(sent)} of {len(hints)} sent)")
+
+    def deepgram(ws):
+        seen["auth"] = ws.request.headers.get("Authorization")
+        seen["query"] = parse_qs(urlparse(ws.request.path).query)
+        seen["control"] = []
+        for msg in ws:
+            if isinstance(msg, str):
+                seen["control"].append(json.loads(msg)["type"])
+                if seen["control"][-1] == "CloseStream":
+                    break
+        for t, final in (("je li", False), ("Je li TIC", True), ("unesen?", True)):
+            ws.send(json.dumps({"type": "Results", "is_final": final, "channel": {"alternatives": [{"transcript": t}]}}))
+        ws.send(json.dumps({"type": "Metadata"}))
+
+    text, t_final, model = run(deepgram, lambda url: Deepgram(url, "nova-3", 300))
+    q = seen["query"]
+    check(text == "Je li TIC unesen?" and t_final is not None, f"deepgram: is_final results joined, interim ones dropped ({text!r})")
+    check(seen["auth"] == "Token test-DEEPGRAM_API_KEY" and q["language"] == ["hr"] and q["endpointing"] == ["300"]
+          and q["mip_opt_out"] == ["true"] and "keyterm" not in q,
+          "deepgram: token header; hr, 300 ms endpointing, model-improvement opt-out, no keyterms")
+    check(seen["control"] == ["Finalize", "CloseStream"] and model == "deepgram:nova-3@global",
+          "deepgram: Finalize, then CloseStream, at the end of input")
+    _, _, model = run(deepgram, lambda url: Deepgram(url, "nova-3", 300, hints))
+    check(seen["query"]["keyterm"] == hints and model.endswith("+hints40"), "deepgram_hints: one keyterm per hint")
+
+
 def main() -> int:
     test_script()
     test_matching()
@@ -416,6 +542,7 @@ def main() -> int:
         test_score(tmp)
         test_split_scoring(tmp)
         test_run_stt(tmp)
+    test_ws_vendors()
     print(f"\n{'all checks passed' if not failures else f'{len(failures)} check(s) failed'}")
     return 1 if failures else 0
 

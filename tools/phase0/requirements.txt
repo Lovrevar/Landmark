@@ -1,4 +1,5 @@
 # Python 3.11+. Install with:  python3 -m pip install -r requirements.txt
 numpy>=1.26
+websockets>=14                     # Soniox, ElevenLabs and Deepgram streaming (sync client, additional_headers)
 google-cloud-speech>=2.26          # provides google.cloud.speech_v2 (Speech-to-Text v2)
 azure-cognitiveservices-speech>=1.38

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Stream every recorded take (clean and noisy) to Google Cloud Speech-to-Text
-v2 and Azure Speech, both hr-HR, through their STREAMING APIs, and write
-transcripts.csv.
+"""Stream every recorded take (clean and noisy) to Croatian speech-to-text
+through each vendor's STREAMING API, and write transcripts.csv. Vendors:
+Soniox (stt-rt-v5), ElevenLabs (scribe_v2_realtime) and Deepgram (nova-3), each
+plain and with vocabulary hints (`_hints`), plus the original Google Cloud
+Speech-to-Text v2 and Azure Speech.
 
-    python3 run_stt.py [--manifest clean/manifest.csv ...] [--vendors google azure]
+    python3 run_stt.py [--manifest clean/manifest.csv ...] [--vendors soniox deepgram_hints ...]
 
 Real-time: audio is sent in --chunk-ms chunks on an absolute clock (chunk k
 leaves at t0 + k*chunk), followed by --trailing-silence-ms of digital silence,
@@ -21,7 +23,16 @@ FailedPrecondition / NotFound: a config error, not a transient one), the take is
 retried on --google-fallback-model in --google-fallback-location (default chirp_2
 in europe-west4), and every later Google stream in the run uses the fallback
 directly. The `model` column records which model produced each transcript
-(e.g. google:long@global, google:chirp_2@europe-west4, azure:hr-HR).
+(e.g. google:long@global, google:chirp_2@europe-west4, azure:hr-HR,
+soniox:stt-rt-v5@eu+hints40).
+
+Vocabulary hints (the `_hints` vendors) are what production would send: the 30
+domain terms in sentences.csv and the 10 project names in entities.csv, never
+the subcontractor names (production could not fit all of them within the
+vendors' limits, so sending only the scripted ones would hand over the answers).
+Soniox gets them as context terms, Deepgram as keyterms, ElevenLabs as keyterms
+within its realtime limit of 50 terms of at most 20 characters; the count sent
+is in the `model` column.
 
 Resumable: rows already in transcripts.csv (same file, vendor, condition) are
 skipped. A failed stream writes NO row, so re-running retries it; failures are
@@ -31,12 +42,17 @@ Credentials (environment):
   Google: GOOGLE_APPLICATION_CREDENTIALS (service-account JSON). The project is
           taken from those credentials, or GOOGLE_CLOUD_PROJECT.
   Azure:  AZURE_SPEECH_KEY and AZURE_SPEECH_REGION.
+  Soniox: SONIOX_API_KEY, from the EU project when --soniox-url is the EU host.
+  ElevenLabs: ELEVENLABS_API_KEY (speech-to-text permission is enough).
+  Deepgram: DEEPGRAM_API_KEY.
 """
 
 from __future__ import annotations
 
 import argparse
+import base64
 import csv
+import json
 import os
 import sys
 import threading
@@ -46,7 +62,9 @@ import wave
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlencode
 
+HERE = Path(__file__).resolve().parent
 RATE = 16000
 BYTES_PER_MS = RATE * 2 // 1000  # 16-bit mono
 OUT_COLS = ["file", "vendor", "condition", "transcript", "time_to_final_ms", "model"]
@@ -225,6 +243,258 @@ class Azure:
         return join(finals), ttf(last_final[-1] if last_final else None, speech_end), "azure:hr-HR"
 
 
+# ---------------------------------------------------------------------------
+# WebSocket vendors: Soniox, ElevenLabs, Deepgram
+# ---------------------------------------------------------------------------
+
+WS_VENDORS = ["soniox", "soniox_hints", "elevenlabs", "elevenlabs_hints", "deepgram", "deepgram_hints"]
+FINISH_IDLE_S = 5.0  # after the end of input, a silent socket for this long means nothing more is coming
+
+
+class _WebSocketEngine:
+    """One WebSocket per take. A sender thread streams the paced audio, then ends the
+    input; the calling thread collects final results until the vendor says it is
+    done, closes the socket, or stays silent for FINISH_IDLE_S after the end of input.
+
+    Subclasses provide url(), headers(), start() (messages before the audio),
+    send_audio(), finish() (end of input) and on_message(), which returns the final
+    text pieces in a message and whether the stream is complete. `state` is per take:
+    the engine itself is shared by the worker threads."""
+
+    def url(self) -> str:
+        raise NotImplementedError
+
+    def headers(self) -> dict[str, str]:
+        raise NotImplementedError
+
+    def label(self) -> str:
+        raise NotImplementedError
+
+    def start(self, ws) -> None:
+        pass
+
+    def send_audio(self, ws, chunk: bytes) -> None:
+        ws.send(chunk)
+
+    def finish(self, ws) -> None:
+        raise NotImplementedError
+
+    def on_message(self, raw: str | bytes, state: dict) -> tuple[list[str], bool]:
+        raise NotImplementedError
+
+    def assemble(self, finals: list[str]) -> str:
+        return join(finals)
+
+    def transcribe(self, pcm: bytes, chunk_ms: int, silence_ms: int) -> tuple[str, int | None, str]:
+        from websockets.exceptions import ConnectionClosedOK
+        from websockets.sync.client import connect
+
+        state: dict = {}
+        finals: list[str] = []
+        last_final: float | None = None
+        speech_end: list[float] = []
+        send_errors: list[BaseException] = []
+        with connect(self.url(), additional_headers=self.headers(), open_timeout=15, max_size=None) as ws:
+            self.start(ws)
+
+            def sender() -> None:
+                try:
+                    for chunk, last_speech in paced_chunks(pcm, silence_ms, chunk_ms):
+                        self.send_audio(ws, chunk)
+                        if last_speech:
+                            speech_end.append(time.monotonic())
+                    state["ending"] = True  # before finish(): its reply can beat the send's return
+                    self.finish(ws)
+                    state["finished"] = True
+                except BaseException as exc:  # reported after the receive loop
+                    send_errors.append(exc)
+
+            thread = threading.Thread(target=sender, daemon=True)
+            thread.start()
+            deadline = time.monotonic() + len(pcm) / (RATE * 2) + silence_ms / 1000 + 30
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError(f"{self.label()}: stream not complete within the deadline")
+                ending = state.get("ending", False)
+                try:
+                    raw = ws.recv(timeout=min(remaining, FINISH_IDLE_S) if ending else remaining)
+                except TimeoutError:
+                    if ending:
+                        break
+                    continue
+                except ConnectionClosedOK:
+                    break
+                state["finished_seen"] = state.get("ending", False)  # read after recv(): it can flip while blocked
+                texts, done = self.on_message(raw, state)
+                texts = [t for t in texts if t and t.strip()]
+                if texts:
+                    finals.extend(texts)
+                    last_final = time.monotonic()
+                if done:
+                    break
+            thread.join(timeout=5)
+        if not state.get("finished"):
+            raise RuntimeError(f"{self.label()}: the stream ended before all audio was sent "
+                               f"({send_errors[0] if send_errors else 'no error from the sender'})")
+        return self.assemble(finals), ttf(last_final, speech_end), self.label()
+
+
+def required_env(name: str) -> str:
+    value = os.environ.get(name)
+    if not value:
+        raise SystemExit(f"{name} is not set")
+    return value
+
+
+def load_hints(script_dir: Path = HERE) -> list[str]:
+    """The domain terms and project names, in script order, without duplicates."""
+    with open(script_dir / "sentences.csv", newline="", encoding="utf-8") as f:
+        terms = [r["term"] for r in csv.DictReader(f)]
+    with open(script_dir / "entities.csv", newline="", encoding="utf-8") as f:
+        projects = [r["target_form"] for r in csv.DictReader(f) if r["entity_type"] == "project"]
+    return list(dict.fromkeys(terms + projects))
+
+
+class Soniox(_WebSocketEngine):
+    """Soniox real-time WebSocket API. Endpoint detection is on, so the recognizer
+    finalizes on its own; the empty text frame at the end flushes what is left."""
+
+    def __init__(self, url: str, model: str, endpoint_delay_ms: int, hints: list[str] | None = None):
+        self.key = required_env("SONIOX_API_KEY")
+        self._url, self.model, self.endpoint_delay_ms, self.hints = url, model, endpoint_delay_ms, hints or []
+        self.region = "eu" if ".eu." in url else "global"
+
+    def url(self) -> str:
+        return self._url
+
+    def headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self.key}"}
+
+    def label(self) -> str:
+        return f"soniox:{self.model}@{self.region}" + (f"+hints{len(self.hints)}" if self.hints else "")
+
+    def start(self, ws) -> None:
+        config = {
+            "model": self.model,
+            "audio_format": "pcm_s16le",
+            "sample_rate": RATE,
+            "num_channels": 1,
+            "language_hints": ["hr"],
+            "language_hints_strict": True,
+            "enable_endpoint_detection": True,
+            "max_endpoint_delay_ms": self.endpoint_delay_ms,
+        }
+        if self.hints:
+            config["context"] = {"terms": self.hints}
+        ws.send(json.dumps(config))
+
+    def finish(self, ws) -> None:
+        ws.send("")  # an empty TEXT frame ends the input; an empty binary frame does not
+
+    def on_message(self, raw, state):
+        msg = json.loads(raw)
+        if msg.get("error_code") or msg.get("error_type"):
+            raise RuntimeError(f"Soniox {msg.get('error_code')} {msg.get('error_type')}: {msg.get('error_message')}")
+        texts = [t["text"] for t in msg.get("tokens", []) if t.get("is_final") and t.get("text") not in ("<end>", "<fin>")]
+        return texts, bool(msg.get("finished"))
+
+    def assemble(self, finals: list[str]) -> str:
+        return " ".join("".join(finals).split())  # tokens carry their own spacing
+
+
+class ElevenLabs(_WebSocketEngine):
+    """ElevenLabs Scribe v2 Realtime, with VAD commits: a pause longer than
+    vad_silence_threshold_secs commits the segment. The end of input is a last
+    chunk of silence sent with commit=true."""
+
+    MAX_HINTS, MAX_HINT_CHARS = 50, 20  # realtime keyterm limits
+
+    def __init__(self, url: str, model: str, vad_silence_s: float, hints: list[str] | None = None):
+        self.key = required_env("ELEVENLABS_API_KEY")
+        self.base, self.model, self.vad_silence_s = url, model, vad_silence_s
+        self.hints = [h for h in (hints or []) if len(h) <= self.MAX_HINT_CHARS][: self.MAX_HINTS]
+
+    def url(self) -> str:
+        params = [
+            ("model_id", self.model),
+            ("audio_format", "pcm_16000"),
+            ("language_code", "hrv"),
+            ("commit_strategy", "vad"),
+            ("vad_silence_threshold_secs", str(self.vad_silence_s)),
+        ] + [("keyterms", h) for h in self.hints]
+        return f"{self.base}?{urlencode(params)}"
+
+    def headers(self) -> dict[str, str]:
+        return {"xi-api-key": self.key}
+
+    def label(self) -> str:
+        region = "eu" if ".eu." in self.base else "us"
+        return f"elevenlabs:{self.model}@{region}" + (f"+hints{len(self.hints)}" if self.hints else "")
+
+    def send_audio(self, ws, chunk: bytes, commit: bool = False) -> None:
+        ws.send(json.dumps({"message_type": "input_audio_chunk", "audio_base_64": base64.b64encode(chunk).decode(),
+                            "commit": commit, "sample_rate": RATE}))
+
+    def finish(self, ws) -> None:
+        self.send_audio(ws, b"\x00" * (100 * BYTES_PER_MS), commit=True)
+
+    def on_message(self, raw, state):
+        msg = json.loads(raw)
+        kind = msg.get("message_type", "")
+        if kind == "committed_transcript":
+            return [msg.get("text", "")], state["finished_seen"]
+        if kind in ("session_started", "partial_transcript") or kind.startswith("committed_transcript_"):
+            return [], False
+        if kind == "insufficient_audio_activity" and state["finished_seen"]:
+            return [], True  # the closing commit held only silence: nothing left to commit
+        raise RuntimeError(f"ElevenLabs {kind}: {msg.get('error') or msg.get('message') or msg}")
+
+
+class Deepgram(_WebSocketEngine):
+    """Deepgram live transcription. Endpointing finalizes on a pause; Finalize then
+    flushes what is left, and CloseStream makes the server send its last results
+    and close the socket."""
+
+    def __init__(self, url: str, model: str, endpointing_ms: int, hints: list[str] | None = None):
+        self.key = required_env("DEEPGRAM_API_KEY")
+        self.base, self.model, self.endpointing_ms, self.hints = url, model, endpointing_ms, hints or []
+
+    def url(self) -> str:
+        params = [
+            ("model", self.model),
+            ("language", "hr"),
+            ("encoding", "linear16"),
+            ("sample_rate", str(RATE)),
+            ("channels", "1"),
+            ("punctuate", "true"),
+            ("endpointing", str(self.endpointing_ms)),
+            ("mip_opt_out", "true"),  # keep the audio out of Deepgram's model-improvement programme
+        ] + [("keyterm", h) for h in self.hints]
+        return f"{self.base}?{urlencode(params)}"
+
+    def headers(self) -> dict[str, str]:
+        return {"Authorization": f"Token {self.key}"}
+
+    def label(self) -> str:
+        region = "eu" if ".eu." in self.base else "global"
+        return f"deepgram:{self.model}@{region}" + (f"+hints{len(self.hints)}" if self.hints else "")
+
+    def finish(self, ws) -> None:
+        ws.send(json.dumps({"type": "Finalize"}))
+        ws.send(json.dumps({"type": "CloseStream"}))
+
+    def on_message(self, raw, state):
+        msg = json.loads(raw)
+        kind = msg.get("type")
+        if kind == "Results":
+            alt = (msg.get("channel", {}).get("alternatives") or [{}])[0]
+            return ([alt.get("transcript", "")] if msg.get("is_final") else []), False
+        if kind == "Error" or "err_code" in msg:
+            raise RuntimeError(f"Deepgram {msg.get('err_code')}: {msg.get('err_msg') or msg.get('description') or msg}")
+        return [], kind == "Metadata" and state["finished_seen"]
+
+
 def join(parts: list[str]) -> str:
     return " ".join(p.strip() for p in parts if p and p.strip())
 
@@ -260,7 +530,8 @@ def main() -> int:
     ap.add_argument("--clean-dir", type=Path, default=Path("clean"))
     ap.add_argument("--noisy-dir", type=Path, default=Path("noisy"))
     ap.add_argument("--out", type=Path, default=Path("transcripts.csv"))
-    ap.add_argument("--vendors", nargs="+", choices=["google", "azure"], default=["google", "azure"])
+    ap.add_argument("--vendors", nargs="+", choices=WS_VENDORS + ["google", "azure"], default=WS_VENDORS,
+                    help="the _hints variants send the domain terms and project names as vocabulary hints")
     ap.add_argument("--conditions", nargs="+", choices=["clean", "noisy"], default=["clean", "noisy"])
     ap.add_argument("--concurrency", type=int, default=4, help="parallel streams (each still paced in real time)")
     ap.add_argument("--chunk-ms", type=int, default=100)
@@ -271,6 +542,20 @@ def main() -> int:
     ap.add_argument("--google-fallback-location", default="europe-west4")
     ap.add_argument("--google-fallback-model", default="chirp_2",
                     help="used if the first model rejects streaming hr-HR")
+    ap.add_argument("--soniox-url", default="wss://stt-rt.eu.soniox.com/transcribe-websocket",
+                    help="the EU host needs a key from the EU project; the global host is stt-rt.soniox.com")
+    ap.add_argument("--soniox-model", default="stt-rt-v5")
+    ap.add_argument("--soniox-endpoint-delay-ms", type=int, default=1000,
+                    help="max_endpoint_delay_ms; keep it below --trailing-silence-ms")
+    ap.add_argument("--elevenlabs-url", default="wss://api.elevenlabs.io/v1/speech-to-text/realtime",
+                    help="EU residency (Enterprise only) is wss://api.eu.residency.elevenlabs.io/v1/speech-to-text/realtime")
+    ap.add_argument("--elevenlabs-model", default="scribe_v2_realtime")
+    ap.add_argument("--elevenlabs-vad-silence-s", type=float, default=0.8,
+                    help="vad_silence_threshold_secs; keep it below --trailing-silence-ms")
+    ap.add_argument("--deepgram-url", default="wss://api.eu.deepgram.com/v1/listen")
+    ap.add_argument("--deepgram-model", default="nova-3")
+    ap.add_argument("--deepgram-endpointing-ms", type=int, default=300,
+                    help="pause that finalizes a segment (Deepgram's default is 10 ms)")
     ap.add_argument("--limit", type=int, default=0, help="only process the first N pending tasks (smoke test)")
     ap.add_argument("--dry-run", action="store_true", help="list pending tasks without calling any service")
     args = ap.parse_args()
@@ -305,6 +590,16 @@ def main() -> int:
                                    args.google_fallback_location, args.google_fallback_model)
     if "azure" in {t.vendor for t in tasks}:
         engines["azure"] = Azure()
+    hints = load_hints()
+    for vendor in sorted({t.vendor for t in tasks} & set(WS_VENDORS)):
+        base, with_hints = vendor.removesuffix("_hints"), vendor.endswith("_hints")
+        h = hints if with_hints else None
+        if base == "soniox":
+            engines[vendor] = Soniox(args.soniox_url, args.soniox_model, args.soniox_endpoint_delay_ms, h)
+        elif base == "elevenlabs":
+            engines[vendor] = ElevenLabs(args.elevenlabs_url, args.elevenlabs_model, args.elevenlabs_vad_silence_s, h)
+        else:
+            engines[vendor] = Deepgram(args.deepgram_url, args.deepgram_model, args.deepgram_endpointing_ms, h)
 
     lock = threading.Lock()
     new_file = not args.out.exists()
