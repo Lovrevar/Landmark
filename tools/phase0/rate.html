@@ -73,6 +73,7 @@
       <button id="flagP" class="flag">P · drugi krivi izgovor</button>
       <button id="next" class="primary" disabled>Spremi i dalje ↵</button>
     </div>
+    <p class="keys"><button id="exportNow">Download ratings so far</button> Progress is kept in this browser either way; this exports what is rated now.</p>
   </section>
 
   <section class="card hidden" id="summary">
@@ -190,7 +191,9 @@ function finish() {
   const done = state.order.filter((c) => state.ratings[c.clip_id]?.naturalness).length
   $('summaryText').textContent = `Done: ${done} of ${state.order.length} clips rated.`
 }
-$('export').addEventListener('click', () => {
+$('export').addEventListener('click', exportRatings)
+$('exportNow').addEventListener('click', exportRatings)
+function exportRatings() {
   const rater = $('rater').value.trim(); const block = $('block').value
   const cols = ['rater', 'block', 'clip_id', 'naturalness', 'number_error', 'other_error', 'replays', 'order_index', 'rated_at']
   const lines = state.order.filter((c) => state.ratings[c.clip_id]?.naturalness)
@@ -198,7 +201,7 @@ $('export').addEventListener('click', () => {
     .map((r) => cols.map((k) => csvCell(r[k])).join(','))
   const blob = new Blob([[cols.join(','), ...lines].join('\n') + '\n'], { type: 'text/csv' })
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `ratings_${rater}_${block}.csv`; a.click()
-})
+}
 </script>
 </body>
 </html>
