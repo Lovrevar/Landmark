@@ -48,13 +48,16 @@ if (callLatency.length) {
   console.log(`  scripted caller: ${callLatency.length} answers, p50 ${fmt(p50)}, p95 ${fmt(pct(callLatency, 95))} -> ${p50 <= 1500 ? 'PASS' : 'FAIL'}`)
 }
 
-const barges = calls.filter((c) => c.mode === 'bargein' && typeof c.stop_ms === 'number').map((c) => Number(c.stop_ms))
+const barges = calls.filter((c) => c.mode === 'bargein' && typeof c.stop_ms === 'number')
+const skipped = calls.filter((c) => c.mode === 'bargein' && c.error).length
 console.log('\nBarge-in: the caller hears the agent stop within 0.5 s (gate: >= 18 of 20)')
 if (!barges.length) console.log('  no interruptions by the scripted caller logged yet')
-else {
-  const ok = barges.filter((ms) => ms <= 500).length
-  const last20 = barges.slice(-20)
+const byLabel = new Map<string, number[]>()
+for (const b of barges) byLabel.set(String(b.label ?? 'unlabelled'), [...(byLabel.get(String(b.label ?? 'unlabelled')) ?? []), Number(b.stop_ms)])
+for (const [label, all] of byLabel) {
+  const last20 = all.slice(-20)
   const ok20 = last20.filter((ms) => ms <= 500).length
-  console.log(`  ${barges.length} interruptions, ${ok} stopped within 0.5 s; median stop ${fmt(pct(barges, 50))}, slowest ${fmt(Math.max(...barges))}`)
-  console.log(`  last ${last20.length}: ${ok20} within 0.5 s -> ${last20.length < 20 ? `needs 20 tries` : ok20 >= 18 ? 'PASS' : 'FAIL'}`)
+  console.log(`  ${label}: last ${last20.length}, ${ok20} within 0.5 s; median ${fmt(pct(last20, 50))}, slowest ${fmt(Math.max(...last20))} -> ` +
+    (last20.length < 20 ? 'needs 20 tries' : ok20 >= 18 ? 'PASS' : 'FAIL'))
 }
+if (skipped) console.log(`  ${skipped} tries not counted: the agent wasn't talking when the caller began`)

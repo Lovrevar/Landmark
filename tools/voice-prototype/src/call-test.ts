@@ -7,7 +7,8 @@
 //   node src/call-test.ts latency  <wav> [<wav> ...]    16 kHz mono 16-bit, e.g. phase 0 takes
 //   node src/call-test.ts bargein  <wav> [<wav> ...]    needs the stub LLM started with STUB_ANSWER=long
 //
-// Results go to logs/calltest.jsonl and the console. "Start" and "end" of a take's speech come from
+// Results go to logs/calltest.jsonl and the console, tagged with LABEL if set (e.g. LABEL=stt for the
+// agent's INTERRUPT_ON, which the caller can't see). "Start" and "end" of a take's speech come from
 // src/speech-span.ts (Silero, offline), not from its loudness: until 2026-10-23 a 10 %-of-peak
 // threshold counted breath and room noise as speech, which put the barge-in clock 0.4-0.8 s early
 // and the latency clock up to 0.8 s late.
@@ -53,7 +54,7 @@ type Take = { name: string; pcm: Int16Array; speechMs: [number, number] }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const log = (entry: Record<string, unknown>) => {
   mkdirSync(LOGS, { recursive: true })
-  appendFileSync(join(LOGS, 'calltest.jsonl'), JSON.stringify({ at: new Date().toISOString(), ...entry }) + '\n')
+  appendFileSync(join(LOGS, 'calltest.jsonl'), JSON.stringify({ at: new Date().toISOString(), label: process.env.LABEL ?? null, ...entry }) + '\n')
   console.log(JSON.stringify(entry))
 }
 
@@ -162,7 +163,8 @@ async function main() {
       while (firstLoudAfter.at === null && performance.now() - tWait < 10000) await sleep(10)
       if (firstLoudAfter.at === null) { log({ mode, take: take.name, speech_ms, error: 'no answer to interrupt' }); continue }
       await sleep(2000)
-      const { start } = await play(take)
+      const { start, end: interruptEnd } = await play(take)
+      firstLoudAfter = { mark: interruptEnd, at: null } // the agent's answer to the interruption, waited for below
       // Stop time: the first moment the agent's audio stays quiet for QUIET_MS after the interruption began.
       // Timeline: loud/quiet runs of the agent's audio from 1 s before to 4 s after the interruption.
       await sleep(Math.max(0, start + 4000 - performance.now()))
@@ -183,7 +185,16 @@ async function main() {
         stopped = after[i]
         if (i + 1 === after.length || after[i + 1] - after[i] >= QUIET_MS) break
       }
-      log({ mode, take: take.name, speech_ms, start_wall: lastStartWall, stop_ms: Math.round(stopped - start), loud_runs_ms: runs.join(' ') })
+      // A try only counts if the agent was talking when the caller began; otherwise there was nothing to stop.
+      if (!loudTimes.some((t) => t >= start - 300 && t < start)) {
+        log({ mode, take: take.name, speech_ms, start_wall: lastStartWall, error: 'agent not speaking when the interruption began', loud_runs_ms: runs.join(' ') })
+      } else {
+        log({ mode, take: take.name, speech_ms, start_wall: lastStartWall, stop_ms: Math.round(stopped - start), loud_runs_ms: runs.join(' ') })
+      }
+      // The agent answers the interrupting take, sometimes only after the 4 s window: wait for that answer
+      // to start and finish, or the next question lands on top of it.
+      const tAnswer = performance.now()
+      while (firstLoudAfter.at === null && performance.now() - tAnswer < 10000) await sleep(10)
       await untilAgentQuiet()
     }
   }
