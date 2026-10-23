@@ -303,6 +303,9 @@ smaller panel in a new folder.
 Round 2 (2026-10-22) is `C:\phase0\tts2`: ElevenLabs v4 Turbo with Sara and Martin, plus Branimir and
 Karlo. After one rater, Azure and Flash were well below 3.5, and Flash also misread numerals.
 
+Round 3 (2026-10-23) is `C:\phase0\tts3`: v4 Turbo with Martin and Karlo only, narrowed from round 2
+before its ratings. It's 60 gate clips.
+
 **Scoring:**
 - A numeric sentence counts as **mispronounced** when more than half of its raters flagged it.
   `tts_results.md` also lists sentences flagged by anyone.
