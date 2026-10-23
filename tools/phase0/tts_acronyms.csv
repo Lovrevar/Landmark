@@ -1,0 +1,27 @@
+sentence_id,block,kind,source,text
+a01a,gate,general,t25_c1,Je li TIC za projekt Zabok već unesen?
+a01b,gate,general,t25_c1,Je li tic za projekt Zabok već unesen?
+a02a,gate,general,t25_c2,Prema TIC-u za Osijek zemljište vrijedi četiri milijuna eura.
+a02b,gate,general,t25_c2,Prema ticu za Osijek zemljište vrijedi četiri milijuna eura.
+a03a,gate,general,t25_c3,Budžet projekta izračunava se iz TIC-a.
+a03b,gate,general,t25_c3,Budžet projekta izračunava se iz tica.
+a04a,gate,general,t23_c1,Koji je OIB tog izvođača?
+a04b,gate,general,t23_c1,Koji je oib tog izvođača?
+a05a,gate,general,t23_c2,Bez OIB-a dobavljača račun ne možemo knjižiti.
+a05b,gate,general,t23_c2,Bez oiba dobavljača račun ne možemo knjižiti.
+a06a,gate,general,t23_c3,Na ponudi nedostaje OIB.
+a06b,gate,general,t23_c3,Na ponudi nedostaje oib.
+a07a,gate,general,t24_c2,Promjena IBAN-a mora biti pisano potvrđena.
+a07b,gate,general,t24_c2,Promjena ibana mora biti pisano potvrđena.
+a08a,gate,general,t24_c3,Izvođač nam je poslao novi IBAN.
+a08b,gate,general,t24_c3,Izvođač nam je poslao novi iban.
+a09a,gate,general,t17_c2,Bez R1 računa ne možemo odbiti pretporez.
+a09b,gate,general,t17_c2,Bez er jedan računa ne možemo odbiti pretporez.
+a10a,gate,general,t17_c3,Dobavljač nam još nije poslao R1 račun.
+a10b,gate,general,t17_c3,Dobavljač nam još nije poslao er jedan račun.
+a11a,gate,general,t16_c2,Iznos bez PDV-a je sto dvadeset tisuća eura.
+a12a,gate,general,t16_c3,Na cijenu stanova još treba dodati PDV.
+a13a,gate,general,e18_c1,Je li Trutanić d.o.o. dostavio jamstvo?
+a14a,gate,general,e14_c1,Je li El Roy d.o.o. potpisao ugovor za Tar?
+a15a,gate,general,e20_c1,Je li Ceramica Koren j.d.o.o. poslala račun za pločice?
+a16a,gate,general,e03_c1,Je li Zona 31 dobila građevinsku dozvolu?
