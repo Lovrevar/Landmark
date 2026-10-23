@@ -54,6 +54,17 @@ The edge functions have their own Deno tests, outside Vitest: `npm run test:func
 `_shared/tools`, the four `ai-chat/tests/` files below, `import-erp/feeds`, `import-erp/parse`,
 `sort-document/classifier`, `sort-document/extract`).
 
+**In VS Code**, `supabase/functions` is Deno code, so the editor's TypeScript reports false errors there
+(`jsr:`/`npm:` imports, `Deno`) unless the Deno extension takes the folder. `.vscode/extensions.json`
+recommends the extension. `.vscode/settings.json` is personal (gitignored), so add this to it:
+
+```json
+{ "deno.enablePaths": ["supabase/functions"], "deno.lint": false }
+```
+
+`deno.lint` is off because ESLint is the project's linter. Deno's linter rejects the inline
+`npm:`/`jsr:` imports used throughout.
+
 ### Configuration ([`vitest.config.ts`](../vitest.config.ts))
 
 - **Plugins:** `@vitejs/plugin-react` (shares the Vite transform pipeline; TS/JSX handled out of the box).
