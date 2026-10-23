@@ -306,7 +306,7 @@ Karlo. After one rater, Azure and Flash were well below 3.5, and Flash also misr
 Round 3 (2026-10-23) is `C:\phase0\tts3`: v4 Turbo with Martin and Karlo only, narrowed from round 2
 before its ratings. It's 60 gate clips.
 
-**Abbreviation check** (2026-10-23, `C:\phase0\tts4`, with a `listen.csv` index; not blind):
+**Abbreviation check** (2026-10-23, `C:\phase0\tts4\martin` and `\karlo`, readable file names; not blind):
 - **Why:** in round 3 Martin and Karlo sounded equal, except that Karlo spells out OIB and TIC.
 - **What:** `tts_acronyms.csv` holds the reviewed sentences with TIC, OIB, IBAN and R1, each as
   written (`TIC-a`) and spelled the way it's said (`tica`, `oiba`, `ibana`, `er jedan račun`).
@@ -314,6 +314,13 @@ before its ratings. It's 60 gate clips.
   Ceramica Koren and Zona 31.
 - **If respelling works,** production should apply it to the text before it reaches the voice,
   whichever voice is chosen.
+- **Decided after listening (2026-10-23):**
+  - TIC, OIB and IBAN are written as said: `tic`, `oib`, `iban`, with case endings (`tica`, `oiba`,
+    `ibana`).
+  - R1, PDV and d.o.o. stay as abbreviations.
+
+  `tts_acronyms.csv` keeps only those versions; that's the substitution list the voice pipeline
+  needs.
 
 **Scoring:**
 - A numeric sentence counts as **mispronounced** when more than half of its raters flagged it.
