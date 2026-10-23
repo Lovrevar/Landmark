@@ -2,9 +2,12 @@
 //
 // Soniox stt-rt-v5 (EU host, Croatian, the phase 0 vocabulary hints) -> stub LLM -> ElevenLabs
 // eleven_v4_turbo, in a LiveKit room. Turns end on Soniox's own endpointing (LiveKit's turn
-// detector has no Croatian); barge-in is Silero VAD. Every reply and every interruption is
-// logged to logs/turns.jsonl and logs/bargein.jsonl for src/report.ts.
+// detector has no Croatian); barge-in is Silero VAD, Soniox's first non-final words, or both
+// (INTERRUPT_ON). Every reply and every interruption is logged to logs/turns.jsonl and
+// logs/bargein.jsonl for src/report.ts.
 //
+//   INTERRUPT_ON         vad (default) | stt | both. stt passes no VAD, so LiveKit interrupts on
+//                        Soniox's first interim words; both keeps Silero and also interrupts on them.
 //   VOICE                martin (default) | karlo | an ElevenLabs voice id
 //   INTERRUPT_MIN_MS     speech needed before the agent stops talking (default 50; LiveKit's own is 500)
 //   OUTPUT_QUEUE_MS      agent audio queued ahead of playout, cleared on interruption (default 50; LiveKit's own is 200)
@@ -39,6 +42,8 @@ const vadMinSpeechMs = Number(process.env.VAD_MIN_SPEECH_MS ?? 30)
 const endpointDelayMs = Number(process.env.ENDPOINT_DELAY_MS ?? 500)
 const turnMinDelayMs = Number(process.env.TURN_MIN_DELAY_MS ?? 100)
 const endpointLatencyLevel = Number(process.env.ENDPOINT_LATENCY_LEVEL ?? 3)
+const interruptOn = process.env.INTERRUPT_ON ?? 'vad'
+if (!['vad', 'stt', 'both'].includes(interruptOn)) throw new Error(`INTERRUPT_ON must be vad, stt or both, not ${interruptOn}`)
 
 const GREETING = 'Dobar dan, ovdje probni glasovni asistent. Pitajte me nešto o projektu, ili recite "daj mi pregled" za duži odgovor.'
 
@@ -90,7 +95,7 @@ export default defineAgent({
   entry: async (ctx: JobContext) => {
     const hints = loadHints()
     const session = new voice.AgentSession({
-      vad: ctx.proc.userData.vad as silero.VAD,
+      vad: interruptOn === 'stt' ? undefined : ctx.proc.userData.vad as silero.VAD,
       stt: new soniox.STT({
         baseUrl: 'wss://stt-rt.eu.soniox.com/transcribe-websocket', // the key comes from the EU project
         model: 'stt-rt-v5', // the Node plugin still defaults to v4
@@ -113,6 +118,8 @@ export default defineAgent({
         // In 'stt' mode LiveKit adds minDelay after Soniox's end-of-turn token, which already follows
         // the final words, so its 500 ms default is pure waiting.
         endpointing: { minDelay: turnMinDelayMs },
+        // mode 'vad' only means "not LiveKit's hosted adaptive model"; without a VAD the framework
+        // interrupts on the STT's interim words instead.
         interruption: { enabled: true, mode: 'vad', minDuration: interruptMinMs },
       },
     })
@@ -137,17 +144,25 @@ export default defineAgent({
     })
 
     // Barge-in: the user starts speaking while the agent speaks; how long until the agent stops?
+    // first_words_wall is when Soniox's first interim words arrived, logged in every mode to compare
+    // the two detectors.
     let agentSpeaking = false
     let userStartedAt: number | null = null
+    let firstWordsAt: number | null = null
     session.on(voice.AgentSessionEventTypes.UserStateChanged, (ev) => {
-      if (ev.newState === 'speaking' && agentSpeaking) userStartedAt = ev.createdAt
+      if (ev.newState === 'speaking' && agentSpeaking && userStartedAt === null) userStartedAt = ev.createdAt
+    })
+    session.on(voice.AgentSessionEventTypes.UserInputTranscribed, (ev) => {
+      if (ev.isFinal || !ev.transcript.trim() || !agentSpeaking || firstWordsAt !== null) return
+      firstWordsAt = ev.createdAt
+      if (interruptOn === 'both') void session.interrupt()
     })
     session.on(voice.AgentSessionEventTypes.AgentStateChanged, (ev) => {
-      if (ev.newState === 'speaking') agentSpeaking = true
+      if (ev.newState === 'speaking') { agentSpeaking = true; firstWordsAt = null }
       if (ev.oldState === 'speaking' && ev.newState !== 'speaking') {
         agentSpeaking = false
         if (userStartedAt !== null) {
-          log('bargein.jsonl', { user_started_wall: userStartedAt, agent_stopped_wall: ev.createdAt, stop_ms: ev.createdAt - userStartedAt, min_interruption_ms: interruptMinMs, output_queue_ms: outputQueueMs, vad_threshold: vadThreshold, vad_min_speech_ms: vadMinSpeechMs })
+          log('bargein.jsonl', { interrupt_on: interruptOn, user_started_wall: userStartedAt, first_words_wall: firstWordsAt, agent_stopped_wall: ev.createdAt, stop_ms: ev.createdAt - userStartedAt, min_interruption_ms: interruptMinMs, output_queue_ms: outputQueueMs, vad_threshold: vadThreshold, vad_min_speech_ms: vadMinSpeechMs })
           userStartedAt = null
         }
       }

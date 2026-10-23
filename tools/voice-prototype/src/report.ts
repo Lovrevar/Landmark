@@ -1,7 +1,10 @@
 // Sums up logs/turns.jsonl and logs/bargein.jsonl against the plan's live phase 0 gates:
 //   latency:  user stopped speaking -> agent's first audio, p50 <= 1.5 s (10 questions per speaker)
 //   barge-in: the agent stops within 0.5 s of the user starting to speak, in >= 18 of 20 tries
-// Agent-side figures: network and browser playout are not included, which on a local server is small.
+// Latency is the agent's own figure (network and playout not included, which on a local server is
+// small) and, when there are any, the scripted caller's. Barge-in is the scripted caller's: the agent
+// can only count from the moment its detector noticed the caller, which leaves out the noticing.
+// Caller rows from before the speech-span fix (no speech_ms) are skipped: their clock was wrong.
 
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -38,9 +41,16 @@ for (const [voiceName, ts] of byVoice) {
     `TTS first audio ${fmt(pct(col('tts_ttfb_ms'), 50))}`)
 }
 
-const barges = read('bargein.jsonl').map((b) => Number(b.stop_ms))
-console.log('\nBarge-in: agent stops within 0.5 s (gate: >= 18 of 20)')
-if (!barges.length) console.log('  no interruptions logged yet')
+const calls = read('calltest.jsonl').filter((c) => Array.isArray(c.speech_ms))
+const callLatency = calls.filter((c) => c.mode === 'latency' && typeof c.latency_ms === 'number').map((c) => Number(c.latency_ms))
+if (callLatency.length) {
+  const p50 = pct(callLatency, 50)
+  console.log(`  scripted caller: ${callLatency.length} answers, p50 ${fmt(p50)}, p95 ${fmt(pct(callLatency, 95))} -> ${p50 <= 1500 ? 'PASS' : 'FAIL'}`)
+}
+
+const barges = calls.filter((c) => c.mode === 'bargein' && typeof c.stop_ms === 'number').map((c) => Number(c.stop_ms))
+console.log('\nBarge-in: the caller hears the agent stop within 0.5 s (gate: >= 18 of 20)')
+if (!barges.length) console.log('  no interruptions by the scripted caller logged yet')
 else {
   const ok = barges.filter((ms) => ms <= 500).length
   const last20 = barges.slice(-20)

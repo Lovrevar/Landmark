@@ -21,7 +21,7 @@ browser (or src/call-test.ts) ── LiveKit room ── agent worker (src/agent
   filler speech is there to cover that.
 - **The turn ends on Soniox's own end-of-turn signal** (`turnDetection: 'stt'`). LiveKit's
   turn-detection models don't cover Croatian.
-- **Barge-in is driven by Silero voice detection.**
+- **Barge-in is driven by Silero voice detection**, Soniox's first words, or both (`INTERRUPT_ON`).
 - **Nothing here uses LiveKit Cloud.** The settings that would quietly enable LiveKit's hosted models
   (the default turn detector, "adaptive" interruption) are switched off explicitly.
 
@@ -68,8 +68,19 @@ npm run report                                                      # the agent-
 | `INTERRUPT_MIN_MS` | 50 | Speech needed before the agent stops talking |
 | `OUTPUT_QUEUE_MS` | 50 | Agent audio queued ahead of playout, cleared on an interruption |
 | `VAD_THRESHOLD`, `VAD_MIN_SPEECH_MS` | 0.3, 30 | Silero's sensitivity (its own defaults are 0.5, 50) |
+| `INTERRUPT_ON` | `vad` | `vad`: Silero. `stt`: no Silero, so LiveKit interrupts on Soniox's first interim words. `both`: Silero, and also stop on Soniox's first words |
 
 ## Results so far
+
+> **The figures below used a wrong clock and are being re-measured.** Until 2026-10-23 the scripted
+> caller took anything above 10 % of a take's peak loudness as speech. s02's takes have 0.4–0.8 s of
+> breath and room noise above that before the first word, so barge-in was timed from too early. The
+> same threshold put the end of speech up to 0.8 s too late, so latency was timed from too late.
+> `src/speech-span.ts` now finds the speech with Silero, offline. The end comes from a pass over the
+> reversed take, because Silero lags 150–300 ms at the end of speech. The caller logs the span as
+> `speech_ms`, and `npm run report` skips rows without it. Re-read against the first word, the
+> Silero runs below stopped 0.21–0.24 s after the caller started, within the gate. Soniox noticed
+> speech 0.13–0.17 s after the first word, so interrupting on its words is no faster.
 
 From 2026-10-23: the local server, the scripted caller with Lovre's (`s02`) recorded questions, and
 Martin's voice.

@@ -7,7 +7,10 @@
 //   node src/call-test.ts latency  <wav> [<wav> ...]    16 kHz mono 16-bit, e.g. phase 0 takes
 //   node src/call-test.ts bargein  <wav> [<wav> ...]    needs the stub LLM started with STUB_ANSWER=long
 //
-// Results go to logs/calltest.jsonl and the console.
+// Results go to logs/calltest.jsonl and the console. "Start" and "end" of a take's speech come from
+// src/speech-span.ts (Silero, offline), not from its loudness: until 2026-10-23 a 10 %-of-peak
+// threshold counted breath and room noise as speech, which put the barge-in clock 0.4-0.8 s early
+// and the latency clock up to 0.8 s late.
 
 import {
   AudioFrame, AudioSource, AudioStream, LocalAudioTrack, type RemoteTrack, Room, RoomEvent, TrackKind,
@@ -17,6 +20,7 @@ import { AccessToken } from 'livekit-server-sdk'
 import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { speechSpanMs } from './speech-span.ts'
 
 const LOGS = join(dirname(fileURLToPath(import.meta.url)), '..', 'logs')
 const RATE = 16000
@@ -44,13 +48,7 @@ function readWav(path: string): Int16Array {
 
 const rms = (x: Int16Array) => Math.sqrt(x.reduce((s, v) => s + v * v, 0) / Math.max(1, x.length))
 
-// The take's own speech span (it has ~300 ms of pre- and post-roll), in 10 ms frames.
-function speechSpan(pcm: Int16Array): [number, number] {
-  const n = Math.floor(pcm.length / FRAME)
-  const e = Array.from({ length: n }, (_, i) => rms(pcm.subarray(i * FRAME, (i + 1) * FRAME)))
-  const thr = Math.max(...e) * 0.1
-  return [e.findIndex((v) => v > thr), n - 1 - [...e].reverse().findIndex((v) => v > thr)]
-}
+type Take = { name: string; pcm: Int16Array; speechMs: [number, number] }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const log = (entry: Record<string, unknown>) => {
@@ -64,6 +62,11 @@ async function main() {
   if (!['latency', 'bargein'].includes(mode) || !wavs.length) {
     console.error('usage: node src/call-test.ts latency|bargein <wav> [<wav> ...]')
     process.exit(2)
+  }
+  const takes: Take[] = []
+  for (const wav of wavs) {
+    const pcm = readWav(wav)
+    takes.push({ name: basename(wav), pcm, speechMs: await speechSpanMs(pcm) })
   }
   const at = new AccessToken(process.env.LIVEKIT_API_KEY ?? 'devkey', process.env.LIVEKIT_API_SECRET ?? 'secret',
     { identity: 'call-test', ttl: '15m' })
@@ -111,8 +114,9 @@ async function main() {
   })()
 
   // Play a take; resolve with the performance.now() of its speech start and end frames.
-  function play(pcm: Int16Array): Promise<{ start: number; end: number }> {
-    const [s, e] = speechSpan(pcm)
+  function play({ pcm, speechMs }: Take): Promise<{ start: number; end: number }> {
+    const s = Math.floor(speechMs[0] / 10)
+    const e = Math.min(Math.ceil(speechMs[1] / 10), Math.floor(pcm.length / FRAME)) - 1
     const frames = Array.from({ length: Math.floor(pcm.length / FRAME) }, (_, i) => pcm.slice(i * FRAME, (i + 1) * FRAME))
     const total = frames.length
     return new Promise((resolve) => {
@@ -139,26 +143,26 @@ async function main() {
   if (!lastLoudAt) throw new Error('no agent audio within 20 s: is the agent worker running?')
   await untilAgentQuiet()
 
-  for (const wav of wavs) {
-    const pcm = readWav(wav)
+  for (const take of takes) {
+    const speech_ms = take.speechMs.map(Math.round)
     if (mode === 'latency') {
       firstLoudAfter = { mark: Infinity, at: null }
-      const { end } = await play(pcm)
+      const { end } = await play(take)
       firstLoudAfter.mark = end
       const tWait = performance.now()
       while (firstLoudAfter.at === null && performance.now() - tWait < 10000) await sleep(10)
-      log({ mode, take: basename(wav), latency_ms: firstLoudAfter.at === null ? null : Math.round(firstLoudAfter.at - end) })
+      log({ mode, take: take.name, speech_ms, latency_ms: firstLoudAfter.at === null ? null : Math.round(firstLoudAfter.at - end) })
       await untilAgentQuiet()
     } else {
       // Ask for the long answer with this take, then interrupt it 2 s into the agent's speech with the same take.
       firstLoudAfter = { mark: Infinity, at: null }
-      const { end } = await play(pcm)
+      const { end } = await play(take)
       firstLoudAfter.mark = end
       const tWait = performance.now()
       while (firstLoudAfter.at === null && performance.now() - tWait < 10000) await sleep(10)
-      if (firstLoudAfter.at === null) { log({ mode, take: basename(wav), error: 'no answer to interrupt' }); continue }
+      if (firstLoudAfter.at === null) { log({ mode, take: take.name, speech_ms, error: 'no answer to interrupt' }); continue }
       await sleep(2000)
-      const { start } = await play(pcm)
+      const { start } = await play(take)
       // Stop time: the first moment the agent's audio stays quiet for QUIET_MS after the interruption began.
       // Timeline: loud/quiet runs of the agent's audio from 1 s before to 4 s after the interruption.
       await sleep(Math.max(0, start + 4000 - performance.now()))
@@ -179,7 +183,7 @@ async function main() {
         stopped = after[i]
         if (i + 1 === after.length || after[i + 1] - after[i] >= QUIET_MS) break
       }
-      log({ mode, take: basename(wav), start_wall: lastStartWall, stop_ms: Math.round(stopped - start), loud_runs_ms: runs.join(' ') })
+      log({ mode, take: take.name, speech_ms, start_wall: lastStartWall, stop_ms: Math.round(stopped - start), loud_runs_ms: runs.join(' ') })
       await untilAgentQuiet()
     }
   }
