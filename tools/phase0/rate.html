@@ -134,7 +134,9 @@ $('folder').addEventListener('change', async (e) => {
 
 $('start').addEventListener('click', () => {
   const rater = $('rater').value.trim(); const block = $('block').value
-  state.key = `tts-rate:${rater}:${block}`
+  // Progress is per panel: the same rater starts fresh in a new round's folder.
+  const panel = fnv1a(state.clips.map((c) => c.clip_id).sort().join(',')).toString(16)
+  state.key = `tts-rate:${panel}:${rater}:${block}`
   state.order = shuffled(state.clips.filter((c) => c.block === block).sort((a, b) => a.clip_id.localeCompare(b.clip_id)), `${rater}|${block}`)
   if (!state.order.length) { $('status').textContent = `No clips in block "${block}".`; return }
   state.ratings = restore()
