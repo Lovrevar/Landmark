@@ -52,7 +52,7 @@ General report's test keeps its own smaller fake.
 The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs every
 `*.test.ts` file under `supabase/functions/` (`_shared/help-score`, `_shared/help-search`,
 `_shared/tools`, the four `ai-chat/tests/` files below, `import-erp/feeds`, `import-erp/parse`,
-`sort-document/classifier`, `sort-document/extract`, and `voice-llm`'s three). CI runs them on
+`send-push/meeting`, `sort-document/classifier`, `sort-document/extract`, and `voice-llm`'s three). CI runs them on
 Deno 2.9.8, pinned in `.github/workflows/test.yml`; use the same version locally
 (`deno upgrade 2.9.8`), since a newer or older Deno can type-check the same code differently.
 
@@ -117,6 +117,7 @@ npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 | `sales_10_cancel_sale` | SALES-10: only Director and Accounting cancel; refused while a sales invoice exists; the apartment, its garage and storage unit become Available; the customer becomes interested only after their last sale; one sale per apartment |
 | `sales_9_unique_numbers` | SALES-9 / SALES-17: one unit number per building (trimmed, case-insensitive, also for apartments without a building), one building name per project |
 | `gen_22_unphased_tic` | GEN-22: an unphased TIC leaves several phases NULL, gives a single phase the whole plan and its classification split, and re-applies when phases are added or removed |
+| `room_reservation_attendees` | Meeting attendees (SHARED_SCHEMA.md §15): the creator or an admin adds and removes, an attendee leaves but cannot invite or remove others, no duplicates, no UPDATE grant, attendees cascade with the reservation, the table is published for realtime |
 | `meeting_rooms` | Conference rooms (SHARED_SCHEMA.md §15): the two rooms are seeded; everyone reads every booking; a booking in someone else's name, one ending before it starts, one over 24 h and one overlapping the same room are refused; back-to-back and other-room bookings pass; only the creator or a task-app admin edits or deletes; only an admin manages rooms; `updated_at` moves by trigger |
 
 ### Writing one

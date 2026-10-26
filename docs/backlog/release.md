@@ -45,6 +45,12 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   `select tablename from pg_publication_tables where pubname = 'supabase_realtime'` lists both
   new tables (the task app's live board depends on it). Then `/db-types` here and
   `npm run typecheck` in the task app.
+- [ ] **Apply `20261027100100_room_reservation_attendees`** (meeting attendees for the task app),
+  dev first, right after `20261027100000`, and **deploy `send-push`** (`supabase functions deploy
+  send-push`) on the same project before the task app build that invites people ships: that build
+  sends `meeting_invited`, which the deployed function rejects as "Nepoznata vrsta obavijesti"
+  until then. Afterwards, as the creator of a booking, add a colleague who has notifications on:
+  their phone shows "Novi sastanak"; cancel it: "Sastanak otkazan" replaces it. Then `/db-types`.
 - [ ] **Apply `20261015100000_unphased_tic_phase_budgets`** (GEN-22), dev first, and **before the
   client from 2026-10-15 ships**: that client no longer recognises the old "phase 1 holds the whole
   plan" shape, so on an unmigrated database Budget Control would measure such a project as phase 1
