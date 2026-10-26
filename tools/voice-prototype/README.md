@@ -53,8 +53,8 @@ includes transport.
 
 ```bash
 node src/call-test.ts latency /mnt/c/phase0/clean/s02_q01.wav /mnt/c/phase0/clean/s02_q02.wav
-node src/call-test.ts bargein /mnt/c/phase0/clean/s02_q01.wav     # with STUB_ANSWER=long
-npm run report                                                      # the agent-side logs against the gates
+LABEL=vad node src/call-test.ts bargein /mnt/c/phase0/clean/s02_q01.wav   # STUB_ANSWER=long; LABEL = the agent's INTERRUPT_ON
+npm run report                                                      # the logs against the gates, barge-in per LABEL
 ```
 
 ## Settings (agent)
@@ -72,41 +72,47 @@ npm run report                                                      # the agent-
 
 ## Results so far
 
-> **The figures below used a wrong clock and are being re-measured.** Until 2026-10-23 the scripted
-> caller took anything above 10 % of a take's peak loudness as speech. s02's takes have 0.4–0.8 s of
-> breath and room noise above that before the first word, so barge-in was timed from too early. The
-> same threshold put the end of speech up to 0.8 s too late, so latency was timed from too late.
-> `src/speech-span.ts` now finds the speech with Silero, offline. The end comes from a pass over the
-> reversed take, because Silero lags 150–300 ms at the end of speech. The caller logs the span as
-> `speech_ms`, and `npm run report` skips rows without it. Re-read against the first word, the
-> Silero runs below stopped 0.21–0.24 s after the caller started, within the gate. Soniox noticed
-> speech 0.13–0.17 s after the first word, so interrupting on its words is no faster.
+From 2026-10-26: the local server, the scripted caller with Lovre's (`s02`) five recorded questions,
+Martin's voice, and the stub LLM. `npm run report` prints these figures.
 
-From 2026-10-23: the local server, the scripted caller with Lovre's (`s02`) recorded questions, and
-Martin's voice.
-
-**Latency: within the gate on this setup.**
-- From the caller's side: **0.76–1.47 s, median 1.27 s**, over 5 questions. That's within 1.5 s.
-- From the agent's side: about 0.90 s, made up of the turn ending (about 0.35 s), the stub LLM (0.41 s)
-  and ElevenLabs' first audio (0.13 s).
-- All 5 questions were transcribed word for word.
+**Latency: within the gate, but only just.**
+- From the caller's side: **1.16–1.61 s, median 1.32 s, p95 1.61 s**, over 10 answers (each question
+  twice). The gate is a 1.5 s median.
+- From the agent's side: about 0.90 s, of which the stub LLM takes 0.41 s and ElevenLabs' first audio
+  0.13 s. The other ~0.4 s passes before the agent decides that the caller has stopped.
 - **Not yet the gate's measurement.** The gate wants 10 live questions × 2 speakers, over a real
-  network. A local server flatters transport, and a real LLM is slower than the stub's 0.4 s.
+  network. A local server flatters transport, and a real LLM is slower than the stub's 0.4 s. With
+  0.18 s of margin, both could push it over.
 
-**Barge-in: not within the gate yet.**
-- The caller hears the agent stop **0.64–1.05 s** after starting to speak, against 0.5 s.
-- Once the agent notices, it stops fast: about 30 ms to change state, and 60–90 ms until the audio is
-  gone.
-- **The time goes into noticing:** Silero takes 0.52–0.93 s to decide that the caller is speaking. It
-  varies with how the sentence starts.
-- Lowering the interruption threshold and the output queue didn't help. A more sensitive Silero (0.3 / 30)
-  helped a little.
+**Barge-in: within the gate, with either detector.** How long after the caller's first word the caller
+hears the agent stop, over 20 tries each:
 
-**Next to try for barge-in:**
-1. A live browser test with a real microphone. The scripted caller counts from the very first sound of a
-   take, which is strict.
-2. Interrupting on Soniox's first non-final words, rather than on Silero.
-3. Running the same test over LiveKit Cloud, to see the real network's share.
+| `INTERRUPT_ON` | Within 0.5 s | Median | Slowest |
+|---|---|---|---|
+| `stt` (Soniox's first words) | 20 / 20 | 0.30 s | 0.38 s |
+| `vad` (Silero, 0.3 / 30) | 20 / 20 | 0.25 s | 0.29 s |
+
+- Once the agent notices, it stops within about 0.1 s.
+- **Silero also reacts to breath.** In 2 of 40 tries it stopped the agent about 0.22 s *before* the
+  first word, on the breath in the take's pre-roll. The caller counts that as a stop, as a negative
+  `stop_ms`. It is harmless here, but on a building site it may mean stopping for noise. Soniox stops
+  only on words, about 0.05 s later. Which to keep is open until the
+  noisy condition is tested.
+
+**Earlier figures were wrong.** Until 2026-10-23 the scripted caller took anything above 10 % of a
+take's peak loudness as speech, and s02's takes have 0.4–0.8 s of breath and room noise above that
+before the first word. Barge-in looked like it failed (0.64–1.05 s), because it was timed from too
+early. Latency was timed from up to 0.8 s too late, although on these five takes the median moved only
+from 1.27 to 1.32 s.
+- `src/speech-span.ts` now finds the speech with Silero, offline. The end comes from a pass over the
+  reversed take, because Silero lags 150–300 ms at the end of speech.
+- The caller logs the span as `speech_ms`, and the report skips rows without it.
+- The old logs are in `logs/old-clock/`.
+
+**Next:**
+1. A live browser test with a real microphone.
+2. The same tests over LiveKit Cloud, to see the real network's share.
+3. More speakers, the noisy condition, and the choice between `stt` and `vad`.
 
 The ElevenLabs plugin needs `@livekit/agents` 1.9.3, released 2026-10-15. 1.9.1 sends `eleven_v4_turbo`
 to an endpoint that rejects it with HTTP 400. That's an exception to pinning versions at least two weeks

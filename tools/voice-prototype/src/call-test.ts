@@ -27,7 +27,9 @@ const LOGS = join(dirname(fileURLToPath(import.meta.url)), '..', 'logs')
 const RATE = 16000
 const FRAME = 160 // 10 ms
 const LOUD = 600 // int16 RMS above which an agent frame counts as speech
-const QUIET_MS = 300 // this much quiet after speech means the agent stopped
+// This much quiet means the agent stopped. Its own pauses between phrases run past 300 ms, and once
+// interrupted it stays quiet until it answers the interrupting take, 2 s or more later.
+const QUIET_MS = 1000
 
 function readWav(path: string): Int16Array {
   const buf = readFileSync(path)
@@ -114,18 +116,20 @@ async function main() {
     }
   })()
 
-  // Play a take; resolve with the performance.now() of its speech start and end frames.
-  function play({ pcm, speechMs }: Take): Promise<{ start: number; end: number }> {
+  // Play a take; resolve with the performance.now() of its first frame and its speech start and end frames.
+  function play({ pcm, speechMs }: Take): Promise<{ played: number; start: number; end: number }> {
     const s = Math.floor(speechMs[0] / 10)
     const e = Math.min(Math.ceil(speechMs[1] / 10), Math.floor(pcm.length / FRAME)) - 1
     const frames = Array.from({ length: Math.floor(pcm.length / FRAME) }, (_, i) => pcm.slice(i * FRAME, (i + 1) * FRAME))
     const total = frames.length
     return new Promise((resolve) => {
+      let played = 0
       let start = 0
       onFrameSent = (left) => {
         const idx = total - 1 - left
+        if (idx === 0) played = performance.now()
         if (idx === s) { start = performance.now(); lastStartWall = Date.now() }
-        if (idx === e) { onFrameSent = null; resolve({ start, end: performance.now() }) }
+        if (idx === e) { onFrameSent = null; resolve({ played, start, end: performance.now() }) }
       }
       queue = frames
     })
@@ -163,9 +167,9 @@ async function main() {
       while (firstLoudAfter.at === null && performance.now() - tWait < 10000) await sleep(10)
       if (firstLoudAfter.at === null) { log({ mode, take: take.name, speech_ms, error: 'no answer to interrupt' }); continue }
       await sleep(2000)
-      const { start, end: interruptEnd } = await play(take)
+      const { played, start, end: interruptEnd } = await play(take)
       firstLoudAfter = { mark: interruptEnd, at: null } // the agent's answer to the interruption, waited for below
-      // Stop time: the first moment the agent's audio stays quiet for QUIET_MS after the interruption began.
+      // Stop time: the first moment the agent's audio stays quiet for QUIET_MS after the take began playing.
       // Timeline: loud/quiet runs of the agent's audio from 1 s before to 4 s after the interruption.
       await sleep(Math.max(0, start + 4000 - performance.now()))
       const runs: string[] = []
@@ -177,16 +181,18 @@ async function main() {
         prev = t
       }
       if (runStart !== null) runs.push(`${Math.round(runStart - start)}..${Math.round(prev - start)}`)
-      // Stop = the end of the first loud stretch after the interruption that is followed by QUIET_MS of
-      // quiet. Taken from the timeline, not while waiting, so the agent's next answer can't count.
-      const after = loudTimes.filter((t) => t >= start)
-      let stopped: number = start
-      for (let i = 0; i < after.length; i++) {
-        stopped = after[i]
-        if (i + 1 === after.length || after[i + 1] - after[i] >= QUIET_MS) break
+      // Stop = the end of the loud stretch the agent was in when the take began playing: the last loud
+      // frame before QUIET_MS of quiet. Taken from the timeline, not while waiting, so the agent's next
+      // answer can't count. It is followed from the take's first frame, not its first word, because Silero
+      // can fire on the breath before the word (2026-10-26); such a stop comes out negative.
+      const before = loudTimes.filter((t) => t < played)
+      let stopped: number = before.length ? before[before.length - 1] : played
+      for (const t of loudTimes.filter((t) => t >= played)) {
+        if (t - stopped >= QUIET_MS) break
+        stopped = t
       }
-      // A try only counts if the agent was talking when the caller began; otherwise there was nothing to stop.
-      if (!loudTimes.some((t) => t >= start - 300 && t < start)) {
+      // A try only counts if the agent was talking when the take began; otherwise there was nothing to stop.
+      if (!loudTimes.some((t) => t >= played - 300 && t < played)) {
         log({ mode, take: take.name, speech_ms, start_wall: lastStartWall, error: 'agent not speaking when the interruption began', loud_runs_ms: runs.join(' ') })
       } else {
         log({ mode, take: take.name, speech_ms, start_wall: lastStartWall, stop_ms: Math.round(stopped - start), loud_runs_ms: runs.join(' ') })
