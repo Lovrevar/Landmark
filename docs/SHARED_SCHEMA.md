@@ -647,7 +647,120 @@ Recorded rather than fixed. Decide these deliberately, don't let them drift furt
    real product disagreement about whether an assignee owns the work or only reports on it.
 2. **Legacy `markdown` descriptions.** Cognilion renders them; the mobile app has no markdown
    renderer and shows the syntax raw. `description_format` says which a row is.
+3. **Projects, decided 2026-10-27.** The task app no longer shows, sets or filters by
+   `tasks.project_id` — its "Projekti" section, project screen and project field were removed
+   at the users' request. Tasks created on the phone therefore arrive with `project_id IS NULL`
+   and land in Cognilion's "no project" group, where a Cognilion user can file them. Accepted.
+   Two rules keep this from turning into data loss: the phone **passes the task's existing
+   `project_id` back unchanged** when it calls `update_task_with_assignees` (the function writes
+   `project_id = p_project_id` unconditionally, so an edit from a form that forgot the column
+   would clear a project set in Cognilion), and it still selects the column for that purpose,
+   just not the `projects` embed. The phone reads nothing from `projects` any more.
 
 *(Closed 2026-09-03: both create forms can now author lines. Cognilion writes them directly
 after the task insert rather than through `create_task_with_assignees`, because that function
 rejects a task with no assignees and never sets `is_private`.)*
+
+---
+
+## 15. Meeting rooms — `meeting_rooms` and `room_reservations`
+
+Specified by `20261027100000_meeting_rooms.sql` (Cognilion repo). Check that it is applied the
+same way as everything else here: ask the database. These two tables are the conference-room
+board the task app shows under "Sastanci". **Cognilion has no UI for them yet** (COLLAB-14);
+the phone is the only client, but the schema is shared the same way the task tables are and
+the same change protocol ([§12](#12-change-protocol)) applies.
+
+```sql
+CREATE TABLE public.meeting_rooms (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       text NOT NULL CHECK (btrim(name) <> ''),   -- UNIQUE
+  sort_order int  NOT NULL DEFAULT 0,
+  active     boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+-- seeded: ('Mala konferencija', 1), ('Velika konferencija', 2)
+
+CREATE TABLE public.room_reservations (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id    uuid NOT NULL REFERENCES public.meeting_rooms(id) ON DELETE RESTRICT,
+  title      text NOT NULL DEFAULT '',
+  start_at   timestamptz NOT NULL,
+  end_at     timestamptz NOT NULL,
+  created_by uuid NULL REFERENCES public.profiles(id) ON DELETE SET NULL,  -- auth id
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),                           -- BY TRIGGER
+  CONSTRAINT room_reservations_end_after_start CHECK (end_at > start_at),
+  CONSTRAINT room_reservations_max_24h CHECK (end_at <= start_at + interval '24 hours'),
+  CONSTRAINT room_reservations_no_overlap
+    EXCLUDE USING gist (room_id WITH =, tstzrange(start_at, end_at, '[)') WITH &&)
+);
+```
+
+### The contract
+
+- **Identity is the task tables' identity.** `created_by` is an auth user id → `profiles`,
+  exactly like `tasks.created_by`. Nothing here touches `public.users`. (This is the reason
+  these are not `calendar_events`, whose ids are `public.users` ids and whose SELECT policy is
+  creator-or-participant — a room board needs the opposite.)
+- **The database refuses a double booking.** The exclusion constraint raises SQLSTATE `23P01`
+  (`exclusion_violation`, constraint `room_reservations_no_overlap`) when a booking overlaps
+  another on the same room. Two phones booking the same slot in the same second get one
+  success and one `23P01`; there is no window for a client-side "is it free?" check to lose.
+  Treat `23P01` as "taken in the meantime", reload the day and say so. A client *may* grey out
+  occupied slots for the user's convenience; it must not rely on that.
+- **The range is half-open.** A booking ending at 10:00 and one starting at 10:00 on the same
+  room do not collide.
+- **`end_at > start_at`** and **at most 24 hours** are `23514` (check violation).
+- **`updated_at` is kept by a trigger** (`room_reservations_set_updated_at`, the baseline's
+  `update_updated_at_column()`). Do **not** write it from a client — the opposite of the rule
+  for `tasks`.
+- **`title` is optional and public.** Every signed-in user reads every reservation, title
+  included. Both clients show `Sastanak` for an empty title; do not store a placeholder.
+- **Times are `timestamptz`.** Store the instant; render in the device zone (Europe/Zagreb).
+  Never build a `timestamptz` from a date-only string.
+- **A room is deactivated, never deleted,** while it has reservations (`ON DELETE RESTRICT`).
+  The booking form offers `active` rooms only; a past reservation on an inactive room still
+  renders with its name.
+- **No recurrence**, decided 2026-10-27. If a standing meeting is ever wanted, the client
+  materialises the next N weeks as rows and each one is still protected; nothing in the schema
+  changes. There is no `recurrence` column and there must not be one — the constraint protects
+  rows, not rules.
+
+### RLS
+
+All policies `TO authenticated`, comparing `auth.uid()` directly. "Admin" is the task app's
+`is_admin()` (`profiles.role = 'admin'`), not Cognilion's Director role.
+
+| Table | SELECT | INSERT | UPDATE | DELETE |
+|---|---|---|---|---|
+| `meeting_rooms` | everyone | admin | admin | admin |
+| `room_reservations` | everyone | `created_by = auth.uid()` | creator OR admin | creator OR admin |
+
+Grants: `SELECT, INSERT, UPDATE, DELETE` to `authenticated` on both, nothing to `anon`. As with
+every table here, a refused UPDATE or DELETE is **silent** (0 rows); a refused INSERT is `42501`.
+
+### Reading the board
+
+A day's bookings for all rooms is an overlap query, both ends in the device's local day, so a
+booking that runs past midnight still shows on the morning it ends:
+
+```ts
+supabase.from("room_reservations")
+  .select("id, room_id, title, start_at, end_at, created_by, creator:profiles(id, name)")
+  .lt("start_at", dayEndIso).gt("end_at", dayStartIso)
+  .order("start_at");
+```
+
+The `creator:profiles(...)` embed works because `created_by` has a single FK to `profiles`.
+
+**Realtime.** The migration adds both tables to the `supabase_realtime` publication, so a
+`postgres_changes` subscription on `room_reservations` (no filter — the board is public) keeps
+two phones in step. Note that this is the **only** place in the Cognilion repo that records a
+table's publication membership: `tasks`, `task_subtasks`, chat and the calendar were added by
+hand in the dashboard, and a freshly built database (local stack, a new dev project) has an
+empty publication until somebody does it again (COLLAB-15). If a subscription on a task table
+delivers nothing, check `select tablename from pg_publication_tables where pubname =
+'supabase_realtime'` before suspecting the client.
+
+Verified by `supabase/tests/database/meeting_rooms.test.sql` in the Cognilion repo.
