@@ -31,7 +31,7 @@
 //
 // Persistence is incremental. Cancellation is honoured: when the client
 // disconnects (fetch reader closes), `req.signal` aborts the per-request
-// AbortController, which is propagated to `anthropic.messages.create` and
+// AbortController, which is propagated to `anthropic.messages.stream` and
 // checked at iteration boundaries — no further DB rows are written after the
 // abort, and no `error` event is emitted (the client is gone). The same
 // controller is also tripped by the 90s timeout, which still surfaces as a
@@ -43,21 +43,29 @@
 // user_id / session_id filters on the service client; tool handlers still
 // use the JWT-scoped userClient internally.
 
-// Pinned to a known-good release with stable AbortSignal support on
-// messages.stream. Bump deliberately; do not float on `latest`.
-import Anthropic from 'npm:@anthropic-ai/sdk@0.97.0'
 import { encodeBase64 } from 'jsr:@std/encoding@1/base64'
 
 import { corsHeaders, handlePreflight } from '../_shared/cors.ts'
 import { authenticate, type AuthContext } from '../_shared/auth.ts'
-import { findAvailableTool, selectAvailableTools, TOOLS, type ToolHandlerExtras } from '../_shared/tools.ts'
+import { selectAvailableTools, TOOLS, type ToolHandlerExtras } from '../_shared/tools.ts'
+import {
+  type AnthropicBlock,
+  anthropic,
+  dispatchTool,
+  type InMemoryMessage,
+  type LoopConfig,
+  type LoopHooks,
+  type MessageStore,
+  runOrchestrationLoop,
+  type TextBlock,
+} from '../_shared/orchestrator.ts'
+import { SSEWriter, SseEventSink } from '../_shared/sse.ts'
 import { buildStaticSystemPrompt, buildUserContext } from '../_shared/prompts.ts'
 import { checkRateLimit } from '../_shared/rateLimit.ts'
 import { describeRoute, sanitizeRoute } from '../_shared/routeLabels.ts'
 import type { HelpSearchContext } from '../_shared/help-search.ts'
 import type { Json } from '../_shared/database.ts'
 import {
-  applyMessageCacheBreakpoint,
   ATTACHMENT_KEEP_RECENT,
   buildSummaryUserText,
   type ChainMessage,
@@ -73,8 +81,6 @@ import {
 
 const jsonHeaders = { ...corsHeaders, 'content-type': 'application/json' }
 
-const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') })
-
 // Hard cap on a single chat stream. Surfaces as a mid-stream `error` event
 // with code 'request_timeout' — the connection has already been upgraded to
 // 200/text-event-stream by the time we time out, so 5xx is no longer
@@ -86,44 +92,9 @@ const REQUEST_TIMEOUT_MS = 90_000
 // UTF-8 bytes — this is a runaway-prompt guard, not a payload-size guard.
 const MAX_MESSAGE_LENGTH = 4000
 
-// SSE keepalive cadence. Proxies and browsers close idle TCP connections
-// after ~30–60s; a single slow tool roundtrip easily exceeds that, so we
-// emit `: keepalive` comments while the loop is between real events. Resets
-// on every real write.
-const HEARTBEAT_INTERVAL_MS = 15_000
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-type Event =
-  | { type: 'session'; session_id: string }
-  | { type: 'turn'; role: 'assistant'; text: string }
-  | { type: 'tool_call'; tool: string; input: unknown; tool_use_id: string }
-  | { type: 'tool_result'; tool: string; output: unknown; tool_use_id: string; is_error: boolean }
-  | { type: 'done'; stop_reason: string; usage: { input_tokens: number; output_tokens: number } }
-  | { type: 'error'; code: string; message: string }
-
-// Loose mirror of Anthropic's content-block shapes. Defined locally so we
-// don't depend on internal SDK type paths that can shift between versions.
-interface TextBlock { type: 'text'; text: string }
-interface ToolUseBlock { type: 'tool_use'; id: string; name: string; input: unknown }
-type AnthropicBlock =
-  | TextBlock
-  | ToolUseBlock
-  | { type: string; [k: string]: unknown }
-
-interface ToolResultBlock {
-  type: 'tool_result'
-  tool_use_id: string
-  content: string
-  is_error: boolean
-}
-
-interface InMemoryMessage {
-  role: 'user' | 'assistant'
-  content: unknown
-}
 
 // Multimodal attachments. Files are uploaded to the `ai-chat-attachments`
 // bucket BEFORE the chat request lands; the client passes their metadata
@@ -190,208 +161,6 @@ interface ChatStreamPrep {
   // `routeRaw` is the sanitized client input — used in telemetry only.
   helpSearch: HelpSearchContext
   routeLabel: string | null
-}
-
-// ---------------------------------------------------------------------------
-// SSE writer: SSE framing + idle-heartbeat in one helper. Owns a single
-// heartbeat timer that fires every HEARTBEAT_INTERVAL_MS unless a real write
-// (event or comment) resets it. close() is idempotent — safe to call from a
-// finally block even if an earlier write already closed the underlying writer.
-// ---------------------------------------------------------------------------
-
-class SSEWriter {
-  private readonly writer: WritableStreamDefaultWriter<Uint8Array>
-  private readonly encoder = new TextEncoder()
-  private heartbeatTimer: number | undefined
-  private closed = false
-  // Third disconnect-detection source: when any write throws, the underlying
-  // socket is dead. Invoked exactly once. Used by streamChatResponse to trip
-  // the per-request AbortController even if req.signal and writer.closed both
-  // miss the event (which is what we suspect is happening in Supabase's Edge
-  // runtime — the BadResource error suggests Deno sees the dead socket but
-  // never propagates it as a clean signal to user code).
-  private readonly onWriteFailure: (() => void) | undefined
-  private writeFailureFired = false
-
-  constructor(
-    writer: WritableStreamDefaultWriter<Uint8Array>,
-    onWriteFailure?: () => void,
-  ) {
-    this.writer = writer
-    this.onWriteFailure = onWriteFailure
-    this.scheduleHeartbeat()
-  }
-
-  private notifyWriteFailure(): void {
-    if (this.writeFailureFired) return
-    this.writeFailureFired = true
-    // Mark closed so subsequent writes are silent no-ops.
-    this.closed = true
-    if (this.heartbeatTimer !== undefined) {
-      clearTimeout(this.heartbeatTimer)
-      this.heartbeatTimer = undefined
-    }
-    this.onWriteFailure?.()
-  }
-
-  private scheduleHeartbeat(): void {
-    if (this.closed) return
-    if (this.heartbeatTimer !== undefined) {
-      clearTimeout(this.heartbeatTimer)
-    }
-    this.heartbeatTimer = setTimeout(() => {
-      if (this.closed) return
-      // Use the heartbeat as a live-connection probe: if the write throws,
-      // the socket is gone — notify so the parent can abort the SDK call.
-      this.writer.write(this.encoder.encode(': keepalive\n\n'))
-        .then(() => this.scheduleHeartbeat())
-        .catch(() => this.notifyWriteFailure())
-    }, HEARTBEAT_INTERVAL_MS)
-  }
-
-  async writeEvent<E extends Event>(name: E['type'], data: E): Promise<void> {
-    if (this.closed) return
-    try {
-      await this.writer.write(
-        this.encoder.encode(`event: ${name}\ndata: ${JSON.stringify(data)}\n\n`),
-      )
-      this.scheduleHeartbeat()
-    } catch {
-      this.notifyWriteFailure()
-    }
-  }
-
-  async writeComment(text: string): Promise<void> {
-    if (this.closed) return
-    try {
-      await this.writer.write(this.encoder.encode(`: ${text}\n\n`))
-      this.scheduleHeartbeat()
-    } catch {
-      this.notifyWriteFailure()
-    }
-  }
-
-  async close(): Promise<void> {
-    if (this.closed) return
-    this.closed = true
-    if (this.heartbeatTimer !== undefined) {
-      clearTimeout(this.heartbeatTimer)
-      this.heartbeatTimer = undefined
-    }
-    try {
-      await this.writer.close()
-    } catch {
-      // already closed
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Tool dispatch — used by BOTH the debug branch and the orchestration loop.
-// ---------------------------------------------------------------------------
-
-async function dispatchTool(
-  name: string,
-  input: unknown,
-  ctx: AuthContext,
-  extras: ToolHandlerExtras,
-): Promise<unknown> {
-  // Role gate at dispatch, not just at advertisement: the name comes from the
-  // model's response, so it is checked again here against what this role may
-  // invoke. A refusal surfaces to the model as an is_error tool_result via
-  // dispatchToolWithTimeout.
-  const tool = findAvailableTool(ctx, name)
-  if (!tool) {
-    const exists = TOOLS.some((t) => t.name === name)
-    console.warn('[ai-chat] tool refused at dispatch', {
-      userId: ctx.userId,
-      role: ctx.role,
-      tool: name,
-      reason: exists ? 'not_permitted_for_role' : 'unknown_tool',
-    })
-    throw new Error(exists ? `tool not permitted for role: ${name}` : `unknown tool: ${name}`)
-  }
-  return await tool.handler(input as Record<string, unknown>, ctx, extras)
-}
-
-// Race the tool handler against a 15s timeout and normalise failure modes
-// into a single envelope shape. Handlers also signal failure via a returned
-// { error: '...' } object without throwing — we treat that as is_error too.
-async function dispatchToolWithTimeout(
-  name: string,
-  input: unknown,
-  ctx: AuthContext,
-  extras: ToolHandlerExtras,
-): Promise<{ output: unknown; isError: boolean }> {
-  try {
-    const output = await Promise.race([
-      dispatchTool(name, input, ctx, extras),
-      new Promise<never>((_, rej) =>
-        setTimeout(() => rej(new Error('tool_timeout')), 15000),
-      ),
-    ])
-    // Intentional: domain 'not found' surfaces as is_error to the model in v1; revisit if it causes retry loops.
-    const isErrorEnvelope =
-      output !== null &&
-      typeof output === 'object' &&
-      'error' in (output as Record<string, unknown>)
-    return { output, isError: isErrorEnvelope }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    return { output: { error: `tool execution failed: ${message}` }, isError: true }
-  }
-}
-
-// Map an Anthropic SDK error to a user-facing event code + Croatian message,
-// plus a flag telling the caller whether to log loudly. `shouldLog: true`
-// covers (a) our-fault errors (bad request shape, bad API key) and (b) the
-// unknown-error fall-through so we never silently swallow a class we haven't
-// mapped yet. Rate-limit / timeout / unreachable are expected operational
-// states and don't pollute the log.
-//
-// APIConnectionTimeoutError must be checked before APIConnectionError —
-// it's a subclass.
-function mapAnthropicError(err: unknown): { code: string; message: string; shouldLog: boolean } {
-  if (err instanceof Anthropic.RateLimitError) {
-    return {
-      code: 'model_rate_limited',
-      message: 'Model je trenutno preopterećen. Pokušajte ponovno za nekoliko trenutaka.',
-      shouldLog: false,
-    }
-  }
-  if (err instanceof Anthropic.APIConnectionTimeoutError) {
-    return {
-      code: 'model_timeout',
-      message: 'Model nije odgovorio na vrijeme. Pokušajte ponovno.',
-      shouldLog: false,
-    }
-  }
-  if (err instanceof Anthropic.APIConnectionError) {
-    return {
-      code: 'model_unreachable',
-      message: 'Greška u komunikaciji s modelom. Pokušajte ponovno.',
-      shouldLog: false,
-    }
-  }
-  if (err instanceof Anthropic.BadRequestError) {
-    return {
-      code: 'model_bad_request',
-      message: 'Interna greška pri pripremi upita. Prijavite ovo administratoru.',
-      shouldLog: true,
-    }
-  }
-  if (err instanceof Anthropic.AuthenticationError) {
-    return {
-      code: 'model_auth_failed',
-      message: 'Greška u autentikaciji s modelom. Prijavite ovo administratoru.',
-      shouldLog: true,
-    }
-  }
-  return {
-    code: 'model_error',
-    message: 'Greška pri pozivu modela. Pokušajte ponovno.',
-    shouldLog: true,
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1104,26 +873,12 @@ async function handleChat(
 }
 
 // ---------------------------------------------------------------------------
-// Orchestration loop — writes events to the SSE writer as they happen.
-// Persistence order:
-//   1. anthropic.messages.create
-//   2. persist assistant row (the durable record comes before the wire frame)
-//   3. emit text -> turn / tool_use -> tool_call events in content-block order
-//   4. if tool_use: dispatch handlers, emit tool_result events, then persist
-//      the user-role tool_result row
-//   5. otherwise emit done, backfill title if newly-created, return
+// The chat turn: the shared loop (_shared/orchestrator.ts) with chat's
+// settings, the SSE sink, rows inserted as they are produced, the DB-backed
+// stop button, and the title backfill once a new conversation is answered.
 // ---------------------------------------------------------------------------
 
-async function runOrchestrationLoop(
-  ctx: AuthContext,
-  sse: SSEWriter,
-  prep: ChatStreamPrep,
-  signal: AbortSignal,
-  onDbCancel: () => void,
-): Promise<void> {
-  const { sessionId, newlyCreatedSession, messages, userMessage } = prep
-  let lastInsertedId: string = prep.lastInsertedId
-  const model = Deno.env.get('AI_CHAT_MODEL') ?? 'claude-sonnet-4-6'
+function chatLoopConfig(ctx: AuthContext): LoopConfig {
   // The system prompt is split into two blocks. The first is the static
   // instruction body — byte-identical for every user — and carries the cache
   // breakpoint, so the tool schemas + static system text become a cacheable
@@ -1144,15 +899,51 @@ async function runOrchestrationLoop(
       text: buildUserContext(ctx),
     },
   ]
-  const availableTools: Array<Record<string, unknown>> = selectAvailableTools(ctx).map((t) => ({
+  const tools: Array<Record<string, unknown>> = selectAvailableTools(ctx).map((t) => ({
     name: t.name,
     description: t.description,
     input_schema: t.input_schema,
   }))
-  if (availableTools.length > 0) {
-    availableTools[availableTools.length - 1].cache_control = { type: 'ephemeral' }
+  if (tools.length > 0) {
+    tools[tools.length - 1].cache_control = { type: 'ephemeral' }
   }
-  const extras: ToolHandlerExtras = { helpSearch: prep.helpSearch }
+  return {
+    model: Deno.env.get('AI_CHAT_MODEL') ?? 'claude-sonnet-4-6',
+    // Headroom for create_document, whose tool-call payload carries an
+    // entire authored document. Too low and the model truncates mid
+    // tool-call (stop_reason 'max_tokens'); the loop's truncation guard
+    // turns any leftover truncation into a clean error instead of a stuck
+    // client-side spinner.
+    maxTokens: 8192,
+    maxIterations: 10,
+    toolTimeoutMs: 15000,
+    system,
+    tools,
+    logTag: '[ai-chat]',
+  }
+}
+
+function dbMessageStore(ctx: AuthContext, sessionId: string): MessageStore {
+  return {
+    async insert(row) {
+      const { data, error } = await ctx.serviceClient
+        .from('ai_messages')
+        .insert({ session_id: sessionId, ...row })
+        .select('id')
+        .single()
+      return { id: data?.id ?? null, code: error?.code }
+    },
+  }
+}
+
+async function runChatTurn(
+  ctx: AuthContext,
+  sse: SSEWriter,
+  prep: ChatStreamPrep,
+  signal: AbortSignal,
+  onDbCancel: () => void,
+): Promise<void> {
+  const { sessionId, newlyCreatedSession, messages, userMessage } = prep
 
   // Prepend a "[Kontekst: ...]" line to the LAST message in the in-memory
   // array (which is always the just-persisted user turn). This is deliberately
@@ -1180,376 +971,63 @@ async function runOrchestrationLoop(
     }
   }
 
-  const MAX_ITERATIONS = 10
-  let lastUsage = { input_tokens: 0, output_tokens: 0 }
-
   // Loop start instant. Cancel beacons (ai_sessions.cancel_requested_at) only
   // count if their timestamp is strictly greater than this — that way a stop
   // from a previous turn that's still sitting in the column doesn't kill a
   // fresh turn on the same session.
   const requestStartedAt = new Date().toISOString()
 
-  // Poll the DB-backed cancel beacon. Returns true iff the user pressed stop
-  // since this loop started (or the per-request controller already aborted,
-  // in which case the signal-based path is doing its job and we exit anyway).
-  // On query error we fail open — Supabase hiccups should not lock the user
-  // into an unstoppable loop, but they also should not surface a fake cancel.
-  const isCancelled = async (): Promise<boolean> => {
-    if (signal.aborted) return true
-    const { data, error } = await ctx.serviceClient
-      .from('ai_sessions')
-      .select('cancel_requested_at')
-      .eq('id', sessionId)
-      .eq('user_id', ctx.userId)
-      .maybeSingle()
-    if (error) {
-      console.error('[ai-chat] cancel beacon read failed', {
-        userId: ctx.userId,
-        sessionId,
-        code: error.code,
-      })
+  const hooks: LoopHooks = {
+    // Poll the DB-backed cancel beacon. Returns true iff the user pressed stop
+    // since this loop started (or the per-request controller already aborted,
+    // in which case the signal-based path is doing its job and we exit anyway).
+    // On query error we fail open — Supabase hiccups should not lock the user
+    // into an unstoppable loop, but they also should not surface a fake cancel.
+    async isCancelled() {
+      if (signal.aborted) return true
+      const { data, error } = await ctx.serviceClient
+        .from('ai_sessions')
+        .select('cancel_requested_at')
+        .eq('id', sessionId)
+        .eq('user_id', ctx.userId)
+        .maybeSingle()
+      if (error) {
+        console.error('[ai-chat] cancel beacon read failed', {
+          userId: ctx.userId,
+          sessionId,
+          code: error.code,
+        })
+        return false
+      }
+      const beacon = data?.cancel_requested_at
+      if (!beacon) return false
+      if (beacon > requestStartedAt) {
+        console.log('[ai-chat] cancel beacon trip', {
+          userId: ctx.userId,
+          sessionId,
+          beacon,
+          requestStartedAt,
+        })
+        onDbCancel()
+        return true
+      }
       return false
-    }
-    const beacon = data?.cancel_requested_at
-    if (!beacon) return false
-    if (beacon > requestStartedAt) {
-      console.log('[ai-chat] cancel beacon trip', {
-        userId: ctx.userId,
-        sessionId,
-        beacon,
-        requestStartedAt,
-      })
-      onDbCancel()
-      return true
-    }
-    return false
-  }
-
-  for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-    // Iteration boundary: bail before issuing the next Anthropic call.
-    if (await isCancelled()) return
-
-    // Slide the prompt-cache breakpoint onto the current last message so the
-    // whole conversation-so-far becomes a cacheable prefix for the next call.
-    applyMessageCacheBreakpoint(messages)
-
-    // Streamed, so text can be passed on as it arrives (voice, §3.1 of the plan).
-    // finalMessage() is the same complete Message that messages.create returned,
-    // so persistence and the events below are unchanged.
-    let response: Awaited<ReturnType<ReturnType<typeof anthropic.messages.stream>['finalMessage']>>
-    try {
-      const stream = anthropic.messages.stream({
-        model,
-        // Headroom for create_document, whose tool-call payload carries an
-        // entire authored document. Too low and the model truncates mid
-        // tool-call (stop_reason 'max_tokens'); the terminal-branch
-        // truncation guard below turns any leftover truncation into a clean
-        // error instead of a stuck client-side spinner.
-        max_tokens: 8192,
-        system: system as unknown as Parameters<typeof anthropic.messages.create>[0]['system'],
-        tools: availableTools as unknown as Parameters<typeof anthropic.messages.create>[0]['tools'],
-        messages: messages as unknown as Parameters<typeof anthropic.messages.create>[0]['messages'],
-      }, { signal })
-      response = await stream.finalMessage()
-    } catch (err) {
-      // If the abort fired, the SDK's thrown error is a consequence — swallow
-      // it. Caller decides whether to log a 'client_disconnect' line or emit
-      // the 'request_timeout' error event based on which source aborted us.
-      if (signal.aborted) {
-        console.log('[ai-chat] anthropic call aborted', {
-          userId: ctx.userId,
-          sessionId,
-          iteration,
-        })
-        return
-      }
-      const mapped = mapAnthropicError(err)
-      if (mapped.shouldLog) {
-        const errorClass = err instanceof Error ? err.constructor.name : typeof err
-        const errorMessage = err instanceof Error ? err.message : String(err)
-        console.error('[ai-chat] anthropic call failed', {
-          userId: ctx.userId,
-          sessionId,
-          iteration,
-          errorClass,
-          // Truncate to keep accidental content out of logs. No request body,
-          // no system prompt, no message content is logged anywhere on this path.
-          errorMessage: errorMessage.slice(0, 200),
-        })
-      }
-      await sse.writeEvent('error', {
-        type: 'error',
-        code: mapped.code,
-        message: mapped.message,
-      })
-      return
-    }
-
-    lastUsage = {
-      input_tokens: response.usage?.input_tokens ?? 0,
-      output_tokens: response.usage?.output_tokens ?? 0,
-    }
-
-    // Persist assistant row BEFORE emitting any of its events. The DB row is
-    // the durable contract; the wire is a projection of it. parent_id chains
-    // off whatever row was inserted last on this request — initially the
-    // user turn, then assistant ↔ tool_result alternation through the loop.
-    const { data: assistantRow, error: assistantInsertError } = await ctx.serviceClient
-      .from('ai_messages')
-      .insert({
-        session_id: sessionId,
-        role: 'assistant',
-        content: response.content as unknown as Json,
-        model: response.model ?? model,
-        input_tokens: response.usage?.input_tokens ?? null,
-        output_tokens: response.usage?.output_tokens ?? null,
-        stop_reason: response.stop_reason ?? null,
-        parent_id: lastInsertedId,
-      })
-      .select('id')
-      .single()
-
-    if (assistantInsertError || !assistantRow) {
-      console.error('[ai-chat] assistant message insert failed', {
-        userId: ctx.userId,
-        sessionId,
-        iteration,
-        code: assistantInsertError?.code,
-      })
-      await sse.writeEvent('error', {
-        type: 'error',
-        code: 'persistence_error',
-        message: 'Greška pri spremanju odgovora.',
-      })
-      return
-    }
-
-    lastInsertedId = assistantRow.id
-    messages.push({ role: 'assistant', content: response.content })
-
-    // Emit events in content-block order: text -> turn, tool_use -> tool_call.
-    const toolUses: ToolUseBlock[] = []
-    for (const block of response.content as AnthropicBlock[]) {
-      if (block.type === 'text') {
-        await sse.writeEvent('turn', {
-          type: 'turn',
-          role: 'assistant',
-          text: (block as TextBlock).text,
-        })
-      } else if (block.type === 'tool_use') {
-        const t = block as ToolUseBlock
-        toolUses.push(t)
-        await sse.writeEvent('tool_call', {
-          type: 'tool_call',
-          tool: t.name,
-          input: t.input,
-          tool_use_id: t.id,
-        })
-      }
-      // Unknown block types (e.g. thinking) are silently skipped — they are
-      // still persisted in the assistant row above for fidelity.
-    }
-
-    const stopReason = response.stop_reason ?? 'end_turn'
-
-    // Defensive guard: if the SDK reports stop_reason='tool_use' but no
-    // tool_use blocks were emitted in this turn, there's nothing to dispatch.
-    // Treat as terminal so we don't persist an empty tool_result row or
-    // re-loop into the model with no new information.
-    if (stopReason === 'tool_use' && toolUses.length === 0) {
-      await sse.writeEvent('done', {
-        type: 'done',
-        stop_reason: stopReason,
-        usage: lastUsage,
-      })
+    },
+    async onComplete() {
       await backfillTitleIfNew(ctx, sessionId, userMessage, newlyCreatedSession)
-      return
-    }
-
-    if (stopReason === 'tool_use') {
-      // The tools the model asked for in one turn are independent (a call that
-      // needs another's output can only come in a later turn), so they run
-      // concurrently, each with its own timeout (plan §3.2). Results go back in
-      // tool_use order, as events and in a single tool_result row.
-      const results = await Promise.all(
-        toolUses.map((tu) => dispatchToolWithTimeout(tu.name, tu.input, ctx, extras)),
-      )
-      // After-dispatch boundary: if the user cancelled while the tools ran,
-      // drop the results on the floor — no SSE event, no DB row.
-      if (await isCancelled()) return
-      const toolResultBlocks: ToolResultBlock[] = []
-      for (const [i, tu] of toolUses.entries()) {
-        const { output, isError } = results[i]
-        await sse.writeEvent('tool_result', {
-          type: 'tool_result',
-          tool: tu.name,
-          output,
-          tool_use_id: tu.id,
-          is_error: isError,
-        })
-        toolResultBlocks.push({
-          type: 'tool_result',
-          tool_use_id: tu.id,
-          // Anthropic's API requires `content` to be a string here.
-          content: JSON.stringify(output),
-          is_error: isError,
-        })
-      }
-
-      const { data: toolResultRow, error: toolResultInsertError } = await ctx.serviceClient
-        .from('ai_messages')
-        .insert({
-          session_id: sessionId,
-          role: 'user',
-          content: toolResultBlocks as unknown as Json,
-          parent_id: lastInsertedId,
-        })
-        .select('id')
-        .single()
-
-      if (toolResultInsertError || !toolResultRow) {
-        console.error('[ai-chat] tool_result insert failed', {
-          userId: ctx.userId,
-          sessionId,
-          iteration,
-          code: toolResultInsertError?.code,
-        })
-        await sse.writeEvent('error', {
-          type: 'error',
-          code: 'persistence_error',
-          message: 'Greška pri spremanju rezultata alata.',
-        })
-        return
-      }
-
-      lastInsertedId = toolResultRow.id
-      messages.push({ role: 'user', content: toolResultBlocks })
-      continue
-    }
-
-    // Truncation guard. A terminal stop_reason (almost always 'max_tokens')
-    // with tool_use blocks present means the model ran out of output budget
-    // MID tool-call — e.g. while authoring a large create_document payload.
-    // The tool_call events were already emitted, so the client now has
-    // spinners that would never resolve. Close them out: synthesize error
-    // tool_results, persist them (so a history reload stays consistent),
-    // and tell the user what happened.
-    if (toolUses.length > 0) {
-      console.warn('[ai-chat] response truncated mid tool_use', {
-        userId: ctx.userId,
-        sessionId,
-        iteration,
-        stopReason,
-        toolCount: toolUses.length,
-      })
-      const truncationOutput = { error: 'response truncated before the tool call completed' }
-      const toolResultBlocks: ToolResultBlock[] = []
-      for (const tu of toolUses) {
-        await sse.writeEvent('tool_result', {
-          type: 'tool_result',
-          tool: tu.name,
-          output: truncationOutput,
-          tool_use_id: tu.id,
-          is_error: true,
-        })
-        toolResultBlocks.push({
-          type: 'tool_result',
-          tool_use_id: tu.id,
-          content: JSON.stringify(truncationOutput),
-          is_error: true,
-        })
-      }
-      const { data: truncResultRow } = await ctx.serviceClient
-        .from('ai_messages')
-        .insert({
-          session_id: sessionId,
-          role: 'user',
-          content: toolResultBlocks as unknown as Json,
-          parent_id: lastInsertedId,
-        })
-        .select('id')
-        .single()
-
-      const truncationText = stopReason === 'max_tokens'
-        ? 'Dokument je prevelik da bi stao u jedan odgovor. Zatražite kraći dokument ili ga podijelite na više manjih.'
-        : 'Odgovor nije dovršen. Pokušajte ponovno.'
-      const truncationContent: TextBlock[] = [{ type: 'text', text: truncationText }]
-      if (truncResultRow) {
-        await ctx.serviceClient
-          .from('ai_messages')
-          .insert({
-            session_id: sessionId,
-            role: 'assistant',
-            content: truncationContent as unknown as Json,
-            model: response.model ?? model,
-            stop_reason: stopReason,
-            parent_id: truncResultRow.id,
-          })
-      }
-      await sse.writeEvent('turn', {
-        type: 'turn',
-        role: 'assistant',
-        text: truncationText,
-      })
-      await sse.writeEvent('done', {
-        type: 'done',
-        stop_reason: stopReason,
-        usage: lastUsage,
-      })
-      await backfillTitleIfNew(ctx, sessionId, userMessage, newlyCreatedSession)
-      return
-    }
-
-    // Terminal stop_reason (end_turn, max_tokens, stop_sequence, or anything
-    // else surfaced by the SDK). Emit done with the raw value — don't normalise.
-    await sse.writeEvent('done', {
-      type: 'done',
-      stop_reason: stopReason,
-      usage: lastUsage,
-    })
-    await backfillTitleIfNew(ctx, sessionId, userMessage, newlyCreatedSession)
-    return
+    },
   }
 
-  // ---- 10-iteration cap reached without a terminal stop_reason ----
-  console.error('[ai-chat] tool iteration limit reached', {
-    userId: ctx.userId,
-    sessionId,
-  })
-
-  const limitMessage = 'Dostignut je limit poziva alata. Pokušajte preformulirati pitanje.'
-  const limitContent: TextBlock[] = [{ type: 'text', text: limitMessage }]
-  const { error: limitInsertError } = await ctx.serviceClient
-    .from('ai_messages')
-    .insert({
-      session_id: sessionId,
-      role: 'assistant',
-      content: limitContent as unknown as Json,
-      model,
-      input_tokens: lastUsage.input_tokens,
-      output_tokens: lastUsage.output_tokens,
-      stop_reason: 'tool_limit_reached',
-      parent_id: lastInsertedId,
-    })
-  if (limitInsertError) {
-    console.error('[ai-chat] limit message insert failed', {
-      userId: ctx.userId,
-      sessionId,
-      code: limitInsertError.code,
-    })
-  }
-
-  await sse.writeEvent('turn', {
-    type: 'turn',
-    role: 'assistant',
-    text: limitMessage,
-  })
-  await sse.writeEvent('done', {
-    type: 'done',
-    stop_reason: 'tool_limit_reached',
-    usage: lastUsage,
-  })
-  await backfillTitleIfNew(ctx, sessionId, userMessage, newlyCreatedSession)
+  const extras: ToolHandlerExtras = { helpSearch: prep.helpSearch }
+  await runOrchestrationLoop(
+    ctx,
+    chatLoopConfig(ctx),
+    { sessionId, messages, lastInsertedId: prep.lastInsertedId, extras },
+    new SseEventSink(sse),
+    dbMessageStore(ctx, sessionId),
+    hooks,
+    signal,
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -1621,7 +1099,7 @@ function streamChatResponse(
         controller.abort()
       }, REQUEST_TIMEOUT_MS)
 
-      await runOrchestrationLoop(
+      await runChatTurn(
         ctx,
         sse,
         prep,
