@@ -1367,16 +1367,19 @@ async function runOrchestrationLoop(
     }
 
     if (stopReason === 'tool_use') {
-      // Run handlers sequentially in tool_call order. Emit each tool_result
-      // event as soon as the handler returns; the persisted tool_result row
-      // is built up alongside and inserted after the last handler completes.
+      // The tools the model asked for in one turn are independent (a call that
+      // needs another's output can only come in a later turn), so they run
+      // concurrently, each with its own timeout (plan §3.2). Results go back in
+      // tool_use order, as events and in a single tool_result row.
+      const results = await Promise.all(
+        toolUses.map((tu) => dispatchToolWithTimeout(tu.name, tu.input, ctx, extras)),
+      )
+      // After-dispatch boundary: if the user cancelled while the tools ran,
+      // drop the results on the floor — no SSE event, no DB row.
+      if (await isCancelled()) return
       const toolResultBlocks: ToolResultBlock[] = []
-
-      for (const tu of toolUses) {
-        const { output, isError } = await dispatchToolWithTimeout(tu.name, tu.input, ctx, extras)
-        // After-dispatch boundary: if the user cancelled while the tool ran,
-        // drop the result on the floor — no SSE event, no DB row.
-        if (await isCancelled()) return
+      for (const [i, tu] of toolUses.entries()) {
+        const { output, isError } = results[i]
         await sse.writeEvent('tool_result', {
           type: 'tool_result',
           tool: tu.name,

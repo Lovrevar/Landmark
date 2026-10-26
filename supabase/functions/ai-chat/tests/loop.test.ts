@@ -164,20 +164,27 @@ scenario('L08 two tools in one turn: one tool_result row, blocks in tool_use ord
   assertEquals(blocksOf(tr[0].content, 'tool_result').map((x) => x.tool_use_id), [a.id, b.id])
 })
 
-scenario('L09 [PHASE 2] tools within a turn are dispatched sequentially: the second starts after the first finishes', async () => {
-  let firstFinishedWhenSecondStarted: boolean | null = null
+scenario('L09 [PHASE 2] tools within a turn are dispatched concurrently: both are in flight at once', async () => {
+  // Was: dispatched sequentially (phase 1). Whichever tool's query arrives first
+  // is held until the other's arrives, or for 1 s. Sequential dispatch would
+  // only start the second tool after the hold expired. Either may come first.
+  const tables = ['projects', 'cost_classifications']
+  let bothArrived!: () => void
+  const arrived = new Promise<void>((r) => (bothArrived = r))
+  let overlapped = false
+  db.hold((r) => tables.includes(r.table), Promise.race([arrived, tick(1000)]))
   db.onRequest((r) => {
-    if (r.table === 'cost_classifications') {
-      // The first tool's request must already exist AND be finished. (An empty
-      // list would pass vacuously: under parallel dispatch the second tool's
-      // query can reach the DB first.)
-      const first = db.requestsTo('projects')
-      firstFinishedWhenSecondStarted = first.length > 0 && first.every((p) => p.finished)
+    if (!tables.includes(r.table)) return
+    const other = tables.find((t) => t !== r.table)!
+    if (db.requestsTo(other).length > 0) {
+      overlapped = db.requestsTo(other).some((o) => !o.finished)
+      bothArrived()
     }
   })
   anthropic.script(callTools(toolUse('search_projects', { query: 'Funtana' }), toolUse('list_cost_classifications', {})), answer('ok'))
-  await ask('x')
-  assertEquals(firstFinishedWhenSecondStarted, true)
+  const sse = await ask('x')
+  assertEquals(overlapped, true)
+  assertEquals(sse.types.at(-1), 'done')
 })
 
 scenario('L10 a handler that returns { error } becomes an is_error tool_result, and the loop continues', async () => {

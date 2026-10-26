@@ -94,6 +94,7 @@ export class FakeSupabase {
   requests: RecordedRequest[] = []
   private faults: Fault[] = []
   private hooks: Array<(r: RecordedRequest) => void> = []
+  private holds: Array<{ match: (r: RecordedRequest) => boolean; until: Promise<unknown> }> = []
   private lastTs = 0
 
   reset(): void {
@@ -104,6 +105,7 @@ export class FakeSupabase {
     this.requests = []
     this.faults = []
     this.hooks = []
+    this.holds = []
   }
 
   /** Monotonic, close-to-real timestamps. Rate-limit windows and the cancel
@@ -141,6 +143,12 @@ export class FakeSupabase {
    * change state mid-request, e.g. writing the cancel beacon while a tool runs. */
   onRequest(hook: (r: RecordedRequest) => void): void {
     this.hooks.push(hook)
+  }
+
+  /** Hold matching requests open until `until` settles, then serve them. Used to
+   * see whether other work starts while one request is still in flight. */
+  hold(match: (r: RecordedRequest) => boolean, until: Promise<unknown>): void {
+    this.holds.push({ match, until })
   }
 
   requestsTo(table: string, method?: string): RecordedRequest[] {
@@ -181,6 +189,7 @@ export class FakeSupabase {
     this.requests.push(rec)
     for (const h of this.hooks) h(rec)
     try {
+      for (const h of this.holds) if (h.match(rec)) await h.until
       return await this.serve(rec, req, url, path, service, name, body)
     } finally {
       rec.finished = true
