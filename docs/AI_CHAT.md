@@ -88,11 +88,11 @@ sequenceDiagram
    - calls `handleChat`, which validates and trims input, runs `checkRateLimit`, resolves or creates a session, loads the message history, and inserts the user's message row;
    - then calls `streamChatResponse`, which returns a `Response` whose body is a `TransformStream` fed by a background async worker.
 
-4. The worker flushes `: ready\n\n`, emits the `session` event, then enters `runOrchestrationLoop`. Each iteration:
+4. The worker flushes `: ready\n\n`, emits the `session` event, then enters the agent loop: `runOrchestrationLoop` in [`_shared/orchestrator.ts`](../supabase/functions/_shared/orchestrator.ts), shared with the voice channel since 2026-10-26 (`feature/voice-assistant`). `ai-chat`'s `runChatTurn` gives it chat's settings, the SSE sink (`_shared/sse.ts`), a store that inserts each row as it is produced, the cancel beacon and the title backfill; it also prepends the route line. The model call is streamed (`messages.stream`, then `finalMessage()`), and the chat events are unchanged. Each iteration:
    - calls `anthropic.messages.create` with the model, system prompt, role-filtered tool list, and the current message array;
    - persists the assistant response row to `ai_messages` BEFORE writing any SSE event;
    - walks the response content blocks and emits `turn` for each `text` block and `tool_call` for each `tool_use` block;
-   - if `stop_reason === 'tool_use'`, runs each tool sequentially through `dispatchToolWithTimeout` (15-second race), emits `tool_result` events as handlers return, persists a single `role='user'` row containing all `tool_result` blocks, then loops;
+   - if `stop_reason === 'tool_use'`, runs the turn's tools concurrently through `dispatchToolWithTimeout` (15-second race each), emits their `tool_result` events in `tool_use` order once all have returned, persists a single `role='user'` row containing all `tool_result` blocks, then loops;
    - otherwise emits `done` and exits.
 
 5. Two hard caps protect the loop: a 90-second per-request timer (surfaces as a mid-stream `error` event with code `request_timeout`) and a 10-iteration tool cap (synthesises a final assistant message with `stop_reason: 'tool_limit_reached'` and a Croatian explanation).
@@ -409,7 +409,7 @@ Consequences of this design: **no storage bucket and no new table** — the spec
 
 ## System Prompt
 
-The Croatian-language system prompt lives in [supabase/functions/_shared/prompts.ts](../supabase/functions/_shared/prompts.ts) as two functions, and `runOrchestrationLoop` in [ai-chat/index.ts](../supabase/functions/ai-chat/index.ts) assembles them into a **two-element `system` array** on every request:
+The Croatian-language system prompt lives in [supabase/functions/_shared/prompts.ts](../supabase/functions/_shared/prompts.ts) as two functions, and `chatLoopConfig` in [ai-chat/index.ts](../supabase/functions/ai-chat/index.ts) assembles them into a **two-element `system` array** on every request:
 
 1. **`buildStaticSystemPrompt()`** — the instruction body. Takes no arguments and is byte-identical for every user, so it carries the `cache_control: ephemeral` breakpoint. Because the tool list is role-filtered, the tools + static-prompt prefix is shared across all users of the same role — role is the caching granularity.
 2. **`buildUserContext(ctx)`** — a short `## Korisnik` block with the user's `email` and `role`, plus one extra sentence for Supervision users noting that their data access is scoped by RLS. It sits after the breakpoint and is not cached across users.
@@ -718,7 +718,7 @@ Two independent cancellation paths feed a single per-request `AbortController` i
 
 2. **90s request timeout** — a `setTimeout` in the worker trips the same controller and surfaces a mid-stream `error` event with `code: 'request_timeout'`, exactly as before.
 
-The controller's signal is also passed to `anthropic.messages.create({...}, { signal })` and there are three legacy transport-layer abort sources still wired up (`req.signal`, `writer.closed.catch`, and `SSEWriter`'s write-failure callback). All three are currently no-ops in Supabase's Edge runtime — they're left in place because they're harmless and would provide instant cancellation if the runtime ever starts surfacing client disconnect to user code. The DB beacon is the only mechanism we have actually observed crossing the runtime boundary.
+The controller's signal is also passed to `anthropic.messages.stream({...}, { signal })` and there are three legacy transport-layer abort sources still wired up (`req.signal`, `writer.closed.catch`, and `SSEWriter`'s write-failure callback). All three are currently no-ops in Supabase's Edge runtime — they're left in place because they're harmless and would provide instant cancellation if the runtime ever starts surfacing client disconnect to user code. The DB beacon is the only mechanism we have actually observed crossing the runtime boundary.
 
 The post-loop branch reads `abortReason` to decide what to emit on the wire:
 
@@ -749,7 +749,7 @@ Supabase Edge Runtime 1.74.0 (compatible with Deno v2.1.4 at time of writing) do
 
 ### The 15-second per-tool timeout
 
-`dispatchToolWithTimeout` in `ai-chat/index.ts` races the handler against a 15-second timer. An expired handler resolves with `{ output: { error: 'tool execution failed: tool_timeout' }, isError: true }`, which produces a `tool_result` with `is_error: true` both on the wire and in the persisted row. The model sees the failure in the next iteration and typically apologises in Croatian; the user sees a tool chip in the error state.
+`dispatchToolWithTimeout` in `_shared/orchestrator.ts` races the handler against a 15-second timer. An expired handler resolves with `{ output: { error: 'tool execution failed: tool_timeout' }, isError: true }`, which produces a `tool_result` with `is_error: true` both on the wire and in the persisted row. The model sees the failure in the next iteration and typically apologises in Croatian; the user sees a tool chip in the error state.
 
 ### Why we count `ai_messages` rather than a separate rate-limit table
 

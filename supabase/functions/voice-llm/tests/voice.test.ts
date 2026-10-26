@@ -54,7 +54,7 @@ scenario('V04 the model gets the voice prompt and settings; inbound system messa
     ],
   }))
   const body = anthropic.calls[0].body
-  assertEquals(body.max_tokens, 384)
+  assertEquals(body.max_tokens, 1024)
   assertEquals(body.stream, true)
   const system = JSON.stringify(body.system)
   assertStringIncludes(system, 'glasovni asistent')

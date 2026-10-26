@@ -106,7 +106,7 @@ const VOICE_PRESENTATION_HR = `## Kako govorite
 
 ## Brojevi, iznosi i datumi
 Vaš tekst izravno čita sintetizator govora, pa sve pišete onako kako se izgovara.
-- Sve brojeve pišite riječima, nikada znamenkama: "dvanaest", "tristo pedeset tisuća".
+- Sve brojeve pišite riječima, nikada znamenkama: "dvanaest", "tristo pedeset tisuća". To vrijedi i za godine: "dvije tisuće dvadeset pete", ne "2025.".
 - Iznose zaokružite i pišite riječima: 1234567.89 → "oko milijun dvjesto trideset pet tisuća eura". Točan iznos recite samo ako ga korisnik izričito traži, i tada ga također napišite riječima.
 - Nikada ne pišite "EUR" ni znak valute — pišite "eura".
 - Postotke pišite riječima: "otprilike dvanaest posto".

@@ -37,7 +37,7 @@ Deno.test('the filler is spoken once per request, and streamed text is not repea
     await s.textBlock('Gotovo je.')
     await s.done('end_turn', { input_tokens: 0, output_tokens: 0 })
   })
-  assertEquals(out.join(''), 'Samo trenutak. Gotovo je.')
+  assertEquals(out.join(''), 'Samo trenutak.\n\nGotovo je.')
 })
 
 Deno.test('a textBlock that was never streamed (the loop\'s own message) is spoken', async () => {
@@ -46,4 +46,49 @@ Deno.test('a textBlock that was never streamed (the loop\'s own message) is spok
     await s.done('tool_limit_reached', { input_tokens: 0, output_tokens: 0 })
   })
   assertEquals(out.join(''), 'Dostignut je limit poziva alata.')
+})
+
+Deno.test('a sentence announcing a lookup is dropped when a tool call follows it', async () => {
+  const out = await spoken(async (s) => {
+    await s.textDelta('Trebam prvo pronaći ')
+    await s.textDelta('projekt, dajte mi trenutak.')
+    await s.toolStarting()
+    await s.textDelta('Projekt nije pronađen.')
+    await s.done('end_turn', { input_tokens: 0, output_tokens: 0 })
+  })
+  assertEquals(out.join(''), 'Samo trenutak.\n\nProjekt nije pronađen.')
+})
+
+Deno.test('an announcement without a full stop is dropped too', async () => {
+  const out = await spoken(async (s) => {
+    await s.textDelta('Provjerit ću')
+    await s.toolStarting()
+    await s.done('end_turn', { input_tokens: 0, output_tokens: 0 })
+  })
+  assertEquals(out.join(''), 'Samo trenutak.\n\n')
+})
+
+Deno.test('the first sentence of an answer is released as soon as the next one begins', async () => {
+  const chunks: string[] = []
+  const sink = new OpenAiChunkSink(async (c) => {
+    if (c.startsWith('data: {')) {
+      const content = JSON.parse(c.slice(6)).choices[0].delta.content
+      if (content) chunks.push(content)
+    }
+  }, 'test', () => 'Samo trenutak.')
+  await sink.textDelta('Projekt Tar je unutar proračuna.')
+  assertEquals(chunks.length, 0) // held: a tool call could still follow
+  await sink.textDelta(' Planirani')
+  assertEquals(chunks.join(''), 'Projekt Tar je unutar proračuna. ')
+  await sink.textDelta(' budžet je postavljen.')
+  await sink.done('end_turn', { input_tokens: 0, output_tokens: 0 })
+  assertEquals(chunks.join(''), 'Projekt Tar je unutar proračuna. Planirani budžet je postavljen.')
+})
+
+Deno.test('a one-sentence answer is spoken at the end', async () => {
+  const out = await spoken(async (s) => {
+    await s.textDelta('Bok!')
+    await s.done('end_turn', { input_tokens: 0, output_tokens: 0 })
+  })
+  assertEquals(out.join(''), 'Bok!')
 })

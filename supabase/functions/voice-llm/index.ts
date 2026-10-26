@@ -118,6 +118,7 @@ async function persistTurn(service: Service, sessionId: string, userRowId: strin
 }
 
 Deno.serve(async (req) => {
+  const t0 = performance.now()
   if (req.method !== 'POST') return json(405, 'method_not_allowed', 'Only POST is supported')
   if (!new URL(req.url).pathname.endsWith('/chat/completions')) return json(404, 'not_found', 'Not found')
 
@@ -166,6 +167,7 @@ Deno.serve(async (req) => {
   const ctx = await authenticateToken(call.access_token)
   if ('error' in ctx) return json(ctx.status, ctx.error.code, ctx.error.message)
   if (ctx.userId !== call.user_id) return json(401, 'unauthorized', 'Call does not belong to this user')
+  const authMs = Math.round(performance.now() - t0)
 
   const tools: Array<Record<string, unknown>> = selectAvailableTools(ctx, 'voice').map((t) => ({
     name: t.name,
@@ -178,7 +180,9 @@ Deno.serve(async (req) => {
   const config: LoopConfig = {
     channel: 'voice',
     model,
-    maxTokens: 384,
+    // Room for a few parallel tool calls; the prompt keeps answers to 1-3 sentences.
+    // (384, the plan's figure, cut off a turn of tool calls on the first dev call.)
+    maxTokens: 1024,
     maxIterations: 4,
     toolTimeoutMs: 6000,
     system: [
@@ -198,6 +202,7 @@ Deno.serve(async (req) => {
   // The agent closes the request when the caller interrupts.
   req.signal.addEventListener('abort', () => controller.abort(), { once: true })
 
+  const marks: string[] = [`auth=${authMs}`]
   const userRowId = crypto.randomUUID()
   const store = new DeferredStore()
   const run = async (sink: OpenAiChunkSink) => {
@@ -212,7 +217,11 @@ Deno.serve(async (req) => {
       },
       sink,
       store,
-      { isCancelled: async () => controller.signal.aborted, onComplete: async () => {} },
+      {
+        isCancelled: async () => controller.signal.aborted,
+        onComplete: async () => {},
+        mark: (event) => marks.push(`${event}=${Math.round(performance.now() - t0)}`),
+      },
       controller.signal,
     )
     // The loop ends silently on an abort; a caller who is still there hears why.
@@ -221,8 +230,17 @@ Deno.serve(async (req) => {
       await sink.error('request_timeout', 'Zahtjev je trajao predugo. Pokušajte ponovno.')
     }
   }
-  const persist = () => {
+  const persist = (sink: OpenAiChunkSink) => {
     clearTimeout(timeout)
+    // Where a request's time goes: the call lookup and identity, then the model
+    // and tools until the first spoken text, then the rest of the answer.
+    console.log('[voice-llm] timing', {
+      sessionId: call.session_id,
+      auth_ms: authMs,
+      first_text_ms: sink.firstOutputAt === null ? null : Math.round(sink.firstOutputAt - t0),
+      total_ms: Math.round(performance.now() - t0),
+      marks: marks.join(' '),
+    })
     const p = persistTurn(service, call.session_id, userRowId, userText, store)
     // Outlive the response on Supabase's runtime; elsewhere (tests) it just runs.
     ;(globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime?.waitUntil(p)
@@ -232,7 +250,7 @@ Deno.serve(async (req) => {
   if (body.stream !== true) {
     const sink = new OpenAiChunkSink(async () => {}, 'cognilion-voice')
     await run(sink)
-    void persist()
+    void persist(sink)
     return new Response(JSON.stringify({
       id: `chatcmpl-${userRowId}`,
       object: 'chat.completion',
@@ -252,6 +270,7 @@ Deno.serve(async (req) => {
       controller.abort() // the agent is gone: stop the loop
     }
   }, 'cognilion-voice')
+  sink.timing = () => `${marks.join(' ')} first_text=${sink.firstOutputAt === null ? '-' : Math.round(sink.firstOutputAt - t0)}`
   ;(async () => {
     try {
       await run(sink)
@@ -259,7 +278,7 @@ Deno.serve(async (req) => {
       console.error('[voice-llm] loop failed', { reason: err instanceof Error ? err.message : String(err) })
       await sink.error('internal_error', 'Došlo je do greške. Pokušajte ponovno.')
     } finally {
-      void persist()
+      void persist(sink)
       try {
         await writer.close()
       } catch {

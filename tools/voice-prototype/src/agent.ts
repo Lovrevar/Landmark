@@ -26,6 +26,8 @@
 //   SONIOX_API_KEY, ELEVENLABS_API_KEY, LIVEKIT_URL / LIVEKIT_API_KEY / LIVEKIT_API_SECRET
 
 import { type JobContext, type JobProcess, ServerOptions, cli, defineAgent, voice } from '@livekit/agents'
+import type { AudioFrame } from '@livekit/rtc-node'
+import { ReadableStream } from 'node:stream/web' // the type the agents library uses
 import * as elevenlabs from '@livekit/agents-plugin-elevenlabs'
 import * as openai from '@livekit/agents-plugin-openai'
 import * as silero from '@livekit/agents-plugin-silero'
@@ -111,6 +113,69 @@ function loadHints(): string[] {
   const projects = parseCsv(readFileSync(join(PHASE0, 'entities.csv'), 'utf8'))
     .filter((r) => r.entity_type === 'project').map((r) => r.target_form)
   return [...new Set([...terms, ...projects])]
+}
+
+// ElevenLabs holds the last sentence back until more text arrives or the input ends. voice-llm follows
+// its filler ("Samo trenutak, provjeravam.") with a paragraph break, and the answer only comes once the
+// tools have run, so each paragraph is synthesised as a stream of its own: ending that stream is what
+// makes the filler audible straight away. Measured on the first dev call: without this the filler
+// waited for the answer, 5-7 s after the caller stopped speaking.
+class ParagraphAgent extends voice.Agent {
+  async ttsNode(
+    text: ReadableStream<string> | AsyncIterable<string>,
+    modelSettings: voice.ModelSettings,
+  ): Promise<ReadableStream<AudioFrame> | null> {
+    const source = (text as AsyncIterable<string>)[Symbol.asyncIterator]()
+    let carry = ''
+    let ended = false
+    async function* paragraph(): AsyncGenerator<string> {
+      for (;;) {
+        const cut = carry.indexOf('\n\n')
+        if (cut !== -1) {
+          const head = carry.slice(0, cut + 2)
+          carry = carry.slice(cut + 2)
+          if (head.trim()) yield head
+          return
+        }
+        if (ended) {
+          const rest = carry
+          carry = ''
+          if (rest.trim()) yield rest
+          return
+        }
+        // Hold back a trailing newline: the next chunk may complete a break.
+        const ready = carry.endsWith('\n') ? carry.length - 1 : carry.length
+        if (ready > 0) {
+          const out = carry.slice(0, ready)
+          carry = carry.slice(ready)
+          yield out
+        }
+        const next = await source.next()
+        if (next.done) ended = true
+        else carry += next.value
+      }
+    }
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- the default node needs the agent
+    const agent = this
+    let current: ReadableStream<AudioFrame> | null = null
+    return new ReadableStream<AudioFrame>({
+      async start(controller) {
+        try {
+          while (!ended || carry.trim()) {
+            current = await voice.Agent.default.ttsNode(agent, paragraph(), modelSettings)
+            if (current) for await (const frame of current) controller.enqueue(frame)
+          }
+          controller.close()
+        } catch (err) {
+          controller.error(err)
+        }
+      },
+      async cancel(reason) {
+        await current?.cancel(reason)
+        await source.return?.()
+      },
+    })
+  }
 }
 
 function log(file: string, entry: Record<string, unknown>) {
@@ -206,7 +271,7 @@ export default defineAgent({
     })
 
     await session.start({
-      agent: new voice.Agent({ instructions: 'Probni asistent.' }),
+      agent: new ParagraphAgent({ instructions: 'Probni asistent.' }),
       room: ctx.room,
       outputOptions: { queueSizeMs: outputQueueMs },
     })

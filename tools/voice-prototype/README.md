@@ -1,5 +1,10 @@
 # Phase 0 — live voice prototype
 
+> **Since 2026-10-26 this worker is also what answers Cognilion's call button on LandmarkDev**, through
+> the `voice-llm` edge function. How that is set up and tested is in
+> [`docs/voice/04-dev-build.md`](../../docs/voice/04-dev-build.md). The `ask` mode of the scripted
+> caller plays questions through Cognilion's own start path and logs what the agent heard and said.
+
 This is the last part of phase 0 in
 [`docs/voice/02-voice-implementation-plan.md`](../../docs/voice/02-voice-implementation-plan.md) (§10).
 It measures the two gates that the offline harnesses in [`tools/phase0/`](../phase0/) can't:
@@ -53,6 +58,7 @@ includes transport.
 
 ```bash
 node src/call-test.ts latency /mnt/c/phase0/clean/s02_q01.wav /mnt/c/phase0/clean/s02_q02.wav
+node src/call-test.ts ask /mnt/c/phase0/clean/s02_q01.wav      # what the agent heard and said; with COGNILION_EMAIL set, via voice-session
 LABEL=vad node src/call-test.ts bargein /mnt/c/phase0/clean/s02_q01.wav   # STUB_ANSWER=long; LABEL = the agent's INTERRUPT_ON
 npm run report                                                      # the logs against the gates, barge-in per LABEL
 ```
@@ -61,7 +67,9 @@ npm run report                                                      # the logs a
 
 | Variable | Default | What it does |
 |---|---|---|
-| `VOICE` | `martin` | `martin`, `karlo`, or any ElevenLabs voice id |
+| `VOICE` | `karlo` | `karlo` (chosen 2026-10-26), `martin`, or any ElevenLabs voice id |
+| `AGENT_NAME` | unset | `cognilion-voice` makes the worker take only calls dispatched by `voice-session/start`; unset, it joins every room (the phase 0 set-up) |
+| `VOICE_LLM_URL`, `VOICE_LLM_SECRET` | — | The `voice-llm` endpoint and its secret, for dispatched calls. A dispatched call answers through Cognilion's assistant; any other through the stub |
 | `ENDPOINT_LATENCY_LEVEL` | 3 | Soniox v5 endpoint latency adjustment, 0–3. At 3, latency dropped from about 1.55 to 1.27 s |
 | `TURN_MIN_DELAY_MS` | 100 | LiveKit's wait *after* Soniox's end-of-turn signal. LiveKit's default of 500 ms is added on top of Soniox's own, so it is pure waiting |
 | `ENDPOINT_DELAY_MS` | 500 | Soniox's maximum end-of-turn delay (500–3000). Lowering it from 1000 made no difference |

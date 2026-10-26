@@ -21,8 +21,12 @@
 >   the gates; they no longer compare vendors.
 > - **Retell is out:** it has no OpenAI-compatible custom LLM, no EU processing, and does not let us
 >   choose Soniox.
-> - **The platform is open:** LiveKit Agents, Pipecat or Vapi; see §11, question 2. Where §1, §3.4 and
->   §4.3 name Vapi or Retell, read "the platform".
+> - **The platform: LiveKit Agents (Node)**, on LiveKit Cloud. The dev build runs on it (2026-10-26,
+>   [`04-dev-build.md`](./04-dev-build.md)); where §1, §3.4 and §4.3 name Vapi or Retell, read
+>   LiveKit. Still open: where the agent worker is hosted.
+> - **Speech-to-text confirmed on s02 alone** (decided 2026-10-26): no more speakers are recorded.
+
+> **✅ Decided 2026-10-26: text-to-speech is ElevenLabs `eleven_v4_turbo` with the voice Karlo.**
 
 Written 2026-09-23, amended the same day after team review. Builds directly on
 [`01-chat-assistant-analysis.md`](./01-chat-assistant-analysis.md); every recommendation here

@@ -27,8 +27,10 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   duplicate has appeared since 2026-10-12 (none then, in any database). Afterwards, try to add a
   unit with a number already in the building and a building with a name already in the project:
   both are refused with a message that says so.
-- [ ] **Apply `20261026100000_voice_calls`** (voice assistant, `feature/voice-assistant` only),
-  dev first. Production only when the voice feature ships. Afterwards: `select jobname from
+- [ ] **Apply `20261026100000_voice_calls`** (voice assistant, `feature/voice-assistant` only).
+  **Dev: done 2026-10-26 by running its SQL directly** (not recorded in `schema_migrations`, so
+  other branches can still push; dev has no pg_cron, so the sweep is not scheduled). Production
+  only when the voice feature ships. Afterwards: `select jobname from
   cron.job where jobname = 'voice-calls-sweep'` returns one row; as a signed-in user,
   `select * from voice_calls` is refused; existing chat sessions show `channel = 'chat'`. Then
   `/db-types`.

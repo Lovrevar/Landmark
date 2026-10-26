@@ -16,8 +16,10 @@
   - ai_sessions.channel separates voice calls from chat conversations (the chat history list and
     the chat rate limit count only 'chat'); external_call_id is the LiveKit room of a voice call.
 
-  After applying: nothing by hand. The sweep needs pg_cron, which dev and production already have
-  for 'deadline-reminders'; without it the migration skips the schedule with a notice.
+  After applying: the sweep needs pg_cron. Without it the migration skips the schedule with a
+  notice (LandmarkDev had no pg_cron on 2026-10-26): expired rows are then still refused at lookup,
+  but nothing deletes them. Enable pg_cron (Dashboard -> Database -> Extensions) and run the last
+  DO block again to schedule it.
 */
 
 CREATE TABLE IF NOT EXISTS public.voice_calls (

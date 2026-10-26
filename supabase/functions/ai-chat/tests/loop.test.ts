@@ -264,6 +264,13 @@ scenario('L16 truncation mid tool_use (max_tokens): error tool_result, persisted
   assertEquals(anthropic.calls.length, 1)
 })
 
+scenario('L16b truncation (max_tokens) of a call that is not create_document uses the generic message', async () => {
+  // Was the document message for any tool (found on the first dev voice call, 2026-10-26).
+  anthropic.script({ content: [toolUse('search_projects', { query: 'F' }), toolUse('list_project_phases', {})], stop_reason: 'max_tokens' })
+  const sse = await ask('x')
+  assertEquals(sse.events.find((e) => e.data.type === 'turn')!.data.text, 'Odgovor nije dovršen. Pokušajte ponovno.')
+})
+
 scenario('L17 truncation with any other terminal stop_reason uses the generic message', async () => {
   anthropic.script({ content: [toolUse('search_projects', { query: 'F' })], stop_reason: 'stop_sequence' })
   const sse = await ask('x')

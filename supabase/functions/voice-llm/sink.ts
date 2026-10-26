@@ -1,9 +1,14 @@
 // The voice channel's EventSink (plan §4.1, §3.4): the loop's text as OpenAI
 // `chat.completion.chunk` deltas, which the voice agent speaks as they arrive.
 //
-//   - textDelta is spoken, a word at a time, after `speakable()`;
-//   - toolStarting speaks one filler sentence per request, so the caller does
-//     not sit in silence while tools run;
+//   - textDelta is spoken, a word at a time, after `speakable()`. The first
+//     sentence of each stretch of text is held until the next token shows what
+//     follows it: if a tool call starts instead, the sentence was the model
+//     announcing a lookup ("Trebam prvo pronaći projekt…"), which the filler
+//     already covers, so it is dropped. Text-to-speech waits for a sentence
+//     end anyway, so holding it costs almost nothing;
+//   - toolStarting speaks one filler sentence per request, followed by a
+//     paragraph break, so the caller does not sit in silence while tools run;
 //   - textBlock repeats text already streamed as deltas, so it is spoken only
 //     when it was not (the loop's own messages: the iteration cap, truncation);
 //   - toolCall and toolResult are not spoken;
@@ -32,9 +37,12 @@ export class OpenAiChunkSink implements EventSink {
   private pending = ''
   private streamed = ''
   private fillerSpoken = false
+  private holding = true
   private roleSent = false
   /** Everything spoken, for a non-streamed response. */
   spoken = ''
+  /** When the first text went out (performance.now()), for the timing log. */
+  firstOutputAt: number | null = null
 
   constructor(
     private readonly write: (chunk: string) => Promise<void>,
@@ -56,6 +64,7 @@ export class OpenAiChunkSink implements EventSink {
   private async say(text: string): Promise<void> {
     if (!text) return
     const content = speakable(text)
+    this.firstOutputAt ??= performance.now()
     this.spoken += content
     await this.emit(this.roleSent ? { content } : { role: 'assistant', content })
     this.roleSent = true
@@ -79,14 +88,25 @@ export class OpenAiChunkSink implements EventSink {
   async textDelta(text: string): Promise<void> {
     this.streamed += text
     this.pending += text
+    if (this.holding) {
+      // Released once a sentence has ended and more text follows it.
+      if (!/[.!?](\s+)\S/.test(this.pending)) return
+      this.holding = false
+    }
     await this.flushWords()
   }
 
   async toolStarting(): Promise<void> {
+    // Held text followed by a tool call is an announcement of the lookup.
+    if (this.holding) this.pending = ''
+    this.holding = true
     if (this.fillerSpoken) return
     this.fillerSpoken = true
     await this.flushAll()
-    await this.say(`${this.spoken && !/\s$/.test(this.spoken) ? ' ' : ''}${this.pickFiller()} `)
+    // The paragraph break makes the agent synthesise the filler at once: its
+    // TTS holds a sentence back until more text arrives, and the answer only
+    // comes after the tools have run.
+    await this.say(`${this.spoken && !/\s$/.test(this.spoken) ? ' ' : ''}${this.pickFiller()}\n\n`)
   }
 
   async textBlock(text: string): Promise<void> {
@@ -101,8 +121,12 @@ export class OpenAiChunkSink implements EventSink {
   async toolCall(_tool: string, _input: unknown, _id: string): Promise<void> {}
   async toolResult(_tool: string, _output: unknown, _id: string, _isError: boolean): Promise<void> {}
 
+  /** Timing marks, sent as an SSE comment that OpenAI clients ignore. */
+  timing: (() => string) | null = null
+
   async done(_stopReason: string, _usage: Usage): Promise<void> {
     await this.flushAll()
+    if (this.timing) await this.write(`: timing ${this.timing()}\n\n`)
     await this.emit({}, 'stop')
     await this.write('data: [DONE]\n\n')
   }

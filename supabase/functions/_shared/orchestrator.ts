@@ -82,6 +82,8 @@ export interface LoopHooks {
   isCancelled(): Promise<boolean>
   /** After a terminal answer (not after an error or a cancel). */
   onComplete(): Promise<void>
+  /** Optional timing marks: model_call, first_event, tools_start, tools_done. */
+  mark?(event: string): void
 }
 
 export interface LoopConfig {
@@ -251,6 +253,8 @@ export async function runOrchestrationLoop(
     // finalMessage() is the same complete Message that messages.create returned,
     // so persistence and the events below are unchanged.
     let response: Awaited<ReturnType<ReturnType<typeof anthropic.messages.stream>['finalMessage']>>
+    hooks.mark?.('model_call')
+    let firstEvent = true
     try {
       const stream = anthropic.messages.stream({
         model,
@@ -260,6 +264,10 @@ export async function runOrchestrationLoop(
         messages: messages as unknown as Parameters<typeof anthropic.messages.create>[0]['messages'],
       }, { signal })
       for await (const ev of stream) {
+        if (firstEvent && (ev.type === 'content_block_start' || ev.type === 'content_block_delta')) {
+          firstEvent = false
+          hooks.mark?.('first_event')
+        }
         if (ev.type === 'content_block_delta' && ev.delta.type === 'text_delta') {
           await sink.textDelta(ev.delta.text)
         } else if (ev.type === 'content_block_start' && ev.content_block.type === 'tool_use') {
@@ -361,9 +369,11 @@ export async function runOrchestrationLoop(
       // needs another's output can only come in a later turn), so they run
       // concurrently, each with its own timeout (plan §3.2). Results go back in
       // tool_use order, as events and in a single tool_result row.
+      hooks.mark?.('tools_start')
       const results = await Promise.all(
         toolUses.map((tu) => dispatchToolWithTimeout(tu.name, tu.input, ctx, extras, config.toolTimeoutMs, config.channel)),
       )
+      hooks.mark?.('tools_done')
       // After-dispatch boundary: if the user cancelled while the tools ran,
       // drop the results on the floor — no event, no DB row.
       if (await hooks.isCancelled()) return
@@ -434,7 +444,9 @@ export async function runOrchestrationLoop(
         parent_id: lastInsertedId,
       })
 
-      const truncationText = stopReason === 'max_tokens'
+      // The document message only when a document was being written; a voice
+      // reply cut off mid tool call is not about a document.
+      const truncationText = stopReason === 'max_tokens' && toolUses.some((tu) => tu.name === 'create_document')
         ? 'Dokument je prevelik da bi stao u jedan odgovor. Zatražite kraći dokument ili ga podijelite na više manjih.'
         : 'Odgovor nije dovršen. Pokušajte ponovno.'
       const truncationContent: TextBlock[] = [{ type: 'text', text: truncationText }]
