@@ -44,7 +44,7 @@
 // use the JWT-scoped userClient internally.
 
 // Pinned to a known-good release with stable AbortSignal support on
-// messages.create. Bump deliberately; do not float on `latest`.
+// messages.stream. Bump deliberately; do not float on `latest`.
 import Anthropic from 'npm:@anthropic-ai/sdk@0.97.0'
 import { encodeBase64 } from 'jsr:@std/encoding@1/base64'
 
@@ -1233,9 +1233,12 @@ async function runOrchestrationLoop(
     // whole conversation-so-far becomes a cacheable prefix for the next call.
     applyMessageCacheBreakpoint(messages)
 
-    let response: Awaited<ReturnType<typeof anthropic.messages.create>>
+    // Streamed, so text can be passed on as it arrives (voice, §3.1 of the plan).
+    // finalMessage() is the same complete Message that messages.create returned,
+    // so persistence and the events below are unchanged.
+    let response: Awaited<ReturnType<ReturnType<typeof anthropic.messages.stream>['finalMessage']>>
     try {
-      response = await anthropic.messages.create({
+      const stream = anthropic.messages.stream({
         model,
         // Headroom for create_document, whose tool-call payload carries an
         // entire authored document. Too low and the model truncates mid
@@ -1247,6 +1250,7 @@ async function runOrchestrationLoop(
         tools: availableTools as unknown as Parameters<typeof anthropic.messages.create>[0]['tools'],
         messages: messages as unknown as Parameters<typeof anthropic.messages.create>[0]['messages'],
       }, { signal })
+      response = await stream.finalMessage()
     } catch (err) {
       // If the abort fired, the SDK's thrown error is a consequence — swallow
       // it. Caller decides whether to log a 'client_disconnect' line or emit

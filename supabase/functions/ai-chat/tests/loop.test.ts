@@ -79,7 +79,7 @@ scenario('L03 the model request: default model, max_tokens 8192, two-block syste
   const body = anthropic.calls[0].body
   assertEquals(body.model, 'claude-sonnet-4-6')
   assertEquals(body.max_tokens, 8192)
-  assertEquals(body.stream, undefined) // [PHASE 2] messages.create today; the refactor switches to stream
+  assertEquals(body.stream, true) // [PHASE 2] was messages.create (no stream flag); now messages.stream
   const system = body.system as Json[]
   assertEquals(system.length, 2)
   assertEquals(system[0].cache_control, { type: 'ephemeral' })
