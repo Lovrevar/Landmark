@@ -44,6 +44,14 @@ export async function authenticate(req: Request): Promise<AuthResult> {
       status: 401,
     }
   }
+  return await authenticateToken(authHeader.slice('Bearer '.length))
+}
+
+/** Identity from a user's JWT, by the same code for every channel. voice-llm
+ * uses it with the JWT stored for a call (plan §4.4), so role and assigned
+ * projects are re-read on every request, as for chat. */
+export async function authenticateToken(jwt: string): Promise<AuthResult> {
+  const authHeader = `Bearer ${jwt}`
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')

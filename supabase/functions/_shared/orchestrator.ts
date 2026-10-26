@@ -21,7 +21,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.97.0'
 
 import type { AuthContext } from './auth.ts'
 import type { Json } from './database.ts'
-import { findAvailableTool, TOOLS, type ToolHandlerExtras } from './tools.ts'
+import { type Channel, findAvailableTool, TOOLS, type ToolHandlerExtras } from './tools.ts'
 import { applyMessageCacheBreakpoint } from './context-window.ts'
 
 export const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') })
@@ -85,6 +85,7 @@ export interface LoopHooks {
 }
 
 export interface LoopConfig {
+  channel: Channel
   model: string
   maxTokens: number
   maxIterations: number
@@ -112,21 +113,28 @@ export async function dispatchTool(
   input: unknown,
   ctx: AuthContext,
   extras: ToolHandlerExtras,
+  channel: Channel = 'chat',
 ): Promise<unknown> {
-  // Role gate at dispatch, not just at advertisement: the name comes from the
-  // model's response, so it is checked again here against what this role may
-  // invoke. A refusal surfaces to the model as an is_error tool_result via
-  // dispatchToolWithTimeout.
-  const tool = findAvailableTool(ctx, name)
+  // Role and channel gate at dispatch, not just at advertisement: the name
+  // comes from the model's response, so it is checked again here against what
+  // this role may invoke on this channel. A refusal surfaces to the model as an
+  // is_error tool_result via dispatchToolWithTimeout.
+  const tool = findAvailableTool(ctx, name, channel)
   if (!tool) {
     const exists = TOOLS.some((t) => t.name === name)
-    console.warn('[ai-chat] tool refused at dispatch', {
+    const forRole = exists && findAvailableTool(ctx, name) !== undefined
+    const reason = !exists ? 'unknown_tool' : forRole ? 'not_permitted_on_channel' : 'not_permitted_for_role'
+    console.warn(`[${channel === 'voice' ? 'voice-llm' : 'ai-chat'}] tool refused at dispatch`, {
       userId: ctx.userId,
       role: ctx.role,
       tool: name,
-      reason: exists ? 'not_permitted_for_role' : 'unknown_tool',
+      reason,
     })
-    throw new Error(exists ? `tool not permitted for role: ${name}` : `unknown tool: ${name}`)
+    throw new Error(
+      reason === 'unknown_tool' ? `unknown tool: ${name}`
+        : reason === 'not_permitted_on_channel' ? `tool not permitted on ${channel}: ${name}`
+        : `tool not permitted for role: ${name}`,
+    )
   }
   return await tool.handler(input as Record<string, unknown>, ctx, extras)
 }
@@ -140,10 +148,11 @@ export async function dispatchToolWithTimeout(
   ctx: AuthContext,
   extras: ToolHandlerExtras,
   timeoutMs = 15000,
+  channel: Channel = 'chat',
 ): Promise<{ output: unknown; isError: boolean }> {
   try {
     const output = await Promise.race([
-      dispatchTool(name, input, ctx, extras),
+      dispatchTool(name, input, ctx, extras, channel),
       new Promise<never>((_, rej) =>
         setTimeout(() => rej(new Error('tool_timeout')), timeoutMs),
       ),
@@ -353,7 +362,7 @@ export async function runOrchestrationLoop(
       // concurrently, each with its own timeout (plan §3.2). Results go back in
       // tool_use order, as events and in a single tool_result row.
       const results = await Promise.all(
-        toolUses.map((tu) => dispatchToolWithTimeout(tu.name, tu.input, ctx, extras, config.toolTimeoutMs)),
+        toolUses.map((tu) => dispatchToolWithTimeout(tu.name, tu.input, ctx, extras, config.toolTimeoutMs, config.channel)),
       )
       // After-dispatch boundary: if the user cancelled while the tools ran,
       // drop the results on the floor — no event, no DB row.

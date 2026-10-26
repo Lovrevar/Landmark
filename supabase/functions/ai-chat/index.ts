@@ -908,6 +908,7 @@ function chatLoopConfig(ctx: AuthContext): LoopConfig {
     tools[tools.length - 1].cache_control = { type: 'ephemeral' }
   }
   return {
+    channel: 'chat',
     model: Deno.env.get('AI_CHAT_MODEL') ?? 'claude-sonnet-4-6',
     // Headroom for create_document, whose tool-call payload carries an
     // entire authored document. Too low and the model truncates mid

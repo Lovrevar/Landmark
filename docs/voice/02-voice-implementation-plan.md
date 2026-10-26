@@ -604,7 +604,7 @@ Two further locks:
 **Excluded in v1:** `create_document` (it authors a document artefact), and
 `list_documents_for_entity` / `get_document_download_link` (the document surface sits on tables
 with open UPDATE/DELETE RLS, and the results are UI cards that mean nothing on a call). The role
-gate still applies on top: a Sales caller gets six of the twelve.
+gate still applies on top: a Sales caller gets seven of the twelve.
 
 ---
 
