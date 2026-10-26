@@ -23,9 +23,11 @@ jobs:
           node-version: 24
           cache: npm
 
+      # Pinned: a new Deno can change type-checking under unchanged code. 2.9 typed setTimeout as
+      # Node's Timeout and failed the edge-function tests (fixed in 6e5affc2). Bump deliberately.
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: v2.9.8
 
       - name: Install dependencies
         run: npm ci
