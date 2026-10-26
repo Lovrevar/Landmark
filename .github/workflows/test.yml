@@ -35,6 +35,19 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
+      # Every other package in the repo (tools/voice-prototype, …) has its own lockfile, which the
+      # step above never sees. npm audit reads the lockfile alone, so nothing needs installing.
+      - name: Audit the other lockfiles
+        run: |
+          status=0
+          for lock in $(git ls-files '*/package-lock.json'); do
+            dir=$(dirname "$lock")
+            echo "::group::npm audit in $dir"
+            (cd "$dir" && npm audit --audit-level=high) || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
       - name: Typecheck
         run: npm run typecheck
 

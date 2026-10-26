@@ -1,0 +1,44 @@
+# Weekly update pull requests against development, where feature work is merged (CLAUDE.md, Git
+# Workflow). Security updates for a published advisory are separate: they are switched on in the
+# repository settings (Code security → Dependabot security updates) and open against the default branch.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    target-branch: development
+    schedule:
+      interval: weekly
+      day: monday
+    # Only versions at least two weeks old, the same rule used when adding dependencies by hand.
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: "/tools/voice-prototype"
+    target-branch: development
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 14
+    open-pull-requests-limit: 3
+    groups:
+      # The plugins pin @livekit/agents exactly, so they can only move together.
+      livekit:
+        patterns: ["@livekit/*"]
+      other:
+        patterns: ["*"]
+        exclude-patterns: ["@livekit/*"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: development
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 14

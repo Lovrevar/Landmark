@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phase 0 recorder</title>
+<style>
+  :root { --bg:#fafaf9; --fg:#1c1917; --muted:#78716c; --accent:#0f766e; --rec:#b91c1c; --warn:#b45309; --card:#ffffff; --line:#e7e5e4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1c1917; --fg:#f5f5f4; --muted:#a8a29e; --accent:#2dd4bf; --rec:#f87171; --warn:#fbbf24; --card:#292524; --line:#44403c; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 18px; margin: 0 0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  label { font-weight:600; margin-right:8px; }
+  input[type=text] { font:inherit; padding:6px 10px; width:6em; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--fg); }
+  button { font:inherit; padding:6px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--fg); cursor:pointer; margin-right:8px; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  #sentence { font-size: clamp(28px, 5vw, 44px); line-height:1.3; min-height: 3.2em; margin: 8px 0 12px; overflow-wrap:anywhere; }
+  #meta { color:var(--muted); font-size:14px; }
+  #state { font-weight:700; font-size:18px; }
+  #state.rec { color:var(--rec); }
+  #state.warn { color:var(--warn); }
+  #hint { color:var(--warn); font-size:14px; min-height:1.5em; }
+  .keys { color:var(--muted); font-size:14px; }
+  kbd { border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:0 6px; font-size:13px; }
+  #meter { height:8px; background:var(--line); border-radius:4px; overflow:hidden; margin-top:8px; }
+  #meterFill { height:100%; width:0; background:var(--accent); transition: width 60ms linear; }
+  #progress { font-variant-numeric: tabular-nums; font-weight:700; }
+  #section { text-transform:uppercase; letter-spacing:.05em; }
+  #log { color:var(--muted); font-size:13px; white-space:pre-wrap; max-height:10em; overflow:auto; }
+  .hidden { display:none; }
+  #dryBanner { background:var(--rec); color:#fff; font-weight:700; padding:8px 16px; text-align:center; }
+  #redoBadge { background:var(--warn); color:#fff; border-radius:6px; padding:0 8px; font-size:14px; margin-left:8px; }
+</style>
+</head>
+<body>
+<div id="dryBanner" class="hidden">DRY RUN — script not frozen or entity placeholders present. These recordings do not count.</div>
+<main>
+  <h1>Phase 0 — snimanje rečenica <span id="sessionLabel"></span></h1>
+
+  <section class="card" id="setup">
+    <p>
+      <label for="speaker">Speaker ID</label>
+      <input id="speaker" type="text" placeholder="s01" maxlength="3" autocomplete="off">
+      <button id="loadCsv">1. Load script</button>
+      <input id="csvFile" type="file" accept=".csv,text/csv" multiple class="hidden">
+      <button id="pickDir">2. Choose output folder (clean/)</button>
+      <button id="start" class="primary" disabled>3. Start</button>
+    </p>
+    <p class="keys">
+      Serve this folder on localhost (see README) and use Chrome or Edge, so the folder picker can write the
+      WAV files and <code>manifest.csv</code> directly. The script is five files plus <code>assignment.csv</code>,
+      which says which takes this speaker records: the primary half by default, or the other half with
+      <code>?session=complement</code>. Order is shuffled with the speaker ID as the seed. Reopening the page
+      resumes, skipping takes already in the folder. Recording is blocked until every row is <code>frozen</code>
+      and no entity is a placeholder (add <code>?dryrun=1</code> for a test run).
+    </p>
+    <p id="setupStatus" class="keys"></p>
+  </section>
+
+  <section class="card hidden" id="session">
+    <div id="meta"><span id="progress">0/0</span> · <span id="section"></span> · <span id="which"></span><span id="redoBadge" class="hidden">PONOVNO</span></div>
+    <div id="sentence"></div>
+    <div id="state">Pritisnite i držite razmaknicu dok čitate.</div>
+    <div id="hint"></div>
+    <div id="meter"><div id="meterFill"></div></div>
+    <p class="keys">
+      Hold <kbd>Space</kbd> while reading, release when done — the take is saved and the next sentence
+      appears. <kbd>R</kbd> goes back to the take you just recorded so the next <kbd>Space</kbd> replaces it;
+      <kbd>Esc</kbd> cancels that.
+    </p>
+    <div id="log"></div>
+  </section>
+</main>
+
+<script>
+'use strict'
+
+const TARGET_RATE = 16000
+const PRE_ROLL_MS = 300   // audio kept from before the key press
+const POST_ROLL_MS = 300  // audio kept after the key release (protects sentence-final words)
+const MANIFEST_NAME = 'manifest.csv'
+const MANIFEST_COLS = ['file', 'speaker', 'session', 'section', 'item_id', 'term_id', 'carrier_no', 'duration_ms', 'sample_rate', 'takes', 'order_index', 'recorded_at']
+const SCRIPT_FILES = {
+  'sentences.csv': { count: 90, cols: ['term_id', 'term', 'critical', 'carrier_no', 'sentence', 'target_form', 'accepted_alternates', 'review_status'] },
+  'entities.csv': { count: 40, cols: ['entity_id', 'entity_type', 'name', 'placeholder', 'carrier_no', 'sentence', 'target_form', 'accepted_alternates', 'review_status'] },
+  'amounts.csv': { count: 10, cols: ['amount_id', 'amount_eur', 'sentence', 'review_status'] },
+  'dates.csv': { count: 10, cols: ['date_id', 'day', 'month', 'year', 'sentence', 'review_status'] },
+  'questions.csv': { count: 10, cols: ['question_id', 'sentence', 'review_status'] },
+  'assignment.csv': { count: 160, cols: ['item_id', 'section', 'critical', 'speakers', 'complement'] },
+}
+const PARAMS = new URLSearchParams(location.search)
+const DRY_RUN = PARAMS.get('dryrun') === '1'
+const SESSION = PARAMS.get('session') === 'complement' ? 'complement' : 'primary'
+
+const $ = (id) => document.getElementById(id)
+const state = {
+  items: null, script: {}, blockers: [], speaker: null, dir: null, order: [], pending: [], idx: 0, done: new Set(),
+  ctx: null, node: null, stream: null, recording: false, chunks: [], ring: [], ringLen: 0,
+  phase: 'idle', // idle | recording | stopping | saving
+  redo: null,    // the item being re-recorded (R), or null
+  last: null,    // the most recently saved item
+  takes: {},     // file -> number of takes this session
+  manifestMemory: [],
+}
+
+$('sessionLabel').textContent = SESSION === 'complement' ? '— complement session' : ''
+
+function log(msg) { const el = $('log'); el.textContent = `${new Date().toLocaleTimeString()} ${msg}\n` + el.textContent }
+function setState(text, cls = '') { const el = $('state'); el.textContent = text; el.className = cls }
+
+// ---------- CSV ----------
+function parseCsv(text) {
+  const rows = []; let row = []; let field = ''; let q = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++ } else q = false }
+      else field += c
+    } else if (c === '"') q = true
+    else if (c === ',') { row.push(field); field = '' }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++
+      row.push(field); field = ''
+      if (row.length > 1 || row[0] !== '') rows.push(row)
+      row = []
+    } else field += c
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row) }
+  const [head, ...body] = rows
+  return body.map((r) => Object.fromEntries(head.map((h, i) => [h.trim(), r[i] ?? ''])))
+}
+const csvCell = (v) => { const s = String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }
+
+function acceptScriptFile(name, text) {
+  const spec = SCRIPT_FILES[name]
+  if (!spec) return
+  const rows = parseCsv(text)
+  if (!rows.length || !spec.cols.every((k) => k in rows[0])) throw new Error(`${name}: missing columns (need ${spec.cols.join(', ')})`)
+  if (rows.length !== spec.count) throw new Error(`${name}: ${rows.length} rows, expected ${spec.count}`)
+  state.script[name] = rows
+}
+
+// One flat list of takes: {section, item_id, sentence, row, speakers, complement}.
+function buildItems() {
+  const items = []
+  for (const r of state.script['sentences.csv']) items.push({ section: 'term', item_id: `${r.term_id}_c${r.carrier_no}`, term_id: r.term_id, carrier_no: r.carrier_no, sentence: r.sentence, row: r })
+  for (const r of state.script['entities.csv']) items.push({ section: 'entity', item_id: `${r.entity_id}_c${r.carrier_no}`, carrier_no: r.carrier_no, sentence: r.sentence, row: r })
+  for (const r of state.script['amounts.csv']) items.push({ section: 'amount', item_id: r.amount_id, sentence: r.sentence, row: r })
+  for (const r of state.script['dates.csv']) items.push({ section: 'date', item_id: r.date_id, sentence: r.sentence, row: r })
+  for (const r of state.script['questions.csv']) items.push({ section: 'question', item_id: r.question_id, sentence: r.sentence, row: r })
+  const assign = Object.fromEntries(state.script['assignment.csv'].map((a) => [a.item_id, a]))
+  for (const it of items) {
+    const a = assign[it.item_id]
+    if (!a) throw new Error(`assignment.csv has no row for ${it.item_id}: re-run assign.py`)
+    it.speakers = a.speakers ? a.speakers.split('|') : []
+    it.complement = a.complement ? a.complement.split('|') : []
+  }
+  return items
+}
+
+// The takes this speaker records in this session.
+function assignedTo(items, speaker) {
+  return items.filter((it) => (SESSION === 'complement' ? it.complement : it.speakers).includes(speaker))
+}
+
+function scriptLoaded() {
+  const missing = Object.keys(SCRIPT_FILES).filter((n) => !state.script[n])
+  if (missing.length) { $('setupStatus').textContent = `Still needed: ${missing.join(', ')}`; return }
+  try { state.items = buildItems() } catch (err) { $('setupStatus').textContent = err.message; return }
+  const drafts = state.items.filter((i) => i.row.review_status !== 'frozen').length
+  const placeholders = new Set(state.script['entities.csv'].filter((r) => r.placeholder === 'y').map((r) => r.entity_id)).size
+  state.blockers = []
+  if (drafts) state.blockers.push(`${drafts} row(s) not frozen`)
+  if (placeholders) state.blockers.push(`${placeholders} placeholder entit${placeholders === 1 ? 'y' : 'ies'}`)
+  $('setupStatus').textContent = `Loaded ${state.items.length} takes.` + (state.blockers.length
+    ? ` Blocked: ${state.blockers.join(', ')}.` + (DRY_RUN ? ' Dry run allowed by ?dryrun=1.' : ' Freeze the script (or use ?dryrun=1 for a test run).')
+    : ' Script frozen.')
+  refreshStart()
+}
+
+// ---------- seeded shuffle (speaker ID + session are the seed) ----------
+function fnv1a(str) { let h = 0x811c9dc5; for (const ch of new TextEncoder().encode(str)) { h ^= ch; h = Math.imul(h, 0x01000193) >>> 0 } return h }
+function mulberry32(seed) { return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
+function shuffled(items, seedStr) {
+  const rnd = mulberry32(fnv1a(seedStr)); const a = items.slice()
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
+  return a
+}
+const fileName = (item) => `${state.speaker}_${item.item_id}.wav`
+
+// ---------- setup ----------
+function refreshStart() {
+  const ok = /^s0[1-6]$/.test($('speaker').value.trim()) && state.items && (!state.blockers.length || DRY_RUN)
+  $('start').disabled = !ok
+}
+$('speaker').addEventListener('input', refreshStart)
+$('loadCsv').addEventListener('click', async () => {
+  try {
+    for (const name of Object.keys(SCRIPT_FILES)) {
+      const res = await fetch(name, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`)
+      acceptScriptFile(name, await res.text())
+    }
+    scriptLoaded()
+  } catch (err) {
+    if (err instanceof TypeError) { $('csvFile').click(); return } // file:// — pick the six files instead
+    $('setupStatus').textContent = err.message
+  }
+})
+$('csvFile').addEventListener('change', async (e) => {
+  try {
+    for (const f of e.target.files) acceptScriptFile(f.name, await f.text())
+    scriptLoaded()
+  } catch (err) { $('setupStatus').textContent = err.message }
+})
+$('pickDir').addEventListener('click', async () => {
+  if (!window.showDirectoryPicker) { $('setupStatus').textContent = 'This browser has no folder picker: takes will download one by one.'; return }
+  try {
+    state.dir = await window.showDirectoryPicker({ mode: 'readwrite' })
+    $('setupStatus').textContent = `Output folder: ${state.dir.name}/`
+  } catch { /* cancelled */ }
+})
+
+$('start').addEventListener('click', async () => {
+  state.speaker = $('speaker').value.trim()
+  state.order = shuffled(assignedTo(state.items, state.speaker), `${state.speaker}:${SESSION}`)
+  state.done = new Set()
+  if (state.dir) {
+    for await (const [name] of state.dir.entries()) state.done.add(name)
+  }
+  state.pending = state.order.filter((r) => !state.done.has(fileName(r)))
+  try { await initAudio() } catch (err) { $('setupStatus').textContent = `Microphone unavailable: ${err.message}`; return }
+  if (state.blockers.length) $('dryBanner').classList.remove('hidden')
+  $('setup').classList.add('hidden'); $('session').classList.remove('hidden')
+  state.idx = 0
+  log(`speaker ${state.speaker}, ${SESSION} session: ${state.pending.length} to record, ${state.order.length - state.pending.length} already done`)
+  showCurrent()
+})
+
+// ---------- audio capture ----------
+const WORKLET = `
+class Tap extends AudioWorkletProcessor {
+  process(inputs) { const ch = inputs[0] && inputs[0][0]; if (ch) this.port.postMessage(ch.slice(0)); return true }
+}
+registerProcessor('tap', Tap)`
+
+async function initAudio() {
+  state.stream = await navigator.mediaDevices.getUserMedia({
+    audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+  })
+  state.ctx = new AudioContext()
+  const url = URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' }))
+  await state.ctx.audioWorklet.addModule(url)
+  const src = state.ctx.createMediaStreamSource(state.stream)
+  state.node = new AudioWorkletNode(state.ctx, 'tap')
+  src.connect(state.node)
+  const preRollSamples = Math.round(state.ctx.sampleRate * PRE_ROLL_MS / 1000)
+  state.node.port.onmessage = (e) => {
+    const block = e.data
+    let sum = 0; for (let i = 0; i < block.length; i++) sum += block[i] * block[i]
+    $('meterFill').style.width = `${Math.min(100, Math.sqrt(sum / block.length) * 400)}%`
+    if (state.recording) { state.chunks.push(block); return }
+    state.ring.push(block); state.ringLen += block.length
+    while (state.ringLen - state.ring[0].length >= preRollSamples) { state.ringLen -= state.ring.shift().length }
+  }
+}
+
+function currentItem() { return state.redo ?? state.pending[state.idx] }
+
+function startRecording() {
+  if (state.ctx.state === 'suspended') state.ctx.resume()
+  state.chunks = state.ring.slice() // pre-roll
+  state.recording = true; state.phase = 'recording'
+  $('hint').textContent = ''
+  setState('● Snimanje…', 'rec')
+}
+
+function stopRecording() {
+  state.phase = 'stopping'
+  setTimeout(async () => { // post-roll, then save and move on: no playback
+    state.recording = false
+    const pcm = concat(state.chunks); state.chunks = []
+    const resampled = await resample(pcm, state.ctx.sampleRate, TARGET_RATE)
+    const durationMs = Math.round(resampled.length / TARGET_RATE * 1000)
+    const peak = resampled.reduce((m, v) => Math.max(m, Math.abs(v)), 0)
+    const item = currentItem()
+    const saved = await save(item, encodeWav(resampled, TARGET_RATE), durationMs)
+    if (!saved) return
+    const wasRedo = state.redo !== null
+    state.last = item; state.redo = null
+    if (!wasRedo) state.idx++
+    const warn = durationMs < 600 ? 'Prethodna snimka je vrlo kratka — R za ponavljanje.'
+      : peak >= 0.99 ? 'Prethodna snimka je preglasna (clipping) — R za ponavljanje.' : ''
+    showCurrent()
+    $('hint').textContent = warn
+  }, POST_ROLL_MS)
+}
+
+function concat(blocks) {
+  const n = blocks.reduce((s, b) => s + b.length, 0); const out = new Float32Array(n); let o = 0
+  for (const b of blocks) { out.set(b, o); o += b.length }
+  return out
+}
+
+async function resample(pcm, fromRate, toRate) {
+  if (pcm.length === 0) return new Float32Array(0)
+  if (fromRate === toRate) return pcm
+  const off = new OfflineAudioContext(1, Math.ceil(pcm.length * toRate / fromRate), toRate)
+  const buf = off.createBuffer(1, pcm.length, fromRate); buf.copyToChannel(pcm, 0)
+  const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start()
+  return (await off.startRendering()).getChannelData(0).slice(0)
+}
+
+function encodeWav(samples, rate) { // 16-bit PCM, mono
+  const buf = new ArrayBuffer(44 + samples.length * 2); const v = new DataView(buf)
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)) }
+  w(0, 'RIFF'); v.setUint32(4, 36 + samples.length * 2, true); w(8, 'WAVE'); w(12, 'fmt ')
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true)
+  v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data')
+  v.setUint32(40, samples.length * 2, true)
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i])); v.setInt16(44 + i * 2, s < 0 ? Math.round(s * 32768) : Math.round(s * 32767), true)
+  }
+  return new Blob([buf], { type: 'audio/wav' })
+}
+
+// ---------- saving ----------
+async function save(item, wav, durationMs) {
+  state.phase = 'saving'
+  const name = fileName(item)
+  state.takes[name] = (state.takes[name] ?? 0) + 1
+  const line = {
+    file: name, speaker: state.speaker, session: SESSION, section: item.section, item_id: item.item_id,
+    term_id: item.term_id ?? '', carrier_no: item.carrier_no ?? '',
+    duration_ms: durationMs, sample_rate: TARGET_RATE, takes: state.takes[name],
+    order_index: state.order.indexOf(item) + 1, recorded_at: new Date().toISOString(),
+  }
+  try {
+    if (state.dir) {
+      await writeFile(name, wav)
+      await upsertManifest(line)
+    } else {
+      download(name, wav)
+      state.manifestMemory = state.manifestMemory.filter((m) => m.file !== name).concat([line])
+    }
+  } catch (err) {
+    state.phase = 'idle'; setState(`Spremanje nije uspjelo: ${err.message} — pokušajte ponovno.`, 'warn'); return false
+  }
+  state.done.add(name)
+  log(`saved ${name} (${durationMs} ms, take ${state.takes[name]})`)
+  return true
+}
+
+async function writeFile(name, blob) {
+  const fh = await state.dir.getFileHandle(name, { create: true }); const w = await fh.createWritable()
+  await w.write(blob); await w.close()
+}
+
+async function upsertManifest(line) {
+  let rows = []
+  try {
+    const fh = await state.dir.getFileHandle(MANIFEST_NAME)
+    rows = parseCsv(await (await fh.getFile()).text())
+  } catch { /* first take in this folder */ }
+  rows = rows.filter((m) => m.file !== line.file).concat([line])
+  const text = [MANIFEST_COLS.join(','), ...rows.map((m) => MANIFEST_COLS.map((c) => csvCell(m[c] ?? '')).join(','))].join('\n') + '\n'
+  await writeFile(MANIFEST_NAME, new Blob([text], { type: 'text/csv' }))
+}
+
+function download(name, blob) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000)
+}
+
+// ---------- flow ----------
+function showCurrent() {
+  const total = state.order.length
+  const names = new Set(state.order.map(fileName))
+  const doneCount = [...state.done].filter((n) => names.has(n)).length
+  $('progress').textContent = `${Math.min(doneCount, total)}/${total}`
+  $('redoBadge').classList.toggle('hidden', !state.redo)
+  const item = currentItem()
+  if (!item) {
+    $('sentence').textContent = 'Gotovo — hvala!'
+    $('section').textContent = ''; $('which').textContent = ''
+    setState(state.last ? 'All takes recorded. R still re-records the last one.' : 'All takes recorded for this session.')
+    if (!state.dir && state.manifestMemory.length) {
+      const text = [MANIFEST_COLS.join(','), ...state.manifestMemory.map((m) => MANIFEST_COLS.map((c) => csvCell(m[c])).join(','))].join('\n') + '\n'
+      download(`manifest_${state.speaker}_${SESSION}.csv`, new Blob([text], { type: 'text/csv' }))
+      state.manifestMemory = []
+    }
+    state.phase = 'idle'; return
+  }
+  $('sentence').textContent = item.sentence
+  $('section').textContent = item.section
+  $('which').textContent = fileName(item)
+  state.phase = 'idle'
+  setState(state.redo ? 'Ponovno snimanje — držite razmaknicu dok čitate (Esc odustaje).' : 'Pritisnite i držite razmaknicu dok čitate.')
+}
+
+document.addEventListener('keydown', (e) => {
+  if ($('session').classList.contains('hidden')) return
+  if (e.code === 'Space') {
+    e.preventDefault()
+    if (!e.repeat && state.phase === 'idle' && currentItem()) startRecording()
+  } else if ((e.key === 'r' || e.key === 'R') && state.phase === 'idle' && state.last && !state.redo) {
+    e.preventDefault(); state.redo = state.last; $('hint').textContent = ''; showCurrent()
+  } else if (e.key === 'Escape' && state.phase === 'idle' && state.redo) {
+    e.preventDefault(); state.redo = null; showCurrent()
+  }
+})
+document.addEventListener('keyup', (e) => {
+  if (e.code === 'Space' && state.phase === 'recording') { e.preventDefault(); stopRecording() }
+})
+</script>
+</body>
+</html>

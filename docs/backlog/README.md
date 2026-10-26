@@ -113,9 +113,15 @@ visible effect: [GEN-18](./projects-dashboards-reports.md) (General report PDF c
   moot or turns into ERP work in phase 5.
 
 **Voice assistant (`feature/voice-assistant`).**
-- The phase 0 freeze checklist is out of date: all 160 script rows are `frozen` since commit
-  `022dcc3d`, but its six boxes are unticked and the stash it mentions still exists.
-- Next: record phase 0 and take the go/no-go.
+- **Works end to end on LandmarkDev** (2026-10-26): the call button, `voice-session`, `voice-llm`
+  and the agent worker. What is missing before it ships is listed in
+  [`docs/voice/04-dev-build.md`](../voice/04-dev-build.md) → "Not done yet": latency, hosting the
+  worker, voice rate limits, plan §3.3/§3.5, OQ-1/OQ-2, result clamps, the in-call panel.
+- Speech-to-text is decided: Soniox (2026-10-22, plan header), confirmed on s02 alone (decided
+  2026-10-26: more speakers are not needed). `s02_e19_c1` is silent.
+- The script is frozen (`022dcc3d`) without the fragile-take dry run or a second reviewer. Open:
+  whether to accept `ojb` for OIB. See the freeze checklist, §4.
 - Phase 2 carries the decided fixes for OQ-1 and OQ-2. OQ-3 to OQ-9 are open.
-- Ten team questions are open in the implementation plan (§11), among them Vapi or Retell,
-  recording, cost ceiling and whether finance data may go over the phone.
+- Team questions open in the implementation plan (§11), among them:
+  - the worker's hosting: LiveKit Cloud's agent hosting (EU) or our own server;
+  - recording, the cost ceiling, and whether finance data may go over the phone.

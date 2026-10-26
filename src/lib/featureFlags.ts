@@ -14,3 +14,13 @@
  * migrations are restored and applied — see "On hold" in docs/erp-integration/PROGRESS.md.
  */
 export const ERP_INTEGRATION_ENABLED = false
+
+/**
+ * In-app voice calls with the AI assistant — on LandmarkDev only (docs/voice/04-dev-build.md). Hides
+ * the call button, and keeps the chat history from filtering on ai_sessions.channel, a column that
+ * exists only where the `voice_calls` migration is applied.
+ *
+ * To try voice against LandmarkDev, set it to true locally and do not commit it. Flip it for real
+ * only with the migration applied and an agent worker running for that deployment.
+ */
+export const VOICE_CALLS_ENABLED = false

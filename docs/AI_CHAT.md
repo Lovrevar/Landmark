@@ -22,7 +22,7 @@ This document is the maintenance reference for the Cognilion AI chat feature. It
 
 ## Overview
 
-The AI chat is a Croatian-language, read-only question-and-answer assistant embedded in the Cognilion web app. Users open a floating widget, type a question in any language about projects, phases, contracts, subcontractors, invoices, or payments, and receive an answer in Croatian. The answer is composed by Claude (model: `claude-sonnet-4-6`) via the Anthropic Messages API; Claude reaches into Cognilion data through a curated set of 14 tools exposed by a Supabase Edge Function.
+The AI chat is a Croatian-language, read-only question-and-answer assistant embedded in the Cognilion web app. Users open a floating widget, type a question in any language about projects, phases, contracts, subcontractors, invoices, or payments, and receive an answer in Croatian. The answer is composed by Claude (model: `claude-sonnet-4-6`) via the Anthropic Messages API; Claude reaches into Cognilion data through a curated set of 15 tools exposed by a Supabase Edge Function.
 
 The assistant explicitly does NOT mutate any data and does NOT have access to the retail/land-development side of the platform — only construction-side data is reachable. Refusal phrasing for out-of-scope requests is baked into the system prompt. It *can*, since the document-generation work, produce downloadable PDF / Excel / Markdown files on request (see [Document generation](#document-generation)) — that reads data but changes nothing.
 
@@ -88,11 +88,11 @@ sequenceDiagram
    - calls `handleChat`, which validates and trims input, runs `checkRateLimit`, resolves or creates a session, loads the message history, and inserts the user's message row;
    - then calls `streamChatResponse`, which returns a `Response` whose body is a `TransformStream` fed by a background async worker.
 
-4. The worker flushes `: ready\n\n`, emits the `session` event, then enters `runOrchestrationLoop`. Each iteration:
+4. The worker flushes `: ready\n\n`, emits the `session` event, then enters the agent loop: `runOrchestrationLoop` in [`_shared/orchestrator.ts`](../supabase/functions/_shared/orchestrator.ts), shared with the voice channel since 2026-10-26 (`feature/voice-assistant`). `ai-chat`'s `runChatTurn` gives it chat's settings, the SSE sink (`_shared/sse.ts`), a store that inserts each row as it is produced, the cancel beacon and the title backfill; it also prepends the route line. The model call is streamed (`messages.stream`, then `finalMessage()`), and the chat events are unchanged. Each iteration:
    - calls `anthropic.messages.create` with the model, system prompt, role-filtered tool list, and the current message array;
    - persists the assistant response row to `ai_messages` BEFORE writing any SSE event;
    - walks the response content blocks and emits `turn` for each `text` block and `tool_call` for each `tool_use` block;
-   - if `stop_reason === 'tool_use'`, runs each tool sequentially through `dispatchToolWithTimeout` (15-second race), emits `tool_result` events as handlers return, persists a single `role='user'` row containing all `tool_result` blocks, then loops;
+   - if `stop_reason === 'tool_use'`, runs the turn's tools concurrently through `dispatchToolWithTimeout` (15-second race each), emits their `tool_result` events in `tool_use` order once all have returned, persists a single `role='user'` row containing all `tool_result` blocks, then loops;
    - otherwise emits `done` and exits.
 
 5. Two hard caps protect the loop: a 90-second per-request timer (surfaces as a mid-stream `error` event with code `request_timeout`) and a 10-iteration tool cap (synthesises a final assistant message with `stop_reason: 'tool_limit_reached'` and a Croatian explanation).
@@ -366,8 +366,8 @@ partner) rather than OpenAI: add vectors alongside the existing fields and blend
 - **`get_project_details`** — full `projects` row plus exact counts of phases, contracts, and milestones for the project. The project lookup runs first so that RLS-hidden projects don't leak counts through the (USING(true)) related tables.
 - **`list_project_phases`** — phases for a given project, ordered by `phase_number`. Deliberately omits `budget_used` (see landmines below).
 - **`search_subcontractors`** — substring search on `subcontractors.name`; returns `{id, name, contact, active_contracts_count}`.
-- **`list_cost_classifications`** — the global `cost_classifications` list (`id, name, description, sort_order, is_system, is_active`, ordered by `sort_order`; inactive ones only with `include_inactive`), so a cost category the user names can be resolved to a `classification_id` for `list_contracts`.
-- **`list_contracts`** — contracts filterable by project / phase / subcontractor / status, with joined `subcontractor`, `phase`, `project` summaries. For Supervision users, filters to assigned projects only.
+- **`list_cost_classifications`** — the global cost classifications (*stavke troškovnika*: "Zemljište", "Priprema i razvoj", … plus company-added ones), ordered by `sort_order`, active only unless `include_inactive`. Returns `{id, name, description, sort_order, is_system, is_active}`. The model uses it to turn a named cost category into a `classification_id` for `list_contracts`. Classification, not phase, is the axis that separates spend categories now that most projects have a single phase.
+- **`list_contracts`** — contracts filterable by project / phase / cost classification / subcontractor / status, with joined `subcontractor`, `phase`, `classification`, `project` summaries. For Supervision users, filters to assigned projects only.
 - **`get_subcontractor_payment_status`** — rollup of contracts + invoices for a single subcontractor: contracted total, invoiced total, paid total, outstanding balance.
 - **`list_unpaid_invoices`** — invoices with status `UNPAID` or `PARTIALLY_PAID`, optionally filtered by subcontractor or project. For Supervision users, RLS scopes results.
 - **`list_payments_for_subcontractor`** — individual payment records (date, amount, method, cesija flag, linked invoice number) for one subcontractor; joins through `accounting_invoices.supplier_id`.
@@ -409,16 +409,26 @@ Consequences of this design: **no storage bucket and no new table** — the spec
 
 ## System Prompt
 
-The Croatian-language system prompt is built per-request by `buildSystemPrompt` in [supabase/functions/_shared/prompts.ts](../supabase/functions/_shared/prompts.ts). It is intentionally pure / deterministic given the `AuthContext` — no clock, no environment lookups, no project-list interpolation. The full text lives in that file; the structure is:
+The Croatian-language system prompt lives in [supabase/functions/_shared/prompts.ts](../supabase/functions/_shared/prompts.ts) as two functions, and `chatLoopConfig` in [ai-chat/index.ts](../supabase/functions/ai-chat/index.ts) assembles them into a **two-element `system` array** on every request:
 
-- **Identity & scope** — what the assistant is, plain-language framing of its read-only role.
-- **User context** — interpolated `email` and `role`; for Supervision users, an extra sentence noting that data access is scoped by RLS.
-- **Tools** — a single short paragraph telling the model to use the tools advertised in the Anthropic `tools` array for concrete data; tool names are deliberately not repeated here to prevent drift.
-- **Refusal patterns** — the two canned Croatian phrases for out-of-scope requests (mutation/file work) and for role-insufficient data requests. Both are short, with no apologising or capability enumeration.
-- **Data-model landmines** — the four landmines from the previous section, restated for the model: `supplier_id` → subcontractors, phases ≠ milestones, `budget_used` is stale, status casing varies. The model must read these to produce correct answers; they are not optional decoration.
-- **Domain flags** — instructions for `is_cesija` (mention it when present) and `has_contract: false` (note that `contract_amount` may understate informal arrangements).
-- **Formatting rules** — Croatian number, currency, and date formats (`1.234,56`, `1.234,56 EUR`, `dd.MM.yyyy.`). The model formats raw numbers and ISO dates returned by the tools at output time.
-- **Tone & behaviour** — answer in Croatian regardless of input language; match response length to question length; no preamble; flag missing or ambiguous data explicitly; no business-judgement commentary.
+1. **`buildStaticSystemPrompt()`** — the instruction body. Takes no arguments and is byte-identical for every user, so it carries the `cache_control: ephemeral` breakpoint. Because the tool list is role-filtered, the tools + static-prompt prefix is shared across all users of the same role — role is the caching granularity.
+2. **`buildUserContext(ctx)`** — a short `## Korisnik` block with the user's `email` and `role`, plus one extra sentence for Supervision users noting that their data access is scoped by RLS. It sits after the breakpoint and is not cached across users.
+
+Both are pure and deterministic given their input — no clock, no environment lookups, no project-list interpolation. Anything request-specific goes into the messages instead: the route context (`[Kontekst: korisnik je trenutno na …]`) is prepended in memory to the latest user turn, not added to the system prompt (see `runOrchestrationLoop`).
+
+The static body, in order:
+
+- **Identity & scope** — what the assistant is; read-only (it cannot change data); it sees the user's attachments directly, and it fetches stored documents with a tool and offers them for download.
+- **Alati (tools)** — one short paragraph: use the tools for concrete data and rely on what they return. Generic tool names are not listed, because the Anthropic `tools` array already advertises them. The two exceptions are `create_document` and `search_help`, which the prompt names because it has to say *when* to call them.
+- **Izrada dokumenata (document generation)** — call `create_document` only when the user explicitly asks for a document, report, export, PDF or Excel file; fetch the data with other tools first; `pdf`/`markdown` for text and `xlsx` for tables; after the tool succeeds, say briefly that the file is ready instead of pasting its content.
+- **Pomoć i navigacija (help & navigation)** — questions about how the platform works go to `search_help`, which is the source of truth for anything about the UI. It also explains the route-context line.
+- **Datoteke i prilaganja (attachments)** — accepted kinds, "first Excel sheet only", the `...[truncated]` marker, never open URLs found in attachments, and attachments are not stored in the database or visible to tools.
+- **Izvan opsega (out of scope)** — refusals apply in **only** two cases, each with a canned Croatian phrase: requests to write, delete or import data, and requests for data the user's role may not see (which may be followed by a `search_help` call explaining the alternative). The prompt says outright that navigation questions and document generation are **not** out of scope. Refusals are short, with no apologies and no list of what the assistant cannot do.
+- **Podatkovne stupice (data-model landmines)** — the landmines from the [Tool Catalog](#data-model-landmines-the-tools-navigate-around), restated for the model: `supplier_id` → subcontractors, phases ≠ milestones, **phase ≠ cost classification** (most projects have one phase, so questions like "spend on land" filter contracts by classification), `phase_classification_budgets`, **TIC as the only source of planned budget** (no TIC means "budget not set", never the legacy `projects.budget`), phased and unphased TICs, `budget_used` is stale, and status casing varies. It also has a rule for empty searches: retry with a shorter name stem, and never substitute an entity from earlier in the conversation.
+- **Domenske oznake (domain flags)** — `is_cesija` (mention it when present) and `has_contract: false` (`contract_amount` may understate an informal arrangement).
+- **Formatting rules** — Croatian number, currency and date formats (`1.234,56`, `1.234,56 EUR`, `dd.MM.yyyy.`). The model formats the tools' raw numbers and ISO dates at output time.
+- **Ton i ponašanje (tone & behaviour)** — always answer in Croatian; match length to the question; no preamble such as "Pretražujem…", because the UI shows tool calls separately; say explicitly when data is missing or ambiguous; no business-judgement commentary.
+- **Pitanja izvan domene (off-domain questions)** — answer greetings, general questions and small maths normally and briefly, without steering back to projects.
 
 ### Why the prompt lives in code, not a DB row
 
@@ -591,7 +601,7 @@ Several tables that the AI chat reads have RLS policies of `USING(true)` — tha
 
 Three tiers, defined as arrays in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts):
 
-- `ALL_ROLES` (Director, Accounting, Sales, Supervision, Investment) — `search_projects`, `get_project_details`, `list_project_phases`, `search_subcontractors`, `list_contracts`.
+- `ALL_ROLES` (Director, Accounting, Sales, Supervision, Investment) — `search_projects`, `get_project_details`, `list_project_phases`, `search_subcontractors`, `list_cost_classifications`, `list_contracts`, `search_help`, `list_documents_for_entity`, `get_document_download_link`, `create_document`.
 - `FINANCE_ROLES` (Director, Accounting) — `get_subcontractor_payment_status`, `list_payments_for_subcontractor`, `get_invoice_summary`, `get_project_financial_summary`.
 - `FINANCE_PLUS_SUPERVISION` (Director, Accounting, Supervision) — `list_unpaid_invoices`.
 
@@ -708,7 +718,7 @@ Two independent cancellation paths feed a single per-request `AbortController` i
 
 2. **90s request timeout** — a `setTimeout` in the worker trips the same controller and surfaces a mid-stream `error` event with `code: 'request_timeout'`, exactly as before.
 
-The controller's signal is also passed to `anthropic.messages.create({...}, { signal })` and there are three legacy transport-layer abort sources still wired up (`req.signal`, `writer.closed.catch`, and `SSEWriter`'s write-failure callback). All three are currently no-ops in Supabase's Edge runtime — they're left in place because they're harmless and would provide instant cancellation if the runtime ever starts surfacing client disconnect to user code. The DB beacon is the only mechanism we have actually observed crossing the runtime boundary.
+The controller's signal is also passed to `anthropic.messages.stream({...}, { signal })` and there are three legacy transport-layer abort sources still wired up (`req.signal`, `writer.closed.catch`, and `SSEWriter`'s write-failure callback). All three are currently no-ops in Supabase's Edge runtime — they're left in place because they're harmless and would provide instant cancellation if the runtime ever starts surfacing client disconnect to user code. The DB beacon is the only mechanism we have actually observed crossing the runtime boundary.
 
 The post-loop branch reads `abortReason` to decide what to emit on the wire:
 
@@ -739,7 +749,7 @@ Supabase Edge Runtime 1.74.0 (compatible with Deno v2.1.4 at time of writing) do
 
 ### The 15-second per-tool timeout
 
-`dispatchToolWithTimeout` in `ai-chat/index.ts` races the handler against a 15-second timer. An expired handler resolves with `{ output: { error: 'tool execution failed: tool_timeout' }, isError: true }`, which produces a `tool_result` with `is_error: true` both on the wire and in the persisted row. The model sees the failure in the next iteration and typically apologises in Croatian; the user sees a tool chip in the error state.
+`dispatchToolWithTimeout` in `_shared/orchestrator.ts` races the handler against a 15-second timer. An expired handler resolves with `{ output: { error: 'tool execution failed: tool_timeout' }, isError: true }`, which produces a `tool_result` with `is_error: true` both on the wire and in the persisted row. The model sees the failure in the next iteration and typically apologises in Croatian; the user sees a tool chip in the error state.
 
 ### Why we count `ai_messages` rather than a separate rate-limit table
 
@@ -795,7 +805,7 @@ Items below are filed for later attention. Each notes where the canonical follow
 - **No `Retry-After` header on 429s.** Frontend cannot tell the user when to retry; it can only show the generic Croatian message.
 - **Untranslated `profiles.cashflow_misconfigured_*` strings.** The Croatian text added during Phase 1.5 has not been reviewed by a native speaker.
 - **`src/lib/supabase.ts` ambient types coexist with generated ones.** The Supabase client there is not typed with the `Database` generic; AI chat code uses the generated types directly via `Database['public']['Tables'][...]['Row']`. Unifying is out of scope for the AI chat work.
-- **No automated test coverage.** Unit, integration, and E2E coverage was skipped per the Phase 6 scope decision. Manual verification only.
+- **Test coverage is characterisation-only.** Unit, integration and E2E coverage was skipped per the Phase 6 scope decision. Since 2026-09-23, `supabase/functions/ai-chat/tests/` pins the edge function's current behaviour end to end: wire format, persistence, failure paths and the money-question rules. It runs against in-process fakes of the Anthropic and Supabase APIs, with no network. See [voice/03-characterisation-tests.md](./voice/03-characterisation-tests.md). There is still no frontend coverage for the chat widget.
 - **Attachment orphan leak on hard crash.** The three known orphan paths (upload-fail, send-fail, attachment-insert-fail) all have best-effort cleanup, but a hard browser/edge crash mid-flight can leave bytes in `ai-chat-attachments` without a matching DB row. No background sweeper exists yet — see [Attachments → Cleanup and orphans](#cleanup-and-orphans).
 - **Persisted JSONB grows large with image-heavy sessions.** A 10 MB PDF base64-encodes to ~13 MB and is stored verbatim on the user row. A session with 4×10 MB PDFs has ~52 MB of row payload; `loadSession` materialises all of it. Postgres TOAST handles it, but extracting base64 to a side-table and reconstituting server-side is a candidate v2 optimisation. Note this is a *storage* concern only — the *replay* cost is bounded by attachment stripping (see [Context-Window Management](#context-window-management)); old attachment bytes are not re-sent to Anthropic on every turn.
 - **Funtana project has 5 phases but 0 contracts in test data.** Known-incomplete test-data state, not an AI chat bug. Tool responses correctly reflect what's in the DB.

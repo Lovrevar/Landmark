@@ -1,0 +1,51 @@
+sentence_id,block,kind,source,text
+n01,gate,numeric,a01,Trošak dostave iznosi četrdeset pet eura.
+n02,gate,numeric,a02,Za popravak je potrošeno tristo osamdeset eura.
+n03,gate,numeric,a03,Račun za elektromaterijal glasi na tisuću dvjesto pedeset eura.
+n04,gate,numeric,a04,Avans iznosi dvanaest tisuća petsto eura i pedeset centi.
+n05,gate,numeric,a05,Situacija za ožujak iznosi osamdeset sedam tisuća eura.
+n06,gate,numeric,a06,Ugovor s izvođačem vrijedan je tristo pedeset tisuća eura.
+n07,gate,numeric,a07,Proračun druge faze je milijun dvjesto tisuća eura.
+n08,gate,numeric,a08,Zemljište smo platili četiri milijuna sedamsto pedeset tisuća eura.
+n09,gate,numeric,a09,Ukupna investicija iznosi dvadeset tri milijuna četiristo tisuća eura.
+n10,gate,numeric,a10,Mjesečni najam skele je devetsto devedeset devet eura i devedeset devet centi.
+n11,gate,numeric,d01,Rok za predaju situacije je petnaesti listopada.
+n12,gate,numeric,d02,Radovi počinju prvog ožujka dvije tisuće dvadeset sedme.
+n13,gate,numeric,d03,Primopredaja je zakazana za dvadeset osmi veljače.
+n14,gate,numeric,d04,Do trećeg svibnja moramo dobiti uporabnu dozvolu.
+n15,gate,numeric,d05,Ugovor vrijedi do trideset prvog prosinca dvije tisuće dvadeset šeste.
+n16,gate,numeric,d06,Sastanak s investitorom je dvadesetog lipnja.
+n17,gate,numeric,d07,Račun je dospio sedmog siječnja.
+n18,gate,numeric,d08,Nadzorni inženjer dolazi dvanaestog studenoga dvije tisuće dvadeset šeste.
+n19,gate,numeric,d09,Isplata avansa bila je dvadeset drugog rujna.
+n20,gate,numeric,d10,Planirani završetak je šesnaesti kolovoza dvije tisuće dvadeset osme.
+g01,gate,general,t25_c3,Budžet projekta izračunava se iz TIC-a.
+g02,gate,general,t17_c3,Dobavljač nam još nije poslao R1 račun.
+g03,gate,general,t23_c2,Bez OIB-a dobavljača račun ne možemo knjižiti.
+g04,gate,general,t14_c3,Taj račun podmirili smo cesijom.
+g05,gate,general,t15_c3,Dug prema izvođaču zatvorili smo kompenzacijom.
+g06,gate,general,t08_c2,Bez potpisa nadzornog inženjera ne plaćamo situaciju.
+g07,gate,general,t24_c2,Promjena IBAN-a mora biti pisano potvrđena.
+g08,gate,general,t20_c3,Izvođač još nije predao jamstvo za dobro izvršenje.
+g09,gate,general,t28_c3,Kupac uz stan kupuje i repozitorij.
+g10,gate,general,t12_c2,Na primopredaji su pronađena tri nedostatka.
+x01,digits,numeric,a01,Trošak dostave iznosi 45 eura.
+x02,digits,numeric,a02,Za popravak je potrošeno 380 eura.
+x03,digits,numeric,a03,Račun za elektromaterijal glasi na 1.250 eura.
+x04,digits,numeric,a04,"Avans iznosi 12.500,50 eura."
+x05,digits,numeric,a05,Situacija za ožujak iznosi 87.000 eura.
+x06,digits,numeric,a06,Ugovor s izvođačem vrijedan je 350.000 eura.
+x07,digits,numeric,a07,Proračun druge faze je 1.200.000 eura.
+x08,digits,numeric,a08,Zemljište smo platili 4.750.000 eura.
+x09,digits,numeric,a09,Ukupna investicija iznosi 23.400.000 eura.
+x10,digits,numeric,a10,"Mjesečni najam skele je 999,99 eura."
+x11,digits,numeric,d01,Rok za predaju situacije je 15. listopada.
+x12,digits,numeric,d02,Radovi počinju 1. ožujka 2027.
+x13,digits,numeric,d03,Primopredaja je zakazana za 28. veljače.
+x14,digits,numeric,d04,Do 3. svibnja moramo dobiti uporabnu dozvolu.
+x15,digits,numeric,d05,Ugovor vrijedi do 31. prosinca 2026.
+x16,digits,numeric,d06,Sastanak s investitorom je 20. lipnja.
+x17,digits,numeric,d07,Račun je dospio 7. siječnja.
+x18,digits,numeric,d08,Nadzorni inženjer dolazi 12. studenoga 2026.
+x19,digits,numeric,d09,Isplata avansa bila je 22. rujna.
+x20,digits,numeric,d10,Planirani završetak je 16. kolovoza 2028.

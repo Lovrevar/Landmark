@@ -9,7 +9,7 @@
 
 import { assert, assertEquals } from 'jsr:@std/assert@1'
 import type { Role } from './auth.ts'
-import { findAvailableTool, selectAvailableTools, TOOLS } from './tools.ts'
+import { findAvailableTool, selectAvailableTools, TOOL_ALLOWLIST, TOOLS } from './tools.ts'
 
 const ROLES: Role[] = ['Director', 'Accounting', 'Sales', 'Supervision', 'Investment']
 
@@ -48,5 +48,46 @@ Deno.test('what dispatch accepts is exactly what is advertised', () => {
     const advertised = selectAvailableTools({ role }).map((t) => t.name).sort()
     const dispatchable = TOOLS.filter((t) => findAvailableTool({ role }, t.name)).map((t) => t.name).sort()
     assertEquals(dispatchable, advertised, role)
+  }
+})
+
+// Channel half (plan §5): voice gets a read-only subset, enforced in code.
+
+Deno.test('voice advertises only allowlisted tools, intersected with the role', () => {
+  for (const role of ROLES) {
+    const voice = selectAvailableTools({ role }, 'voice').map((t) => t.name).sort()
+    const expected = TOOLS
+      .filter((t) => t.requiredRoles.includes(role) && TOOL_ALLOWLIST.voice.includes(t.name))
+      .map((t) => t.name).sort()
+    assertEquals(voice, expected, role)
+  }
+  assertEquals(selectAvailableTools({ role: 'Director' }, 'voice').length, 12)
+  assertEquals(selectAvailableTools({ role: 'Sales' }, 'voice').length, 7) // six all-roles tools + search_help
+})
+
+Deno.test('voice never reaches a tool that writes, nor the document tools', () => {
+  for (const role of ROLES) {
+    for (const t of selectAvailableTools({ role }, 'voice')) assert(t.readOnly, `${role} → ${t.name}`)
+    for (const name of ['create_document', 'list_documents_for_entity', 'get_document_download_link']) {
+      assertEquals(findAvailableTool({ role }, name, 'voice'), undefined, `${role} → ${name}`)
+    }
+  }
+})
+
+Deno.test('on voice, what dispatch accepts is exactly what is advertised', () => {
+  for (const role of ROLES) {
+    const advertised = selectAvailableTools({ role }, 'voice').map((t) => t.name).sort()
+    const dispatchable = TOOLS.filter((t) => findAvailableTool({ role }, t.name, 'voice')).map((t) => t.name).sort()
+    assertEquals(dispatchable, advertised, role)
+  }
+})
+
+Deno.test('chat is unchanged by the channel: every tool for its roles', () => {
+  for (const role of ROLES) {
+    assertEquals(
+      selectAvailableTools({ role }, 'chat').map((t) => t.name),
+      TOOLS.filter((t) => t.requiredRoles.includes(role)).map((t) => t.name),
+      role,
+    )
   }
 })

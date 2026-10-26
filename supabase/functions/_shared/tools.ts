@@ -59,6 +59,9 @@ export interface ToolDefinition<I = Record<string, unknown>, O = unknown> {
   // model, not runtime-validated here. Phase 3.2 may add validation per tool.
   input_schema: Record<string, unknown>
   requiredRoles: Role[]
+  // True when the handler only reads. Voice may only reach read-only tools
+  // (TOOL_ALLOWLIST below, checked at module load).
+  readOnly: boolean
   handler: (input: I, ctx: AuthContext, extras: ToolHandlerExtras) => Promise<O>
 }
 
@@ -98,6 +101,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
+    readOnly: true,
     handler: (input, ctx) => handleSearchProjects(input as unknown as SearchProjectsInput, ctx),
   },
 
@@ -120,6 +124,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
+    readOnly: true,
     handler: (input, ctx) => handleGetProjectDetails(input as unknown as GetProjectDetailsInput, ctx),
   },
 
@@ -152,6 +157,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
+    readOnly: true,
     handler: (input, ctx) => handleListProjectPhases(input as unknown as ListProjectPhasesInput, ctx),
   },
 
@@ -182,6 +188,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
+    readOnly: true,
     handler: (input, ctx) => handleSearchSubcontractors(input as unknown as SearchSubcontractorsInput, ctx),
   },
 
@@ -201,6 +208,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
+    readOnly: true,
     handler: (input, ctx) => handleListCostClassifications(input as unknown as ListCostClassificationsInput, ctx),
   },
 
@@ -237,6 +245,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
+    readOnly: true,
     handler: (input, ctx) => handleListContracts(input as unknown as ListContractsInput, ctx),
   },
 
@@ -259,6 +268,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: FINANCE_ROLES,
+    readOnly: true,
     handler: (input, ctx) =>
       handleGetSubcontractorPaymentStatus(input as unknown as GetSubcontractorPaymentStatusInput, ctx),
   },
@@ -286,6 +296,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: FINANCE_PLUS_SUPERVISION,
+    readOnly: true,
     handler: (input, ctx) => handleListUnpaidInvoices(input as unknown as ListUnpaidInvoicesInput, ctx),
   },
 
@@ -315,6 +326,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: FINANCE_ROLES,
+    readOnly: true,
     handler: (input, ctx) =>
       handleListPaymentsForSubcontractor(input as unknown as ListPaymentsForSubcontractorInput, ctx),
   },
@@ -347,6 +359,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: FINANCE_ROLES,
+    readOnly: true,
     handler: (input, ctx) => handleGetInvoiceSummary(input as unknown as GetInvoiceSummaryInput, ctx),
   },
 
@@ -373,6 +386,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: FINANCE_ROLES,
+    readOnly: true,
     handler: (input, ctx) =>
       handleGetProjectFinancialSummary(input as unknown as GetProjectFinancialSummaryInput, ctx),
   },
@@ -398,6 +412,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
+    readOnly: true,
     handler: (input, ctx, extras) =>
       handleSearchHelp(input as unknown as SearchHelpInput, ctx, extras.helpSearch),
   },
@@ -435,6 +450,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
+    readOnly: true,
     handler: (input, ctx) =>
       handleListDocumentsForEntity(input as unknown as ListDocumentsForEntityInput, ctx),
   },
@@ -460,6 +476,7 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
+    readOnly: true,
     handler: (input, ctx) =>
       handleGetDocumentDownloadLink(input as unknown as GetDocumentDownloadLinkInput, ctx),
   },
@@ -541,28 +558,64 @@ export const TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
     requiredRoles: ALL_ROLES,
+    readOnly: false,
     handler: (input) => handleCreateDocument(input as unknown as CreateDocumentInput),
   },
 ]
 
 // ---------------------------------------------------------------------------
+// Channel allowlist (plan §5)
+// ---------------------------------------------------------------------------
+// Default-deny: a tool added to TOOLS reaches chat automatically, as before,
+// but reaches voice only when its name is added here, in a reviewed diff.
+// Speech-to-text output is a new injection surface and several reachable
+// tables have USING(true) policies, so the voice blast radius is capped by
+// what the model can call, below the prompt layer.
+
+export type Channel = 'chat' | 'voice'
+
+const VOICE_V1_TOOLS = [
+  'search_projects', 'get_project_details', 'list_project_phases',
+  'search_subcontractors', 'list_cost_classifications', 'list_contracts',
+  'get_subcontractor_payment_status', 'list_unpaid_invoices',
+  'list_payments_for_subcontractor', 'get_invoice_summary',
+  'get_project_financial_summary', 'search_help',
+]
+
+export const TOOL_ALLOWLIST: Record<Channel, readonly string[]> = {
+  chat: TOOLS.map((t) => t.name),
+  voice: VOICE_V1_TOOLS,
+}
+
+// A write tool must never reach voice through an allowlist typo or a later
+// edit: fail at module load, before any request is served.
+for (const name of TOOL_ALLOWLIST.voice) {
+  const tool = TOOLS.find((t) => t.name === name)
+  if (!tool) throw new Error(`TOOL_ALLOWLIST.voice names an unknown tool: ${name}`)
+  if (!tool.readOnly) throw new Error(`TOOL_ALLOWLIST.voice names a tool that writes: ${name}`)
+}
+
+// ---------------------------------------------------------------------------
 // Role filter
 // ---------------------------------------------------------------------------
 
-// Returns the subset of TOOLS the given user is allowed to invoke based on
-// their role. No project-scoping here — that's per-handler logic in 3.2.
-export function selectAvailableTools(ctx: Pick<AuthContext, 'role'>): ToolDefinition[] {
-  return TOOLS.filter((t) => t.requiredRoles.includes(ctx.role))
+// Returns the subset of TOOLS the given user is allowed to invoke on this
+// channel: their role's tools, intersected with the channel's allowlist. No
+// project-scoping here — that's per-handler logic in 3.2.
+export function selectAvailableTools(ctx: Pick<AuthContext, 'role'>, channel: Channel = 'chat'): ToolDefinition[] {
+  const allowed = new Set(TOOL_ALLOWLIST[channel])
+  return TOOLS.filter((t) => t.requiredRoles.includes(ctx.role) && allowed.has(t.name))
 }
 
 // Looks up a tool by name, but only among the tools this user's role may
-// invoke. The orchestration loop dispatches whatever name the model returned,
-// and selectAvailableTools only controls which tools are *advertised* — so
-// dispatch must re-apply the role gate itself, or a name the model was never
-// given would still run. Returns undefined for unknown and forbidden alike.
+// invoke on this channel. The orchestration loop dispatches whatever name the
+// model returned, and selectAvailableTools only controls which tools are
+// *advertised* — so dispatch must re-apply the gate itself, or a name the model
+// was never given would still run. Returns undefined for unknown and forbidden alike.
 export function findAvailableTool(
   ctx: Pick<AuthContext, 'role'>,
   name: string,
+  channel: Channel = 'chat',
 ): ToolDefinition | undefined {
-  return selectAvailableTools(ctx).find((t) => t.name === name)
+  return selectAvailableTools(ctx, channel).find((t) => t.name === name)
 }

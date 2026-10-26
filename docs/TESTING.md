@@ -49,9 +49,21 @@ rows and applies `eq`, `in`, `gte`, `lte`, not-null, `order`, `range` and `singl
 PostgREST would, dotted paths into embedded rows included, and fails the tables a test names. The
 General report's test keeps its own smaller fake.
 
-The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs the six
-`*.test.ts` files under `supabase/functions/` (`_shared/help-score`, `_shared/tools`,
-`import-erp/feeds`, `import-erp/parse`, `sort-document/classifier`, `sort-document/extract`).
+The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs every
+`*.test.ts` file under `supabase/functions/` (`_shared/help-score`, `_shared/help-search`,
+`_shared/tools`, the four `ai-chat/tests/` files below, `import-erp/feeds`, `import-erp/parse`,
+`sort-document/classifier`, `sort-document/extract`).
+
+**In VS Code**, `supabase/functions` is Deno code, so the editor's TypeScript reports false errors there
+(`jsr:`/`npm:` imports, `Deno`) unless the Deno extension takes the folder. `.vscode/extensions.json`
+recommends the extension. `.vscode/settings.json` is personal (gitignored), so add this to it:
+
+```json
+{ "deno.enablePaths": ["supabase/functions"], "deno.lint": false }
+```
+
+`deno.lint` is off because ESLint is the project's linter. Deno's linter rejects the inline
+`npm:`/`jsr:` imports used throughout.
 
 ### Configuration ([`vitest.config.ts`](../vitest.config.ts))
 
@@ -169,6 +181,24 @@ anything under `erp.` or the promotion functions.**
 
 The parsing and validation logic has its own Deno unit tests
 (`cd supabase/functions && deno test import-erp/`, 38 tests).
+
+## AI chat characterisation tests
+
+`supabase/functions/ai-chat/tests/` (106 tests) runs the **real** `ai-chat` edge function
+in-process against fakes of the Anthropic Messages API and of Supabase (GoTrue, PostgREST,
+Storage). No network, no project, no key. It pins what the function does today: SSE wire format,
+persisted rows and their parent chain, failure and cancellation paths, and the money-question rules
+(TIC as the only budget source, phase vs cost classification, `budget_used` never reaching the
+model). It runs as part of `npm run test:functions`, and so in CI.
+
+```bash
+cd supabase/functions && deno test --allow-net --allow-env ai-chat/tests/
+```
+
+It is **characterisation**, not specification: some tests pin behaviour that is logged as a
+suspected bug (`[OQ-n]` tags, see `docs/voice/open-questions.md`). Change those only together with a
+decision on the open question. The scenario list, the coverage map and the rules for the voice
+refactor are in [voice/03-characterisation-tests.md](./voice/03-characterisation-tests.md).
 
 ## E2E suite
 

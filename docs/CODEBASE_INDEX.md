@@ -19,7 +19,7 @@
 | **Core** | [CORE.md](./CORE.md) | Contexts, hooks, lib, types, utils |
 | **Activity Log** | [ACTIVITY_LOG.md](./ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
 | **Help** | [HELP.md](./HELP.md) | In-app guidance: `/help` page, the "?" beside page titles, `InfoHint` popovers, usage logging, release notes with a "what's new" banner, screenshots — all reading `help-kb/` |
-| **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 14-tool catalog, fork-and-regenerate edits |
+| **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 15-tool catalog, fork-and-regenerate edits |
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
 | **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
 | **Tasks** | [TASKS.md](./TASKS.md) | Shared org-wide task list grouped by project; binary open/done checkbox, subtask checklists (a task with lines has its completion written by a trigger, so its own checkbox is a readout), private tasks, colour labels, attachments, @mention comments. Schema is shared with a standalone mobile task app: task tables use auth user ids + a `profiles` mirror table (`deadline`/`completed` columns). That app's Web Push server half — `push_subscriptions`, the `send-push` edge function, and the `pg_cron` deadline-reminder dispatcher — also lives in this project |
@@ -29,6 +29,7 @@
 
 | Doc | File | Description |
 |---|---|---|
+| **Voice access** | [voice/](./voice/01-chat-assistant-analysis.md) | 🚧 **Works on LandmarkDev, on `feature/voice-assistant` (2026-10-26)** — the call button, `voice-session`, `voice-llm`, the agent loop shared with chat in `_shared/orchestrator.ts`, and a LiveKit agent worker; see [voice/04-dev-build.md](./voice/04-dev-build.md) for what is missing before it ships. Voice access to the existing AI chat assistant through a voice platform (LiveKit Agents, Pipecat or Vapi; open), in Custom LLM mode on one shared backend. Speech-to-text is Soniox (decided 2026-10-22 from the phase 0 harness in `tools/phase0/`). Phase 1 surveys today's assistant (the blocker: it does not stream tokens). Phase 2 commits to an in-app call button as v1 and defers a PIN-gated phone number to v2 (decided 2026-09-23), a default-deny voice tool allowlist, a Croatian STT/TTS go/no-go gate and a phased rollout. Phase 1 pinned the current assistant with 106 tests and logged 10 open questions |
 | **ERP Integration** | [erp-integration/](./erp-integration/README.md) | ⏸️ **On hold** — merged but switched off (flag off, migrations parked in `supabase/parked-migrations/erp/`). Rewrite of the financial section: 4D Wand becomes the source of truth for invoices, payments and bank balances; Cognilion stops authoring them and imports/classifies instead. Spec, decision log, progress and open questions |
 | **graphify** | [GRAPHIFY.md](./GRAPHIFY.md) | The code knowledge graph in `graphify-out/`: how it is rebuilt, the one edge type worth trusting, and what it cannot tell you (moved out of CLAUDE.md) |
 | **Testing** | [TESTING.md](./TESTING.md) | Vitest unit tests + Playwright e2e setup and conventions |

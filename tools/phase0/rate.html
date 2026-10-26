@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phase 0 TTS rating</title>
+<style>
+  :root { --bg:#fafaf9; --fg:#1c1917; --muted:#78716c; --accent:#0f766e; --bad:#b91c1c; --card:#ffffff; --line:#e7e5e4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1c1917; --fg:#f5f5f4; --muted:#a8a29e; --accent:#2dd4bf; --bad:#f87171; --card:#292524; --line:#44403c; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 18px; margin: 0 0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  label { font-weight:600; margin-right:6px; }
+  input[type=text], select { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--fg); margin-right:12px; }
+  input[type=text] { width:7em; }
+  button { font:inherit; padding:6px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--fg); cursor:pointer; margin-right:8px; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.on { border-color:var(--accent); outline:2px solid var(--accent); }
+  button.flag.on { border-color:var(--bad); outline-color:var(--bad); }
+  button:disabled { opacity:.5; cursor:default; }
+  #sentence { font-size: clamp(22px, 4vw, 34px); line-height:1.3; margin: 8px 0 12px; overflow-wrap:anywhere; }
+  .muted, .keys { color:var(--muted); font-size:14px; }
+  kbd { border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:0 6px; font-size:13px; }
+  .row { margin: 10px 0; display:flex; flex-wrap:wrap; gap:8px 0; align-items:center; }
+  table { border-collapse: collapse; font-size:14px; }
+  td, th { padding:2px 12px 2px 0; text-align:left; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Phase 0 — slušni test sintetiziranog govora (TTS)</h1>
+
+  <section class="card" id="setup">
+    <p>
+      <label for="rater">Ocjenjivač</label><input id="rater" type="text" placeholder="r1" maxlength="8" autocomplete="off">
+      <label for="block">Blok</label>
+      <select id="block"><option value="gate">gate (svi ocjenjivači)</option><option value="digits">digits (jedan ocjenjivač)</option></select>
+    </p>
+    <p><label>Mapa panela</label><input id="folder" type="file" webkitdirectory multiple></p>
+    <p><button id="start" class="primary" disabled>Počni</button></p>
+    <p class="keys">
+      Choose the panel folder that <code>tts_panel.py</code> wrote (it holds <code>panel_manifest.csv</code> and
+      <code>clips/</code>). Every rater sees the same clips in their own random order, and no clip says which
+      voice it is. Progress is kept in this browser; download the ratings at the end and send the file back.
+    </p>
+    <p class="keys">
+      <strong>Prirodnost:</strong> 1 = robotski, teško razumljivo · 2 = jasno robotski · 3 = razumljivo, ali
+      se čuje da je stroj · 4 = gotovo prirodno · 5 = kao čovjek.
+      <strong>Broj</strong> označite ako je iznos ili datum izgovoren pogrešno (krivi broj, krivi padež, krivo
+      čitanje znamenki). <strong>Izgovor</strong> označite za bilo koju drugu krivo izgovorenu riječ.
+    </p>
+    <p class="keys">
+      Keys: <kbd>1</kbd>–<kbd>5</kbd> naturalness · <kbd>N</kbd> number or date wrong · <kbd>P</kbd> other
+      mispronunciation · <kbd>Enter</kbd> save and next · <kbd>Space</kbd> replay · <kbd>←</kbd> back.
+    </p>
+    <p id="status" class="muted"></p>
+  </section>
+
+  <section class="card hidden" id="player">
+    <div class="muted"><span id="pos"></span></div>
+    <div id="sentence"></div>
+    <audio id="audio" controls></audio>
+    <div class="row">
+      <span class="muted" style="margin-right:8px">Prirodnost</span>
+      <button data-score="1">1</button><button data-score="2">2</button><button data-score="3">3</button>
+      <button data-score="4">4</button><button data-score="5">5</button>
+    </div>
+    <div class="row">
+      <button id="flagN" class="flag">N · broj/datum krivo</button>
+      <button id="flagP" class="flag">P · drugi krivi izgovor</button>
+      <button id="next" class="primary" disabled>Spremi i dalje ↵</button>
+    </div>
+    <p class="keys"><button id="exportNow">Download ratings so far</button> Progress is kept in this browser either way; this exports what is rated now.</p>
+  </section>
+
+  <section class="card hidden" id="summary">
+    <p><strong id="summaryText"></strong></p>
+    <p><button id="export" class="primary">Download ratings</button></p>
+    <p class="keys">Send the downloaded <code>ratings_….csv</code> back; <code>tts_score.py</code> reads every ratings file in the panel folder.</p>
+  </section>
+</main>
+
+<script>
+'use strict'
+const $ = (id) => document.getElementById(id)
+const state = { clips: [], files: new Map(), order: [], i: 0, ratings: {}, replays: 0, key: '' }
+
+function fnv1a(str) { let h = 0x811c9dc5; for (const ch of new TextEncoder().encode(str)) { h ^= ch; h = Math.imul(h, 0x01000193) >>> 0 } return h }
+function mulberry32(seed) { return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
+function shuffled(items, seedStr) {
+  const rnd = mulberry32(fnv1a(seedStr)); const a = items.slice()
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
+  return a
+}
+function parseCsv(text) {
+  const rows = []; let row = []; let field = ''; let q = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++ } else q = false } else field += c }
+    else if (c === '"') q = true
+    else if (c === ',') { row.push(field); field = '' }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(field); field = ''; if (row.length > 1 || row[0] !== '') rows.push(row); row = [] }
+    else field += c
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row) }
+  const [head, ...body] = rows
+  return body.map((r) => Object.fromEntries(head.map((h, i) => [h.trim(), r[i] ?? ''])))
+}
+function csvCell(v) { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s }
+
+function save() { try { localStorage.setItem(state.key, JSON.stringify(state.ratings)) } catch { /* private window: progress lives in memory only */ } }
+function restore() { try { return JSON.parse(localStorage.getItem(state.key) || '{}') } catch { return {} } }
+
+function canStart() { $('start').disabled = !($('rater').value.trim() && state.clips.length) }
+$('rater').addEventListener('input', canStart)
+
+$('folder').addEventListener('change', async (e) => {
+  state.files = new Map(); let manifest = null
+  for (const f of e.target.files) {
+    if (f.name === 'panel_manifest.csv') manifest = f
+    else if (/^[0-9a-f]{12}\.wav$/.test(f.name)) state.files.set(f.name.slice(0, 12), f)
+  }
+  if (!manifest) { $('status').textContent = 'No panel_manifest.csv in that folder: choose the folder tts_panel.py wrote (--out).'; return }
+  const rows = parseCsv(await manifest.text())
+  const byId = new Map(); for (const r of rows) byId.set(r.clip_id, r) // a regenerated clip's last line wins
+  state.clips = [...byId.values()].filter((r) => state.files.has(r.clip_id))
+  const missing = byId.size - state.clips.length
+  $('status').textContent = `${state.clips.length} clips found` + (missing ? `, ${missing} listed but missing on disk (skipped)` : '') + '.'
+  canStart()
+})
+
+$('start').addEventListener('click', () => {
+  const rater = $('rater').value.trim(); const block = $('block').value
+  // Progress is per panel: the same rater starts fresh in a new round's folder.
+  const panel = fnv1a(state.clips.map((c) => c.clip_id).sort().join(',')).toString(16)
+  state.key = `tts-rate:${panel}:${rater}:${block}`
+  state.order = shuffled(state.clips.filter((c) => c.block === block).sort((a, b) => a.clip_id.localeCompare(b.clip_id)), `${rater}|${block}`)
+  if (!state.order.length) { $('status').textContent = `No clips in block "${block}".`; return }
+  state.ratings = restore()
+  const firstOpen = state.order.findIndex((c) => !state.ratings[c.clip_id])
+  state.i = firstOpen === -1 ? state.order.length : firstOpen
+  $('setup').classList.add('hidden')
+  show()
+})
+
+function current() { return state.order[state.i] }
+function draft() { const c = current(); return (state.ratings[c.clip_id] ||= { naturalness: 0, number_error: 0, other_error: 0, replays: 0 }) }
+
+function show() {
+  if (state.i >= state.order.length) return finish()
+  const c = current(); const d = draft()
+  $('player').classList.remove('hidden'); $('summary').classList.add('hidden')
+  $('pos').textContent = `${state.i + 1} / ${state.order.length}`
+  $('sentence').textContent = c.text
+  const audio = $('audio'); if (audio.src) URL.revokeObjectURL(audio.src)
+  audio.src = URL.createObjectURL(state.files.get(c.clip_id)); audio.play().catch(() => {})
+  paint(d)
+}
+function paint(d) {
+  for (const b of document.querySelectorAll('[data-score]')) b.classList.toggle('on', Number(b.dataset.score) === d.naturalness)
+  $('flagN').classList.toggle('on', !!d.number_error); $('flagP').classList.toggle('on', !!d.other_error)
+  $('next').disabled = !d.naturalness
+}
+function score(n) { const d = draft(); d.naturalness = n; paint(d) }
+function toggle(field) { const d = draft(); d[field] = d[field] ? 0 : 1; paint(d) }
+function next() {
+  const d = draft(); if (!d.naturalness) return
+  d.rated_at = new Date().toISOString(); d.order_index = state.i + 1; save()
+  state.i++; show()
+}
+function back() { if (state.i > 0) { state.i--; show() } }
+function replay() { const a = $('audio'); a.currentTime = 0; a.play().catch(() => {}); draft().replays++ }
+
+for (const b of document.querySelectorAll('[data-score]')) b.addEventListener('click', () => score(Number(b.dataset.score)))
+$('flagN').addEventListener('click', () => toggle('number_error'))
+$('flagP').addEventListener('click', () => toggle('other_error'))
+$('next').addEventListener('click', next)
+document.addEventListener('keydown', (e) => {
+  if ($('player').classList.contains('hidden') || e.target.tagName === 'INPUT') return
+  if (/^[1-5]$/.test(e.key)) score(Number(e.key))
+  else if (e.key === 'n' || e.key === 'N') toggle('number_error')
+  else if (e.key === 'p' || e.key === 'P') toggle('other_error')
+  else if (e.key === 'Enter') { e.preventDefault(); next() }
+  else if (e.key === ' ') { e.preventDefault(); replay() }
+  else if (e.key === 'ArrowLeft') back()
+})
+
+function finish() {
+  $('player').classList.add('hidden'); $('summary').classList.remove('hidden')
+  const done = state.order.filter((c) => state.ratings[c.clip_id]?.naturalness).length
+  $('summaryText').textContent = `Done: ${done} of ${state.order.length} clips rated.`
+}
+$('export').addEventListener('click', exportRatings)
+$('exportNow').addEventListener('click', exportRatings)
+function exportRatings() {
+  const rater = $('rater').value.trim(); const block = $('block').value
+  const cols = ['rater', 'block', 'clip_id', 'naturalness', 'number_error', 'other_error', 'replays', 'order_index', 'rated_at']
+  const lines = state.order.filter((c) => state.ratings[c.clip_id]?.naturalness)
+    .map((c) => ({ rater, block, clip_id: c.clip_id, ...state.ratings[c.clip_id] }))
+    .map((r) => cols.map((k) => csvCell(r[k])).join(','))
+  const blob = new Blob([[cols.join(','), ...lines].join('\n') + '\n'], { type: 'text/csv' })
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `ratings_${rater}_${block}.csv`; a.click()
+}
+</script>
+</body>
+</html>
