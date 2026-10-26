@@ -8,6 +8,8 @@
 //   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, COGNILION_EMAIL, COGNILION_PASSWORD,
 //   VOICE_LLM_URL, VOICE_LLM_SECRET
 //   node src/llm-bench.ts [repeats=3]        LABEL=… tags the rows in logs/llm-bench.jsonl
+//   node src/llm-bench.ts first [warm]       one call's first question (q01) only; with `warm`, after
+//                                            the agent's /warm and 3 s of greeting. For cold-start runs
 //
 // The service role key is not stored anywhere; export it for the run:
 //   export SUPABASE_SERVICE_ROLE_KEY=$(supabase projects api-keys --project-ref <ref> -o json |
@@ -133,6 +135,33 @@ async function ask(token: string, question: string): Promise<Result> {
     timing,
     text: text.trim(),
   }
+}
+
+async function warmUp(token: string) {
+  const t0 = performance.now()
+  const res = await fetch(`${env('VOICE_LLM_URL')}/warm`, {
+    method: 'POST',
+    headers: { 'x-voice-secret': env('VOICE_LLM_SECRET'), 'x-voice-call-id': ROOM, authorization: `Bearer ${token}` },
+  })
+  return { status: res.status, client_ms: Math.round(performance.now() - t0), ...(await res.json()) }
+}
+
+if (process.argv[2] === 'first') {
+  const warm = process.argv[3] === 'warm'
+  const call = await openCall()
+  try {
+    const warmed = warm ? await warmUp(call.token) : null
+    if (warm) await new Promise((r) => setTimeout(r, 3000))
+    const q = phase0Questions()[0]
+    const r = await ask(call.token, q.text)
+    const row = { at: new Date().toISOString(), label: process.env.LABEL ?? null, mode: 'first', warm, warmed, id: q.id, ...r }
+    mkdirSync(LOGS, { recursive: true })
+    appendFileSync(join(LOGS, 'llm-bench.jsonl'), JSON.stringify(row) + '\n')
+    console.log(JSON.stringify({ warm, warmed, first_text_ms: r.first_text_ms, total_ms: r.total_ms, cache_read_first: r.cache_read_first, timing: r.timing }))
+  } finally {
+    await call.close()
+  }
+  process.exit(0)
 }
 
 const repeats = Number(process.argv[2] ?? 3)

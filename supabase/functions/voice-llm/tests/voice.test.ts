@@ -205,3 +205,29 @@ scenario('V13 after the answer, the turn is written to the call session, chained
   void ROOM
   void USERS
 })
+
+// ---------------------------------------------------------------------------
+// Warm-up
+// ---------------------------------------------------------------------------
+
+scenario('V14 /warm writes the prompt cache with a request shaped exactly like a real one, generating nothing', async () => {
+  await seedCall()
+  anthropic.script({ content: [], stop_reason: 'max_tokens' }, answer('ok'))
+  const res = await voice({ path: '/warm', messages: [] })
+  assertEquals(res.status, 200)
+  const body = await res.json()
+  assertEquals([body.ok, typeof body.cache_write, typeof body.ms], [true, 'number', 'number'])
+  await readChunks(await voice())
+  const [w, real] = anthropic.calls.map((c) => c.body as unknown as Record<string, unknown>)
+  assertEquals([w.max_tokens, w.stream], [0, undefined])
+  // Everything that makes up the cached prefix is the same as the question's.
+  for (const key of ['model', 'system', 'tools', 'thinking', 'output_config']) assertEquals(w[key], real[key], key)
+})
+
+scenario('V15 /warm runs the same checks as a question: no secret or no live call, no model request', async () => {
+  await seedCall()
+  assertEquals(await status(await voice({ path: '/warm', secret: 'wrong' })), 401)
+  assertEquals(await status(await voice({ path: '/warm', token: 'not-a-call-token' })), 401)
+  assertEquals(await status(await voice({ path: '/warm', room: 'some-other-room' })), 401)
+  assertEquals(anthropic.calls.length, 0)
+})
