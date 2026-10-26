@@ -36,9 +36,12 @@ Cognilion (call button) ─ voice-session/start ─┬─ ai_sessions (channel '
   calls are still refused at lookup; their rows are just not deleted.
 - **Deployed:** `voice-llm` and `voice-session`. **`ai-chat` on dev is still the old version**
   (no streaming, sequential tools); this branch's `ai-chat` is not deployed.
-- **Secrets:** `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `VOICE_LLM_SECRET`. The
-  voice model is `AI_CHAT_VOICE_MODEL`, else `AI_CHAT_MODEL`, else `claude-sonnet-4-6` (dev sets
-  neither).
+- **Secrets:** `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `VOICE_LLM_SECRET`.
+- **Voice model: `claude-sonnet-5-5`** (since 2026-10-27), with thinking off
+  (`thinking: {type: "between_tools"}`), effort `low` and the server-side fallback
+  (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`). `AI_CHAT_VOICE_MODEL` and
+  `AI_CHAT_VOICE_EFFORT` override them; another model gets none of the Sonnet 5.5 settings. Voice
+  no longer follows `AI_CHAT_MODEL`. Chat is still on `claude-sonnet-4-6`.
 - **Test user:** `voice-test@cognilion.test`, a Director, with its password in
   `~/.config/cognilion-voice/dev-user.env` (outside the repo).
 
@@ -76,7 +79,11 @@ LandmarkDev, set it to `true` locally and do not commit it.
   hangs up. Then check the session's rows on dev. On 2026-10-26: live 3.3 s after the press, the
   agent's audio playing, the question and a two-tool answer persisted and chained, the credential
   deleted on hang-up, and the voice session absent from the chat history.
-- **Unit and function tests** — `npm run test:functions` (253), `npm test`.
+- **The model alone, without speech** — `node src/llm-bench.ts 3` in `tools/voice-prototype/`
+  asks the ten phase 0 questions and two small-talk lines, three times each, straight against
+  `voice-llm`, and reports the time to the first text, to the whole answer, the model rounds and
+  the prompt-cache hits (the script's header says how to set it up).
+- **Unit and function tests** — `npm run test:functions`, `npm test`.
 
 ## Measured (2026-10-26, s02, LiveKit Cloud, dev)
 
@@ -88,6 +95,21 @@ LandmarkDev, set it to `true` locally and do not commit it.
 - Before two fixes the same day, the first audio took 6.8–7.4 s: ElevenLabs held the filler back
   until the answer arrived, and the model's own "let me look that up" sentence was spoken on top
   of the filler.
+
+### The voice model (2026-10-27, `llm-bench.ts`, 36 questions per row)
+
+| | Sonnet 4.6 | Sonnet 5.5, `medium` | Sonnet 5.5, `low` (chosen) |
+|---|---|---|---|
+| First text, p50 / p95 | 2.10 / 6.61 s | 2.23 / 3.81 s | 2.21 / 4.48 s |
+| Whole answer, p50 / p95 | 6.84 / 15.25 s | 7.32 / 13.23 s | **4.52** / 11.89 s |
+| Model's first output per call, p50 / p90 | **1.01** / 1.85 s | 1.49 / 3.57 s | 1.35 / 3.45 s |
+| Model rounds per question | 1.92 | 2.25 | **1.89** |
+| Prompt cache hit on the first call | 35/36 | 35/36 | 36/36 |
+
+Sonnet 5.5 is not faster per call than 4.6; at `low` it answers in fewer rounds, so the whole
+answer is faster, and it is cheaper ($2/$10 against $3/$15 per million tokens). With thinking off,
+it says more of its reasoning aloud between tool calls ("Prvo ću dohvatiti…"); the sink drops only
+a single sentence before a tool call.
 
 ## Not done yet
 

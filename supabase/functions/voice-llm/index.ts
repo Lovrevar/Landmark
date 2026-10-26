@@ -176,7 +176,12 @@ Deno.serve(async (req) => {
   }))
   if (tools.length > 0) tools[tools.length - 1].cache_control = { type: 'ephemeral' }
   const today = new Date().toLocaleDateString('hr-HR', { timeZone: 'Europe/Zagreb', day: 'numeric', month: 'long', year: 'numeric' })
-  const model = Deno.env.get('AI_CHAT_VOICE_MODEL') ?? Deno.env.get('AI_CHAT_MODEL') ?? 'claude-sonnet-4-6'
+  const model = Deno.env.get('AI_CHAT_VOICE_MODEL') ?? 'claude-sonnet-5-5'
+  // Sonnet 5.5 thinks by default, which a caller hears as a pause: between_tools
+  // turns it off (accepted at effort high or below). The server-side fallback
+  // re-runs a request the model declines on another model, in the same call.
+  // Other models reject between_tools, so these go to Sonnet 5.5 only.
+  const sonnet55 = model === 'claude-sonnet-5-5'
   const config: LoopConfig = {
     channel: 'voice',
     model,
@@ -191,6 +196,18 @@ Deno.serve(async (req) => {
     ],
     tools,
     logTag: '[voice-llm]',
+    ...(sonnet55
+      ? {
+        extra: {
+          thinking: { type: 'between_tools' },
+          // low: on the phase 0 questions (2026-10-27) the whole answer took a
+          // median 4.5 s against 7.3 s at medium, in fewer model rounds.
+          output_config: { effort: Deno.env.get('AI_CHAT_VOICE_EFFORT') ?? 'low' },
+          fallbacks: 'default',
+        },
+        betas: ['server-side-fallback-2026-07-01'],
+      }
+      : {}),
   }
 
   const controller = new AbortController()
@@ -221,6 +238,7 @@ Deno.serve(async (req) => {
         isCancelled: async () => controller.signal.aborted,
         onComplete: async () => {},
         mark: (event) => marks.push(`${event}=${Math.round(performance.now() - t0)}`),
+        usage: (u) => marks.push(`tokens=${u.input}/${u.output}/cache_read=${u.cacheRead}/cache_write=${u.cacheWrite}`),
       },
       controller.signal,
     )

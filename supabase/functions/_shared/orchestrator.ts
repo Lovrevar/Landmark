@@ -84,6 +84,8 @@ export interface LoopHooks {
   onComplete(): Promise<void>
   /** Optional timing marks: model_call, first_event, tools_start, tools_done. */
   mark?(event: string): void
+  /** Optional: each model call's token usage, including what the prompt cache served. */
+  usage?(usage: { input: number; output: number; cacheRead: number; cacheWrite: number }): void
 }
 
 export interface LoopConfig {
@@ -96,6 +98,10 @@ export interface LoopConfig {
   tools: Array<Record<string, unknown>>
   /** Prefix of every log line, e.g. "[ai-chat]". */
   logTag: string
+  /** Further request fields for this channel's model (thinking, output_config, fallbacks). */
+  extra?: Record<string, unknown>
+  /** Beta headers; when set, the call goes through the beta Messages endpoint. */
+  betas?: string[]
 }
 
 export interface LoopInput {
@@ -256,13 +262,19 @@ export async function runOrchestrationLoop(
     hooks.mark?.('model_call')
     let firstEvent = true
     try {
-      const stream = anthropic.messages.stream({
+      const params = {
         model,
         max_tokens: config.maxTokens,
         system: config.system as unknown as Parameters<typeof anthropic.messages.create>[0]['system'],
         tools: config.tools as unknown as Parameters<typeof anthropic.messages.create>[0]['tools'],
         messages: messages as unknown as Parameters<typeof anthropic.messages.create>[0]['messages'],
-      }, { signal })
+        ...config.extra,
+      }
+      // The beta endpoint streams the same events and final message; only its
+      // types are wider, so it is read through the stable stream's type.
+      const stream = config.betas?.length
+        ? anthropic.beta.messages.stream({ ...params, betas: config.betas } as never, { signal }) as unknown as ReturnType<typeof anthropic.messages.stream>
+        : anthropic.messages.stream(params, { signal })
       for await (const ev of stream) {
         if (firstEvent && (ev.type === 'content_block_start' || ev.type === 'content_block_delta')) {
           firstEvent = false
@@ -275,6 +287,12 @@ export async function runOrchestrationLoop(
         }
       }
       response = await stream.finalMessage()
+      hooks.usage?.({
+        input: response.usage?.input_tokens ?? 0,
+        output: response.usage?.output_tokens ?? 0,
+        cacheRead: response.usage?.cache_read_input_tokens ?? 0,
+        cacheWrite: response.usage?.cache_creation_input_tokens ?? 0,
+      })
     } catch (err) {
       // If the abort fired, the SDK's thrown error is a consequence — swallow
       // it. Caller decides whether to log a 'client_disconnect' line or emit

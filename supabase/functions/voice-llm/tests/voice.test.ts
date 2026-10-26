@@ -64,6 +64,35 @@ scenario('V04 the model gets the voice prompt and settings; inbound system messa
   assertEquals(body.messages[0].role, 'user')
 })
 
+scenario('V04b voice runs on Sonnet 5.5 with thinking off, low effort and the server-side fallback', async () => {
+  await seedCall()
+  anthropic.script(answer('ok'))
+  await readChunks(await voice())
+  const call = anthropic.calls[0]
+  const body = call.body as unknown as Record<string, unknown>
+  assertEquals(body.model, 'claude-sonnet-5-5')
+  assertEquals(body.thinking, { type: 'between_tools' })
+  assertEquals(body.output_config, { effort: 'low' })
+  assertEquals(body.fallbacks, 'default')
+  assertStringIncludes(call.headers.get('anthropic-beta') ?? '', 'server-side-fallback-2026-07-01')
+})
+
+scenario('V04c another voice model gets none of the Sonnet 5.5 settings (it would reject between_tools)', async () => {
+  await seedCall()
+  Deno.env.set('AI_CHAT_VOICE_MODEL', 'claude-sonnet-4-6')
+  try {
+    anthropic.script(answer('ok'))
+    await readChunks(await voice())
+  } finally {
+    Deno.env.delete('AI_CHAT_VOICE_MODEL')
+  }
+  const call = anthropic.calls[0]
+  const body = call.body as unknown as Record<string, unknown>
+  assertEquals(body.model, 'claude-sonnet-4-6')
+  assertEquals([body.thinking, body.output_config, body.fallbacks], [undefined, undefined, undefined])
+  assertEquals(call.headers.get('anthropic-beta'), null)
+})
+
 scenario('V05 voice advertises the read-only voice tools for the role, and nothing else', async () => {
   await seedCall()
   anthropic.script(answer('ok'))
@@ -138,6 +167,14 @@ scenario('V11 stream: false returns one chat.completion with the whole answer', 
   const body = await res.json()
   assertEquals(body.object, 'chat.completion')
   assertEquals(body.choices[0].message.content, 'Funtana je u izgradnji.')
+})
+
+scenario('V12b a declined request is answered with one sentence, not silence', async () => {
+  await seedCall()
+  anthropic.script({ content: [], stop_reason: 'refusal' })
+  const out = await readChunks(await voice())
+  assertEquals(out.text, 'Na to vam ne mogu odgovoriti.')
+  assert(out.done)
 })
 
 scenario('V12 a model error is spoken, and the stream still ends cleanly', async () => {

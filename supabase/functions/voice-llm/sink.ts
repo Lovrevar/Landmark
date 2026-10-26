@@ -124,8 +124,10 @@ export class OpenAiChunkSink implements EventSink {
   /** Timing marks, sent as an SSE comment that OpenAI clients ignore. */
   timing: (() => string) | null = null
 
-  async done(_stopReason: string, _usage: Usage): Promise<void> {
+  async done(stopReason: string, _usage: Usage): Promise<void> {
     await this.flushAll()
+    // A declined request (after any fallback) ends with nothing to say.
+    if (stopReason === 'refusal' && !this.spoken.trim()) await this.say('Na to vam ne mogu odgovoriti.')
     if (this.timing) await this.write(`: timing ${this.timing()}\n\n`)
     await this.emit({}, 'stop')
     await this.write('data: [DONE]\n\n')
