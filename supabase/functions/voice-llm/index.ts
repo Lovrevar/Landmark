@@ -26,7 +26,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { authenticateToken } from '../_shared/auth.ts'
-import type { Json } from '../_shared/database.ts'
+import type { Database, Json } from '../_shared/database.ts'
 import type { AuthContext } from '../_shared/auth.ts'
 import {
   anthropic,
@@ -66,10 +66,8 @@ async function sha256Hex(text: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-// Untyped until the voice_calls migration is applied and /db-types regenerates
-// _shared/database.ts.
 function serviceClient() {
-  return createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+  return createClient<Database>(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 }

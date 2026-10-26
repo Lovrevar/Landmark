@@ -28,8 +28,9 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   unit with a number already in the building and a building with a name already in the project:
   both are refused with a message that says so.
 - [ ] **Apply `20261026100000_voice_calls`** (voice assistant, `feature/voice-assistant` only).
-  **Dev: done 2026-10-26 by running its SQL directly** (not recorded in `schema_migrations`, so
-  other branches can still push; dev has no pg_cron, so the sweep is not scheduled). Production
+  **Dev: done** — its SQL ran directly on 2026-10-26 and `supabase db push` recorded it on
+  2026-10-27, after the merge. Dev has no pg_cron, so the sweep is not scheduled (enable pg_cron,
+  then run the migration's last DO block). Production
   only when the voice feature ships, and before `VOICE_CALLS_ENABLED` is flipped on (without the
   migration the flag breaks the chat history list). Afterwards: `select jobname from
   cron.job where jobname = 'voice-calls-sweep'` returns one row; as a signed-in user,

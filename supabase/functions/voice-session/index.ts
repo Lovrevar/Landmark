@@ -19,6 +19,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { AccessToken, AgentDispatchClient } from 'npm:livekit-server-sdk@2.19.1'
 import { authenticate } from '../_shared/auth.ts'
+import type { Database } from '../_shared/database.ts'
 import { corsHeaders, handlePreflight } from '../_shared/cors.ts'
 
 const CALL_CAP_MS = 15 * 60_000
@@ -27,10 +28,8 @@ const jsonHeaders = { ...corsHeaders, 'content-type': 'application/json' }
 const reply = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: jsonHeaders })
 const fail = (status: number, code: string, message: string) => reply(status, { error: { code, message } })
 
-// Untyped until the voice_calls migration is applied and /db-types regenerates
-// _shared/database.ts.
 function serviceClient() {
-  return createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+  return createClient<Database>(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 }

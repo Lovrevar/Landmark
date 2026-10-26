@@ -29,9 +29,10 @@ Cognilion (call button) ─ voice-session/start ─┬─ ai_sessions (channel '
 
 ## State of LandmarkDev (2026-10-26)
 
-- **Migration applied by running its SQL directly**, not recorded in `schema_migrations`, so other
-  branches can still `db push`. It is idempotent; the push after this branch merges applies it
-  again harmlessly.
+- **Migration applied and recorded** (`supabase db push`, 2026-10-27). The types in
+  `src/types/database.ts` and `_shared/database.ts` gained only the voice changes, added by hand:
+  regenerating them from LandmarkDev would drop the ERP types, because the parked ERP migrations
+  are not on dev.
 - **pg_cron is not enabled on LandmarkDev**, so `voice-calls-sweep` is not scheduled. Expired
   calls are still refused at lookup; their rows are just not deleted.
 - **Deployed:** `voice-llm` (from `feature/voice-latency` since 2026-10-27: Sonnet 5.5, `/warm`)
