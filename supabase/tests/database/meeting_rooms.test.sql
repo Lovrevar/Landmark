@@ -3,7 +3,7 @@
 -- only the creator or a task-app admin edits or deletes; only an admin manages rooms.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(22);
 
 -- Fixtures, as the database owner. The sign-up chain (auth.users → public.users → profiles)
 -- gives each a profile with role 'user'; the third is promoted to the task-app admin.
@@ -17,6 +17,17 @@ select is(
   (select count(*)::int from public.meeting_rooms where active),
   2,
   'the two conference rooms are seeded'
+);
+-- The phones keep the board live over realtime, which delivers only for published tables.
+select ok(
+  exists (select 1 from pg_publication_tables
+           where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'room_reservations'),
+  'room_reservations is in the supabase_realtime publication'
+);
+select ok(
+  exists (select 1 from pg_publication_tables
+           where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'meeting_rooms'),
+  'meeting_rooms is in the supabase_realtime publication'
 );
 
 -- ---------- Ana books ----------

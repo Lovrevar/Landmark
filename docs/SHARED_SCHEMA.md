@@ -742,17 +742,25 @@ every table here, a refused UPDATE or DELETE is **silent** (0 rows); a refused I
 
 ### Reading the board
 
-A day's bookings for all rooms is a range scan on `start_at` (indexed), both ends in the
-device's day:
+A day's bookings for all rooms is an overlap query, both ends in the device's local day, so a
+booking that runs past midnight still shows on the morning it ends:
 
 ```ts
 supabase.from("room_reservations")
   .select("id, room_id, title, start_at, end_at, created_by, creator:profiles(id, name)")
-  .gte("start_at", dayStartIso).lt("start_at", dayEndIso)
+  .lt("start_at", dayEndIso).gt("end_at", dayStartIso)
   .order("start_at");
 ```
 
 The `creator:profiles(...)` embed works because `created_by` has a single FK to `profiles`.
-Realtime on `room_reservations` (no filter — the board is public) keeps two phones in step.
+
+**Realtime.** The migration adds both tables to the `supabase_realtime` publication, so a
+`postgres_changes` subscription on `room_reservations` (no filter — the board is public) keeps
+two phones in step. Note that this is the **only** place in the Cognilion repo that records a
+table's publication membership: `tasks`, `task_subtasks`, chat and the calendar were added by
+hand in the dashboard, and a freshly built database (local stack, a new dev project) has an
+empty publication until somebody does it again (COLLAB-15). If a subscription on a task table
+delivers nothing, check `select tablename from pg_publication_tables where pubname =
+'supabase_realtime'` before suspecting the client.
 
 Verified by `supabase/tests/database/meeting_rooms.test.sql` in the Cognilion repo.

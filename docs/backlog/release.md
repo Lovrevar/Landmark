@@ -41,8 +41,10 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   "Sastanci" ships** — that client names both tables in its workspace query and goes dark without
   them (SHARED_SCHEMA.md §12 step 4). It enables `btree_gist`. Afterwards: `select name from
   meeting_rooms order by sort_order` returns Mala konferencija, Velika konferencija; as a signed-in
-  user insert two overlapping bookings of the same room and the second is refused with `23P01`.
-  Then `/db-types` here and `npm run typecheck` in the task app.
+  user insert two overlapping bookings of the same room and the second is refused with `23P01`;
+  `select tablename from pg_publication_tables where pubname = 'supabase_realtime'` lists both
+  new tables (the task app's live board depends on it). Then `/db-types` here and
+  `npm run typecheck` in the task app.
 - [ ] **Apply `20261015100000_unphased_tic_phase_budgets`** (GEN-22), dev first, and **before the
   client from 2026-10-15 ships**: that client no longer recognises the old "phase 1 holds the whole
   plan" shape, so on an unmigrated database Budget Control would measure such a project as phase 1

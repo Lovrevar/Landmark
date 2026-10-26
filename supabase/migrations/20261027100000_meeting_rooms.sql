@@ -168,7 +168,31 @@ CREATE POLICY "Room reservations: creator or admin can delete" ON public.room_re
   FOR DELETE TO authenticated
   USING (created_by = auth.uid() OR public.is_admin());
 
--- ---------- 4. grants, saying the same as the policies ----------
+-- ---------- 4. realtime ----------
+-- The board is kept live on every phone by a realtime subscription, which only delivers for
+-- tables in the supabase_realtime publication. No migration in this repo adds a table to it:
+-- tasks, task_subtasks, chat and the calendar were added by hand in the dashboard, which is
+-- why a freshly built database has an empty publication (COLLAB-15). These two are recorded
+-- here. Membership is checked first because ADD TABLE raises on a table already in.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    RAISE NOTICE 'supabase_realtime publication missing; realtime not configured on this database';
+    RETURN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables
+                  WHERE pubname = 'supabase_realtime' AND schemaname = 'public'
+                    AND tablename = 'room_reservations') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.room_reservations;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables
+                  WHERE pubname = 'supabase_realtime' AND schemaname = 'public'
+                    AND tablename = 'meeting_rooms') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.meeting_rooms;
+  END IF;
+END $$;
+
+-- ---------- 5. grants, saying the same as the policies ----------
 REVOKE ALL ON public.meeting_rooms     FROM anon, authenticated;
 REVOKE ALL ON public.room_reservations FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.meeting_rooms     TO authenticated;

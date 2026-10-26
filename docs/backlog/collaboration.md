@@ -1,6 +1,6 @@
 # Backlog — tasks, calendar, chat, documents and AI assistant
 
-Ids: `COLLAB-n` (next free: `COLLAB-15`). Entry format and rules are in [README.md](./README.md).
+Ids: `COLLAB-n` (next free: `COLLAB-16`). Entry format and rules are in [README.md](./README.md).
 
 The `task*` tables are shared with the mobile task app; read
 [../SHARED_SCHEMA.md](../SHARED_SCHEMA.md) before changing them. The AI assistant is pinned by
@@ -8,6 +8,21 @@ characterisation tests on `feature/voice-assistant`; its open questions (`OQ-n`)
 `docs/voice/open-questions.md` on that branch.
 
 ## Open
+
+### COLLAB-15 · Low · Realtime publication membership is recorded nowhere
+- **Check:** Confirmed 2026-10-27 — the local stack built from every migration has an empty
+  `supabase_realtime` publication
+- **Where:** every `postgres_changes` subscription in `src/`: `tasks`, `task_assignees`,
+  `task_subtasks`, `task_comments`, `task_attachments`, `chat_messages`, `calendar_events`,
+  `calendar_event_participants`, `calendar_event_exceptions`, `calendar_occurrence_responses`,
+  `calendar_notifications`; plus whatever the task app subscribes to. Only
+  `20261027100000_meeting_rooms` adds its tables in SQL
+- **What happens:** production works because the tables were ticked in the dashboard. A new dev
+  or demo project, or a re-seeded one, gets no live updates anywhere and nothing says why; the
+  clients refetch on their own schedule and look merely slow
+- **Fix direction:** one migration with the idempotent `DO` block pattern from
+  `20261027100000`, listing every table a client subscribes to (grep `postgres_changes` in
+  `src/` and the task app); run it on dev and demo and compare with production's list first
 
 ### COLLAB-14 · Low · Room reservations have no Cognilion surface
 - **Check:** Decided 2026-10-27
