@@ -478,6 +478,11 @@ an unprivileged session can get in front of.
 | `task_completed` | signed-in user | assignees + creator |
 | `reminder_day_before` / `reminder_due_today` | scheduler only | assignees |
 | `reminder_overdue` | scheduler only | assignees + creator |
+| `meeting_invited` | signed-in creator of the reservation, or admin | attendees (caller excluded); `newAttendeeIds` may narrow |
+| `meeting_cancelled` | signed-in creator of the reservation, or admin | attendees (caller excluded) |
+
+The two meeting events take `{ event, reservationId, newAttendeeIds? }` instead of `taskId`
+and re-read `room_reservations` + its attendees — see [§15](#15-meeting-rooms--meeting_rooms-and-room_reservations).
 
 - The two sets are **cross-gated against caller mode** (`isReminder !== (mode === "scheduled")`
   → 403). Without that, any signed-in user could POST `reminder_overdue` and buzz the whole
@@ -764,3 +769,60 @@ delivers nothing, check `select tablename from pg_publication_tables where pubna
 'supabase_realtime'` before suspecting the client.
 
 Verified by `supabase/tests/database/meeting_rooms.test.sql` in the Cognilion repo.
+
+### Attendees — `room_reservation_attendees`
+
+Specified by `20261027100100_room_reservation_attendees.sql`. A meeting can name the people it
+is for. Modelled on `task_assignees`:
+
+```sql
+CREATE TABLE public.room_reservation_attendees (
+  reservation_id uuid NOT NULL REFERENCES public.room_reservations(id) ON DELETE CASCADE,
+  user_id        uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,  -- auth id
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (reservation_id, user_id)
+);
+```
+
+- **The composite PK is load-bearing**, as on `task_assignees`: it is what lets PostgREST
+  embed `attendees:profiles!room_reservation_attendees(id, name)` on a reservation.
+- **The creator is implicit and has no row.** "Moji sastanci" = `created_by = me` OR an
+  attendee row for me. Do not insert the creator; it double-counts them on every edit.
+- **No RSVP** (decided 2026-10-27). A `response` column can be added later without a grant
+  change. There is no UPDATE grant or policy — a row has nothing to update.
+- **Edits reconcile as a set difference** (delete who left, insert who arrived), so unchanged
+  rows keep `created_at`.
+- Published for realtime like its parent.
+
+| SELECT | INSERT | DELETE |
+|---|---|---|
+| everyone | reservation creator OR admin | reservation creator OR admin OR `user_id = auth.uid()` (leave) |
+
+A duplicate insert is `23505`. A refused DELETE is silent (0 rows), as everywhere here.
+
+### Pushing a meeting
+
+`send-push` has two user events for meetings, cross-gated like the task events:
+
+```ts
+POST /functions/v1/send-push   { event: "meeting_invited",   reservationId, newAttendeeIds? }
+POST /functions/v1/send-push   { event: "meeting_cancelled", reservationId }
+```
+
+- The function re-reads the reservation, its room and its attendees with the service role.
+  Only the reservation's **creator or an admin** may trigger either (an attendee may not).
+  Recipients are the attendees minus the caller; `newAttendeeIds` may only narrow that set,
+  by intersection — send it on an edit so people already on the meeting are not re-buzzed.
+- Bodies are Croatian, built server-side: `Novi sastanak` / `<title or Sastanak> · <room> ·
+  DD.MM.YYYY. HH:MM` in Europe/Zagreb, and `Sastanak otkazan` / `<actor> je otkazao: …`. Both
+  carry `tag = reservation id`, so a cancellation replaces an unread invitation.
+- The payload the service worker receives has `reservationId` and `url: "/sastanci"` instead
+  of `taskId`; a click should land on the Sastanci tab.
+- ⚠️ **Cancel is sent before the delete, and awaited.** The function reads the row to work out
+  who to tell; once the row is gone there is nobody to tell. The client therefore `await`s
+  the `meeting_cancelled` call and only then deletes the reservation. A push that fails must
+  not stop the delete, and a delete that fails after a sent cancellation is a visible error the
+  user retries — the rarer of the two wrong outcomes.
+
+Verified by `supabase/tests/database/room_reservation_attendees.test.sql` and
+`supabase/functions/send-push/meeting.test.ts`.
