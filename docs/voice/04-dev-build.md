@@ -53,8 +53,14 @@ set -a; source ~/.config/cognilion-voice/stt.env; source ~/.config/cognilion-voi
 AGENT_NAME=cognilion-voice npm run agent        # the worker, on LiveKit Cloud
 ```
 
-Then the app (`npm run dev` at the repo root, pointed at LandmarkDev): open the AI assistant and
-press the phone icon.
+Then the app (`npm run dev` at the repo root, pointed at LandmarkDev, with `VOICE_CALLS_ENABLED`
+set to `true` locally): open the AI assistant and press the phone icon.
+
+**The feature is off: `VOICE_CALLS_ENABLED = false`** in `src/lib/featureFlags.ts`, a compile-time
+constant like the other flags there, so no deployment can switch it on without its backend. Off,
+the call button is hidden and the chat history does not filter on `ai_sessions.channel`, so a
+build of `development` works on a database without the voice migration. To try voice against
+LandmarkDev, set it to `true` locally and do not commit it.
 
 ## Testing without speaking
 
@@ -109,8 +115,8 @@ Before the button can be shown to users:
    (§11, question 9).
 8. **"Kasnimo li s rokovima na nekom projektu?"** has no tool that answers it across all projects;
    the model says so and points to the app.
-9. **The call button shows for every user once this branch merges**, whether or not a worker is
-   running. Put it behind a flag (or a role) until the worker is hosted.
+9. **The flag is all-or-nothing** (`VOICE_CALLS_ENABLED`). For a trial with a few users on
+   production, it needs to be per user or per role.
 10. **Help article and release note** for the call button (`/help-article`, `ai-chat-widget.md`),
     when it ships.
 11. **The pgTAP test** `supabase/tests/database/voice_calls.test.sql` has not been run: Docker was

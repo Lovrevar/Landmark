@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabase'
+import { VOICE_CALLS_ENABLED } from '../../../lib/featureFlags'
 import type {
   AiAttachmentRow,
   AiChatEvent,
@@ -10,11 +11,13 @@ import type {
 import { AiChatHttpError } from '../../../types/aiChat'
 
 export async function listSessions(): Promise<AiSession[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('ai_sessions')
     .select('id, user_id, title, created_at, updated_at, cancel_requested_at')
-    .eq('channel', 'chat') // voice calls are sessions too, but not chat threads
-    .order('updated_at', { ascending: false })
+  // Voice calls are sessions too, but not chat threads. The column exists only where the voice
+  // migration is applied, which is what the flag promises.
+  if (VOICE_CALLS_ENABLED) query = query.eq('channel', 'chat')
+  const { data, error } = await query.order('updated_at', { ascending: false })
   if (error) throw error
   return (data ?? []) as AiSession[]
 }

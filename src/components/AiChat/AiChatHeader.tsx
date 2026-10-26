@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Pencil, Plus, Trash2, X } from 'lucide-react'
 import ConfirmDialog from '../ui/ConfirmDialog'
+import { VOICE_CALLS_ENABLED } from '../../lib/featureFlags'
 import { useAiChat } from './AiChatProvider'
 import VoiceCallButton from './components/VoiceCallButton'
 
@@ -185,7 +186,7 @@ export default function AiChatHeader() {
         )}
       </div>
 
-      <VoiceCallButton />
+      {VOICE_CALLS_ENABLED && <VoiceCallButton />}
 
       <button
         type="button"

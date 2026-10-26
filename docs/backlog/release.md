@@ -30,7 +30,8 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
 - [ ] **Apply `20261026100000_voice_calls`** (voice assistant, `feature/voice-assistant` only).
   **Dev: done 2026-10-26 by running its SQL directly** (not recorded in `schema_migrations`, so
   other branches can still push; dev has no pg_cron, so the sweep is not scheduled). Production
-  only when the voice feature ships. Afterwards: `select jobname from
+  only when the voice feature ships, and before `VOICE_CALLS_ENABLED` is flipped on (without the
+  migration the flag breaks the chat history list). Afterwards: `select jobname from
   cron.job where jobname = 'voice-calls-sweep'` returns one row; as a signed-in user,
   `select * from voice_calls` is refused; existing chat sessions show `channel = 'chat'`. Then
   `/db-types`.
