@@ -52,7 +52,9 @@ General report's test keeps its own smaller fake.
 The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs every
 `*.test.ts` file under `supabase/functions/` (`_shared/help-score`, `_shared/help-search`,
 `_shared/tools`, the four `ai-chat/tests/` files below, `import-erp/feeds`, `import-erp/parse`,
-`sort-document/classifier`, `sort-document/extract`).
+`sort-document/classifier`, `sort-document/extract`, and `voice-llm`'s three). CI runs them on
+Deno 2.9.8, pinned in `.github/workflows/test.yml`; use the same version locally
+(`deno upgrade 2.9.8`), since a newer or older Deno can type-check the same code differently.
 
 **In VS Code**, `supabase/functions` is Deno code, so the editor's TypeScript reports false errors there
 (`jsr:`/`npm:` imports, `Deno`) unless the Deno extension takes the folder. `.vscode/extensions.json`

@@ -116,7 +116,8 @@ visible effect: [GEN-18](./projects-dashboards-reports.md) (General report PDF c
 - **Works end to end on LandmarkDev** (2026-10-26): the call button, `voice-session`, `voice-llm`
   and the agent worker. What is missing before it ships is listed in
   [`docs/voice/04-dev-build.md`](../voice/04-dev-build.md) → "Not done yet": latency, hosting the
-  worker, voice rate limits, plan §3.3/§3.5, OQ-1/OQ-2, result clamps, the in-call panel.
+  worker, voice rate limits, plan §3.3/§3.5, OQ-1/OQ-2, result clamps, the in-call panel. The
+  latency plan, step by step, is in the same file → "Latency: where it stands, and the plan".
 - Speech-to-text is decided: Soniox (2026-10-22, plan header), confirmed on s02 alone (decided
   2026-10-26: more speakers are not needed). `s02_e19_c1` is silent.
 - The script is frozen (`022dcc3d`) without the fragile-take dry run or a second reviewer. Open:

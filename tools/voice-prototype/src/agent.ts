@@ -67,6 +67,18 @@ function callTokenOf(metadata: string | undefined): string | null {
   }
 }
 
+// Started as the call starts, not awaited: while the greeting plays, voice-llm wakes, resolves the
+// caller and writes the prompt cache, so the first question pays neither a cold start nor a miss.
+function warmCognilion(callToken: string, room: string) {
+  const t0 = Date.now()
+  fetch(`${process.env.VOICE_LLM_URL}/warm`, {
+    method: 'POST',
+    headers: { 'x-voice-secret': process.env.VOICE_LLM_SECRET ?? '', 'x-voice-call-id': room, authorization: `Bearer ${callToken}` },
+  })
+    .then(async (res) => log('warm.jsonl', { room, status: res.status, ms: Date.now() - t0, result: await res.text() }))
+    .catch((err) => log('warm.jsonl', { room, error: String(err), ms: Date.now() - t0 }))
+}
+
 // Cognilion's assistant as an OpenAI-compatible LLM: the call token as the API key, the shared secret
 // and the room as headers (voice-llm refuses the token for any other room).
 function cognilionLlm(callToken: string, room: string): openai.LLM {
@@ -194,6 +206,7 @@ export default defineAgent({
     const hints = loadHints()
     const callToken = callTokenOf(ctx.job.metadata)
     const room = ctx.job.room?.name ?? ''
+    if (callToken) warmCognilion(callToken, room)
     const session = new voice.AgentSession({
       vad: interruptOn === 'stt' ? undefined : ctx.proc.userData.vad as silero.VAD,
       stt: new soniox.STT({

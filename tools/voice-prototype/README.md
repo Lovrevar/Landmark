@@ -59,6 +59,7 @@ includes transport.
 ```bash
 node src/call-test.ts latency /mnt/c/phase0/clean/s02_q01.wav /mnt/c/phase0/clean/s02_q02.wav
 node src/call-test.ts ask /mnt/c/phase0/clean/s02_q01.wav      # what the agent heard and said; with COGNILION_EMAIL set, via voice-session
+node src/llm-bench.ts 3                                         # voice-llm alone, no speech: the phase 0 questions × 3 (see its header)
 LABEL=vad node src/call-test.ts bargein /mnt/c/phase0/clean/s02_q01.wav   # STUB_ANSWER=long; LABEL = the agent's INTERRUPT_ON
 npm run report                                                      # the logs against the gates, barge-in per LABEL
 ```
