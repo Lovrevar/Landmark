@@ -1083,7 +1083,7 @@ function streamChatResponse(
   const sse = new SSEWriter(writer, () => onClientDisconnect('sse.write_failed'))
 
   ;(async () => {
-    let timeoutHandle: number | undefined
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined
     try {
       // Flush headers + signal liveness to any proxy. Must precede real work.
       await sse.writeComment('ready')

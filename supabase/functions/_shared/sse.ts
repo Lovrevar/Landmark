@@ -27,7 +27,7 @@ export type Event =
 export class SSEWriter {
   private readonly writer: WritableStreamDefaultWriter<Uint8Array>
   private readonly encoder = new TextEncoder()
-  private heartbeatTimer: number | undefined
+  private heartbeatTimer: ReturnType<typeof setTimeout> | undefined
   private closed = false
   // Third disconnect-detection source: when any write throws, the underlying
   // socket is dead. Invoked exactly once. Used by ai-chat's streamChatResponse to trip

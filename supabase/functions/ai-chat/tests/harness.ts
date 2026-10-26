@@ -134,7 +134,7 @@ export interface SSE {
  * every DB write of the request has happened. Pass `timeoutMs: 0` under
  * FakeTime, where a guard timer would itself be faked. */
 export async function readSSE(res: Response, timeoutMs = 10_000): Promise<SSE> {
-  let timer: number | undefined
+  let timer: ReturnType<typeof setTimeout> | undefined
   const raw = timeoutMs <= 0 ? await res.text() : await Promise.race([
     res.text(),
     new Promise<never>((_, reject) => {
