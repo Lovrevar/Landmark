@@ -36,6 +36,13 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   cron.job where jobname = 'voice-calls-sweep'` returns one row; as a signed-in user,
   `select * from voice_calls` is refused; existing chat sessions show `channel = 'chat'`. Then
   `/db-types`.
+- [ ] **Apply `20261027100000_meeting_rooms`** (conference-room board for the task app,
+  `feature/meeting-rooms`), dev first, then production **before the task app build that shows
+  "Sastanci" ships** — that client names both tables in its workspace query and goes dark without
+  them (SHARED_SCHEMA.md §12 step 4). It enables `btree_gist`. Afterwards: `select name from
+  meeting_rooms order by sort_order` returns Mala konferencija, Velika konferencija; as a signed-in
+  user insert two overlapping bookings of the same room and the second is refused with `23P01`.
+  Then `/db-types` here and `npm run typecheck` in the task app.
 - [ ] **Apply `20261015100000_unphased_tic_phase_budgets`** (GEN-22), dev first, and **before the
   client from 2026-10-15 ships**: that client no longer recognises the old "phase 1 holds the whole
   plan" shape, so on an unmigrated database Budget Control would measure such a project as phase 1

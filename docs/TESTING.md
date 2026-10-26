@@ -117,6 +117,7 @@ npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 | `sales_10_cancel_sale` | SALES-10: only Director and Accounting cancel; refused while a sales invoice exists; the apartment, its garage and storage unit become Available; the customer becomes interested only after their last sale; one sale per apartment |
 | `sales_9_unique_numbers` | SALES-9 / SALES-17: one unit number per building (trimmed, case-insensitive, also for apartments without a building), one building name per project |
 | `gen_22_unphased_tic` | GEN-22: an unphased TIC leaves several phases NULL, gives a single phase the whole plan and its classification split, and re-applies when phases are added or removed |
+| `meeting_rooms` | Conference rooms (SHARED_SCHEMA.md §15): the two rooms are seeded; everyone reads every booking; a booking in someone else's name, one ending before it starts, one over 24 h and one overlapping the same room are refused; back-to-back and other-room bookings pass; only the creator or a task-app admin edits or deletes; only an admin manages rooms; `updated_at` moves by trigger |
 
 ### Writing one
 

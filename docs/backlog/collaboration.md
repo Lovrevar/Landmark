@@ -1,6 +1,6 @@
 # Backlog — tasks, calendar, chat, documents and AI assistant
 
-Ids: `COLLAB-n` (next free: `COLLAB-14`). Entry format and rules are in [README.md](./README.md).
+Ids: `COLLAB-n` (next free: `COLLAB-15`). Entry format and rules are in [README.md](./README.md).
 
 The `task*` tables are shared with the mobile task app; read
 [../SHARED_SCHEMA.md](../SHARED_SCHEMA.md) before changing them. The AI assistant is pinned by
@@ -8,6 +8,17 @@ characterisation tests on `feature/voice-assistant`; its open questions (`OQ-n`)
 `docs/voice/open-questions.md` on that branch.
 
 ## Open
+
+### COLLAB-14 · Low · Room reservations have no Cognilion surface
+- **Check:** Decided 2026-10-27
+- **Where:** `meeting_rooms` / `room_reservations` (migration `20261027100000`,
+  [SHARED_SCHEMA.md §15](../SHARED_SCHEMA.md#15-meeting-rooms--meeting_rooms-and-room_reservations))
+- **What happens:** the two conference rooms are booked from the task app only. A Cognilion
+  user cannot see or book a room, and the Calendar page does not show that a room is taken.
+- **Fix direction:** a read-only "Sobe" layer on the Calendar page is the natural first step
+  (map `created_by`, an auth id, to `users` the way the task overlay does). Booking from
+  Cognilion is the same insert the phone does. Do not reuse `calendar_events` for it — the
+  migration header says why.
 
 ### COLLAB-12 · Low · A refused file delete goes unnoticed and leaves an orphan
 - **Check:** Code reading (pre-release review, 2026-10-20)
