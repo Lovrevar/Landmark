@@ -1,14 +1,20 @@
-// Phase 0 live prototype: the voice agent worker.
+// The voice agent worker: the phase 0 prototype, and in dev the agent behind Cognilion's call button.
 //
-// Soniox stt-rt-v5 (EU host, Croatian, the phase 0 vocabulary hints) -> stub LLM -> ElevenLabs
-// eleven_v4_turbo, in a LiveKit room. Turns end on Soniox's own endpointing (LiveKit's turn
+// Soniox stt-rt-v5 (EU host, Croatian, the phase 0 vocabulary hints) -> LLM -> ElevenLabs
+// eleven_v4_turbo, in a LiveKit room. The LLM is Cognilion's assistant (the voice-llm edge function)
+// when the job was dispatched by voice-session/start, whose metadata carries the call's opaque token;
+// otherwise it is the stub, for the phase 0 measurements. Turns end on Soniox's own endpointing (LiveKit's turn
 // detector has no Croatian); barge-in is Silero VAD, Soniox's first non-final words, or both
 // (INTERRUPT_ON). Every reply and every interruption is logged to logs/turns.jsonl and
 // logs/bargein.jsonl for src/report.ts.
 //
 //   INTERRUPT_ON         vad (default) | stt | both. stt passes no VAD, so LiveKit interrupts on
 //                        Soniox's first interim words; both keeps Silero and also interrupts on them.
-//   VOICE                martin (default) | karlo | an ElevenLabs voice id
+//   AGENT_NAME           set it (cognilion-voice) to take only explicitly dispatched calls, as
+//                        voice-session/start dispatches them; unset, the worker joins every room
+//   VOICE_LLM_URL, VOICE_LLM_SECRET  the voice-llm endpoint (…/functions/v1/voice-llm) and its shared
+//                        secret; needed for dispatched calls
+//   VOICE                karlo (default, chosen 2026-10-26) | martin | an ElevenLabs voice id
 //   INTERRUPT_MIN_MS     speech needed before the agent stops talking (default 50; LiveKit's own is 500)
 //   OUTPUT_QUEUE_MS      agent audio queued ahead of playout, cleared on interruption (default 50; LiveKit's own is 200)
 //   VAD_THRESHOLD, VAD_MIN_SPEECH_MS  Silero's activation threshold and minimum speech (default 0.3 and 30;
@@ -24,6 +30,7 @@ import * as elevenlabs from '@livekit/agents-plugin-elevenlabs'
 import * as openai from '@livekit/agents-plugin-openai'
 import * as silero from '@livekit/agents-plugin-silero'
 import * as soniox from '@livekit/agents-plugin-soniox'
+import OpenAI from 'openai'
 import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -33,7 +40,7 @@ const LOGS = join(HERE, '..', 'logs')
 const PHASE0 = join(HERE, '..', '..', 'phase0')
 
 const VOICES: Record<string, string> = { martin: 'CgDf4YS1Sotf0h6n2vtV', karlo: 'pTD8166KADi6ZFJ5FEXi' }
-const voiceName = (process.env.VOICE ?? 'martin').toLowerCase()
+const voiceName = (process.env.VOICE ?? 'karlo').toLowerCase()
 const voiceId = VOICES[voiceName] ?? voiceName
 const interruptMinMs = Number(process.env.INTERRUPT_MIN_MS ?? 50)
 const outputQueueMs = Number(process.env.OUTPUT_QUEUE_MS ?? 50)
@@ -46,6 +53,32 @@ const interruptOn = process.env.INTERRUPT_ON ?? 'vad'
 if (!['vad', 'stt', 'both'].includes(interruptOn)) throw new Error(`INTERRUPT_ON must be vad, stt or both, not ${interruptOn}`)
 
 const GREETING = 'Dobar dan, ovdje probni glasovni asistent. Pitajte me nešto o projektu, ili recite "daj mi pregled" za duži odgovor.'
+const COGNILION_GREETING = 'Dobar dan, ovdje Cognilion. Kako vam mogu pomoći?'
+
+// The call's opaque token, if voice-session/start dispatched this job.
+function callTokenOf(metadata: string | undefined): string | null {
+  try {
+    const token = JSON.parse(metadata || '{}').callToken
+    return typeof token === 'string' && token ? token : null
+  } catch {
+    return null
+  }
+}
+
+// Cognilion's assistant as an OpenAI-compatible LLM: the call token as the API key, the shared secret
+// and the room as headers (voice-llm refuses the token for any other room).
+function cognilionLlm(callToken: string, room: string): openai.LLM {
+  const baseURL = process.env.VOICE_LLM_URL
+  const secret = process.env.VOICE_LLM_SECRET
+  if (!baseURL || !secret) throw new Error('VOICE_LLM_URL and VOICE_LLM_SECRET are needed for a dispatched call')
+  const client = new OpenAI({
+    apiKey: callToken,
+    baseURL,
+    defaultHeaders: { 'x-voice-secret': secret, 'x-voice-call-id': room },
+    maxRetries: 0, // a retried turn would answer twice
+  })
+  return new openai.LLM({ client, model: 'cognilion-voice' })
+}
 
 function parseCsv(text: string): Record<string, string>[] {
   const rows: string[][] = []
@@ -94,6 +127,8 @@ export default defineAgent({
   },
   entry: async (ctx: JobContext) => {
     const hints = loadHints()
+    const callToken = callTokenOf(ctx.job.metadata)
+    const room = ctx.job.room?.name ?? ''
     const session = new voice.AgentSession({
       vad: interruptOn === 'stt' ? undefined : ctx.proc.userData.vad as silero.VAD,
       stt: new soniox.STT({
@@ -106,7 +141,9 @@ export default defineAgent({
         endpointLatencyAdjustmentLevel: endpointLatencyLevel,
         context: { terms: hints },
       }),
-      llm: new openai.LLM({ baseURL: process.env.STUB_LLM_URL ?? 'http://127.0.0.1:8787/v1', model: 'stub', apiKey: 'stub' }),
+      llm: callToken
+        ? cognilionLlm(callToken, room)
+        : new openai.LLM({ baseURL: process.env.STUB_LLM_URL ?? 'http://127.0.0.1:8787/v1', model: 'stub', apiKey: 'stub' }),
       tts: new elevenlabs.TTS({
         apiKey: process.env.ELEVENLABS_API_KEY,
         voiceId,
@@ -174,8 +211,8 @@ export default defineAgent({
       outputOptions: { queueSizeMs: outputQueueMs },
     })
     await ctx.connect()
-    session.say(GREETING)
+    session.say(callToken ? COGNILION_GREETING : GREETING)
   },
 })
 
-cli.runApp(new ServerOptions({ agent: fileURLToPath(import.meta.url) }))
+cli.runApp(new ServerOptions({ agent: fileURLToPath(import.meta.url), agentName: process.env.AGENT_NAME }))

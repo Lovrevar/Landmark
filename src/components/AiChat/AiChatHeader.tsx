@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Pencil, Plus, Trash2, X } from 'lucide-react'
 import ConfirmDialog from '../ui/ConfirmDialog'
 import { useAiChat } from './AiChatProvider'
+import VoiceCallButton from './components/VoiceCallButton'
 
 export default function AiChatHeader() {
   const {
@@ -183,6 +184,8 @@ export default function AiChatHeader() {
           </div>
         )}
       </div>
+
+      <VoiceCallButton />
 
       <button
         type="button"

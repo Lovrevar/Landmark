@@ -6,6 +6,12 @@
 //
 //   node src/call-test.ts latency  <wav> [<wav> ...]    16 kHz mono 16-bit, e.g. phase 0 takes
 //   node src/call-test.ts bargein  <wav> [<wav> ...]    needs the stub LLM started with STUB_ANSWER=long
+//   node src/call-test.ts ask      <wav> [<wav> ...]    asks each question, logs what the agent heard and said
+//
+// With COGNILION_EMAIL and COGNILION_PASSWORD (plus SUPABASE_URL and SUPABASE_ANON_KEY) the caller goes
+// through Cognilion's own start path, as the call button does: it signs in as that user, calls
+// voice-session/start, joins the room it returns, and calls voice-session/end afterwards. The agent then
+// answers through voice-llm, on that user's data. Otherwise it joins a local room of its own.
 //
 // Results go to logs/calltest.jsonl and the console, tagged with LABEL if set (e.g. LABEL=stt for the
 // agent's INTERRUPT_ON, which the caller can't see). "Start" and "end" of a take's speech come from
@@ -62,8 +68,8 @@ const log = (entry: Record<string, unknown>) => {
 
 async function main() {
   const [mode, ...wavs] = process.argv.slice(2)
-  if (!['latency', 'bargein'].includes(mode) || !wavs.length) {
-    console.error('usage: node src/call-test.ts latency|bargein <wav> [<wav> ...]')
+  if (!['latency', 'bargein', 'ask'].includes(mode) || !wavs.length) {
+    console.error('usage: node src/call-test.ts latency|bargein|ask <wav> [<wav> ...]')
     process.exit(2)
   }
   const takes: Take[] = []
@@ -71,16 +77,28 @@ async function main() {
     const pcm = readWav(wav)
     takes.push({ name: basename(wav), pcm, speechMs: await speechSpanMs(pcm) })
   }
-  const at = new AccessToken(process.env.LIVEKIT_API_KEY ?? 'devkey', process.env.LIVEKIT_API_SECRET ?? 'secret',
-    { identity: 'call-test', ttl: '15m' })
-  const roomName = `calltest-${Date.now().toString(36)}`
-  at.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true })
+  const conn = await connection()
+  const roomName = conn.room
 
   // Agent audio: the time of the latest loud frame, and of its first loud frame after a mark.
   let lastLoudAt = 0
   const loudTimes: number[] = [] // every loud agent frame, for the barge-in timeline
   let firstLoudAfter: { mark: number; at: number | null } = { mark: Infinity, at: null }
   const room = new Room()
+  // What the agent heard (the caller's speech, transcribed) and what it said, as LiveKit publishes them.
+  const transcripts: Array<{ from: 'caller' | 'agent'; text: string }> = []
+  room.registerTextStreamHandler('lk.transcription', (reader, sender) => {
+    void reader.readAll().then((text) => {
+      const own = sender.identity === room.localParticipant?.identity
+      const trackOwnerIsCaller = reader.info.attributes?.['lk.transcribed_track_id'] !== undefined &&
+        room.localParticipant?.trackPublications.has(reader.info.attributes['lk.transcribed_track_id'])
+      const from = own || trackOwnerIsCaller ? 'caller' : 'agent'
+      // Each interim version of the caller's speech is its own stream; only the final one counts.
+      // (The agent's text comes as one stream per segment, not marked final.)
+      if (from === 'caller' && reader.info.attributes?.['lk.transcription_final'] === 'false') return
+      if (text.trim()) transcripts.push({ from, text: text.trim() })
+    })
+  })
   room.on(RoomEvent.TrackSubscribed, async (track: RemoteTrack) => {
     if (track.kind !== TrackKind.KIND_AUDIO) return
     for await (const frame of new AudioStream(track, RATE, 1)) {
@@ -92,7 +110,7 @@ async function main() {
       }
     }
   })
-  await room.connect(process.env.LIVEKIT_URL ?? 'ws://localhost:7880', await at.toJwt(), { autoSubscribe: true, dynacast: false })
+  await room.connect(conn.url, conn.token, { autoSubscribe: true, dynacast: false })
 
   // The "microphone": real-time 10 ms frames, silence whenever no take is playing.
   // A 50 ms queue, not the default 1000 ms: captureFrame() returns when a frame is queued, so a
@@ -134,10 +152,10 @@ async function main() {
       queue = frames
     })
   }
-  async function untilAgentQuiet(maxMs = 30000) {
+  async function untilAgentQuiet(maxMs = 30000, quietMs = 1500) {
     const t0 = performance.now()
     while (performance.now() - t0 < maxMs) {
-      if (lastLoudAt && performance.now() - lastLoudAt > 1500 && !playing) return
+      if (lastLoudAt && performance.now() - lastLoudAt > quietMs && !playing) return
       await sleep(50)
     }
   }
@@ -150,7 +168,24 @@ async function main() {
 
   for (const take of takes) {
     const speech_ms = take.speechMs.map(Math.round)
-    if (mode === 'latency') {
+    if (mode === 'ask') {
+      // A real answer can pause after its filler sentence while tools run, so "done" is 4 s of quiet.
+      const mark = transcripts.length
+      firstLoudAfter = { mark: Infinity, at: null }
+      const { end } = await play(take)
+      firstLoudAfter.mark = end
+      const tWait = performance.now()
+      while (firstLoudAfter.at === null && performance.now() - tWait < 20000) await sleep(10)
+      await untilAgentQuiet(60000, 4000)
+      await sleep(500) // the last transcript segment lands after the audio
+      const since = transcripts.slice(mark)
+      log({
+        mode, take: take.name, speech_ms,
+        latency_ms: firstLoudAfter.at === null ? null : Math.round(firstLoudAfter.at - end),
+        heard: since.filter((t) => t.from === 'caller').map((t) => t.text).join(' '),
+        said: since.filter((t) => t.from === 'agent').map((t) => t.text).join(' '),
+      })
+    } else if (mode === 'latency') {
       firstLoudAfter = { mark: Infinity, at: null }
       const { end } = await play(take)
       firstLoudAfter.mark = end
@@ -205,7 +240,39 @@ async function main() {
     }
   }
   await room.disconnect()
+  await conn.end()
   process.exit(0)
+}
+
+/** Where to join: through Cognilion's voice-session (as the call button does), or a local room. */
+async function connection(): Promise<{ url: string; token: string; room: string; end: () => Promise<void> }> {
+  const email = process.env.COGNILION_EMAIL
+  if (!email) {
+    const at = new AccessToken(process.env.LIVEKIT_API_KEY ?? 'devkey', process.env.LIVEKIT_API_SECRET ?? 'secret',
+      { identity: 'call-test', ttl: '15m' })
+    const room = `calltest-${Date.now().toString(36)}`
+    at.addGrant({ roomJoin: true, room, canPublish: true, canSubscribe: true })
+    return { url: process.env.LIVEKIT_URL ?? 'ws://localhost:7880', token: await at.toJwt(), room, end: async () => {} }
+  }
+  const supabaseUrl = process.env.SUPABASE_URL
+  const anonKey = process.env.SUPABASE_ANON_KEY
+  if (!supabaseUrl || !anonKey) throw new Error('COGNILION_EMAIL needs SUPABASE_URL and SUPABASE_ANON_KEY')
+  const login = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: anonKey, 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password: process.env.COGNILION_PASSWORD }),
+  })
+  if (!login.ok) throw new Error(`sign-in failed: ${login.status}`)
+  const jwt = (await login.json()).access_token as string
+  const call = (path: string, body: unknown) => fetch(`${supabaseUrl}/functions/v1/voice-session/${path}`, {
+    method: 'POST',
+    headers: { apikey: anonKey, authorization: `Bearer ${jwt}`, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const started = await call('start', {})
+  if (!started.ok) throw new Error(`voice-session/start failed: ${started.status} ${await started.text()}`)
+  const s = await started.json() as { url: string; token: string; room: string; session_id: string }
+  return { url: s.url, token: s.token, room: s.room, end: async () => void await call('end', { session_id: s.session_id }) }
 }
 
 main().catch((e) => { console.error(e); process.exit(1) })

@@ -13,6 +13,7 @@ export async function listSessions(): Promise<AiSession[]> {
   const { data, error } = await supabase
     .from('ai_sessions')
     .select('id, user_id, title, created_at, updated_at, cancel_requested_at')
+    .eq('channel', 'chat') // voice calls are sessions too, but not chat threads
     .order('updated_at', { ascending: false })
   if (error) throw error
   return (data ?? []) as AiSession[]
