@@ -752,12 +752,19 @@ booking that runs past midnight still shows on the morning it ends:
 
 ```ts
 supabase.from("room_reservations")
-  .select("id, room_id, title, start_at, end_at, created_by, creator:profiles(id, name)")
+  .select("id, room_id, title, start_at, end_at, created_by, creator:profiles!created_by(id, name), attendees:profiles!room_reservation_attendees(id, name)")
   .lt("start_at", dayEndIso).gt("end_at", dayStartIso)
   .order("start_at");
 ```
 
-The `creator:profiles(...)` embed works because `created_by` has a single FK to `profiles`.
+⚠️ **Both embeds of `profiles` need their hint.** A reservation reaches `profiles` two ways:
+directly through `created_by`, and m2m through `room_reservation_attendees`. PostgREST
+refuses an unhinted `profiles(...)` the moment a second path exists (`PGRST201`, naming
+`room_reservations_created_by_fkey` and the junction). `profiles!created_by` names the column;
+`profiles!room_reservation_attendees` names the junction, exactly as `assignees` does on
+`tasks`. An earlier version of this section showed a plain `creator:profiles(...)`, which
+worked only until the attendees migration — that is why the task query never embeds a task's
+creator either.
 
 **Realtime.** The migration adds both tables to the `supabase_realtime` publication, so a
 `postgres_changes` subscription on `room_reservations` (no filter — the board is public) keeps
