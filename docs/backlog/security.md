@@ -2,13 +2,26 @@
 
 Open defects in RLS, storage policies, edge-function auth and role gating, followed by the
 security limitations the team has accepted for now. Ids: `SEC-An` for defects (next free:
-`SEC-A14`), `SEC-00n` for accepted risks (next free: `SEC-005`). Entry format and rules are in
+`SEC-A15`), `SEC-00n` for accepted risks (next free: `SEC-005`). Entry format and rules are in
 [README.md](./README.md).
 
 An item moves from "Open defects" to "Accepted risks" only after the team decides to live with
 it; write down why, and what a fix would look like.
 
 ## Open defects
+
+### SEC-A14 · Medium · `assistant-api` mints a GoTrue session per request, against a per-IP verify limit
+- **Check:** Runtime check needed
+- **Where:** `supabase/functions/assistant-api/session.ts` (`openSession`: `generateLink` then
+  `verifyOtp`); Auth → Rate Limits → *token verifications* on each project.
+- **What happens:** every tool call and every `/me` makes one `/verify` request to GoTrue, and Auth
+  limits token verifications per IP. When the assistant's traffic reaches the limit, session
+  minting fails and the call is `500 internal_error` (`verifyOtp failed` in the log), even though
+  the caller did nothing wrong. Not yet deployed anywhere.
+- **Fix direction:** before the first live test on LandmarkDev, check the limit and raise it if
+  needed ([../ASSISTANT_API.md](../ASSISTANT_API.md), "Deploying to the dev project"). If traffic
+  grows, cache one session per user for its lifetime instead of minting one per request, or mint
+  a short-lived JWT once the signing scheme is decided (voice plan open question 1).
 
 ### SEC-A9 · Low · `dispatch-calendar-reminders` has no request authentication
 - **Where:** `supabase/functions/dispatch-calendar-reminders/index.ts`, `verify_jwt = false`.

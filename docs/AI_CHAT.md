@@ -284,6 +284,8 @@ These cover the common cases; a hard crash mid-flight can still leak. No backgro
 
 15 tools, defined in [supabase/functions/_shared/tools.ts](../supabase/functions/_shared/tools.ts) and implemented in [supabase/functions/_shared/tool-handlers.ts](../supabase/functions/_shared/tool-handlers.ts) (the help-search tool lives in `help-search.ts`). For each tool, JSON Schema and exact input/output shapes live in those files — do not duplicate them here.
 
+The twelve voice tools are also served to the company assistant, through the same role and channel gate, by the `assistant-api` edge function — see [ASSISTANT_API.md](./ASSISTANT_API.md). A change to a tool's description, schema or roles changes that function's `/manifest` version.
+
 ### Role gating
 
 | Tool | Director | Accounting | Sales | Supervision | Investment |
