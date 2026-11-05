@@ -1,13 +1,34 @@
 # Backlog — Cashflow
 
 Invoices, payments, companies, bank accounts, loans, cesija and kompenzacija. Ids: `CASH-n` (next
-free: `CASH-32`). Entry format and rules are in [README.md](./README.md).
+free: `CASH-33`). Entry format and rules are in [README.md](./README.md).
 
 Phase 5 of the ERP integration removes in-app invoice and payment creation. Each entry says how
 that changes it; do not build new authoring UI here without reading
 [../erp-integration/](../erp-integration/README.md) first.
 
 ## Open
+
+### CASH-32 · Low · "Open" and "overdue" invoices are counted four other ways
+- **Check:** Code reading (Step 7 item 1, 2026-10-21). The rule is now
+  `isOpenInvoice` / `isOverdueInvoice` / `invoiceStatusSummary` in `src/utils/invoiceFigures.ts`:
+  open is `UNPAID` or `PARTIALLY_PAID`, valued at `remaining_amount`, and overdue is open with a due
+  date before today in local days. The General report, the invoice list's `isOverdue` and Debt
+  status use it
+- **Where / what happens:**
+  - `Cashflow/Calendar/index.tsx` ~290: `new Date(invoice.due_date) < new Date()`, with "today"
+    meaning now. An invoice due today shows as overdue from 02:00 on its due day, which is the bug
+    `retailReportService` fixed for itself.
+  - `Cashflow/Calendar/utils/monthStats.ts`: the same overdue rule with its own date parsing. Its
+    `unpaidAmount` sums `total_amount` of unpaid invoices, while `incomingUnpaid` beside it sums
+    `remaining_amount`.
+  - `Reports/services/retailReportService.ts` ~298: pending *excludes* overdue (an `else if`).
+    In the General report, overdue invoices are also pending.
+  - `dashboards/services/directorService.ts` ~302: receivables and payables are
+    `max(0, total_amount − paid_amount)`, not `remaining_amount`.
+- **Fix direction:** call `isOverdueInvoice` in the calendar (a fix: due-today invoices stop
+  showing as overdue). Give `monthStats` the `daysFrom` parameter. Decide whether "pending"
+  includes overdue, and say so on both reports.
 
 ### CASH-28 · Low · Cashflow wording, hardcoded strings and unused keys
 - **Check:** Code reading

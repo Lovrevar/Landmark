@@ -39,7 +39,7 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
   const profitMargin = totalRevenue > 0 ? (profitLoss / totalRevenue) * 100 : 0
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 mb-6">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">{t('retail_projects.financial_statistics')}</h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -105,7 +105,7 @@ export const ProjectStatistics: React.FC<ProjectStatisticsProps> = ({ project, a
       </div>
 
       <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-        <div className={`p-6 rounded-xl ${profitLoss >= 0 ? 'bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/30' : 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/30'}`}>
+        <div className={`p-6 rounded-xl ${profitLoss >= 0 ? 'bg-linear-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/30' : 'bg-linear-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/30'}`}>
           <div className="flex items-center justify-between">
             <div>
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">

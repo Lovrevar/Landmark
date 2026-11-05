@@ -162,7 +162,15 @@ export default function BudgetControl() {
    * "forecast" is then just the budget again.
    */
   const forecastAvailable = costAvailable && data.metrics.CPI !== 0
-  const noForecastLabel = t(costAvailable || !hasBudgetData ? 'budget_control.no_forecast' : 'budget_control.no_cost')
+  // Money paid but nothing measurable: only suppliers without a contract were paid, or the paid
+  // contracts have no milestones. Earned then equals paid and CPI is 1 by construction (GEN-23).
+  const NO_COST_LABEL = {
+    nothing_paid: 'budget_control.no_cost',
+    no_contract: 'budget_control.no_contracted_cost',
+    no_milestones: 'budget_control.no_milestones',
+  } as const
+  const noCostLabel = t(NO_COST_LABEL[data?.metrics.costUnavailableReason ?? 'nothing_paid'])
+  const noForecastLabel = costAvailable || !hasBudgetData ? t('budget_control.no_forecast') : noCostLabel
   const forecastUnderBudget = forecastAvailable && data.metrics.VAC >= 0
   if (forecastAvailable && barData[0]) barData[0][t('budget_control.forecast_eac')] = data.metrics.EAC
 
@@ -179,7 +187,7 @@ export default function BudgetControl() {
           <select
             value={selectedProjectId}
             onChange={e => setSelectedProjectId(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:min-w-[220px]"
+            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 w-full sm:min-w-[220px]"
           >
             {projects.map(p => (
               <option key={p.id} value={p.id}>
@@ -268,7 +276,7 @@ export default function BudgetControl() {
           {/* Charts Row */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {/* Budget Control Bar Chart */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-xs">
               <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('budget_control.budget_chart_title')}</h2>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={barData} margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
@@ -297,7 +305,7 @@ export default function BudgetControl() {
             </div>
 
             {/* EVM Performance Indices Chart */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-xs">
               <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('budget_control.evm_indices_title')}</h2>
               <ResponsiveContainer width="100%" height={280}>
                 <ScatterChart margin={{ top: 8, right: 24, left: 8, bottom: 8 }}>
@@ -348,7 +356,7 @@ export default function BudgetControl() {
                 <IndexCard
                   label={t('budget_control.cpi')}
                   value={cpiStatus ? data.metrics.CPI : null}
-                  sublabel={cpiStatus ? t(cpiStatus.labelKey) : t('budget_control.no_cost')}
+                  sublabel={cpiStatus ? t(cpiStatus.labelKey) : noCostLabel}
                   status={cpiStatus ? cpiStatus.status : 'unknown'}
                   hint={<EvmHint metric="cpi" />}
                 />
@@ -465,10 +473,10 @@ function MetricCard({ label, sublabel, value, icon: Icon, variant }: MetricCardP
   return (
     // `stat-card` / `stat-card__value` (index.css): the figure shrinks with the card and then
     // wraps, instead of running past the edge when five cards share a laptop window (UI-11).
-    <div className={`stat-card rounded-xl border p-4 shadow-sm ${s.container}`}>
+    <div className={`stat-card rounded-xl border p-4 shadow-xs ${s.container}`}>
       <div className="flex items-start justify-between mb-2">
         <p className={`text-sm font-medium ${s.label}`}>{label}</p>
-        <Icon className={`w-4 h-4 ${s.icon} flex-shrink-0`} />
+        <Icon className={`w-4 h-4 ${s.icon} shrink-0`} />
       </div>
       <p
         className={`stat-card__value font-bold ${s.value}`}

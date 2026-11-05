@@ -3,7 +3,7 @@ import React from 'react'
 type CardVariant = 'default' | 'bordered' | 'elevated'
 
 const variantStyles: Record<CardVariant, string> = {
-  default: 'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700',
+  default: 'bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700',
   bordered: 'bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700',
   elevated: 'bg-white dark:bg-gray-800 rounded-xl shadow-md',
 }

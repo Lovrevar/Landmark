@@ -64,7 +64,7 @@ function ModalRoot({ show, onClose, size = 'md', ariaLabel, children }: ModalPro
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4"
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
     >
@@ -75,7 +75,7 @@ function ModalRoot({ show, onClose, size = 'md', ariaLabel, children }: ModalPro
         aria-labelledby={ariaLabel ? undefined : titleId}
         aria-label={ariaLabel}
         tabIndex={-1}
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col outline-none`}
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col outline-hidden`}
       >
         <ModalTitleContext.Provider value={titleId}>
           {children}
@@ -101,7 +101,7 @@ function ModalHeader({ title, subtitle, onClose, children }: ModalHeaderProps) {
   // than drifting to the middle of a taller header. Plain headers keep it centred on the title.
   const align = children ? 'items-start' : 'items-center'
   return (
-    <div className={`bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex justify-between ${align} gap-3 flex-shrink-0 rounded-t-lg`}>
+    <div className={`bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4 flex justify-between ${align} gap-3 shrink-0 rounded-t-lg`}>
       <div className="min-w-0">
         <h2 id={titleId} className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{title}</h2>
         {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">{subtitle}</p>}
@@ -112,7 +112,7 @@ function ModalHeader({ title, subtitle, onClose, children }: ModalHeaderProps) {
         onClick={onClose}
         aria-label={t('common.close')}
         title={t('common.close')}
-        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors shrink-0 rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500"
       >
         <X className="w-6 h-6" />
       </button>
@@ -144,7 +144,7 @@ interface ModalFooterProps {
 function ModalFooter({ children, sticky = true }: ModalFooterProps) {
   const baseClasses = [
     'bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 rounded-b-lg',
-    'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 [&>*]:w-full sm:[&>*]:w-auto',
+    'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 *:w-full sm:*:w-auto',
     sticky ? 'sticky bottom-0' : '',
   ].filter(Boolean).join(' ')
 

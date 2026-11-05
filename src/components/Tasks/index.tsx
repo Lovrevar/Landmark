@@ -361,11 +361,11 @@ const TasksPage: React.FC = () => {
       className="w-full flex items-center gap-2 px-1 pt-3 pb-1 text-left"
     >
       {collapsedSet.has(group.key) ? (
-        <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
       ) : (
-        <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
       )}
-      <FolderOpen className="w-5 h-5 text-gray-400 flex-shrink-0" />
+      <FolderOpen className="w-5 h-5 text-gray-400 shrink-0" />
       <span className="text-base font-semibold text-gray-700 dark:text-gray-200 truncate">
         {group.label}
       </span>
@@ -386,7 +386,7 @@ const TasksPage: React.FC = () => {
         type="button"
         onClick={() => { void submitQuickAdd(group) }}
         disabled={quickAddBusy === group.key || !(quickAddDrafts[group.key] || '').trim()}
-        className="flex-shrink-0 p-2 -m-2 text-gray-400 enabled:text-blue-600 enabled:hover:text-blue-700 dark:enabled:text-blue-400 dark:enabled:hover:text-blue-300 disabled:cursor-default"
+        className="shrink-0 p-2 -m-2 text-gray-400 enabled:text-blue-600 enabled:hover:text-blue-700 dark:enabled:text-blue-400 dark:enabled:hover:text-blue-300 disabled:cursor-default"
         title={t('tasks.new_task')}
         aria-label={t('tasks.new_task')}
       >
@@ -423,7 +423,7 @@ const TasksPage: React.FC = () => {
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
             <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="min-w-0">
@@ -431,7 +431,7 @@ const TasksPage: React.FC = () => {
             <p className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block">{t('tasks.subtitle')}</p>
           </div>
         </div>
-        <Button icon={Plus} size="lg" className="flex-shrink-0" onClick={() => setShowNew(true)}>
+        <Button icon={Plus} size="lg" className="shrink-0" onClick={() => setShowNew(true)}>
           {t('tasks.new_task')}
         </Button>
       </div>

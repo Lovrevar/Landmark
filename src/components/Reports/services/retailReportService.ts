@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { daysFromToday } from '../../../utils/dateOnly'
+import { projectStatusCounts } from '../../../utils/projectFigures'
 import type {
   RetailReportData,
   ProjectReportData,
@@ -117,7 +118,7 @@ export async function fetchRetailReportData(): Promise<RetailReportData> {
   return {
     portfolio: {
       total_projects: allProjects.length,
-      active_projects: allProjects.filter(p => p.status === 'In Progress').length,
+      active_projects: projectStatusCounts(allProjects).active,
       completed_projects: allProjects.filter(p => p.status === 'Completed').length,
       total_land_area: totalLandArea,
       total_land_investment: totalLandInvestment,

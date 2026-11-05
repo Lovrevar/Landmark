@@ -15,7 +15,7 @@ const DirectorFinancialSection: React.FC<Props> = ({ metrics }) => {
   // "Novčani tok (rujan)" — a Croatian month name, from `common.months`, not date-fns' English.
   const monthName = (t('common.months', { returnObjects: true }) as string[])[new Date().getMonth()]
   return (
-    <div className="bg-gradient-to-br from-blue-50 dark:from-blue-900/20 to-green-50 dark:to-green-900/20 rounded-xl shadow-lg border border-blue-200 dark:border-blue-700 p-6">
+    <div className="bg-linear-to-br from-blue-50 dark:from-blue-900/20 to-green-50 dark:to-green-900/20 rounded-xl shadow-lg border border-blue-200 dark:border-blue-700 p-6">
       <div className="flex items-center mb-6">
         <Euro className="w-6 h-6 text-blue-600 mr-2" />
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('dashboards.director.financial_overview')}</h2>

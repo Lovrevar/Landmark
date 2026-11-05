@@ -4,7 +4,7 @@ import { CreditCard, Edit, Trash2 } from 'lucide-react'
 import { Payment, VisibleColumns } from './types'
 import { getPaymentMethodLabel, getPaymentMethodVariant } from '../services/paymentHelpers'
 import { paymentDirection, paymentKind, FINANCING_TEXT_CLASS } from '../services/invoiceHelpers'
-import { DIRECTION_AMOUNT_CLASS } from '../services/paymentTotals'
+import { DIRECTION_AMOUNT_CLASS } from '../../../utils/paymentTotals'
 import { formatEuro, formatDate, NO_VALUE } from '../../../utils/formatters'
 import { Table, Button, EmptyState, Badge } from '../../ui'
 

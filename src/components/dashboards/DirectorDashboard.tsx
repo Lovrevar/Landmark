@@ -87,7 +87,7 @@ const DirectorDashboard: React.FC = () => {
       <DirectorAlertsSection alerts={alerts} />
       <DirectorFinancialSection metrics={financialMetrics} />
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <Home className="w-6 h-6 text-green-600 mr-2" />
@@ -114,7 +114,7 @@ const DirectorDashboard: React.FC = () => {
         </StatGrid>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <HardHat className="w-6 h-6 text-orange-600 mr-2" />
@@ -143,7 +143,7 @@ const DirectorDashboard: React.FC = () => {
         </StatGrid>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <Banknote className="w-6 h-6 text-blue-600 mr-2" />

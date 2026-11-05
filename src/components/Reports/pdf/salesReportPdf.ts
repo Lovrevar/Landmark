@@ -8,6 +8,7 @@ import { PROJECT_STATUS, UNIT_STATUS, CUSTOMER_STATUS, statusLabel } from '../..
 import { logActivity } from '../../../lib/activityLog'
 import { fetchOrgName, orgHeading } from '../../../lib/orgName'
 import type { ProjectSalesReport, CustomerReport } from '../types'
+import { conversionRate } from '../../../utils/salesFigures'
 
 export async function generateSalesReportPDF(
   reportType: 'project' | 'customer',
@@ -244,18 +245,18 @@ export async function generateSalesReportPDF(
     pdf.setFontSize(10)
     pdf.setFont(PDF_FONT_FAMILY, 'normal')
 
-    const conversionRate = customerReport.total_customers > 0
-      ? ((customerReport.buyers / customerReport.total_customers) * 100).toFixed(1)
+    const conversionRateText = customerReport.total_customers > 0
+      ? conversionRate(customerReport.buyers, customerReport.total_customers).toFixed(1)
       : '0'
 
     printRows([
       [rowLabel('reports.sales.total_customers_stat'), customerReport.total_customers.toString()],
-      [rowLabel('reports.sales.buyers_label'), `${customerReport.buyers} (${conversionRate}%)`],
+      [rowLabel('reports.sales.buyers_label'), `${customerReport.buyers} (${conversionRateText}%)`],
       [rowLabel('reports.sales.interested_label'), customerReport.interested.toString()],
       [rowLabel('reports.sales.leads_label'), customerReport.leads.toString()],
       [rowLabel('reports.sales.total_revenue'), pdfMoney(customerReport.total_revenue)],
       [rowLabel('reports.sales.avg_purchase_stat'), pdfMoney(customerReport.average_purchase)],
-      [rowLabel('reports.general.conversion_rate_label'), `${conversionRate}%`],
+      [rowLabel('reports.general.conversion_rate_label'), `${conversionRateText}%`],
     ])
 
     yPosition += 15

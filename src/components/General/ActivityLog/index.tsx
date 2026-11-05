@@ -77,7 +77,7 @@ const ActivityLog: React.FC = () => {
       />
 
       {/* Filter bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 p-4 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <SearchInput
             value={searchTerm}
@@ -164,7 +164,7 @@ const ActivityLog: React.FC = () => {
               type="checkbox"
               checked={showHelpEvents}
               onChange={(e) => setShowHelpEvents(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded-sm focus:ring-blue-500"
             />
             {t('activity_log.show_help_events')}
           </label>

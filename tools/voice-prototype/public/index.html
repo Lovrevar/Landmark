@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice prototype</title>
+<style>
+  :root { --bg:#fafaf9; --fg:#1c1917; --muted:#78716c; --accent:#0f766e; --bad:#b91c1c; --card:#ffffff; --line:#e7e5e4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1c1917; --fg:#f5f5f4; --muted:#a8a29e; --accent:#2dd4bf; --bad:#f87171; --card:#292524; --line:#44403c; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 18px; margin: 0 0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  button { font:inherit; padding:10px 18px; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
+  button.end { background:var(--bad); border-color:var(--bad); }
+  #status { font-weight:600; margin-left:12px; }
+  .muted { color:var(--muted); font-size:14px; }
+  ol { padding-left: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Phase 0 — glasovni prototip</h1>
+  <section class="card">
+    <button id="call">Nazovi</button><span id="status">nije spojeno</span>
+    <p class="muted">Local LiveKit server, Soniox speech-to-text (EU), ElevenLabs v4 Turbo, and a stub LLM with fixed answers. Use headphones, so the agent doesn't hear itself.</p>
+  </section>
+  <section class="card">
+    <strong>Test</strong>
+    <ol class="muted">
+      <li><strong>Latency:</strong> ask 10 short questions, e.g. "Koliko ugovora ima projekt Tar?". Wait for each answer.</li>
+      <li><strong>Barge-in:</strong> say "daj mi pregled" for a long answer and interrupt it mid-sentence. Repeat 20 times.</li>
+    </ol>
+    <p class="muted">The agent logs every reply and interruption; <code>npm run report</code> sums them up.</p>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.22.3/dist/livekit-client.umd.js"></script>
+<script>
+'use strict'
+const { Room, RoomEvent, Track } = LivekitClient
+const $ = (id) => document.getElementById(id)
+let room = null
+
+function status(text) { $('status').textContent = text }
+
+async function start() {
+  status('spajanje…')
+  const { url, token } = await (await fetch('/token')).json()
+  room = new Room({ audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })
+  room.on(RoomEvent.TrackSubscribed, (track) => { if (track.kind === Track.Kind.Audio) document.body.appendChild(track.attach()) })
+  room.on(RoomEvent.ParticipantConnected, (p) => status(`spojeno, agent: ${p.identity}`))
+  room.on(RoomEvent.Disconnected, () => { status('nije spojeno'); setButton(false) })
+  await room.connect(url, token)
+  await room.startAudio()
+  await room.localParticipant.setMicrophoneEnabled(true)
+  status(room.remoteParticipants.size ? 'spojeno' : 'spojeno, čekam agenta…')
+  setButton(true)
+}
+async function stop() { await room?.disconnect(); room = null }
+function setButton(inCall) { const b = $('call'); b.textContent = inCall ? 'Prekini' : 'Nazovi'; b.classList.toggle('end', inCall) }
+$('call').addEventListener('click', () => (room ? stop() : start().catch((e) => { status('greška: ' + e.message); console.error(e) })))
+</script>
+</body>
+</html>

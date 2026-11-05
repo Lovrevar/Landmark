@@ -360,7 +360,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
         aria-modal="true"
         aria-label={task.title}
         tabIndex={-1}
-        className={`ml-auto relative w-full md:w-[560px] h-full bg-white dark:bg-gray-800 shadow-xl flex flex-col transform transition-transform duration-200 outline-none ${mounted ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`ml-auto relative w-full md:w-[560px] h-full bg-white dark:bg-gray-800 shadow-xl flex flex-col transform transition-transform duration-200 outline-hidden ${mounted ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="safe-top px-4 sm:px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -384,7 +384,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
               type="button"
               disabled={!canEdit || saving || checklist}
               onClick={toggleDone}
-              className={`flex-shrink-0 mt-1 transition-colors ${
+              className={`shrink-0 mt-1 transition-colors ${
                 done
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400'
@@ -415,7 +415,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                       if (e.key === 'Escape') { e.preventDefault(); setTitleDraft(task.title); setEditingTitle(false) }
                     }}
                     autoFocus
-                    className="flex-1 px-2 py-1 text-lg font-semibold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="flex-1 px-2 py-1 text-lg font-semibold border border-gray-300 dark:border-gray-600 rounded-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                   <button
                     onClick={saveTitle}
@@ -427,7 +427,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                 </div>
               ) : (
                 <h2
-                  className={`text-2xl font-bold break-words ${done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'} ${canEdit ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded px-1 -mx-1' : ''}`}
+                  className={`text-2xl font-bold wrap-break-word ${done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'} ${canEdit ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-sm px-1 -mx-1' : ''}`}
                   onClick={() => canEdit && setEditingTitle(true)}
                 >
                   {task.title}
@@ -471,7 +471,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                   if (e.key === 'Enter') { e.preventDefault(); saveDueDate(e.currentTarget.value) }
                 }}
                 disabled={!canEdit}
-                className="w-full px-2 py-1.5 text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60"
+                className="w-full px-2 py-1.5 text-base border border-gray-300 dark:border-gray-600 rounded-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-60"
               />
             </Field>
           </div>
@@ -516,7 +516,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                           type="button"
                           onClick={() => removeAssignee(u.id)}
                           disabled={saving}
-                          className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gray-500 hover:bg-red-600 text-white flex items-center justify-center shadow ring-2 ring-white dark:ring-gray-800 disabled:opacity-50"
+                          className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gray-500 hover:bg-red-600 text-white flex items-center justify-center shadow-sm ring-2 ring-white dark:ring-gray-800 disabled:opacity-50"
                           title={t('common.remove')}
                           aria-label={t('common.remove')}
                         >
@@ -557,13 +557,13 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
               {addingAssignee && canManageAssignees && (
                 <div className="mt-2 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
-                    <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <Search className="w-4 h-4 text-gray-400 shrink-0" />
                     <input
                       value={assigneeQuery}
                       onChange={e => setAssigneeQuery(e.target.value)}
                       placeholder={t('tasks.modal.assign_placeholder')}
                       autoFocus
-                      className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none"
+                      className="flex-1 bg-transparent text-base text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-hidden"
                     />
                   </div>
                   <div className="max-h-48 overflow-y-auto">
@@ -648,7 +648,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                     type="button"
                     onClick={saveDescription}
                     disabled={saving}
-                    className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-sm hover:bg-blue-700 disabled:opacity-50"
                   >
                     {t('common.save')}
                   </button>
@@ -709,7 +709,7 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                   const parts = renderCommentWithMentions(c.comment)
                   return (
                     <div key={c.id} className={`flex gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 flex items-center justify-center text-xs font-semibold shrink-0">
                         {c.user?.username?.charAt(0).toUpperCase() || '?'}
                       </div>
                       <div className={`flex-1 min-w-0 ${mine ? 'text-right' : ''}`}>
@@ -719,12 +719,12 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
                           <div className={`text-sm mb-0.5 ${mine ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
                             {c.user?.username || '—'} · {stamp(c.created_at)}
                           </div>
-                          <div className="whitespace-pre-wrap break-words text-left">
+                          <div className="whitespace-pre-wrap wrap-break-word text-left">
                             {parts.map((p, i) =>
                               p.type === 'mention' ? (
                                 <span
                                   key={i}
-                                  className={`inline-block px-1 rounded ${mine ? 'bg-blue-700 text-white' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200'}`}
+                                  className={`inline-block px-1 rounded-sm ${mine ? 'bg-blue-700 text-white' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200'}`}
                                 >
                                   @{p.value}
                                 </span>

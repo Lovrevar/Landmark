@@ -78,7 +78,7 @@ export const CustomerGrid: React.FC<CustomerGridProps> = ({
         <button
           type="button"
           onClick={onSelectAll}
-          className="flex items-center gap-2 rounded select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="flex items-center gap-2 rounded-sm select-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <SelectIcon
             className={`w-5 h-5 ${selectedCount > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}

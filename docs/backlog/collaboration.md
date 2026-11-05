@@ -1,6 +1,6 @@
 # Backlog — tasks, calendar, chat, documents and AI assistant
 
-Ids: `COLLAB-n` (next free: `COLLAB-12`). Entry format and rules are in [README.md](./README.md).
+Ids: `COLLAB-n` (next free: `COLLAB-16`). Entry format and rules are in [README.md](./README.md).
 
 The `task*` tables are shared with the mobile task app; read
 [../SHARED_SCHEMA.md](../SHARED_SCHEMA.md) before changing them. The AI assistant is pinned by
@@ -8,6 +8,53 @@ characterisation tests on `feature/voice-assistant`; its open questions (`OQ-n`)
 `docs/voice/open-questions.md` on that branch.
 
 ## Open
+
+### COLLAB-15 · Low · Realtime publication membership is recorded nowhere
+- **Check:** Confirmed 2026-10-27 — the local stack built from every migration has an empty
+  `supabase_realtime` publication
+- **Where:** every `postgres_changes` subscription in `src/`: `tasks`, `task_assignees`,
+  `task_subtasks`, `task_comments`, `task_attachments`, `chat_messages`, `calendar_events`,
+  `calendar_event_participants`, `calendar_event_exceptions`, `calendar_occurrence_responses`,
+  `calendar_notifications`; plus whatever the task app subscribes to. Only
+  `20261027100000_meeting_rooms` adds its tables in SQL
+- **What happens:** production works because the tables were ticked in the dashboard. A new dev
+  or demo project, or a re-seeded one, gets no live updates anywhere and nothing says why; the
+  clients refetch on their own schedule and look merely slow
+- **Fix direction:** one migration with the idempotent `DO` block pattern from
+  `20261027100000`, listing every table a client subscribes to (grep `postgres_changes` in
+  `src/` and the task app); run it on dev and demo and compare with production's list first
+
+### COLLAB-14 · Low · Room reservations have no Cognilion surface
+- **Check:** Decided 2026-10-27
+- **Where:** `meeting_rooms` / `room_reservations` (migration `20261027100000`,
+  [SHARED_SCHEMA.md §15](../SHARED_SCHEMA.md#15-meeting-rooms--meeting_rooms-and-room_reservations))
+- **What happens:** the two conference rooms are booked from the task app only. A Cognilion
+  user cannot see or book a room, and the Calendar page does not show that a room is taken.
+- **Fix direction:** a read-only "Sobe" layer on the Calendar page is the natural first step
+  (map `created_by`, an auth id, to `users` the way the task overlay does). Booking from
+  Cognilion is the same insert the phone does. Do not reuse `calendar_events` for it — the
+  migration header says why.
+
+### COLLAB-12 · Low · A refused file delete goes unnoticed and leaves an orphan
+- **Check:** Code reading (pre-release review, 2026-10-20)
+- **Where:** `Documents/services/documentService.ts:351-354` (`deleteDocument`)
+- **What happens:** the row is deleted first, then the file. Storage's `remove()` refused by RLS
+  returns success with an empty array, and only `error` is checked, so the file stays with no row
+  pointing at it and nothing is logged. Happens only when the row's uploader differs from the
+  file's owner, which was never the case on production (18 of 18 on 2026-10-09).
+- **Fix direction:** treat an empty result as a failure: log it with `logActivity` (severity high)
+  and tell the user the file could not be removed.
+
+### COLLAB-13 · Low · "Pitaj AI asistenta" from Help can send stale attachments
+- **Check:** Code reading (pre-release review, 2026-10-20)
+- **Where:** `AiChat/hooks/useAiChatStore.ts` `askInNewConversation` (around lines 605-617)
+- **What happens:** it calls `newConversation()` and then `sendMessage()` in the same tick.
+  `newConversation` clears the pending attachments in state and starts purging their uploaded
+  files, but `pendingAttachmentsRef` only follows state after the next render, so `sendMessage`
+  still reads the old list. Files waiting in the assistant's input go out with the Help question
+  while they are being deleted — the send can fail or carry attachments that no longer exist.
+- **Fix direction:** reset `pendingAttachmentsRef.current = []` in `askInNewConversation`, next to
+  the other refs it resets by hand.
 
 ### COLLAB-4 · Medium · AI rate limiting miscounts
 - **What happens:** tool-result rows are stored as `role = 'user'` and count against the

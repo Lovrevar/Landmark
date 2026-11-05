@@ -1370,8 +1370,10 @@ export type Database = {
       ai_sessions: {
         Row: {
           cancel_requested_at: string | null
+          channel: string
           context_summary: string | null
           created_at: string
+          external_call_id: string | null
           id: string
           summary_through_message_id: string | null
           title: string | null
@@ -1380,8 +1382,10 @@ export type Database = {
         }
         Insert: {
           cancel_requested_at?: string | null
+          channel?: string
           context_summary?: string | null
           created_at?: string
+          external_call_id?: string | null
           id?: string
           summary_through_message_id?: string | null
           title?: string | null
@@ -1390,8 +1394,10 @@ export type Database = {
         }
         Update: {
           cancel_requested_at?: string | null
+          channel?: string
           context_summary?: string | null
           created_at?: string
+          external_call_id?: string | null
           id?: string
           summary_through_message_id?: string | null
           title?: string | null
@@ -4304,6 +4310,57 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      voice_calls: {
+        Row: {
+          access_token: string
+          call_token_hash: string
+          created_at: string
+          expires_at: string
+          id: string
+          last_seen_at: string
+          platform_call_id: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          call_token_hash: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          last_seen_at?: string
+          platform_call_id?: string | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          call_token_hash?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_seen_at?: string
+          platform_call_id?: string | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_calls_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "ai_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_calls_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       work_logs: {
         Row: {

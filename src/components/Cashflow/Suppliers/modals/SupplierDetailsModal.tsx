@@ -24,7 +24,7 @@ const SupplierDetailsModal: React.FC<SupplierDetailsModalProps> = ({
 
   return (
     <Modal show={showModal} onClose={onClose} size="xl" ariaLabel={supplier.name}>
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center flex-shrink-0 rounded-t-lg">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center shrink-0 rounded-t-lg">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">{supplier.name}</h2>

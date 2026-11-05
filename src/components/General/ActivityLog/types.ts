@@ -62,6 +62,7 @@ export const ACTION_CATEGORIES = [
   'land_plot',
   'export',
   'conversation',
+  'voice_call',
   'calendar_event',
   'task',
   'help',

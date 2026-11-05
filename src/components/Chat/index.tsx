@@ -49,9 +49,9 @@ const ChatPage: React.FC = () => {
   }
 
   return (
-    <div className="flex h-[calc(100vh-7rem)] bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="flex h-[calc(100vh-7rem)] bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div
-        className={`w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 ${
+        className={`w-full lg:w-80 xl:w-96 shrink-0 border-r border-gray-200 dark:border-gray-700 ${
           mobileShowMessages ? 'hidden lg:flex lg:flex-col' : 'flex flex-col'
         }`}
       >

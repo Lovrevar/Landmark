@@ -168,7 +168,7 @@ const AccountingSuppliers: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 space-y-3">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 space-y-3">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -205,7 +205,7 @@ const AccountingSuppliers: React.FC = () => {
               aria-label={t('common.project')}
               value={prefs.projectFilter}
               onChange={(e) => setPrefs({ projectFilter: e.target.value })}
-              className="py-1.5 px-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[200px]"
+              className="py-1.5 px-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-blue-500 max-w-[200px]"
             >
               <option value="">{t('common.all_projects')}</option>
               {availableProjects.map(p => <option key={p} value={p}>{p}</option>)}
@@ -223,11 +223,11 @@ const AccountingSuppliers: React.FC = () => {
       </div>
 
       {error && suppliers.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
           <ErrorState onRetry={() => void refetch()} />
         </div>
       ) : filteredSuppliers.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
           <EmptyState
             icon={Users}
             title={searchTerm ? t('common.no_results') : t('suppliers.no_suppliers')}
@@ -255,22 +255,22 @@ const AccountingSuppliers: React.FC = () => {
               <Table.Th>{t('common.contact')}</Table.Th>
               <Table.Th>{t('suppliers.stats.total_contracts')}</Table.Th>
               <Table.Th>{t('suppliers.invoices_label')}</Table.Th>
-              <Table.Th className="text-right">{t('common.value')}</Table.Th>
-              <Table.Th className="text-right">{t('common.total_paid')}</Table.Th>
-              <Table.Th className="text-right">{t('common.remaining')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('common.value')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('common.total_paid')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('common.remaining')}</Table.Th>
               <Table.Th sticky className="text-right">{t('common.actions')}</Table.Th>
             </Table.Tr>
           </Table.Head>
           <Table.Body>
             {filteredSuppliers.map(supplier => (
               <Table.Tr key={supplier.id} className="cursor-pointer" onClick={() => handleViewDetails(supplier)}>
-                <Table.Td label={t('common.name')} className="font-medium">{supplier.name}</Table.Td>
+                <Table.Td label={t('common.name')} className="font-medium"><div className="md:w-80 md:truncate" title={supplier.name}>{supplier.name}</div></Table.Td>
                 <Table.Td label={t('suppliers.source_label')}>
                   <Badge variant={supplier.source === 'retail' ? 'teal' : 'blue'} size="sm">
                     {supplier.source === 'retail' ? t('suppliers.source_retail') : t('suppliers.source_site')}
                   </Badge>
                 </Table.Td>
-                <Table.Td label={t('common.contact')} className="text-gray-500 dark:text-gray-400">{supplier.contact || '-'}</Table.Td>
+                <Table.Td label={t('common.contact')} className="text-gray-500 dark:text-gray-400"><div className="md:w-60 md:truncate" title={supplier.contact || undefined}>{supplier.contact || '-'}</div></Table.Td>
                 <Table.Td label={t('suppliers.stats.total_contracts')}>{supplier.total_contracts}</Table.Td>
                 <Table.Td label={t('suppliers.invoices_label')}>{supplier.total_invoices}</Table.Td>
                 <Table.Td label={t('common.value')} className="text-right font-semibold">€{formatEuropean(supplier.total_contract_value)}</Table.Td>

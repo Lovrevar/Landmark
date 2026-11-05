@@ -193,23 +193,23 @@ const MonthView: React.FC<Props> = ({
         }}
         className={[
           'pointer-events-auto text-left text-xs px-1.5 flex items-center gap-1 overflow-hidden',
-          'border-l-[3px] rounded-sm',
+          'border-l-[3px] rounded-xs',
           EVENT_TYPE_COLORS[ev.event_type].border,
           EVENT_TYPE_COLORS[ev.event_type].surface,
           seg.continuesLeft ? 'rounded-l-none' : '',
           seg.continuesRight ? 'rounded-r-none' : '',
-          'hover:shadow-sm hover:brightness-105 dark:hover:brightness-125 transition-all',
+          'hover:shadow-xs hover:brightness-105 dark:hover:brightness-125 transition-all',
           occ.isDeclined ? 'opacity-60 line-through' : '',
         ].filter(Boolean).join(' ')}
         title={ev.title}
       >
         {!seg.continuesLeft && !isMultiDay && (
-          <span className="text-[11px] opacity-70 flex-shrink-0">
+          <span className="text-[11px] opacity-70 shrink-0">
             {formatTime(occ.start, dateLocale)}
           </span>
         )}
         <span className="truncate font-medium">{ev.title}</span>
-        <span className="flex items-center gap-0.5 ml-auto flex-shrink-0 opacity-80">
+        <span className="flex items-center gap-0.5 ml-auto shrink-0 opacity-80">
           {ev.recurrence && <Repeat className="w-2.5 h-2.5" />}
           {ev.location && <MapPin className="w-2.5 h-2.5" />}
           {participantCount > 0 && <Users className="w-2.5 h-2.5" />}

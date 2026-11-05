@@ -38,7 +38,7 @@ const ArticleList: React.FC<{ articles: HelpArticle[] }> = ({ articles }) => {
           >
             <span>{article.title}</span>
             {article.date && (
-              <span className="flex-shrink-0 text-xs text-gray-500 dark:text-gray-400">
+              <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
                 {formatDate(parseLocalDate(article.date), i18n.language)}
               </span>
             )}

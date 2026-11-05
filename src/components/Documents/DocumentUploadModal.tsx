@@ -356,7 +356,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
           error={errors.category}
         >
           {breadcrumb && (
-            <div className="text-sm text-gray-700 dark:text-gray-300 mb-2 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded">
+            <div className="text-sm text-gray-700 dark:text-gray-300 mb-2 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 rounded-sm">
               {breadcrumb}
             </div>
           )}

@@ -93,14 +93,14 @@ export default function ParticipantPicker({
           </span>
         ))}
         <div className="flex items-center gap-1 flex-1 min-w-[120px]">
-          <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
           <input
             value={query}
             onFocus={() => setOpen(true)}
             onChange={e => { setQuery(e.target.value); setOpen(true) }}
             placeholder={selectedUsers.length === 0 ? placeholder : ''}
             disabled={disabled}
-            className="flex-1 bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-hidden"
           />
         </div>
       </div>

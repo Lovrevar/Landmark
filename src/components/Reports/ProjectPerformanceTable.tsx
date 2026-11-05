@@ -65,7 +65,7 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
   )
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="p-5 border-b border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('reports.project_performance.title')}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('reports.project_performance.subtitle')}</p>

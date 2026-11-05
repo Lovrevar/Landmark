@@ -11,7 +11,7 @@ import { ALL_INVOICE_TYPES, getInvoiceTypeLabel, getInvoiceTypeLongLabel } from 
 export const InvoiceTypeHint: React.FC = () => {
   const { t } = useTranslation()
   return (
-    <InfoHint hintId="invoices.type" label={t('invoices.hints.type_title')} articleId="term-invoice-types" widthClassName="w-[23rem]">
+    <InfoHint hintId="invoices.type" label={t('invoices.hints.type_title')} articleId="term-invoice-types" widthClassName="w-92">
       <p>{t('invoices.hints.type_intro')}</p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
         {ALL_INVOICE_TYPES.map(type => (

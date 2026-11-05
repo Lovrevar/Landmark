@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as webpush from "jsr:@negrel/webpush@0.5.0";
+import { buildMeetingPayload, type MeetingEvent, type MeetingForPush } from "./meeting.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +17,9 @@ type ReminderEvent = "reminder_day_before" | "reminder_due_today" | "reminder_ov
 type PushEvent = UserEvent | ReminderEvent;
 
 const USER_EVENTS: readonly string[] = ["task_assigned", "task_completed"];
+// Meetings (room_reservations, SHARED_SCHEMA.md §15) are user events too — a person did
+// something — but about a different row, so they take their own branch below.
+const MEETING_EVENTS: readonly string[] = ["meeting_invited", "meeting_cancelled"];
 const REMINDER_EVENTS: readonly string[] = [
   "reminder_day_before",
   "reminder_due_today",
@@ -28,11 +32,17 @@ const REMINDER_EVENTS: readonly string[] = [
 type Caller = { mode: "user"; callerId: string } | { mode: "scheduled" };
 
 interface RequestPayload {
-  event: PushEvent;
-  taskId: string;
+  event: PushEvent | MeetingEvent;
+  // One of the two, by event. The client sends only an id — never a recipient list or
+  // message text — so this endpoint cannot be used to push arbitrary content to anyone.
+  taskId?: string;
+  reservationId?: string;
   // Optional, sent by the Cognilion web UI when assignees are added to an
   // EXISTING task. See the intersection below for why it cannot be abused.
   newAssigneeIds?: string[];
+  // The same idea for a meeting edited on the phone: only the people just added get the
+  // invitation, and the list can only narrow the attendees the function reads itself.
+  newAttendeeIds?: string[];
 }
 
 interface SubscriptionRow {
@@ -48,8 +58,10 @@ interface NotificationPayload {
   body: string;
   tag: string;
   // Echoed back by the service worker when the notification is clicked, so the app can bring
-  // the user to the right screen instead of wherever they happened to leave it.
-  taskId: string;
+  // the user to the right screen instead of wherever they happened to leave it. One of the
+  // two ids is set, by event.
+  taskId?: string;
+  reservationId?: string;
   url: string;
 }
 
@@ -239,6 +251,55 @@ async function sendToRecipients(
   return { sent, pruned: dead.length };
 }
 
+// A meeting notification. Mirrors the task branch: the reservation and its attendees are
+// re-read with the service role, only someone who may change the meeting (its creator or an
+// admin) may trigger a send, the caller never notifies themselves, and the client may only
+// narrow the recipients. A cancellation arrives BEFORE the client deletes the row — the row
+// is what this reads, so the client awaits this call and then deletes (SHARED_SCHEMA.md §15).
+async function notifyMeeting(
+  admin: ReturnType<typeof serviceClient>,
+  callerId: string,
+  event: MeetingEvent,
+  reservationId: string,
+  newAttendeeIds: string[] | undefined,
+): Promise<Response> {
+  const { data: meeting, error } = await admin
+    .from("room_reservations")
+    .select(
+      "id, title, start_at, end_at, created_by, room:meeting_rooms(name), attendees:profiles!room_reservation_attendees(id)",
+    )
+    .eq("id", reservationId)
+    .maybeSingle();
+  if (error) return errorResponse(error.message, 500);
+  if (!meeting) return errorResponse("Sastanak ne postoji.", 404);
+
+  const { data: callerProfile } = await admin
+    .from("profiles")
+    .select("name, role")
+    .eq("id", callerId)
+    .maybeSingle();
+  const mayNotify = meeting.created_by === callerId || callerProfile?.role === "admin";
+  if (!mayNotify) return errorResponse("Nemate pristup ovom sastanku.", 403);
+
+  const attendeeIds = ((meeting.attendees ?? []) as { id: string }[]).map((a) => a.id);
+  const recipients = new Set<string>(attendeeIds);
+  if (Array.isArray(newAttendeeIds) && newAttendeeIds.length > 0) {
+    const only = new Set(newAttendeeIds);
+    for (const id of [...recipients]) {
+      if (!only.has(id)) recipients.delete(id);
+    }
+  }
+  recipients.delete(callerId);
+
+  const payload = buildMeetingPayload(
+    event,
+    meeting as unknown as MeetingForPush,
+    callerProfile?.name ?? "Kolega",
+  );
+  const result = await sendToRecipients(admin, [...recipients], payload);
+  return jsonResponse({ ...result, recipients: recipients.size });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -249,10 +310,12 @@ Deno.serve(async (req: Request) => {
 
   try {
     const caller = await authorize(req);
-    const { event, taskId, newAssigneeIds } = (await req.json()) as RequestPayload;
+    const { event, taskId, reservationId, newAssigneeIds, newAttendeeIds } =
+      (await req.json()) as RequestPayload;
 
     const isReminder = REMINDER_EVENTS.includes(event);
-    if (!isReminder && !USER_EVENTS.includes(event)) {
+    const isMeeting = MEETING_EVENTS.includes(event);
+    if (!isReminder && !isMeeting && !USER_EVENTS.includes(event)) {
       return errorResponse("Nepoznata vrsta obavijesti.", 400);
     }
     // Cross-gate mode against event. A reminder may only come from the scheduler, and a user
@@ -261,7 +324,6 @@ Deno.serve(async (req: Request) => {
     if (isReminder !== (caller.mode === "scheduled")) {
       return errorResponse("Nemate pristup ovoj vrsti obavijesti.", 403);
     }
-    if (!taskId) return errorResponse("Nedostaje id zadatka.", 400);
 
     if (!vapidKeys) {
       // Misconfiguration, not a client error. Report it without failing the caller's
@@ -271,6 +333,12 @@ Deno.serve(async (req: Request) => {
     }
 
     const admin = serviceClient();
+
+    if (isMeeting && caller.mode === "user") {
+      if (!reservationId) return errorResponse("Nedostaje id sastanka.", 400);
+      return await notifyMeeting(admin, caller.callerId, event as MeetingEvent, reservationId, newAttendeeIds);
+    }
+    if (!taskId) return errorResponse("Nedostaje id zadatka.", 400);
 
     // Re-read the task server-side. The client sends only a task id — never a
     // recipient list or message text — so this endpoint cannot be used to push
@@ -343,7 +411,7 @@ Deno.serve(async (req: Request) => {
     recipients.delete("");
 
     const payload = buildPayload(
-      event,
+      event as PushEvent,
       task as unknown as {
         id: string;
         title: string;

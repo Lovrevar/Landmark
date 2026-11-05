@@ -54,7 +54,7 @@ export default function NowIndicator({ date, locale, leftOffsetPx = 0 }: Props) 
         <div className="flex-1 h-px bg-red-500" />
       </div>
       <div
-        className="absolute text-[10px] font-semibold text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 px-1 rounded"
+        className="absolute text-[10px] font-semibold text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 px-1 rounded-sm"
         style={{ left: Math.max(0, leftOffsetPx - 44), top: -8 }}
       >
         {now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}

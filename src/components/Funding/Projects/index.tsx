@@ -56,10 +56,10 @@ const InvestmentProjects: React.FC = () => {
         {projects.map((project) => (
           <div
             key={project.id}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 hover:shadow-md transition-all duration-200"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-4 sm:p-6 hover:shadow-md transition-all duration-200"
           >
             <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 mb-6">
-              <div className="flex-1 min-w-[12rem]">
+              <div className="flex-1 min-w-48">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{project.name}</h3>
                   <Badge variant={statusVariant(PROJECT_STATUS, project.status)} size="sm">

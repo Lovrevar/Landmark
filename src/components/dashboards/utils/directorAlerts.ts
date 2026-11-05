@@ -1,3 +1,5 @@
+import { isSettledMilestone } from '../../../utils/constructionFigures'
+
 /**
  * Pure derivation behind the Director dashboard's payment-milestone counters and its alert
  * panel. No i18n and no formatting here: an alert carries a `kind` and its parameters, and
@@ -13,8 +15,9 @@
  * 2. **The alerts were English strings built in the service** and rendered raw.
  */
 
-/** A milestone is finished, for alerting purposes, only once it is fully paid. */
-export const isSettledMilestone = (status: string | null | undefined): boolean => status === 'paid'
+// A milestone is finished only once it is fully paid. The rule lives with the other construction
+// figures; re-exported for the alert code and its tests.
+export { isSettledMilestone }
 
 export interface MilestoneLike {
   milestone_name?: string | null

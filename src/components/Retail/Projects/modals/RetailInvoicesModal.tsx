@@ -3,7 +3,7 @@ import { FileText, Calendar, DollarSign, Building2, AlertCircle, User } from 'lu
 import { useTranslation } from 'react-i18next'
 import type { RetailContract } from '../../../../types/retail'
 import { retailProjectService } from '../services/retailProjectService'
-import { daysFromToday } from '../../../../utils/dateOnly'
+import { isOverdueInvoice } from '../../../../utils/invoiceFigures'
 import { Button, Modal, Badge, EmptyState, ErrorState, LoadingSpinner } from '../../../ui'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel, getInvoiceTypeLongLabel } from '../../../Cashflow/services/invoiceHelpers'
 import { formatDate } from '../../../../utils/formatters'
@@ -91,10 +91,7 @@ export const RetailInvoicesModal: React.FC<RetailInvoicesModalProps> = ({
     }
   }
 
-  const isOverdue = (dueDate: string, status: string) => {
-    if (status === 'PAID') return false
-    return daysFromToday(dueDate) < 0
-  }
+  const isOverdue = (dueDate: string, status: string) => isOverdueInvoice({ due_date: dueDate, status })
 
   return (
     <Modal show={isOpen && !!contract} onClose={onClose} size="full">

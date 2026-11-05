@@ -6,7 +6,7 @@ import type { Payment } from './types'
 import { Modal, Button } from '../../ui'
 import { getPaymentMethodLabel } from '../services/paymentHelpers'
 import { getInvoiceTypeLongLabel, paymentDirection } from '../services/invoiceHelpers'
-import { DIRECTION_AMOUNT_CLASS } from '../services/paymentTotals'
+import { DIRECTION_AMOUNT_CLASS } from '../../../utils/paymentTotals'
 
 interface PaymentDetailViewProps {
   payment: Payment | null
@@ -160,7 +160,7 @@ export const PaymentDetailView: React.FC<PaymentDetailViewProps> = ({
         {payment.is_cesija && payment.cesija_company_name && (
           <div className="border-t pt-4">
             <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">{t('payments.detail.cesija_section')}</h3>
-            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
+            <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-sm">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-purple-700 dark:text-purple-400 font-medium">{t('payments.detail.cesija_label')}</span>
               </div>

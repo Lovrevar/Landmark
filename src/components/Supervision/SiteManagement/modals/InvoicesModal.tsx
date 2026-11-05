@@ -5,7 +5,7 @@ import { FileText, Calendar, DollarSign, Building2, AlertCircle } from 'lucide-r
 import { Subcontractor } from '../../../../lib/supabase'
 import { Modal, Button, Badge, LoadingSpinner, EmptyState, Alert } from '../../../ui'
 import { fetchContractInvoices, ContractInvoiceRow } from '../services/siteService'
-import { daysFromToday } from '../../../../utils/dateOnly'
+import { isOverdueInvoice } from '../../../../utils/invoiceFigures'
 import { getInvoiceStatusVariant, getInvoiceStatusLabel } from '../../../Cashflow/services/invoiceHelpers'
 
 type Invoice = ContractInvoiceRow
@@ -69,10 +69,7 @@ export const InvoicesModal: React.FC<InvoicesModalProps> = ({
     }
   }, [isOpen])
 
-  const isOverdue = (dueDate: string, status: string) => {
-    if (status === 'PAID') return false
-    return daysFromToday(dueDate) < 0
-  }
+  const isOverdue = (dueDate: string, status: string) => isOverdueInvoice({ due_date: dueDate, status })
 
   if (!isOpen || !subcontractor) return null
 

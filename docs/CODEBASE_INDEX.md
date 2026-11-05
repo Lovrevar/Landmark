@@ -19,7 +19,7 @@
 | **Core** | [CORE.md](./CORE.md) | Contexts, hooks, lib, types, utils |
 | **Activity Log** | [ACTIVITY_LOG.md](./ACTIVITY_LOG.md) | Audit trail: shared logger, Director-only UI, action inventory |
 | **Help** | [HELP.md](./HELP.md) | In-app guidance: `/help` page, the "?" beside page titles, `InfoHint` popovers, usage logging, release notes with a "what's new" banner, screenshots — all reading `help-kb/` |
-| **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 14-tool catalog, fork-and-regenerate edits |
+| **AI Chat** | [AI_CHAT.md](./AI_CHAT.md) | Floating Claude assistant: SSE streaming, 15-tool catalog, fork-and-regenerate edits |
 | **Chat** | [CHAT.md](./CHAT.md) | 1:1 and group conversations, file attachments, realtime unread badge |
 | **Calendar** | [CALENDAR.md](./CALENDAR.md) | Events, RSVP, month/week/day/agenda views, recurring occurrences, per-user task overlay |
 | **Tasks** | [TASKS.md](./TASKS.md) | Shared org-wide task list grouped by project; binary open/done checkbox, subtask checklists (a task with lines has its completion written by a trigger, so its own checkbox is a readout), private tasks, colour labels, attachments, @mention comments. Schema is shared with a standalone mobile task app: task tables use auth user ids + a `profiles` mirror table (`deadline`/`completed` columns). That app's Web Push server half — `push_subscriptions`, the `send-push` edge function, and the `pg_cron` deadline-reminder dispatcher — also lives in this project |
@@ -29,6 +29,7 @@
 
 | Doc | File | Description |
 |---|---|---|
+| **Voice access** | [voice/](./voice/01-chat-assistant-analysis.md) | 🚧 **Works on LandmarkDev, on `feature/voice-assistant` (2026-10-26)** — the call button, `voice-session`, `voice-llm`, the agent loop shared with chat in `_shared/orchestrator.ts`, and a LiveKit agent worker; see [voice/04-dev-build.md](./voice/04-dev-build.md) for what is missing before it ships. Voice access to the existing AI chat assistant through a voice platform (LiveKit Agents, Pipecat or Vapi; open), in Custom LLM mode on one shared backend. Speech-to-text is Soniox (decided 2026-10-22 from the phase 0 harness in `tools/phase0/`). Phase 1 surveys today's assistant (the blocker: it does not stream tokens). Phase 2 commits to an in-app call button as v1 and defers a PIN-gated phone number to v2 (decided 2026-09-23), a default-deny voice tool allowlist, a Croatian STT/TTS go/no-go gate and a phased rollout. Phase 1 pinned the current assistant with 106 tests and logged 10 open questions |
 | **ERP Integration** | [erp-integration/](./erp-integration/README.md) | ⏸️ **On hold** — merged but switched off (flag off, migrations parked in `supabase/parked-migrations/erp/`). Rewrite of the financial section: 4D Wand becomes the source of truth for invoices, payments and bank balances; Cognilion stops authoring them and imports/classifies instead. Spec, decision log, progress and open questions |
 | **graphify** | [GRAPHIFY.md](./GRAPHIFY.md) | The code knowledge graph in `graphify-out/`: how it is rebuilt, the one edge type worth trusting, and what it cannot tell you (moved out of CLAUDE.md) |
 | **Testing** | [TESTING.md](./TESTING.md) | Vitest unit tests + Playwright e2e setup and conventions |
@@ -102,8 +103,10 @@ Two companion rules that follow from the same change, and that every module is e
 | `src/contexts/UnsavedChangesContext.tsx` | App-wide "you have unsaved work" guard. A screen arms it with `useUnsavedChanges(isDirty, save?)` — passing `save` adds a "save and leave" button to the dialog; every navigation in `Layout` runs through `useLeaveGuard()`'s `requestLeave`, and reloads fall to `beforeunload`. See `docs/UI.md` |
 | `src/utils/permissions.ts` | Role-based access control |
 | `src/utils/formatters.ts` | Shared date/currency/number formatters (unit-tested) |
+| `src/utils/appPath.ts` | `isAppPath(url)` — whether a markdown link or image address stays on the app's origin (resolved with the URL parser, so `/\host` is another site — SEC-A13). Used by `MarkdownView`; unit-tested |
 | `src/utils/phaseLabel.ts` | `formatPhaseLabel(phase, phaseWord)` — the **only** way to render a phase to a user. Since the split, phases are stored as literally "Faza 1", so concatenating number and name gives "Faza 1 · Faza 1"; this collapses it. Matched structurally, so it works with a Croatian name under an English UI. Unit-tested |
 | `src/utils/evm.ts` | EVM calculation utilities (calculatePhaseEVM, calculateProjectEVM) |
+| `src/utils/salesFigures.ts`, `fundingFigures.ts`, `paymentFigures.ts`, `paymentTotals.ts`, `cashFlowFigures.ts`, `invoiceFigures.ts`, `constructionFigures.ts`, `projectFigures.ts`, `retailFigures.ts`, `ticFigures.ts` | **Business figures**, one tested function each, called by every screen and report that shows the figure — never re-derive one inline. See `docs/CORE.md` → Business figures |
 | `src/utils/vatCalculations.ts` | Croatian 4-slot VAT breakdown (`calculateVatBreakdown`, `CROATIAN_VAT_RATES` 25/13/0/5%); unit-tested |
 | `src/utils/yieldToUI.ts` | `yieldToUI()` — yields to the next macrotask to keep the UI responsive during long PDF-builder loops |
 | `src/utils/excelParsers.ts` | Excel file import helpers |
@@ -116,6 +119,8 @@ Two companion rules that follow from the same change, and that every module is e
 | `src/contexts/ToastContext.tsx` | App-wide toast queue (`ToastProvider`, `useToast`) |
 | `src/lib/useCachedData.ts` | TTL-cached fetch hook used by every dashboard (`useCachedData`, `invalidateCachedData`); exposes `error` — never render zeros on a failed load |
 | `src/lib/dbErrors.ts` | `isForeignKeyViolation()` — distinguishes FK violations from other Supabase errors |
+| `src/lib/linkedUnitPrices.ts` | `fetchLinkedPrices()` — the list prices of the garages and storage linked to each apartment, for a sale's package value (`contractedSales`); paged, throws on a failed read |
+| `src/test/fakeSupabase.ts` | Test-only fake Supabase client for the characterization tests of services (`fakeSupabase(db)`, `emptyFakeDb()`); see `docs/TESTING.md` |
 | `src/lib/orgName.ts` | The organisation's name for report headers: `fetchOrgName()` reads the one row of `organization_settings` (set with SQL per database; null prints only the title), `orgHeading()` capitalises it (GEN-19) |
 | `src/lib/featureFlags.ts` | Compile-time flags for merged-but-unreleased work; `ERP_INTEGRATION_ENABLED` (off) hides the ERP screens |
 | `src/hooks/useMediaQuery.ts` | `useMediaQuery`, `useIsMobile`, `useIsTabletUp`, `useIsDesktop` — the responsive breakpoint hooks |

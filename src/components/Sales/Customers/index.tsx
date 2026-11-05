@@ -197,7 +197,7 @@ const CustomersManagement: React.FC = () => {
         onCategoryChange={handleCategoryChange}
       />
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <SearchInput

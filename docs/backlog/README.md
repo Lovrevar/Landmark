@@ -7,16 +7,16 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 
 | File | Covers | Open |
 |---|---|---|
-| [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 9 steps |
-| [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 4 defects, 3 accepted risks |
-| [sales.md](./sales.md) | Units, the sale flow, customers | 7 |
+| [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 10 steps |
+| [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 1 defect, 3 accepted risks |
+| [sales.md](./sales.md) | Units, the sale flow, customers | 9 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
-| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 4 |
-| [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 7, plus 4 waiting on the ERP |
+| [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 9 |
+| [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 9, plus 4 waiting on the ERP |
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
-| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 6 |
-| [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 10 |
-| [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 9 |
+| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 25 |
+| [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 14 |
+| [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 16 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
 | [archive/](./archive/) | The four audits, with every fixed entry | Closed, do not update |
 
@@ -64,14 +64,15 @@ it from the ranking. Never reuse an id: code comments and migrations quote them 
 
 ## Open work, ranked
 
-Ranked on 2026-10-05, last revised 2026-10-09, by what goes wrong if the item is left, then by how small the job is.
+Ranked on 2026-10-05, last revised 2026-10-21, by what goes wrong if the item is left, then by how small the job is.
 
 ### 1. Do first
 
-Everything in [release.md](./release.md): apply the four written migrations in order (document
-files, contracts by project, sale cancellation, unique unit numbers) with the check under each,
-assign the production Supervision user to their projects, walk the pre-merge sheet, and try TIC
-saves on dev.
+Everything in [release.md](./release.md): apply the six written migrations in order (document
+files, contracts by project, sale cancellation, unique unit numbers, unphased TIC phase budgets,
+organization settings) with the check under each — the last two before the client from
+2026-10-15 ships — assign the production Supervision user to their projects, walk the pre-merge
+sheet, and try TIC saves on dev.
 
 ### 2. Open defects that need code or a decision
 
@@ -79,22 +80,24 @@ saves on dev.
 |---|---|---|
 | 1 | [CASH-6](./cashflow.md) — cesija-from-credit sign | Allocation usage is wrong for every such payment. Blocked on an accounting decision, not on code. |
 | 2 | [COLLAB-4](./collaboration.md) — AI rate limit miscounts and fails open | Deferred to the voice branch (OQ-3). Do it there. |
+| 3 | [GEN-35](./projects-dashboards-reports.md), [GEN-43](./projects-dashboards-reports.md) — General report, Director and Sales dashboards not paged past 1000 rows | Every total goes silently low once payments or invoices pass 1000. Check production counts first. |
+| 4 | [GEN-27](./projects-dashboards-reports.md), [GEN-28](./projects-dashboards-reports.md) — General report per-project funding, retail section | Wrong figures in a report that goes to banks. Each has a pinned test to change. |
 
 ### 3. Larger work, schedule deliberately
 
 | # | Item | Note |
 |---|---|---|
-| 3 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
-| 4 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
-| 5 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
-| 6 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
-| 7 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
-| 8 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
+| 5 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
+| 6 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
+| 7 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
+| 8 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
+| 9 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
+| 10 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
 
 ### 4. Small and low-risk
 
 Everything else marked Low in the area files. Pick these up when working nearby. The ones with
-visible effect: [FUND-13](./funding.md) (TIC export drops classifications), [GEN-16](./projects-dashboards-reports.md) and
+visible effect: [GEN-18](./projects-dashboards-reports.md) (General report PDF chart filled black), [GEN-16](./projects-dashboards-reports.md) and
 [COLLAB-11](./collaboration.md) (UUID fragments instead of names), [CASH-9](./cashflow.md) (loans with no checks).
 
 ### 5. Parked with their feature
@@ -110,9 +113,16 @@ visible effect: [FUND-13](./funding.md) (TIC export drops classifications), [GEN
   moot or turns into ERP work in phase 5.
 
 **Voice assistant (`feature/voice-assistant`).**
-- The phase 0 freeze checklist is out of date: all 160 script rows are `frozen` since commit
-  `022dcc3d`, but its six boxes are unticked and the stash it mentions still exists.
-- Next: record phase 0 and take the go/no-go.
+- **Works end to end on LandmarkDev** (2026-10-26): the call button, `voice-session`, `voice-llm`
+  and the agent worker. What is missing before it ships is listed in
+  [`docs/voice/04-dev-build.md`](../voice/04-dev-build.md) → "Not done yet": latency, hosting the
+  worker, voice rate limits, plan §3.3/§3.5, OQ-1/OQ-2, result clamps, the in-call panel. The
+  latency plan, step by step, is in the same file → "Latency: where it stands, and the plan".
+- Speech-to-text is decided: Soniox (2026-10-22, plan header), confirmed on s02 alone (decided
+  2026-10-26: more speakers are not needed). `s02_e19_c1` is silent.
+- The script is frozen (`022dcc3d`) without the fragile-take dry run or a second reviewer. Open:
+  whether to accept `ojb` for OIB. See the freeze checklist, §4.
 - Phase 2 carries the decided fixes for OQ-1 and OQ-2. OQ-3 to OQ-9 are open.
-- Ten team questions are open in the implementation plan (§11), among them Vapi or Retell,
-  recording, cost ceiling and whether finance data may go over the phone.
+- Team questions open in the implementation plan (§11), among them:
+  - the worker's hosting: LiveKit Cloud's agent hosting (EU) or our own server;
+  - recording, the cost ceiling, and whether finance data may go over the phone.
