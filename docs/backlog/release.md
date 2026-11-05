@@ -23,13 +23,13 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   files ran in one transaction in the SQL editor and were inserted into `schema_migrations` by
   hand, because a `db push` from `development` would also have applied `voice_calls`. `send-push`
   was deployed to production the same day. Not on LandmarkDemo, which no task app uses.
-- [ ] **Deploy `ai-chat`** from `main` after the release of 2026-11-05 (PR #77), to production
+- [x] **Deploy `ai-chat`** (2026-11-05) from `main` after the release of 2026-11-05 (PR #77), to production
   (`--project-ref xhlgviunhitdgzkeucxc`) and LandmarkDemo (`asvuyvmuzroyrzlgyzij`). The release
   streams the model's answer and dispatches a turn's tool calls concurrently; the frontend works
   with the old function too. It needs no migration: `channel: 'chat'` is configuration, not the
   `ai_sessions.channel` column `voice_calls` adds. Afterwards ask the assistant a question that
   uses a tool and check the answer streams in.
-- [ ] **Bring `demo` up to `main`** (a PR from `main` into `demo`, as #66): the demo still runs
+- [x] **Bring `demo` up to `main`** (2026-11-05) (a PR from `main` into `demo`, as #66): the demo ran
   the client from 2026-10-20.
 - [ ] **Apply `20261026100000_voice_calls`** (voice assistant, `feature/voice-assistant` only).
   **Dev: done** — its SQL ran directly on 2026-10-26 and `supabase db push` recorded it on
@@ -43,13 +43,14 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   **Production's history ends at `20261027100100`** (the meeting-room migrations, recorded by
   hand on 2026-11-05), which is newer than this file, so a plain `supabase db push` refuses it:
   push with `--include-all`, after a `--dry-run` that lists only this file.
-- [ ] **Walk [../test/11-pre-merge-ui-audit.md](../test/11-pre-merge-ui-audit.md).** 80 unticked
+- [x] **Walk [../test/11-pre-merge-ui-audit.md](../test/11-pre-merge-ui-audit.md).** (2026-11-05,
+  before the release.) 80
   checks, over a dozen marked blocker. Steps 0.4 and 0.5 follow the migrations directly: log in as
   Sales and Supervision and open the invoice screens; edit an existing payment's amount and bank
   account and check the balance follows.
 - [x] **Check bank accounts that were already wiped** (2026-10-09, read-only on production).
   See "Bank accounts check" below: no account matches the CASH-1 pattern; four balances are stale.
-- [ ] **Tell Budget Control users the figures move** (GEN-23, `fix/gen-23-evm-uncontracted`). It
+- [x] **Tell Budget Control users the figures move** (2026-11-05) (GEN-23, `fix/gen-23-evm-uncontracted`). It
   shipped to production on 2026-11-05 (PR #77); the demo's `kontrola-proracuna.png` was retaken
   the same day (Jarun's EAC went from €4.980.839,06 to €7.382.237,49). Earned value no longer credits uncontracted work: on production on
   2026-10-20 the 10 projects with contracts had only about 15% of their phase budgets contracted,
