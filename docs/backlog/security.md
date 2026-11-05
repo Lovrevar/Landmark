@@ -110,8 +110,8 @@ When `VITE_CASHFLOW_PASSWORD` is unset, the Cashflow profile remains selectable 
 
 #### What was fixed
 
-Migration `20261012100000_contracts_project_scope` (written 2026-10-12, **not applied yet** — see
-[release.md](./release.md)) replaced the blanket `USING (true)` policies:
+Migration `20261012100000_contracts_project_scope` (written 2026-10-12,
+applied everywhere by 2026-11-05) replaced the blanket `USING (true)` policies:
 
 - `contracts`: read through `app_can_access_project(project_id)` — Director, Accounting,
   Investment and Sales always, Supervision only on projects in `project_managers`. Supervision
@@ -157,7 +157,7 @@ dashboards, the reports and the assistant's tools. That is a project of its own.
 
 ### AUTH-4 · Low · An unused `user_has_project_access(uuid, uuid)` overload contradicts the real rule
 - Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): the unused two-argument `user_has_project_access` is dropped in migration
-  `20261012100000` (**not applied yet**), behind a guard that refuses if anything uses it.
+  `20261012100000` (applied everywhere by 2026-11-05), behind a guard that refuses if anything uses it.
 
 ### SEC-A10 · Low · Investment role can manage payments in the UI but reads none
 - Decided 2026-10-09: hide the screens rather than widen the policy (production has no
@@ -165,7 +165,7 @@ dashboards, the reports and the assistant's tools. That is a project of its own.
 
 ### SEC-A12 · Medium · Any signed-in user can delete any stored document file
 - Fixed by migration `20261009100000_storage_document_delete_policies` (written 2026-10-09,
-  **not applied yet** — see [release.md](./release.md)): the DELETE policies on the `documents`
+  applied everywhere by 2026-11-05): the DELETE policies on the `documents`
   and `contract-documents` buckets allow the file's owner, Director and Accounting. There was no
   UPDATE policy on either bucket, so files could not be overwritten; the entry was wrong on that.
 

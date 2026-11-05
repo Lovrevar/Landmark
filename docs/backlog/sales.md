@@ -138,12 +138,12 @@ Unit inventory, the sale flow, customers and Sales payments. Ids: `SALES-n` (nex
 
 ### SALES-9 · Low · No unique constraint on unit numbers
 - Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): unique indexes on unit numbers per building and building names per
-  project (migration `20261012100200`, **not applied yet**); the create, edit and import paths say
+  project (migration `20261012100200`, applied everywhere by 2026-11-05); the create, edit and import paths say
   so in words. No database had a duplicate on 2026-10-12.
 
 ### SALES-10 · Low · No sale cancellation flow
-- Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): `cancel_apartment_sale` (migration `20261012100100`, **not applied yet** —
-  see [release.md](./release.md)) and the "Poništi prodaju" action for Director and Accounting.
+- Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): `cancel_apartment_sale` (migration `20261012100100`,
+  applied everywhere by 2026-11-05) and the "Poništi prodaju" action for Director and Accounting.
   The Edit Apartment form no longer sets or unsets Sold.
 
 ### SALES-8 · Low · Customers module keeps only one garage and one storage per apartment
