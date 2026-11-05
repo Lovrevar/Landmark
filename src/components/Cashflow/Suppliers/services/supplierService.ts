@@ -272,8 +272,8 @@ export const deleteSupplier = async (supplier: SupplierSummary): Promise<void> =
 }
 
 export const fetchSupplierDetails = async (supplier: SupplierSummary): Promise<{ contracts: Contract[], invoices: Invoice[] }> => {
-  let contractsWithPayments: Contract[] = []
-  let invoicesWithPayments: Invoice[] = []
+  let contractsWithPayments: Contract[]
+  let invoicesWithPayments: Invoice[]
 
   if (supplier.source === 'retail') {
     const { data: rContracts } = await supabase

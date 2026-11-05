@@ -1,7 +1,7 @@
 # Backlog — app-wide UI
 
 Problems that repeat across modules: formatting, status display, failed loads, translations, the
-shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-18`). Entry format and
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-21`). Entry format and
 rules are in [README.md](./README.md).
 
 A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
@@ -9,6 +9,41 @@ helper or a sweep. Counts were measured on 2026-09-21 to 2026-09-23 and will hav
 again before starting a sweep. Check [../UI.md](../UI.md) before adding a primitive.
 
 ## Open
+
+### UI-18 · Low · The React Compiler lint rules run as warnings, not errors
+- **Check:** Confirmed (lint on 2026-11-05, the dependency branch `chore/deps-2026-11-05`)
+- **Where:** `eslint.config.js`; `eslint-plugin-react-hooks` 7 enables the compiler rules in its
+  `recommended` preset
+- **What happens:** the code base predates the rules: 142 `set-state-in-effect` findings in 101
+  files, 21 `immutability`, 14 `static-components`, 8 `preserve-manual-memoization`, 6 `purity`
+  (`Date.now` during render), 6 `refs`. All six are downgraded to `warn` in the config so the bump
+  could land; `npm run lint` now reports about 200 warnings instead of 9, and a new finding is easy
+  to miss among them. ESLint 10's `preserve-caught-error` is `warn` for the same reason: the three
+  rethrows in `useSubcontractorManagement.ts` cannot take `{ cause }` while `tsconfig.app.json`
+  has `lib: ES2020` (ErrorOptions is typed in ES2022).
+- **Fix direction:** walk the findings module by module (the effect ones are mostly "load on
+  mount, then setState" patterns the hook layer should own), raise the lib to ES2022 and add
+  `{ cause }`, then delete the six `warn` lines so the rules are errors again.
+
+### UI-19 · Low · `manualChunks` in `vite.config.ts` is the deprecated Rolldown form
+- **Check:** Confirmed (Vite 8 migration guide, 2026-11-05)
+- **Where:** `vite.config.ts`, `build.rolldownOptions.output.manualChunks`
+- **What happens:** Vite 8 bundles with Rolldown, which removed the object form of `manualChunks`
+  and deprecates the function form the config uses for its `vendor-*` and `i18n-locales` chunks.
+  It still works in 8.3 (the build of 2026-11-05 produced every named chunk, no warning), but a
+  later major drops it.
+- **Fix direction:** express the same groups as Rolldown's `codeSplitting.groups` (one `test`
+  per vendor group, same names), then compare `dist/assets` before and after.
+
+### UI-20 · Low · TypeScript 7 waits on typescript-eslint
+- **Check:** Confirmed (`npm view typescript-eslint@8.72.1 peerDependencies`, 2026-11-05)
+- **Where:** `package.json` (`typescript ^5.5.3`), `.github/dependabot.yml` (the major is ignored)
+- **What happens:** typescript-eslint's peer range ends below TypeScript 6.1, so dependabot's
+  TypeScript 7 PR could not install. The bump is parked with an `ignore` rule in
+  `dependabot.yml`; TypeScript 7 is also the native compiler, and `tsc --noEmit` semantics may
+  shift.
+- **Fix direction:** when typescript-eslint allows TypeScript 7, remove the `ignore` rule, take the
+  bump on its own branch, and run typecheck, lint and the build.
 
 ### UI-14 · Low · StatCard: a long word in the title runs under the icon
 - **Check:** Confirmed on LandmarkDemo at 1280 px (2026-10-21)

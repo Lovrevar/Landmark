@@ -19,6 +19,19 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // eslint-plugin-react-hooks 7 turns the React Compiler rules on as errors. The code base
+      // predates them (205 findings on 2026-11-05, 142 of them setState inside an effect), and a
+      // dependency bump is not the place to rework components. Warnings until the backlog item
+      // that walks them is done; new code should not add to the count.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/static-components': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-hooks/refs': 'warn',
+      // ESLint 10's recommended set asks every rethrow to carry `{ cause }`, but ErrorOptions is
+      // typed in lib.es2022 and tsconfig.app.json targets ES2020. Lift this with the lib.
+      'preserve-caught-error': 'warn',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

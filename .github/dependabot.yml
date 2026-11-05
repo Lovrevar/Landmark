@@ -16,6 +16,11 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # typescript-eslint's peer range stops below TypeScript 6.1 (8.72.1 on 2026-11-05); TypeScript
+      # 7 is also the native compiler, a migration of its own. Lift this when typescript-eslint allows it.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: "/tools/voice-prototype"
@@ -33,6 +38,13 @@ updates:
       other:
         patterns: ["*"]
         exclude-patterns: ["@livekit/*"]
+    ignore:
+      # CI only audits this lockfile, nobody runs the prototype there: major bumps of the model
+      # client and the compiler wait until someone runs it by hand.
+      - dependency-name: openai
+        update-types: ["version-update:semver-major"]
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
