@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useNow } from '../../../../hooks/useNow'
 import { useTranslation } from 'react-i18next'
 import type { InvoiceWithDetails, InvoiceStats } from '../services/supervisionInvoiceService'
 import {
@@ -45,6 +46,8 @@ export function useSupervisionInvoices() {
 
   useEffect(() => { loadInvoices() }, [loadInvoices])
 
+  // 'recent' means the last 7 days; a cutoff only has to be roughly right, so a slow tick.
+  const now = useNow(5 * 60_000)
   const filteredInvoices = useMemo(() => invoices.filter(invoice => {
     const matchesSearch =
       invoice.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,7 +61,7 @@ export function useSupervisionInvoices() {
 
     const matchesFilter =
       filterStatus === 'all' ||
-      (filterStatus === 'recent' && new Date(invoice.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      (filterStatus === 'recent' && new Date(invoice.created_at) > new Date(now - 7 * 24 * 60 * 60 * 1000)) ||
       (filterStatus === 'large' && invoice.total_amount > 10000)
 
     const matchesApproved =
@@ -67,7 +70,7 @@ export function useSupervisionInvoices() {
       (filterApproved === 'not_approved' && !invoice.approved)
 
     return matchesSearch && matchesDateRange && matchesFilter && matchesApproved
-  }), [invoices, searchTerm, filterStatus, filterApproved, dateRange])
+  }), [invoices, searchTerm, filterStatus, filterApproved, dateRange, now])
 
   const paginatedInvoices = useMemo(
     () => filteredInvoices.slice((currentPage - 1) * pageSize, currentPage * pageSize),

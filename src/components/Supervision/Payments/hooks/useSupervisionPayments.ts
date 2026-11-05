@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useNow } from '../../../../hooks/useNow'
 import type { PaymentWithDetails, PaymentStats } from '../services/supervisionPaymentService'
 import {
   fetchSupervisionPayments,
@@ -37,6 +38,8 @@ export function useSupervisionPayments() {
 
   useEffect(() => { loadPayments() }, [loadPayments])
 
+  // 'recent' means the last 7 days; a cutoff only has to be roughly right, so a slow tick.
+  const now = useNow(5 * 60_000)
   const filteredPayments = useMemo(() => payments.filter(payment => {
     const matchesSearch =
       payment.subcontractor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -50,11 +53,11 @@ export function useSupervisionPayments() {
 
     const matchesFilter =
       filterStatus === 'all' ||
-      (filterStatus === 'recent' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      (filterStatus === 'recent' && new Date(payment.created_at) > new Date(now - 7 * 24 * 60 * 60 * 1000)) ||
       (filterStatus === 'large' && payment.amount > 10000)
 
     return matchesSearch && matchesDateRange && matchesFilter
-  }), [payments, searchTerm, filterStatus, dateRange])
+  }), [payments, searchTerm, filterStatus, dateRange, now])
 
   // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
   const { exporting, run: runExportExcel } = useAsyncExport(exportSupervisionPaymentsExcel, 'common.export_error')

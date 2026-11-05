@@ -43,14 +43,17 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function getFileIcon(mimeType: string | null | undefined) {
-  if (!mimeType) return File
-  if (mimeType.startsWith('image/')) return ImageIcon
-  if (mimeType.includes('pdf')) return FileText
-  if (mimeType.includes('sheet') || mimeType.includes('excel') || mimeType.includes('csv'))
-    return FileSpreadsheet
-  if (mimeType.includes('word') || mimeType.includes('document')) return FileText
-  return File
+/** The icon for an attachment's MIME type, as an element: a component type chosen during render
+ *  reads to the React Compiler rules as a component created there. */
+function fileIcon(mimeType: string | null | undefined, className: string): React.ReactElement {
+  const Icon =
+    !mimeType ? File
+    : mimeType.startsWith('image/') ? ImageIcon
+    : mimeType.includes('pdf') ? FileText
+    : mimeType.includes('sheet') || mimeType.includes('excel') || mimeType.includes('csv') ? FileSpreadsheet
+    : mimeType.includes('word') || mimeType.includes('document') ? FileText
+    : File
+  return <Icon className={className} />
 }
 
 function isImageFile(mimeType: string | null | undefined): boolean {
@@ -95,7 +98,6 @@ function FileAttachment({
 
   if (!fileUrl) return null
 
-  const Icon = getFileIcon(message.file_type)
   const isImage = isImageFile(message.file_type)
 
   if (isImage) {
@@ -127,9 +129,7 @@ function FileAttachment({
           : 'bg-gray-200/60 dark:bg-gray-600/40 hover:bg-gray-200 dark:hover:bg-gray-600/60'
       }`}
     >
-      <Icon className={`w-5 h-5 shrink-0 ${
-        isOwn ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'
-      }`} />
+      {fileIcon(message.file_type, `w-5 h-5 shrink-0 ${isOwn ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'}`)}
       <div className="flex-1 min-w-0">
         <p className={`text-xs font-medium truncate ${
           isOwn ? 'text-white' : 'text-gray-800 dark:text-gray-200'

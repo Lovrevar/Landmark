@@ -1,25 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
+
+const canMatch = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function'
 
 /**
  * Subscribe to a CSS media query and re-render when it changes.
- * SSR-safe: returns false until mounted.
+ *
+ * The media query list is an external store, so `useSyncExternalStore` reads it: no state copy to
+ * keep in step from an effect, and a changed `query` is read on the next render rather than one
+ * render late. Without `matchMedia` (a server, an old test environment) it is false.
  */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState<boolean>(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return false
-    return window.matchMedia(query).matches
-  })
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return
+  const subscribe = useCallback((onChange: () => void) => {
+    if (!canMatch()) return () => {}
     const mql = window.matchMedia(query)
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches)
-    setMatches(mql.matches)
-    mql.addEventListener('change', handler)
-    return () => mql.removeEventListener('change', handler)
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
   }, [query])
+  const getSnapshot = () => (canMatch() ? window.matchMedia(query).matches : false)
 
-  return matches
+  return useSyncExternalStore(subscribe, getSnapshot, () => false)
 }
 
 // Breakpoints mirror Tailwind defaults (sm 640, md 768, lg 1024).

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useNow } from '../../../../hooks/useNow'
 import { useTranslation } from 'react-i18next'
 import {
   fetchSalesPayments,
@@ -39,6 +40,8 @@ export function useSalesPayments() {
 
   const stats: SalesPaymentStats = useMemo(() => calculateSalesPaymentStats(payments), [payments])
 
+  // 'recent' means the last 7 days; a cutoff only has to be roughly right, so a slow tick.
+  const now = useNow(5 * 60_000)
   const filteredPayments = useMemo(() =>
     payments.filter(payment => {
       const matchesSearch =
@@ -54,12 +57,12 @@ export function useSalesPayments() {
 
       const matchesFilter =
         filterStatus === 'all' ||
-        (filterStatus === 'recent' && new Date(payment.payment_date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+        (filterStatus === 'recent' && new Date(payment.payment_date) > new Date(now - 7 * 24 * 60 * 60 * 1000)) ||
         (filterStatus === 'large' && Number(payment.amount) > 10000)
 
       return matchesSearch && matchesDateRange && matchesFilter
     }),
-    [payments, searchTerm, filterStatus, dateRange]
+    [payments, searchTerm, filterStatus, dateRange, now]
   )
 
   const dismissError = useCallback(() => setError(null), [])

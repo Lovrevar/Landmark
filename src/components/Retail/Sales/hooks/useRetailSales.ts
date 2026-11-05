@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useNow } from '../../../../hooks/useNow'
 import type { RetailSalesPaymentWithDetails, SalesStats } from '../services/retailSalesService'
 import { fetchRetailSalesPayments, calculateSalesStats, exportRetailSalesPaymentsExcel } from '../services/retailSalesService'
 import { useAsyncExport } from '../../../../hooks/useAsyncExport'
@@ -36,6 +37,8 @@ export function useRetailSales() {
 
   const dismissError = useCallback(() => setError(null), [])
 
+  // 'recent' means the last 7 days; a cutoff only has to be roughly right, so a slow tick.
+  const now = useNow(5 * 60_000)
   const filteredPayments = useMemo(() => payments.filter(payment => {
     const matchesSearch =
       payment.contract_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -50,11 +53,11 @@ export function useRetailSales() {
 
     const matchesFilter =
       filterStatus === 'all' ||
-      (filterStatus === 'recent' && new Date(payment.payment_date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      (filterStatus === 'recent' && new Date(payment.payment_date) > new Date(now - 7 * 24 * 60 * 60 * 1000)) ||
       (filterStatus === 'large' && payment.amount > 10000)
 
     return matchesSearch && matchesDateRange && matchesFilter
-  }), [payments, searchTerm, filterStatus, dateRange])
+  }), [payments, searchTerm, filterStatus, dateRange, now])
 
   // Through `useAsyncExport` so a failed export toasts instead of dying inside the click handler.
   const { exporting, run: runExportExcel } = useAsyncExport(exportRetailSalesPaymentsExcel, 'common.export_error')
