@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "db:types": "supabase gen types typescript --linked --schema public --schema erp > src/types/database.ts && cp src/types/database.ts supabase/functions/_shared/database.ts",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 180",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "e2e:serve": "vite preview --host 127.0.0.1 --port 5173 --strictPort",

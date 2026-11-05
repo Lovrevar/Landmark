@@ -62,7 +62,7 @@ export function pushEscapeLayer(layer: EscapeLayer): () => void {
  */
 export function useEscapeKey(active: boolean, onEscape: () => void) {
   const handler = useRef(onEscape)
-  handler.current = onEscape
+  useEffect(() => { handler.current = onEscape })
 
   useEffect(() => {
     if (!active) return

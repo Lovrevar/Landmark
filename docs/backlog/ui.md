@@ -11,19 +11,25 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
 ## Open
 
 ### UI-18 · Low · The React Compiler lint rules run as warnings, not errors
-- **Check:** Confirmed (lint on 2026-11-05, the dependency branch `chore/deps-2026-11-05`)
+- **Check:** Confirmed (lint on 2026-11-05)
 - **Where:** `eslint.config.js`; `eslint-plugin-react-hooks` 7 enables the compiler rules in its
   `recommended` preset
-- **What happens:** the code base predates the rules: 142 `set-state-in-effect` findings in 101
-  files, 21 `immutability`, 14 `static-components`, 8 `preserve-manual-memoization`, 6 `purity`
-  (`Date.now` during render), 6 `refs`. All six are downgraded to `warn` in the config so the bump
-  could land; `npm run lint` now reports about 200 warnings instead of 9, and a new finding is easy
-  to miss among them. ESLint 10's `preserve-caught-error` is `warn` for the same reason: the three
-  rethrows in `useSubcontractorManagement.ts` cannot take `{ cause }` while `tsconfig.app.json`
-  has `lib: ES2020` (ErrorOptions is typed in ES2022).
-- **Fix direction:** walk the findings module by module (the effect ones are mostly "load on
-  mount, then setState" patterns the hook layer should own), raise the lib to ES2022 and add
-  `{ cause }`, then delete the six `warn` lines so the rules are errors again.
+- **What happens:** the code base predates the rules. Three stay at `warn`: `set-state-in-effect`
+  (141 findings in about 100 files, the "load on mount, then setState" shape of the form and data
+  hooks, heaviest in Cashflow, Supervision and Sales), `immutability` (21) and
+  `preserve-manual-memoization` (8). `npm run lint` fails above the `--max-warnings` ceiling in
+  `package.json` (180 on 2026-11-05, 9 of them older), so the count can only fall; lower the number
+  in any change that clears some. Fixed on `chore/lint-ceiling` the same day, and back at `error`:
+  `static-components` (hoisted `SortableTh`, `SortHeader`, the chat file icon), `refs` (latest-value
+  refs written in effects; one documented render-time write in `TaskDetail.tsx`), `purity`
+  (`useNow` in `src/hooks/useNow.ts` replaces `Date.now()` during render) and ESLint 10's
+  `preserve-caught-error` (lib raised to ES2022 for `{ cause }`). `useMediaQuery` reads the media
+  query through `useSyncExternalStore`.
+- **Fix direction:** not a sweep. Clear `set-state-in-effect` in a module when touching it, the
+  shared hooks first (`useCachedData` keeps one: the fresh-cache path sets state in its effect).
+  The sweep pays off with the React Compiler, i.e. at the React 19 upgrade. When a module is clean,
+  pin it at `error` with a per-directory override so it cannot regress; when all are, delete the
+  three `warn` lines.
 
 ### UI-19 · Low · `manualChunks` in `vite.config.ts` is the deprecated Rolldown form
 - **Check:** Confirmed (Vite 8 migration guide, 2026-11-05)

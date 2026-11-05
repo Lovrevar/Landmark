@@ -260,6 +260,10 @@ const TaskDetail: React.FC<Props> = ({ task, onClose, onDelete, onChanged }) => 
     if (canEdit && deadlineDraft !== (task.deadline || '')) void saveDueDate(deadlineDraft)
     onClose()
   }
+  // Written during render on purpose: `requestClose` closes over values defined after the early
+  // return above, so an effect declared with the other hooks would hit the TDZ when there is no
+  // task. useEscapeKey reads the ref at key time, after this render has committed.
+  // eslint-disable-next-line react-hooks/refs
   requestCloseRef.current = requestClose
 
   const saveColor = async (color: TaskColor | null) => {

@@ -57,7 +57,7 @@ export default function InfoHint({ hintId, label, children, articleId, icon: Ico
     setOpen(next)
   }
 
-  const { refs, floatingStyles, context } = useFloating({
+  const { refs: { setReference, setFloating }, floatingStyles, context } = useFloating({
     open,
     onOpenChange: handleOpenChange,
     placement: 'top',
@@ -79,7 +79,7 @@ export default function InfoHint({ hintId, label, children, articleId, icon: Ico
     <>
       <button
         type="button"
-        ref={refs.setReference}
+        ref={setReference}
         aria-label={t('help.hint.button_label', { topic: label })}
         aria-expanded={open}
         className={`inline-flex shrink-0 items-center justify-center align-middle rounded-full focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 ${className}`}
@@ -92,7 +92,7 @@ export default function InfoHint({ hintId, label, children, articleId, icon: Ico
           <div
             ref={(node) => {
               panelRef.current = node
-              refs.setFloating(node)
+              setFloating(node)
             }}
             role="dialog"
             aria-labelledby={headingId}

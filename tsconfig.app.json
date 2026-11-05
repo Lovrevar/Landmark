@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     /* TypeScript 6 stops loading every node_modules/@types package by default. The unit tests
        read fixtures through node:fs and process.cwd(), so the node types are named here. */
     "types": ["node"],

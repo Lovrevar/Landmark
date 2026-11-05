@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   DAY_HOURS,
   HOUR_HEIGHT,
@@ -37,7 +37,8 @@ interface DraftState {
 export function useClickToCreate({ dayForPointer, minMinutes = SLOT_MINUTES, onComplete }: UseClickToCreateArgs) {
   const [draft, setDraft] = useState<DraftState | null>(null)
   const draftRef = useRef<DraftState | null>(null)
-  draftRef.current = draft
+  // Mirrored after commit, never during render: the handlers read it at pointer time.
+  useEffect(() => { draftRef.current = draft }, [draft])
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return

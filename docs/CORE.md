@@ -37,9 +37,13 @@ Covers `src/contexts/`, `src/hooks/`, `src/lib/`, `src/types/`, and `src/utils/`
 - `unlockBodyScroll()` — sets `body.style.overflow = 'unset'`
 
 ### useMediaQuery.ts
-- `useMediaQuery(query)` — subscribes to a `matchMedia` query and re-renders on change
+- `useMediaQuery(query)` — reads a `matchMedia` query through `useSyncExternalStore` and re-renders on change
 - `useIsMobile()` / `useIsTabletUp()` / `useIsDesktop()` — the named breakpoints built on it
 - Use these rather than duplicating breakpoint strings; the responsive-table card view keys off `useIsMobile()`
+
+### useNow.ts
+- `useNow(intervalMs = 60_000)` — the current time (epoch ms) as state, refreshed on an interval
+- Use it instead of `Date.now()` in render or `useMemo`: time is state, and `react-hooks/purity` refuses impure calls during render. A long interval suits a "last 7 days" cutoff
 
 ### useListPreferences.ts
 - `useListPreferences(key, defaults)` — persists a list's view mode / sort / filter choice per user
