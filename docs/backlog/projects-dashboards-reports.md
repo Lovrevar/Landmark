@@ -145,7 +145,8 @@ GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 
   either filter by source or reword the doc and the screen.
 
 ### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
-- **Check:** Code reading. **Runtime check needed** on production row counts
+- **Check:** Code reading. Production on 2026-11-05: 851 `accounting_invoices`, 224
+  `accounting_payments`; the other 26 tables not counted
 - **Where:** `generalReportService.ts`, the first `Promise.all`. Also
   `dashboards/services/accountingDashboardService.ts` `fetchMonthlyTrends` (this year's payments)
 - **What happens:** PostgREST returns at most 1000 rows without saying so, and none of the reads
