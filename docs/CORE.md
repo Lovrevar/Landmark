@@ -194,6 +194,33 @@ read "Jan 05, 2026".
 - Both amounts must be in the same unit — compare gross with gross. Comparing gross payments against a net `base_amount` is what made every fully-paid subcontractor contract show a 25% overrun
 - Pure; covered by `contractVariance.test.ts`
 
+### Business figures
+
+Each business figure has one pure function, and every screen, report and export calls it
+(`.claude/rules/architecture.md` → Business figures). They came out of
+`Reports/services/generalReportService.ts` in October 2026 (REGRESSION_PREVENTION Step 7 item 1),
+and the sales figures out of the dashboards and the Sales report (item 2). Characterization tests
+(`generalReportService.test.ts`, then the Director and Sales dashboards', the Sales report's and
+Project details') pinned each service's output before the move and passed unchanged through it;
+where item 2 then changed a definition on purpose, the expectation changed in that fix's commit. Where a function keeps a figure that is known to be wrong, its comment
+names the backlog id, and so does the pinned expectation.
+
+| Module | Functions | Called by |
+|---|---|---|
+| `salesFigures.ts` | Inventory: `unitStatusCounts`, `salesRate`, `averagePer`. **Contracted sales** ("Ugovorena prodaja": a sale is a `sales` row, worth its package): `contractedSales`, `contractedSalesByProject`, `saleValue`, `salesSince`, `salesByMonth`, `linkedPricesByApartment`, on `packageTotal` / `unitPackageTotal` (SALES-6, moved from `Sales/utils/`). **Collected** ("Naplaćeno od prodaje", GEN-9): `collectedFromSales`, `collectedSince`, `collectedByMonth`, `collectedByProject`. `customerFunnel`, `conversionRate` | Director and Sales dashboards, General and Sales reports, Project details, Sales payments, the Sales project cards (`buildSalesProjects`), and the package total on the Sales unit cards, Apartments and Customers screens. Garage and storage links: `fetchLinkedPrices` (`src/lib/linkedUnitPrices.ts`). Definitions: `docs/SALES.md` → A sale and sales revenue; still to do: SALES-23 (Step 7 item 4) |
+| `fundingFigures.ts` | `isLiveDebt`, `liveDebtFigures` (outstanding, facility amount, used, weighted rate, debt service), `totalEquity`, `debtToEquity`, `creditLineTotals`, `allocationTotals`, `activeFunderCount`, `projectFunding` (GEN-27), `loanTotals` | General report, Director and Investment dashboards. Differences: FUND-21 |
+| `paymentFigures.ts` | `costPaid` (payments on cost invoices, optionally narrowed), `cesijaFromCredit` (GEN-29), `bankAccountTotals` | General report. The Director dashboard's expense basis: GEN-39 |
+| `paymentTotals.ts` | `paymentTotalsByDirection`, `paymentTotalsByCategory` (cent sums), `DIRECTION_AMOUNT_CLASS`, `formatSignedEuro` — moved from `Cashflow/services/` | Cashflow and Funding payment registers, `cashFlowFigures` |
+| `cashFlowFigures.ts` | `monthlyCashFlow` (per month, in/out × operating/financing, local months), `cashFlowTotals` | General report screen, PDF and service; Accounting dashboard trends. Not reconciled with the bank balance: GEN-33 |
+| `invoiceFigures.ts` | `isOpenInvoice`, `isOverdueInvoice`, `invoiceStatusSummary`, `officeInvoiceTotals` (GEN-36) | General report, Cashflow invoice list (`isOverdue`), Debt status, the Site Management and Retail invoice modals. Differences: CASH-32 |
+| `constructionFigures.ts` | `contractTotals`, `contractTypeCounts` (whole-number names first, as a plain object orders keys), `completedPhaseCount`, `phaseCompletionRate`, `isSettledMilestone`, `recentWorkLogCount` | General report and PDF, Budget Control, Director alerts. Differences: SUP-18 |
+| `projectFigures.ts` | `profitAndMargin`, `returnOnEquity`, `projectRiskLevel`, `reportRisks`, `topProjectsByRevenue`, `recommendationKeys`, `projectStatusCounts` | General report and PDF, Director, Retail dashboards, Retail report. Thresholds: GEN-41; zeros for "no answer": GEN-32 |
+| `retailFigures.ts` | `retailPortfolioCounts` — the General report's retail section, **wrong as it stands** (GEN-28) | General report |
+| `ticFigures.ts` | `ticTotalsByProject`, `portfolioValue`, `ticPlanSummary` (GEN-30), on `ticGrandTotal` from `Funding/TIC/utils/ticBudget.ts` | General report. Investment dashboard's source: GEN-40 |
+
+Row types are narrow interfaces (`{ status, price }`), amounts go through `Number(x || 0)`, and a
+figure that depends on today takes `daysFrom` (default `daysFromToday`) so tests can fix it.
+
 ### errorMessage.ts (`src/lib/`)
 - `toErrorMessage(error, fallback)` — the sentence to show a user for a rejected promise. Prefers a message written for people (a service's own "Ne možete obrisati faze koje imaju ugovore: …"), and falls back to the caller's translated string when the error is machine text (`violates … constraint`, a bare `PGRST301`) or an RLS refusal
 - `isPermissionError(error)` — Postgres `42501`
@@ -241,6 +268,10 @@ read "Jan 05, 2026".
 - `parseLocalDate(str)` — builds `new Date(y, m-1, d)` so a SQL `date` column is not parsed as UTC midnight
 - `monthKey(str)` — `YYYY-MM` bucket key; `daysFromToday(str)`; `isValidDate(str)`; `startOfTodayLocal()`
 - **Use these for every date-only column.** `new Date('2026-09-01')` parses as UTC and compares wrong against a local `new Date()` — Croatia is UTC+1/+2, so month buckets and overdue detection drift by a day at boundaries. Added during the June 2026 dashboard audit (see [`DASHBOARD_AUDIT.md`](./backlog/archive/DASHBOARD_AUDIT.md) DASH-001)
+
+### appPath.ts
+- `isAppPath(url)` — whether a markdown link or image address is one of the app's own paths; `MarkdownView` uses it to choose between `<Link>` and a new tab
+- Resolves the address with the URL parser and requires the same origin. A `startsWith('/') && !startsWith('//')` check lets `/\host` and `/<tab>/host` through, which browsers read as `//host` — an open redirect from task text or an assistant reply (SEC-A13)
 
 ### pdfFont.ts
 - `loadUnicodeFont(doc)` + `PDF_FONT_FAMILY` — registers the embedded Noto Sans on a jsPDF document. Every generator calls it before drawing

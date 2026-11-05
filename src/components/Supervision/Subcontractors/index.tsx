@@ -197,7 +197,7 @@ const SubcontractorManagement: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 p-4 space-y-3">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -222,7 +222,7 @@ const SubcontractorManagement: React.FC = () => {
               aria-label={t('common.project')}
               value={prefs.projectFilter}
               onChange={(e) => setPrefs({ projectFilter: e.target.value })}
-              className="py-1.5 px-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[200px]"
+              className="py-1.5 px-3 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-blue-500 max-w-[200px]"
             >
               <option value="">{t('common.all_projects')}</option>
               {availableProjects.map(p => <option key={p} value={p}>{p}</option>)}
@@ -270,9 +270,9 @@ const SubcontractorManagement: React.FC = () => {
               <Table.Th>{t('common.name')}</Table.Th>
               <Table.Th>{t('common.contact')}</Table.Th>
               <Table.Th>{t('supervision.subcontractors.total_contracts')}</Table.Th>
-              <Table.Th className="text-right">{t('supervision.subcontractors.contract_value')}</Table.Th>
-              <Table.Th className="text-right">{t('common.total_paid')}</Table.Th>
-              <Table.Th className="text-right">{t('common.remaining')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('supervision.subcontractors.contract_value')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('common.total_paid')}</Table.Th>
+              <Table.Th className="text-right w-36">{t('common.remaining')}</Table.Th>
               <Table.Th>{t('supervision.subcontractors.payment_progress')}</Table.Th>
               <Table.Th sticky className="text-right">{t('common.actions')}</Table.Th>
             </Table.Tr>
@@ -282,8 +282,8 @@ const SubcontractorManagement: React.FC = () => {
               const pct = paymentPct(sub)
               return (
                 <Table.Tr key={sub.id} className="cursor-pointer" onClick={() => setSelectedSubcontractor(sub)}>
-                  <Table.Td label={t('common.name')} className="font-medium">{sub.name}</Table.Td>
-                  <Table.Td label={t('common.contact')} className="text-gray-500 dark:text-gray-400">{sub.contact || '-'}</Table.Td>
+                  <Table.Td label={t('common.name')} className="font-medium"><div className="md:w-80 md:truncate" title={sub.name}>{sub.name}</div></Table.Td>
+                  <Table.Td label={t('common.contact')} className="text-gray-500 dark:text-gray-400"><div className="md:w-60 md:truncate" title={sub.contact || undefined}>{sub.contact || '-'}</div></Table.Td>
                   <Table.Td label={t('supervision.subcontractors.total_contracts')}>{sub.total_contracts} ({sub.active_contracts})</Table.Td>
                   <Table.Td label={t('supervision.subcontractors.contract_value')} className="text-right font-semibold">€{formatEuropean(sub.total_contract_value)}</Table.Td>
                   <Table.Td label={t('common.total_paid')} className="text-right text-teal-600 dark:text-teal-400">€{formatEuropean(sub.total_paid)}</Table.Td>

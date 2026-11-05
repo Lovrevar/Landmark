@@ -127,7 +127,7 @@ export const PortfolioOverview: React.FC<Props> = ({ data, formatCurrency }) => 
       {invoices.overdue > 0 && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-5">
           <div className="flex items-center gap-3">
-            <Target className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <Target className="w-5 h-5 text-red-600 shrink-0" />
             <div>
               <p className="font-semibold text-red-900 dark:text-red-300">
                 {t('reports.portfolio.overdue_invoices_title', { count: invoices.overdue })}
@@ -177,7 +177,7 @@ function FinanceCard({ title, icon, children }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>
         {icon}

@@ -13,7 +13,8 @@ concurrency:
 
 jobs:
   e2e:
-    runs-on: ubuntu-latest
+    # Not ubuntu-latest: it moved to 26.04, where Playwright 1.59 cannot install Chromium.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -27,7 +28,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies

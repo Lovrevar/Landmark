@@ -139,7 +139,7 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
                       className="px-2 py-1 border-gray-200 dark:border-gray-600"
                     />
                   </td>
-                  <td className={`${CELL} px-2 py-2 min-w-[12rem]`}>
+                  <td className={`${CELL} px-2 py-2 min-w-48`}>
                     <Select
                       value={item.classification_id ?? ''}
                       onChange={(e) =>
@@ -204,7 +204,7 @@ const InvestmentTable: React.FC<InvestmentTableProps> = ({
                         type="button"
                         onClick={() => setEditingPhasesFor(index)}
                         title={isPhased(item) ? t('tic.phases.edit_cell_title') : t('tic.phases.unphased_cell_title')}
-                        className={`w-full px-4 py-2 text-right whitespace-nowrap hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
+                        className={`w-full px-4 py-2 text-right whitespace-nowrap hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-hidden focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
                           isPhased(item) ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-600'
                         }`}
                       >

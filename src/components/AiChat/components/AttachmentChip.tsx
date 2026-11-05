@@ -39,7 +39,7 @@ export default function AttachmentChip({ attachment, disabled, onRemove }: Props
       className={`inline-flex items-center gap-2 max-w-[220px] rounded-md border px-2 py-1 text-xs ${borderClass}`}
       title={isError ? ERROR_LABELS_HR[attachment.errorCode ?? ''] ?? UI_LABELS_HR.uploadFailed : file.name}
     >
-      <span className="flex-shrink-0">
+      <span className="shrink-0">
         {isUploading ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500 dark:text-gray-400" />
         ) : (
@@ -51,7 +51,7 @@ export default function AttachmentChip({ attachment, disabled, onRemove }: Props
       <span className="flex-1 min-w-0 truncate text-gray-700 dark:text-gray-200">
         {file.name}
       </span>
-      <span className="flex-shrink-0 text-gray-400 dark:text-gray-500">
+      <span className="shrink-0 text-gray-400 dark:text-gray-500">
         {formatFileSize(file.size)}
       </span>
       <button
@@ -59,7 +59,7 @@ export default function AttachmentChip({ attachment, disabled, onRemove }: Props
         onClick={onRemove}
         disabled={disabled}
         aria-label={UI_LABELS_HR.removeAttachment}
-        className="flex-shrink-0 -mr-1 p-0.5 rounded text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="shrink-0 -mr-1 p-0.5 rounded-sm text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <X className="w-3.5 h-3.5" />
       </button>

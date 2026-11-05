@@ -85,7 +85,7 @@ export default function SearchableSelect({
         onClick={() => !disabled && setOpen(v => !v)}
         className={[
           'w-full flex items-center justify-between gap-2 rounded-lg border',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+          'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500',
           'border-gray-300 dark:border-gray-600',
           'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100',
           'hover:border-gray-400 dark:hover:border-gray-500 transition-colors',
@@ -121,7 +121,7 @@ export default function SearchableSelect({
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full bg-transparent focus:outline-none text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+              className="w-full bg-transparent focus:outline-hidden text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
             />
           </div>
           <div className="max-h-56 overflow-y-auto py-1">

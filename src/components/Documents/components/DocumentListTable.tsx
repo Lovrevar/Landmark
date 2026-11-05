@@ -62,7 +62,7 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
 
   if (loading && documents.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 py-12 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700 py-12 flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
     )
@@ -70,7 +70,7 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
 
   if (documents.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
         <EmptyState
           icon={Files}
           title={t('documents.page.empty.title')}
@@ -118,7 +118,7 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
                   </Table.Td>
                   <Table.Td label={t('documents.page.table.filename')}>
                     <div className="flex items-center gap-2 min-w-0 max-w-[16rem] xl:max-w-sm">
-                      <Files className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <Files className="w-4 h-4 text-blue-500 shrink-0" />
                       <span
                         className="font-medium text-gray-900 dark:text-white truncate"
                         title={doc.file_name}
@@ -194,7 +194,7 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
                         </DetailRow>
                         <DetailRow label={t('documents.page.table.description')}>
                           {doc.description
-                            ? <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">{doc.description}</span>
+                            ? <span className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap wrap-break-word">{doc.description}</span>
                             : <span className="text-sm italic text-gray-400">{t('documents.page.table.no_description')}</span>}
                         </DetailRow>
                         {others.length > 0 && (

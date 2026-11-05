@@ -85,7 +85,7 @@ const AccountingCompanies: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xs border border-gray-200 dark:border-gray-700">
         <SearchInput
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -107,7 +107,7 @@ const AccountingCompanies: React.FC = () => {
           {filteredCompanies.map((company) => (
             <div
               key={company.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">

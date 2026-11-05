@@ -249,7 +249,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
         />
       )}
       {creditAllocations.length > 0 && (
-        <div className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/30 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
+        <div className="mb-6 bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/30 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
           <div className="flex items-center mb-4">
             <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('supervision.site_management.project_detail.allocated_funds')}</h2>

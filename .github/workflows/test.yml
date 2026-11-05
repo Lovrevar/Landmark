@@ -2,7 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, development]
   pull_request:
     branches: [main, development]
   workflow_dispatch:
@@ -20,15 +20,41 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
+      # Pinned: a new Deno can change type-checking under unchanged code. 2.9 typed setTimeout as
+      # Node's Timeout and failed the edge-function tests (fixed in 6e5affc2). Bump deliberately.
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: v2.9.8
 
       - name: Install dependencies
         run: npm ci
+
+      # What ships to the browser. Fails on a newly published advisory too, even when this push
+      # did not cause it: run `npm audit fix`, or `npm audit --omit=dev` to see the finding.
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      # Every other package in the repo (tools/voice-prototype, …) has its own lockfile, which the
+      # step above never sees. npm audit reads the lockfile alone, so nothing needs installing.
+      - name: Audit the other lockfiles
+        run: |
+          status=0
+          for lock in $(git ls-files '*/package-lock.json'); do
+            dir=$(dirname "$lock")
+            echo "::group::npm audit in $dir"
+            (cd "$dir" && npm audit --audit-level=high) || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
 
       - name: Run unit tests
         run: npm test

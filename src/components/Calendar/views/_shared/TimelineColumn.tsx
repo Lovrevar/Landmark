@@ -88,9 +88,9 @@ function ClusterPopover({ state, locale, onSelect, onClose }: ClusterPopoverProp
             key={occurrence.occurrenceKey}
             type="button"
             onClick={() => { onSelect(occurrence); onClose() }}
-            className="w-full text-left px-2 py-1.5 rounded flex items-start gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
+            className="w-full text-left px-2 py-1.5 rounded-sm flex items-start gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-hidden focus:bg-gray-100 dark:focus:bg-gray-700"
           >
-            <span className={`flex-shrink-0 mt-1 w-1 h-6 rounded-full ${accent.dot}`} />
+            <span className={`shrink-0 mt-1 w-1 h-6 rounded-full ${accent.dot}`} />
             <span className="flex-1 min-w-0">
               <span className={`block text-sm font-medium truncate ${occurrence.isDeclined ? 'line-through opacity-60' : ''} text-gray-900 dark:text-white`}>
                 {occurrence.event.title}
@@ -198,7 +198,7 @@ export default function TimelineColumn({
                   title={`${occurrence.event.title} · ${occurrence.start.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}–${occurrence.end.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`}
                   className={[
                     'absolute rounded-md text-left overflow-hidden border-l-[3px]',
-                    'transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-inset',
+                    'transition-colors focus:outline-hidden focus:ring-2 focus:ring-blue-400 focus:ring-inset',
                     'hover:brightness-110 dark:hover:brightness-125',
                     accent.surface,
                     occurrence.isDeclined ? 'opacity-60' : '',
@@ -243,7 +243,7 @@ export default function TimelineColumn({
                       rect: e.currentTarget.getBoundingClientRect(),
                     })
                   }}
-                  className="absolute z-10 px-2 h-5 text-[10px] font-semibold rounded-full bg-blue-600 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="absolute z-10 px-2 h-5 text-[10px] font-semibold rounded-full bg-blue-600 text-white shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-400"
                   style={{ top: chipTop, right: 4 }}
                 >
                   {t('calendar.more_events', { count: hiddenCount })}

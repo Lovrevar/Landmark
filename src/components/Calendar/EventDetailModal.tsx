@@ -208,7 +208,7 @@ const EventDetailModal: React.FC<Props> = ({
         <Modal.Header title={event.title} onClose={onClose} />
         <Modal.Body>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`px-2 py-1 text-xs rounded ${EVENT_TYPE_COLORS[event.event_type].badge}`}>
+            <span className={`px-2 py-1 text-xs rounded-sm ${EVENT_TYPE_COLORS[event.event_type].badge}`}>
               {t(`calendar.event_type.${event.event_type}`)}
             </span>
             {event.is_private && (
@@ -217,7 +217,7 @@ const EventDetailModal: React.FC<Props> = ({
               </span>
             )}
             {isRecurring && (
-              <span className="text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded flex items-center gap-1">
+              <span className="text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-sm flex items-center gap-1">
                 <Repeat className="w-3 h-3" /> {t('calendar.detail.recurring')}
               </span>
             )}

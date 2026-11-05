@@ -447,7 +447,7 @@ no DB, no Claude tokens. Run `npm run test:functions` (or, from `supabase/functi
 
 1. **Happy path** — `supabase functions serve sort-document`, then:
    ```
-   curl -X POST http://localhost:54321/functions/v1/sort-document \
+   curl -X POST http://localhost:54421/functions/v1/sort-document \
      -H "Content-Type: application/json" -H "x-doc-sort-secret: <secret>" \
      -d '{"email_subject":"Ugovor","email_body":"...","attachment":{"file_name":"test.pdf","mime_type":"application/pdf","data_base64":"<base64>"}}'
    ```

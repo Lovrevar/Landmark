@@ -131,7 +131,7 @@ const MentionPicker: React.FC<Props> = ({
           rows={rows}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white px-3 py-2 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
         />
         {mention.active && filtered.length > 0 && (
           <div className="absolute bottom-full left-0 mb-1 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 max-h-52 overflow-y-auto">

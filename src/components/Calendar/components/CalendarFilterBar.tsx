@@ -122,7 +122,7 @@ export default function CalendarFilterBar({
           <button
             type="button"
             onClick={clearAll}
-            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1 rounded inline-flex items-center gap-1"
+            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1 rounded-sm inline-flex items-center gap-1"
           >
             <X className="w-3 h-3" /> {t('calendar.filter.clear')}
           </button>

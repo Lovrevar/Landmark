@@ -82,7 +82,7 @@ export default function InfoHint({ hintId, label, children, articleId, icon: Ico
         ref={refs.setReference}
         aria-label={t('help.hint.button_label', { topic: label })}
         aria-expanded={open}
-        className={`inline-flex flex-shrink-0 items-center justify-center align-middle rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${className}`}
+        className={`inline-flex shrink-0 items-center justify-center align-middle rounded-full focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 ${className}`}
         {...getReferenceProps({ onClick: (e) => e.stopPropagation() })}
       >
         <Icon className="w-4 h-4" aria-hidden="true" />
@@ -98,7 +98,7 @@ export default function InfoHint({ hintId, label, children, articleId, icon: Ico
             aria-labelledby={headingId}
             tabIndex={-1}
             style={floatingStyles}
-            className={`z-[70] ${widthClassName} max-w-[calc(100vw-1rem)] rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 shadow-lg text-left text-sm font-normal normal-case tracking-normal text-gray-700 dark:text-gray-200 focus:outline-none`}
+            className={`z-70 ${widthClassName} max-w-[calc(100vw-1rem)] rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 p-3 shadow-lg text-left text-sm font-normal normal-case tracking-normal text-gray-700 dark:text-gray-200 focus:outline-hidden`}
             {...getFloatingProps()}
           >
             <p id={headingId} className="font-semibold text-gray-900 dark:text-white mb-1">{label}</p>

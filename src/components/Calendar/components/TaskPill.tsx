@@ -52,7 +52,7 @@ const TaskPill: React.FC<Props> = ({
     : 'bg-gray-100 dark:bg-gray-700/60 border-gray-200 dark:border-gray-600'
 
   const baseCls = [
-    'w-full flex items-center gap-1.5 rounded-sm overflow-hidden border',
+    'w-full flex items-center gap-1.5 rounded-xs overflow-hidden border',
     surface,
     'text-gray-800 dark:text-gray-200',
     compact ? 'text-[11px] h-5 px-1' : 'text-xs px-2 py-1',
@@ -68,7 +68,7 @@ const TaskPill: React.FC<Props> = ({
         onClick={e => { e.stopPropagation(); onToggle?.(occurrence) }}
         title={toggle.title}
         aria-label={toggle.title}
-        className="flex-shrink-0 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:cursor-not-allowed disabled:hover:text-gray-500"
+        className="shrink-0 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:cursor-not-allowed disabled:hover:text-gray-500"
       >
         <ToggleIcon className={compact ? 'w-3 h-3' : 'w-3.5 h-3.5'} />
       </button>
@@ -81,8 +81,8 @@ const TaskPill: React.FC<Props> = ({
           type's, and red there means a deadline event. (The task list, with no events to
           compete, keeps its red stripe.) */}
       {isOverdue && (
-        <span role="img" title={overdueLabel} aria-label={overdueLabel} className="flex-shrink-0 inline-flex">
-          <AlertTriangle className="w-3 h-3 flex-shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
+        <span role="img" title={overdueLabel} aria-label={overdueLabel} className="shrink-0 inline-flex">
+          <AlertTriangle className="w-3 h-3 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
         </span>
       )}
       <button
@@ -98,7 +98,7 @@ const TaskPill: React.FC<Props> = ({
         {task.title}
       </button>
       {(attachmentCount > 0 || commentCount > 0) && !compact && (
-        <span className="flex items-center gap-1 flex-shrink-0 opacity-70">
+        <span className="flex items-center gap-1 shrink-0 opacity-70">
           {attachmentCount > 0 && <Paperclip className="w-3 h-3" />}
           {commentCount > 0 && <MessageSquare className="w-3 h-3" />}
         </span>

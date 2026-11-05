@@ -172,7 +172,7 @@ const AccountingApprovals: React.FC = () => {
       </StatGrid>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <SearchInput
             value={searchTerm}
@@ -236,7 +236,7 @@ const AccountingApprovals: React.FC = () => {
                       type="checkbox"
                       checked={allFilteredSelected}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 cursor-pointer"
+                      className="w-4 h-4 rounded-sm border-gray-300 dark:border-gray-600 text-blue-600 cursor-pointer"
                     />
                   </th>
                   {visibleColumns.category && <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">{t('approvals.column_labels.category')}</th>}
@@ -265,7 +265,7 @@ const AccountingApprovals: React.FC = () => {
                         type="checkbox"
                         checked={selectedIds.has(invoice.id)}
                         onChange={() => toggleSelect(invoice.id)}
-                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 cursor-pointer"
+                        className="w-4 h-4 rounded-sm border-gray-300 dark:border-gray-600 text-blue-600 cursor-pointer"
                       />
                     </td>
                     {visibleColumns.category && (
@@ -332,7 +332,7 @@ const AccountingApprovals: React.FC = () => {
       </div>
 
       {invoices.length > 0 && filteredInvoices.length === 0 && searchTerm && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 p-8">
           <EmptyState
             icon={AlertCircle}
             title={t('approvals.no_results.title')}

@@ -52,6 +52,8 @@ graphify-out/
 
 # Supabase temp folder
 supabase/.temp/
+# Local stack state written by `supabase start` / `supabase db reset`
+supabase/.branches/
 # Deno lockfile — regenerated locally when type-checking edge functions
 supabase/functions/deno.lock
 # Web Push private VAPID keys — the JWKS half. Lives in the send-push edge

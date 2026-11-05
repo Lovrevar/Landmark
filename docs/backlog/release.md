@@ -27,6 +27,30 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   duplicate has appeared since 2026-10-12 (none then, in any database). Afterwards, try to add a
   unit with a number already in the building and a building with a name already in the project:
   both are refused with a message that says so.
+- [ ] **Apply `20261026100000_voice_calls`** (voice assistant, `feature/voice-assistant` only).
+  **Dev: done** — its SQL ran directly on 2026-10-26 and `supabase db push` recorded it on
+  2026-10-27, after the merge. Dev has no pg_cron, so the sweep is not scheduled (enable pg_cron,
+  then run the migration's last DO block). Production
+  only when the voice feature ships, and before `VOICE_CALLS_ENABLED` is flipped on (without the
+  migration the flag breaks the chat history list). Afterwards: `select jobname from
+  cron.job where jobname = 'voice-calls-sweep'` returns one row; as a signed-in user,
+  `select * from voice_calls` is refused; existing chat sessions show `channel = 'chat'`. Then
+  `/db-types`.
+- [ ] **Apply `20261027100000_meeting_rooms`** (conference-room board for the task app,
+  `feature/meeting-rooms`), dev first, then production **before the task app build that shows
+  "Sastanci" ships** — that client names both tables in its workspace query and goes dark without
+  them (SHARED_SCHEMA.md §12 step 4). It enables `btree_gist`. Afterwards: `select name from
+  meeting_rooms order by sort_order` returns Mala konferencija, Velika konferencija; as a signed-in
+  user insert two overlapping bookings of the same room and the second is refused with `23P01`;
+  `select tablename from pg_publication_tables where pubname = 'supabase_realtime'` lists both
+  new tables (the task app's live board depends on it). Then `/db-types` here and
+  `npm run typecheck` in the task app.
+- [ ] **Apply `20261027100100_room_reservation_attendees`** (meeting attendees for the task app),
+  dev first, right after `20261027100000`, and **deploy `send-push`** (`supabase functions deploy
+  send-push`) on the same project before the task app build that invites people ships: that build
+  sends `meeting_invited`, which the deployed function rejects as "Nepoznata vrsta obavijesti"
+  until then. Afterwards, as the creator of a booking, add a colleague who has notifications on:
+  their phone shows "Novi sastanak"; cancel it: "Sastanak otkazan" replaces it. Then `/db-types`.
 - [ ] **Apply `20261015100000_unphased_tic_phase_budgets`** (GEN-22), dev first, and **before the
   client from 2026-10-15 ships**: that client no longer recognises the old "phase 1 holds the whole
   plan" shape, so on an unmigrated database Budget Control would measure such a project as phase 1
@@ -60,8 +84,18 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   account and check the balance follows.
 - [x] **Check bank accounts that were already wiped** (2026-10-09, read-only on production).
   See "Bank accounts check" below: no account matches the CASH-1 pattern; four balances are stale.
-- [ ] **Try TIC saves on dev** once `20260930100400` is applied: a first-time save, and a save as
-  Accounting and as Investment (FUND-2). The fix was made from reading the code.
+- [ ] **Tell Budget Control users the figures move** (GEN-23, `fix/gen-23-evm-uncontracted`) when
+  that branch ships. Earned value no longer credits uncontracted work: on production on
+  2026-10-20 the 10 projects with contracts had only about 15% of their phase budgets contracted,
+  so the old CPIs (Precko Zapad 115,58) were inflated. No paid contract on production has
+  milestones, so after the release **every production project shows "—" for CPI, EAC and VAC**,
+  with "Plaćeni ugovori nemaju prekretnice" or, for four projects paid only through suppliers
+  without a contract, "Samo plaćanja bez ugovora". CPI comes back per project once its contracts
+  get milestones (GEN-8) — tell the site team. Also check Precko Zapad's €600.000.000 plan is
+  real. After it reaches the demo, retake `HELP_SHOTS_ONLY=kontrola-proracuna npm run help:shots`.
+- [ ] **Try TIC saves on dev** (FUND-2): a first-time save, and a save as Accounting and as
+  Investment. The fix was made from reading the code; its migration `20260930100400` is applied
+  everywhere since 2026-10-06, so nothing blocks this.
 - [ ] **Run drift check 2 from migration `20260917100000`** after the cesija sign is decided
   (CASH-6 in [cashflow.md](./cashflow.md)).
 

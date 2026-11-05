@@ -291,7 +291,7 @@ Several tests above assert on `activity_log` rows. Notes for test authors:
 
 - **GitHub Actions**. Workflow: `.github/workflows/e2e.yml`.
 - **Triggers**: pull requests to `main` and `development`; `workflow_dispatch` for ad-hoc runs.
-- **Runtime environment**: `ubuntu-latest`, Node 20, `npx playwright install --with-deps chromium`.
+- **Runtime environment**: `ubuntu-latest`, Node 24, `npx playwright install --with-deps chromium`.
 - **Secrets**: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CASHFLOW_PASSWORD`, `E2E_ALLOWED_SUPABASE_URL`. Workflow asserts each is non-empty before running tests.
 - **Sharding**: start single-shard. If the suite exceeds 8 minutes, split into 2 shards via Playwright's `--shard=i/n` with a GitHub matrix. Not needed at the 21-test baseline.
 - **Artifacts**: upload `playwright-report/` and `test-results/` on failure, 14-day retention. Traces, videos, and screenshots are sufficient to debug any failure without re-running.

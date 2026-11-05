@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phase 0 spot-check</title>
+<style>
+  :root { --bg:#fafaf9; --fg:#1c1917; --muted:#78716c; --accent:#0f766e; --bad:#b91c1c; --card:#ffffff; --line:#e7e5e4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1c1917; --fg:#f5f5f4; --muted:#a8a29e; --accent:#2dd4bf; --bad:#f87171; --card:#292524; --line:#44403c; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 18px; margin: 0 0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  label { font-weight:600; margin-right:6px; }
+  input[type=number], input[type=text] { font:inherit; padding:6px 10px; width:7em; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--fg); margin-right:12px; }
+  button { font:inherit; padding:6px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--fg); cursor:pointer; margin-right:8px; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  #sentence { font-size: clamp(22px, 4vw, 34px); line-height:1.3; margin: 8px 0; overflow-wrap:anywhere; }
+  .muted, .keys { color:var(--muted); font-size:14px; }
+  kbd { border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:0 6px; font-size:13px; }
+  #verdict.bad { color:var(--bad); font-weight:700; }
+  table { border-collapse: collapse; font-size:14px; }
+  td, th { padding:2px 12px 2px 0; text-align:left; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Phase 0 — spot-check of recorded takes</h1>
+
+  <section class="card">
+    <p>
+      <label>1. Takes folder</label><input id="folder" type="file" webkitdirectory multiple>
+    </p>
+    <p>
+      <label for="n">Takes per speaker</label><input id="n" type="number" min="1" value="5">
+      <label for="seed">Seed</label><input id="seed" type="text">
+      <button id="sample" class="primary" disabled>2. Draw sample</button>
+    </p>
+    <p class="keys">
+      Serve this folder on localhost, as for the recorder, so the sentence text can be shown next to each
+      take. The sample is random per speaker; the seed is shown so a sample can be drawn again exactly.
+      Keys: <kbd>Space</kbd> replay · <kbd>Enter</kbd> OK and next · <kbd>F</kbd> flag and next ·
+      <kbd>←</kbd> back.
+    </p>
+    <p id="status" class="muted"></p>
+  </section>
+
+  <section class="card hidden" id="player">
+    <div class="muted"><span id="pos"></span> · <span id="file"></span></div>
+    <div id="sentence"></div>
+    <audio id="audio" controls></audio>
+    <div id="verdict"></div>
+  </section>
+
+  <section class="card hidden" id="summary">
+    <p><strong id="summaryText"></strong></p>
+    <table id="perSpeaker"></table>
+    <p><button id="export" class="primary">Download flagged.csv</button></p>
+    <p class="keys">
+      To re-record flagged takes, delete those files from the takes folder and reopen the recorder for that
+      speaker and session: its resume step asks for exactly the missing takes.
+    </p>
+  </section>
+</main>
+
+<script>
+'use strict'
+const $ = (id) => document.getElementById(id)
+const NAME_RE = /^(s0[1-6])_(t\d{2}_c[123]|e\d{2}_c[12]|[adq]\d{2})\.wav$/
+const state = { files: new Map(), sentences: {}, sample: [], i: 0, marks: {} }
+
+function fnv1a(str) { let h = 0x811c9dc5; for (const ch of new TextEncoder().encode(str)) { h ^= ch; h = Math.imul(h, 0x01000193) >>> 0 } return h }
+function mulberry32(seed) { return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
+function shuffled(items, seedStr) {
+  const rnd = mulberry32(fnv1a(seedStr)); const a = items.slice()
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]] }
+  return a
+}
+function parseCsv(text) {
+  const rows = []; let row = []; let field = ''; let q = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++ } else q = false } else field += c }
+    else if (c === '"') q = true
+    else if (c === ',') { row.push(field); field = '' }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(field); field = ''; if (row.length > 1 || row[0] !== '') rows.push(row); row = [] }
+    else field += c
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row) }
+  const [head, ...body] = rows
+  return body.map((r) => Object.fromEntries(head.map((h, i) => [h.trim(), r[i] ?? ''])))
+}
+
+// Sentence text per item id, if the script files are reachable (they are when served on localhost).
+async function loadSentences() {
+  const spec = [
+    ['sentences.csv', (r) => `${r.term_id}_c${r.carrier_no}`], ['entities.csv', (r) => `${r.entity_id}_c${r.carrier_no}`],
+    ['amounts.csv', (r) => r.amount_id], ['dates.csv', (r) => r.date_id], ['questions.csv', (r) => r.question_id],
+  ]
+  for (const [name, id] of spec) {
+    try {
+      const res = await fetch(name, { cache: 'no-store' }); if (!res.ok) continue
+      for (const r of parseCsv(await res.text())) state.sentences[id(r)] = r.sentence
+    } catch { /* opened from file:// — sentences just won't be shown */ }
+  }
+}
+
+$('seed').value = String(Math.floor(Math.random() * 1e6))
+loadSentences()
+
+$('folder').addEventListener('change', (e) => {
+  state.files = new Map()
+  for (const f of e.target.files) if (NAME_RE.test(f.name)) state.files.set(f.name, f)
+  const speakers = new Set([...state.files.keys()].map((n) => n.slice(0, 3)))
+  $('status').textContent = `${state.files.size} takes from ${speakers.size} speaker(s).`
+  $('sample').disabled = state.files.size === 0
+})
+
+$('sample').addEventListener('click', () => {
+  const n = Math.max(1, parseInt($('n').value, 10) || 5)
+  const seed = $('seed').value.trim() || '0'
+  const bySpeaker = {}
+  for (const name of [...state.files.keys()].sort()) (bySpeaker[name.slice(0, 3)] ??= []).push(name)
+  state.sample = []
+  for (const sp of Object.keys(bySpeaker).sort()) state.sample.push(...shuffled(bySpeaker[sp], `${seed}:${sp}`).slice(0, n))
+  state.i = 0; state.marks = {}
+  $('summary').classList.add('hidden'); $('player').classList.remove('hidden')
+  $('status').textContent = `Sample: ${state.sample.length} takes (${n} per speaker, seed ${seed}).`
+  show()
+})
+
+function show() {
+  if (state.i >= state.sample.length) return finish()
+  const name = state.sample[state.i]
+  const itemId = name.match(NAME_RE)[2]
+  $('pos').textContent = `${state.i + 1}/${state.sample.length}`
+  $('file').textContent = name
+  $('sentence').textContent = state.sentences[itemId] ?? '(sentence text unavailable — open via localhost)'
+  const v = state.marks[name]
+  $('verdict').textContent = v === 'flag' ? 'FLAGGED' : v === 'ok' ? 'ok' : ''
+  $('verdict').className = v === 'flag' ? 'bad' : ''
+  const audio = $('audio'); URL.revokeObjectURL(audio.src)
+  audio.src = URL.createObjectURL(state.files.get(name)); audio.play().catch(() => {})
+}
+
+function mark(v) { state.marks[state.sample[state.i]] = v; state.i++; show() }
+
+function finish() {
+  $('player').classList.add('hidden'); $('summary').classList.remove('hidden')
+  const flagged = state.sample.filter((n) => state.marks[n] === 'flag')
+  $('summaryText').textContent = `${flagged.length} of ${state.sample.length} sampled takes flagged.`
+  const rows = {}
+  for (const n of state.sample) { const sp = n.slice(0, 3); rows[sp] ??= [0, 0]; rows[sp][0]++; if (state.marks[n] === 'flag') rows[sp][1]++ }
+  $('perSpeaker').innerHTML = '<tr><th>Speaker</th><th>Checked</th><th>Flagged</th></tr>' +
+    Object.entries(rows).map(([sp, [c, f]]) => `<tr><td>${sp}</td><td>${c}</td><td>${f}</td></tr>`).join('')
+}
+
+$('export').addEventListener('click', () => {
+  const flagged = state.sample.filter((n) => state.marks[n] === 'flag')
+  const q = (s) => `"${String(s).replace(/"/g, '""')}"`
+  const text = 'file,speaker,sentence\n' + flagged.map((n) => [n, n.slice(0, 3), q(state.sentences[n.match(NAME_RE)[2]] ?? '')].join(',')).join('\n') + '\n'
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = 'flagged.csv'; a.click()
+})
+
+document.addEventListener('keydown', (e) => {
+  if ($('player').classList.contains('hidden') || e.target.tagName === 'INPUT') return
+  if (e.code === 'Space') { e.preventDefault(); const a = $('audio'); a.currentTime = 0; a.play().catch(() => {}) }
+  else if (e.key === 'Enter') { e.preventDefault(); mark('ok') }
+  else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); mark('flag') }
+  else if (e.key === 'ArrowLeft' && state.i > 0) { e.preventDefault(); state.i--; show() }
+})
+</script>
+</body>
+</html>

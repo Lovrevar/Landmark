@@ -1,10 +1,11 @@
 # Cognilion — Testing
 
-Three complementary layers:
+Four complementary layers:
 
 1. **Unit suite** — Vitest, runs in-process with no DB, fast feedback. Covers pure functions across every module (formatters, VAT and credit math, TIC, export rows, calendar recurrence, task rules, dashboard figures…).
-2. **Automated E2E suite** — Playwright, runs against the dev Supabase project, green suite required before release. Covers critical paths across Auth, Cashflow, Sales, Funding, Retail, Supervision and Reports.
-3. **Manual testing cheat sheet** — module-by-module walkable checklists under [./test/](./test/). Source of truth for edge cases, uncommon flows, and UX regressions not yet worth automating.
+2. **Database tests** — pgTAP, against a local database built from every migration. Covers RLS policies, functions and triggers as they stand after the last migration. See [below](#database-tests-pgtap).
+3. **Automated E2E suite** — Playwright, runs against the dev Supabase project, green suite required before release. Covers critical paths across Auth, Cashflow, Sales, Funding, Retail, Supervision and Reports.
+4. **Manual testing cheat sheet** — module-by-module walkable checklists under [./test/](./test/). Source of truth for edge cases, uncommon flows, and UX regressions not yet worth automating.
 
 Run the unit suite for instant feedback on the logic you touched, then E2E to catch the blunt-force regressions, and finally walk the relevant manual sheet for the module you touched.
 
@@ -18,33 +19,53 @@ Run the unit suite for instant feedback on the logic you touched, then E2E to ca
 
 Pure functions only — the deterministic calculation and formatting helpers that back the financial/UI layers. Component rendering and integration flows are left to the E2E suite.
 
-66 test files as of 2026-10-01, each beside the code it tests. The first three rows are relative to
+105 test files as of 2026-10-21, each beside the code it tests (the utils, lib, Cashflow, Reports,
+Sales, General and Dashboards rows were recounted that day, the others on 2026-10-01). The first three rows are relative to
 `src/`, the module rows to `src/components/<Module>/`; the `.test.ts` suffix is left off:
 
 | Area | Files |
 |---|---|
-| Shared utils — `utils/` (14) | `formatters`, `vatCalculations` (the 4-slot multi-VAT engine), `dateOnly`, `evm`, `contractRollup`, `contractVariance`, `excelParsers`, `downloadFile`, `i18nGuards`, `locale`, `pdfFont`, `phaseLabel`, `projectTimeline`, `statusDisplay` |
-| Data layer — `lib/` (4) | `dbErrors`, `errorMessage`, `fetchAllRows`, `xlsxExport` |
+| Shared utils — `utils/` (29) | `formatters`, `vatCalculations` (the 4-slot multi-VAT engine), `dateOnly`, `evm`, `contractRollup`, `contractVariance`, `excelParsers`, `downloadFile`, `i18nGuards`, `locale`, `pdfFont`, `phaseLabel`, `projectTimeline`, `statusDisplay`, `appPath`, `invoiceCashDirection`, `permissions`, `routeAccess`; the business figures `salesFigures` (and `packageTotal`'s tests), `fundingFigures`, `paymentFigures`, `paymentTotals`, `cashFlowFigures`, `invoiceFigures`, `constructionFigures`, `projectFigures`, `retailFigures`, `ticFigures` |
+| Data layer — `lib/` (9) | `dbErrors`, `errorMessage`, `fetchAllRows`, `helpKb`, `linkedUnitPrices`, `migrationSupersession`, `orgName`, `organizationSettings`, `xlsxExport` |
 | Hooks — `hooks/` (2) | `useEscapeKey`, `useFocusTrap` (the pure layer-stack / focus helpers, no rendering) |
 | Calendar (6) | `utils/`: `eventEdit`, `eventTypeColors`, `monthLayout`, `pendingCount`, `recurrence`, `recurrencePresets` |
-| Cashflow (6) | `DebtStatus/services/debtExport`, `Payments/services/paymentPayload`, `Payments/services/paymentValidation`, `services/invoiceHelpers`, `services/paymentHelpers`, `services/paymentTotals` |
+| Cashflow (9) | `Calendar/calendarMoney`, `Calendar/utils/budgetDifference`, `Calendar/utils/monthStats`, `Companies/companyMoney`, `DebtStatus/services/debtExport`, `Payments/services/paymentPayload`, `Payments/services/paymentValidation`, `services/invoiceHelpers`, `services/paymentHelpers` |
 | Chat (1) | `services/chatAttachmentPath` |
 | Documents (1) | `utils/treeHelpers` |
 | Funding (10) | `Investments/utils/creditUsage`, `Investors/utils/creditCalculations`, `Investors/utils/creditStatus`, `Payments/services/fundingPaymentsExport`, `Projects/utils/weightedInterestRate`, `TIC/services/ticExport`, `TIC/services/ticImport`, `TIC/utils/ticBudget`, `TIC/utils/ticClassificationMap`, `TIC/utils/ticFormatters` |
-| General (1) | `Projects/tabs/subcontractorsSummary` |
-| Reports (1) | `pdf/pdfExportKeys` |
+| General (2) | `Projects/services/projectDetailsService`, `Projects/tabs/subcontractorsSummary` |
+| Reports (4) | `pdf/pdfExportKeys`, `pdf/pdfText`, `services/generalReportService`, `services/salesReportService` (characterization tests: the whole report pinned over a fake Supabase client, before its figures moved to `src/utils/` — see `docs/REPORTS.md`) |
 | Retail (2) | `Invoices/services/retailInvoiceService`, `Sales/services/retailSalesService` |
-| Sales (5) | `Payments/services/salesPaymentsService`, `SalesProjects/bulkPriceResult`, `SalesProjects/importOutcome`, `SalesProjects/unitFilters`, `utils/priceUtils` |
+| Sales (11) | `Payments/services/salesPaymentsService`, `SalesProjects/bulkPriceResult`, `SalesProjects/importOutcome`, `SalesProjects/salesProjectsRollup`, `SalesProjects/unitFilters`, `SalesProjects/services/salesService`, `SalesProjects/services/apartmentImportTemplate`, `SalesProjects/services/apartmentImportValidation`, `SalesProjects/services/garageImportService`, `SalesProjects/services/garageImportTemplate`, `utils/priceUtils` |
 | Supervision (6) | `Invoices/services/supervisionInvoiceService`, `Payments/services/supervisionPaymentService`, `SiteManagement/utils/classificationNormalization`, `SiteManagement/utils/contractTree`, `SiteManagement/utils/phaseSetup`, `WorkLogs/workLogStatus` |
 | Tasks (4) | `permissions`, `subtasks`, `taskLists`, `unread` |
-| Dashboards (3) | `utils/barScale`, `utils/directorAlerts`, `utils/retailTotals` |
+| Dashboards (6) | `services/directorService`, `services/salesDashboardService`, `utils/barScale`, `utils/directorAlerts`, `utils/retailTotals`, `utils/supervisionDeadlines` |
 
-The specs that sit in `services/` test the pure helpers those files export (payment payloads,
-validation, export-sheet builders, TIC workbook parsing), never the Supabase calls.
+Most specs in `services/` test the pure helpers those files export (payment payloads,
+validation, export-sheet builders, TIC workbook parsing). The characterization tests of Step 7
+(the General and Sales reports, the Director and Sales dashboards, Project details) run a whole
+service over a fake client instead: `src/test/fakeSupabase.ts` answers `from(table)` with fixture
+rows and applies `eq`, `in`, `gte`, `lte`, not-null, `order`, `range` and `single` the way
+PostgREST would, dotted paths into embedded rows included, and fails the tables a test names. The
+General report's test keeps its own smaller fake.
 
-The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs the six
-`*.test.ts` files under `supabase/functions/` (`_shared/help-score`, `_shared/tools`,
-`import-erp/feeds`, `import-erp/parse`, `sort-document/classifier`, `sort-document/extract`).
+The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs every
+`*.test.ts` file under `supabase/functions/` (`_shared/help-score`, `_shared/help-search`,
+`_shared/tools`, the four `ai-chat/tests/` files below, `import-erp/feeds`, `import-erp/parse`,
+`send-push/meeting`, `sort-document/classifier`, `sort-document/extract`, and `voice-llm`'s three). CI runs them on
+Deno 2.9.8, pinned in `.github/workflows/test.yml`; use the same version locally
+(`deno upgrade 2.9.8`), since a newer or older Deno can type-check the same code differently.
+
+**In VS Code**, `supabase/functions` is Deno code, so the editor's TypeScript reports false errors there
+(`jsr:`/`npm:` imports, `Deno`) unless the Deno extension takes the folder. `.vscode/extensions.json`
+recommends the extension. `.vscode/settings.json` is personal (gitignored), so add this to it:
+
+```json
+{ "deno.enablePaths": ["supabase/functions"], "deno.lint": false }
+```
+
+`deno.lint` is off because ESLint is the project's linter. Deno's linter rejects the inline
+`npm:`/`jsr:` imports used throughout.
 
 ### Configuration ([`vitest.config.ts`](../vitest.config.ts))
 
@@ -60,6 +81,15 @@ The edge functions have their own Deno tests, outside Vitest: `npm run test:func
 - Targets are **pure functions** — deterministic, dependency-free, no Supabase/React. If a helper needs a DB row or a rendered component, it belongs in E2E, not here.
 - Croatian domain terms (`vlastita`, `kreditna`, the 4 VAT slots) stay in Croatian in the test data, matching the codebase.
 - Assertions are anchored to the code's **actual** output, not the textbook ideal — several specs document real quirks (e.g. the `calculatePaymentSchedule` 119-vs-120 monthly-payment off-by-one, hr-HR's U+2212 minus sign).
+- **A bug fix is the exception:** its test asserts the *correct* output, is named after the backlog id (`it('GEN-23: …')`), and must fail before the fix. It checks what the user saw — the figure on the card, not an intermediate value. Rules: [`.claude/rules/testing.md`](../.claude/rules/testing.md); why: [`REGRESSION_PREVENTION.md`](./REGRESSION_PREVENTION.md).
+- Two tests still read a migration's text (`organizationSettings.test.ts` and the "database agrees" part of `invoiceCashDirection.test.ts`). They are guarded by `src/lib/migrationSupersession.test.ts`, which fails when a newer migration redefines what they read. New SQL is tested with pgTAP instead (below).
+
+### Claude Code hooks
+
+Two hooks in `.claude/settings.json` run for every Claude Code session in this repository:
+
+- **Stop** — [`.claude/hooks/stop-verify.mjs`](../.claude/hooks/stop-verify.mjs). When Claude is about to end a turn with uncommitted changes in `src/`, it runs `npm run typecheck` and `vitest related` on the changed files; a failure is sent back to Claude instead of ending the turn. It blocks once per turn and skips a tree that already passed. CI stays the full check.
+- **PreToolUse (Edit|Write)** — [`.claude/hooks/guard-tests.mjs`](../.claude/hooks/guard-tests.mjs). An edit to an existing test file that removes or changes an assertion, or adds `.skip`/`.only`/`.todo`, asks you first and quotes the lines. Adding new tests passes silently.
 
 ### Running
 
@@ -68,6 +98,50 @@ npm test               # one-shot run (vitest run)
 npm run test:watch     # watch mode (vitest)
 npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 ```
+
+---
+
+## Database tests (pgTAP)
+
+**Files:** `supabase/tests/database/*.test.sql`. **Runner:** `supabase test db` (`npm run test:db`), which runs [pgTAP](https://pgtap.org/) through `pg_prove` against the local database.
+
+**CI:** [`.github/workflows/db-tests.yml`](../.github/workflows/db-tests.yml) (job **Database tests / db**) runs them on every push and pull request to `main` and `development`. It needs no secrets.
+
+`supabase start` builds that database from nothing by applying every migration in `supabase/migrations/`, so a green run also proves the migrations still apply from scratch. Each test file opens a transaction and rolls it back, so the tests leave no data behind and never touch LandmarkDev, LandmarkDemo or production.
+
+| File | Checks |
+|---|---|
+| `00_rls_enabled` | Every table in `public` has row level security on |
+| `sec_004_contracts_scope` | SEC-004: a Supervision user reads, adds, updates and moves contracts, and reads milestones, only on projects it is assigned to; only a Director deletes; AUTH-4's overload stays dropped |
+| `sec_a12_document_delete` | SEC-A12: a file in `documents` / `contract-documents` is deleted only by its uploader, a Director or Accounting; no UPDATE policy on those buckets |
+| `sales_10_cancel_sale` | SALES-10: only Director and Accounting cancel; refused while a sales invoice exists; the apartment, its garage and storage unit become Available; the customer becomes interested only after their last sale; one sale per apartment |
+| `sales_9_unique_numbers` | SALES-9 / SALES-17: one unit number per building (trimmed, case-insensitive, also for apartments without a building), one building name per project |
+| `gen_22_unphased_tic` | GEN-22: an unphased TIC leaves several phases NULL, gives a single phase the whole plan and its classification split, and re-applies when phases are added or removed |
+| `room_reservation_attendees` | Meeting attendees (SHARED_SCHEMA.md §15): the creator or an admin adds and removes, an attendee leaves but cannot invite or remove others, no duplicates, no UPDATE grant, attendees cascade with the reservation, the table is published for realtime |
+| `meeting_rooms` | Conference rooms (SHARED_SCHEMA.md §15): the two rooms are seeded; everyone reads every booking; a booking in someone else's name, one ending before it starts, one over 24 h and one overlapping the same room are refused; back-to-back and other-room bookings pass; only the creator or a task-app admin edits or deletes; only an admin manages rooms; `updated_at` moves by trigger |
+
+### Writing one
+
+- Name the file after the backlog id (`sales_10_cancel_sale.test.sql`) and the assertions too (`'SEC-004: …'`).
+- Fixtures are inserted as the database owner, so RLS does not get in the way. Insert into `auth.users` with the role in `raw_app_meta_data` (`{"provider":"email","role":"Supervision"}`). The sign-up trigger (`handle_new_user`) creates the `public.users` row.
+- To act as that user: `set local role authenticated;` then `set local request.jwt.claims = '{"sub":"<auth user id>","role":"authenticated"}';`. `reset role;` goes back to the owner, for example to check nothing was written.
+- RLS refusing an INSERT raises `42501`. An UPDATE or DELETE it refuses raises nothing and touches 0 rows, so assert the row count afterwards.
+- An UPDATE with a `WHERE` clause is also checked against the SELECT policy, which can hide a broken UPDATE policy. Test the UPDATE policy with a blanket `update … set` (no `WHERE`) and count what changed.
+- Deleting from `storage.objects` in SQL needs `set local storage.allow_delete_query = 'true'` first, or Storage's own trigger refuses every delete with `42501`.
+- `results_eq` on a `name` or `proconfig` column fails with "could not determine which collation"; compare those with `is()` instead.
+- Watch it fail: undo the fix in a scratch migration, `supabase db reset && supabase test db`, then delete the scratch migration and reset again.
+
+### Running
+
+```bash
+supabase start     # needs Docker; the first run pulls the images (several minutes)
+npm run test:db    # supabase test db
+supabase db reset  # after adding or changing a migration: rebuild from every migration
+supabase stop      # when finished
+```
+
+- **Docker in WSL:** Docker Desktop must be running *and* have WSL integration on for Ubuntu (Settings → Resources → WSL integration). If `docker info` fails in WSL while `docker.exe info` works, toggle that integration off and on, or run `wsl --shutdown` and restart Docker Desktop.
+- **Ports:** this project's local stack uses 5442x (API 54421, database 54422, Studio 54423, Inbucket 54424), set in `supabase/config.toml`, so it can run beside another local Supabase project on the default 5432x ports.
 
 ---
 
@@ -111,6 +185,24 @@ anything under `erp.` or the promotion functions.**
 
 The parsing and validation logic has its own Deno unit tests
 (`cd supabase/functions && deno test import-erp/`, 38 tests).
+
+## AI chat characterisation tests
+
+`supabase/functions/ai-chat/tests/` (106 tests) runs the **real** `ai-chat` edge function
+in-process against fakes of the Anthropic Messages API and of Supabase (GoTrue, PostgREST,
+Storage). No network, no project, no key. It pins what the function does today: SSE wire format,
+persisted rows and their parent chain, failure and cancellation paths, and the money-question rules
+(TIC as the only budget source, phase vs cost classification, `budget_used` never reaching the
+model). It runs as part of `npm run test:functions`, and so in CI.
+
+```bash
+cd supabase/functions && deno test --allow-net --allow-env ai-chat/tests/
+```
+
+It is **characterisation**, not specification: some tests pin behaviour that is logged as a
+suspected bug (`[OQ-n]` tags, see `docs/voice/open-questions.md`). Change those only together with a
+decision on the open question. The scenario list, the coverage map and the rules for the voice
+refactor are in [voice/03-characterisation-tests.md](./voice/03-characterisation-tests.md).
 
 ## E2E suite
 

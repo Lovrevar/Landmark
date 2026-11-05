@@ -5,6 +5,31 @@
 project_id = "cognilion"
 
 # ----------------------------------------------------------------------------
+# Local development ports (`supabase start`, used by the pgTAP tests)
+# ----------------------------------------------------------------------------
+# Shifted from the CLI defaults (5432x) to 5442x so this stack can run beside
+# another local Supabase project. Only affects the local stack and CI.
+
+[api]
+port = 54421
+
+[db]
+port = 54422
+shadow_port = 54420
+
+[db.pooler]
+port = 54429
+
+[studio]
+port = 54423
+
+[inbucket]
+port = 54424
+
+[analytics]
+port = 54427
+
+# ----------------------------------------------------------------------------
 # Edge Functions
 # ----------------------------------------------------------------------------
 
@@ -17,6 +42,18 @@ verify_jwt = false
 
 [functions.ai-chat]
 verify_jwt = true
+
+[functions.voice-session]
+# Starts, refreshes and ends an in-app voice call; the browser calls it with
+# its normal session, like ai-chat.
+verify_jwt = true
+
+[functions.voice-llm]
+# Called by our voice agent worker, not a browser — there is no user JWT on the
+# request. The function checks a shared secret (x-voice-secret) and resolves
+# the caller from the opaque call token voice-session issued. See
+# docs/voice/02-voice-implementation-plan.md §4.3–4.4.
+verify_jwt = false
 
 [functions.send-push]
 # Web Push fan-out for the standalone mobile task app, which points at this

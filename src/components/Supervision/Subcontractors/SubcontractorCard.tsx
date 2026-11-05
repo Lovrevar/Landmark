@@ -26,7 +26,7 @@ export const SubcontractorCard: React.FC<Props> = ({ sub, onSelect, onEdit, onDe
           <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate">{sub.name}</h3>
           {sub.contact && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{sub.contact}</p>}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {onEdit && (
             <button
               onClick={onEdit}

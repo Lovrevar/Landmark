@@ -80,7 +80,7 @@ const TaskRow: React.FC<Props> = ({
           onClick(task)
         }
       }}
-      className={`group relative flex items-center gap-3 pl-4 pr-4 py-3.5 border ${surface} rounded-lg hover:shadow-sm transition-shadow cursor-pointer ${overdue ? 'border-l-4 border-l-red-500 dark:border-l-red-500' : ''}`}
+      className={`group relative flex items-center gap-3 pl-4 pr-4 py-3.5 border ${surface} rounded-lg hover:shadow-xs transition-shadow cursor-pointer ${overdue ? 'border-l-4 border-l-red-500 dark:border-l-red-500' : ''}`}
     >
       <button
         type="button"
@@ -89,7 +89,7 @@ const TaskRow: React.FC<Props> = ({
           e.stopPropagation()
           onToggleDone(task)
         }}
-        className={`flex-shrink-0 p-2 -m-2 transition-colors ${
+        className={`shrink-0 p-2 -m-2 transition-colors ${
           done
             ? 'text-emerald-600 dark:text-emerald-400'
             : 'text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400'
@@ -114,7 +114,7 @@ const TaskRow: React.FC<Props> = ({
         <div className="flex items-center gap-2 min-w-0">
           {hasUnread && (
             <span
-              className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500"
+              className="shrink-0 w-2 h-2 rounded-full bg-blue-500"
               title={t('tasks.row.unread')}
             />
           )}

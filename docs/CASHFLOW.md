@@ -964,7 +964,7 @@ Shared utilities used across multiple Cashflow sub-modules.
 - `columnLabels` — Croatian display names for invoice table columns
 - **Depends on:** `utils/dateOnly` (pure helpers)
 
-### paymentTotals.ts
+### paymentTotals.ts — now `src/utils/paymentTotals.ts`
 - `paymentTotalsByDirection(rows)` → `{ inflow, outflow, net, count }`. Sums by direction, never
 - `paymentTotalsByCategory(rows)` → `{ operating, financing }`, each a `PaymentTotals`. The Cashflow payments cards and the "Filtrirano" line show `operating` as Prihod / Rashod / Neto and `financing` on its own line (`common.financing_received_repaid`): credit principal is neither income nor expense (CASH-29). The Funding register keeps `paymentTotalsByDirection` — its cards are worded as drawdowns and repayments.
   across it: one summed amount put a €500k drawdown and its €500k repayment at €1.000.000, and a
@@ -976,8 +976,9 @@ Shared utilities used across multiple Cashflow sub-modules.
   payment screens render a direction identically
 - `formatSignedEuro(value)` — a net figure with its `+` (the minus comes from `formatEuro`)
 - Moved here (was `Funding/Payments/paymentTotals.ts`, `bankPaymentTotals`) when the Cashflow
-  payments screen needed the same maths — it was never bank-specific. Unit-tested in
-  `paymentTotals.test.ts` (7 tests)
+  payments screen needed the same maths — it was never bank-specific — and on to `src/utils/` in
+  October 2026, when the General report's monthly cash flow (`src/utils/cashFlowFigures.ts`)
+  started summing with it. Unit-tested in `src/utils/paymentTotals.test.ts`
 
 ### paymentHelpers.ts
 - `allowedPaymentMethods(source, isCesija)` — bank_account → WIRE/CARD/CHECK, credit → WIRE, gotovina → CASH, kompenzacija → none, cesija (any source) → WIRE; unknown source → all four

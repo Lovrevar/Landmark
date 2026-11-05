@@ -1,6 +1,7 @@
 import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
 import { supabase } from '../../../lib/supabase'
 import { daysFromToday } from '../../../utils/dateOnly'
+import { creditLineTotals } from '../../../utils/fundingFigures'
 import { formatEuroCompact } from '../../../utils/formatters'
 import type { Project, Company, Bank, BankCredit, CreditAllocation, FinancialSummary, RecentActivity } from '../../../types/investment'
 
@@ -73,9 +74,10 @@ export async function fetchInvestmentDashboardData(): Promise<InvestmentDashboar
   const budgetedProjects = projects.filter(p => budgetedProjectIds.has(p.id))
   const total_portfolio_value = budgetedProjects.reduce((sum, p) => sum + Number(p.budget), 0)
   const unbudgeted_project_ids = projects.filter(p => !budgetedProjectIds.has(p.id)).map(p => p.id as string)
-  const total_credit_lines = credits.reduce((sum, c) => sum + Number(c.amount), 0)
-  const total_used_credit = credits.reduce((sum, c) => sum + Number(c.used_amount || 0), 0)
+  const { total: total_credit_lines, used: total_used_credit } = creditLineTotals(credits)
   const total_repaid_credit = credits.reduce((sum, c) => sum + Number(c.repaid_amount || 0), 0)
+  // Debt, headroom and the rate are defined differently from the Director dashboard and the
+  // General report, which use live debt only (FUND-21).
   // Derive debt from used − repaid so the headline KPI is always consistent with
   // the Used/Repaid tiles, rather than trusting a separately-stored balance.
   const total_outstanding_debt = Math.max(0, total_used_credit - total_repaid_credit)

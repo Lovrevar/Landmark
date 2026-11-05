@@ -24,7 +24,7 @@ const InlineLoadError: React.FC<InlineLoadErrorProps> = ({ message, onRetry, cla
   const { t } = useTranslation()
   return (
     <p className={`flex items-start gap-1.5 text-xs text-red-600 dark:text-red-400 ${className}`.trim()}>
-      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+      <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
       <span>
         {message ?? t('common.load_error_title')}
         {onRetry && (

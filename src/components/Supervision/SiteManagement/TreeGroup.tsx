@@ -38,7 +38,7 @@ const Metric: React.FC<{
   valueClassName?: string
   muted?: boolean
 }> = ({ label, children, className = '', valueClassName, muted }) => (
-  <div className={`flex-col items-end w-28 flex-shrink-0 ${className || 'flex'}`}>
+  <div className={`flex-col items-end w-28 shrink-0 ${className || 'flex'}`}>
     {children !== null && children !== undefined && (
       <>
         <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 leading-tight">
@@ -131,15 +131,15 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
               one vertical line whether or not a row is expandable. */}
           {isExpandable
             ? (isExpanded
-                ? <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                : <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />)
-            : <span className="w-4 h-4 flex-shrink-0" aria-hidden="true" />}
+                ? <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />
+                : <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400 shrink-0" />)
+            : <span className="w-4 h-4 shrink-0" aria-hidden="true" />}
           <span className={`font-semibold truncate ${
             isExpandable ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
           }`}>
             {node.label}
           </span>
-          <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
+          <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">
             ({node.rollup.count})
           </span>
         </button>
@@ -176,7 +176,7 @@ export const TreeGroup: React.FC<TreeGroupProps> = ({
           )}
 
           {/* Fixed width whether or not the buttons exist, so rows without them keep the grid. */}
-          <div className="flex items-center justify-end w-[72px] flex-shrink-0">
+          <div className="flex items-center justify-end w-[72px] shrink-0">
             {canEditBudget && (
               <Button
                 variant="ghost"

@@ -4,6 +4,8 @@ import { logActivity } from '../../../../lib/activityLog'
 import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
 import { exportT } from '../../../../utils/exportLanguage'
 import { getPaymentMethodLabel } from '../../../Cashflow/services/paymentHelpers'
+import { collectedFromSales, collectedSince } from '../../../../utils/salesFigures'
+import { parseLocalDate } from '../../../../utils/dateOnly'
 
 export interface SalesPaymentWithDetails {
   id: string
@@ -90,13 +92,12 @@ export async function fetchSalesPayments(): Promise<SalesPaymentWithDetails[]> {
 export function calculateSalesPaymentStats(payments: SalesPaymentWithDetails[]): SalesPaymentStats {
   const now = new Date()
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0)
-  const thisMonth = payments.filter(p => new Date(p.payment_date) >= firstDayOfMonth)
+  // By the payment's local date: `new Date('2026-10-01')` is UTC, which west of UTC is 30 September.
   return {
     totalPayments: payments.length,
-    totalAmount,
-    paymentsThisMonth: thisMonth.length,
-    amountThisMonth: thisMonth.reduce((sum, p) => sum + Number(p.amount), 0)
+    totalAmount: collectedFromSales(payments),
+    paymentsThisMonth: payments.filter(p => parseLocalDate(p.payment_date) >= firstDayOfMonth).length,
+    amountThisMonth: collectedSince(payments, firstDayOfMonth)
   }
 }
 

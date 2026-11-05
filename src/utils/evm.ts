@@ -18,10 +18,20 @@ export interface EVMMetrics {
    */
   scheduleAvailable?: boolean
   /**
-   * False while nothing has been paid. CPI is then 1 and EAC the budget only by convention —
-   * there is no cost to measure against, so callers must not present them as "under budget".
+   * False until something is paid on a contract whose progress its milestones measure. CPI is
+   * otherwise 1 and EAC the budget by construction, not by measurement, so callers must not present
+   * them as "under budget". Why it is false is in `costUnavailableReason`.
    */
   costAvailable?: boolean
+  /**
+   * Set when `costAvailable` is false (GEN-23):
+   * - `nothing_paid` — no payment at all;
+   * - `no_contract` — everything paid went to suppliers without a contract, which count as earned
+   *   for what was paid;
+   * - `no_milestones` — the paid contracts have no milestones, so their progress is paid/amount and
+   *   earned equals paid.
+   */
+  costUnavailableReason?: 'nothing_paid' | 'no_contract' | 'no_milestones'
 }
 
 export interface MilestoneProgress {
@@ -99,6 +109,7 @@ export function calculateProjectEVM(
   projectBudget: number | null = null
 ): EVMMetrics {
   let totalPV = 0, totalEV = 0, totalAC = 0, totalBudget = 0
+  let contractedAC = 0, measuredAC = 0
   let scheduledPhases = 0
 
   const milestonesByContract = new Map<string, MilestoneProgress[]>()
@@ -117,14 +128,17 @@ export function calculateProjectEVM(
   const phaseIds = new Set(phases.map(phase => phase.id))
   const unphasedPlan = budgetNotSplitByPhase(phases)
 
+  // The span is known only when every phase is dated: taking it from the dated ones alone had the
+  // whole plan due by the end of phase 1 whenever the later phases had no dates yet (GEN-23).
+  const allDated = phases.every(phase => !!phase.start_date && !!phase.end_date)
   const starts = phases.map(phase => phase.start_date).filter((date): date is string => !!date).sort()
   const ends = phases.map(phase => phase.end_date).filter((date): date is string => !!date).sort()
   const measured = unphasedPlan
     ? [{
         budget: projectBudget ?? 0,
         contracts: contracts.filter(c => c.phase_id != null && phaseIds.has(c.phase_id)),
-        start: starts[0] ?? null,
-        end: ends[ends.length - 1] ?? null,
+        start: allDated ? starts[0] ?? null : null,
+        end: allDated ? ends[ends.length - 1] ?? null : null,
       }]
     : phases.map(phase => ({
         budget: Number(phase.budget_allocated ?? 0),
@@ -136,18 +150,32 @@ export function calculateProjectEVM(
         end: phase.end_date ?? null,
       }))
 
+  // A row with no contract value — a supplier paid without a contract (has_contract false), or a
+  // draft paid before its amount was entered — is work bought as it was paid for: worth what was
+  // paid and done. Left at 0 it was spent money that could never be earned, which sank CPI once
+  // completion was measured against the plan (GEN-23).
+  const value = (c: ContractWithDetails) => {
+    const amount = Number(c.contract_amount || 0)
+    return amount > 0 ? amount : Number(c.budget_realized || 0)
+  }
+  const physicalPct = (c: ContractWithDetails) => Number(c.contract_amount || 0) > 0
+    ? contractPhysicalPct(c.id, Number(c.contract_amount), Number(c.budget_realized || 0), milestonesByContract)
+    : 100
+
   measured.forEach(({ budget, contracts: phaseContracts, start, end }) => {
-    const phaseCommitted = phaseContracts.reduce((sum, c) => sum + Number(c.contract_amount || 0), 0)
+    const phaseCommitted = phaseContracts.reduce((sum, c) => sum + value(c), 0)
     const phaseAC = phaseContracts.reduce((sum, c) => sum + Number(c.budget_realized || 0), 0)
     // Physical completion = contract-value-weighted average of each contract's
     // milestone-based physical progress. Independent of money spent (see
     // contractPhysicalPct), so EV no longer collapses onto AC.
-    const weightedPhysical = phaseContracts.reduce((sum, c) => {
-      const amount = Number(c.contract_amount || 0)
-      const pct = contractPhysicalPct(c.id, amount, Number(c.budget_realized || 0), milestonesByContract)
-      return sum + amount * pct
-    }, 0)
-    const physicalCompletionPct = phaseCommitted > 0 ? weightedPhysical / phaseCommitted : 0
+    const weightedPhysical = phaseContracts.reduce((sum, c) => sum + value(c) * physicalPct(c), 0)
+    // Completion is measured against the plan, not against what has been contracted so far: work
+    // with no contract yet is not started. Dividing by the committed amount alone spread every
+    // contract's progress over the whole budget, so a phase 15% contracted and half done read as
+    // half the plan earned (GEN-23). Only when the contracts exceed the plan is their progress
+    // scaled down to it, so EV never passes the budget.
+    const completionBase = Math.max(phaseCommitted, budget)
+    const physicalCompletionPct = completionBase > 0 ? weightedPhysical / completionBase : 0
 
     // EV and AC need no schedule, so they are always accumulated. Only PV depends on dates.
     //
@@ -158,6 +186,11 @@ export function calculateProjectEVM(
     // schedule side, which `scheduleAvailable` now reports.
     totalEV += (budget * physicalCompletionPct) / 100
     totalAC += phaseAC
+    for (const c of phaseContracts) {
+      if (Number(c.contract_amount || 0) <= 0) continue
+      contractedAC += Number(c.budget_realized || 0)
+      if (milestonesByContract.get(c.id)?.length) measuredAC += Number(c.budget_realized || 0)
+    }
 
     if (start && end) {
       scheduledPhases += 1
@@ -180,6 +213,9 @@ export function calculateProjectEVM(
   return {
     PV: totalPV, EV: totalEV, AC: totalAC, CPI, SPI, EAC, VAC, CV, SV,
     scheduleAvailable: scheduledPhases > 0,
-    costAvailable: totalAC > 0,
+    costAvailable: measuredAC > 0,
+    ...(measuredAC > 0 ? {} : {
+      costUnavailableReason: totalAC <= 0 ? 'nothing_paid' : contractedAC <= 0 ? 'no_contract' : 'no_milestones',
+    }),
   }
 }

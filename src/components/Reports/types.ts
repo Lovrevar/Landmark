@@ -1,4 +1,5 @@
 import type { Project, Apartment, Customer, Sale, ProjectCategory } from '../../lib/supabase'
+import type { CashFlowAmounts } from '../../utils/cashFlowFigures'
 
 // ── General Report ──────────────────────────────────────────────────────────
 
@@ -27,11 +28,7 @@ export interface ProjectData {
 }
 
 /** One side of the cash-flow table for a month. `net` is inflow − outflow. */
-export interface CashFlowAmounts {
-  inflow: number
-  outflow: number
-  net: number
-}
+export type { CashFlowAmounts }
 
 export interface ComprehensiveReport {
   /** The organisation's name from `organization_settings`; null when none is set (GEN-19). */

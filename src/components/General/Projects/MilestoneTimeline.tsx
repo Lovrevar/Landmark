@@ -76,12 +76,12 @@ const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
         )}
 
         <div className="relative flex items-start group">
-          <div className={`flex-shrink-0 w-12 h-12 rounded-full ${status.bg} ${status.border} border-2 flex items-center justify-center z-10`}>
+          <div className={`shrink-0 w-12 h-12 rounded-full ${status.bg} ${status.border} border-2 flex items-center justify-center z-10`}>
             <status.icon className={`w-6 h-6 ${status.color}`} />
           </div>
 
           <div className="ml-6 flex-1">
-            <div className={`bg-white dark:bg-gray-800 rounded-lg border-2 ${status.border} p-4 shadow-sm hover:shadow-md transition-shadow duration-200`}>
+            <div className={`bg-white dark:bg-gray-800 rounded-lg border-2 ${status.border} p-4 shadow-xs hover:shadow-md transition-shadow duration-200`}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
