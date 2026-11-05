@@ -13,3 +13,8 @@ coverage/
 # Playwright artifacts — no source today, but regenerated per run.
 playwright-report/
 test-results/
+
+# The demo build (`npm run help:shots`, `npm run help:check`). graphify skips dist/ on its own but
+# not this directory: its 120-odd bundled chunks added 4,800 nodes to the graph and took the
+# rebuild from 11 s to 44 s, all of it in the betweenness pass of the report (2026-11-05).
+dist-demo/
