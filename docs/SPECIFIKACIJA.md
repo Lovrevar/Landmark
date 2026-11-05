@@ -99,14 +99,14 @@ Izvan opsega: modul Retail (`src/components/Retail/`), `RetailDashboard`, `Retai
 
 | Sloj | Tehnologija |
 |---|---|
-| Frontend | React 18.3, TypeScript 5.5, Vite 7.3 |
+| Frontend | React 18.3, TypeScript 5.5, Vite 8.3 |
 | Usmjeravanje | React Router DOM 7 (`<BrowserRouter>`) |
 | Stilovi | Tailwind CSS 4.3 (`@tailwindcss/vite`; tamni način klasom `dark` na `<html>`) |
 | Backend | Supabase: PostgreSQL s Row Level Security, Auth, Storage, Realtime, Edge Functions (Deno) |
 | PDF | jsPDF 4 (isključivo u pregledniku) s ugrađenim fontom NotoSans |
 | Excel | `@e965/xlsx` 0.20 (održavani fork SheetJS-a, ne paket `xlsx`) |
 | Grafikoni | Recharts 3 (kontrola proračuna); dashboardi koriste vlastite trake i StatCard komponente |
-| Lokalizacija | i18next 25 + react-i18next 16 + detektor jezika preglednika |
+| Lokalizacija | i18next 26 + react-i18next 17 + detektor jezika preglednika |
 | Datumi | date-fns 4 (hrvatski locale), `rrule` 2.8 za ponavljajuće događaje |
 | Ikone | lucide-react |
 | Markdown | react-markdown 10 + remark-gfm 4 |

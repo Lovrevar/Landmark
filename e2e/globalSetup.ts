@@ -101,7 +101,8 @@ export default async function globalSetup(): Promise<void> {
         }
         throw new Error(
           `[e2e] globalSetup: login failed for ${user.email} (role=${user.role}). ` +
-            `Cause: ${(err as Error).message}`
+            `Cause: ${(err as Error).message}`,
+          { cause: err }
         )
       }
 

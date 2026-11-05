@@ -1153,10 +1153,7 @@ function streamChatResponse(
         })
       }
     } finally {
-      if (timeoutHandle !== undefined) {
-        clearTimeout(timeoutHandle)
-        timeoutHandle = undefined
-      }
+      if (timeoutHandle !== undefined) clearTimeout(timeoutHandle)
       // The reqSignal listener is `{ once: true }` and reqSignal is request-
       // scoped — no manual remove is needed (or possible: it was registered
       // via an arrow wrapper so the original reference isn't kept).

@@ -13,6 +13,9 @@ concurrency:
 
 jobs:
   e2e:
+    # Dependabot's pull requests never receive repository secrets, so the job would only fail on
+    # them at "Assert required secrets are present". Skip it there; the Tests job still runs.
+    if: github.actor != 'dependabot[bot]'
     # Not ubuntu-latest: it moved to 26.04, where Playwright 1.59 cannot install Chromium.
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -24,9 +27,9 @@ jobs:
       E2E_ALLOWED_SUPABASE_URL: ${{ secrets.E2E_ALLOWED_SUPABASE_URL }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -51,7 +54,7 @@ jobs:
 
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: |
