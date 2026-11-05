@@ -99,7 +99,7 @@ Izvan opsega: modul Retail (`src/components/Retail/`), `RetailDashboard`, `Retai
 
 | Sloj | Tehnologija |
 |---|---|
-| Frontend | React 18.3, TypeScript 5.5, Vite 8.3 |
+| Frontend | React 18.3, TypeScript 6.0, Vite 8.3 |
 | Usmjeravanje | React Router DOM 7 (`<BrowserRouter>`) |
 | Stilovi | Tailwind CSS 4.3 (`@tailwindcss/vite`; tamni način klasom `dark` na `<html>`) |
 | Backend | Supabase: PostgreSQL s Row Level Security, Auth, Storage, Realtime, Edge Functions (Deno) |

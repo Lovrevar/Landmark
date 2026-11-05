@@ -20,7 +20,7 @@ updates:
       # typescript-eslint's peer range stops below TypeScript 6.1 (8.72.1 on 2026-11-05); TypeScript
       # 7 is also the native compiler, a migration of its own. Lift this when typescript-eslint allows it.
       - dependency-name: typescript
-        update-types: ["version-update:semver-major"]
+        versions: [">=7.0.0"]
 
   - package-ecosystem: npm
     directory: "/tools/voice-prototype"

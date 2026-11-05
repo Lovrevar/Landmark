@@ -37,11 +37,13 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
 
 ### UI-20 · Low · TypeScript 7 waits on typescript-eslint
 - **Check:** Confirmed (`npm view typescript-eslint@8.72.1 peerDependencies`, 2026-11-05)
-- **Where:** `package.json` (`typescript ^5.5.3`), `.github/dependabot.yml` (the major is ignored)
+- **Where:** `package.json` (`typescript ^6.0.3`), `.github/dependabot.yml` (7.x is ignored)
 - **What happens:** typescript-eslint's peer range ends below TypeScript 6.1, so dependabot's
   TypeScript 7 PR could not install. The bump is parked with an `ignore` rule in
   `dependabot.yml`; TypeScript 7 is also the native compiler, and `tsc --noEmit` semantics may
-  shift.
+  shift. TypeScript 6.0.3, the bridge release, is in since 2026-11-05: its one default change
+  that bit (`types` no longer loads every `@types` package) is answered by `"types": ["node"]` in
+  `tsconfig.app.json`, and it raised no deprecation warning on the config.
 - **Fix direction:** when typescript-eslint allows TypeScript 7, remove the `ignore` rule, take the
   bump on its own branch, and run typecheck, lint and the build.
 
