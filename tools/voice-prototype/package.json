@@ -26,11 +26,11 @@
     "i18next": "^26.7.1",
     "livekit-server-sdk": "2.19.2",
     "onnxruntime-node": "1.30.0",
-    "openai": "6.49.0",
+    "openai": "7.42.0",
     "react-i18next": "^17.1.12"
   },
   "devDependencies": {
-    "@types/node": "24.19.2",
+    "@types/node": "26.6.5",
     "@vitejs/plugin-react": "^6.2.1",
     "eslint": "^10.14.0",
     "globals": "^17.14.0",
