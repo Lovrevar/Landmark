@@ -115,6 +115,14 @@ Deno.test('U08 a jti is forgotten after 120 s', async () => {
   assert((await verifyAssertion(second, SECRET, later)).ok)
 })
 
+Deno.test('U10 an iat more than 30 s ahead is refused; 30 s of skew is allowed', async () => {
+  const now = Date.now()
+  const claims = (iat: number) => ({ iss: 'va', aud: 'landmark-assistant-api', sub: 'a@b.hr', iat, exp: iat + 60, jti: crypto.randomUUID() })
+  const sec = Math.floor(now / 1000)
+  assertEquals(await verifyAssertion(await token(claims(sec + 31)), SECRET, now), { ok: false, reason: 'iat_in_future' })
+  assertEquals(await verifyAssertion(await token(claims(sec + 30)), SECRET, now), { ok: true, email: 'a@b.hr' })
+})
+
 Deno.test('U09 a missing jti, sub or iat is refused, with the reason and no value', async () => {
   const iat = Math.floor(Date.now() / 1000)
   for (const drop of ['jti', 'sub', 'iat']) {

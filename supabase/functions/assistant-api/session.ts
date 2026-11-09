@@ -16,6 +16,7 @@ export interface MappedUser {
   id: string            // public.users.id
   authUserId: string    // auth.users.id
   username: string | null
+  email: string         // public.users.email, as stored
 }
 
 /** `%`, `_` and `\` match literally in an ilike pattern only when escaped. */
@@ -28,7 +29,7 @@ function escapeLike(value: string): string {
 export async function mapUser(service: Service, email: string): Promise<MappedUser | null> {
   const { data, error } = await service
     .from('users')
-    .select('id, auth_user_id, username')
+    .select('id, auth_user_id, username, email')
     .ilike('email', escapeLike(email))
     .not('auth_user_id', 'is', null)
     .limit(2)
@@ -38,7 +39,7 @@ export async function mapUser(service: Service, email: string): Promise<MappedUs
     console.warn('[assistant-api] not_mapped', { reason: 'ambiguous', rows: data.length })
     return null
   }
-  return { id: data[0].id, authUserId: data[0].auth_user_id!, username: data[0].username }
+  return { id: data[0].id, authUserId: data[0].auth_user_id!, username: data[0].username, email: data[0].email! }
 }
 
 /** An access token for this user. The link is minted for the email on the

@@ -4,13 +4,16 @@
 // ASSISTANT_API_SECRET: iss "va", aud "landmark-assistant-api", sub the
 // employee's email, a jti, and at most 60 s between iat and exp. A jti is
 // remembered for 120 s so a captured assertion cannot be replayed. The memory
-// is per isolate: a cold start forgets it, which a 60 s token makes acceptable.
+// is per isolate: a cold start forgets it, which a 60 s token makes acceptable
+// only while iat is honest: an iat minted an hour ahead would pass every other
+// check and outlive the memory, so an iat more than 30 s ahead is refused too.
 
 import { errors, jwtVerify } from 'npm:jose@5.10.0'
 
 export const ISSUER = 'va'
 export const AUDIENCE = 'landmark-assistant-api'
 const MAX_LIFETIME_S = 60
+const MAX_IAT_AHEAD_S = 30
 const JTI_MEMORY_MS = 120_000
 
 // No `*` or `%`: PostgREST reads both as wildcards in the ilike that maps the
@@ -45,6 +48,7 @@ export async function verifyAssertion(token: string, secret: string, now = Date.
   if (typeof exp !== 'number' || typeof iat !== 'number' || exp - iat > MAX_LIFETIME_S) {
     return { ok: false, reason: 'lifetime_too_long' }
   }
+  if (iat > Math.floor(now / 1000) + MAX_IAT_AHEAD_S) return { ok: false, reason: 'iat_in_future' }
   if (typeof jti !== 'string' || jti.length === 0) return { ok: false, reason: 'jti_missing' }
   if (typeof sub !== 'string' || !EMAIL.test(sub)) return { ok: false, reason: 'sub_not_email' }
 

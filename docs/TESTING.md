@@ -52,7 +52,10 @@ General report's test keeps its own smaller fake.
 The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs every
 `*.test.ts` file under `supabase/functions/` (`_shared/help-score`, `_shared/help-search`,
 `_shared/tools`, the four `ai-chat/tests/` files below, `import-erp/feeds`, `import-erp/parse`,
-`send-push/meeting`, `sort-document/classifier`, `sort-document/extract`, and `voice-llm`'s three). CI runs them on
+`send-push/meeting`, `sort-document/classifier`, `sort-document/extract`, `voice-llm`'s three and
+`assistant-api/tests/`' two, which run the real `assistant-api` function against the same Supabase
+fake as ai-chat and check after every scenario that no log line carries an email, an assertion or
+a token). CI runs them on
 Deno 2.9.8, pinned in `.github/workflows/test.yml`; use the same version locally
 (`deno upgrade 2.9.8`), since a newer or older Deno can type-check the same code differently.
 

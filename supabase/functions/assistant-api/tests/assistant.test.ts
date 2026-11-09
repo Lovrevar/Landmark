@@ -29,6 +29,7 @@ scenario('A01 every bad assertion is 401 bad_assertion, before any database work
     ['wrong iss', await sign({ iss: 'not-va' })],
     ['expired', await sign({ iat: now() - 120, exp: now() - 60 })],
     ['exp - iat over 60 s', await sign({ iat: now(), exp: now() + 61 })],
+    ['iat an hour ahead', await sign({ iat: now() + 3600, exp: now() + 3630 })],
     ['alg none', unsigned()],
     ['sub not an email', await sign({ sub: 'direktor' })],
     ['sub with a wildcard', await sign({ sub: 'dir*@test.hr' })],
@@ -41,6 +42,7 @@ scenario('A01 every bad assertion is 401 bad_assertion, before any database work
   }
   assertEquals(db.requests.length, 0)
   assert(logs.some((l) => l.includes('bad_assertion') && l.includes('reason')))
+  assert(logs.some((l) => l.includes('iat_in_future')))
 })
 
 scenario('A02 an assertion is accepted once: its jti cannot be replayed', async () => {
@@ -69,6 +71,8 @@ scenario('A04 the email matches in any case, and an underscore matches only itse
   const mixed = await call({ path: '/me', assertion: await sign({ sub: 'Direktor@Test.HR' }) })
   assertEquals(mixed.status, 200)
   assertEquals(mixed.body.role, 'Director')
+  // No username on the row: the display name is the email's local part, as on profiles.
+  assertEquals(mixed.body.display_name, 'direktor')
 
   // `_` is an ilike wildcard: unescaped, anaxb@ would find ana_b@.
   const wild = await call({ path: '/me', assertion: await sign({ sub: 'anaxb@test.hr' }) })

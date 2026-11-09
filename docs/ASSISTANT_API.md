@@ -9,7 +9,9 @@ domain rules come from `_shared/prompts.ts`.
 Code: [`supabase/functions/assistant-api/`](../supabase/functions/assistant-api/). Tests:
 `assistant-api/tests/` (`deno task test` from `supabase/functions/`).
 
-**Status (2026-11-04):** built and tested on `feat/assistant-api`, not deployed anywhere.
+**Status (2026-11-09):** built and tested on `feat/assistant-api`, not deployed anywhere. The
+assistant side has since been built against this contract; its addendum of 2026-11-09 (an `iat` in
+the future is refused; the exposed list is held to a reviewed twelve on its side) is in.
 
 ## Who is calling: the assertion
 
@@ -19,12 +21,14 @@ Every request carries `Authorization: Bearer <assertion>`: an HS256 JWT signed w
 1. the signature, with `alg` `HS256` (`alg: none` and any other algorithm are refused)
 2. `iss` is `va` and `aud` is `landmark-assistant-api`
 3. `exp` is in the future, and `exp − iat` is at most 60 s
-4. `jti` is present and has not been seen in the last 120 s
-5. `sub` is an email address; `*` and `%` are refused, because PostgREST reads them as wildcards
+4. `iat` is not more than 30 s in the future. Without this, a token minted an hour ahead would
+   pass every other check and outlive the `jti` memory below
+5. `jti` is present and has not been seen in the last 120 s
+6. `sub` is an email address; `*` and `%` are refused, because PostgREST reads them as wildcards
 
 Any failure is `401 bad_assertion`. The log line names the failed check (a jose error code or
-claim, or `lifetime_too_long`, `jti_replayed`, `sub_not_email`, `missing_header`) and never a
-claim's value.
+claim, or `lifetime_too_long`, `iat_in_future`, `jti_replayed`, `sub_not_email`, `missing_header`)
+and never a claim's value.
 
 Seen `jti`s are kept **in memory, per isolate**. A cold start forgets them, which a token that
 lives 60 s makes acceptable.
@@ -62,7 +66,8 @@ status.
 | `/assistant-api/manifest` | `{}` | `{ "version", "tools": [{ "name", "description", "input_schema", "roles", "voice" }], "domain_rules_hr" }` |
 | `/assistant-api/tools/<name>` | `{ "input": {…}, "channel": "chat" \| "voice" }` | `{ "data": … }` |
 
-- **`/me`**: `display_name` is `public.users.username` (it may be null). Each tool list is
+- **`/me`**: `display_name` is `public.users.username`, or the email's local part when the row
+  has no username (the same fallback as the `profiles` trigger). Each tool list is
   `selectAvailableTools(ctx, channel)`, filtered to the exposed tools, so it lists only what this
   API will accept. A Director gets twelve on each channel, Sales seven.
 - **`/manifest`**: needs a valid assertion but no mapped user. `version` is the SHA-256 of the
@@ -80,6 +85,10 @@ status.
 
 The twelve in `TOOL_ALLOWLIST.voice` (voice plan §5), on **both** channels. `create_document`,
 `list_documents_for_entity` and `get_document_download_link` are not exposed.
+
+The assistant side holds its manifest snapshot to a reviewed list of these twelve names and
+refuses a thirteenth until someone reviews it there. **If this list changes, tell the assistant
+team** in the same change; `/manifest`'s `version` changing is not enough on its own.
 
 ### Refusals
 

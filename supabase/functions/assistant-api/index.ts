@@ -210,7 +210,8 @@ async function handle(req: Request, log: RequestLog, t0: number): Promise<Respon
       const names = (ch: Channel) => selectAvailableTools(ctx, ch).filter((t) => EXPOSED_NAMES.has(t.name)).map((t) => t.name)
       return json(200, {
         role: ctx.role,
-        display_name: user.username,
+        // The same fallback as the profiles trigger: the username, else the email's local part.
+        display_name: user.username ?? user.email.split('@')[0],
         tools: { chat: names('chat'), voice: names('voice') },
       })
     }
