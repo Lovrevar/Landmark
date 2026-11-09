@@ -105,7 +105,8 @@ interface RequestLog {
 }
 
 async function dispatchWithTimeout(name: string, input: unknown, ctx: AuthContext, channel: Channel): Promise<unknown> {
-  let timer: number | undefined
+  // ReturnType, not number: Deno 2.9 types setTimeout with Node's Timeout when npm packages are in play.
+  let timer: ReturnType<typeof setTimeout> | undefined
   try {
     return await Promise.race([
       dispatchTool(name, input, ctx, EXTRAS, channel),
