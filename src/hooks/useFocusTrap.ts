@@ -109,7 +109,7 @@ export function useFocusTrap(
   options: { initialFocus?: RefObject<HTMLElement | null> } = {},
 ) {
   const initialFocus = useRef(options.initialFocus)
-  initialFocus.current = options.initialFocus
+  useEffect(() => { initialFocus.current = options.initialFocus })
 
   useEffect(() => {
     if (!active) return

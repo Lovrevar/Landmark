@@ -7,7 +7,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 
 | File | Covers | Open |
 |---|---|---|
-| [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 7 steps |
+| [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 3 steps |
 | [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 2 defects, 3 accepted risks |
 | [sales.md](./sales.md) | Units, the sale flow, customers | 9 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
@@ -16,7 +16,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
 | [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 25 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 15 |
-| [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 16 |
+| [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 19 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
 | [archive/](./archive/) | The four audits, with every fixed entry | Closed, do not update |
 
@@ -68,10 +68,9 @@ Ranked on 2026-10-05, last revised 2026-11-05, by what goes wrong if the item is
 
 ### 1. Do first
 
-Everything in [release.md](./release.md): deploy `ai-chat` to production and the demo and bring
-`demo` up to `main` after the release of 2026-11-05, tell Budget Control users why CPI now shows
-"—", walk the pre-merge sheet, and try TIC saves on dev. Every migration in
-`supabase/migrations/` is on production except `voice_calls`, which waits for the voice feature.
+Everything in [release.md](./release.md): try TIC saves on dev. The release of 2026-11-05 is out
+on production and the demo. Every migration in `supabase/migrations/` is on production except
+`voice_calls`, which waits for the voice feature.
 
 ### 2. Open defects that need code or a decision
 

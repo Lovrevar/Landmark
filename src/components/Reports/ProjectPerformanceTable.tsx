@@ -12,6 +12,33 @@ interface Props {
 
 type SortKey = 'name' | 'land_cost' | 'total_costs' | 'total_revenue' | 'profit' | 'roi'
 
+interface SortHeaderProps {
+  label: string
+  field: SortKey
+  sortKey: SortKey
+  sortAsc: boolean
+  onSort: (key: SortKey) => void
+}
+
+// At module level, not inside the table: a component defined during render is a new type on every
+// render, so React unmounts and remounts its subtree each time.
+const SortHeader = ({ label, field, sortKey, sortAsc, onSort }: SortHeaderProps) => (
+  <Table.Th
+    sortable
+    className="font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+    onClick={() => onSort(field)}
+  >
+    <div className="flex items-center gap-1">
+      {label}
+      {sortKey === field ? (
+        sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+      ) : (
+        <ArrowUpDown className="w-3 h-3 opacity-30" />
+      )}
+    </div>
+  </Table.Th>
+)
+
 export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurrency }) => {
   const { t } = useTranslation()
   const [sortKey, setSortKey] = useState<SortKey>('name')
@@ -47,23 +74,6 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
     profit: acc.profit + p.profit
   }), { land_cost: 0, dev: 0, constr: 0, revenue: 0, collected: 0, outstanding: 0, costs: 0, profit: 0 })
 
-  const SortHeader = ({ label, field }: { label: string; field: SortKey }) => (
-    <Table.Th
-      sortable
-      className="font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-      onClick={() => handleSort(field)}
-    >
-      <div className="flex items-center gap-1">
-        {label}
-        {sortKey === field ? (
-          sortAsc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
-        ) : (
-          <ArrowUpDown className="w-3 h-3 opacity-30" />
-        )}
-      </div>
-    </Table.Th>
-  )
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xs border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="p-5 border-b border-gray-200 dark:border-gray-700">
@@ -74,13 +84,13 @@ export const ProjectPerformanceTable: React.FC<Props> = ({ projects, formatCurre
       <Table className="rounded-none shadow-none border-0">
         <Table.Head>
           <Table.Tr hoverable={false}>
-            <SortHeader label={t('common.project')} field="name" />
+            <SortHeader label={t('common.project')} field="name" sortKey={sortKey} sortAsc={sortAsc} onSort={handleSort} />
             <Table.Th className="font-semibold text-gray-600 dark:text-gray-400">{t('common.status')}</Table.Th>
-            <SortHeader label={t('reports.project_performance.land')} field="land_cost" />
-            <SortHeader label={t('reports.project_performance.costs')} field="total_costs" />
-            <SortHeader label={t('reports.project_performance.revenue')} field="total_revenue" />
-            <SortHeader label={t('reports.project_performance.profit')} field="profit" />
-            <SortHeader label="ROI" field="roi" />
+            <SortHeader label={t('reports.project_performance.land')} field="land_cost" sortKey={sortKey} sortAsc={sortAsc} onSort={handleSort} />
+            <SortHeader label={t('reports.project_performance.costs')} field="total_costs" sortKey={sortKey} sortAsc={sortAsc} onSort={handleSort} />
+            <SortHeader label={t('reports.project_performance.revenue')} field="total_revenue" sortKey={sortKey} sortAsc={sortAsc} onSort={handleSort} />
+            <SortHeader label={t('reports.project_performance.profit')} field="profit" sortKey={sortKey} sortAsc={sortAsc} onSort={handleSort} />
+            <SortHeader label="ROI" field="roi" sortKey={sortKey} sortAsc={sortAsc} onSort={handleSort} />
             <Table.Th className="w-10">{''}</Table.Th>
           </Table.Tr>
         </Table.Head>

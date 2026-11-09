@@ -8,7 +8,11 @@ require a rebuild. CLAUDE.md carries the short version of this page.
 
 - The `post-commit` and `post-checkout` git hooks (installed by `graphify hook install`) rebuild
   the code graph after every commit and branch switch.
-- To query uncommitted changes, rebuild by hand (about 5 seconds):
+- A rebuild takes about 10 seconds. Extraction is cached per file and takes well under a second;
+  nearly all of the time is NetworkX betweenness centrality in graphify's "suggested questions"
+  step, which grows with nodes × edges. Anything that inflates the graph inflates that step: the
+  demo build (`dist-demo/`) took it to 44 seconds until it was listed in `.graphifyignore`.
+- To query uncommitted changes, rebuild by hand:
   `python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"`
   Run it from the repo root: run elsewhere it writes a stray `graphify-out/` into that directory
   (`src/graphify-out/` and `supabase/functions/graphify-out/` are leftovers of exactly that; they

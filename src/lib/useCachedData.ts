@@ -79,7 +79,7 @@ export function useCachedData<T>(
   // Keep the latest fetcher without making it a dependency — callers almost
   // always pass an inline closure whose identity changes every render.
   const fetcherRef = useRef(fetcher)
-  fetcherRef.current = fetcher
+  useEffect(() => { fetcherRef.current = fetcher })
 
   const readFresh = useCallback((): CacheEntry<T> | null => {
     const entry = store.get(key) as CacheEntry<T> | undefined

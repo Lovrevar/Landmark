@@ -132,13 +132,13 @@ export const useSubcontractorManagement = (fetchProjects: () => Promise<void>) =
     } catch (error: unknown) {
       console.error('Error adding subcontractor:', error)
       if (error instanceof Error && error.message?.includes('duplicate key value violates unique constraint')) {
-        throw new Error('Broj ugovora već postoji. Pokušajte ponovo.')
+        throw new Error('Broj ugovora već postoji. Pokušajte ponovo.', { cause: error })
       } else if (error instanceof Error && error.message?.includes('contracts_contract_type_id_fkey')) {
-        throw new Error('Odaberite kategoriju ugovora.')
+        throw new Error('Odaberite kategoriju ugovora.', { cause: error })
       } else if (error instanceof Error) {
         throw error
       } else {
-        throw new Error('Greška pri dodavanju podugovaratelja.')
+        throw new Error('Greška pri dodavanju podugovaratelja.', { cause: error })
       }
     }
   }

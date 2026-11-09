@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNow } from '../../../hooks/useNow'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../../contexts/AuthContext'
 import { canManagePayments } from '../../../utils/permissions'
@@ -38,6 +39,8 @@ const FundingPaymentsManagement: React.FC = () => {
     refetch()
   }, [refetch])
 
+  // 'recent' means the last 7 days; a cutoff only has to be roughly right, so a slow tick.
+  const now = useNow(5 * 60_000)
   const filteredPayments = payments.filter(payment => {
     const matchesSearch =
       payment.bank_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -50,7 +53,7 @@ const FundingPaymentsManagement: React.FC = () => {
 
     const matchesFilter =
       filterStatus === 'all' ||
-      (filterStatus === 'recent' && new Date(payment.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      (filterStatus === 'recent' && new Date(payment.created_at) > new Date(now - 7 * 24 * 60 * 60 * 1000)) ||
       // Magnitude, whichever way the money went (amounts are always positive).
       (filterStatus === 'large' && Number(payment.amount) > 50000)
 

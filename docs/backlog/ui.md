@@ -1,7 +1,7 @@
 # Backlog — app-wide UI
 
 Problems that repeat across modules: formatting, status display, failed loads, translations, the
-shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-18`). Entry format and
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-21`). Entry format and
 rules are in [README.md](./README.md).
 
 A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
@@ -9,6 +9,49 @@ helper or a sweep. Counts were measured on 2026-09-21 to 2026-09-23 and will hav
 again before starting a sweep. Check [../UI.md](../UI.md) before adding a primitive.
 
 ## Open
+
+### UI-18 · Low · The React Compiler lint rules run as warnings, not errors
+- **Check:** Confirmed (lint on 2026-11-05)
+- **Where:** `eslint.config.js`; `eslint-plugin-react-hooks` 7 enables the compiler rules in its
+  `recommended` preset
+- **What happens:** the code base predates the rules. Three stay at `warn`: `set-state-in-effect`
+  (141 findings in about 100 files, the "load on mount, then setState" shape of the form and data
+  hooks, heaviest in Cashflow, Supervision and Sales), `immutability` (21) and
+  `preserve-manual-memoization` (8). `npm run lint` fails above the `--max-warnings` ceiling in
+  `package.json` (180 on 2026-11-05, 9 of them older), so the count can only fall; lower the number
+  in any change that clears some. Fixed on `chore/lint-ceiling` the same day, and back at `error`:
+  `static-components` (hoisted `SortableTh`, `SortHeader`, the chat file icon), `refs` (latest-value
+  refs written in effects; one documented render-time write in `TaskDetail.tsx`), `purity`
+  (`useNow` in `src/hooks/useNow.ts` replaces `Date.now()` during render) and ESLint 10's
+  `preserve-caught-error` (lib raised to ES2022 for `{ cause }`). `useMediaQuery` reads the media
+  query through `useSyncExternalStore`.
+- **Fix direction:** not a sweep. Clear `set-state-in-effect` in a module when touching it, the
+  shared hooks first (`useCachedData` keeps one: the fresh-cache path sets state in its effect).
+  The sweep pays off with the React Compiler, i.e. at the React 19 upgrade. When a module is clean,
+  pin it at `error` with a per-directory override so it cannot regress; when all are, delete the
+  three `warn` lines.
+
+### UI-19 · Low · `manualChunks` in `vite.config.ts` is the deprecated Rolldown form
+- **Check:** Confirmed (Vite 8 migration guide, 2026-11-05)
+- **Where:** `vite.config.ts`, `build.rolldownOptions.output.manualChunks`
+- **What happens:** Vite 8 bundles with Rolldown, which removed the object form of `manualChunks`
+  and deprecates the function form the config uses for its `vendor-*` and `i18n-locales` chunks.
+  It still works in 8.3 (the build of 2026-11-05 produced every named chunk, no warning), but a
+  later major drops it.
+- **Fix direction:** express the same groups as Rolldown's `codeSplitting.groups` (one `test`
+  per vendor group, same names), then compare `dist/assets` before and after.
+
+### UI-20 · Low · TypeScript 7 waits on typescript-eslint
+- **Check:** Confirmed (`npm view typescript-eslint@8.72.1 peerDependencies`, 2026-11-05)
+- **Where:** `package.json` (`typescript ^6.0.3`), `.github/dependabot.yml` (7.x is ignored)
+- **What happens:** typescript-eslint's peer range ends below TypeScript 6.1, so dependabot's
+  TypeScript 7 PR could not install. The bump is parked with an `ignore` rule in
+  `dependabot.yml`; TypeScript 7 is also the native compiler, and `tsc --noEmit` semantics may
+  shift. TypeScript 6.0.3, the bridge release, is in since 2026-11-05: its one default change
+  that bit (`types` no longer loads every `@types` package) is answered by `"types": ["node"]` in
+  `tsconfig.app.json`, and it raised no deprecation warning on the config.
+- **Fix direction:** when typescript-eslint allows TypeScript 7, remove the `ignore` rule, take the
+  bump on its own branch, and run typecheck, lint and the build.
 
 ### UI-14 · Low · StatCard: a long word in the title runs under the icon
 - **Check:** Confirmed on LandmarkDemo at 1280 px (2026-10-21)

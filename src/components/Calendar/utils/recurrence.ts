@@ -107,7 +107,7 @@ export function expandEvents(
 
     // Fetch all occurrences within the window. rrule .between() is inclusive-exclusive
     // by default; pass `true` for inclusive endpoint behavior.
-    let occurrences: Date[] = []
+    let occurrences: Date[]
     try {
       occurrences = rule.between(windowStart, windowEnd, true)
     } catch {

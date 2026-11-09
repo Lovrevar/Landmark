@@ -128,6 +128,7 @@ Two companion rules that follow from the same change, and that every module is e
 | `src/hooks/useListPreferences.ts` | Persisted per-list view mode / sort preferences |
 | `src/hooks/useAsyncExport.ts` | Wraps a long export in pending state so the UI can show progress |
 | `src/hooks/useModalOverflow.ts` | Locks `body` scroll while a modal is open |
+| `src/hooks/useNow.ts` | `useNow(intervalMs)` — the current time as state, ticking; the replacement for `Date.now()` during render, which the React Compiler rules refuse |
 | `src/utils/dateOnly.ts` | Local-timezone date-only helpers (`parseLocalDate`, `monthKey`, `daysFromToday`, `isValidDate`, `startOfTodayLocal`). **Use these for SQL `date` columns** — `new Date('YYYY-MM-DD')` parses as UTC and drifts a day in Croatia |
 | `src/utils/pdfFont.ts` | `loadUnicodeFont()` — loads NotoSans into a jsPDF doc so Croatian diacritics render |
 | `src/types/database.ts` | Generated Supabase types (`public` + `erp` schemas). Regenerate with `npm run db:types`; never hand-edit |

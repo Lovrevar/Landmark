@@ -6,8 +6,11 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
+        // Vite 8 bundles with Rolldown: `rollupOptions` is the deprecated name, and the object form
+        // of manualChunks is gone. The function form below is deprecated but still honoured; the
+        // replacement is Rolldown's `codeSplitting` groups (backlog).
         // Function form so we can also peel the (large) i18n locale JSON and a
         // few heavy libraries out of the entry chunk, not just the headline
         // vendors. Each returns a stable, independently-cacheable chunk name.

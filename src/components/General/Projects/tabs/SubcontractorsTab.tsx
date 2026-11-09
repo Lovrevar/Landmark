@@ -23,6 +23,29 @@ const formatEur = (n: number) => `€${n.toLocaleString('hr-HR')}`
 const statusVariant = (status: string): 'green' | 'gray' | 'yellow' =>
   status === 'active' ? 'green' : status === 'completed' ? 'gray' : 'yellow'
 
+interface SortableThProps {
+  sortKey: SortKey
+  activeKey: SortKey
+  dir: SortDir
+  onToggle: (key: SortKey) => void
+  children: React.ReactNode
+}
+
+// At module level, not inside the tab: a component defined during render is a new type on every
+// render, so React unmounts and remounts its subtree each time.
+const SortableTh: React.FC<SortableThProps> = ({ sortKey, activeKey, dir, onToggle, children }) => (
+  <Table.Th sortable onClick={() => onToggle(sortKey)}>
+    <span className="inline-flex items-center gap-1">
+      {children}
+      {activeKey === sortKey && (
+        dir === 'asc'
+          ? <ChevronUp className="w-3 h-3" />
+          : <ChevronDown className="w-3 h-3" />
+      )}
+    </span>
+  </Table.Th>
+)
+
 const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases }) => {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
@@ -99,19 +122,6 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
     setStatusFilter('all')
   }
 
-  const SortableTh: React.FC<{ sortKey: SortKey; children: React.ReactNode }> = ({ sortKey: key, children }) => (
-    <Table.Th sortable onClick={() => toggleSort(key)}>
-      <span className="inline-flex items-center gap-1">
-        {children}
-        {sortKey === key && (
-          sortDir === 'asc'
-            ? <ChevronUp className="w-3 h-3" />
-            : <ChevronDown className="w-3 h-3" />
-        )}
-      </span>
-    </Table.Th>
-  )
-
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('general_projects.subcontractors_contracts')}</h3>
@@ -168,13 +178,13 @@ const SubcontractorsTab: React.FC<SubcontractorsTabProps> = ({ contracts, phases
             <Table>
               <Table.Head>
                 <Table.Tr>
-                  <SortableTh sortKey="name">{t('common.subcontractor')}</SortableTh>
-                  <SortableTh sortKey="phase">{t('common.phase')}</SortableTh>
-                  <SortableTh sortKey="classification">{t('supervision.site_management.phase_card.classification_label')}</SortableTh>
-                  <SortableTh sortKey="contract_amount">{t('general_projects.contract_amount')}</SortableTh>
-                  <SortableTh sortKey="realized">{t('general_projects.realized')}</SortableTh>
-                  <SortableTh sortKey="remaining">{t('common.remaining')}</SortableTh>
-                  <SortableTh sortKey="status">{t('common.status')}</SortableTh>
+                  <SortableTh sortKey="name" activeKey={sortKey} dir={sortDir} onToggle={toggleSort}>{t('common.subcontractor')}</SortableTh>
+                  <SortableTh sortKey="phase" activeKey={sortKey} dir={sortDir} onToggle={toggleSort}>{t('common.phase')}</SortableTh>
+                  <SortableTh sortKey="classification" activeKey={sortKey} dir={sortDir} onToggle={toggleSort}>{t('supervision.site_management.phase_card.classification_label')}</SortableTh>
+                  <SortableTh sortKey="contract_amount" activeKey={sortKey} dir={sortDir} onToggle={toggleSort}>{t('general_projects.contract_amount')}</SortableTh>
+                  <SortableTh sortKey="realized" activeKey={sortKey} dir={sortDir} onToggle={toggleSort}>{t('general_projects.realized')}</SortableTh>
+                  <SortableTh sortKey="remaining" activeKey={sortKey} dir={sortDir} onToggle={toggleSort}>{t('common.remaining')}</SortableTh>
+                  <SortableTh sortKey="status" activeKey={sortKey} dir={sortDir} onToggle={toggleSort}>{t('common.status')}</SortableTh>
                   <Table.Th>{t('general_projects.contact')}</Table.Th>
                 </Table.Tr>
               </Table.Head>

@@ -19,6 +19,14 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // eslint-plugin-react-hooks 7 turns the React Compiler rules on as errors. The code base
+      // predates them: three rules stay warnings (171 findings on 2026-11-05, 142 of them setState
+      // inside an effect, the "load on mount, store the result" shape of the form hooks) until
+      // backlog UI-18 walks them. The `lint` script's --max-warnings ceiling keeps the count from
+      // growing; lower it whenever some are cleared.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

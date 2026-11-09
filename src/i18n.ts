@@ -19,8 +19,6 @@ i18n
     // keeps anything else falling back to Croatian. See src/utils/locale.ts.
     supportedLngs: ['hr', 'en'],
     load: 'languageOnly',
-    // Suppresses i18next's Locize promo console.info on every dev boot.
-    showSupportNotice: false,
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],

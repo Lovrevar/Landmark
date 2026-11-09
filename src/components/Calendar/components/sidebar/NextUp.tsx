@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useNow } from '../../../../hooks/useNow'
 import { useTranslation } from 'react-i18next'
 import { Clock, MapPin, Repeat, Users } from 'lucide-react'
 import type { ExpandedOccurrence } from '../../utils/recurrence'
@@ -41,8 +42,9 @@ export default function NextUp({
   const { t, i18n } = useTranslation()
   const dateLocale = intlLocale(i18n.language)
 
+  const nowMs = useNow()
   const items = useMemo<Item[]>(() => {
-    const now = Date.now()
+    const now = nowMs
     const horizon = now + 24 * 60 * 60 * 1000
     const events: Item[] = occurrences
       .filter(o => o.start.getTime() > now - 5 * 60000)
@@ -51,9 +53,9 @@ export default function NextUp({
       .filter(o => o.due_at.getTime() > now - 5 * 60000 && o.due_at.getTime() <= horizon)
       .map(o => ({ kind: 'task' as const, occ: o, sortAt: o.due_at.getTime() }))
     return [...events, ...tasks].sort((a, b) => a.sortAt - b.sortAt).slice(0, limit)
-  }, [occurrences, taskOccurrences, limit])
+  }, [occurrences, taskOccurrences, limit, nowMs])
 
-  const now = new Date()
+  const now = new Date(nowMs)
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">

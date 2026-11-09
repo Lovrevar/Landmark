@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { PostgrestError } from '@supabase/supabase-js'
 import { fetchAllRows } from './fetchAllRows'
 
 const table = Array.from({ length: 7 }, (_, i) => ({ id: i }))
@@ -20,7 +21,7 @@ describe('fetchAllRows', () => {
   })
 
   it('throws on a failed page instead of returning a partial list', async () => {
-    const error = { message: 'boom', details: '', hint: '', code: 'XX000', name: 'PostgrestError' }
+    const error = new PostgrestError({ message: 'boom', details: '', hint: '', code: 'XX000' })
     await expect(fetchAllRows((from) => Promise.resolve(from === 0 ? { data: table.slice(0, 3), error: null } : { data: null, error }), 3)).rejects.toBe(error)
   })
 })
