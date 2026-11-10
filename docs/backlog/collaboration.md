@@ -1,6 +1,6 @@
 # Backlog — tasks, calendar, chat, documents and AI assistant
 
-Ids: `COLLAB-n` (next free: `COLLAB-17`). Entry format and rules are in [README.md](./README.md).
+Ids: `COLLAB-n` (next free: `COLLAB-20`). Entry format and rules are in [README.md](./README.md).
 
 The `task*` tables are shared with the mobile task app; read
 [../SHARED_SCHEMA.md](../SHARED_SCHEMA.md) before changing them. The AI assistant is pinned by
@@ -9,7 +9,7 @@ characterisation tests on `feature/voice-assistant`; its open questions (`OQ-n`)
 
 ## Open
 
-### COLLAB-16 · Low · `search_help` gives voice the full articles, not titles and a summary
+### COLLAB-19 · Low · `search_help` gives voice the full articles, not titles and a summary
 - **Check:** Code reading
 - **Where:** `supabase/functions/_shared/help-search.ts` (`handleSearchHelp`), reached on voice by
   `voice-llm` and by `assistant-api`; voice plan §5 ("returns titles and a one-line summary on
@@ -21,6 +21,32 @@ characterisation tests on `feature/voice-assistant`; its open questions (`OQ-n`)
   `{ title, summary }` per match. The clamp then cuts the list to five and keeps each short line
   whole.
 
+### COLLAB-17 · Low · A checklist line's deadline is not shown in Cognilion
+- **Check:** Decided 2026-11-10 with the task app's request (`20261110100000_task_subtask_deadlines`)
+- **Where:** `SUBTASK_FIELDS` and the subtask writes in
+  `src/components/Tasks/services/tasksService.ts`, `Subtask` in `src/types/tasks.ts`,
+  `src/components/Tasks/components/SubtaskList.tsx` and `SubtaskDraftList.tsx`
+- **What happens:** the mobile app sets a date per line and shows it in its detail sheet and
+  forms; Cognilion selects an explicit column list, so the date is invisible here and the
+  checklist editors cannot set one. Nothing breaks: every Cognilion write names its own columns
+  and leaves `deadline` alone
+- **Fix direction:** add `deadline` to `SUBTASK_FIELDS` and the type after `/db-types`; a date
+  badge on the line in `SubtaskList` (overdue in red like `TaskRow`), a date input in both
+  editors, written through `parseLocalDate`/`formatDate`; then `/help-article` on
+  `help-kb/tasks.md`. Needs the migration on the project the client points at first
+
+### COLLAB-16 · Low · An external (task-app-only) assignee renders with no name in Cognilion
+- **Check:** Code reading, 2026-11-10 (`20261110100100_task_app_only_users`)
+- **Where:** `hydrateTaskRelations` in `src/components/Tasks/services/tasksService.ts` builds
+  its user map from `public.users`; `TaskRow.tsx` and `TaskDetail.tsx` then
+  `.filter(u => !!u.username)`
+- **What happens:** a task created in the task app and assigned to a person with no roster row
+  (`profiles.external = true`) is visible here to its creator and other assignees, but that
+  assignee is dropped from the avatar stack and the detail list; when they were the only
+  assignee the detail view says there are none. A comment by them shows `—` for the name
+- **Fix direction:** for an `assignee_id` or comment `user_id` missing from the `users` map,
+  fall back to `profiles.name` (one extra query keyed by id) and label it "vanjski"; keep them
+  out of the picker, which stays on `public.users`
 ### COLLAB-15 · Low · Realtime publication membership is recorded nowhere
 - **Check:** Confirmed 2026-10-27 — the local stack built from every migration has an empty
   `supabase_realtime` publication
@@ -109,3 +135,12 @@ characterisation tests on `feature/voice-assistant`; its open questions (`OQ-n`)
   exists) are decided and will be fixed in voice phase 2. OQ-5 (`tool_result` emitted before it
   is persisted) is open. OQ-6 (`is_fully_paid` true when nothing is invoiced) is a chat bug
   outside that branch and has no owner yet.
+
+## Resolved
+
+### COLLAB-18 · High · `task_app_only` is invisible to the sign-up trigger when the user comes from the Auth admin API
+Fixed 2026-11-10 by `20261110100200_task_app_only_admin_api.sql` (`on_auth_user_task_app_only`,
+`AFTER UPDATE OF raw_app_meta_data`, undoes the roster row a sign-up provisioned within the last
+minute) and by moving `manage-users` into this repo, where it reads `profiles.external` back
+after every create. Test `supabase/tests/database/task_app_only_admin_api.test.sql` ('COLLAB-18: …'):
+4 of 14 assertions fail with the migration removed, seen on the local stack on 2026-11-10.

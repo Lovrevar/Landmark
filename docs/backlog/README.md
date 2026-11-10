@@ -15,7 +15,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 9, plus 4 waiting on the ERP |
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
 | [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 25 |
-| [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 15 |
+| [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 17 |
 | [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 19 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
 | [archive/](./archive/) | The four audits, with every fixed entry | Closed, do not update |
@@ -68,8 +68,9 @@ Ranked on 2026-10-05, last revised 2026-11-05, by what goes wrong if the item is
 
 ### 1. Do first
 
-Everything in [release.md](./release.md): try TIC saves on dev. The release of 2026-11-05 is out
-on production and the demo. Every migration in `supabase/migrations/` is on production except
+Everything in [release.md](./release.md): try TIC saves on dev. The release of 2026-11-05 is
+out on production and the demo; the three task-app migrations of 2026-11-10 and `manage-users`
+are on dev and production. Every migration in `supabase/migrations/` is on production except
 `voice_calls`, which waits for the voice feature.
 
 ### 2. Open defects that need code or a decision

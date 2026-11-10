@@ -122,11 +122,15 @@ npm run test:coverage  # one-shot run with v8 coverage (text + html report)
 | `gen_22_unphased_tic` | GEN-22: an unphased TIC leaves several phases NULL, gives a single phase the whole plan and its classification split, and re-applies when phases are added or removed |
 | `room_reservation_attendees` | Meeting attendees (SHARED_SCHEMA.md §15): the creator or an admin adds and removes, an attendee leaves but cannot invite or remove others, no duplicates, no UPDATE grant, attendees cascade with the reservation, the table is published for realtime |
 | `meeting_rooms` | Conference rooms (SHARED_SCHEMA.md §15): the two rooms are seeded; everyone reads every booking; a booking in someone else's name, one ending before it starts, one over 24 h and one overlapping the same room are refused; back-to-back and other-room bookings pass; only the creator or a task-app admin edits or deletes; only an admin manages rooms; `updated_at` moves by trigger |
+| `voice_calls` | Voice calls (`20261026100000`): `voice_calls` holds a live JWT, so no signed-in user may read or write it; `ai_sessions.channel` defaults to `chat` and accepts only `chat` / `voice` |
+| `task_subtask_deadlines` | A deadline per checklist line (SHARED_SCHEMA.md §4, §8): the column exists; the create RPC stores a line's date and treats a missing or empty one as none; the update RPC sets it when the key is present, **keeps it when the key is absent** (an older client bundle), clears it on `null` and on `""`, dates a new line, and disturbs neither a tick nor the parent |
+| `task_app_only_users` | Task-app-only people (SHARED_SCHEMA.md §1): an auth user carrying `app_metadata.task_app_only` gets a profile marked `external` and no `public.users` row, can create a task for itself and is not an admin; one without the flag is provisioned as before |
+| `task_app_only_admin_api` | COLLAB-18: the same, the way the Auth admin API does it — inserted without the flag, then given it by an UPDATE of `raw_app_meta_data`; the roster row the insert provisioned is gone, the profile is external and named from `user_metadata`; a roster row older than a minute survives the flag; an identity-linking rewrite of `app_metadata` touches nothing |
 
 ### Writing one
 
 - Name the file after the backlog id (`sales_10_cancel_sale.test.sql`) and the assertions too (`'SEC-004: …'`).
-- Fixtures are inserted as the database owner, so RLS does not get in the way. Insert into `auth.users` with the role in `raw_app_meta_data` (`{"provider":"email","role":"Supervision"}`). The sign-up trigger (`handle_new_user`) creates the `public.users` row.
+- Fixtures are inserted as the database owner, so RLS does not get in the way. Insert into `auth.users` with the role in `raw_app_meta_data` (`{"provider":"email","role":"Supervision"}`). The sign-up trigger (`handle_new_user`) creates the `public.users` row (unless `raw_app_meta_data.task_app_only` is `true`: then only `profiles`, with `external = true`).
 - To act as that user: `set local role authenticated;` then `set local request.jwt.claims = '{"sub":"<auth user id>","role":"authenticated"}';`. `reset role;` goes back to the owner, for example to check nothing was written.
 - RLS refusing an INSERT raises `42501`. An UPDATE or DELETE it refuses raises nothing and touches 0 rows, so assert the row count afterwards.
 - An UPDATE with a `WHERE` clause is also checked against the SELECT policy, which can hide a broken UPDATE policy. Test the UPDATE policy with a blanket `update … set` (no `WHERE`) and count what changed.
@@ -188,6 +192,11 @@ anything under `erp.` or the promotion functions.**
 
 The parsing and validation logic has its own Deno unit tests
 (`cd supabase/functions && deno test import-erp/`, 38 tests).
+
+`manage-users`, the mobile task app's function for people from outside the company, keeps its
+decisions in `supabase/functions/manage-users/policy.ts` (external-only create, the delete
+guard, the after-create check that catches a project missing `20261110100200`), tested with
+`deno test manage-users/`.
 
 ## AI chat characterisation tests
 

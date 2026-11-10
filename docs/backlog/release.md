@@ -41,8 +41,25 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   `select * from voice_calls` is refused; existing chat sessions show `channel = 'chat'`. Then
   `/db-types`.
   **Production's history ends at `20261027100100`** (the meeting-room migrations, recorded by
-  hand on 2026-11-05), which is newer than this file, so a plain `supabase db push` refuses it:
-  push with `--include-all`, after a `--dry-run` that lists only this file.
+  hand on 2026-11-05; `20261110100100` once the two task-app items below are done), which is
+  newer than this file, so a plain `supabase db push` refuses it: push with `--include-all`,
+  after a `--dry-run` that lists only this file.
+- [x] **Apply `20261110100000_task_subtask_deadlines`** (2026-11-10). Part 1 of the task app's
+  request: `task_subtasks.deadline` and the optional `deadline` key on `p_subtasks`. Production
+  by hand in the SQL editor, dev by `supabase db push` from `development`; all three
+  `20261110*` rows confirmed in `schema_migrations` on both. `/db-types` still to run (from
+  dev it drops the `erp` schema — splice by hand).
+- [x] **Apply `20261110100100_task_app_only_users`** (2026-11-10). Part 2: `profiles.external`
+  and the `task_app_only` branch in `handle_new_user()`. Production by hand, then found not to
+  work through the Auth admin API (COLLAB-18, fixed by the next item); the one person created
+  that way was kept as a Supervision user with no projects. Dev by `db push`.
+- [x] **Apply `20261110100200_task_app_only_admin_api` and deploy `manage-users`**
+  (2026-11-10). Dev by `db push` and `supabase functions deploy manage-users`; production in the
+  SQL editor with the `schema_migrations` row by hand, then the function deployed with
+  `--project-ref xhlgviunhitdgzkeucxc`. On both projects an external person added from the task
+  app's Settings came out as the profiles row only, `external = true`. The task app is told; it
+  retires its `supabase/` folder and ships "Dodaj vanjskog suradnika". Not on LandmarkDemo, which
+  no task app uses.
 - [x] **Walk [../test/11-pre-merge-ui-audit.md](../test/11-pre-merge-ui-audit.md).** (2026-11-05,
   before the release.) 80
   checks, over a dozen marked blocker. Steps 0.4 and 0.5 follow the migrations directly: log in as

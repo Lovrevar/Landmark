@@ -128,7 +128,7 @@ When `channel` is `voice`, `data` passes through `voice.ts`:
 
 `search_help` returns its articles as one markdown string, so on voice it is clipped to 200
 characters. The voice plan's "titles and a one-line summary on voice" is not built yet:
-[COLLAB-16](./backlog/collaboration.md).
+[COLLAB-19](./backlog/collaboration.md).
 
 ## Logging
 

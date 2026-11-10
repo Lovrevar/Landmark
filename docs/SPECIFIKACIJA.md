@@ -230,8 +230,8 @@ Tablica `public.users`:
 dodatno učitava dodijeljene projekte iz tablice `project_managers`.
 
 Tablica `public.profiles` zrcali korisnike za mobilnu aplikaciju zadataka (`id` = auth id,
-`email`, `name`, `role` = `admin` za direktore, inače `user`); sinkronizira je trigger
-`sync_profile_from_user`.
+`email`, `name`, `role` = `admin` za direktore, inače `user`, `external` za vanjske
+suradnike bez retka u `public.users`); sinkronizira je trigger `sync_profile_from_user`.
 
 ### 3.4 Dodjela korisnika i uloge
 
@@ -239,6 +239,13 @@ Funkcija `handle_new_user()` (trigger `on_auth_user_created` nad `auth.users`):
 
 - **prijava e-mailom** — kreira redak u `public.users`; uloga se čita iz
   `raw_app_meta_data.role`, zadano `Sales`;
+- **vanjski suradnik aplikacije Zadaci** — e-mail prijava s
+  `app_metadata.task_app_only = true` (može postaviti samo servisna uloga, tj. funkcija
+  `manage-users`, koja se postavlja iz ovog repozitorija) ne stvara redak u `public.users`,
+  nego samo `profiles` s `external = true`; takva osoba radi u aplikaciji Zadaci, a u Landmark
+  ne može. Budući da admin API upisuje `app_metadata` tek nakon umetanja retka, drugi okidač
+  (`on_auth_user_task_app_only`) poništava redak u `public.users` koji je prvi okidač upravo
+  stvorio (migracije `20261110100100` i `20261110100200`);
 - **Microsoft prijava** — samo povezuje: traži unaprijed kreiran redak po e-mailu (bez obzira
   na velika i mala slova) i upisuje mu `auth_user_id`. Ako retka nema, sesija se odbija
   (`sso_not_provisioned`); ako je redak već vezan uz drugog korisnika, povezivanje se odbija.
