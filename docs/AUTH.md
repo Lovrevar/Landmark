@@ -50,7 +50,22 @@ account. `handle_new_user()` runs from the `on_auth_user_created` trigger on `au
 non-email identity to a `public.users` row that an admin created in advance,
 matched on email with `auth_user_id` still NULL. With no such row, no account is
 created, `fetchUserData` finds nothing, and the client signs the session back out
-with `auth.error_sso_not_provisioned`. To onboard someone:
+with `auth.error_sso_not_provisioned`.
+
+The email branch has one exception since `20261110100100_task_app_only_users.sql`: an
+auth user created with `app_metadata: {"task_app_only": true}` — settable by the service
+role only, which is how the task app's `manage-users` function creates a person outside the
+company — gets a `profiles` row with `external = true` and **no** `public.users` row. Such a
+person works in the task app and nowhere else; if they try Cognilion the client refuses the
+session with `no_user_record`, which is the intended outcome
+([SHARED_SCHEMA.md §1](./SHARED_SCHEMA.md#1-identity-model--the-thing-most-bugs-come-from)).
+Because the admin API sets `app_metadata` only *after* the insert the trigger fires on, a
+second trigger (`on_auth_user_task_app_only`, `20261110100200`, COLLAB-18) undoes the roster
+row the insert provisioned, for a row created in the same minute only. The function that
+creates such people, `manage-users`, is deployed from this repo
+(`supabase/functions/manage-users/`).
+
+To onboard someone:
 
 ```sql
 INSERT INTO public.users (email, username, role)

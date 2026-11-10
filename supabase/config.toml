@@ -64,6 +64,17 @@ verify_jwt = false
 # assignee, the creator, or an admin before sending.
 verify_jwt = true
 
+[functions.manage-users]
+# Adds and removes the standalone mobile task app's people from outside the
+# company: a profiles row and never a Landmark roster row. Deployed from this
+# repo, not from that app, because the schema and the two triggers it depends
+# on (20261110100100, 20261110100200 — COLLAB-18) live here. The caller must
+# be a task-app admin (profiles.role = 'admin'); the function re-checks that
+# itself after the gateway's JWT gate, and reads profiles.external back after
+# every create so a project missing the trigger refuses instead of creating a
+# Landmark user. docs/SHARED_SCHEMA.md §1.
+verify_jwt = true
+
 [functions.sort-document]
 # Called by the Make.com email-automation scenario, not a browser — there is
 # no user JWT. The function authenticates the caller itself via a shared

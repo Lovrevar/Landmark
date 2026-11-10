@@ -51,6 +51,11 @@ not there.
 that one recorded at 2026-09-02 11:00 UTC and in use by the mobile app. Confirm with the query
 above rather than taking this paragraph's word for it.
 
+`20261110100000_task_subtask_deadlines` (§4, §8), `20261110100100_task_app_only_users` and
+`20261110100200_task_app_only_admin_api` (§1) are specified here and **pending** until
+`docs/backlog/release.md` ticks them (the first two reached production by hand on 2026-11-10).
+All are additive; neither client may name the new columns before the database has them.
+
 ---
 
 ## 1. Identity model — the thing most bugs come from
@@ -68,7 +73,8 @@ auth.users.id ──> public.profiles.id          <- task tables point here
 ```
 
 `public.users` is Cognilion's own user table and is **irrelevant to you** except that it is
-where profiles get mirrored from. If you see a query joining `users`, it is Cognilion code.
+where staff profiles get mirrored from, and that its *absence* is what makes a person
+task-app-only (below). If you see a query joining `users`, it is Cognilion code.
 
 ```sql
 CREATE TABLE public.profiles (
@@ -76,7 +82,8 @@ CREATE TABLE public.profiles (
   email      text NOT NULL,
   name       text NOT NULL,
   role       text NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  external   boolean NOT NULL DEFAULT false   -- 20261110100100
 );
 ```
 
@@ -87,11 +94,48 @@ CREATE TABLE public.profiles (
 - Policies: `profiles_select_all` (any authenticated user may read any profile).
   `profiles_update_own` was **dropped** — regular users can no longer update their own row,
   which is what closes self-promotion through the unrestricted `role` column. Admins may
-  update any profile (`20260721110000_profiles_admin_role_management.sql`).
+  update any profile, `external` included (`20260721110000_profiles_admin_role_management.sql`).
 - ⚠️ Since `20260825100000_sso_pre_provisioned_only.sql`, a non-email auth provider
   (Microsoft/Entra) **links only, never auto-provisions**. An OAuth identity with no
   pre-existing roster row gets no `public.users` row, and Cognilion's client then refuses the
   session. If the mobile app ever adds OAuth sign-in, this is the behaviour it inherits.
+- **A profile with no roster row is a legitimate state** since
+  `20261110100100_task_app_only_users.sql`: a person outside the company who works in the task
+  app only (a subcontractor, a site contact). The task app's `manage-users` function creates
+  the auth user with `app_metadata: {"task_app_only": true}` — `raw_app_meta_data` is written
+  by the admin API only, so only a service-role caller can set it — and the database keeps
+  the roster row away from that sign-up with **two triggers**, because the admin API inserts
+  the user *without* the request's `app_metadata` and merges it in a later UPDATE of the same
+  transaction (`20261110100200`, COLLAB-18):
+  - `on_auth_user_created` → `handle_new_user()`: a row inserted **with** the flag (a direct
+    insert, the pgTAP fixtures) skips `public.users` and writes the profile with
+    `external = true`, `role = 'user'`, `name` from `user_metadata.name`;
+  - `on_auth_user_task_app_only` (`AFTER UPDATE OF raw_app_meta_data`, only when the flag turns
+    true) → `handle_auth_user_task_app_only()`: undoes what the insert provisioned — deletes
+    the roster row **if it was created within the last minute**, marks the profile external,
+    forces `role = 'user'` and takes `name` from `user_metadata.name`. A roster row older than
+    that is a real Landmark user and survives the flag, with a WARNING. No error is swallowed:
+    if the undo fails the admin create fails, and no user is left behind.
+  - `manage-users` itself is deployed **from Landmark** (`supabase/functions/manage-users/`,
+    `verify_jwt` on, task-app admin re-checked against `profiles.role`). It refuses a create
+    without `external: true` (staff are provisioned in Landmark), reads `profiles.external`
+    back after every create and deletes the auth user again if the trigger did not mark it,
+    and deletes external people only.
+
+  What each side sees:
+  - **Task app:** everything works. Every task and room policy compares `auth.uid()` or
+    consults `profiles`; none reads `public.users`. `is_admin()` reads `profiles.role`. Label
+    the row "vanjski suradnik" from `external` and keep the admin toggle off it.
+  - **Cognilion:** the session is refused (`no_user_record`), no picker lists the person
+    (`fetchTaskUsers()` reads `public.users`), and a task assigned to them in the task app shows
+    that assignee **with no name** to its creator and other assignees (COLLAB-16).
+  - **`external` is a label, not a boundary.** `profiles_update_admin` is row-level and there
+    are no column grants, so a task-app admin can flip it. The boundary is the missing roster
+    row. If such a person is later hired and given a `public.users` row,
+    `sync_profile_from_user` updates `email` only — flip `external = false` by hand.
+  - Deleting the auth user cascades to `profiles`; there is nothing in `public.users` to clean.
+  - The Auth dashboard's "Add user" cannot set `app_metadata`, so it always makes a Landmark
+    user. External people come through `manage-users` or the admin API only.
 
 ---
 
@@ -177,9 +221,9 @@ Your inserts should leave it `NULL` (the default), so a task you assign shows as
 
 ## 4. `public.task_subtasks` — checklists
 
-Specified by `20260902110000_task_subtasks.sql`, applied 2026-09-02. This is the newest surface
-and the one you are most likely to
-be verifying, so verify against the migration file, and expect the database not to have it.
+Specified by `20260902110000_task_subtasks.sql`, applied 2026-09-02, and extended by
+`20261110100000_task_subtask_deadlines.sql` (the `deadline` column, pending — see the header).
+Verify against the migration files, not this page.
 
 ```sql
 CREATE TABLE public.task_subtasks (
@@ -189,10 +233,18 @@ CREATE TABLE public.task_subtasks (
   position     int  NOT NULL,
   completed    boolean NOT NULL DEFAULT false,
   completed_at timestamptz,
-  created_at   timestamptz NOT NULL DEFAULT now()
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  deadline     date                            -- 20261110100000
 );
 CREATE INDEX idx_task_subtasks_task ON public.task_subtasks(task_id, position);
 ```
+
+**`deadline` is informational.** It paints a badge on the line and nothing else: it is not read
+by `dispatch_due_reminders()` (reminders stay per task, keyed `(task_id, kind, sent_on)` —
+decided with the task app on 2026-11-10; per-line reminders would re-key that table and are a
+separate change), the sync trigger below fires on `UPDATE OF completed` only, and there are no
+column grants on this table, so whoever the row policies admit — creator, assignee or admin —
+may write it directly or through `p_subtasks` ([§8](#p_subtasks--the-tri-state)).
 
 **The kind is derived, never stored.** Zero subtasks = simple task; one or more = checklist.
 There is no `kind` column and there must not be one: it would be a second source of truth that
@@ -443,8 +495,8 @@ Behaviour worth knowing:
 
 ### `p_subtasks` — the tri-state
 
-A jsonb array of `{"id": uuid|null, "title": text, "position": int}`. Three distinguishable
-states, and the client is expected to use all three:
+A jsonb array of `{"id": uuid|null, "title": text, "position": int, "deadline"?: date|null}`.
+Three distinguishable states, and the client is expected to use all three:
 
 | Value | Meaning |
 |---|---|
@@ -458,8 +510,24 @@ means a new line. That is the entire reason `update` reconciles rather than dele
 crossed off. Blank titles are dropped rather than rejected (an empty trailing row is what an
 "add line" button produces). Positions fall back to array ordinal when absent.
 
+**The `deadline` key is optional, and on `update` absent and null differ** (since
+`20261110100000`):
+
+| Sent | Meaning |
+|---|---|
+| key absent | keep the line's stored deadline |
+| `"deadline": null` | clear it |
+| `"deadline": ""` | clear it (what a cleared `<input type="date">` yields) |
+| `"deadline": "2026-11-20"` | set it |
+
+A bundle built before the column existed sends `{id, title, position}` and nothing else; if the
+RPC read a missing key as "clear", the first edit from an old phone would wipe every line's
+date. On `create` there is nothing stored to keep, so absent and null are the same there. The
+task app's forms always send the key (`null` when empty), so the absent-key rule is only ever
+exercised by old bundles, by design.
+
 The reconciliation is one statement with three CTE arms — `removed` (anti-join, because
-`NOT IN` would swallow the predicate on a NULL id), `moved` (title/position only, never
+`NOT IN` would swallow the predicate on a NULL id), `moved` (title/position/deadline, never
 `completed`), and the insert. It is deliberately **not** a temp table: `pg_temp` is searched
 ahead of a `SECURITY DEFINER` function's fixed `search_path`, so a temp relation name is one
 an unprivileged session can get in front of.
@@ -513,6 +581,8 @@ WHERE t.completed = false
   AND t.deadline <= v_today + 1
   AND t.deadline >= v_today - 30   -- stop nagging about ancient tasks
 ```
+
+`task_subtasks.deadline` is not in it: a line's date never sends a push (§4).
 
 ⚠️ **It is re-evaluated every run.** A checklist task pushed back to open by an un-tick becomes
 eligible again the following morning — un-ticking a line on a late task re-arms its overdue
@@ -595,6 +665,18 @@ third uninvolved user.
       `task_subtasks_sync_parent`
 - [ ] No column-level grants: `\dp public.tasks` and `\dp public.task_subtasks` show no
       per-column entries for `authenticated`
+- [ ] `task_subtasks.deadline` exists (`20261110100000`); a `p_subtasks` element sent
+      **without** the key leaves the line's date alone, `null` and `""` clear it
+      (`supabase/tests/database/task_subtask_deadlines.test.sql`)
+- [ ] `profiles.external` exists (`20261110100100`); an auth user inserted with
+      `raw_app_meta_data.task_app_only = true` gets a profile with `external = true` and
+      **no** `public.users` row; one without the flag is provisioned as before
+      (`supabase/tests/database/task_app_only_users.test.sql`)
+- [ ] `on_auth_user_task_app_only` exists on `auth.users` (`20261110100200`); an auth user
+      inserted **without** the flag and then given it by an UPDATE of `raw_app_meta_data`
+      ends with no `public.users` row and an external profile named from `user_metadata`; a
+      roster row older than a minute survives the same flag
+      (`supabase/tests/database/task_app_only_admin_api.test.sql`)
 
 **Behaviour**
 
@@ -634,6 +716,7 @@ a user moving between the apps sees the same rows.
 | Who may add / rename / reorder / remove a line | **Creator, assignee, or admin** — the set the RLS policies allow. A client that is stricter than this is inconsistent with the other one, not "safer" |
 | Removing the last line | The task becomes simple again and **keeps** whatever `completed` it had. Do not reset it |
 | Blank line titles | Dropped silently, not rejected. An empty trailing row is what an "add line" button produces |
+| A line's deadline | Task app: shown in the detail sheet and the forms only; the card and the deadline sort stay on `tasks.deadline`; the forms always send the key (`null` when empty). Cognilion: not shown yet (COLLAB-17) — its `SUBTASK_FIELDS` is explicit and its per-column writes leave the date alone |
 | Concurrent ticks | The UI must not block: tick optimistically, do not gate the next tap on the last one's response. But the **write path must serialise per task**, or two ticks on a 4-of-6 list both read `completed = false` before writing and `true` after, each concludes it closed the task, and the user gets two pushes. Queue the network work behind the optimistic UI; do not serialise the taps |
 
 ⚠️ The permission row is the one that has actually diverged. Routing structural subtask edits

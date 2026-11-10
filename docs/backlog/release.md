@@ -41,8 +41,51 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   `select * from voice_calls` is refused; existing chat sessions show `channel = 'chat'`. Then
   `/db-types`.
   **Production's history ends at `20261027100100`** (the meeting-room migrations, recorded by
-  hand on 2026-11-05), which is newer than this file, so a plain `supabase db push` refuses it:
-  push with `--include-all`, after a `--dry-run` that lists only this file.
+  hand on 2026-11-05; `20261110100100` once the two task-app items below are done), which is
+  newer than this file, so a plain `supabase db push` refuses it: push with `--include-all`,
+  after a `--dry-run` that lists only this file.
+- [ ] **Apply `20261110100000_task_subtask_deadlines`** (the task app's request of 2026-11-10,
+  part 1: `task_subtasks.deadline` and the optional `deadline` key on `p_subtasks`).
+  **Production: applied by hand on 2026-11-10**, before the PR merged and before dev — check
+  that its `schema_migrations` row was inserted, and still apply to dev. Dev
+  (`nxvbglegqcgxlxvyfuht`) first, then production (`xhlgviunhitdgzkeucxc`). A plain `db push`
+  refuses it while `voice_calls` is older and unapplied, and `--include-all` would drag
+  `voice_calls` along, so do what the meeting-room item did: run the file in the SQL editor
+  and insert its row into `supabase_migrations.schema_migrations` by hand. Check:
+  `select column_name from information_schema.columns where table_name = 'task_subtasks' and
+  column_name = 'deadline'` returns one row, and `npm run test:db` was green locally before
+  this. **Tell the task app after dev** — it runs `/schema-refresh` and finishes its client —
+  **and after production**, because its `main` names `deadline` in the subtask embed of
+  `TASK_SELECT`, and PostgREST fails that whole query on an unknown column: a task-app bundle
+  naming the column before production has it takes the Zadaci tab dark. It holds its
+  `dev` → `main` merge until this is confirmed. Then `/db-types` here (from dev it drops the
+  `erp` schema — splice the two new columns in by hand).
+- [ ] **Apply `20261110100100_task_app_only_users`** (part 2: `profiles.external`, and
+  `handle_new_user()` skips `public.users` for an auth user with
+  `app_metadata.task_app_only = true`). **Production: applied by hand on 2026-11-10** (check
+  the `schema_migrations` row), and found not to work through the Auth admin API — COLLAB-18,
+  fixed by `20261110100200` below; the one person created that way was kept as a Supervision
+  user with no projects instead. Independent of part 1, same procedure for dev: SQL
+  editor plus a `schema_migrations` row by hand, then production. Check on dev: create an
+  auth user through the dashboard (or the task app's `manage-users` with `external: true`)
+  carrying that app_metadata, then `select external from public.profiles where id = …` is
+  `true` and `select count(*) from public.users where auth_user_id = …` is 0; a user created
+  without the flag still gets a `Sales` roster row. Then `/db-types` (same splice note as
+  above).
+- [ ] **Apply `20261110100200_task_app_only_admin_api` and deploy `manage-users`** (COLLAB-18:
+  the Auth admin API merges `app_metadata` after the insert, so a second trigger undoes the
+  roster row). Dev (`nxvbglegqcgxlxvyfuht`) first, then production (`xhlgviunhitdgzkeucxc`),
+  SQL editor plus the `schema_migrations` row by hand (same reason as above: `voice_calls` is
+  older and unapplied). Then, from this repo, `supabase functions deploy manage-users
+  --project-ref <ref>` to **both** projects; the task app's copy of the function is retired
+  once this is live (its repo's `supabase/functions/manage-users`, README, `CLAUDE.md` and
+  `docs/ARCHITECTURE.md` point here afterwards). Check on each project: from the task app's
+  Settings add an external person, then
+  `select 'users', username, role from public.users where auth_user_id = '<id>' union all
+  select 'profiles', name, external::text from public.profiles where id = '<id>'` returns the
+  **profiles row only**, external `true`, named as entered; signing in to Landmark with that
+  account is refused; a `DELETE ?id=<staff id>` through the function answers 400. Before
+  production is done the task app must not ship its "Dodaj vanjskog suradnika" form.
 - [x] **Walk [../test/11-pre-merge-ui-audit.md](../test/11-pre-merge-ui-audit.md).** (2026-11-05,
   before the release.) 80
   checks, over a dozen marked blocker. Steps 0.4 and 0.5 follow the migrations directly: log in as
