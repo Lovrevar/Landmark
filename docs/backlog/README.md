@@ -7,7 +7,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 
 | File | Covers | Open |
 |---|---|---|
-| [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 3 steps |
+| [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 6 steps |
 | [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 1 defect, 3 accepted risks |
 | [sales.md](./sales.md) | Units, the sale flow, customers | 9 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
@@ -15,7 +15,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 9, plus 4 waiting on the ERP |
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
 | [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 25 |
-| [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 14 |
+| [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 16 |
 | [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 19 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
 | [archive/](./archive/) | The four audits, with every fixed entry | Closed, do not update |
@@ -68,9 +68,12 @@ Ranked on 2026-10-05, last revised 2026-11-05, by what goes wrong if the item is
 
 ### 1. Do first
 
-Everything in [release.md](./release.md): try TIC saves on dev. The release of 2026-11-05 is out
-on production and the demo. Every migration in `supabase/migrations/` is on production except
-`voice_calls`, which waits for the voice feature.
+Everything in [release.md](./release.md): apply `20261110100200` and deploy `manage-users` to
+dev and production, then apply the two earlier task-app migrations of 2026-11-10 to dev; try
+TIC saves on dev. The release of 2026-11-05 is out on production and the demo. Every migration
+in `supabase/migrations/` is on production except `voice_calls`, which waits for the voice
+feature, and `20261110100200`, which waits for release.md (`20261110100000` / `20261110100100`
+reached production by hand on 2026-11-10 and still wait for dev).
 
 ### 2. Open defects that need code or a decision
 

@@ -12,7 +12,7 @@ Removed in the rework: the `in_progress` ("u tijeku") status, reminders (never d
 
 ## Data Layer
 
-Six tables (schema baseline + `20260706120000_simplify_tasks.sql` + `20260720120000_tasks_mobile_compat.sql` + `20260902110000_task_subtasks.sql`):
+Six tables (schema baseline + `20260706120000_simplify_tasks.sql` + `20260720120000_tasks_mobile_compat.sql` + `20260902110000_task_subtasks.sql` + `20261110100000_task_subtask_deadlines.sql`):
 
 > ⚠️ **Shared schema with the standalone mobile task app.** All user columns
 > in the task tables (`tasks.created_by`, `task_assignees.assignee_id`,
@@ -20,7 +20,11 @@ Six tables (schema baseline + `20260706120000_simplify_tasks.sql` + `20260720120
 > ids** and FK to `public.profiles` (a mirror of `public.users` keyed by
 > `auth_user_id`; email is trigger-synced, while `name`/`role` are owned by
 > profiles — task-app admins are managed explicitly there, independent of
-> Cognilion roles; new signups default to `role='user'`).
+> Cognilion roles; new signups default to `role='user'`). Since
+> `20261110100100_task_app_only_users.sql` a `profiles` row may exist **with no
+> `public.users` row** — a task-app-only person (`profiles.external = true`), who can
+> never sign in here — which is why `TaskRow`/`TaskDetail` drop an assignee that
+> resolves to no roster user instead of failing (COLLAB-16).
 > The web app translates via `user.auth_user_id` from AuthContext; the
 > activity log still uses `public.users.id` (see `TaskActor` in
 > [types/tasks.ts](../src/types/tasks.ts)). Column names follow the mobile
@@ -33,7 +37,7 @@ Six tables (schema baseline + `20260706120000_simplify_tasks.sql` + `20260720120
 
 - `tasks` — carries `project_id`, `description_format ('markdown'|'plain')`; `completed` boolean; `completed_at` flips with it. `deadline` is the due date. New descriptions are always saved as `plain`; legacy `markdown` rows still render through `MarkdownView`. `due_time` remains in the schema for legacy Calendar rendering but has no UI (and is invisible to the mobile app). `color` is a nullable label colour constrained to six values by `tasks_color_check` — see [Colours](#colours)
 - `task_assignees` — junction (`assignee_id`, composite PK `(task_id, assignee_id)` so PostgREST supports the mobile app's flat `profiles!task_assignees` embed; surrogate `id` kept as UNIQUE for web delete-by-id) with `acknowledged_at` (NULL until the assignee opens the task — see [Unread](#unread-new-assignments)). The mobile app creates and edits tasks via the `create_task_with_assignees(...)` / `update_task_with_assignees(...)` RPCs, which exist here too but which the web paths do not use (see [Editing](#editing-create-vs-update-rpcs))
-- `task_subtasks` — checklist lines: `(task_id, title, position, completed, completed_at)`, cascade-deleted with the task. Zero rows for a task means a simple task; one or more makes it a checklist whose `completed` is written by a trigger. See [Subtasks](#subtasks-checklists)
+- `task_subtasks` — checklist lines: `(task_id, title, position, completed, completed_at, deadline)`, cascade-deleted with the task. `deadline` is a per-line date the mobile app shows; it sends no reminder and Cognilion does not show it yet (COLLAB-17). Zero rows for a task means a simple task; one or more makes it a checklist whose `completed` is written by a trigger. See [Subtasks](#subtasks-checklists)
 - `task_reminders` — scheduler bookkeeping for [deadline reminders](#deadline-reminders), keyed `(task_id, kind, sent_on)`. No client reads it; `REVOKE ALL` from `anon`/`authenticated`
 - `task_comments` — thread per task; bodies may embed `@[username](uuid)` mention tokens
 - `task_attachments` — storage metadata for files in the private `task-attachments` Storage bucket (25 MB/file, 10/task)
@@ -83,7 +87,7 @@ Two RPCs exist for the mobile app, which has no direct write path of its own:
 - `create_task_with_assignees(p_title, p_description, p_project_id, p_deadline, p_assignee_ids, p_color, p_subtasks)` — SECURITY INVOKER, requires ≥1 assignee. `p_color` then `p_subtasks` were each appended last with a DEFAULT so an old client bundle calling the shorter form keeps working through a deploy
 - `update_task_with_assignees(p_task_id, p_title, p_description, p_project_id, p_deadline, p_color, p_assignee_ids, p_subtasks)` — SECURITY DEFINER (and therefore carrying its own "creator or admin" check, since DEFINER bypasses RLS). Reassignment is a set difference, not a wipe-and-reinsert, so rows that did not change keep their `created_at` **and their `acknowledged_at`**
 
-`p_subtasks` is a jsonb array of `{"id": uuid|null, "title": text, "position": int}` with three meaningful states: `NULL` = an older client that knows nothing about subtasks, leave them alone; `'[]'` = a simple task, clear the list; `[…]` = this is the list, in this order. A present `id` means "the row you already have" and preserves its `completed` — that is why the update reconciles instead of deleting and re-inserting, and why changing a deadline does not un-tick everyone's lines.
+`p_subtasks` is a jsonb array of `{"id": uuid|null, "title": text, "position": int, "deadline"?: date|null}` with three meaningful states: `NULL` = an older client that knows nothing about subtasks, leave them alone; `'[]'` = a simple task, clear the list; `[…]` = this is the list, in this order. A present `id` means "the row you already have" and preserves its `completed` — that is why the update reconciles instead of deleting and re-inserting, and why changing a deadline does not un-tick everyone's lines. The `deadline` key is optional: on update, a **missing** key keeps the line's stored date (an old phone bundle never sends it), while `null` or `""` clears it — [SHARED_SCHEMA.md §8](./SHARED_SCHEMA.md#p_subtasks--the-tri-state).
 
 ⚠️ Recreating these functions **must preserve `updated_at = now()`** in the update RPC's set-list. The mobile app's reference version omits it — its `tasks` table has no such column — and this one is maintained by hand everywhere else.
 
@@ -253,6 +257,7 @@ The header badge on the Tasks icon and the blue dot on a row mean the same thing
 - Migration `20260902110000_task_subtasks.sql` (the `task_subtasks` table + RLS + the parent-sync trigger + `p_subtasks` on both RPCs) must be applied by a human **before** this client ships, then `npm run db:types`. Apply it to the e2e/dev project (`nxvbglegqcgxlxvyfuht`, pinned as `E2E_ALLOWED_SUPABASE_URL` in `.env.test.example`) first — it is written from an unvalidated reference spec that has never met a real Postgres. Afterwards, and only after reading its dry-run output, the one-shot `docs/subtasks-backfill-preview.sql` → `docs/subtasks-backfill.sql` pair converts existing description-lists
 - **The mobile app dropped projects on 2026-10-27** (decided with the users): it no longer shows or sets `project_id`, so tasks created on a phone arrive in the "no project" group here and are filed from the drawer. The phone passes the stored `project_id` back on edit, so a project set here survives an edit there — [SHARED_SCHEMA.md §14](./SHARED_SCHEMA.md#14-client-parity), divergence 3
 - Migration `20261027100000_meeting_rooms.sql` adds the conference-room board the mobile app shows as "Sastanci": `meeting_rooms` (two seeded rows) and `room_reservations`, keyed on auth ids like the task tables, with the double-booking check in the database. Cognilion has no UI for them (COLLAB-14) — [SHARED_SCHEMA.md §15](./SHARED_SCHEMA.md#15-meeting-rooms--meeting_rooms-and-room_reservations)
+- Migrations `20261110100000_task_subtask_deadlines.sql` (`task_subtasks.deadline` + the optional `deadline` key on `p_subtasks`) and `20261110100100_task_app_only_users.sql` (`profiles.external`; `handle_new_user()` skips `public.users` for `app_metadata.task_app_only`) answer the task app's requests of 2026-11-10; `20261110100200_task_app_only_admin_api.sql` adds the second trigger the Auth admin API needs (COLLAB-18) — see [People from outside the company](#people-from-outside-the-company-task-app-only). Apply by hand, dev first, then `/db-types` — [release.md](./backlog/release.md). The task app's `main` names `deadline` in its subtask embed, so it must not deploy before production has the column
 
 ## Web Push
 
@@ -270,6 +275,31 @@ Task notifications reach a phone's lock screen through the mobile app. Cognilion
 - `setAssignees` passes `newAssigneeIds` so only the people just added are told. The function **intersects** it with the assignees it read itself: the client can narrow the fan-out but never widen it, so the "client cannot push arbitrary content to arbitrary people" property holds. The mobile app never sends the field
 - Receiving in Landmark is not implemented — it would need PWA/service-worker infrastructure this repo does not have. The table and RPC already support it; the mobile app's `src/lib/push.ts` and `src/sw.ts` are a working reference
 - Notification text is built server-side in Croatian by `buildPayload()`. Correct while every recipient is a mobile-app user; revisit if Landmark ever receives
+
+## People from outside the company (task app only)
+
+The mobile app sometimes needs an account for a subcontractor or a site contact who must never
+become a Landmark user. Such a person is a `profiles` row with `external = true` and **no**
+`public.users` row, so this client refuses their session (`no_user_record`) and no picker lists
+them; a task assigned to them in the mobile app shows that assignee without a name here
+(COLLAB-16). [SHARED_SCHEMA.md §1](./SHARED_SCHEMA.md#1-identity-model--the-thing-most-bugs-come-from).
+
+- Edge function [`supabase/functions/manage-users/`](../supabase/functions/manage-users/index.ts) —
+  called by the mobile app's Settings screen ("Dodaj vanjskog suradnika"); deployed from this
+  repo because the schema and triggers it depends on live here. Caller must be a task-app admin
+  (`profiles.role = 'admin'`). `POST { name, email, password, external: true }` creates the auth
+  user through the Auth admin API with `app_metadata.task_app_only`; a create without
+  `external: true` is refused (staff are provisioned here, in `public.users`). `DELETE ?id=`
+  removes external people only. The decisions are in `policy.ts`, tested in Deno
+- Two triggers keep the roster row away from that sign-up: `handle_new_user()` for a row
+  inserted with the flag (`20261110100100`), and `on_auth_user_task_app_only` for the admin
+  API, which merges `app_metadata` in a later UPDATE (`20261110100200`, COLLAB-18). The function
+  reads `profiles.external` back after every create and deletes the auth user again if the
+  trigger did not mark it, so a project missing the migration refuses instead of creating a
+  Landmark user
+- Deploy: `supabase functions deploy manage-users --project-ref <ref>` to dev and production.
+  Needs only the platform-injected `SUPABASE_URL`, `SUPABASE_ANON_KEY` and
+  `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Deadline reminders
 
