@@ -2995,6 +2995,7 @@ export type Database = {
         Row: {
           created_at: string
           email: string
+          external: boolean
           id: string
           name: string
           role: string
@@ -3002,6 +3003,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          external?: boolean
           id: string
           name: string
           role?: string
@@ -3009,6 +3011,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          external?: boolean
           id?: string
           name?: string
           role?: string
@@ -4134,6 +4137,7 @@ export type Database = {
           completed: boolean
           completed_at: string | null
           created_at: string
+          deadline: string | null
           id: string
           position: number
           task_id: string
@@ -4143,6 +4147,7 @@ export type Database = {
           completed?: boolean
           completed_at?: string | null
           created_at?: string
+          deadline?: string | null
           id?: string
           position: number
           task_id: string
@@ -4152,6 +4157,7 @@ export type Database = {
           completed?: boolean
           completed_at?: string | null
           created_at?: string
+          deadline?: string | null
           id?: string
           position?: number
           task_id?: string
