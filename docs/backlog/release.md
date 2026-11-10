@@ -47,7 +47,8 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
 - [ ] **Apply `20261110100000_task_subtask_deadlines`** (the task app's request of 2026-11-10,
   part 1: `task_subtasks.deadline` and the optional `deadline` key on `p_subtasks`).
   **Production: applied by hand on 2026-11-10**, before the PR merged and before dev — check
-  that its `schema_migrations` row was inserted, and still apply to dev. Dev
+  that its `schema_migrations` row was inserted. **Dev: done 2026-11-10** by `supabase db push`
+  from `development`. Dev
   (`nxvbglegqcgxlxvyfuht`) first, then production (`xhlgviunhitdgzkeucxc`). A plain `db push`
   refuses it while `voice_calls` is older and unapplied, and `--include-all` would drag
   `voice_calls` along, so do what the meeting-room item did: run the file in the SQL editor
@@ -63,7 +64,8 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
 - [ ] **Apply `20261110100100_task_app_only_users`** (part 2: `profiles.external`, and
   `handle_new_user()` skips `public.users` for an auth user with
   `app_metadata.task_app_only = true`). **Production: applied by hand on 2026-11-10** (check
-  the `schema_migrations` row), and found not to work through the Auth admin API — COLLAB-18,
+  the `schema_migrations` row). **Dev: done 2026-11-10.** Found not to work through the Auth
+  admin API — COLLAB-18,
   fixed by `20261110100200` below; the one person created that way was kept as a Supervision
   user with no projects instead. Independent of part 1, same procedure for dev: SQL
   editor plus a `schema_migrations` row by hand, then production. Check on dev: create an
@@ -74,10 +76,12 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   above).
 - [ ] **Apply `20261110100200_task_app_only_admin_api` and deploy `manage-users`** (COLLAB-18:
   the Auth admin API merges `app_metadata` after the insert, so a second trigger undoes the
-  roster row). Dev (`nxvbglegqcgxlxvyfuht`) first, then production (`xhlgviunhitdgzkeucxc`),
-  SQL editor plus the `schema_migrations` row by hand (same reason as above: `voice_calls` is
-  older and unapplied). Then, from this repo, `supabase functions deploy manage-users
-  --project-ref <ref>` to **both** projects; the task app's copy of the function is retired
+  roster row). **Dev: done 2026-11-10** — `supabase db push` and
+  `supabase functions deploy manage-users` from `development`; an external person added from
+  the task app's Settings on dev came out as the profiles row only, `external = true`.
+  **Production pending:** SQL editor plus the `schema_migrations` row by hand (same reason as
+  above: `voice_calls` is older and unapplied), then, from this repo, `supabase functions deploy
+  manage-users --project-ref xhlgviunhitdgzkeucxc`; the task app's copy of the function is retired
   once this is live (its repo's `supabase/functions/manage-users`, README, `CLAUDE.md` and
   `docs/ARCHITECTURE.md` point here afterwards). Check on each project: from the task app's
   Settings add an external person, then

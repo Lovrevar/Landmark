@@ -69,11 +69,10 @@ Ranked on 2026-10-05, last revised 2026-11-05, by what goes wrong if the item is
 ### 1. Do first
 
 Everything in [release.md](./release.md): apply `20261110100200` and deploy `manage-users` to
-dev and production, then apply the two earlier task-app migrations of 2026-11-10 to dev; try
-TIC saves on dev. The release of 2026-11-05 is out on production and the demo. Every migration
-in `supabase/migrations/` is on production except `voice_calls`, which waits for the voice
-feature, and `20261110100200`, which waits for release.md (`20261110100000` / `20261110100100`
-reached production by hand on 2026-11-10 and still wait for dev).
+production (dev has both since 2026-11-10); try TIC saves on dev. The release of 2026-11-05 is
+out on production and the demo. Every migration in `supabase/migrations/` is on production
+except `voice_calls`, which waits for the voice feature, and `20261110100200`, which waits for
+release.md.
 
 ### 2. Open defects that need code or a decision
 
