@@ -7,7 +7,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 
 | File | Covers | Open |
 |---|---|---|
-| [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 6 steps |
+| [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 3 steps |
 | [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 1 defect, 3 accepted risks |
 | [sales.md](./sales.md) | Units, the sale flow, customers | 9 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
@@ -68,11 +68,10 @@ Ranked on 2026-10-05, last revised 2026-11-05, by what goes wrong if the item is
 
 ### 1. Do first
 
-Everything in [release.md](./release.md): apply `20261110100200` and deploy `manage-users` to
-production (dev has both since 2026-11-10); try TIC saves on dev. The release of 2026-11-05 is
-out on production and the demo. Every migration in `supabase/migrations/` is on production
-except `voice_calls`, which waits for the voice feature, and `20261110100200`, which waits for
-release.md.
+Everything in [release.md](./release.md): try TIC saves on dev. The release of 2026-11-05 is
+out on production and the demo; the three task-app migrations of 2026-11-10 and `manage-users`
+are on dev and production. Every migration in `supabase/migrations/` is on production except
+`voice_calls`, which waits for the voice feature.
 
 ### 2. Open defects that need code or a decision
 
