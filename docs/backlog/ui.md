@@ -1,7 +1,7 @@
 # Backlog — app-wide UI
 
 Problems that repeat across modules: formatting, status display, failed loads, translations, the
-shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-21`). Entry format and
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-22`). Entry format and
 rules are in [README.md](./README.md).
 
 A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
@@ -52,6 +52,18 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
   `tsconfig.app.json`, and it raised no deprecation warning on the config.
 - **Fix direction:** when typescript-eslint allows TypeScript 7, remove the `ignore` rule, take the
   bump on its own branch, and run typecheck, lint and the build.
+
+### UI-21 · Low · React 19 is deferred, and dependabot ignores its majors
+- **Check:** Confirmed (dependabot PR #98, closed 2026-11-11)
+- **Where:** `package.json` (`react`, `react-dom`, `@types/react`, `@types/react-dom` on 18),
+  `.github/dependabot.yml` (major bumps of all four are ignored)
+- **What happens:** dependabot bumped `react-dom` and `@types/react-dom` to 19 and left `react` on
+  18, so the PR failed CI. React 19 is a migration, not a bump: the four packages move together,
+  and the React Compiler that UI-18's lint sweep prepares for comes with it. The `ignore` rules
+  keep dependabot from reopening the split PR every Monday.
+- **Fix direction:** on its own branch, move all four to 19 at once, check the libraries that take
+  React as a peer (Recharts, React Router, react-i18next, @tanstack/react-virtual), run typecheck,
+  lint, unit tests and the build, click through the profiles; then remove the four `ignore` rules.
 
 ### UI-14 · Low · StatCard: a long word in the title runs under the icon
 - **Check:** Confirmed on LandmarkDemo at 1280 px (2026-10-21)

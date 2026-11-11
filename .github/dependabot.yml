@@ -21,6 +21,19 @@ updates:
       # 7 is also the native compiler, a migration of its own. Lift this when typescript-eslint allows it.
       - dependency-name: typescript
         versions: [">=7.0.0"]
+      # The runtime is Node 24 (Vercel's build setting and CI); the types follow it.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # React 19 is a planned migration (backlog UI-21): react, react-dom and both @types packages
+      # move together, which a per-package bump cannot do.
+      - dependency-name: react
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react-dom
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: "/tools/voice-prototype"
