@@ -165,6 +165,17 @@ request to GoTrue, and that limit is per IP, so the assistant's normal traffic c
 it is hit, session minting fails and the request is `500 internal_error`, with `verifyOtp failed`
 in the log. Tracked as [SEC-A14](./backlog/security.md).
 
+**Then run the smoke test** (`scripts/assistant-api-smoke.mjs`). It signs assertions as the
+assistant does and checks the manifest, the pilot's mapping and role, one read on voice, and three
+refusals. It writes nothing, refuses production, and never prints the secret or the email:
+
+```sh
+read -rs ASSISTANT_API_SECRET && export ASSISTANT_API_SECRET   # paste, Enter; stays out of history
+ASSISTANT_API_EMAIL=<pilot's email> npm run assistant:smoke
+```
+
+Every check should read `PASS`. Send the manifest `version` it prints along with the URL.
+
 Then give the assistant side:
 
 1. the URL: `https://nxvbglegqcgxlxvyfuht.supabase.co/functions/v1/assistant-api`

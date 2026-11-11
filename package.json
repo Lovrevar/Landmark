@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "e2e:serve": "vite preview --host 127.0.0.1 --port 5173 --strictPort",
     "erp:smoke": "node --env-file=.env scripts/erp-pipeline-smoke.mjs",
+    "assistant:smoke": "node scripts/assistant-api-smoke.mjs",
     "test": "vitest run",
     "test:functions": "cd supabase/functions && deno task test",
     "test:db": "supabase test db",
