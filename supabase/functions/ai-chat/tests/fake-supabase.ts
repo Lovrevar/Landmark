@@ -1,6 +1,8 @@
 // In-memory stand-in for the three Supabase services ai-chat talks to:
 // GoTrue (`/auth/v1/user`), PostgREST (`/rest/v1/*`) and Storage
-// (`/storage/v1/object/*`).
+// (`/storage/v1/object/*`). assistant-api also mints sessions through GoTrue's
+// admin magic link (`admin/users/{id}`, `admin/generate_link`, `verify`,
+// `logout`), which are answered here too.
 //
 // It speaks HTTP, not a client API. The real supabase-js / postgrest-js in the
 // function under test build real requests against SUPABASE_URL and this class
@@ -89,6 +91,10 @@ export class FakeSupabase {
   tables: Record<string, Row[]> = {}
   /** token -> auth user. A token not in this map is rejected by `/auth/v1/user`. */
   authUsers: Record<string, { id: string; email: string }> = {}
+  /** hashed_token -> auth user id, for magic links minted and not yet verified. */
+  linkHashes: Record<string, string> = {}
+  /** Access tokens signed out through `/logout`, in order. */
+  revokedTokens: string[] = []
   storage: Record<string, Uint8Array<ArrayBuffer>> = {}
   rpcs: Record<string, (args: Row) => unknown> = {}
   requests: RecordedRequest[] = []
@@ -100,6 +106,8 @@ export class FakeSupabase {
   reset(): void {
     this.tables = {}
     this.authUsers = {}
+    this.linkHashes = {}
+    this.revokedTokens = []
     this.storage = {}
     this.rpcs = {}
     this.requests = []
@@ -215,7 +223,7 @@ export class FakeSupabase {
 
     switch (service) {
       case 'auth':
-        return this.handleAuth(req)
+        return this.handleAuth(req, name, body)
       case 'rpc': {
         const fn = this.rpcs[name]
         if (!fn) return json(404, { code: 'PGRST202', message: `Could not find the function public.${name}` })
@@ -228,19 +236,69 @@ export class FakeSupabase {
     }
   }
 
-  private handleAuth(req: Request): Response {
+  private handleAuth(req: Request, name: string, body: unknown): Response {
     const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
-    const user = this.authUsers[token]
-    if (!user) return json(401, { code: 401, error_code: 'bad_jwt', msg: 'invalid JWT' })
-    return json(200, {
-      id: user.id,
+    const authUser = (u: { id: string; email: string }) => ({
+      id: u.id,
       aud: 'authenticated',
       role: 'authenticated',
-      email: user.email,
+      email: u.email,
       app_metadata: {},
       user_metadata: {},
       created_at: '2026-01-01T00:00:00Z',
     })
+    const byId = (id: string) => Object.values(this.authUsers).find((u) => u.id === id)
+    const byEmail = (email: string) => Object.values(this.authUsers).find((u) => u.email === email)
+
+    if (name === 'user') {
+      const user = this.authUsers[token]
+      if (!user) return json(401, { code: 401, error_code: 'bad_jwt', msg: 'invalid JWT' })
+      return json(200, authUser(user))
+    }
+    if (name.startsWith('admin/users/')) {
+      const user = byId(name.slice('admin/users/'.length))
+      if (!user) return json(404, { code: 404, error_code: 'user_not_found', msg: 'User not found' })
+      return json(200, authUser(user))
+    }
+    if (name === 'admin/generate_link') {
+      const { type, email } = (body ?? {}) as { type?: string; email?: string }
+      const user = email ? byEmail(email) : undefined
+      if (type !== 'magiclink' || !user) return json(404, { code: 404, error_code: 'user_not_found', msg: 'User not found' })
+      const hash = `hash-${crypto.randomUUID()}`
+      this.linkHashes[hash] = user.id
+      return json(200, {
+        ...authUser(user),
+        action_link: `http://fake-supabase.test/auth/v1/verify?token=${hash}&type=magiclink`,
+        email_otp: '000000',
+        hashed_token: hash,
+        redirect_to: 'http://localhost',
+        verification_type: 'magiclink',
+      })
+    }
+    if (name === 'verify') {
+      const { token_hash } = (body ?? {}) as { token_hash?: string }
+      const userId = token_hash ? this.linkHashes[token_hash] : undefined
+      const user = userId ? byId(userId) : undefined
+      if (!user) return json(403, { code: 403, error_code: 'otp_expired', msg: 'Token has expired or is invalid' })
+      delete this.linkHashes[token_hash!]
+      const accessToken = `tok-session-${crypto.randomUUID()}`
+      this.authUsers[accessToken] = user
+      return json(200, {
+        access_token: accessToken,
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        refresh_token: `refresh-${crypto.randomUUID()}`,
+        user: authUser(user),
+      })
+    }
+    if (name === 'logout') {
+      if (!this.authUsers[token]) return json(401, { code: 401, error_code: 'bad_jwt', msg: 'invalid JWT' })
+      delete this.authUsers[token]
+      this.revokedTokens.push(token)
+      return new Response(null, { status: 204 })
+    }
+    return json(404, { message: `fake-supabase: no auth route for ${name}` })
   }
 
   private handleStorage(method: string, rest: string, body: unknown): Response {

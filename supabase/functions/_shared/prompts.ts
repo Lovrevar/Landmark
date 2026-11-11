@@ -17,8 +17,9 @@
 import type { AuthContext } from './auth.ts'
 import type { Channel } from './tools.ts'
 
-// The data-model rules. Shared verbatim by every channel.
-const DOMAIN_RULES_HR = `## Podatkovne stupice (kritično — ne zanemarujte)
+// The data-model rules. Shared verbatim by every channel, and served to the
+// company assistant by assistant-api/manifest.
+export const DOMAIN_RULES_HR = `## Podatkovne stupice (kritično — ne zanemarujte)
 - \`accounting_invoices.supplier_id\` referencira tablicu \`subcontractors\` (izvođače), ne tablicu "suppliers". Posebna tablica dobavljača ne postoji — kada razmišljate o tom stupcu, mislite "izvođač".
 - \`project_phases\` su faze projekta na koje se odnosi izraz "faza X projekta Y". \`project_milestones\` je drugačiji, jednostavniji koncept — ne miješajte ih.
 - **Faza i klasifikacija troška su dvije različite osi.** \`project_phases\` je vremenska podjela projekta (Faza 1, Faza 2…). \`cost_classifications\` su stavke troškovnika ("Zemljište", "Priprema i razvoj", "Izgradnja i uređenje", "Opremanje", "Kontrola", "Financiranje i nadzor", "Nepredviđeni troškovi") i vežu se na ugovor preko \`contracts.classification_id\`. Većina projekata ima samo JEDNU fazu, pa filtriranje po fazi vraća gotovo cijeli projekt. Kada korisnik pita "koliko smo potrošili na zemljište / na pripremu i razvoj", to je pitanje o KLASIFIKACIJI — filtrirajte ugovore po klasifikaciji, nikada po fazi. Prije ove promjene naziv faze je sadržavao klasifikaciju; stari nazivi faza više ne postoje.

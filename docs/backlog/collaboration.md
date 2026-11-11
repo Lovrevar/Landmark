@@ -1,6 +1,6 @@
 # Backlog — tasks, calendar, chat, documents and AI assistant
 
-Ids: `COLLAB-n` (next free: `COLLAB-19`). Entry format and rules are in [README.md](./README.md).
+Ids: `COLLAB-n` (next free: `COLLAB-20`). Entry format and rules are in [README.md](./README.md).
 
 The `task*` tables are shared with the mobile task app; read
 [../SHARED_SCHEMA.md](../SHARED_SCHEMA.md) before changing them. The AI assistant is pinned by
@@ -8,6 +8,18 @@ characterisation tests on `feature/voice-assistant`; its open questions (`OQ-n`)
 `docs/voice/open-questions.md` on that branch.
 
 ## Open
+
+### COLLAB-19 · Low · `search_help` gives voice the full articles, not titles and a summary
+- **Check:** Code reading
+- **Where:** `supabase/functions/_shared/help-search.ts` (`handleSearchHelp`), reached on voice by
+  `voice-llm` and by `assistant-api`; voice plan §5 ("returns titles and a one-line summary on
+  voice").
+- **What happens:** the tool returns up to five articles as one markdown string on every channel.
+  `voice-llm` hands all of it to the model. `assistant-api`'s voice clamp clips any string to 200
+  characters, so on voice the company assistant gets little more than the first article's opening.
+- **Fix direction:** give `handleSearchHelp` a channel-aware shape: on voice, a list of
+  `{ title, summary }` per match. The clamp then cuts the list to five and keeps each short line
+  whole.
 
 ### COLLAB-17 · Low · A checklist line's deadline is not shown in Cognilion
 - **Check:** Decided 2026-11-10 with the task app's request (`20261110100000_task_subtask_deadlines`)
@@ -35,7 +47,7 @@ characterisation tests on `feature/voice-assistant`; its open questions (`OQ-n`)
 - **Fix direction:** for an `assignee_id` or comment `user_id` missing from the `users` map,
   fall back to `profiles.name` (one extra query keyed by id) and label it "vanjski"; keep them
   out of the picker, which stays on `public.users`
- Low · Realtime publication membership is recorded nowhere
+### COLLAB-15 · Low · Realtime publication membership is recorded nowhere
 - **Check:** Confirmed 2026-10-27 — the local stack built from every migration has an empty
   `supabase_realtime` publication
 - **Where:** every `postgres_changes` subscription in `src/`: `tasks`, `task_assignees`,
