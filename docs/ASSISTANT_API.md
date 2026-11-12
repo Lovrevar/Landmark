@@ -9,9 +9,15 @@ domain rules come from `_shared/prompts.ts`.
 Code: [`supabase/functions/assistant-api/`](../supabase/functions/assistant-api/). Tests:
 `assistant-api/tests/` (`deno task test` from `supabase/functions/`).
 
-**Status (2026-11-09):** built and tested on `feat/assistant-api`, not deployed anywhere. The
-assistant side has since been built against this contract; its addendum of 2026-11-09 (an `iat` in
-the future is refused; the exposed list is held to a reviewed twelve on its side) is in.
+**Status (2026-11-12):** deployed to LandmarkDev, not to production. The assistant side's latency
+request of 2026-11-11 is built on `feat/assistant-api-latency` and not deployed yet:
+
+- sessions are reused per user
+- `search_projects` lists every project when given no query
+- the twelve descriptions are at most 300 characters each
+
+The earlier addendum of 2026-11-09 (an `iat` in the future is refused; the exposed list is held to
+a reviewed twelve on the assistant's side) is in.
 
 ## Who is calling: the assertion
 
@@ -50,8 +56,32 @@ session for that user:
    `session.access_token`.
 4. `authenticateToken(access_token)` re-reads role and assigned projects, exactly as for chat. The
    function also checks that the session's user is the mapped row.
-5. After the request, `auth.admin.signOut(access_token, 'local')` revokes it. This is best effort:
-   a failure is logged and the request still answers.
+
+Steps 1–3 run once per user for a few minutes, not once per request. Step 4 runs on every request,
+so a changed role or assignment shows on the next call. The cache is `SessionCache` in
+`session.ts`, keyed by `public.users.id`:
+
+- **Window.** A session is reused for 5 minutes, or until 60 s before the token's own expiry,
+  whichever comes first.
+- **One mint at a time.** Calls that arrive while a session is being minted wait for that one
+  mint. GoTrue keeps one pending magic link per user, so two parallel mints made the first fail
+  (`verifyOtp failed`, 500). Parallel calls for one user are fine now. A failed mint is not
+  cached; the next call tries again.
+- **Dropped and signed out** (`auth.admin.signOut(token, 'local')`, best effort, a failure
+  logged):
+  - when it is past its window, at the start of the next request
+  - when GoTrue or PostgREST answers 401 for it
+  - when the user's row points at a different auth account
+  - at isolate shutdown (`beforeunload`)
+
+  A dropped session is signed out only once no request still holds it.
+- **Retried once on a 401.** If `getUser` refuses the session (revoked elsewhere), or a handler's
+  read gets a 401 from PostgREST, the session is dropped and the whole request runs once more with
+  a fresh one. That is safe because all twelve tools only read. A second 401 is answered as before:
+  500 from `getUser`, or the handler's own `{ error }`. A retried tool call can take two tool
+  timeouts.
+- **Per isolate.** The cache is in memory, like the `jti` memory. A cold start mints again, and two
+  warm isolates each hold their own session for a user.
 
 The link, the hash and the token are never logged.
 
@@ -73,9 +103,16 @@ status.
 - **`/manifest`**: needs a valid assertion but no mapped user. `version` is the SHA-256 of the
   JSON of `{ tools, domain_rules_hr }`, so it changes exactly when a tool's description, schema or
   roles, or the domain rules, change.
+- **`search_projects` without a query** (omitted, `""` or blank) lists every project the caller
+  may see, in name order, capped by `limit` (default 20). Supervision gets only its assigned
+  projects; with none, the answer is empty and no query runs. Give part of a name to search, as
+  before.
 - **`/tools/<name>`**: `data` is **literally** what `dispatchTool` returned. Handlers return
   `{ data: … }` or `{ error: '…' }`, so a success is `{ "data": { "data": { "projects": […],
   "count": 1 } } }`.
+  - **`search_help` is the exception to the inner `data`.** It returns `{ markdown, matches }`,
+    so its answer is `{ "data": { "markdown": "…", "matches": 3 } }`, with no second `data`. A
+    client that looks for `data.data` reads it as missing.
   - **A handler's own `{ error }` is an answer, not a failure.** It comes back as
     `200 { "data": { "error": "Project not found or not accessible" } }`, which is what chat's model
     sees as an `is_error` tool result. This is a deliberate departure from the request document,
@@ -85,6 +122,10 @@ status.
 
 The twelve in `TOOL_ALLOWLIST.voice` (voice plan §5), on **both** channels. `create_document`,
 `list_documents_for_entity` and `get_document_download_link` are not exposed.
+
+Their descriptions are at most 300 characters each (`_shared/tools.test.ts` checks it): what the
+tool returns, when to call it and when not to. The data-model warnings are in `domain_rules_hr`,
+which every channel's system prompt carries.
 
 The assistant side holds its manifest snapshot to a reviewed list of these twelve names and
 refuses a thirteenth until someone reviews it there. **If this list changes, tell the assistant
@@ -105,7 +146,7 @@ The checks run in this order, and each one stops the request.
 | 403 | `not_mapped` | no single `public.users` row with a login for the email |
 | 429 | `rate_limited` | more than 30 tool calls by one user in a minute |
 | 403 | `forbidden_tool` | the user's role may not use the tool on that channel (`findAvailableTool`; `dispatchTool` checks again) |
-| 500 | `internal_error` | the session could not be opened, the handler threw, or it ran past its timeout (6 s on voice, 15 s on chat), logged with the error class and code |
+| 500 | `internal_error` | the session could not be opened (or was refused again after one retry), the handler threw, or it ran past its timeout (6 s on voice, 15 s on chat), logged with the error class and code |
 
 Input is checked against the tool's `input_schema` by `validate.ts`. In chat the schema is only
 documentation for the model. The validator understands the keywords the twelve use, and at module
@@ -132,8 +173,10 @@ characters. The voice plan's "titles and a one-line summary on voice" is not bui
 
 ## Logging
 
-One line per request: `[assistant-api] request { route, tool, channel, userId, auth_ms, session_ms,
-tool_ms, status, total_ms }`. `userId` is `public.users.id`. Refusals add one line with the reason.
+One line per request: `[assistant-api] request { route, tool, channel, userId, auth_ms, session,
+session_ms, tool_ms, status, total_ms }`. `userId` is `public.users.id`. `session` is `minted`,
+`reused`, or `retried` (minted again after a 401). `session_ms` covers getting the session and
+`authenticateToken`. Refusals add one line with the reason.
 No line carries the input, the output, the email, the assertion or any token. The test harness
 checks this after every scenario.
 
@@ -160,10 +203,10 @@ supabase functions deploy assistant-api
 ```
 
 **Before the first live test:** in the dashboard, open Auth → Rate Limits → *token verifications*
-on the dev project and raise it if needed. Every tool call and every `/me` makes one `/verify`
-request to GoTrue, and that limit is per IP, so the assistant's normal traffic can reach it. When
-it is hit, session minting fails and the request is `500 internal_error`, with `verifyOtp failed`
-in the log. Tracked as [SEC-A14](./backlog/security.md).
+on the dev project and check it. A session is minted, with one `/verify` request to GoTrue, once
+per user per 5 minutes per warm isolate, no longer on every call. The limit is per IP. When it is
+hit, session minting fails and the request is `500 internal_error`, with `verifyOtp failed` in the
+log. Tracked as [SEC-A14](./backlog/security.md).
 
 **Then run the smoke test** (`scripts/assistant-api-smoke.mjs`). It signs assertions as the
 assistant does and checks the manifest, the pilot's mapping and role, one read on voice, and three

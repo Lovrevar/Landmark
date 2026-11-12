@@ -68,7 +68,7 @@ Deno.test('U05 validate accepts good input and names the first problem with bad 
   assert(validate({ limit: 2.5 }, schema)?.includes('input.limit'))
   assert(validate({ project_id: 'nope' }, schema)?.includes('uuid'))
   assert(validate({ other: 1 }, schema)?.includes('not allowed'))
-  assert(validate({ query: '' }, TOOLS.find((t) => t.name === 'search_projects')!.input_schema)?.includes('too short'))
+  assert(validate({ query: '' }, TOOLS.find((t) => t.name === 'search_subcontractors')!.input_schema)?.includes('too short'))
 })
 
 // ---------------------------------------------------------------------------

@@ -10,18 +10,20 @@ it; write down why, and what a fix would look like.
 
 ## Open defects
 
-### SEC-A14 · Medium · `assistant-api` mints a GoTrue session per request, against a per-IP verify limit
-- **Check:** Runtime check needed
-- **Where:** `supabase/functions/assistant-api/session.ts` (`openSession`: `generateLink` then
-  `verifyOtp`); Auth → Rate Limits → *token verifications* on each project.
-- **What happens:** every tool call and every `/me` makes one `/verify` request to GoTrue, and Auth
-  limits token verifications per IP. When the assistant's traffic reaches the limit, session
+### SEC-A14 · Low · `assistant-api` session minting counts against a per-IP verify limit
+- **Check:** Runtime check needed, after `feat/assistant-api-latency` is deployed to LandmarkDev
+- **Where:** `supabase/functions/assistant-api/session.ts` (`SessionCache`, `openSession`:
+  `generateLink` then `verifyOtp`); Auth → Rate Limits → *token verifications* on each project.
+- **What happens:** minting a session makes one `/verify` request to GoTrue, and Auth limits token
+  verifications per IP. It used to happen on every tool call and `/me`. Since the 2026-11-12
+  change it happens once per user per 5 minutes per warm isolate (`SessionCache`), so the
+  assistant's normal traffic should stay well under the limit. If the limit is reached anyway,
   minting fails and the call is `500 internal_error` (`verifyOtp failed` in the log), even though
-  the caller did nothing wrong. Not yet deployed anywhere.
-- **Fix direction:** before the first live test on LandmarkDev, check the limit and raise it if
-  needed ([../ASSISTANT_API.md](../ASSISTANT_API.md), "Deploying to the dev project"). If traffic
-  grows, cache one session per user for its lifetime instead of minting one per request, or mint
-  a short-lived JWT once the signing scheme is decided (voice plan open question 1).
+  the caller did nothing wrong.
+- **Fix direction:** after deploying, check the limit against the assistant's traffic
+  ([../ASSISTANT_API.md](../ASSISTANT_API.md), "Deploying to the dev project") and raise it if
+  needed. Close this once that check passes. The longer-term option is to mint a short-lived JWT
+  once the signing scheme is decided (voice plan open question 1).
 
 ### SEC-A9 · Low · `dispatch-calendar-reminders` has no request authentication
 - **Where:** `supabase/functions/dispatch-calendar-reminders/index.ts`, `verify_jwt = false`.

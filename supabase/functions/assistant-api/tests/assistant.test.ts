@@ -5,8 +5,8 @@
 
 import { assert, assertEquals, assertMatch } from 'jsr:@std/assert@1'
 import { DOMAIN_RULES_HR } from '../../_shared/prompts.ts'
-import { CT_LAND, P_TIC, PH_TIC_1, SC_BUILDER, USERS } from '../../ai-chat/tests/fixtures.ts'
-import { call, db, errorCode, logs, NO_LOGIN, rateLimiter, scenario, sign, TOOL_TIMEOUT_MS, tool, UNDERSCORE, unsigned } from './harness.ts'
+import { CT_LAND, P_LEGACY, P_TIC, P_UNPLANNED, PH_TIC_1, SC_BUILDER, USERS } from '../../ai-chat/tests/fixtures.ts'
+import { call, db, errorCode, logs, NO_LOGIN, rateLimiter, scenario, SESSION_WINDOW, sessions, sign, TOOL_TIMEOUT_MS, tool, UNDERSCORE, unsigned } from './harness.ts'
 
 const VOICE_TWELVE = [
   'search_projects', 'get_project_details', 'list_project_phases',
@@ -16,6 +16,11 @@ const VOICE_TWELVE = [
   'get_project_financial_summary', 'search_help',
 ]
 const now = () => Math.floor(Date.now() / 1000)
+
+/** GoTrue requests to one endpoint so far (`admin/generate_link`, `verify`, `user`, `logout`). */
+const authCalls = (name: string) => db.requests.filter((r) => r.service === 'auth' && r.table === name).length
+/** The bearer token each read of this table carried, in order. */
+const bearers = (table: string) => db.requestsTo(table, 'GET').map((r) => (r.headers.get('authorization') ?? '').replace(/^Bearer /, ''))
 
 // ---------------------------------------------------------------------------
 // Who is calling
@@ -82,21 +87,25 @@ scenario('A04 the email matches in any case, and an underscore matches only itse
   assertEquals(exact.body.display_name, 'Ana B.')
 })
 
-scenario('A05 the session is minted for the mapped user, used, and signed out after the request', async () => {
+scenario('A05 the session is minted once for the mapped user, used by the handler, and kept after the request', async () => {
   const res = await tool('search_projects', { query: 'Funt' })
   assertEquals(res.status, 200)
-  assertEquals(db.revokedTokens.length, 1)
-  assertMatch(db.revokedTokens[0], /^tok-session-/)
-  assertEquals(db.authUsers[db.revokedTokens[0]], undefined)
+  assertEquals([authCalls('admin/generate_link'), authCalls('verify')], [1, 1])
   // The handler read with that session, not with the service role.
-  const read = db.requestsTo('projects', 'GET')[0]
-  assertEquals(read.headers.get('authorization'), `Bearer ${db.revokedTokens[0]}`)
+  const [token] = bearers('projects')
+  assertMatch(token, /^tok-session-/)
+  // Kept for the user's next request, not signed out.
+  await sessions.idle()
+  assertEquals(db.revokedTokens, [])
+  assert(db.authUsers[token])
 })
 
-scenario('A06 a failed sign-out is logged and does not fail the request', async () => {
+scenario('A06 a failed sign-out of a dropped session is logged and does not fail the request', async () => {
+  SESSION_WINDOW.ttlMs = 0 // every session is past its window by the next request
   db.fault((r) => r.service === 'auth' && r.table === 'logout', { status: 500, body: { code: 500, msg: 'boom' } })
-  const res = await call({ path: '/me' })
-  assertEquals(res.status, 200)
+  assertEquals((await call({ path: '/me' })).status, 200)
+  assertEquals((await call({ path: '/me' })).status, 200)
+  await sessions.idle()
   assert(logs.some((l) => l.includes('session sign-out failed')))
 })
 
@@ -106,6 +115,9 @@ scenario('A07 a failure to mint the session is 500 internal_error, and the tool 
   assertEquals(res.status, 500)
   assertEquals(errorCode(res.body), 'internal_error')
   assertEquals(db.requestsTo('projects').length, 0)
+  // A failed mint is not cached: the next request mints again, and answers.
+  assertEquals((await tool('search_projects', { query: 'Funt' })).status, 200)
+  assertEquals(authCalls('admin/generate_link'), 2)
 })
 
 // ---------------------------------------------------------------------------
@@ -186,7 +198,7 @@ scenario('A13 a tool outside the twelve is 404 unknown_tool on both channels, be
 
 scenario('A14 input that fails the tool\'s schema, or a bad body, is 400 bad_request', async () => {
   const cases: Array<[string, () => ReturnType<typeof call>]> = [
-    ['missing required', () => tool('search_projects', {})],
+    ['missing required', () => tool('search_subcontractors', {})],
     ['not a uuid', () => tool('get_project_details', { project_id: 'Funtana' })],
     ['extra property', () => tool('search_projects', { query: 'Funt', drop: true })],
     ['wrong type', () => tool('search_projects', { query: 'Funt', limit: 'many' })],
@@ -239,8 +251,9 @@ scenario('A16 a handler that does not answer in time is 500 internal_error', asy
     assertEquals(res.status, 500)
     assertEquals(errorCode(res.body), 'internal_error')
     assert(logs.some((l) => l.includes('tool failed') && l.includes('tool_timeout')))
-    // The session is still signed out.
-    assertEquals(db.revokedTokens.length, 1)
+    // The session is kept for the next request all the same.
+    await sessions.idle()
+    assertEquals(db.revokedTokens, [])
   } finally {
     TOOL_TIMEOUT_MS.voice = saved
   }
@@ -274,9 +287,135 @@ scenario('A19 one log line per request, with route, tool, channel, status and us
   const lines = logs.filter((l) => l.includes('[assistant-api] request'))
   assertEquals(lines.length, 1)
   const line = lines[0]
-  for (const part of ['route: "tool"', 'tool: "search_projects"', 'channel: "voice"', 'status: 200', USERS.director.id, 'total_ms']) {
+  for (const part of ['route: "tool"', 'tool: "search_projects"', 'channel: "voice"', 'session: "minted"', 'status: 200', USERS.director.id, 'total_ms']) {
     assert(line.includes(part), `missing ${part}`)
   }
   assert(logs.every((l) => !l.includes('Funtana-secret-query')), 'the input reached a log line')
   assert(logs.every((l) => !l.includes(P_TIC)), 'the output reached a log line')
+})
+
+// ---------------------------------------------------------------------------
+// Session reuse (SEC-A14)
+// ---------------------------------------------------------------------------
+
+scenario('A20 a second call by the same user inside the window mints nothing and reads with the same session', async () => {
+  assertEquals((await tool('search_projects', { query: 'Funt' })).status, 200)
+  const before = db.requests.length
+  assertEquals((await tool('search_projects', { query: 'Kop' }, 'voice')).status, 200)
+  assertEquals([authCalls('admin/generate_link'), authCalls('verify')], [1, 1])
+  const [first, second] = bearers('projects')
+  assertEquals(second, first)
+  // The only GoTrue request of the second call is the identity check.
+  const auth = db.requests.slice(before).filter((r) => r.service === 'auth').map((r) => r.table)
+  assertEquals(auth, ['user'])
+  assert(logs.filter((l) => l.includes('[assistant-api] request')).at(-1)!.includes('session: "reused"'))
+  // Another user gets a session of their own.
+  assertEquals((await tool('search_projects', { query: 'Funt' }, 'chat', { as: 'accounting' })).status, 200)
+  assertEquals(authCalls('admin/generate_link'), 2)
+  assert(bearers('projects')[2] !== first)
+})
+
+scenario('A21 after the window, or near the token\'s own expiry, the next call mints again and the old session is signed out', async () => {
+  SESSION_WINDOW.ttlMs = 0
+  await tool('search_projects', { query: 'Funt' })
+  await tool('search_projects', { query: 'Funt' })
+  await sessions.idle()
+  const [first, second] = bearers('projects')
+  assert(first !== second)
+  assertEquals(db.revokedTokens, [first])
+
+  // The token's own expiry, less the margin, ends the window too.
+  Object.assign(SESSION_WINDOW, { ttlMs: 5 * 60_000, marginMs: 2 * 3600_000 })
+  await tool('search_projects', { query: 'Funt' })
+  await sessions.idle()
+  assertEquals(authCalls('admin/generate_link'), 3)
+  assertEquals(db.revokedTokens, [first, second])
+})
+
+scenario('A22 a 401 on a handler\'s read drops the session; the request runs once more with a fresh one', async () => {
+  await call({ path: '/me' })
+  db.fault((r) => r.service === 'rest' && r.table === 'projects', { status: 401, body: { code: 'PGRST301', message: 'JWT expired' } })
+  const res = await tool('search_projects', { query: 'Funt' })
+  assertEquals(res.status, 200)
+  assertEquals((res.body.data as { data: { projects: Array<{ id: string }> } }).data.projects.map((p) => p.id), [P_TIC])
+  await sessions.idle()
+  const [refused, fresh] = bearers('projects')
+  assert(refused !== fresh)
+  assertEquals(db.revokedTokens, [refused])
+  assertEquals(authCalls('admin/generate_link'), 2)
+  assert(logs.filter((l) => l.includes('[assistant-api] request')).at(-1)!.includes('session: "retried"'))
+
+  // Only once: a second 401 is the handler's own answer, and nothing more is minted.
+  db.fault((r) => r.service === 'rest' && r.table === 'projects', { status: 401, body: { code: 'PGRST301', message: 'JWT expired' } }, 2)
+  const again = await tool('search_projects', { query: 'Funt' })
+  assertEquals(again.status, 200)
+  assertEquals(again.body, { data: { error: 'Failed to search projects' } })
+  assertEquals(authCalls('admin/generate_link'), 3)
+})
+
+scenario('A23 a cached session revoked elsewhere is refused by GoTrue; the request mints a fresh one and answers', async () => {
+  await call({ path: '/me' })
+  const [token] = Object.keys(db.authUsers).filter((t) => t.startsWith('tok-session-'))
+  delete db.authUsers[token]
+  const res = await tool('search_projects', { query: 'Funt' })
+  assertEquals(res.status, 200)
+  assertEquals(authCalls('admin/generate_link'), 2)
+  assert(bearers('projects')[0] !== token)
+})
+
+scenario('A24 two concurrent calls by one user share one mint, and both answer', async () => {
+  let open!: () => void
+  db.hold((r) => r.service === 'auth' && r.table === 'admin/generate_link', new Promise<void>((resolve) => (open = resolve)))
+  const a = tool('search_projects', { query: 'Funt' })
+  const b = tool('list_cost_classifications', {})
+  await new Promise((resolve) => setTimeout(resolve, 30))
+  open()
+  const [ra, rb] = await Promise.all([a, b])
+  assertEquals([ra.status, rb.status], [200, 200])
+  assertEquals([authCalls('admin/generate_link'), authCalls('verify')], [1, 1])
+})
+
+// ---------------------------------------------------------------------------
+// Listing projects, and search_help through the function
+// ---------------------------------------------------------------------------
+
+scenario('A25 search_projects without a query lists every project the caller may see, in name order, capped by limit', async () => {
+  type Projects = { data: { projects: Array<{ id: string; name: string }>; count: number; total?: number } }
+  const names = (res: { body: Record<string, unknown> }) => (res.body.data as Projects).data.projects.map((p) => p.name)
+
+  assertEquals(names(await tool('search_projects', {})), ['Funtana', 'Kopko', 'Prečko zapad'])
+  assertEquals(names(await tool('search_projects', { query: '' })), ['Funtana', 'Kopko', 'Prečko zapad'])
+  assertEquals(names(await tool('search_projects', { query: '   ' })), ['Funtana', 'Kopko', 'Prečko zapad'])
+  assertEquals(names(await tool('search_projects', { limit: 2 })), ['Funtana', 'Kopko'])
+  assert(db.requestsTo('projects', 'GET').every((r) => !r.params.has('name')), 'no name filter without a query')
+
+  // Supervision: only its assigned projects, and no query at all without one.
+  const sup = await tool('search_projects', {}, 'chat', { as: 'supervision' })
+  assertEquals((sup.body.data as Projects).data.projects.map((p) => p.id), [P_TIC])
+  assertEquals(db.requestsTo('projects', 'GET').at(-1)!.params.get('id'), `in.(${P_TIC})`)
+  db.tables.project_managers = []
+  const reads = db.requestsTo('projects').length
+  assertEquals((await tool('search_projects', {}, 'chat', { as: 'supervision' })).body, { data: { data: { projects: [], count: 0 } } })
+  assertEquals(db.requestsTo('projects').length, reads)
+
+  // On voice the list is still cut to five, with its total.
+  db.seed('projects', ['Ankaran', 'Bale', 'Cres', 'Drniš'].map((name, i) => ({
+    id: `00000000-0000-4000-8000-0000000009${String(i).padStart(2, '0')}`, name, location: null, status: 'Planning', budget: null,
+  })))
+  const voice = (await tool('search_projects', {}, 'voice')).body.data as Projects
+  assertEquals(voice.data.projects.length, 5)
+  assertEquals(voice.data.total, 7)
+  assert(![P_LEGACY, P_UNPLANNED].some((id) => voice.data.projects.slice(0, 4).some((p) => p.id === id)))
+})
+
+scenario('A26 search_help through the function answers 200 with { markdown, matches }, not an error, on both channels', async () => {
+  for (const channel of ['chat', 'voice'] as const) {
+    const res = await tool('search_help', { query: 'TIC budžet projekta' }, channel)
+    assertEquals(res.status, 200, channel)
+    const data = res.body.data as { markdown?: unknown; matches?: unknown; error?: unknown }
+    assertEquals(data.error, undefined, channel)
+    assertEquals(typeof data.markdown, 'string', channel)
+    assertEquals(typeof data.matches, 'number', channel)
+    if (channel === 'voice') assert((data.markdown as string).length <= 201)
+  }
 })

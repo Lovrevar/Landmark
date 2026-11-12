@@ -364,7 +364,8 @@ partner) rather than OpenAI: add vectors alongside the existing fields and blend
 
 ### What each tool returns
 
-- **`search_projects`** — substring search on `projects.name`; returns `{id, name, location, status}`. Construction projects only; retail projects are a separate table and not searched.
+- **`search_projects`** — substring search on `projects.name`; returns `{id, name, location, status}`. With no query (omitted or blank) it lists every project the caller may see, in name order, up to `limit`. Supervision is scoped to its assigned projects explicitly, on top of RLS. Construction projects only; retail projects are a separate table and not searched.
+- **Tool descriptions** stay short; the voice-exposed twelve are at most 300 characters (`_shared/tools.test.ts`). The data-model warnings (TIC, phase vs classification, stale `budget_used`) live in `DOMAIN_RULES_HR` in the system prompt, not in the descriptions.
 - **`get_project_details`** — full `projects` row plus exact counts of phases, contracts, and milestones for the project. The project lookup runs first so that RLS-hidden projects don't leak counts through the (USING(true)) related tables.
 - **`list_project_phases`** — phases for a given project, ordered by `phase_number`. Deliberately omits `budget_used` (see landmines below).
 - **`search_subcontractors`** — substring search on `subcontractors.name`; returns `{id, name, contact, active_contracts_count}`.

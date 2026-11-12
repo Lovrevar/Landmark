@@ -11,7 +11,9 @@
 //
 // Every request: the assertion, then (except /manifest) the employee's
 // public.users row by email, then a real session for that user so every
-// handler reads under their RLS. The session is signed out after the request.
+// handler reads under their RLS. The session is reused for that user's next
+// requests for a few minutes (session.ts, SessionCache); a 401 for it drops it
+// and the request runs once more with a fresh one.
 //
 // Failures are { "error": { "code", "message" } } with a real status. A
 // handler's own { error } result is an answer, not a failure: it comes back as
@@ -25,7 +27,7 @@ import { DOMAIN_RULES_HR } from '../_shared/prompts.ts'
 import { type Channel, findAvailableTool, selectAvailableTools, TOOL_ALLOWLIST, TOOLS, type ToolHandlerExtras } from '../_shared/tools.ts'
 import { verifyAssertion } from './assertion.ts'
 import { RateLimiter } from './rateLimit.ts'
-import { closeSession, type MappedUser, mapUser, openSession } from './session.ts'
+import { type Lease, type MappedUser, mapUser, SESSION_WINDOW, SessionCache } from './session.ts'
 import { assertSupported, validate } from './validate.ts'
 import { clampForVoice } from './voice.ts'
 
@@ -36,6 +38,8 @@ const MAX_BODY_BYTES = 64 * 1024
 export const TOOL_TIMEOUT_MS: Record<Channel, number> = { chat: 15_000, voice: 6_000 }
 
 export const rateLimiter = new RateLimiter()
+
+export { SESSION_WINDOW }
 
 // The v1 voice list (voice plan §5), on both channels. The document tools are
 // not exposed: their results are UI cards, and create_document writes.
@@ -59,6 +63,23 @@ function serviceClient() {
   return createClient<Database>(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
+}
+
+export const sessions = new SessionCache(serviceClient)
+
+// Best effort: sign the cached sessions out when the isolate shuts down. The
+// map is emptied at once, so a second dispatch of the event has nothing to do.
+addEventListener('beforeunload', () => sessions.dropAll())
+
+/** A fetch that notes a 401 from PostgREST: a handler turns a failed read into
+ * its own { error }, so the status would be lost otherwise. */
+function watching(seen: { unauthorized: boolean }): typeof fetch {
+  return async (input, init) => {
+    const res = await fetch(input, init)
+    const url = input instanceof Request ? input.url : String(input)
+    if (res.status === 401 && url.includes('/rest/v1/')) seen.unauthorized = true
+    return res
+  }
 }
 
 let manifest: Promise<Record<string, unknown>> | null = null
@@ -100,6 +121,9 @@ interface RequestLog {
   channel: Channel | null
   userId: string | null
   auth_ms: number | null
+  /** Whether this request minted its session, reused a cached one, or minted
+   * again after a 401 on the cached one. */
+  session: 'minted' | 'reused' | 'retried' | null
   session_ms: number | null
   tool_ms: number | null
 }
@@ -186,66 +210,101 @@ async function handle(req: Request, log: RequestLog, t0: number): Promise<Respon
     return fail(429, 'rate_limited', 'Too many tool calls; try again in a minute')
   }
 
+  // A 401 for the session (revoked, or refused by PostgREST) drops it, and the
+  // request runs once more with a fresh one. Safe to repeat: every exposed tool
+  // only reads (tools.ts refuses a writing one on voice at load).
+  const first = await withSession({ route, input, channel, user, log, retried: false })
+  if (first !== 'unauthorized') return first
+  console.warn('[assistant-api] session refused; minting a fresh one', { userId: user.id })
+  return await withSession({ route, input, channel, user, log, retried: true }) as Response
+}
+
+interface Attempt {
+  route: Exclude<Route, { kind: 'manifest' }>
+  input: Record<string, unknown>
+  channel: Channel
+  user: MappedUser
+  log: RequestLog
+  /** The second attempt: a 401 is then answered, not retried. */
+  retried: boolean
+}
+
+/** One attempt with one session. 'unauthorized' (first attempt only) when the
+ * session itself was refused; it has been dropped, so the next acquire mints. */
+async function withSession(a: Attempt): Promise<Response | 'unauthorized'> {
   const tSession = performance.now()
-  let accessToken: string
+  let lease: Lease
   try {
-    accessToken = await openSession(service, user)
+    lease = await sessions.acquire(a.user)
   } catch (err) {
-    console.error('[assistant-api] session failed', { userId: user.id, reason: err instanceof Error ? err.message : String(err) })
+    console.error('[assistant-api] session failed', { userId: a.user.id, reason: err instanceof Error ? err.message : String(err) })
     return fail(500, 'internal_error', 'Could not open a session')
   }
-
+  a.log.session = a.retried ? 'retried' : lease.reused ? 'reused' : 'minted'
   try {
-    const ctx = await authenticateToken(accessToken)
-    log.session_ms = Math.round(performance.now() - tSession)
-    if ('error' in ctx) {
-      console.error('[assistant-api] identity failed', { userId: user.id, code: ctx.error.code })
-      return fail(500, 'internal_error', 'Could not resolve the user')
-    }
-    if (ctx.userId !== user.id) {
-      console.error('[assistant-api] session user mismatch', { userId: user.id, sessionUserId: ctx.userId })
-      return fail(500, 'internal_error', 'Could not resolve the user')
-    }
-
-    if (route.kind === 'me') {
-      const names = (ch: Channel) => selectAvailableTools(ctx, ch).filter((t) => EXPOSED_NAMES.has(t.name)).map((t) => t.name)
-      return json(200, {
-        role: ctx.role,
-        // The same fallback as the profiles trigger: the username, else the email's local part.
-        display_name: user.username ?? user.email.split('@')[0],
-        tools: { chat: names('chat'), voice: names('voice') },
-      })
-    }
-
-    // 4. The tool, through chat's own gate and handler.
-    if (!findAvailableTool(ctx, route.name, channel)) {
-      console.warn('[assistant-api] forbidden_tool', { userId: user.id, role: ctx.role, tool: route.name, channel })
-      return fail(403, 'forbidden_tool', `Tool not available to this user on ${channel}: ${route.name}`)
-    }
-    const tTool = performance.now()
-    let data: unknown
-    try {
-      data = await dispatchWithTimeout(route.name, input, ctx, channel)
-    } catch (err) {
-      console.error('[assistant-api] tool failed', {
-        userId: user.id,
-        tool: route.name,
-        errorClass: err instanceof Error ? err.constructor.name : typeof err,
-        code: (err as { code?: unknown })?.code ?? null,
-      })
-      return fail(500, 'internal_error', 'The tool failed')
-    } finally {
-      log.tool_ms = Math.round(performance.now() - tTool)
-    }
-    return json(200, { data: channel === 'voice' ? clampForVoice(data) : data })
+    const res = await serve(a, lease, tSession)
+    if (res === 'unauthorized') sessions.drop(lease.entry)
+    return res
   } finally {
-    await closeSession(service, accessToken, user.id)
+    sessions.release(lease)
   }
+}
+
+async function serve(a: Attempt, lease: Lease, tSession: number): Promise<Response | 'unauthorized'> {
+  const { route, input, channel, user, log } = a
+  const seen = { unauthorized: false }
+  const refused = () => !a.retried && seen.unauthorized
+  const ctx = await authenticateToken(lease.token, { fetch: watching(seen) })
+  log.session_ms = Math.round(performance.now() - tSession)
+  if ('error' in ctx) {
+    if (ctx.status === 401 && !a.retried) return 'unauthorized'
+    console.error('[assistant-api] identity failed', { userId: user.id, code: ctx.error.code })
+    return fail(500, 'internal_error', 'Could not resolve the user')
+  }
+  if (ctx.userId !== user.id) {
+    console.error('[assistant-api] session user mismatch', { userId: user.id, sessionUserId: ctx.userId })
+    sessions.drop(lease.entry)
+    return fail(500, 'internal_error', 'Could not resolve the user')
+  }
+
+  if (route.kind === 'me') {
+    const names = (ch: Channel) => selectAvailableTools(ctx, ch).filter((t) => EXPOSED_NAMES.has(t.name)).map((t) => t.name)
+    return json(200, {
+      role: ctx.role,
+      // The same fallback as the profiles trigger: the username, else the email's local part.
+      display_name: user.username ?? user.email.split('@')[0],
+      tools: { chat: names('chat'), voice: names('voice') },
+    })
+  }
+
+  // 4. The tool, through chat's own gate and handler.
+  if (!findAvailableTool(ctx, route.name, channel)) {
+    console.warn('[assistant-api] forbidden_tool', { userId: user.id, role: ctx.role, tool: route.name, channel })
+    return fail(403, 'forbidden_tool', `Tool not available to this user on ${channel}: ${route.name}`)
+  }
+  const tTool = performance.now()
+  let data: unknown
+  try {
+    data = await dispatchWithTimeout(route.name, input, ctx, channel)
+  } catch (err) {
+    if (refused()) return 'unauthorized'
+    console.error('[assistant-api] tool failed', {
+      userId: user.id,
+      tool: route.name,
+      errorClass: err instanceof Error ? err.constructor.name : typeof err,
+      code: (err as { code?: unknown })?.code ?? null,
+    })
+    return fail(500, 'internal_error', 'The tool failed')
+  } finally {
+    log.tool_ms = Math.round(performance.now() - tTool)
+  }
+  if (refused()) return 'unauthorized'
+  return json(200, { data: channel === 'voice' ? clampForVoice(data) : data })
 }
 
 Deno.serve(async (req) => {
   const t0 = performance.now()
-  const log: RequestLog = { route: null, tool: null, channel: null, userId: null, auth_ms: null, session_ms: null, tool_ms: null }
+  const log: RequestLog = { route: null, tool: null, channel: null, userId: null, auth_ms: null, session: null, session_ms: null, tool_ms: null }
   let res: Response
   try {
     res = await handle(req, log, t0)

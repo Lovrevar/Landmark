@@ -2707,7 +2707,7 @@ Popis alata filtrira se prema ulozi i ponovno provjerava pri izvršavanju.
 
 | # | Alat | Uloge | Što radi |
 |---|---|---|---|
-| 1 | `search_projects` | sve | traži projekte po nazivu; ako ništa ne nađe, ponavlja s hrvatskim korijenom riječi |
+| 1 | `search_projects` | sve | traži projekte po nazivu; ako ništa ne nađe, ponavlja s hrvatskim korijenom riječi; bez upita vraća sve projekte koje korisnik smije vidjeti |
 | 2 | `get_project_details` | sve | puni zapis projekta i broj faza, ugovora i milestoneova |
 | 3 | `list_project_phases` | sve | faze projekta s datumima, statusom i alociranim budžetom |
 | 4 | `search_subcontractors` | sve | traži podizvođače; vraća kontakt i broj aktivnih ugovora |
