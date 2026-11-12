@@ -3,9 +3,9 @@
 From the Landmark side, 2026-11-12. This answers *Request for the Landmark repository: three changes
 that make `assistant-api` faster to speak*.
 
-**Status:** all three are built and tested on `feat/assistant-api-latency`, but **not deployed**.
-LandmarkDev still runs the previous version. We will send a note when it is deployed. Until then,
-nothing changes for you.
+**Status:** all three are **deployed to LandmarkDev** (2026-11-12), at the same URL. Our smoke test
+passes against it, including `search_projects` with no query, `search_help`, and five parallel
+calls for one user. Production is unchanged.
 
 ## In short
 
@@ -15,13 +15,13 @@ nothing changes for you.
 | 2. List the caller's projects | `search_projects` with no `query` lists them all | Same tool, same name. The schema has no required field now |
 | 3. Shorter descriptions | The twelve rewritten in place, all ≤ 300 characters, `search_help`'s now English | Re-pull `/manifest`. No `voice_description` field |
 
-The exposed list is still the same twelve names. The new manifest `version` is:
+The exposed list is still the same twelve names. The manifest `version` on LandmarkDev is now:
 
 ```
 6a9b191f7ce7b27c7ae8c0815ca98ffc27236a221663f399cf02b6b7d14794af
 ```
 
-The current one on LandmarkDev, until the deploy, is `ad40be62df6edae8605e55bd4377ffb40bb902396da546e87463a839e839de5b`.
+It replaces `ad40be62df6edae8605e55bd4377ffb40bb902396da546e87463a839e839de5b`. Re-pull the manifest.
 
 ## 1. Session reuse
 
@@ -66,8 +66,19 @@ answers.
 | GoTrue requests per call, session minted | 5 | 4 (`admin/users`, `generate_link`, `verify`, `getUser`) |
 | Sessions minted for N calls by one user within 5 min | N | 1 |
 
-So the saving shows from a user's second call on. Your bench's per-call 0.5–1.0 s should drop by
-most of the minting share. Please measure it on LandmarkDev after the deploy.
+So the saving shows from a user's second call on.
+
+On LandmarkDev, our smoke test ran once before and once after the deploy, from one client.
+These are single runs, not a bench:
+
+| Call | Before | After |
+|---|---|---|
+| `/me` (mints the session) | 1,678 ms | 1,227 ms |
+| A voice read right after it (`list_cost_classifications`) | 965 ms | 408 ms (session reused) |
+| Five parallel calls for one user | four `500`s, one `200` in 1,007 ms | five `200`s, 328–443 ms |
+| `search_projects` with no query | `400` | `200` in 373 ms, 5 shown of 14 |
+
+Please run your bench for the real numbers.
 
 The request log line gains `session: "minted" | "reused" | "retried"`, if you want to match your
 timings to ours.
@@ -155,13 +166,11 @@ you saw, while the data tools work. Could you check your side for that?
 On voice the markdown is still clipped to 200 characters. Titles plus a one-line summary for voice
 is a separate open item on our side.
 
-## After the deploy
+## What we need from you
 
-When it is on LandmarkDev we will send you:
-
-1. confirmation, and the manifest `version` as deployed (it should match the one above)
-2. the result of our smoke test
-
-Then please re-pull the manifest, re-run your bench, and tell us the new numbers. In particular,
-check the *token verifications* rate limit: it should now be well clear, and we will close our
-item for it once your bench confirms that.
+1. Re-pull the manifest. The `version` should be the one above.
+2. Let parallel calls for one user overlap again, and replace the four project searches with one
+   `search_projects {}`.
+3. Check how you read `search_help` (see above).
+4. Re-run your bench and send us the numbers. If no call hits the *token verifications* rate limit
+   (`500 internal_error` from minting), we will close our item for it.

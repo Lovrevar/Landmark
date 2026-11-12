@@ -10,7 +10,8 @@ Code: [`supabase/functions/assistant-api/`](../supabase/functions/assistant-api/
 `assistant-api/tests/` (`deno task test` from `supabase/functions/`).
 
 **Status (2026-11-12):** deployed to LandmarkDev, not to production. The assistant side's latency
-request of 2026-11-11 is built on `feat/assistant-api-latency` and not deployed yet:
+request of 2026-11-11 is built and deployed to LandmarkDev (manifest `6a9b191f…`, smoke test
+passing). Our answer is in [requests/landmark-latency-response.md](./requests/landmark-latency-response.md):
 
 - sessions are reused per user
 - `search_projects` lists every project when given no query
