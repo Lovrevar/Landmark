@@ -17,6 +17,7 @@ characterisation tests on `feature/voice-assistant`; its open questions (`OQ-n`)
 - **What happens:** the tool returns up to five articles as one markdown string on every channel.
   `voice-llm` hands all of it to the model. `assistant-api`'s voice clamp clips any string to 200
   characters, so on voice the company assistant gets little more than the first article's opening.
+- **Asked for** by the assistant team on 2026-11-12, as not urgent.
 - **Fix direction:** give `handleSearchHelp` a channel-aware shape: on voice, a list of
   `{ title, summary }` per match. The clamp then cuts the list to five and keeps each short line
   whole.

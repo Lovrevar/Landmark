@@ -174,3 +174,26 @@ is a separate open item on our side.
 3. Check how you read `search_help` (see above).
 4. Re-run your bench and send us the numbers. If no call hits the *token verifications* rate limit
    (`500 internal_error` from minting), we will close our item for it.
+
+## Outcome (their reply, 2026-11-12)
+
+The assistant team confirmed all four items against LandmarkDev:
+
+- **Manifest:** re-pulled at `6a9b191f…`.
+- **Calls and listing:** their one-call-per-user queue is removed, and the caller's projects are one
+  `search_projects {}` per call.
+- **`search_help`:** the refusal was theirs. Their client read `data.data`; it is fixed on their
+  side, and the handler is unchanged.
+- **Bench** (Haiku 5.5, 8 questions × 3, LandmarkDev):
+
+| | Before | After |
+|---|---|---|
+| First answer, median / p95 | 3.28 s / 5.51 s | 2.65 s / 4.31 s |
+| Whole answer, median / p95 | 3.35 s / 5.80 s | 2.85 s / 4.99 s |
+| One tool call, from the second on | 0.5–1.1 s | 0.22–0.45 s |
+
+There were no `500`s and no verify-limit hits, so SEC-A14 is closed.
+
+Open, not urgent:
+- titles and a one-line summary for `search_help` on voice ([COLLAB-19](../backlog/collaboration.md))
+- the production deploy, after the pilot has run on dev ([release.md](../backlog/release.md))

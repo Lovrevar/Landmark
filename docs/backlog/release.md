@@ -31,6 +31,12 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   uses a tool and check the answer streams in.
 - [x] **Bring `demo` up to `main`** (2026-11-05) (a PR from `main` into `demo`, as #66): the demo ran
   the client from 2026-10-20.
+- [ ] **Deploy `assistant-api` to production** — only after the pilot has run on LandmarkDev; the
+  assistant team will not start before then. Needs `ASSISTANT_API_SECRET` set as a function
+  secret on production, the Auth → Rate Limits → *token verifications* setting checked, and
+  `scripts/assistant-api-smoke.mjs` run with `ASSISTANT_API_URL` pointed there. The script
+  refuses production today, so that guard has to be lifted deliberately for the run.
+  Steps: [ASSISTANT_API.md](../ASSISTANT_API.md).
 - [ ] **Apply `20261026100000_voice_calls`** (voice assistant, `feature/voice-assistant` only).
   **Dev: done** — its SQL ran directly on 2026-10-26 and `supabase db push` recorded it on
   2026-10-27, after the merge. Dev has no pg_cron, so the sweep is not scheduled (enable pg_cron,

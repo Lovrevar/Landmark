@@ -10,21 +10,6 @@ it; write down why, and what a fix would look like.
 
 ## Open defects
 
-### SEC-A14 · Low · `assistant-api` session minting counts against a per-IP verify limit
-- **Check:** Runtime check needed: the session cache is on LandmarkDev since 2026-11-12; waiting on the assistant team's bench
-- **Where:** `supabase/functions/assistant-api/session.ts` (`SessionCache`, `openSession`:
-  `generateLink` then `verifyOtp`); Auth → Rate Limits → *token verifications* on each project.
-- **What happens:** minting a session makes one `/verify` request to GoTrue, and Auth limits token
-  verifications per IP. It used to happen on every tool call and `/me`. Since the 2026-11-12
-  change it happens once per user per 5 minutes per warm isolate (`SessionCache`), so the
-  assistant's normal traffic should stay well under the limit. If the limit is reached anyway,
-  minting fails and the call is `500 internal_error` (`verifyOtp failed` in the log), even though
-  the caller did nothing wrong.
-- **Fix direction:** after deploying, check the limit against the assistant's traffic
-  ([../ASSISTANT_API.md](../ASSISTANT_API.md), "Deploying to the dev project") and raise it if
-  needed. Close this once that check passes. The longer-term option is to mint a short-lived JWT
-  once the signing scheme is decided (voice plan open question 1).
-
 ### SEC-A9 · Low · `dispatch-calendar-reminders` has no request authentication
 - **Where:** `supabase/functions/dispatch-calendar-reminders/index.ts`, `verify_jwt = false`.
 - **What happens:** harmless today because the function is disabled in `config.toml`. Enabling it
@@ -169,6 +154,12 @@ dashboards, the reports and the assistant's tools. That is a project of its own.
 - The gate covers derived signals (unpaid, utilisation, overdue), not just the raw numbers.
 
 ## Resolved
+
+### SEC-A14 · Medium · `assistant-api` minted a GoTrue session per request, against a per-IP verify limit
+- Fixed in `2720920c` (2026-11-12): `SessionCache` mints once per user per 5 minutes, single-flight
+  (tests A20–A24 in `assistant-api/tests/assistant.test.ts`). On LandmarkDev the smoke test showed
+  four `500`s in five parallel calls before the deploy and none after; the assistant team's bench
+  (8 questions × 3) hit no `500` and no verify limit.
 
 ### AUTH-4 · Low · An unused `user_has_project_access(uuid, uuid)` overload contradicts the real rule
 - Fixed on `fix/contracts-scope-sale-cancel-unit-numbers` (2026-10-12): the unused two-argument `user_has_project_access` is dropped in migration

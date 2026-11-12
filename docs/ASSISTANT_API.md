@@ -11,7 +11,9 @@ Code: [`supabase/functions/assistant-api/`](../supabase/functions/assistant-api/
 
 **Status (2026-11-12):** deployed to LandmarkDev, not to production. The assistant side's latency
 request of 2026-11-11 is built and deployed to LandmarkDev (manifest `6a9b191f…`, smoke test
-passing). Our answer is in [requests/landmark-latency-response.md](./requests/landmark-latency-response.md):
+passing). The assistant team's bench went from 3.28 s to 2.65 s median to the first answer, and from
+0.5–1.1 s to 0.22–0.45 s per tool call after the first. Our answer is in
+[requests/landmark-latency-response.md](./requests/landmark-latency-response.md):
 
 - sessions are reused per user
 - `search_projects` lists every project when given no query
@@ -207,7 +209,7 @@ supabase functions deploy assistant-api
 on the dev project and check it. A session is minted, with one `/verify` request to GoTrue, once
 per user per 5 minutes per warm isolate, no longer on every call. The limit is per IP. When it is
 hit, session minting fails and the request is `500 internal_error`, with `verifyOtp failed` in the
-log. Tracked as [SEC-A14](./backlog/security.md).
+log. [SEC-A14](./backlog/security.md) is closed: the assistant team's bench on dev hit no limit.
 
 **Then run the smoke test** (`scripts/assistant-api-smoke.mjs`). It signs assertions as the
 assistant does and checks the manifest, the pilot's mapping and role, one read on voice, and three
