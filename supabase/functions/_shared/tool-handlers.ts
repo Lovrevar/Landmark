@@ -26,7 +26,8 @@ import type { AuthContext } from './auth.ts'
 // ---------------------------------------------------------------------------
 
 export interface SearchProjectsInput {
-  query: string
+  /** Empty or omitted lists every project the caller may see. */
+  query?: string
   limit?: number
 }
 
@@ -296,16 +297,22 @@ export async function handleSearchProjects(
   ctx: AuthContext,
 ): Promise<SearchProjectsOutput> {
   const query = (input.query ?? '').trim()
-  if (!query) return { data: { projects: [], count: 0 } }
-
   const limit = clampLimit(input.limit)
 
-  const { data: firstPass, error } = await ctx.userClient
-    .from('projects')
-    .select('id, name, location, status')
-    .ilike('name', `%${escapeIlike(query)}%`)
-    .order('name', { ascending: true })
-    .limit(limit)
+  // RLS already hides other projects from Supervision; the explicit scope
+  // mirrors list_contracts and keeps the answer the same if a policy loosens.
+  const assigned = ctx.assignedProjects.map((p) => p.project_id)
+  if (ctx.role === 'Supervision' && assigned.length === 0) return { data: { projects: [], count: 0 } }
+
+  // No query lists every project the caller may see, in name order.
+  const projectsNamed = (pattern: string | null) => {
+    let q = ctx.userClient.from('projects').select('id, name, location, status')
+    if (pattern !== null) q = q.ilike('name', `%${escapeIlike(pattern)}%`)
+    if (ctx.role === 'Supervision') q = q.in('id', assigned)
+    return q.order('name', { ascending: true }).limit(limit)
+  }
+
+  const { data: firstPass, error } = await projectsNamed(query || null)
 
   if (error) {
     console.error('[ai-chat:tool] search_projects failed', {
@@ -320,15 +327,10 @@ export async function handleSearchProjects(
   // retry once with a stripped stem. Skip if first pass already returned results
   // or if the stem ends up identical to the original.
   let projects = firstPass ?? []
-  if (projects.length === 0) {
+  if (projects.length === 0 && query) {
     const stem = croatianStem(query)
     if (stem !== query) {
-      const retry = await ctx.userClient
-        .from('projects')
-        .select('id, name, location, status')
-        .ilike('name', `%${escapeIlike(stem)}%`)
-        .order('name', { ascending: true })
-        .limit(limit)
+      const retry = await projectsNamed(stem)
       if (!retry.error && retry.data) projects = retry.data
     }
   }

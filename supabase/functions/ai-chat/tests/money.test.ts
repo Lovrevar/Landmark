@@ -72,15 +72,19 @@ scenario('M01 the cached system prompt carries the money rules, byte-identical a
   assert(director[1].text !== sales[1].text) // only the per-user block differs
 })
 
-scenario('M02 the tool descriptions repeat the budget rules where the model chooses tools', async () => {
+// The full budget rules live in DOMAIN_RULES_HR, in the system prompt (M01).
+// The descriptions stay short (assistant-api latency, 2026-11-12) and keep
+// only the pointers the model needs at the moment it picks a tool.
+scenario('M02 the tool descriptions keep short budget pointers where the model chooses tools', async () => {
   anthropic.script(answer('ok'))
   await chat({ session_id: null, message: 'x' })
   const desc = Object.fromEntries(anthropic.calls[0].body.tools!.map((t) => [t.name, t.description]))
-  assertStringIncludes(desc.get_project_financial_summary, 'A project with no TIC has no planned budget')
-  assertStringIncludes(desc.get_project_financial_summary, '"remaining budget" is then meaningless')
-  assertStringIncludes(desc.list_project_phases, '`budget_allocated` is derived from the project TIC')
-  assertStringIncludes(desc.list_contracts, 'The `budget_realized` field is automatically maintained from payments')
-  assertStringIncludes(desc.list_cost_classifications, 'resolve a cost category the user named into a classification_id')
+  assertStringIncludes(desc.get_project_financial_summary, 'Without a TIC there is no budget; say so')
+  assertStringIncludes(desc.list_project_phases, 'Not for cost categories')
+  assertStringIncludes(desc.list_project_phases, 'spend (use `get_project_financial_summary`)')
+  assertStringIncludes(desc.list_contracts, '`budget_realized` (the authoritative spend)')
+  assertStringIncludes(desc.list_contracts, 'filter by classification_id, not by phase')
+  assertStringIncludes(desc.list_cost_classifications, 'into a classification_id for `list_contracts`')
 })
 
 // ---------------------------------------------------------------------------

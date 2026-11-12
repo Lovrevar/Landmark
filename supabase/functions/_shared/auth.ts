@@ -49,8 +49,10 @@ export async function authenticate(req: Request): Promise<AuthResult> {
 
 /** Identity from a user's JWT, by the same code for every channel. voice-llm
  * uses it with the JWT stored for a call (plan §4.4), so role and assigned
- * projects are re-read on every request, as for chat. */
-export async function authenticateToken(jwt: string): Promise<AuthResult> {
+ * projects are re-read on every request, as for chat. `opts.fetch` replaces
+ * the user client's fetch; assistant-api uses it to notice a 401 from
+ * PostgREST inside a handler, which the handler itself turns into { error }. */
+export async function authenticateToken(jwt: string, opts: { fetch?: typeof fetch } = {}): Promise<AuthResult> {
   const authHeader = `Bearer ${jwt}`
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -68,7 +70,7 @@ export async function authenticateToken(jwt: string): Promise<AuthResult> {
   // RLS-respecting client carrying the user's JWT.
   const userClient = createClient<Database>(supabaseUrl, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { Authorization: authHeader } },
+    global: { headers: { Authorization: authHeader }, ...(opts.fetch ? { fetch: opts.fetch } : {}) },
   })
 
   const { data: { user: authUser }, error: getUserError } = await userClient.auth.getUser()

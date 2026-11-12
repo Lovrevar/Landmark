@@ -91,3 +91,14 @@ Deno.test('chat is unchanged by the channel: every tool for its roles', () => {
     )
   }
 })
+
+Deno.test('every voice-exposed description is 300 characters or fewer, and English', () => {
+  // The model deliberates over every description before its first tool call;
+  // the data-model warnings belong in DOMAIN_RULES_HR, not here.
+  for (const name of TOOL_ALLOWLIST.voice) {
+    const tool = TOOLS.find((t) => t.name === name)!
+    assert(tool.description.length <= 300, `${name}: ${tool.description.length} characters`)
+  }
+  // search_help's was Croatian; a few words of it would show.
+  assert(!/Pretraži|Pozovite|Vraća/.test(TOOLS.find((t) => t.name === 'search_help')!.description))
+})

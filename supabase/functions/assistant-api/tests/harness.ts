@@ -46,7 +46,8 @@ const api = await import('../index.ts')
 ;(Deno as unknown as { serve: unknown }).serve = realServe
 if (!handler) throw new Error('harness: assistant-api/index.ts did not register a Deno.serve handler')
 
-export const { TOOL_TIMEOUT_MS, rateLimiter } = api
+export const { TOOL_TIMEOUT_MS, rateLimiter, sessions, SESSION_WINDOW } = api
+const DEFAULT_WINDOW = { ...SESSION_WINDOW }
 
 /** A user row whose email has an ilike wildcard in it, and one with no login. */
 export const UNDERSCORE = { id: '00000000-0000-4000-8000-000000000106', authId: '00000000-0000-4000-8000-000000000206', email: 'ana_b@test.hr' }
@@ -65,6 +66,9 @@ export function scenario(name: string, fn: () => Promise<void>): void {
       logs.length = 0
       secrets.clear()
       rateLimiter.clear()
+      // Each scenario starts with no cached session, and the real window.
+      sessions.clear()
+      Object.assign(SESSION_WINDOW, DEFAULT_WINDOW)
       seedWorld(db)
       db.authUsers['tok-underscore'] = { id: UNDERSCORE.authId, email: UNDERSCORE.email }
       db.seed('users', [
@@ -75,6 +79,7 @@ export function scenario(name: string, fn: () => Promise<void>): void {
       for (const t of Object.values(TOKENS)) secrets.add(t)
 
       await fn()
+      await sessions.idle()
 
       // Every token minted and every link hash issued during the test.
       for (const t of db.revokedTokens) secrets.add(t)
