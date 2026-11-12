@@ -11,7 +11,7 @@ it; write down why, and what a fix would look like.
 ## Open defects
 
 ### SEC-A14 · Low · `assistant-api` session minting counts against a per-IP verify limit
-- **Check:** Runtime check needed, after `feat/assistant-api-latency` is deployed to LandmarkDev
+- **Check:** Runtime check needed: the session cache is on LandmarkDev since 2026-11-12; waiting on the assistant team's bench
 - **Where:** `supabase/functions/assistant-api/session.ts` (`SessionCache`, `openSession`:
   `generateLink` then `verifyOtp`); Auth → Rate Limits → *token verifications* on each project.
 - **What happens:** minting a session makes one `/verify` request to GoTrue, and Auth limits token

@@ -12,7 +12,10 @@
  * It signs assertions the way the assistant does (HS256, 60 s at most) and
  * checks what the assistant relies on: the manifest and its stable version,
  * that the pilot email maps to a Director with the twelve tools, a real read
- * on the voice channel, and three refusals. Nothing is written. The secret,
+ * on the voice channel, search_projects with no query, search_help's answer,
+ * five parallel calls for one user (the session cache), and three refusals.
+ * The times show the first call minting a session and the later ones reusing
+ * it. Nothing is written. The secret,
  * the assertions and the email are never printed.
  */
 import { createHmac, randomUUID } from 'node:crypto'
@@ -78,6 +81,20 @@ check('/me lists twelve voice tools', me.json?.tools?.voice?.length === 12, `${m
 const read = await post('/tools/list_cost_classifications', { input: {}, channel: 'voice' })
 const classifications = read.json?.data?.data?.classifications
 check('a voice tool call reads data', read.status === 200 && Array.isArray(classifications), `${read.status}, ${read.ms} ms, ${classifications?.length ?? '-'} classifications`)
+
+// Listing projects: search_projects with no query (2026-11-12).
+const list = await post('/tools/search_projects', { input: {}, channel: 'voice' })
+const projects = list.json?.data?.data?.projects
+check('search_projects without a query lists projects', list.status === 200 && Array.isArray(projects) && projects.length > 0, `${list.status}, ${list.ms} ms, ${projects?.length ?? '-'} shown${list.json?.data?.data?.total ? ` of ${list.json.data.data.total}` : ''}`)
+
+// search_help answers { markdown, matches } directly under data, with no inner data.
+const help = await post('/tools/search_help', { input: { query: 'TIC budžet' }, channel: 'chat' })
+check('search_help answers with markdown, not an error', help.status === 200 && typeof help.json?.data?.markdown === 'string' && !help.json?.data?.error, `${help.status}, ${help.ms} ms, ${help.json?.data?.matches ?? '-'} matches`)
+
+// Session reuse: parallel calls for one user share a session and all answer.
+// A call before the reuse was 500 when two minted at once.
+const parallel = await Promise.all([1, 2, 3, 4, 5].map(() => post('/tools/list_cost_classifications', { input: {}, channel: 'voice' })))
+check('five parallel calls for one user all answer', parallel.every((r) => r.status === 200), `${parallel.map((r) => r.status).join(' ')}; ${parallel.map((r) => r.ms).join(', ')} ms`)
 
 // Refusals.
 const token = assertion()
