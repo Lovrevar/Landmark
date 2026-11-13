@@ -77,8 +77,8 @@ Two things to know before adding a figure here:
   invoice, kompenzacija, cesija from a credit and from a bank account, live, equity, repaid and
   defaulted credits, and retail rows; an empty database; failed reads in both batches. They
   pinned the output *before* the figures moved and passed unchanged after. Wrong figures are
-  pinned as they are, with their ids: GEN-26 (linked garages and storage, since fixed), GEN-27 (per-project
-  debt and equity), GEN-28 (retail section), GEN-29 (cesija), GEN-30 (TIC summary), GEN-32 (0
+  pinned as they are, with their ids: GEN-26 (linked garages and storage), GEN-27 (per-project
+  debt and equity) and GEN-28 (retail section), all three since fixed; GEN-29 (cesija), GEN-30 (TIC summary), GEN-32 (0
   for no answer), GEN-33 (kompenzacija), GEN-36 (office spend). A fix changes its expectation in
   its own commit
 - **One failed query fails the whole report.** supabase-js resolves a failure as `{ data: null, error }` rather than rejecting, and every read here falls back to `[]`, so until September 2026 a dropped request produced an executive report of zeros — and exported it to PDF. `throwIfAnyFailed()` checks the 27 top-level reads and throws, which `useCachedData` hands the page as an `error`; the linked garage and storage prices come from `fetchLinkedPrices`, which throws on its own. Revenue is contracted sales, the sale rows at their package values (GEN-38; SALES.md → A sale and sales revenue), so the projects add up to the portfolio
@@ -321,6 +321,10 @@ same thing on both screens:
 - **Debt** = Σ `outstanding_balance` of live, non-equity credits (not repaid or defaulted); it was
   the face value of every credit, equity and repaid ones included.
 - **Equity** = Σ `amount` of `equity` credits; it was Σ credit allocations. ROI and D/E use these.
+- **A project card's equity and debt** are the same two definitions over the credits whose
+  `project_id` is that project (`projectFunding`, GEN-27, November 2026). A credit with no project
+  counts in the portfolio only, and allocations do not move a credit between projects. Until
+  GEN-27 the cards showed Σ allocations as equity and the face value of every credit as debt.
 - **Average interest** is weighted by facility amount over live debt; it was a plain mean.
 - **Monthly debt service** sums live debt only.
 - **Available credit** = Σ (`amount` − `used_amount`); it read two columns `bank_credits` does not

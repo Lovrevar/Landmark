@@ -464,10 +464,10 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
         // Paid on its cost invoices; the principal repayment i6 is not a cost.
         expenses: p1Expenses,
         units_sold: 2, total_units: 6, contracts: 3, phases_done: 1, total_phases: 2,
-        // Σ allocations, debt and equity alike, and the face value of every credit, equity
-        // included: not the portfolio's definitions (GEN-27).
-        equity: 900_000,
-        debt: 1_400_000,
+        // The portfolio's definitions over the project's own credits (GEN-27, changed on purpose:
+        // 900.000 and 1.400.000): the equity facility cr2, and what cr1 still owes.
+        equity: 400_000,
+        debt: 580_000,
         sales_rate: pct(2, 6),
         profit: p1Revenue - p1Expenses,
         profit_margin: pct(p1Revenue - p1Expenses, p1Revenue),
@@ -479,8 +479,9 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
         // a7 with its garage, and a8; a9 has no sale (GEN-38, changed on purpose: 770.000).
         revenue: 565_000, expenses: 0,
         units_sold: 3, total_units: 3, contracts: 1, phases_done: 1, total_phases: 1,
-        // Includes the repaid term loan cr3 (GEN-27).
-        equity: 200_000, debt: 800_000,
+        // What cr5 still owes; the repaid term loan cr3 is not debt (GEN-27, changed on purpose:
+        // 200.000 and 800.000).
+        equity: 0, debt: 100_000,
         sales_rate: 100, profit: 565_000, profit_margin: 100,
         risk_level: 'Low',
       },

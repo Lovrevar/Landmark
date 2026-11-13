@@ -211,8 +211,8 @@ export async function fetchGeneralReportData(
       const projectApartments = apartmentsArray.filter(a => a.project_id === project.id)
       const projectContracts = contractsArray.filter(c => c.project_id === project.id)
       const projectPhases = projectPhasesArray.filter(p => p.project_id === project.id)
-      // Not the portfolio's definitions (GEN-27).
-      const funding = projectFunding(project.id, creditAllocationsArray, bankCreditsArray)
+      // The portfolio's definitions over the project's own credits (GEN-27).
+      const funding = projectFunding(project.id, bankCreditsArray)
 
       const projectExpenses = costPaid(accountingPaymentsArray, accountingInvoicesArray, inv => inv.project_id === project.id)
 

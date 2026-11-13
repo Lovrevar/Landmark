@@ -90,11 +90,26 @@ describe('allocations and funders', () => {
     expect(activeFunderCount([], CREDITS)).toBe(0)
   })
 
-  // Pinned as the General report's project cards show it today (GEN-27).
-  it('projectFunding: Σ allocations as equity, Σ face value of every credit as debt', () => {
-    expect(projectFunding('p1', allocations, CREDITS)).toEqual({ equity: 900_000, debt: 1_400_000 })
-    expect(projectFunding('p2', allocations, CREDITS)).toEqual({ equity: 200_001, debt: 800_000 })
-    expect(projectFunding('p9', allocations, CREDITS)).toEqual({ equity: 0, debt: 0 })
+})
+
+describe('projectFunding', () => {
+  // GEN-27, changed on purpose: it was Σ allocations as equity (900.000 for p1) and the face value
+  // of every credit of the project as debt, equity and repaid ones included (1.400.000 for p1,
+  // 800.000 for p2). Now the portfolio's definitions over the project's own credits.
+  it('GEN-27: the equity facilities as equity, what is still owed on live debt as debt', () => {
+    // cr1 owes 580.000; cr2 is the equity facility.
+    expect(projectFunding('p1', CREDITS)).toEqual({ equity: 400_000, debt: 580_000 })
+    // cr3 is repaid, so only cr5's 100.000 is owed.
+    expect(projectFunding('p2', CREDITS)).toEqual({ equity: 0, debt: 100_000 })
+    expect(projectFunding('p9', CREDITS)).toEqual({ equity: 0, debt: 0 })
+  })
+
+  it('adds up to the portfolio figures, apart from credits with no project', () => {
+    const unassignedLive = credit({ id: 'cr6', amount: 90_000, outstanding_balance: 70_000 })
+    const credits = [...CREDITS, unassignedLive]
+    const projects = ['p1', 'p2'].map(id => projectFunding(id, credits))
+    expect(projects.reduce((sum, p) => sum + p.debt, 0)).toBe(liveDebtFigures(credits).outstanding - 70_000)
+    expect(projects.reduce((sum, p) => sum + p.equity, 0)).toBe(totalEquity(credits))
   })
 })
 
