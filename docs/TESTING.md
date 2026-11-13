@@ -39,15 +39,17 @@ Sales, General and Dashboards rows were recounted that day, the others on 2026-1
 | Sales (11) | `Payments/services/salesPaymentsService`, `SalesProjects/bulkPriceResult`, `SalesProjects/importOutcome`, `SalesProjects/salesProjectsRollup`, `SalesProjects/unitFilters`, `SalesProjects/services/salesService`, `SalesProjects/services/apartmentImportTemplate`, `SalesProjects/services/apartmentImportValidation`, `SalesProjects/services/garageImportService`, `SalesProjects/services/garageImportTemplate`, `utils/priceUtils` |
 | Supervision (6) | `Invoices/services/supervisionInvoiceService`, `Payments/services/supervisionPaymentService`, `SiteManagement/utils/classificationNormalization`, `SiteManagement/utils/contractTree`, `SiteManagement/utils/phaseSetup`, `WorkLogs/workLogStatus` |
 | Tasks (4) | `permissions`, `subtasks`, `taskLists`, `unread` |
-| Dashboards (6) | `services/directorService`, `services/salesDashboardService`, `utils/barScale`, `utils/directorAlerts`, `utils/retailTotals`, `utils/supervisionDeadlines` |
+| Dashboards (7) | `services/accountingDashboardService` (paging, GEN-35), `services/directorService`, `services/salesDashboardService`, `utils/barScale`, `utils/directorAlerts`, `utils/retailTotals`, `utils/supervisionDeadlines` |
 
 Most specs in `services/` test the pure helpers those files export (payment payloads,
 validation, export-sheet builders, TIC workbook parsing). The characterization tests of Step 7
 (the General and Sales reports, the Director and Sales dashboards, Project details) run a whole
 service over a fake client instead: `src/test/fakeSupabase.ts` answers `from(table)` with fixture
 rows and applies `eq`, `in`, `gte`, `lte`, not-null, `order`, `range` and `single` the way
-PostgREST would, dotted paths into embedded rows included, and fails the tables a test names. The
-General report's test keeps its own smaller fake.
+PostgREST would, dotted paths into embedded rows included, and fails the tables a test names. A
+list read without `range` stops at 1000 rows, as PostgREST's `max-rows` does, so a test with more
+rows than that fails until the read pages through `fetchAllRows` (GEN-35). The General report's
+test keeps its own smaller fake, with the same cap.
 
 The edge functions have their own Deno tests, outside Vitest: `npm run test:functions` runs every
 `*.test.ts` file under `supabase/functions/` (`_shared/help-score`, `_shared/help-search`,

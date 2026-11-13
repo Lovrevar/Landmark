@@ -83,6 +83,21 @@ Do these before anything else in the backlog. No ids; tick an item off and date 
   without a contract, "Samo plaćanja bez ugovora". CPI comes back per project once its contracts
   get milestones (GEN-8) — tell the site team. Also check Precko Zapad's €600.000.000 plan is
   real.
+- [ ] **Check the General report's new figures against real data, and tell its readers**
+  (GEN-27, GEN-28, `fix/general-report-figures`). Read-only, on LandmarkDemo and then production:
+  run the report before and after and list what moves. Expected: per-project debt drops to what
+  is still owed on the project's own live credits (repaid and equity credits leave it), equity
+  becomes the project's equity facilities, and the retail section's active projects and
+  completed phases stop reading 0 while its contract value and realised budget lose the buyers'
+  contracts. Anyone who sends the report to a bank should hear the per-project figures changed
+  before the next one goes out.
+  **LandmarkDemo: done** (2026-11-13, old and new builds side by side, as Director, hr and en).
+  Črnomerec 7.500.000 / 7.500.000 → 0 / 0 (its loan is undrawn; the "equity" was that loan's
+  allocation), Trešnjevka 0 / 2.000.000 → 0 / 0 (its loan is `paid`), Jarun 4.000.000 /
+  5.000.000 → 0 / 1.207.550 (owed on its loan); the demo has no equity facilities. Retail: active
+  projects and completed phases 0 → 1, contract value unchanged (all three contracts are cost
+  contracts). The PDF still exports. Production still to do. The demo's Trešnjevka loan is
+  `paid` with 1.837.500 outstanding, which the seed should not produce.
 - [ ] **Try TIC saves on dev** (FUND-2): a first-time save, and a save as Accounting and as
   Investment. The fix was made from reading the code; its migration `20260930100400` is applied
   everywhere since 2026-10-06, so nothing blocks this.

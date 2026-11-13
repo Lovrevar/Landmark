@@ -13,8 +13,8 @@
  * - **The average rate** is weighted by facility amount over live debt, so a small credit moves it
  *   less than a large one.
  *
- * `projectFunding` is the exception: it still computes a project's figures the pre-GEN-2 way,
- * because that is what the General report's project cards show (GEN-27).
+ * A project's figures (`projectFunding`) are the same definitions over the credits whose
+ * `project_id` is that project (GEN-27). A credit with no project counts in the portfolio only.
  */
 
 const num = (value: unknown): number => Number(value || 0)
@@ -111,19 +111,13 @@ export function activeFunderCount(allocations: readonly AllocationRow[], credits
 }
 
 /**
- * A project's funding as the General report's project cards show it: equity is Σ the project's
- * allocations, whatever the credit's type, and debt the face value of every credit of the project,
- * equity and repaid ones included. Not the portfolio's definitions (GEN-27).
+ * A project's funding, on the portfolio's definitions over the project's own credits
+ * (`bank_credits.project_id`): equity is its equity facilities, debt what is still owed on its
+ * live debt (GEN-27). Allocations do not move a credit between projects here.
  */
-export function projectFunding(
-  projectId: string,
-  allocations: readonly AllocationRow[],
-  credits: readonly CreditRow[],
-): { equity: number; debt: number } {
-  return {
-    equity: allocations.filter(a => a.project_id === projectId).reduce((sum, a) => sum + num(a.allocated_amount), 0),
-    debt: credits.filter(c => c.project_id === projectId).reduce((sum, c) => sum + num(c.amount), 0),
-  }
+export function projectFunding(projectId: string, credits: readonly CreditRow[]): { equity: number; debt: number } {
+  const own = credits.filter(c => c.project_id === projectId)
+  return { equity: totalEquity(own), debt: liveDebtFigures(own).outstanding }
 }
 
 /** A `company_loans` row. */

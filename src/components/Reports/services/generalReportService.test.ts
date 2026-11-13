@@ -10,13 +10,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * Do not edit an expectation to get a refactor green. If one moves, the refactor changed a figure.
  */
 
-// A fake Supabase client: `from(table).select()` resolves to that table's rows, its `.in()`
-// filters them by id, and `.order().range()` pages them (the linked garage and storage prices,
-// read through fetchAllRows). A table listed in `failing` or `failingLookup` answers the way
+// A fake Supabase client: `from(table).select()` resolves to that table's first 1000 rows, as
+// PostgREST's `max-rows` cuts an unpaged read without saying so (GEN-35), its `.in()` filters them
+// by id, and `.order().range()` pages them (every read that can outgrow a page goes through
+// fetchAllRows). A table listed in `failing` or `failingLookup` answers the way
 // supabase-js reports a failed request: `{ data: null, error }`.
 let tables: Record<string, unknown[]> = {}
 let failing: Record<string, string> = {}
 let failingLookup: Record<string, string> = {}
+
+/** PostgREST's `max-rows`: no single request returns more. */
+const MAX_ROWS = 1000
 
 vi.mock('../../../lib/supabase', () => {
   const response = (rows: unknown[], message: string | undefined) =>
@@ -26,7 +30,7 @@ vi.mock('../../../lib/supabase', () => {
       from: (table: string) => ({
         select: () => ({
           then: (resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) =>
-            Promise.resolve(response(tables[table] ?? [], failing[table])).then(resolve, reject),
+            Promise.resolve(response((tables[table] ?? []).slice(0, MAX_ROWS), failing[table])).then(resolve, reject),
           in: (_column: string, ids: string[]) =>
             Promise.resolve(response(
               (tables[table] ?? []).filter(row => ids.includes((row as { id: string }).id)),
@@ -218,15 +222,15 @@ const PORTFOLIO: Record<string, unknown[]> = {
     { id: 'rp1', status: 'In Progress' },
     { id: 'rp2', status: 'Completed' },
   ],
-  // One supplier contract and one buyer contract (GEN-28).
+  // One supplier contract on a construction phase and one buyer contract on a sales phase (GEN-28).
   retail_contracts: [
-    { id: 'rc1', supplier_id: 'rs1', customer_id: null, contract_amount: 80_000, budget_realized: 30_000 },
-    { id: 'rc2', supplier_id: null, customer_id: 'rcu1', contract_amount: 120_000, budget_realized: 60_000 },
+    { id: 'rc1', phase_id: 'rph1', supplier_id: 'rs1', customer_id: null, contract_amount: 80_000, budget_realized: 30_000 },
+    { id: 'rc2', phase_id: 'rph2', supplier_id: null, customer_id: 'rcu1', contract_amount: 120_000, budget_realized: 60_000 },
   ],
   retail_project_phases: [
-    { id: 'rph1', status: 'Completed' },
-    { id: 'rph2', status: 'In Progress' },
-    { id: 'rph3', status: 'Pending' },
+    { id: 'rph1', project_id: 'rp1', phase_type: 'construction', status: 'Completed' },
+    { id: 'rph2', project_id: 'rp1', phase_type: 'sales', status: 'In Progress' },
+    { id: 'rph3', project_id: 'rp2', phase_type: 'development', status: 'Pending' },
   ],
   retail_land_plots: [{ id: 'lp1' }, { id: 'lp2' }],
   retail_customers: [{ id: 'rcu1' }],
@@ -401,15 +405,18 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
   it('retail portfolio', async () => {
     expect((await report()).retail_portfolio).toEqual({
       total_retail_projects: 2,
-      // 'active' and 'completed' are not statuses these tables allow, so both read 0, and the
-      // contract figures add the buyer's contract to the supplier's (GEN-28).
-      active_retail_projects: 0,
+      // GEN-28, changed on purpose: 'In Progress' and 'Completed' are the statuses the tables
+      // allow (both read 0 on 'active' and 'completed'), and the contract value and realised
+      // budget are the supplier's contract alone. The buyer's contract is the sales side.
+      active_retail_projects: 1,
       total_land_plots: 2,
       total_retail_contracts: 2,
-      retail_contract_value: 200_000,
-      retail_budget_realized: 90_000,
+      retail_contract_value: 80_000,
+      retail_budget_realized: 30_000,
+      retail_sales_contracted: 120_000,
+      retail_collected: 60_000,
       retail_phases: 3,
-      completed_retail_phases: 0,
+      completed_retail_phases: 1,
       total_retail_customers: 1,
       retail_suppliers: 2,
     })
@@ -461,10 +468,10 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
         // Paid on its cost invoices; the principal repayment i6 is not a cost.
         expenses: p1Expenses,
         units_sold: 2, total_units: 6, contracts: 3, phases_done: 1, total_phases: 2,
-        // Σ allocations, debt and equity alike, and the face value of every credit, equity
-        // included: not the portfolio's definitions (GEN-27).
-        equity: 900_000,
-        debt: 1_400_000,
+        // The portfolio's definitions over the project's own credits (GEN-27, changed on purpose:
+        // 900.000 and 1.400.000): the equity facility cr2, and what cr1 still owes.
+        equity: 400_000,
+        debt: 580_000,
         sales_rate: pct(2, 6),
         profit: p1Revenue - p1Expenses,
         profit_margin: pct(p1Revenue - p1Expenses, p1Revenue),
@@ -476,8 +483,9 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
         // a7 with its garage, and a8; a9 has no sale (GEN-38, changed on purpose: 770.000).
         revenue: 565_000, expenses: 0,
         units_sold: 3, total_units: 3, contracts: 1, phases_done: 1, total_phases: 1,
-        // Includes the repaid term loan cr3 (GEN-27).
-        equity: 200_000, debt: 800_000,
+        // What cr5 still owes; the repaid term loan cr3 is not debt (GEN-27, changed on purpose:
+        // 200.000 and 800.000).
+        equity: 0, debt: 100_000,
         sales_rate: 100, profit: 565_000, profit_margin: 100,
         risk_level: 'Low',
       },
@@ -536,6 +544,27 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
   })
 })
 
+describe('fetchGeneralReportData: more rows than one PostgREST page', () => {
+  // GEN-35: every read used to stop at row 1000 without a word. Here 1000 more paid office
+  // invoices, each with its payment, take both tables past a page, so an unpaged read drops the
+  // last rows of each, and a payment whose invoice was dropped falls out of the expenses too.
+  it('GEN-35: counts every invoice and payment, not the first 1000', async () => {
+    const extra = Array.from({ length: 1_000 }, (_, i) => `x${String(i).padStart(4, '0')}`)
+    tables.accounting_invoices.push(...extra.map(id => ({
+      id, invoice_type: 'INCOMING_OFFICE', project_id: null, status: 'PAID', total_amount: 2,
+      remaining_amount: 0, due_date: '2026-08-01', invoice_category: 'OFFICE',
+    })))
+    tables.accounting_payments.push(...extra.map(id => ({
+      id: `pay-${id}`, invoice_id: id, amount: 2, payment_date: '2026-08-01', payment_source_type: 'bank_account',
+    })))
+
+    const r = await report()
+    expect(r.accounting_overview.total_invoices).toBe(11 + 1_000)
+    expect(r.office_expenses.total_office_invoices).toBe(2 + 1_000)
+    expect(r.executive_summary.total_expenses).toBe(roundDeep(EXPENSES + 2_000))
+  })
+})
+
 describe('fetchGeneralReportData: no rows at all', () => {
   it('is a report of zeros and empty lists, not an error', async () => {
     tables = {}
@@ -583,7 +612,8 @@ describe('fetchGeneralReportData: no rows at all', () => {
       },
       retail_portfolio: {
         total_retail_projects: 0, active_retail_projects: 0, total_land_plots: 0, total_retail_contracts: 0,
-        retail_contract_value: 0, retail_budget_realized: 0, retail_phases: 0, completed_retail_phases: 0,
+        retail_contract_value: 0, retail_budget_realized: 0, retail_sales_contracted: 0, retail_collected: 0,
+        retail_phases: 0, completed_retail_phases: 0,
         total_retail_customers: 0, retail_suppliers: 0,
       },
       contract_types: [],

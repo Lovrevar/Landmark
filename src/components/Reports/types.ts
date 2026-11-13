@@ -152,8 +152,12 @@ export interface ComprehensiveReport {
     active_retail_projects: number
     total_land_plots: number
     total_retail_contracts: number
+    /** Cost (development and construction) contracts: their value and what was paid (GEN-28). */
     retail_contract_value: number
     retail_budget_realized: number
+    /** Sales contracts: their value and what was collected. */
+    retail_sales_contracted: number
+    retail_collected: number
     retail_phases: number
     completed_retail_phases: number
     total_retail_customers: number

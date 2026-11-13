@@ -370,13 +370,15 @@ const GeneralReports: React.FC = () => {
           <Home className="w-6 h-6 text-green-600 mr-2" />
           <h2 className="text-2xl font-bold text-green-900 dark:text-green-300">{t('reports.general.retail_portfolio')}</h2>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-sm">
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.retail_projects')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.total_retail_projects}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.active_retail_projects')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.active_retail_projects}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.land_plots')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.total_land_plots}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.retail_contracts')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.total_retail_contracts}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.contract_value_retail')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{formatEuroRounded(report.retail_portfolio.retail_contract_value)}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.budget_realized_retail')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{formatEuroRounded(report.retail_portfolio.retail_budget_realized)}</p></div>
+          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.sales_contracted_retail')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{formatEuroRounded(report.retail_portfolio.retail_sales_contracted)}</p></div>
+          <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.collected_retail')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{formatEuroRounded(report.retail_portfolio.retail_collected)}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.retail_phases')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.retail_phases}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.completed_retail_phases')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.completed_retail_phases}</p></div>
           <div><p className="font-bold text-gray-700 dark:text-gray-200">{t('reports.general.retail_customers')}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{report.retail_portfolio.total_retail_customers}</p></div>

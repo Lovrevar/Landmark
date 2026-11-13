@@ -32,9 +32,13 @@ free: `FUND-23`). Entry format and rules are in [README.md](./README.md).
   - Investors and funders: the Director dashboard counts banks of live credits, equity included,
     with no allocation needed. The General report counts banks of credits that have an allocation,
     whatever their status.
-  - Per-project debt: the Director dashboard sums `outstanding_balance` over every credit of the
-    project, equity included. The General report sums face value (GEN-27).
-    `Funding/Projects/services/investmentService.ts` splits allocations by credit type.
+  - Per-project debt: the General report's project cards call `projectFunding` (since GEN-27):
+    outstanding on the project's own live, non-equity credits, and its equity facilities as
+    equity. The Director dashboard still sums `outstanding_balance` over every credit of the
+    project, equity and defaulted ones included (`directorService.ts` ~257), and could call
+    `projectFunding` instead. `Funding/Projects/services/investmentService.ts` splits
+    allocations by credit type, at their allocated amount: how a project is financed rather than
+    what it still owes, so its label should say so if it stays.
 - **Fix direction:** one per-project and one portfolio definition in `fundingFigures.ts`, which the
   Investment dashboard calls too. Where a figure stays different, its label says what it counts.
 - **Also found while planning (2026-10-21):**

@@ -4275,6 +4275,8 @@
       "retail_contracts": "Retail Contracts:",
       "contract_value_retail": "Contract Value:",
       "budget_realized_retail": "Budget Realized:",
+      "sales_contracted_retail": "Contracted Sales:",
+      "collected_retail": "Collected:",
       "retail_phases": "Retail Phases:",
       "completed_retail_phases": "Completed Phases:",
       "retail_customers": "Retail Customers:",

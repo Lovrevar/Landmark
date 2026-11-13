@@ -14,7 +14,7 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 | [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 9 |
 | [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 9, plus 4 waiting on the ERP |
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
-| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 25 |
+| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 22 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 17 |
 | [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 19 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
@@ -64,7 +64,7 @@ it from the ranking. Never reuse an id: code comments and migrations quote them 
 
 ## Open work, ranked
 
-Ranked on 2026-10-05, last revised 2026-11-05, by what goes wrong if the item is left, then by how small the job is.
+Ranked on 2026-10-05, last revised 2026-11-13, by what goes wrong if the item is left, then by how small the job is.
 
 ### 1. Do first
 
@@ -79,19 +79,18 @@ are on dev and production. Every migration in `supabase/migrations/` is on produ
 |---|---|---|
 | 1 | [CASH-6](./cashflow.md) — cesija-from-credit sign | Allocation usage is wrong for every such payment. Blocked on an accounting decision, not on code. |
 | 2 | [COLLAB-4](./collaboration.md) — AI rate limit miscounts and fails open | Deferred to the voice branch (OQ-3). Do it there. |
-| 3 | [GEN-35](./projects-dashboards-reports.md), [GEN-43](./projects-dashboards-reports.md) — General report, Director and Sales dashboards not paged past 1000 rows | Every total goes silently low once payments or invoices pass 1000. On production on 2026-11-05: 851 invoices, 224 payments, so invoices pass 1000 within months. |
-| 4 | [GEN-27](./projects-dashboards-reports.md), [GEN-28](./projects-dashboards-reports.md) — General report per-project funding, retail section | Wrong figures in a report that goes to banks. Each has a pinned test to change. |
+| 3 | [GEN-43](./projects-dashboards-reports.md) — Director and Sales dashboards, Sales report and Sales payments not paged past 1000 rows | Every total goes silently low once payments or invoices pass 1000. On production on 2026-11-05: 851 invoices, 224 payments, so invoices pass 1000 within months. The General report's version, GEN-35, is fixed and shows the pattern. |
 
 ### 3. Larger work, schedule deliberately
 
 | # | Item | Note |
 |---|---|---|
-| 5 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
-| 6 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
-| 7 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
-| 8 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
-| 9 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
-| 10 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
+| 4 | [SEC-001](./security.md) — server-side Cashflow unlock | ~15 policies on 11 tables. Accepted risk; needs its own design review. |
+| 5 | [UI-3](./ui.md), [CASH-18](./cashflow.md) — status and invoice-type display in Cashflow | Shared maps exist for the other domains. |
+| 6 | [COLLAB-10](./collaboration.md), [COLLAB-9](./collaboration.md) — team calendar overlay | Needs a migration. |
+| 7 | [UI-1](./ui.md), [UI-9](./ui.md), [UI-2](./ui.md) — money formatting, dark-mode contrast, export dates | Mechanical sweeps; the helpers exist. |
+| 8 | [UI-5](./ui.md), [UI-7](./ui.md) — hardcoded strings, hand-rolled primitives | Consistency, no wrong data. |
+| 9 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Decide whether it is still wanted before the ERP work resumes; ERP partner mapping targets the same three tables. |
 
 ### 4. Small and low-risk
 

@@ -219,7 +219,7 @@ names the backlog id, and so does the pinned expectation.
 | `invoiceFigures.ts` | `isOpenInvoice`, `isOverdueInvoice`, `invoiceStatusSummary`, `officeInvoiceTotals` (GEN-36) | General report, Cashflow invoice list (`isOverdue`), Debt status, the Site Management and Retail invoice modals. Differences: CASH-32 |
 | `constructionFigures.ts` | `contractTotals`, `contractTypeCounts` (whole-number names first, as a plain object orders keys), `completedPhaseCount`, `phaseCompletionRate`, `isSettledMilestone`, `recentWorkLogCount` | General report and PDF, Budget Control, Director alerts. Differences: SUP-18 |
 | `projectFigures.ts` | `profitAndMargin`, `returnOnEquity`, `projectRiskLevel`, `reportRisks`, `topProjectsByRevenue`, `recommendationKeys`, `projectStatusCounts` | General report and PDF, Director, Retail dashboards, Retail report. Thresholds: GEN-41; zeros for "no answer": GEN-32 |
-| `retailFigures.ts` | `retailPortfolioCounts` — the General report's retail section, **wrong as it stands** (GEN-28) | General report |
+| `retailFigures.ts` | `retailPortfolioCounts` — the General report's retail section: statuses as the tables allow them, cost contracts and sales split by phase through `computeRetailTotals` (GEN-28) | General report |
 | `ticFigures.ts` | `ticTotalsByProject`, `portfolioValue`, `ticPlanSummary` (GEN-30), on `ticGrandTotal` from `Funding/TIC/utils/ticBudget.ts` | General report. Investment dashboard's source: GEN-40 |
 
 Row types are narrow interfaces (`{ status, price }`), amounts go through `Number(x || 0)`, and a

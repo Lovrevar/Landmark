@@ -58,6 +58,20 @@ describe('computeRetailTotals', () => {
     expect(totals.total_costs - totals.total_invested).toBe(totals.land_cost)
   })
 
+  // The General report's retail section shows the cost contracts' value next to what was paid on
+  // them (GEN-28); a buyer's contract is never part of it.
+  it('cost_contracted is the value of development and construction contracts only', () => {
+    const totals = computeRetailTotals(input({
+      contracts: [
+        { id: 'c1', phase_id: 'p-dev', contract_amount: 200, budget_realized: 100 },
+        { id: 'c2', phase_id: 'p-con', contract_amount: '600', budget_realized: 400 },
+        { id: 'c3', phase_id: 'p-sal', contract_amount: 2000, budget_realized: 1500 }
+      ]
+    }))
+
+    expect(totals.cost_contracted).toBe(800)
+  })
+
   it('revenue is the contracted sales value, collected is what was paid', () => {
     const totals = computeRetailTotals(input({
       contracts: [{ id: 'c3', phase_id: 'p-sal', contract_amount: 2000, budget_realized: 800 }]
