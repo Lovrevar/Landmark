@@ -218,15 +218,15 @@ const PORTFOLIO: Record<string, unknown[]> = {
     { id: 'rp1', status: 'In Progress' },
     { id: 'rp2', status: 'Completed' },
   ],
-  // One supplier contract and one buyer contract (GEN-28).
+  // One supplier contract on a construction phase and one buyer contract on a sales phase (GEN-28).
   retail_contracts: [
-    { id: 'rc1', supplier_id: 'rs1', customer_id: null, contract_amount: 80_000, budget_realized: 30_000 },
-    { id: 'rc2', supplier_id: null, customer_id: 'rcu1', contract_amount: 120_000, budget_realized: 60_000 },
+    { id: 'rc1', phase_id: 'rph1', supplier_id: 'rs1', customer_id: null, contract_amount: 80_000, budget_realized: 30_000 },
+    { id: 'rc2', phase_id: 'rph2', supplier_id: null, customer_id: 'rcu1', contract_amount: 120_000, budget_realized: 60_000 },
   ],
   retail_project_phases: [
-    { id: 'rph1', status: 'Completed' },
-    { id: 'rph2', status: 'In Progress' },
-    { id: 'rph3', status: 'Pending' },
+    { id: 'rph1', project_id: 'rp1', phase_type: 'construction', status: 'Completed' },
+    { id: 'rph2', project_id: 'rp1', phase_type: 'sales', status: 'In Progress' },
+    { id: 'rph3', project_id: 'rp2', phase_type: 'development', status: 'Pending' },
   ],
   retail_land_plots: [{ id: 'lp1' }, { id: 'lp2' }],
   retail_customers: [{ id: 'rcu1' }],
@@ -401,15 +401,18 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
   it('retail portfolio', async () => {
     expect((await report()).retail_portfolio).toEqual({
       total_retail_projects: 2,
-      // 'active' and 'completed' are not statuses these tables allow, so both read 0, and the
-      // contract figures add the buyer's contract to the supplier's (GEN-28).
-      active_retail_projects: 0,
+      // GEN-28, changed on purpose: 'In Progress' and 'Completed' are the statuses the tables
+      // allow (both read 0 on 'active' and 'completed'), and the contract value and realised
+      // budget are the supplier's contract alone. The buyer's contract is the sales side.
+      active_retail_projects: 1,
       total_land_plots: 2,
       total_retail_contracts: 2,
-      retail_contract_value: 200_000,
-      retail_budget_realized: 90_000,
+      retail_contract_value: 80_000,
+      retail_budget_realized: 30_000,
+      retail_sales_contracted: 120_000,
+      retail_collected: 60_000,
       retail_phases: 3,
-      completed_retail_phases: 0,
+      completed_retail_phases: 1,
       total_retail_customers: 1,
       retail_suppliers: 2,
     })
@@ -583,7 +586,8 @@ describe('fetchGeneralReportData: no rows at all', () => {
       },
       retail_portfolio: {
         total_retail_projects: 0, active_retail_projects: 0, total_land_plots: 0, total_retail_contracts: 0,
-        retail_contract_value: 0, retail_budget_realized: 0, retail_phases: 0, completed_retail_phases: 0,
+        retail_contract_value: 0, retail_budget_realized: 0, retail_sales_contracted: 0, retail_collected: 0,
+        retail_phases: 0, completed_retail_phases: 0,
         total_retail_customers: 0, retail_suppliers: 0,
       },
       contract_types: [],

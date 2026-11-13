@@ -63,6 +63,11 @@ export interface RetailTotals {
   /** Construction-phase contracts, paid. */
   construction_cost: number
   /**
+   * Σ `contract_amount` over development- and construction-phase contracts: what the cost
+   * contracts are worth, against `total_invested` paid on them (the General report, GEN-28).
+   */
+  cost_contracted: number
+  /**
    * Development + construction paid. Deliberately **excludes** land, so "Investirano" is not a
    * second name for Costs — the two tiles differ by exactly the land cost.
    */
@@ -91,6 +96,7 @@ export const EMPTY_RETAIL_TOTALS: RetailTotals = {
   land_cost: 0,
   development_cost: 0,
   construction_cost: 0,
+  cost_contracted: 0,
   total_invested: 0,
   total_costs: 0,
   total_revenue: 0,
@@ -119,6 +125,7 @@ export function computeRetailTotals({
 
   let development_cost = 0
   let construction_cost = 0
+  let cost_contracted = 0
   let total_collected = 0
   let total_revenue = 0
   const salesContractIds = new Set<string>()
@@ -129,8 +136,10 @@ export function computeRetailTotals({
     const paid = num(contract.budget_realized)
     if (type === 'development') {
       development_cost += paid
+      cost_contracted += num(contract.contract_amount)
     } else if (type === 'construction') {
       construction_cost += paid
+      cost_contracted += num(contract.contract_amount)
     } else if (type === 'sales') {
       // Money in, never a cost.
       total_collected += paid
@@ -158,6 +167,7 @@ export function computeRetailTotals({
     land_cost,
     development_cost,
     construction_cost,
+    cost_contracted,
     total_invested,
     total_costs,
     total_revenue,

@@ -278,8 +278,8 @@ export async function fetchGeneralReportData(
   const totalGarages = garagesArray.length
   const totalRepositories = repositoriesArray.length
 
-  // Wrong in three ways, pinned until GEN-28 is fixed.
-  const retail = retailPortfolioCounts({ projects: retailProjectsArray, contracts: retailContractsArray, phases: retailPhasesArray })
+  // Cost contracts and sales kept apart by phase, on the statuses the tables allow (GEN-28).
+  const retail = retailPortfolioCounts({ projects: retailProjectsArray, phases: retailPhasesArray, contracts: retailContractsArray })
 
 
   return {
@@ -404,8 +404,10 @@ export async function fetchGeneralReportData(
       active_retail_projects: retail.activeProjects,
       total_land_plots: retailLandPlotsArray.length,
       total_retail_contracts: retail.contracts,
-      retail_contract_value: retail.contractValue,
-      retail_budget_realized: retail.realized,
+      retail_contract_value: retail.costContractValue,
+      retail_budget_realized: retail.costRealized,
+      retail_sales_contracted: retail.salesContracted,
+      retail_collected: retail.collected,
       retail_phases: retail.phases,
       completed_retail_phases: retail.completedPhases,
       total_retail_customers: retailCustomersArray.length,
