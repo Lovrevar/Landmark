@@ -241,7 +241,7 @@ GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 
 ## Resolved
 
 ### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
-- Fixed on `fix/general-report-figures` (2026-11-13): the nine tables that grow (apartments, sales,
+- Fixed on `fix/general-report-figures` (2026-11-13, e0308202): the nine tables that grow (apartments, sales,
   customers, contracts, work logs, invoices, payments, milestones, retail contracts) page through
   `fetchAllRows` ordered by `id`; so do the Accounting dashboard's `fetchMonthlyTrends`,
   `fetchCashFlowStats` and `fetchVATStats`. Tests `it('GEN-35: counts every invoice and payment,
@@ -249,14 +249,14 @@ GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 
   now cut unpaged reads at 1000 rows.
 
 ### GEN-28 · Medium · General report retail section: two figures always 0, contract totals mix buyers and suppliers
-- Fixed on `fix/general-report-figures` (2026-11-13): `retailPortfolioCounts` counts `'In Progress'`
+- Fixed on `fix/general-report-figures` (2026-11-13, 2fd5e4d4): `retailPortfolioCounts` counts `'In Progress'`
   projects and `'Completed'` phases, and splits money by phase through `computeRetailTotals` (new
   `cost_contracted`). The two tiles are the cost contracts; "Ugovorena prodaja" and "Naplaćeno" are
   the sales side. Tests `it('GEN-28: counts the allowed statuses and splits cost contracts from
   sales')` and the report's `it('retail portfolio')`, which failed before.
 
 ### GEN-27 · Medium · General report: per-project debt and equity still use the definitions GEN-2 replaced
-- Fixed on `fix/general-report-figures` (2026-11-13): `projectFunding(projectId, credits)` applies
+- Fixed on `fix/general-report-figures` (2026-11-13, 0ce88321): `projectFunding(projectId, credits)` applies
   the GEN-2 definitions to the project's own credits (equity facilities; outstanding on live debt).
   Tests `it('GEN-27: the equity facilities as equity, what is still owed on live debt as debt')`
   and the report's `it('projects')`, which failed before. The Director dashboard and Funding →
