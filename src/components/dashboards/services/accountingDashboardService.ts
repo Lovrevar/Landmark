@@ -23,13 +23,14 @@ export async function fetchVATStats(): Promise<VATStats> {
   const currentMonthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd')
   const yearStart = format(startOfYear(new Date()), 'yyyy-MM-dd')
 
-  const { data: invoices, error } = await supabase
+  // Paged: a year of paid invoices passes PostgREST's 1000-row page (GEN-35).
+  const invoices = await fetchAllRows((from, to) => supabase
     .from('accounting_invoices')
-    .select('invoice_type, vat_amount_1, vat_amount_2, vat_amount_3, vat_amount_4, issue_date, status')
+    .select('id, invoice_type, vat_amount_1, vat_amount_2, vat_amount_3, vat_amount_4, issue_date, status')
     .eq('status', 'PAID')
     .gte('issue_date', yearStart)
-
-  if (error) throw error
+    .order('id')
+    .range(from, to))
 
   // Output VAT comes from the invoices the company issues, input VAT (pretporez) from every
   // invoice it receives — the same split as the payments register's PDV cards.
@@ -63,12 +64,13 @@ export async function fetchCashFlowStats(): Promise<CashFlowStats> {
   const previousMonthEnd = format(endOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd')
   const yearStart = format(startOfYear(new Date()), 'yyyy-MM-dd')
 
-  const { data: payments, error } = await supabase
+  // Paged: a year of payments passes PostgREST's 1000-row page (GEN-35).
+  const payments = await fetchAllRows((from, to) => supabase
     .from('accounting_payments')
-    .select('amount, payment_date, invoice_id, accounting_invoices!inner(invoice_type)')
+    .select('id, amount, payment_date, invoice_id, accounting_invoices!inner(invoice_type)')
     .gte('payment_date', yearStart)
-
-  if (error) throw error
+    .order('id')
+    .range(from, to))
 
   const incomingPayments = (payments || []).filter(p =>
     isIncomingPaymentType((p.accounting_invoices as unknown as { invoice_type: string }).invoice_type)
@@ -167,12 +169,13 @@ export async function fetchTopCompanies(): Promise<TopCompany[]> {
 export async function fetchMonthlyTrends(): Promise<MonthlyData[]> {
   const yearStart = format(startOfYear(new Date()), 'yyyy-MM-dd')
 
-  const { data: payments, error } = await supabase
+  // Paged: a year of payments passes PostgREST's 1000-row page (GEN-35).
+  const payments = await fetchAllRows((from, to) => supabase
     .from('accounting_payments')
-    .select('amount, payment_date, accounting_invoices!inner(invoice_type)')
+    .select('id, amount, payment_date, accounting_invoices!inner(invoice_type)')
     .gte('payment_date', yearStart)
-
-  if (error) throw error
+    .order('id')
+    .range(from, to))
 
   // Every month from January to this one, gaps as zeros, by the General report's cash-flow sums
   // (operating and financing together). `month` is the month's first day, not a rendered name:

@@ -6,7 +6,8 @@
  *   dotted path into an embedded row (`'invoice.invoice_type'`), as a filter on an `!inner` join
  *   is written. A fixture row carries its embedded rows already, under the name the query uses.
  * - `order` sorts, nulls last when ascending and first when descending (Postgres' default), and
- *   `range` slices, so `fetchAllRows` pages through a table.
+ *   `range` slices, so `fetchAllRows` pages through a table. A list read without `range` stops at
+ *   1000 rows, as PostgREST's `max-rows` cuts it without saying so (GEN-35).
  * - `single` and `maybeSingle` answer one row.
  * - `select`'s column list is ignored: a fixture row holds what the query would return.
  *
@@ -23,6 +24,9 @@ export interface FakeDb {
 }
 
 type Row = Record<string, unknown>
+
+/** PostgREST's `max-rows`: an unpaged read returns no more. */
+const POSTGREST_MAX_ROWS = 1000
 
 const valueAt = (row: Row, path: string): unknown =>
   path.split('.').reduce<unknown>((value, key) => (value == null ? undefined : (value as Row)[key]), row)
@@ -92,6 +96,7 @@ class FakeQuery implements PromiseLike<{ data: unknown; error: { message: string
     }
 
     if (this.window) rows = rows.slice(this.window[0], this.window[1] + 1)
+    else rows = rows.slice(0, POSTGREST_MAX_ROWS)
     if (this.shape === 'many') return { data: rows, error: null }
     if (rows.length === 1) return { data: rows[0], error: null }
     if (rows.length === 0 && this.shape === 'maybeSingle') return { data: null, error: null }

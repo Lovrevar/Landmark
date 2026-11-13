@@ -16,6 +16,7 @@ Role-based dashboard views that aggregate KPIs and summaries from all other modu
 - `fetchTopCompanies()` — returns top 5 companies ranked by net balance
 - `fetchMonthlyTrends()` — returns MonthlyData[] for stacked bar chart
 - `fetchMonthlyBudget()` — returns current MonthlyBudget or null
+- Tests: `services/accountingDashboardService.test.ts` (paging past 1000 rows, failed reads)
 - **Depends on:** supabase client
 
 ### directorService.ts
@@ -331,6 +332,6 @@ Net figures show their own sign; colour is reinforcement, never the only cue. Ne
 
 `directorService` checked only the projects query and `investmentDashboardService` none, so a
 failed read rendered as zeros. Both now throw on any query error, as do the Budget Control and
-Project Details services. The Accounting dashboard's top-companies payments and invoice counts are
-paged through `fetchAllRows` (a year of payments passes PostgREST's 1000-row page) and throw on
-failure. RLS-limited roles are unaffected: a table they may not read returns no rows, not an error.
+Project Details services. Every year-to-date read on the Accounting dashboard (VAT, cash flow, the monthly trend and the
+top companies' payments and invoice counts) is paged through `fetchAllRows` (a year of payments
+passes PostgREST's 1000-row page, GEN-35) and throws on failure. RLS-limited roles are unaffected: a table they may not read returns no rows, not an error.

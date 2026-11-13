@@ -44,8 +44,8 @@ GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 
   months" instead of an empty frame). GEN-18 is the line chart on the same report
 
 ### GEN-43 · Medium · Director and Sales dashboards, the Sales report and Sales payments read without paging past 1000 rows
-- **Check:** Code reading (Step 7 item 2 planning, 2026-10-21). The General report's version is
-  GEN-35
+- **Check:** Code reading (Step 7 item 2 planning, 2026-10-21). The General report's version,
+  GEN-35, is fixed; its test shows the pattern (a fake that stops unpaged reads at 1000 rows)
 - **Where:**
   - `dashboards/services/directorService.ts`: apartments, contracts, invoices, payments, sales,
     credits, milestones.
@@ -58,8 +58,10 @@ GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 
     item 2; a project rarely has 1000 sales).
 - **What happens:** PostgREST returns at most 1000 rows without saying so. Past that, collected
   from sales, contracted sales, expenses and the unit counts all go silently low.
-- **Fix direction:** `fetchAllRows` with a stable order on the tables that can grow, as for
-  GEN-35. Check production counts first.
+- **Fix direction:** `fetchAllRows` with a stable order on the tables that can grow, as GEN-35
+  did in `generalReportService.ts`. The shared fake (`src/test/fakeSupabase.ts`) now stops an
+  unpaged read at 1000 rows, so a test with 1001 rows fails until the read pages. Check
+  production counts first.
 
 ### GEN-44 · Low · Director "Novčani tok (mjesec)" counts only what customers paid
 - **Check:** Code reading (Step 7 item 2 planning, 2026-10-21)
@@ -70,28 +72,6 @@ GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 
   each compute a real monthly cash flow (`cashFlowFigures`).
 - **Fix direction:** decide what the tile is for. Either show the month from `monthlyCashFlow`, or
   call it "Naplaćeno od kupaca (mjesec)".
-
-### GEN-27 · Medium · General report: per-project debt and equity still use the definitions GEN-2 replaced
-- **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`)
-- **Where:** `generalReportService.ts`, `projects[].equity` / `.debt`. Shown on screen as
-  `reports.general.funding_value`
-- **What happens:** equity is Σ credit allocations, debt and equity alike, and debt is the face value
-  of every credit of the project, equity and repaid ones included. GEN-2 changed the portfolio
-  figures to equity facilities and outstanding live debt, and the per-project ones were left behind.
-  In the test, a project with €580k outstanding shows €1.4M of debt.
-- **Fix direction:** the per-project figures on the portfolio's definitions, from the shared funding
-  function.
-
-### GEN-28 · Medium · General report retail section: two figures always 0, contract totals mix buyers and suppliers
-- **Check:** Confirmed (schema CHECKs; pinned in `src/components/Reports/services/generalReportService.test.ts`)
-- **Where:** `generalReportService.ts`, `retail_portfolio`
-- **What happens:** "active retail projects" tests `status = 'active'` and "completed retail phases"
-  tests `'completed'`. The tables allow `Planning | In Progress | Completed | On Hold` and
-  `Pending | In Progress | Completed`, so both always read 0. Contract value and realised sum every
-  `retail_contracts` row, buyers' contracts with suppliers', which is the bug
-  `dashboards/utils/retailTotals.ts` was written to fix on the dashboard.
-- **Fix direction:** the statuses the Retail screens use (`'In Progress'`, `'Completed'`), and costs
-  and sales split by phase as `computeRetailTotals` does.
 
 ### GEN-29 · Low · General report counts only cesija paid from a credit
 - **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`)
@@ -143,17 +123,6 @@ GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 
   the way the doc says.
 - **Fix direction:** ask accounting whether a kompenzacija belongs in a cash-flow statement. Then
   either filter by source or reword the doc and the screen.
-
-### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
-- **Check:** Code reading. Production on 2026-11-05: 851 `accounting_invoices`, 224
-  `accounting_payments`; the other 26 tables not counted
-- **Where:** `generalReportService.ts`, the first `Promise.all`. Also
-  `dashboards/services/accountingDashboardService.ts` `fetchMonthlyTrends` (this year's payments)
-- **What happens:** PostgREST returns at most 1000 rows without saying so, and none of the reads
-  uses `fetchAllRows`. Past 1000 payments or invoices every total is silently low. A payment whose
-  invoice is beyond row 1000 has no type, so it drops out of expenses and the cash flow altogether.
-- **Fix direction:** `fetchAllRows` with a stable order for the tables that can grow:
-  payments, invoices, apartments, work logs, milestones, contracts, customers.
 
 ### GEN-36 · Low · General report "office expenses" counts every office-category invoice at its total
 - **Check:** Confirmed (pinned in `src/components/Reports/services/generalReportService.test.ts`)
@@ -270,6 +239,28 @@ GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 
   the chart.
 
 ## Resolved
+
+### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
+- Fixed on `fix/general-report-figures` (2026-11-13): the nine tables that grow (apartments, sales,
+  customers, contracts, work logs, invoices, payments, milestones, retail contracts) page through
+  `fetchAllRows` ordered by `id`; so do the Accounting dashboard's `fetchMonthlyTrends`,
+  `fetchCashFlowStats` and `fetchVATStats`. Tests `it('GEN-35: counts every invoice and payment,
+  not the first 1000')` and `accountingDashboardService.test.ts`, which failed before; both fakes
+  now cut unpaged reads at 1000 rows.
+
+### GEN-28 · Medium · General report retail section: two figures always 0, contract totals mix buyers and suppliers
+- Fixed on `fix/general-report-figures` (2026-11-13): `retailPortfolioCounts` counts `'In Progress'`
+  projects and `'Completed'` phases, and splits money by phase through `computeRetailTotals` (new
+  `cost_contracted`). The two tiles are the cost contracts; "Ugovorena prodaja" and "Naplaćeno" are
+  the sales side. Tests `it('GEN-28: counts the allowed statuses and splits cost contracts from
+  sales')` and the report's `it('retail portfolio')`, which failed before.
+
+### GEN-27 · Medium · General report: per-project debt and equity still use the definitions GEN-2 replaced
+- Fixed on `fix/general-report-figures` (2026-11-13): `projectFunding(projectId, credits)` applies
+  the GEN-2 definitions to the project's own credits (equity facilities; outstanding on live debt).
+  Tests `it('GEN-27: the equity facilities as equity, what is still owed on live debt as debt')`
+  and the report's `it('projects')`, which failed before. The Director dashboard and Funding →
+  Projects still differ: FUND-21.
 
 ### GEN-38 · Low · "Sales revenue" and "average price" have six definitions
 - Fixed on `refactor/sales-figures` (2026-10-21), Step 7 item 2: one definition of a sale (a

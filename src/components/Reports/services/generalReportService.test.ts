@@ -10,13 +10,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * Do not edit an expectation to get a refactor green. If one moves, the refactor changed a figure.
  */
 
-// A fake Supabase client: `from(table).select()` resolves to that table's rows, its `.in()`
-// filters them by id, and `.order().range()` pages them (the linked garage and storage prices,
-// read through fetchAllRows). A table listed in `failing` or `failingLookup` answers the way
+// A fake Supabase client: `from(table).select()` resolves to that table's first 1000 rows, as
+// PostgREST's `max-rows` cuts an unpaged read without saying so (GEN-35), its `.in()` filters them
+// by id, and `.order().range()` pages them (every read that can outgrow a page goes through
+// fetchAllRows). A table listed in `failing` or `failingLookup` answers the way
 // supabase-js reports a failed request: `{ data: null, error }`.
 let tables: Record<string, unknown[]> = {}
 let failing: Record<string, string> = {}
 let failingLookup: Record<string, string> = {}
+
+/** PostgREST's `max-rows`: no single request returns more. */
+const MAX_ROWS = 1000
 
 vi.mock('../../../lib/supabase', () => {
   const response = (rows: unknown[], message: string | undefined) =>
@@ -26,7 +30,7 @@ vi.mock('../../../lib/supabase', () => {
       from: (table: string) => ({
         select: () => ({
           then: (resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) =>
-            Promise.resolve(response(tables[table] ?? [], failing[table])).then(resolve, reject),
+            Promise.resolve(response((tables[table] ?? []).slice(0, MAX_ROWS), failing[table])).then(resolve, reject),
           in: (_column: string, ids: string[]) =>
             Promise.resolve(response(
               (tables[table] ?? []).filter(row => ids.includes((row as { id: string }).id)),
@@ -537,6 +541,27 @@ describe('fetchGeneralReportData: a realistic portfolio', () => {
     // Risks and top projects are drawn from the narrowed list.
     expect(one.risks).toEqual([])
     expect(one.insights.top_projects).toEqual([{ name: 'Precko Zapad', revenue: 565_000, sales_rate: 100 }])
+  })
+})
+
+describe('fetchGeneralReportData: more rows than one PostgREST page', () => {
+  // GEN-35: every read used to stop at row 1000 without a word. Here 1000 more paid office
+  // invoices, each with its payment, take both tables past a page, so an unpaged read drops the
+  // last rows of each, and a payment whose invoice was dropped falls out of the expenses too.
+  it('GEN-35: counts every invoice and payment, not the first 1000', async () => {
+    const extra = Array.from({ length: 1_000 }, (_, i) => `x${String(i).padStart(4, '0')}`)
+    tables.accounting_invoices.push(...extra.map(id => ({
+      id, invoice_type: 'INCOMING_OFFICE', project_id: null, status: 'PAID', total_amount: 2,
+      remaining_amount: 0, due_date: '2026-08-01', invoice_category: 'OFFICE',
+    })))
+    tables.accounting_payments.push(...extra.map(id => ({
+      id: `pay-${id}`, invoice_id: id, amount: 2, payment_date: '2026-08-01', payment_source_type: 'bank_account',
+    })))
+
+    const r = await report()
+    expect(r.accounting_overview.total_invoices).toBe(11 + 1_000)
+    expect(r.office_expenses.total_office_invoices).toBe(2 + 1_000)
+    expect(r.executive_summary.total_expenses).toBe(roundDeep(EXPENSES + 2_000))
   })
 })
 

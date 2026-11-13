@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
+import { fetchAllRows } from '../../../lib/fetchAllRows'
 import type { ComprehensiveReport, ProjectData } from '../types'
 import { normalizeOrgName } from '../../../lib/orgName'
 import { contractedSales, contractedSalesByProject, customerFunnel, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
@@ -47,55 +48,63 @@ function throwIfAnyFailed(responses: readonly { error: { message: string } | nul
   if (failed?.error) throw new Error(failed.error.message)
 }
 
+/**
+ * `fetchAllRows` throws the PostgREST error itself, a plain object; the report fails with an
+ * `Error`, as `throwIfAnyFailed` makes it.
+ */
+function asError(error: unknown): Error {
+  if (error instanceof Error) return error
+  return new Error((error as { message?: string } | null)?.message ?? String(error))
+}
+
 export async function fetchGeneralReportData(
   selectedProject: string,
   dateRange: { start: string; end: string }
 ): Promise<ComprehensiveReport> {
-  const responses = await Promise.all([
-    supabase.from('projects').select('*'),
-    supabase.from('apartments').select('*'),
-    supabase.from('sales').select('sale_price, apartment_id'),
-    supabase.from('customers').select('*'),
-    supabase.from('contracts').select('*, contract_types(name)'),
-    supabase.from('subcontractors').select('*'),
-    supabase.from('project_phases').select('*'),
-    supabase.from('work_logs').select('*'),
-    supabase.from('accounting_invoices').select('*'),
-    supabase.from('accounting_payments').select('*'),
-    supabase.from('banks').select('*'),
-    supabase.from('company_bank_accounts').select('*'),
-    supabase.from('tic_cost_structures').select('*'),
-    supabase.from('office_suppliers').select('*'),
-    supabase.from('bank_credits').select('*'),
-    supabase.from('company_loans').select('*'),
-    supabase.from('credit_allocations').select('*'),
-    supabase.from('buildings').select('*'),
-    supabase.from('garages').select('*'),
-    supabase.from('repositories').select('*'),
-    supabase.from('subcontractor_milestones').select('*'),
-    supabase.from('retail_projects').select('*'),
-    supabase.from('retail_contracts').select('*'),
-    supabase.from('retail_project_phases').select('*'),
-    supabase.from('retail_land_plots').select('*'),
-    supabase.from('retail_customers').select('*'),
-    supabase.from('retail_suppliers').select('*'),
-    // The one row of organisation settings: its name heads the report (GEN-19).
-    supabase.from('organization_settings').select('name'),
+  // The tables that grow with the business are paged (GEN-35); the rest are short lookup lists.
+  const [responses, paged] = await Promise.all([
+    Promise.all([
+      supabase.from('projects').select('*'),
+      supabase.from('subcontractors').select('*'),
+      supabase.from('project_phases').select('*'),
+      supabase.from('banks').select('*'),
+      supabase.from('company_bank_accounts').select('*'),
+      supabase.from('tic_cost_structures').select('*'),
+      supabase.from('office_suppliers').select('*'),
+      supabase.from('bank_credits').select('*'),
+      supabase.from('company_loans').select('*'),
+      supabase.from('credit_allocations').select('*'),
+      supabase.from('buildings').select('*'),
+      supabase.from('garages').select('*'),
+      supabase.from('repositories').select('*'),
+      supabase.from('retail_projects').select('*'),
+      supabase.from('retail_project_phases').select('*'),
+      supabase.from('retail_land_plots').select('*'),
+      supabase.from('retail_customers').select('*'),
+      supabase.from('retail_suppliers').select('*'),
+      // The one row of organisation settings: its name heads the report (GEN-19).
+      supabase.from('organization_settings').select('name'),
+    ]),
+    // Every row, not the first 1000 (GEN-35): ordered by `id` so pages neither repeat nor skip.
+    Promise.all([
+      fetchAllRows((from, to) => supabase.from('apartments').select('*').order('id').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('sales').select('id, sale_price, apartment_id').order('id').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('customers').select('*').order('id').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('contracts').select('*, contract_types(name)').order('id').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('work_logs').select('*').order('id').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('accounting_invoices').select('*').order('id').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('accounting_payments').select('*').order('id').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('subcontractor_milestones').select('*').order('id').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('retail_contracts').select('*').order('id').range(from, to)),
+    ]).catch(error => { throw asError(error) }),
   ])
 
   throwIfAnyFailed(responses)
 
   const [
     { data: projects },
-    { data: apartments },
-    { data: sales },
-    { data: customers },
-    { data: contracts },
     { data: subcontractors },
     { data: projectPhases },
-    { data: workLogs },
-    { data: accountingInvoices },
-    { data: accountingPayments },
     { data: banks },
     { data: companyBankAccounts },
     { data: ticCostStructures },
@@ -106,15 +115,24 @@ export async function fetchGeneralReportData(
     { data: buildings },
     { data: garages },
     { data: repositories },
-    { data: subcontractorMilestones },
     { data: retailProjects },
-    { data: retailContracts },
     { data: retailPhases },
     { data: retailLandPlots },
     { data: retailCustomers },
     { data: retailSuppliers },
     { data: organizationSettings },
   ] = responses
+  const [
+    apartments,
+    sales,
+    customers,
+    contracts,
+    workLogs,
+    accountingInvoices,
+    accountingPayments,
+    subcontractorMilestones,
+    retailContracts,
+  ] = paged
 
   const projectsArray = projects || []
   const apartmentsArray = apartments || []
