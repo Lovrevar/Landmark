@@ -43,26 +43,6 @@ GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 
   or shorten names with an ellipsis; draw negative bars below a zero line (or say "no positive
   months" instead of an empty frame). GEN-18 is the line chart on the same report
 
-### GEN-43 · Medium · Director and Sales dashboards, the Sales report and Sales payments read without paging past 1000 rows
-- **Check:** Code reading (Step 7 item 2 planning, 2026-10-21). The General report's version,
-  GEN-35, is fixed; its test shows the pattern (a fake that stops unpaged reads at 1000 rows)
-- **Where:**
-  - `dashboards/services/directorService.ts`: apartments, contracts, invoices, payments, sales,
-    credits, milestones.
-  - `dashboards/services/salesDashboardService.ts`: every read, payments included.
-  - `Reports/services/salesReportService.ts`: the customer report's customers and sales.
-  - `Sales/Payments/services/salesPaymentsService.ts`: invoices and payments.
-  - `Sales/SalesProjects/services/salesService.ts`: `fetchActualTotalPaidByApartment`, and an
-    `.in()` with every sold apartment's id in the URL.
-  - `General/Projects/services/projectDetailsService.ts`: one project's sales (added by Step 7
-    item 2; a project rarely has 1000 sales).
-- **What happens:** PostgREST returns at most 1000 rows without saying so. Past that, collected
-  from sales, contracted sales, expenses and the unit counts all go silently low.
-- **Fix direction:** `fetchAllRows` with a stable order on the tables that can grow, as GEN-35
-  did in `generalReportService.ts`. The shared fake (`src/test/fakeSupabase.ts`) now stops an
-  unpaged read at 1000 rows, so a test with 1001 rows fails until the read pages. Check
-  production counts first.
-
 ### GEN-44 · Low · Director "Novčani tok (mjesec)" counts only what customers paid
 - **Check:** Code reading (Step 7 item 2 planning, 2026-10-21)
 - **Where:** `dashboards/services/directorService.ts` `deriveFinancial`,
@@ -239,6 +219,19 @@ GEN-45 and GEN-46 were found in the LandmarkDemo visual check after Step 7 item 
   the chart.
 
 ## Resolved
+
+### GEN-43 · Medium · Director and Sales dashboards, the Sales report and Sales payments read without paging past 1000 rows
+- Fixed on `fix/gen-43-paging` (2026-11-20, 5f60d2f1): the Director and Sales dashboards, both
+  Sales reports, Sales payments, the Sales projects screen and Project details read their growing
+  tables through `fetchAllRows`, with `id` after the visible order. Sales payments and "Naplaćeno"
+  per apartment (`fetchActualTotalPaidByApartment`) filter payments through their invoice
+  (`!inner`) instead of a URL holding every invoice id, and Sales payments now throws when the bank
+  account read fails. Tests `it('GEN-43: …')` in the six services' test files, each seen failing
+  first. The rest of the app: UI-22.
+- Reads that had no order now have one, because paging needs it: the Director's milestones by due
+  date, so its alerts (capped at 10) show the most overdue first, and the Sales report's apartments
+  by number, the order its PDF lists them. Checked on LandmarkDemo against the build before the
+  change: the five screens show the same figures; only the Director's alerts changed order.
 
 ### GEN-35 · Medium · General report reads 28 tables without paging past 1000 rows
 - Fixed on `fix/general-report-figures` (2026-11-13, e0308202): the nine tables that grow (apartments, sales,

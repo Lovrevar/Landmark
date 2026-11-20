@@ -334,4 +334,7 @@ Net figures show their own sign; colour is reinforcement, never the only cue. Ne
 failed read rendered as zeros. Both now throw on any query error, as do the Budget Control and
 Project Details services. Every year-to-date read on the Accounting dashboard (VAT, cash flow, the monthly trend and the
 top companies' payments and invoice counts) is paged through `fetchAllRows` (a year of payments
-passes PostgREST's 1000-row page, GEN-35) and throws on failure. RLS-limited roles are unaffected: a table they may not read returns no rows, not an error.
+passes PostgREST's 1000-row page, GEN-35) and throws on failure. The Director and Sales
+dashboards page their growing tables the same way (apartments, contracts, invoices, payments,
+sales, milestones; units, sales, customers and payments), with `id` after any visible order
+(GEN-43). RLS-limited roles are unaffected: a table they may not read returns no rows, not an error.

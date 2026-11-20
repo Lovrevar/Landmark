@@ -1,7 +1,7 @@
 # Backlog — app-wide UI
 
 Problems that repeat across modules: formatting, status display, failed loads, translations, the
-shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-22`). Entry format and
+shared component library, mobile and dark mode. Ids: `UI-n` (next free: `UI-23`). Entry format and
 rules are in [README.md](./README.md).
 
 A UI problem on one screen belongs in that module's file. It belongs here when the fix is a shared
@@ -9,6 +9,25 @@ helper or a sweep. Counts were measured on 2026-09-21 to 2026-09-23 and will hav
 again before starting a sweep. Check [../UI.md](../UI.md) before adding a primitive.
 
 ## Open
+
+### UI-22 · Medium · Lists outside the dashboards still stop at 1000 rows
+- **Check:** Code reading (grep survey, 2026-11-20, after GEN-35 and GEN-43). Many of these reads
+  are narrowed to one record, one project or one contract and stay small; the risk is a read of a
+  whole growing table into a list or a total.
+- **Where:** services that read `accounting_invoices`, `accounting_payments`, `sales`, `customers`,
+  `apartments`, `contracts`, `work_logs`, `retail_contracts` or `retail_customers` without
+  `fetchAllRows` (45 files on 2026-11-20). The whole-table ones to check first:
+  `Cashflow/Customers/services/customerService.ts`, `Sales/Customers/services/customerService.ts`,
+  `Sales/Apartments/services/apartmentListService.ts`, `Cashflow/Suppliers/services/supplierService.ts`,
+  `Cashflow/Companies/services/companyService.ts`, `Funding/Payments/services/bankPaymentsService.ts`,
+  `dashboards/services/retailDashboardService.ts`, `dashboards/services/supervisionService.ts`,
+  `Reports/services/retailReportService.ts`, `Retail/Sales/services/retailSalesService.ts`.
+- **What happens:** PostgREST returns at most 1000 rows and says nothing; a list ends early and its
+  totals go silently low.
+- **Fix direction:** as GEN-35 and GEN-43: `fetchAllRows` with `id` after the visible order, and an
+  `!inner` filter instead of an `.in()` with every id of a growing table. The shared fake
+  (`src/test/fakeSupabase.ts`) stops unpaged reads at 1000 rows, so a test with 1001 rows fails
+  until the read pages. Measure production counts to order the work.
 
 ### UI-18 · Low · The React Compiler lint rules run as warnings, not errors
 - **Check:** Confirmed (lint on 2026-11-05)
@@ -60,7 +79,10 @@ again before starting a sweep. Check [../UI.md](../UI.md) before adding a primit
 - **What happens:** dependabot bumped `react-dom` and `@types/react-dom` to 19 and left `react` on
   18, so the PR failed CI. React 19 is a migration, not a bump: the four packages move together,
   and the React Compiler that UI-18's lint sweep prepares for comes with it. The `ignore` rules
-  keep dependabot from reopening the split PR every Monday.
+  keep dependabot from reopening the split PR every Monday. **They do not work yet:** dependabot
+  reads its config from the default branch, `main`, and the rules exist only on `development`
+  until the next release. On 2026-11-16 it opened #107 (`react` 19) and #108 (`@types/node` 26)
+  anyway; close them with "@dependabot ignore this major version" until then.
 - **Fix direction:** on its own branch, move all four to 19 at once, check the libraries that take
   React as a peer (Recharts, React Router, react-i18next, @tanstack/react-virtual), run typecheck,
   lint, unit tests and the build, click through the profiles; then remove the four `ignore` rules.

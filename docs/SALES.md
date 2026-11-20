@@ -76,10 +76,10 @@ Top-level navigation through projects → buildings → units. Handles bulk/sing
 ### services/salesService.ts
 - `fetchProjects()` — fetches the projects whose `category` is in `SALES_PROJECT_CATEGORIES` (`stambeno`, `retail`); Interno projects are excluded
 - `fetchBuildings()` — fetches buildings for a project
-- `fetchApartments()`, `fetchGarages()`, `fetchRepositories()` — fetches units by type
-- `fetchCustomers()` — fetches all customers
-- `fetchSales()` — fetches all sale records
-- `fetchActualTotalPaidByApartment(apartmentId)` — computes total paid for an apartment
+- `fetchApartments()`, `fetchGarages()`, `fetchRepositories()` — fetches units by type, every row (paged through `fetchAllRows`, GEN-43)
+- `fetchCustomers()` — fetches all customers, paged
+- `fetchSales()` — fetches all sale records, paged
+- `fetchActualTotalPaidByApartment(apartmentIds)` — what buyers paid per apartment ("Naplaćeno"): one paged read of the payments on apartment sales invoices (`!inner`), kept to the ids asked for. It used to put every apartment and invoice id in the URL (GEN-43)
 - `createBuilding(data)`, `deleteBuilding(id)` — building CRUD
 - `createBulkBuildings(projectId, quantity, nameFor)` — creates `quantity` buildings named by `nameFor(i)`; the screen passes `sales_projects.default_building_name` ("Zgrada {{n}}" / "Building {{n}}"), so names are stored in the creator's language rather than hard-coded English
 - `createUnit(data)`, `bulkCreateUnits(data)`, `deleteUnit(id)` — unit CRUD
@@ -397,7 +397,7 @@ Payment tracking for apartment sales contracts.
 #### Services
 
 ### services/salesPaymentsService.ts
-- `fetchSalesPayments()` — fetches all payments with linked apartment, customer, and sale details
+- `fetchSalesPayments()` — every payment on an apartment sales invoice, with its invoice, apartment, project, buyer and bank account. Invoices and payments are paged, and payments are filtered through their invoice (`!inner`) rather than by a list of every invoice id (GEN-43); a failed bank account read throws
 - `calculateSalesPaymentStats(payments)` — computes totals and this-month stats
 - `exportSalesPaymentsExcel(payments)` — async; writes a real `.xlsx` (one `Plaćanja` sheet) through `src/lib/xlsxExport.ts`
 - `buildSalesPaymentsSheet(payments, t)` — pure AOA builder, exported for `salesPaymentsService.test.ts`

@@ -7,16 +7,16 @@ area holds the open items; the audits that found them are kept in `archive/` as 
 
 | File | Covers | Open |
 |---|---|---|
-| [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 3 steps |
+| [release.md](./release.md) | Fixes written but not live, and checks nobody has run | 5 steps |
 | [security.md](./security.md) | RLS, storage policies, role gating; accepted risks | 2 defects, 3 accepted risks |
 | [sales.md](./sales.md) | Units, the sale flow, customers | 9 |
 | [retail.md](./retail.md) | Land development, retail buyers | 3 |
 | [supervision.md](./supervision.md) | Site management, subcontractors, contracts | 9 |
 | [cashflow.md](./cashflow.md) | Invoices, payments, companies, bank accounts | 9, plus 4 waiting on the ERP |
 | [funding.md](./funding.md) | Credits, investors, allocations, TIC | 10 |
-| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 22 |
+| [projects-dashboards-reports.md](./projects-dashboards-reports.md) | General module, dashboards, reports, activity log | 21 |
 | [collaboration.md](./collaboration.md) | Tasks, calendar, chat, documents, AI assistant | 17 |
-| [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 19 |
+| [ui.md](./ui.md) | App-wide UI: formatting, failed loads, i18n, mobile, dark mode | 20 |
 | [plans/supplier-unification.md](./plans/supplier-unification.md) | Plan to merge the three vendor tables | Not started |
 | [archive/](./archive/) | The four audits, with every fixed entry | Closed, do not update |
 
@@ -64,7 +64,7 @@ it from the ranking. Never reuse an id: code comments and migrations quote them 
 
 ## Open work, ranked
 
-Ranked on 2026-10-05, last revised 2026-11-13, by what goes wrong if the item is left, then by how small the job is.
+Ranked on 2026-10-05, last revised 2026-11-20, by what goes wrong if the item is left, then by how small the job is.
 
 ### 1. Do first
 
@@ -79,7 +79,7 @@ are on dev and production. Every migration in `supabase/migrations/` is on produ
 |---|---|---|
 | 1 | [CASH-6](./cashflow.md) — cesija-from-credit sign | Allocation usage is wrong for every such payment. Blocked on an accounting decision, not on code. |
 | 2 | [COLLAB-4](./collaboration.md) — AI rate limit miscounts and fails open | Deferred to the voice branch (OQ-3). Do it there. |
-| 3 | [GEN-43](./projects-dashboards-reports.md) — Director and Sales dashboards, Sales report and Sales payments not paged past 1000 rows | Every total goes silently low once payments or invoices pass 1000. On production on 2026-11-05: 851 invoices, 224 payments, so invoices pass 1000 within months. The General report's version, GEN-35, is fixed and shows the pattern. |
+| 3 | [UI-22](./ui.md) — lists outside the dashboards still stop at 1000 rows | The same silent shortfall GEN-35 and GEN-43 fixed on the reports and dashboards (sales, invoices and payments past 1000). Measure production counts to pick the order. |
 
 ### 3. Larger work, schedule deliberately
 
