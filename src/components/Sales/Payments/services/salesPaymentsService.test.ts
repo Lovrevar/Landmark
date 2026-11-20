@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
-import { buildSalesPaymentsSheet, calculateSalesPaymentStats, type SalesPaymentWithDetails } from './salesPaymentsService'
+import { emptyFakeDb, type FakeDb } from '../../../../test/fakeSupabase'
+
+const db = vi.hoisted((): FakeDb => ({ tables: {}, failing: {}, failingIn: {} }))
+vi.mock('../../../../lib/supabase', async () => {
+  const { fakeSupabase } = await import('../../../../test/fakeSupabase')
+  return { supabase: fakeSupabase(db) }
+})
+
+import { buildSalesPaymentsSheet, calculateSalesPaymentStats, fetchSalesPayments, type SalesPaymentWithDetails } from './salesPaymentsService'
 import { exportT } from '../../../../utils/exportLanguage'
 
 const t = exportT()
@@ -100,4 +108,58 @@ describe('calculateSalesPaymentStats', () => {
   it('no payments', () => {
     expect(calculateSalesPaymentStats([])).toEqual({ totalPayments: 0, totalAmount: 0, paymentsThisMonth: 0, amountThisMonth: 0 })
   })
+})
+
+describe('fetchSalesPayments', () => {
+  // Payments carry their invoice as the `!inner` join returns it; only apartment sales invoices
+  // belong on this screen.
+  const sale = (n: number) => ({
+    id: `i${n}`, invoice_number: `R-${n}`, issue_date: '2026-10-01', total_amount: 100, customer_id: 'cu1', apartment_id: 'a1',
+    invoice_type: 'OUTGOING_SALES', customers: { name: 'Ana', surname: 'Horvat' }, apartments: { number: 'A1', projects: { name: 'Zelena Dolina' } },
+  })
+  const paid = (n: number, invoiceId = `i${n}`, invoice = { invoice_type: 'OUTGOING_SALES', apartment_id: 'a1' }) => ({
+    id: `pay${n}`, payment_date: '2026-10-05', amount: '10', payment_method: 'WIRE', description: null,
+    created_at: '2026-10-05T09:00:00.000Z', invoice_id: invoiceId, company_bank_account_id: 'ba1', invoice,
+  })
+
+  beforeEach(() => {
+    Object.assign(db, emptyFakeDb(), {
+      tables: {
+        accounting_invoices: [sale(1)],
+        accounting_payments: [
+          paid(1),
+          // A supplier invoice's payment is not a sales payment.
+          paid(2, 'i-supplier', { invoice_type: 'INCOMING_SUPPLIER', apartment_id: 'a1' }),
+        ],
+        company_bank_accounts: [{ id: 'ba1', bank_name: 'Zagrebačka banka' }],
+      },
+    })
+  })
+
+  it('lists the apartment sales payments with their invoice, buyer and bank', async () => {
+    expect(await fetchSalesPayments()).toEqual([{
+      id: 'pay1', payment_date: '2026-10-05', amount: 10, payment_method: 'WIRE', description: null,
+      created_at: '2026-10-05T09:00:00.000Z', invoice_number: 'R-1', issue_date: '2026-10-01', invoice_total_amount: 100,
+      apartment_number: 'A1', project_name: 'Zelena Dolina', customer_name: 'Ana Horvat', bank_account_name: 'Zagrebačka banka',
+    }])
+  })
+
+  // GEN-43: the invoices and payments stopped at row 1000 without a word, and the payments were
+  // asked for with every invoice id in the URL. Here 1001 invoices each have one payment.
+  it('GEN-43: lists every payment, not the first 1000', async () => {
+    db.tables.accounting_invoices = Array.from({ length: 1_001 }, (_, n) => sale(n))
+    db.tables.accounting_payments = Array.from({ length: 1_001 }, (_, n) => paid(n))
+    const payments = await fetchSalesPayments()
+    expect(payments).toHaveLength(1_001)
+    expect(calculateSalesPaymentStats(payments).totalAmount).toBe(10_010)
+    expect(payments.every(p => p.invoice_number.startsWith('R-'))).toBe(true)
+  })
+
+  it.each(['accounting_invoices', 'accounting_payments', 'company_bank_accounts'])(
+    'rejects when the %s read fails, rather than showing payments without it',
+    async table => {
+      db.failing = { [table]: `permission denied for table ${table}` }
+      await expect(fetchSalesPayments()).rejects.toMatchObject({ message: `permission denied for table ${table}` })
+    },
+  )
 })

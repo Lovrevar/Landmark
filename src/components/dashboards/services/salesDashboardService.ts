@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabase'
 import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
+import { fetchAllRows } from '../../../lib/fetchAllRows'
 import { subMonths, startOfMonth, format } from 'date-fns'
 import { collectedByMonth, collectedByProject, collectedFromSales, collectedSince, contractedSales, customerFunnel, salesByMonth, salesRate, unitStatusCounts } from '../../../utils/salesFigures'
 import type { SalesDashboardStats, ProjectStats, MonthlyTrend, RecentSale } from '../types/salesDashboardTypes'
@@ -26,40 +27,41 @@ export async function fetchSalesDashboardData(): Promise<{
     paymentsData,
     linkedPrices
   ] = await Promise.all([
-    supabase.from('apartments').select('id, status, project_id, price'),
-    supabase.from('garages').select('status, building_id'),
-    supabase.from('repositories').select('status, building_id'),
+    // Every row, page by page: PostgREST stops at 1000 without a word, and the unit counts,
+    // collected sales and the funnel would go silently low (GEN-43). Paged reads throw on a
+    // failed page; the rest are checked below.
+    fetchAllRows((from, to) => supabase.from('apartments').select('id, status, project_id, price').order('id').range(from, to)),
+    fetchAllRows((from, to) => supabase.from('garages').select('id, status, building_id').order('id').range(from, to)),
+    fetchAllRows((from, to) => supabase.from('repositories').select('id, status, building_id').order('id').range(from, to)),
     supabase.from('buildings').select('id, project_id'),
-    supabase.from('sales').select('*, apartment_id').order('sale_date', { ascending: false }),
-    supabase.from('customers').select('*'),
+    fetchAllRows((from, to) => supabase
+      .from('sales')
+      .select('*, apartment_id')
+      .order('sale_date', { ascending: false })
+      .order('id')
+      .range(from, to)),
+    fetchAllRows((from, to) => supabase.from('customers').select('*').order('id').range(from, to)),
     supabase.from('projects').select('*'),
-    supabase.from('accounting_payments').select(`
+    fetchAllRows((from, to) => supabase.from('accounting_payments').select(`
+      id,
       amount,
       payment_date,
       invoice:accounting_invoices!inner(
         apartment_id,
         invoice_type
       )
-    `).eq('invoice.invoice_type', 'OUTGOING_SALES').not('invoice.apartment_id', 'is', null),
+    `).eq('invoice.invoice_type', 'OUTGOING_SALES').not('invoice.apartment_id', 'is', null).order('id').range(from, to)),
     fetchLinkedPrices()
   ])
 
-  if (apartmentsData.error) throw apartmentsData.error
-  if (garagesData.error) throw garagesData.error
-  if (repositoriesData.error) throw repositoriesData.error
   if (buildingsData.error) throw buildingsData.error
-  if (salesData.error) throw salesData.error
-  if (customersData.error) throw customersData.error
   if (projectsData.error) throw projectsData.error
-  // The one query whose error used to go unchecked: revenue, the monthly figure and every
-  // per-project amount come from it, so a failed read rendered a confident €0.
-  if (paymentsData.error) throw paymentsData.error
 
-  const apartments = apartmentsData.data || []
-  const sales = salesData.data || []
-  const customers = customersData.data || []
+  const apartments = apartmentsData
+  const sales = salesData
+  const customers = customersData
   const projects = projectsData.data || []
-  const payments = (paymentsData.data || []) as unknown as Array<{ amount: string | number; payment_date: string; invoice?: { apartment_id: string | null; invoice_type: string } | null }>
+  const payments = paymentsData as unknown as Array<{ amount: string | number; payment_date: string; invoice?: { apartment_id: string | null; invoice_type: string } | null }>
 
   // Garages/repositories link to a building, not directly to a project.
   const buildingToProject = new Map<string, string>()
@@ -68,8 +70,8 @@ export async function fetchSalesDashboardData(): Promise<{
   // Whole-inventory unit list across all three saleable types.
   const allUnits: UnitRow[] = [
     ...apartments.map(a => ({ status: a.status, project_id: a.project_id as string | null })),
-    ...(garagesData.data || []).map(g => ({ status: g.status, project_id: buildingToProject.get(g.building_id) ?? null })),
-    ...(repositoriesData.data || []).map(r => ({ status: r.status, project_id: buildingToProject.get(r.building_id) ?? null }))
+    ...garagesData.map(g => ({ status: g.status, project_id: buildingToProject.get(g.building_id) ?? null })),
+    ...repositoriesData.map(r => ({ status: r.status, project_id: buildingToProject.get(r.building_id) ?? null }))
   ]
 
   // Revenue is cash actually collected ("Naplaćeno od prodaje", GEN-9); only apartment sales are

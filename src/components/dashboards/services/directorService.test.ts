@@ -256,6 +256,25 @@ describe('fetchDirectorDashboard: a realistic portfolio', () => {
   })
 })
 
+describe('fetchDirectorDashboard: more rows than one PostgREST page', () => {
+  // GEN-43: every read stopped at row 1000 without a word. Here 1000 more customer invoices,
+  // each paid €10 this month, and 1000 more Available apartments take those tables past a page.
+  it('GEN-43: counts every payment and every apartment, not the first 1000', async () => {
+    const extra = Array.from({ length: 1_000 }, (_, i) => String(i).padStart(4, '0'))
+    db.tables.accounting_invoices.push(...extra.map(id => ({
+      id: `ix${id}`, contract_id: null, project_id: 'p1', invoice_type: 'OUTGOING_SALES', invoice_category: 'CUSTOMER',
+      total_amount: 10, paid_amount: 10,
+    })))
+    db.tables.accounting_payments.push(...extra.map(id => ({ id: `px${id}`, amount: 10, payment_date: '2026-10-06', invoice_id: `ix${id}` })))
+    db.tables.apartments.push(...extra.map(id => ({ id: `ax${id}`, project_id: 'p1', status: 'Available', price: 1 })))
+
+    const d = await dashboard()
+    expect(d.financial.cash_flow_current_month).toBe(45_000 + 10_000)
+    expect(d.sales.total_units).toBe(8 + 1_000)
+    expect(d.sales.available_units).toBe(2 + 1_000)
+  })
+})
+
 describe('fetchDirectorDashboard: no rows at all', () => {
   it('is a dashboard of zeros and empty lists, not an error', async () => {
     db.tables = {}

@@ -54,30 +54,30 @@ export async function generateProjectReport(
 
   const projectWithFunding = { ...project, investor: fundingSources }
 
-  const { data: apartmentsData, error: apartmentsError } = await supabase
+  // Every row, page by page: PostgREST stops at 1000 without a word (GEN-43). Throws on a failed page.
+  const apartments = await fetchAllRows((from, to) => supabase
     .from('apartments')
     .select('*')
     .eq('project_id', selectedProject)
-
-  if (apartmentsError) throw apartmentsError
-
-  const apartments = apartmentsData || []
+    // By unit number, as the PDF lists them; `id` keeps the pages stable.
+    .order('number')
+    .order('id')
+    .range(from, to))
 
   // Throws on a failed read, rather than leaving the garages and storage out (GEN-42).
   const linked = await fetchLinkedPrices()
   const listPrices = new Map(apartments.map(apt => [apt.id as string, apt.price as number | null]))
   const saleOptions = { linked, listPrice: (id: string) => listPrices.get(id) }
 
-  const { data: salesData, error: salesError } = await supabase
+  const sales = await fetchAllRows((from, to) => supabase
     .from('sales')
     .select('*, apartments!inner(project_id)')
     .eq('apartments.project_id', selectedProject)
     .gte('sale_date', dateRange.start)
     .lte('sale_date', dateRange.end)
-
-  if (salesError) throw salesError
-
-  const sales = salesData || []
+    .order('sale_date', { ascending: false })
+    .order('id')
+    .range(from, to))
 
   // Contracted sales dated in the range, each at its package value (GEN-38).
   const { value: total_revenue, average: average_price } = contractedSales(sales, saleOptions)
@@ -130,22 +130,15 @@ export async function generateProjectReport(
 export async function generateCustomerReport(
   dateRange: { start: string; end: string }
 ): Promise<CustomerReport> {
-  const { data: customersData, error: customersError } = await supabase
-    .from('customers')
-    .select('*')
-
-  if (customersError) throw customersError
-
-  const { data: salesData, error: salesError } = await supabase
+  // Every row, page by page: PostgREST stops at 1000 without a word (GEN-43). Throws on a failed page.
+  const customers = await fetchAllRows((from, to) => supabase.from('customers').select('*').order('id').range(from, to))
+  const sales = await fetchAllRows((from, to) => supabase
     .from('sales')
     .select('*')
     .gte('sale_date', dateRange.start)
     .lte('sale_date', dateRange.end)
-
-  if (salesError) throw salesError
-
-  const customers = customersData || []
-  const sales = salesData || []
+    .order('id')
+    .range(from, to))
 
   // Each sale at its package value: the linked garages and storage, and the list price for a 0
   // sale price (GEN-38).

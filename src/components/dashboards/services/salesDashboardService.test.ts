@@ -173,6 +173,27 @@ describe('fetchSalesDashboardData: a realistic portfolio', () => {
   })
 })
 
+describe('fetchSalesDashboardData: more rows than one PostgREST page', () => {
+  // GEN-43: every read stopped at row 1000 without a word. Here 1000 more payments of €10 on a1's
+  // sales invoice this month, 1000 more leads and 1000 more available garages each take their
+  // table past a page.
+  it('GEN-43: counts every payment, customer and unit, not the first 1000', async () => {
+    const extra = Array.from({ length: 1_000 }, (_, i) => String(i).padStart(4, '0'))
+    db.tables.accounting_payments.push(...extra.map(id => ({
+      id: `px${id}`, amount: 10, payment_date: '2026-10-15', invoice: { apartment_id: 'a1', invoice_type: 'OUTGOING_SALES' },
+    })))
+    db.tables.customers.push(...extra.map(id => ({ id: `cx${id}`, name: 'Lead', surname: id, status: 'lead' })))
+    db.tables.garages.push(...extra.map(id => ({ id: `gx${id}`, status: 'Available', building_id: 'bd1' })))
+
+    const { stats } = await dashboard()
+    expect(stats.totalRevenue).toBe(roundDeep(COLLECTED + 10_000))
+    expect(stats.monthlyRevenue).toBe(45_000 + 30_000 + 1_000 + 10_000)
+    expect(stats.totalCustomers).toBe(6 + 1_000)
+    expect(stats.activeLeads).toBe(3 + 1_000)
+    expect(stats.totalUnits).toBe(14 + 1_000)
+  })
+})
+
 describe('fetchSalesDashboardData: no rows at all', () => {
   it('is a dashboard of zeros, not an error', async () => {
     db.tables = {}

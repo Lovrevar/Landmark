@@ -61,6 +61,21 @@ describe('fetchProjectDataEnhanced', () => {
     expect(unitStatusCounts(apartments)).toEqual({ total: 3, sold: 2, reserved: 1, available: 0 })
   })
 
+  // GEN-43: the reads stopped at row 1000 without a word. 1000 more apartments on p1, each sold for
+  // €1, take apartments and sales past a page.
+  it('GEN-43: counts every apartment and every sale of the project, not the first 1000', async () => {
+    const extra = Array.from({ length: 1_000 }, (_, i) => String(i).padStart(4, '0'))
+    db.tables.apartments.push(...extra.map(id => ({ id: `ax${id}`, project_id: 'p1', floor: 9, status: 'Sold', price: 1 })))
+    db.tables.sales.push(...extra.map(id => ({
+      id: `sx${id}`, apartment_id: `ax${id}`, sale_price: 1, sale_date: '2026-10-05', apartments: { project_id: 'p1' },
+    })))
+
+    const { apartments, contractedSales } = await fetchProjectDataEnhanced('p1')
+    expect(apartments).toHaveLength(3 + 1_000)
+    expect(contractedSales.count).toBe(2 + 1_000)
+    expect(contractedSales.value).toBeCloseTo(198_000 + 15_000 + 150_000.5 + 1_000, 6)
+  })
+
   it('an all-zero TIC is no budget', async () => {
     expect((await fetchProjectDataEnhanced('p2')).ticTotal).toBeNull()
   })

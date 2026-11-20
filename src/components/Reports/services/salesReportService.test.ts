@@ -210,3 +210,36 @@ describe('generateCustomerReport', () => {
     await expect(generateCustomerReport(RANGE)).rejects.toMatchObject({ message: `permission denied for table ${table}` })
   })
 })
+
+describe('more rows than one PostgREST page', () => {
+  // GEN-43: every read stopped at row 1000 without a word. Here 1000 more apartments on p1, each
+  // sold for €1 inside the range to one of 1000 more customers, take apartments, sales and
+  // customers past a page.
+  const extra = Array.from({ length: 1_000 }, (_, i) => String(i).padStart(4, '0'))
+  const addRows = () => {
+    db.tables.apartments.push(...extra.map(id => ({ id: `ax${id}`, project_id: 'p1', number: `X${id}`, status: 'Sold', price: 1 })))
+    db.tables.sales.push(...extra.map(id => ({
+      id: `sx${id}`, apartment_id: `ax${id}`, customer_id: `cx${id}`, sale_price: 1, sale_date: '2026-08-01', apartments: { project_id: 'p1' },
+    })))
+    db.tables.customers.push(...extra.map(id => ({ id: `cx${id}`, name: 'Kupac', surname: id, status: 'buyer' })))
+  }
+
+  it('GEN-43: the project report counts every unit and every sale', async () => {
+    const before = await generateProjectReport('p1', PROJECTS, RANGE)
+    addRows()
+    const after = await generateProjectReport('p1', PROJECTS, RANGE)
+    expect(after.total_units).toBe(before.total_units + 1_000)
+    expect(after.sold_units).toBe(before.sold_units + 1_000)
+    expect(after.total_revenue).toBeCloseTo(before.total_revenue + 1_000, 6)
+    expect(after.sales).toHaveLength(before.sales.length + 1_000)
+  })
+
+  it('GEN-43: the customer report counts every customer and every sale', async () => {
+    const before = await generateCustomerReport(RANGE)
+    addRows()
+    const after = await generateCustomerReport(RANGE)
+    expect(after.total_customers).toBe(before.total_customers + 1_000)
+    expect(after.buyers).toBe(before.buyers + 1_000)
+    expect(after.total_revenue).toBeCloseTo(before.total_revenue + 1_000, 6)
+  })
+})

@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next'
 import { supabase } from '../../../../lib/supabase'
+import { fetchAllRows } from '../../../../lib/fetchAllRows'
 import { logActivity } from '../../../../lib/activityLog'
 import { downloadWorkbook, toDateCell, textCell, type SheetRows } from '../../../../lib/xlsxExport'
 import { exportT } from '../../../../utils/exportLanguage'
@@ -31,43 +32,56 @@ export interface SalesPaymentStats {
 }
 
 export async function fetchSalesPayments(): Promise<SalesPaymentWithDetails[]> {
-  const { data: invoicesData, error: invoicesError } = await supabase
-    .from('accounting_invoices')
-    .select(`
-      id, invoice_number, issue_date, total_amount, customer_id, apartment_id,
-      customers (name, surname),
-      apartments (number, projects (name))
-    `)
-    .eq('invoice_type', 'OUTGOING_SALES')
-    .not('apartment_id', 'is', null)
-    .order('issue_date', { ascending: false })
+  // Every apartment sales invoice and every payment on one, page by page: PostgREST stops at
+  // 1000 rows without a word (GEN-43). The payments are filtered through their invoice
+  // (`!inner`) rather than by a list of every invoice id, which made the URL grow with the data.
+  // fetchAllRows throws on a failed page.
+  const [invoicesData, paymentsData] = await Promise.all([
+    fetchAllRows((from, to) => supabase
+      .from('accounting_invoices')
+      .select(`
+        id, invoice_number, issue_date, total_amount, customer_id, apartment_id,
+        customers (name, surname),
+        apartments (number, projects (name))
+      `)
+      .eq('invoice_type', 'OUTGOING_SALES')
+      .not('apartment_id', 'is', null)
+      .order('issue_date', { ascending: false })
+      .order('id')
+      .range(from, to)),
+    fetchAllRows((from, to) => supabase
+      .from('accounting_payments')
+      .select(`
+        id, payment_date, amount, payment_method, description, created_at, invoice_id, company_bank_account_id,
+        invoice:accounting_invoices!inner(invoice_type, apartment_id)
+      `)
+      .eq('invoice.invoice_type', 'OUTGOING_SALES')
+      .not('invoice.apartment_id', 'is', null)
+      .order('payment_date', { ascending: false })
+      .order('id')
+      .range(from, to)),
+  ])
 
-  if (invoicesError) throw invoicesError
+  if (paymentsData.length === 0) return []
 
-  const invoiceIds = (invoicesData || []).map(inv => inv.id)
-  if (invoiceIds.length === 0) return []
-
-  const { data: paymentsData, error: paymentsError } = await supabase
-    .from('accounting_payments')
-    .select('id, payment_date, amount, payment_method, description, created_at, invoice_id, company_bank_account_id')
-    .in('invoice_id', invoiceIds)
-    .order('payment_date', { ascending: false })
-
-  if (paymentsError) throw paymentsError
-
-  const bankAccountIds = [...new Set((paymentsData || []).map(p => p.company_bank_account_id).filter(Boolean))]
+  const bankAccountIds = [...new Set(paymentsData.map(p => p.company_bank_account_id).filter(Boolean))]
   let bankAccountsData: { id: string; bank_name: string }[] = []
   if (bankAccountIds.length > 0) {
-    const { data: accounts } = await supabase
+    const { data: accounts, error: accountsError } = await supabase
       .from('company_bank_accounts')
       .select('id, bank_name')
       .in('id', bankAccountIds)
+    // Unchecked, a failed read listed every payment with no bank.
+    if (accountsError) throw accountsError
     bankAccountsData = accounts || []
   }
 
-  return (paymentsData || []).map(payment => {
-    const invoice = invoicesData?.find(inv => inv.id === payment.invoice_id)
-    const bankAccount = bankAccountsData.find(ba => ba.id === payment.company_bank_account_id)
+  const invoiceById = new Map(invoicesData.map(inv => [inv.id, inv]))
+  const bankAccountById = new Map(bankAccountsData.map(ba => [ba.id, ba]))
+
+  return paymentsData.map(payment => {
+    const invoice = invoiceById.get(payment.invoice_id)
+    const bankAccount = bankAccountById.get(payment.company_bank_account_id)
     const apt = invoice?.apartments as { number?: string; projects?: { name?: string } } | null
     const customer = invoice?.customers as unknown as { name: string; surname: string } | null
 

@@ -1,6 +1,7 @@
 import { fetchBudgetedProjectIds } from '../../Supervision/SiteManagement/services/siteService'
 import { supabase, type ProjectCategory } from '../../../lib/supabase'
 import { fetchLinkedPrices } from '../../../lib/linkedUnitPrices'
+import { fetchAllRows } from '../../../lib/fetchAllRows'
 import { startOfMonth } from 'date-fns'
 import { isCostInvoiceType } from '../../../utils/invoiceCashDirection'
 import { parseLocalDate, daysFromToday } from '../../../utils/dateOnly'
@@ -115,15 +116,15 @@ export interface DirectorDashboardData {
 export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
   const [
     { data: projectsData, error: projectsError },
-    { data: apartmentsData, error: apartmentsError },
-    { data: contractsData, error: contractsError },
-    { data: invoicesData, error: invoicesError },
-    { data: paymentsData, error: paymentsError },
-    { data: salesRowsData, error: salesRowsError },
+    apartmentsData,
+    contractsData,
+    invoicesData,
+    paymentsData,
+    salesRowsData,
     { data: allocationsData, error: allocationsError },
     { data: creditsData, error: creditsError },
     { data: subcontractorsData, error: subcontractorsError },
-    { data: milestonesData, error: milestonesError },
+    milestonesData,
     budgetedProjectIds,
     linkedPrices
   ] = await Promise.all([
@@ -131,15 +132,22 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
       .from('projects')
       .select('id, name, location, status, budget, category')
       .order('created_at', { ascending: false }),
-    supabase.from('apartments').select('id, project_id, status, price'),
-    supabase
+    // The tables that grow are read in full, page by page: PostgREST stops at 1000 rows without a
+    // word, and every total built on a cut list goes silently low (GEN-43). fetchAllRows throws
+    // on a failed page.
+    fetchAllRows((from, to) => supabase.from('apartments').select('id, project_id, status, price').order('id').range(from, to)),
+    fetchAllRows((from, to) => supabase
       .from('contracts')
-      .select('id, project_id, total_amount, contract_amount, budget_realized, status'),
-    supabase
+      .select('id, project_id, total_amount, contract_amount, budget_realized, status')
+      .order('id')
+      .range(from, to)),
+    fetchAllRows((from, to) => supabase
       .from('accounting_invoices')
-      .select('id, contract_id, project_id, invoice_type, invoice_category, total_amount, paid_amount'),
-    supabase.from('accounting_payments').select('amount, payment_date, invoice_id'),
-    supabase.from('sales').select('apartment_id, sale_price, sale_date'),
+      .select('id, contract_id, project_id, invoice_type, invoice_category, total_amount, paid_amount')
+      .order('id')
+      .range(from, to)),
+    fetchAllRows((from, to) => supabase.from('accounting_payments').select('id, amount, payment_date, invoice_id').order('id').range(from, to)),
+    fetchAllRows((from, to) => supabase.from('sales').select('id, apartment_id, sale_price, sale_date').order('id').range(from, to)),
     supabase.from('credit_allocations').select('project_id, allocated_amount'),
     supabase
       .from('bank_credits')
@@ -147,37 +155,37 @@ export async function fetchDirectorDashboard(): Promise<DirectorDashboardData> {
         'id, project_id, bank_id, amount, used_amount, repaid_amount, outstanding_balance, interest_rate, monthly_payment, credit_type, status, maturity_date, credit_name, company:accounting_companies(id, name)'
       ),
     supabase.from('subcontractors').select('id'),
-    supabase
+    // By due date, so the alerts (capped at 10, taken in this order) show the most overdue first;
+    // the read had no order before, so which milestones made the list was the database's choice.
+    fetchAllRows((from, to) => supabase
       .from('subcontractor_milestones')
-      .select('id, milestone_name, due_date, status, contract_id'),
+      .select('id, milestone_name, due_date, status, contract_id')
+      .order('due_date', { ascending: true })
+      .order('id')
+      .range(from, to)),
     // Which projects have a budget at all: only a TIC sets one (GEN-5).
     fetchBudgetedProjectIds(),
     // A sale is worth its package: the linked garages and storage count too (GEN-38).
     fetchLinkedPrices()
   ])
 
-  // Every read is checked: a failure shows the error panel instead of a dashboard of zeros.
+  // Every read is checked: a failure shows the error panel instead of a dashboard of zeros. The
+  // paged reads above throw on their own.
   if (projectsError) throw projectsError
-  if (apartmentsError) throw apartmentsError
-  if (contractsError) throw contractsError
-  if (invoicesError) throw invoicesError
-  if (paymentsError) throw paymentsError
-  if (salesRowsError) throw salesRowsError
   if (allocationsError) throw allocationsError
   if (creditsError) throw creditsError
   if (subcontractorsError) throw subcontractorsError
-  if (milestonesError) throw milestonesError
 
   const projects = (projectsData || []) as ProjectRow[]
-  const apartments = (apartmentsData || []) as ApartmentRow[]
-  const contracts = (contractsData || []) as ContractRow[]
-  const invoices = (invoicesData || []) as InvoiceRow[]
-  const payments = (paymentsData || []) as PaymentRow[]
-  const salesRows = (salesRowsData || []) as SaleRow[]
+  const apartments = apartmentsData as ApartmentRow[]
+  const contracts = contractsData as ContractRow[]
+  const invoices = invoicesData as InvoiceRow[]
+  const payments = paymentsData as PaymentRow[]
+  const salesRows = salesRowsData as SaleRow[]
   const allocations = (allocationsData || []) as AllocationRow[]
   const credits = (creditsData || []) as unknown as CreditRow[]
   const subcontractors = (subcontractorsData || []) as SubcontractorRow[]
-  const milestones = (milestonesData || []) as MilestoneRow[]
+  const milestones = milestonesData as MilestoneRow[]
 
   const listPrices = new Map(apartments.map(a => [a.id, a.price]))
   const saleOptions: SaleValueOptions = { linked: linkedPrices, listPrice: id => listPrices.get(id) }

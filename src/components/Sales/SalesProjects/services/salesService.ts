@@ -1,5 +1,6 @@
 import { supabase, Apartment } from '../../../../lib/supabase'
 import { logActivity } from '../../../../lib/activityLog'
+import { fetchAllRows } from '../../../../lib/fetchAllRows'
 import { UnitType, BulkCreateData, SaleFormData, CustomerMode, UnitForSale, SALES_PROJECT_CATEGORIES } from '../types'
 import { summarizeBulkPriceUpdate, type BulkPriceUpdateResult } from '../bulkPriceResult'
 import { effectivePricePerM2 } from '../../utils/priceUtils'
@@ -155,8 +156,12 @@ export const fetchBuildings = async () => {
   return data || []
 }
 
+// The unit, customer and sale lists below are read whole, page by page: PostgREST stops at 1000
+// rows without a word, and the screen's counts and totals would go silently low (GEN-43).
+// fetchAllRows throws on a failed page. `id` after the visible order keeps the pages stable.
+
 export const fetchApartments = async (): Promise<Apartment[]> => {
-  const { data, error } = await supabase
+  const data = await fetchAllRows((from, to) => supabase
     .from('apartments')
     .select(`
       *,
@@ -164,10 +169,10 @@ export const fetchApartments = async (): Promise<Apartment[]> => {
       apartment_repositories(repository:repositories(id, number, size_m2, price, status))
     `)
     .order('number')
+    .order('id')
+    .range(from, to))
 
-  if (error) throw error
-
-  return (data || []).map((apt: Record<string, unknown> & { apartment_garages?: { garage: unknown }[]; apartment_repositories?: { repository: unknown }[] }) => ({
+  return data.map((apt: Record<string, unknown> & { apartment_garages?: { garage: unknown }[]; apartment_repositories?: { repository: unknown }[] }) => ({
     ...apt,
     linked_garages: (apt.apartment_garages || []).map((ag: { garage: unknown }) => ag.garage).filter(Boolean),
     linked_repositories: (apt.apartment_repositories || []).map((ar: { repository: unknown }) => ar.repository).filter(Boolean),
@@ -176,73 +181,50 @@ export const fetchApartments = async (): Promise<Apartment[]> => {
   })) as unknown as Apartment[]
 }
 
-export const fetchGarages = async () => {
-  const { data, error } = await supabase
-    .from('garages')
-    .select('*')
-    .order('number')
+export const fetchGarages = async () =>
+  fetchAllRows((from, to) => supabase.from('garages').select('*').order('number').order('id').range(from, to))
 
-  if (error) throw error
-  return data || []
-}
+export const fetchRepositories = async () =>
+  fetchAllRows((from, to) => supabase.from('repositories').select('*').order('number').order('id').range(from, to))
 
-export const fetchRepositories = async () => {
-  const { data, error } = await supabase
-    .from('repositories')
-    .select('*')
-    .order('number')
+export const fetchCustomers = async () =>
+  fetchAllRows((from, to) => supabase.from('customers').select('*').order('name').order('id').range(from, to))
 
-  if (error) throw error
-  return data || []
-}
-
-export const fetchCustomers = async () => {
-  const { data, error } = await supabase
-    .from('customers')
-    .select('*')
-    .order('name')
-
-  if (error) throw error
-  return data || []
-}
-
-export const fetchSales = async () => {
-  const { data, error } = await supabase
+export const fetchSales = async () =>
+  fetchAllRows((from, to) => supabase
     .from('sales')
     .select(`
       *,
       customers(name, surname, email, phone)
     `)
+    .order('id')
+    .range(from, to))
 
-  if (error) throw error
-  return data || []
-}
-
+/**
+ * What buyers paid on each of `apartmentIds`: every payment on an apartment sales invoice.
+ *
+ * One paged read of the payments, filtered through their invoice (`!inner`), then kept to the
+ * apartments asked for. It used to read the invoices with every apartment id in the URL and the
+ * payments with every invoice id, so the URL grew with the data, and both stopped at 1000 rows
+ * (GEN-43).
+ */
 export const fetchActualTotalPaidByApartment = async (apartmentIds: string[]): Promise<Map<string, number>> => {
   if (apartmentIds.length === 0) return new Map()
 
-  const { data: invoicesData, error: invoicesError } = await supabase
-    .from('accounting_invoices')
-    .select('id, apartment_id')
-    .in('apartment_id', apartmentIds)
-    .eq('invoice_type', 'OUTGOING_SALES')
-  if (invoicesError) throw invoicesError
-
-  const paidMap = new Map<string, number>()
-  if (!invoicesData || invoicesData.length === 0) return paidMap
-
-  const invoiceIds = invoicesData.map(inv => inv.id)
-  const { data: paymentsData, error: paymentsError } = await supabase
+  const payments = await fetchAllRows((from, to) => supabase
     .from('accounting_payments')
-    .select('invoice_id, amount')
-    .in('invoice_id', invoiceIds)
-  if (paymentsError) throw paymentsError
+    .select('id, amount, invoice:accounting_invoices!inner(invoice_type, apartment_id)')
+    .eq('invoice.invoice_type', 'OUTGOING_SALES')
+    .not('invoice.apartment_id', 'is', null)
+    .order('id')
+    .range(from, to))
 
-  for (const payment of paymentsData || []) {
-    const invoice = invoicesData.find(inv => inv.id === payment.invoice_id)
-    if (!invoice?.apartment_id) continue
-    const current = paidMap.get(invoice.apartment_id) || 0
-    paidMap.set(invoice.apartment_id, current + parseFloat(payment.amount))
+  const wanted = new Set(apartmentIds)
+  const paidMap = new Map<string, number>()
+  for (const payment of payments) {
+    const apartmentId = (payment.invoice as unknown as { apartment_id: string | null } | null)?.apartment_id
+    if (!apartmentId || !wanted.has(apartmentId)) continue
+    paidMap.set(apartmentId, (paidMap.get(apartmentId) || 0) + parseFloat(payment.amount))
   }
 
   return paidMap
